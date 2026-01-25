@@ -1,6 +1,6 @@
 # Acceptance Phase0
 
-Linked Task: P0-007
+Linked Task: P0-007, P0-121
 
 ## Acceptance Checklist (YES/NO)
 
@@ -31,6 +31,15 @@ Linked Task: P0-007
 - [ ] WARN links cannot be linked to notifications (or hard warning).
 - [ ] Audit logs are immutable.
 
-## Notes
-- TODO: record evidence, dates, and sign-off.
+## Evidence Log
+| Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
+| --- | --- | --- | --- | --- |
+| A. LINE |  |  |  |  |
+| B. Mini App |  |  |  |  |
+| C. Admin |  |  |  |  |
+| D. Safety |  |  |  |  |
 
+## Sign-off
+- Reviewer: 
+- Date: 
+- Result: PASS / FAIL

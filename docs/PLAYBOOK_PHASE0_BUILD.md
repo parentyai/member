@@ -1,25 +1,42 @@
 # Playbook Phase0 Build
 
-Linked Task: P0-006
+Linked Task: P0-006, P0-121
 
 ## Prerequisites
-- Node version: TODO
-- Required ENV: see `.env.example`
+- Node.js 20.x (matches GitHub Actions)
+- Required ENV keys: see `.env.example`
 
 ## ENV Setup
 1) Copy `.env.example` to `.env`.
 2) Fill required secrets (LINE, Firestore, Storage, Base URL).
+3) If running only tests, ENV values may be empty strings (tests do not read ENV).
 
 ## Install
-- TODO: add install command(s) once package manager is defined.
+- If `package-lock.json` exists: `npm ci`
+- Otherwise: `npm install`
+- Expected: dependencies installed, no errors.
 
 ## Local Start
-- TODO: add start command(s).
-- Expected: server starts without errors.
+- Not applicable in Phase0 scaffolding (no server entrypoint yet).
+- Expected: N/A
+
+## Tests
+- Run: `npm test`
+- Expected: `phase0 smoke` passes.
 
 ## Seed (Phase0)
 - Run: `node scripts/seed_phase0.js`
-- Expected: no-op and exits with success.
+- Expected: outputs `P0-014 seed stub: no-op` and exits 0.
 
-## LINE Connectivity (Skeleton)
-- TODO: add webhook URL, signature verification steps, and test user flow.
+## LINE Connectivity (Phase0)
+Precondition: `/webhook/line` and push send exist (P0-102/P0-103).
+
+When available:
+1) Set LINE webhook URL to `${PUBLIC_BASE_URL}/webhook/line`.
+2) Send a test event from LINE Developer Console.
+3) Confirm 200 response and user creation in Firestore.
+
+Expected:
+- Webhook returns 200.
+- `users/{lineUserId}` is created.
+
