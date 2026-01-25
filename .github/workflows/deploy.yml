@@ -1,0 +1,80 @@
+name: Deploy to Cloud Run
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  RUNTIME_SA_EMAIL: ${{ vars.RUNTIME_SA_EMAIL }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  ENV_NAME: ${{ vars.ENV_NAME }}
+  PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+  FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+  STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+
+jobs:
+  dry-run:
+    name: dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint (if configured)
+        run: |
+          if [ -f package.json ] && grep -q "\"lint\"" package.json; then
+            npm ci
+            npm run lint
+          else
+            echo "lint skipped"
+          fi
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    needs: dry-run
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --source . \
+            --service-account "$RUNTIME_SA_EMAIL" \
+            --set-env-vars "ENV_NAME=$ENV_NAME,PUBLIC_BASE_URL=$PUBLIC_BASE_URL,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,STORAGE_BUCKET=$STORAGE_BUCKET" \
+            --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest"
