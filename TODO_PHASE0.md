@@ -125,6 +125,15 @@ Linked Task: P0-003
 - Evidence: docs/SSOT_DELTA_PROPOSAL.md
 - Risks: Deltas tracked outside the SSOT delta log.
 
+### P0-120: Setup GCP IAM + GitHub Actions OIDC (WIF) + Cloud Run deploy workflow
+- Purpose: Enable OIDC auth with deploy SA impersonation and document IAM steps.
+- Completion Criteria: docs/GCP_SETUP.md and docs/GITHUB_SETUP.md updated; .github/workflows/deploy.yml added; npm test available.
+- Dependencies: P0-001.
+- Edit Files: docs/GCP_SETUP.md, docs/GITHUB_SETUP.md, .github/workflows/deploy.yml, package.json
+- Tests: npm test
+- Evidence: docs/GCP_SETUP.md, .github/workflows/deploy.yml, package.json
+- Risks: IAM misconfiguration or missing required APIs.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
