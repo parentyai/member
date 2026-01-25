@@ -18,10 +18,10 @@ Linked Task: P0-120
 Set these in your shell for copy/paste commands:
 
 ```sh
-PROJECT_ID=YOUR_PROJECT_ID
-PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+PROJECT_ID=member-485303
+PROJECT_NUMBER=306972605843
 REGION=us-east1
-SERVICE_NAME=member-api
+SERVICE_NAME=member
 
 GITHUB_OWNER=parentyai
 GITHUB_REPO=member
@@ -191,7 +191,16 @@ gcloud secrets create LINE_CHANNEL_ACCESS_TOKEN --project "$PROJECT_ID"
 Expected:
 - `gcloud secrets list` shows both secrets.
 
-## 6) GitHub Repository Settings
+## 6) Storage Bucket (memberCardAsset)
+
+```sh
+gcloud storage buckets describe gs://member-uploads-member-485303 --project "$PROJECT_ID"
+```
+
+Expected:
+- Bucket exists in `us-east1`.
+
+## 7) GitHub Repository Settings
 Add repository variables (non-secret):
 
 - `GCP_PROJECT_ID`
@@ -208,7 +217,7 @@ Add repository variables (non-secret):
 Expected:
 - Actions workflow uses variables without GitHub Secrets.
 
-## 7) Dry-Run Checklist (must pass before deploy)
+## 8) Dry-Run Checklist (must pass before deploy)
 - [ ] Required APIs enabled
 - [ ] WIF provider resource name recorded in `GCP_WIF_PROVIDER`
 - [ ] WIF binding to deploy SA applied
@@ -218,4 +227,36 @@ Expected:
 - [ ] Service URL reachable after deploy
 - [ ] Logs visible in Cloud Run / Cloud Logging
 - [ ] Firestore read/write verified with runtime SA
+
+## Execution Evidence (member-485303)
+
+- Active account: `nshimamura@parentyai.com`
+- Active project: `member-485303`
+- Project number: `306972605843`
+- Enabled APIs:
+  - `artifactregistry.googleapis.com`
+  - `cloudbuild.googleapis.com`
+  - `datastore.googleapis.com`
+  - `firestore.googleapis.com`
+  - `iam.googleapis.com`
+  - `run.googleapis.com`
+  - `secretmanager.googleapis.com`
+- Deploy SA exists: `member-deploy@member-485303.iam.gserviceaccount.com`
+- WIF pool: `projects/306972605843/locations/global/workloadIdentityPools/github-pool`
+- WIF provider: `projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider`
+- WIF binding to deploy SA:
+  - `roles/iam.workloadIdentityUser` bound to `principalSet://.../attribute.repository/parentyai/member`
+- Deploy SA roles:
+  - `roles/run.admin` on project
+  - `roles/logging.viewer` on project
+  - `roles/iam.serviceAccountUser` on runtime SA
+- Runtime SA roles:
+  - `roles/datastore.user`
+  - `roles/secretmanager.secretAccessor`
+  - `roles/storage.objectAdmin`
+- Secrets exist:
+  - `LINE_CHANNEL_SECRET`
+  - `LINE_CHANNEL_ACCESS_TOKEN`
+- Storage bucket exists:
+  - `gs://member-uploads-member-485303` (location `US-EAST1`)
 
