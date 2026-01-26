@@ -134,6 +134,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md, .github/workflows/deploy.yml, package.json
 - Risks: IAM misconfiguration or missing required APIs.
 
+### P0-121: Make Playbook/Runbook/Acceptance reproducible (remove TODOs)
+- Purpose: Provide copy-paste-ready operational docs for Phase0.
+- Completion Criteria: Playbooks/Runbook/Acceptance contain concrete steps and evidence fields with no TODOs.
+- Dependencies: P0-006, P0-007.
+- Edit Files: docs/PLAYBOOK_PHASE0_BUILD.md, docs/PLAYBOOK_PHASE0_E2E.md, docs/PLAYBOOK_PHASE0_DEBUG.md, docs/PLAYBOOK_PHASE0_INCIDENT.md, docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
+- Tests: npm test (doc-only change)
+- Evidence: docs/PLAYBOOK_PHASE0_BUILD.md, docs/PLAYBOOK_PHASE0_E2E.md, docs/PLAYBOOK_PHASE0_DEBUG.md, docs/PLAYBOOK_PHASE0_INCIDENT.md, docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
+- Risks: Operational steps diverge from future implementation.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
