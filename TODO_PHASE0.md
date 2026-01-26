@@ -143,6 +143,15 @@ Linked Task: P0-003
 - Evidence: docs/PLAYBOOK_PHASE0_BUILD.md, docs/PLAYBOOK_PHASE0_E2E.md, docs/PLAYBOOK_PHASE0_DEBUG.md, docs/PLAYBOOK_PHASE0_INCIDENT.md, docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Operational steps diverge from future implementation.
 
+### P0-122: Traceability for SSOT 6.6-6.11
+- Purpose: Map SSOT 6.6-6.11 to concrete files, tests, and playbooks with unimplemented status noted.
+- Completion Criteria: docs/TRACEABILITY_PHASE0.md includes detailed mapping for 6.6-6.11 with file paths, function names, and test names.
+- Dependencies: P0-004.
+- Edit Files: docs/TRACEABILITY_PHASE0.md
+- Tests: npm test (doc-only change)
+- Evidence: docs/TRACEABILITY_PHASE0.md
+- Risks: Planned file structure may need adjustment during implementation.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
