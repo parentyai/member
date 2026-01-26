@@ -301,3 +301,5 @@ Expected:
     uniform_bucket_level_access: true
     update_time: 2026-01-26T00:51:16+0000
     ```
+- CI deploy flags update (2026-01-26):
+  - Added `--gcs-source-staging-dir "gs://$GCP_PROJECT_ID_cloudbuild/source"` and `--allow-unauthenticated` in `.github/workflows/deploy.yml` (PR #5, commit `e460abc`).
