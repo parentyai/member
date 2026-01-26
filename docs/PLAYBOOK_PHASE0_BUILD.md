@@ -17,8 +17,10 @@ Linked Task: P0-006, P0-121
 - Expected: dependencies installed, no errors.
 
 ## Local Start
-- Not applicable in Phase0 scaffolding (no server entrypoint yet).
-- Expected: N/A
+- Run: `npm run start`
+- Expected:
+  - `http://localhost:8080/` returns `ok`
+  - `http://localhost:8080/healthz` returns `{"ok":true,"env":"local"}` (or `ENV_NAME`)
 
 ## Tests
 - Run: `npm test`
@@ -39,4 +41,3 @@ When available:
 Expected:
 - Webhook returns 200.
 - `users/{lineUserId}` is created.
-
