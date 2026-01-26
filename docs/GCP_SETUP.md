@@ -269,3 +269,15 @@ Expected:
   - `gs://member-485303_cloudbuild` (location `US`)
 - Bucket-level IAM:
   - `roles/storage.objectAdmin` granted to deploy SA on `gs://member-485303_cloudbuild`
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21341888975`
+  - Commit: `ae3e5dd5784de7382d03c8977c8479d775b217de`
+  - Error excerpt:
+    - `Uploading sources............failed`
+    - `ERROR: (gcloud.run.deploy) HTTPError 403: member-deploy@member-485303.iam.gserviceaccount.com does not have storage.buckets.create access`
+- Remediation commands executed (2026-01-26):
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/cloudbuild.builds.editor"`
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/artifactregistry.writer"`
+  - `gcloud artifacts repositories create cloud-run-source-deploy --repository-format=docker --location=us-east1 --project member-485303`
+  - `gcloud storage buckets create gs://member-485303_cloudbuild --location=US --project member-485303`
+  - `gcloud storage buckets add-iam-policy-binding gs://member-485303_cloudbuild --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/storage.objectAdmin"`
