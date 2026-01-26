@@ -249,7 +249,11 @@ Expected:
 - Deploy SA roles:
   - `roles/run.admin` on project
   - `roles/logging.viewer` on project
+  - `roles/cloudbuild.builds.editor` on project
+  - `roles/artifactregistry.writer` on project
   - `roles/iam.serviceAccountUser` on runtime SA
+- Deploy SA role updates (2026-01-26):
+  - Added `roles/cloudbuild.builds.editor` and `roles/artifactregistry.writer` to resolve deploy from source.
 - Runtime SA roles:
   - `roles/datastore.user`
   - `roles/secretmanager.secretAccessor`
@@ -259,4 +263,9 @@ Expected:
   - `LINE_CHANNEL_ACCESS_TOKEN`
 - Storage bucket exists:
   - `gs://member-uploads-member-485303` (location `US-EAST1`)
-
+- Artifact Registry repo exists:
+  - `cloud-run-source-deploy` (location `us-east1`)
+- Cloud Build staging bucket exists:
+  - `gs://member-485303_cloudbuild` (location `US`)
+- Bucket-level IAM:
+  - `roles/storage.objectAdmin` granted to deploy SA on `gs://member-485303_cloudbuild`
