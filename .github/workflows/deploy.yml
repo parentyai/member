@@ -70,13 +70,22 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
-      - name: Deploy to Cloud Run
+      - name: Build image (Cloud Build)
         run: |
+          IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
+          gcloud builds submit \
+            --project "$GCP_PROJECT_ID" \
+            --gcs-source-staging-dir "gs://${GCP_PROJECT_ID}_cloudbuild/source" \
+            --tag "$IMAGE" \
+            .
+
+      - name: Deploy image to Cloud Run
+        run: |
+          IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
           gcloud run deploy "$SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
-            --source . \
-            --gcs-source-staging-dir "gs://$GCP_PROJECT_ID_cloudbuild/source" \
+            --image "$IMAGE" \
             --allow-unauthenticated \
             --service-account "$RUNTIME_SA_EMAIL" \
             --set-env-vars "ENV_NAME=$ENV_NAME,PUBLIC_BASE_URL=$PUBLIC_BASE_URL,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,STORAGE_BUCKET=$STORAGE_BUCKET" \

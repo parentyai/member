@@ -303,3 +303,13 @@ Expected:
     ```
 - CI deploy flags update (2026-01-26):
   - Added `--gcs-source-staging-dir "gs://$GCP_PROJECT_ID_cloudbuild/source"` and `--allow-unauthenticated` in `.github/workflows/deploy.yml` (PR #5, commit `e460abc`).
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21344095469`
+  - Commit: `2fecd49cab1c33e541d562d011661b4dc6433a29`
+  - Error excerpt:
+    - `ERROR: (gcloud.run.deploy) unrecognized arguments:`
+    - `--gcs-source-staging-dir`
+    - `gs:///source`
+- Remediation plan (2026-01-26):
+  - Switch to Cloud Build image build + `gcloud run deploy --image`.
+  - Correct staging bucket string to `gs://${GCP_PROJECT_ID}_cloudbuild/source` for `gcloud builds submit`.
