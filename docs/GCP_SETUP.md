@@ -345,3 +345,44 @@ Expected:
     - `This tool can only stream logs if you are Viewer/Owner of the project...`
 - Remediation plan (2026-01-26):
   - Use `gcloud builds submit --async` and poll build status to avoid log streaming restrictions.
+- Remediation PR (2026-01-27):
+  - PR: `https://github.com/parentyai/member/pull/8`
+  - Commit: `2d6b593`
+  - Change: use `gcloud builds submit --async` and poll with `gcloud builds describe`.
+- Deploy failure evidence (2026-01-27):
+  - Cloud Build log: `https://console.cloud.google.com/cloud-build/builds/fa26a4aa-5da6-4e24-ab61-e7043cb06d2e?project=306972605843`
+  - Error excerpt:
+    - `denied: Permission "artifactregistry.repositories.uploadArtifacts" denied on resource`
+    - `serviceAccount:306972605843-compute@developer.gserviceaccount.com`
+- Remediation commands executed (2026-01-27):
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:306972605843@cloudbuild.gserviceaccount.com" --role "roles/artifactregistry.writer"`
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:306972605843-compute@developer.gserviceaccount.com" --role "roles/artifactregistry.writer"`
+- Secrets versions added (2026-01-27):
+  - `printf '***' | gcloud secrets versions add LINE_CHANNEL_SECRET --data-file=- --project member-485303`
+  - `printf '***' | gcloud secrets versions add LINE_CHANNEL_ACCESS_TOKEN --data-file=- --project member-485303`
+- Remediation PR (2026-01-27):
+  - PR: `https://github.com/parentyai/member/pull/9`
+  - Commit: `26e6fa4`
+  - Change: add minimal HTTP server + preflight to satisfy Buildpacks/Cloud Run.
+- Deploy success (2026-01-27):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21345039368`
+  - Result: deploy job green.
+- Cloud Run service URL (2026-01-27):
+  - Command: `gcloud run services describe member --region us-east1 --project member-485303 --format="value(status.url)"`
+  - Output: `https://member-pvxgenwkba-ue.a.run.app`
+- PUBLIC_BASE_URL update (2026-01-27):
+  - Command: `gh variable set PUBLIC_BASE_URL -b "https://member-pvxgenwkba-ue.a.run.app" -R parentyai/member`
+  - Evidence: re-run jobs on run `21345039368` (deploy green).
+- Cloud Run IAM (2026-01-27):
+  - Attempted unauth binding (blocked by org policy):
+    - `gcloud run services add-iam-policy-binding member --member "allUsers" --role "roles/run.invoker" --region us-east1 --project member-485303`
+    - Error: `PERMISSION_DENIED: Policy constraint constraints/run.allowedUnauthenticated`
+  - Applied authenticated invoker for tester:
+    - `gcloud run services add-iam-policy-binding member --member "user:nshimamura@parentyai.com" --role "roles/run.invoker" --region us-east1 --project member-485303`
+- Endpoint checks (2026-01-27):
+  - Unauth: `curl -i https://member-pvxgenwkba-ue.a.run.app/` -> `403 Forbidden`
+  - Auth: `curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/` -> `ok`
+  - Auth: `curl -i -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/healthz` -> `404` (did not reach container; no app logs)
+  - Auth: `curl -i -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/healthz/` -> `404` with body `not found` (container)
+- Note (2026-01-27):
+  - `/healthz` appears to be handled by the Google Frontend before reaching the container; use `/` for basic health checks until resolved.
