@@ -249,7 +249,11 @@ Expected:
 - Deploy SA roles:
   - `roles/run.admin` on project
   - `roles/logging.viewer` on project
+  - `roles/cloudbuild.builds.editor` on project
+  - `roles/artifactregistry.writer` on project
   - `roles/iam.serviceAccountUser` on runtime SA
+- Deploy SA role updates (2026-01-26):
+  - Added `roles/cloudbuild.builds.editor` and `roles/artifactregistry.writer` to resolve deploy from source.
 - Runtime SA roles:
   - `roles/datastore.user`
   - `roles/secretmanager.secretAccessor`
@@ -259,4 +263,43 @@ Expected:
   - `LINE_CHANNEL_ACCESS_TOKEN`
 - Storage bucket exists:
   - `gs://member-uploads-member-485303` (location `US-EAST1`)
-
+- Artifact Registry repo exists:
+  - `cloud-run-source-deploy` (location `us-east1`)
+- Cloud Build staging bucket exists:
+  - `gs://member-485303_cloudbuild` (location `US`)
+- Bucket-level IAM:
+  - `roles/storage.objectAdmin` granted to deploy SA on `gs://member-485303_cloudbuild`
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21341888975`
+  - Commit: `ae3e5dd5784de7382d03c8977c8479d775b217de`
+  - Error excerpt:
+    - `Uploading sources............failed`
+    - `ERROR: (gcloud.run.deploy) HTTPError 403: member-deploy@member-485303.iam.gserviceaccount.com does not have storage.buckets.create access`
+- Remediation commands executed (2026-01-26):
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/cloudbuild.builds.editor"`
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/artifactregistry.writer"`
+  - `gcloud artifacts repositories create cloud-run-source-deploy --repository-format=docker --location=us-east1 --project member-485303`
+  - `gcloud storage buckets create gs://member-485303_cloudbuild --location=US --project member-485303`
+  - `gcloud storage buckets add-iam-policy-binding gs://member-485303_cloudbuild --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/storage.objectAdmin"`
+- Staging bucket describe (2026-01-26):
+  - Command: `gcloud storage buckets describe gs://member-485303_cloudbuild --project member-485303`
+  - Output:
+    ```
+    creation_time: 2026-01-26T00:22:07+0000
+    default_storage_class: STANDARD
+    generation: 1769386927035614841
+    location: US
+    location_type: multi-region
+    metageneration: 3
+    name: member-485303_cloudbuild
+    public_access_prevention: inherited
+    rpo: DEFAULT
+    soft_delete_policy:
+      effectiveTime: '2026-01-26T00:22:07.271000+00:00'
+      retentionDurationSeconds: '604800'
+    storage_url: gs://member-485303_cloudbuild/
+    uniform_bucket_level_access: true
+    update_time: 2026-01-26T00:51:16+0000
+    ```
+- CI deploy flags update (2026-01-26):
+  - Added `--gcs-source-staging-dir "gs://$GCP_PROJECT_ID_cloudbuild/source"` and `--allow-unauthenticated` in `.github/workflows/deploy.yml` (PR #5, commit `e460abc`).

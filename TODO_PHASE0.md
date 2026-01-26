@@ -143,6 +143,15 @@ Linked Task: P0-003
 - Evidence: docs/PLAYBOOK_PHASE0_BUILD.md, docs/PLAYBOOK_PHASE0_E2E.md, docs/PLAYBOOK_PHASE0_DEBUG.md, docs/PLAYBOOK_PHASE0_INCIDENT.md, docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Operational steps diverge from future implementation.
 
+### P0-124: Fix Cloud Run source staging for CI deploy
+- Purpose: Avoid storage.buckets.create errors by using an existing staging bucket and record GCP evidence.
+- Completion Criteria: Deploy job uses `--gcs-source-staging-dir` and GCP_SETUP evidence reflects added resources/roles.
+- Dependencies: P0-120.
+- Edit Files: .github/workflows/deploy.yml, docs/GCP_SETUP.md
+- Tests: GitHub Actions deploy job (dry-run/deploy)
+- Evidence: .github/workflows/deploy.yml, docs/GCP_SETUP.md
+- Risks: Staging bucket access misconfigured.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
