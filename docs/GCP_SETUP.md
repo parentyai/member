@@ -281,3 +281,23 @@ Expected:
   - `gcloud artifacts repositories create cloud-run-source-deploy --repository-format=docker --location=us-east1 --project member-485303`
   - `gcloud storage buckets create gs://member-485303_cloudbuild --location=US --project member-485303`
   - `gcloud storage buckets add-iam-policy-binding gs://member-485303_cloudbuild --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/storage.objectAdmin"`
+- Staging bucket describe (2026-01-26):
+  - Command: `gcloud storage buckets describe gs://member-485303_cloudbuild --project member-485303`
+  - Output:
+    ```
+    creation_time: 2026-01-26T00:22:07+0000
+    default_storage_class: STANDARD
+    generation: 1769386927035614841
+    location: US
+    location_type: multi-region
+    metageneration: 3
+    name: member-485303_cloudbuild
+    public_access_prevention: inherited
+    rpo: DEFAULT
+    soft_delete_policy:
+      effectiveTime: '2026-01-26T00:22:07.271000+00:00'
+      retentionDurationSeconds: '604800'
+    storage_url: gs://member-485303_cloudbuild/
+    uniform_bucket_level_access: true
+    update_time: 2026-01-26T00:51:16+0000
+    ```
