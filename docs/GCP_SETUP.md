@@ -315,5 +315,5 @@ Expected:
   - Correct staging bucket string to `gs://${GCP_PROJECT_ID}_cloudbuild/source` for `gcloud builds submit`.
 - Remediation PR (2026-01-26):
   - PR: `https://github.com/parentyai/member/pull/6`
-  - Commit: `993fbde`
-  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344251953` (green)
+  - Commit: `27e648a`
+  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344264653` (green)
