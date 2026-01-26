@@ -14,7 +14,10 @@ Expected:
 
 ## Verify Deploy
 - Get service URL:
-  - `gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)"`
+  - `SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
+- Verify HTTP endpoints:
+  - `curl -sS "$SERVICE_URL/"` returns `ok`
+  - `curl -sS "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
 - Check revisions:
   - `gcloud run revisions list --service "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --limit=5`
 

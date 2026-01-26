@@ -46,6 +46,9 @@ jobs:
             echo "lint skipped"
           fi
 
+      - name: Preflight
+        run: npm run preflight
+
       - name: Run tests
         run: npm test
 
