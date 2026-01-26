@@ -76,7 +76,7 @@ jobs:
           gcloud builds submit \
             --project "$GCP_PROJECT_ID" \
             --gcs-source-staging-dir "gs://${GCP_PROJECT_ID}_cloudbuild/source" \
-            --tag "$IMAGE" \
+            --pack "image=${IMAGE}" \
             .
 
       - name: Deploy image to Cloud Run

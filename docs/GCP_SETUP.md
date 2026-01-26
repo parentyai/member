@@ -317,3 +317,14 @@ Expected:
   - PR: `https://github.com/parentyai/member/pull/6`
   - Commit: `27e648a`
   - Dry-run: `https://github.com/parentyai/member/actions/runs/21344264653` (green)
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21344329763`
+  - Commit: `04a1586cecc4f03a2e1ed92b72030782aa827e6d`
+  - Error excerpt:
+    - `ERROR: (gcloud.builds.submit) Invalid value for [source]: Dockerfile required when specifying --tag`
+- Remediation plan (2026-01-26):
+  - Use Cloud Buildpacks: `gcloud builds submit --pack "image=..."` (no Dockerfile).
+- Remediation PR (2026-01-26):
+  - PR: `https://github.com/parentyai/member/pull/7`
+  - Commit: `43dea55`
+  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344484600` (green)
