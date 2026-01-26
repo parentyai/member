@@ -328,3 +328,20 @@ Expected:
   - PR: `https://github.com/parentyai/member/pull/7`
   - Commit: `43dea55`
   - Dry-run: `https://github.com/parentyai/member/actions/runs/21344484600` (green)
+
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21344509503`
+  - Commit: `c246b4758ee92b15b621782b9c89e5ce50f15649`
+  - Error excerpt:
+    - `ERROR: (gcloud.builds.submit) The user is forbidden from accessing the bucket [member-485303_cloudbuild].`
+    - `Please check your organization's policy or if the user has the "serviceusage.services.use" permission.`
+- Remediation commands executed (2026-01-26):
+  - `gcloud projects add-iam-policy-binding member-485303 --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/serviceusage.serviceUsageConsumer"`
+  - `gcloud storage buckets add-iam-policy-binding gs://member-485303_cloudbuild --member "serviceAccount:member-deploy@member-485303.iam.gserviceaccount.com" --role "roles/storage.legacyBucketReader"`
+- Deploy failure evidence (2026-01-26):
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21344509503`
+  - Error excerpt:
+    - `The build is running, and logs are being written to the default logs bucket.`
+    - `This tool can only stream logs if you are Viewer/Owner of the project...`
+- Remediation plan (2026-01-26):
+  - Use `gcloud builds submit --async` and poll build status to avoid log streaming restrictions.
