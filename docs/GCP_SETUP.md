@@ -326,5 +326,5 @@ Expected:
   - Use Cloud Buildpacks: `gcloud builds submit --pack "image=..."` (no Dockerfile).
 - Remediation PR (2026-01-26):
   - PR: `https://github.com/parentyai/member/pull/7`
-  - Commit: `e948dba`
-  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344473357` (green)
+  - Commit: `43dea55`
+  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344484600` (green)
