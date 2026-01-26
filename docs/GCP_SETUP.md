@@ -313,3 +313,7 @@ Expected:
 - Remediation plan (2026-01-26):
   - Switch to Cloud Build image build + `gcloud run deploy --image`.
   - Correct staging bucket string to `gs://${GCP_PROJECT_ID}_cloudbuild/source` for `gcloud builds submit`.
+- Remediation PR (2026-01-26):
+  - PR: `https://github.com/parentyai/member/pull/6`
+  - Commit: `993fbde`
+  - Dry-run: `https://github.com/parentyai/member/actions/runs/21344251953` (green)
