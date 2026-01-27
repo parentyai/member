@@ -26,7 +26,7 @@ Linked Task: P0-004, P0-122
 | notification_deliveries/{deliveryId} | src/repos/firestore/deliveriesRepo.js::createDelivery/markRead/markClick | tests/phase0/notifications.test.js::"delivery created on send" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
 | link_registry/{linkId} | src/repos/firestore/linkRegistryRepo.js::createLink/updateLink/listLinks/setHealth; src/usecases/linkRegistry/*.js | tests/phase0/linkRegistry.test.js::"linkRegistryRepo: setHealth stores WARN state" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo + handler) |
 | audit_logs/{logId} | src/repos/firestore/auditLogsRepo.js::appendAuditLog | tests/phase0/audit.test.js::"audit log append" | docs/PLAYBOOK_PHASE0_INCIDENT.md | 一部実装済 (repo) |
-| system_flags/phase0 | src/repos/firestore/systemFlagsRepo.js::getKillSwitch/setKillSwitch | tests/phase0/killSwitch.test.js::"kill switch blocks send" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo) |
+| system_flags/phase0 | src/repos/firestore/systemFlagsRepo.js::getKillSwitch/setKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch/getKillSwitch | tests/phase0/killSwitch.test.js::"killSwitch: default false, set true" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo + handler) |
 
 ## SSOT 6.7: API設計
 
@@ -37,7 +37,7 @@ Linked Task: P0-004, P0-122
 | POST /admin/notifications/:id/test-send | src/routes/admin/notifications.js::handleTestSend; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/testSendNotification.test.js::"testSendNotification: creates delivery after push" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | POST /admin/notifications/:id/send | src/routes/admin/notifications.js::sendNotification; src/usecases/notifications/sendNotification.js::sendNotification | tests/phase0/notifications.test.js::"send creates deliveries" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | GET /admin/notifications | src/routes/admin/notifications.js::listNotifications; src/usecases/notifications/listNotifications.js::listNotifications | tests/phase0/notifications.test.js::"list notifications" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| POST /admin/kill-switch | src/routes/admin/killSwitch.js::setKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | tests/phase0/killSwitch.test.js::"kill switch blocks send" | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
+| POST /admin/kill-switch | src/routes/admin/killSwitch.js::handleSetKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | tests/phase0/killSwitch.test.js::"killSwitch: default false, set true" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (handler) |
 | CRUD /admin/link-registry | src/routes/admin/linkRegistry.js::handleCreate/handleList/handleUpdate/handleDelete/handleHealth; src/usecases/linkRegistry/createLink.js::createLink; src/usecases/linkRegistry/listLinks.js::listLinks; src/usecases/linkRegistry/updateLink.js::updateLink; src/usecases/linkRegistry/deleteLink.js::deleteLink; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/linkRegistry.test.js::"linkRegistryRepo: setHealth stores WARN state" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | POST /track/click | src/routes/trackClick.js::trackClick; src/usecases/track/recordClick.js::recordClickAndRedirect | tests/phase0/click.test.js::"click records clickAt" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 
@@ -75,7 +75,7 @@ Linked Task: P0-004, P0-122
 | 通知作成→テスト送信が成功 | tests/phase0/testSendNotification.test.js::"testSendNotification: creates delivery after push" | src/routes/admin/notifications.js::handleTestSend | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | 配信で対象ユーザーにdeliveryが作られる | tests/phase0/notifications.test.js::"send creates deliveries" | src/routes/admin/notifications.js::sendNotification | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | クリックでclickAtが記録 | tests/phase0/click.test.js::"click records clickAt" | src/routes/trackClick.js::trackClick | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| Kill Switch ONで配信が拒否 | tests/phase0/killSwitch.test.js::"kill switch blocks send" | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
+| Kill Switch ONで配信が拒否 | tests/phase0/testSendNotification.test.js::"testSendNotification: blocked when kill switch ON" | src/usecases/notifications/testSendNotification.js::testSendNotification | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (usecase) |
 | WARNリンクが通知に紐付けできない | tests/phase0/linkRegistry.test.js::"WARN link cannot be used" | src/domain/validators.js::validateNotificationPayload | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 
 ## SSOT 6.11: 出力物（実装完了時に必須）

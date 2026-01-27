@@ -70,6 +70,15 @@ Linked Task: P0-003
 - Evidence: docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Missing key ops sections (rollback, kill switch).
 
+### P0-106: Implement Kill Switch
+- Purpose: Block sends when Kill Switch is ON.
+- Completion Criteria: Admin toggle + enforcement in send flow.
+- Dependencies: P0-101.
+- Edit Files: src/usecases/killSwitch/setKillSwitch.js, src/routes/admin/killSwitch.js, src/index.js, tests/phase0/killSwitch.test.js
+- Tests: npm test
+- Evidence: PR #23
+- Risks: Sends allowed during ON.
+
 ### P0-105: Implement Link Registry CRUD + health check
 - Purpose: Manage official links and WARN state.
 - Completion Criteria: CRUD endpoints and manual health check available.
@@ -255,14 +264,6 @@ Linked Task: P0-003
 - Risks: CTA/link validation gaps.
 
 
-### P0-106: Implement Kill Switch
-- Purpose: Block sends when Kill Switch is ON.
-- Completion Criteria: Admin toggle + enforcement in send flow.
-- Dependencies: P0-101.
-- Edit Files: apps/admin/, src/ (routes/usecases/repos)
-- Tests: Kill switch block test.
-- Evidence: TODO.
-- Risks: Sends allowed during ON.
 
 ### P0-107: Implement mini app inbox + checklist
 - Purpose: Show notifications and checklist per scenario/step.
