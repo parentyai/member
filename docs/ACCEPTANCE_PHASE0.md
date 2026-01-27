@@ -5,7 +5,7 @@ Linked Task: P0-007, P0-121
 ## Acceptance Checklist (YES/NO)
 
 Note:
-- Org policy blocks unauthenticated (allUsers) access to Cloud Run. Verification must use authenticated requests.
+- LINE webhook requires unauthenticated access. Org policy exception must allow `allUsers` for Cloud Run invoker on `member-webhook`.
 
 ### A. LINE
 - [ ] LINE push send to a specific user works.
@@ -35,7 +35,7 @@ Note:
 - [ ] Audit logs are immutable.
 
 ### E. Deploy / Access
-- [ ] Cloud Run service is reachable with authenticated requests (unauth 403 is expected due to org policy).
+- [ ] Cloud Run webhook edge (`member-webhook`) is reachable without auth (unauth 200 expected).
 
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
@@ -44,7 +44,7 @@ Note:
 | B. Mini App |  |  |  |  |
 | C. Admin |  |  |  |  |
 | D. Safety |  |  |  |  |
-| E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21379726867 | Commit `ae2a330` / Service URL `https://member-pvxgenwkba-ue.a.run.app` |
+| E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21379726867 | member: `https://member-pvxgenwkba-ue.a.run.app` / webhook: (URL) / allUsers invoker enabled |
 
 ## Sign-off
 - Reviewer: 
