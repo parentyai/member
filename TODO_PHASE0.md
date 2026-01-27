@@ -6,6 +6,15 @@ Linked Task: P0-003
 
 ## In Progress
 
+### P0-102: Implement LINE webhook (user creation)
+- Purpose: Receive LINE events and create users.
+- Completion Criteria: /webhook/line creates users with scenario/step defaults.
+- Dependencies: P0-101.
+- Edit Files: src/routes/webhookLine.js, src/usecases/users/ensureUser.js, src/index.js, tests/phase0/webhook.test.js
+- Tests: npm test
+- Evidence: PR #TBD
+- Risks: Signature verification failure.
+
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -217,14 +226,6 @@ Linked Task: P0-003
 
 ## Parking Lot
 
-### P0-102: Implement LINE webhook (user creation)
-- Purpose: Receive LINE events and create users.
-- Completion Criteria: /webhook/line creates users with scenario/step defaults.
-- Dependencies: P0-101.
-- Edit Files: src/ (routes/usecases/infra)
-- Tests: Webhook integration test.
-- Evidence: TODO.
-- Risks: Signature verification failure.
 
 ### P0-103: Implement LINE push test send
 - Purpose: Test send notifications to a specific user.

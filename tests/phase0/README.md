@@ -8,6 +8,7 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 ## Scope (Now)
 - Smoke test (always pass).
 - Repo unit tests use an in-memory Firestore stub (no emulator).
+- Webhook unit tests verify signature gating and user creation (stubbed Firestore).
 - No integration or E2E assertions.
 
 ## Scope (Next Phase)

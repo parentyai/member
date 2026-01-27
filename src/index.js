@@ -2,11 +2,11 @@
 
 const http = require('http');
 const crypto = require('crypto');
+const { handleLineWebhook } = require('./routes/webhookLine');
 
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
 const SERVICE_MODE = process.env.SERVICE_MODE || 'member';
-const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET || '';
 const MAX_BODY_BYTES = 1024 * 1024;
 
 function getPathname(reqUrl) {
@@ -25,34 +25,9 @@ function getRequestId(req) {
   return crypto.randomUUID();
 }
 
-function timingSafeEqual(a, b) {
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
-}
-
-function verifyLineSignature(secret, body, signature) {
-  if (!secret || !signature) return false;
-  const hmac = crypto.createHmac('sha256', secret).update(body).digest('base64');
-  const actual = Buffer.from(signature);
-  const expected = Buffer.from(hmac);
-  return timingSafeEqual(actual, expected);
-}
-
 function handleWebhook(req, res) {
   const requestId = getRequestId(req);
-  if (!LINE_CHANNEL_SECRET) {
-    console.log(`[webhook] requestId=${requestId} reject=missing-secret`);
-    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('server misconfigured');
-    return;
-  }
   const signature = req.headers['x-line-signature'];
-  if (typeof signature !== 'string' || signature.length === 0) {
-    console.log(`[webhook] requestId=${requestId} reject=missing-signature`);
-    res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('unauthorized');
-    return;
-  }
 
   let bytes = 0;
   const chunks = [];
@@ -72,19 +47,23 @@ function handleWebhook(req, res) {
     chunks.push(chunk);
   });
 
-  req.on('end', () => {
+  req.on('end', async () => {
     if (tooLarge) return;
     const body = Buffer.concat(chunks).toString('utf8');
-    const ok = verifyLineSignature(LINE_CHANNEL_SECRET, body, signature);
-    if (!ok) {
-      console.log(`[webhook] requestId=${requestId} reject=invalid-signature`);
-      res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('unauthorized');
-      return;
+    try {
+      const result = await handleLineWebhook({
+        signature: typeof signature === 'string' ? signature : '',
+        body,
+        requestId,
+        logger: (msg) => console.log(msg)
+      });
+      res.writeHead(result.status, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(result.body);
+    } catch (err) {
+      console.log(`[webhook] requestId=${requestId} reject=exception`);
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('server error');
     }
-    console.log(`[webhook] requestId=${requestId} accept`);
-    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('ok');
   });
 }
 
