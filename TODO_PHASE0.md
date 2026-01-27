@@ -85,7 +85,7 @@ Linked Task: P0-003
 - Dependencies: P0-101.
 - Edit Files: src/ (usecases/repos/infra)
 - Tests: Audit log unit tests.
-- Evidence: PR #TBD
+- Evidence: PR #24
 - Risks: Missing logs for critical actions.
 
 ### P0-105: Implement Link Registry CRUD + health check
