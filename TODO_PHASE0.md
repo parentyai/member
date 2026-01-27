@@ -5,15 +5,6 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
-
-### P0-105: Implement Link Registry CRUD + health check
-- Purpose: Manage official links and WARN state.
-- Completion Criteria: CRUD endpoints and manual health check available.
-- Dependencies: P0-101.
-- Edit Files: src/routes/admin/linkRegistry.js, src/usecases/linkRegistry/*.js, src/index.js, tests/phase0/linkRegistry.test.js
-- Tests: npm test
-- Evidence: PR #TBD
-- Risks: WARN links accidentally usable.
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -78,6 +69,15 @@ Linked Task: P0-003
 - Tests: None.
 - Evidence: docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Missing key ops sections (rollback, kill switch).
+
+### P0-105: Implement Link Registry CRUD + health check
+- Purpose: Manage official links and WARN state.
+- Completion Criteria: CRUD endpoints and manual health check available.
+- Dependencies: P0-101.
+- Edit Files: src/routes/admin/linkRegistry.js, src/usecases/linkRegistry/*.js, src/index.js, tests/phase0/linkRegistry.test.js
+- Tests: npm test
+- Evidence: PR #22
+- Risks: WARN links accidentally usable.
 
 ### P0-103: Implement LINE push test send
 - Purpose: Test send notifications to a specific user.
