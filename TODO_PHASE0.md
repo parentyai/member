@@ -161,6 +161,24 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: Org policy blocks public invoker; unauth 403 may persist.
 
+### P0-129: Allow allUsers invoker for webhook (org policy exception)
+- Purpose: Permit unauthenticated LINE webhook access via Cloud Run invoker exception.
+- Completion Criteria: Org policy override applied, allUsers invoker binding succeeds, docs updated.
+- Dependencies: P0-120.
+- Edit Files: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md, docs/RUNBOOK_PHASE0.md, docs/PLAYBOOK_PHASE0_DEBUG.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: Org policy change broadens IAM membership within project.
+
+### P0-130: Webhook edge service (member-webhook)
+- Purpose: Separate public webhook entrypoint from main service with signature verification.
+- Completion Criteria: member-webhook deployed, unauth /healthz 200, /webhook/line rejects unsigned, docs updated.
+- Dependencies: P0-120.
+- Edit Files: src/index.js, docs/GCP_SETUP.md, docs/PLAYBOOK_PHASE0_BUILD.md, docs/PLAYBOOK_PHASE0_DEBUG.md, docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
+- Tests: None (manual curl + LINE console)
+- Evidence: docs/GCP_SETUP.md
+- Risks: Org policy blocks allUsers or webhook signature mismatch.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections

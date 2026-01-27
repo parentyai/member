@@ -22,6 +22,7 @@ PROJECT_ID=member-485303
 PROJECT_NUMBER=306972605843
 REGION=us-east1
 SERVICE_NAME=member
+WEBHOOK_SERVICE_NAME=member-webhook
 
 GITHUB_OWNER=parentyai
 GITHUB_REPO=member
@@ -33,6 +34,7 @@ WIF_PRINCIPAL="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/loca
 
 DEPLOY_SA_EMAIL="member-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
 RUNTIME_SA_EMAIL="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+SERVICE_MODE_WEBHOOK=webhook
 ```
 
 ## 1) Enable Required APIs
@@ -217,6 +219,31 @@ Add repository variables (non-secret):
 Expected:
 - Actions workflow uses variables without GitHub Secrets.
 
+## 7.5) Org Policy Exception for Public Webhook (Required)
+LINE webhook requires unauthenticated HTTPS access. If org policy blocks `allUsers`, request a scoped exception for the webhook service.
+
+### Request Template (to Admin)
+Title: Allow `allUsers` invoker for Cloud Run webhook service  
+Purpose: LINE Messaging API webhook cannot send auth headers; webhook must be public.  
+Scope: **Only** `member-webhook` Cloud Run service (no other services).  
+Requested change:
+1) Permit `allUsers` for `roles/run.invoker` on `member-webhook`.
+2) If restricted by org policy (e.g., `constraints/iam.allowedPolicyMemberDomains`), allow a **project-level override** for project `member-485303`.
+Security controls:
+- Webhook endpoint only (`/webhook/line`)
+- LINE signature verification required
+- Rate limiting and logging enabled
+
+### Apply after approval (commands)
+Grant public invoker for webhook service:
+```sh
+gcloud run services add-iam-policy-binding "$WEBHOOK_SERVICE_NAME" \
+  --member "allUsers" \
+  --role "roles/run.invoker" \
+  --region "$REGION" \
+  --project "$PROJECT_ID"
+```
+
 ## 8) Dry-Run Checklist (must pass before deploy)
 - [ ] Required APIs enabled
 - [ ] WIF provider resource name recorded in `GCP_WIF_PROVIDER`
@@ -227,6 +254,28 @@ Expected:
 - [ ] Service URL reachable after deploy
 - [ ] Logs visible in Cloud Run / Cloud Logging
 - [ ] Firestore read/write verified with runtime SA
+
+## 9) Deploy Webhook Edge Service (member-webhook)
+Deploy the same image with webhook-only mode enabled.
+
+```sh
+IMAGE="us-east1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
+gcloud run deploy "$WEBHOOK_SERVICE_NAME" \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --image "$IMAGE" \
+  --allow-unauthenticated \
+  --service-account "$RUNTIME_SA_EMAIL" \
+  --set-env-vars "ENV_NAME=$ENV_NAME,SERVICE_MODE=$SERVICE_MODE_WEBHOOK" \
+  --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest"
+```
+
+Verify:
+```sh
+WEBHOOK_URL=$(gcloud run services describe "$WEBHOOK_SERVICE_NAME" --region "$REGION" --project "$PROJECT_ID" --format "value(status.url)")
+curl -i "$WEBHOOK_URL/healthz"
+curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
+```
 
 ## Execution Evidence (member-485303)
 
