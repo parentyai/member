@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-134: Record Phase0 gate evidence (A-K)
+- Purpose: Capture Phase0 gate checks with commands/expected/actual/evidence.
+- Completion Criteria: docs/ACCEPTANCE_PHASE0.md and docs/GCP_SETUP.md updated with gate evidence.
+- Dependencies: None.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
+- Tests: None (doc-only change)
+- Evidence: PR #TBD
+- Risks: Evidence drift if not updated with latest runs.
+
 ### P0-110: Implement first-time welcome message
 - Purpose: Send initial message once after registration.
 - Completion Criteria: Exactly one welcome message per user.
@@ -296,6 +305,5 @@ Linked Task: P0-003
 - Risks: URL changes if service is recreated.
 
 ## Parking Lot
-
 
 
