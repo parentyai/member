@@ -79,6 +79,15 @@ Linked Task: P0-003
 - Evidence: PR #23
 - Risks: Sends allowed during ON.
 
+### P0-109: Implement audit logging
+- Purpose: Record actor/action/entity for admin operations.
+- Completion Criteria: audit_logs entries for all admin actions.
+- Dependencies: P0-101.
+- Edit Files: src/ (usecases/repos/infra)
+- Tests: Audit log unit tests.
+- Evidence: PR #24
+- Risks: Missing logs for critical actions.
+
 ### P0-105: Implement Link Registry CRUD + health check
 - Purpose: Manage official links and WARN state.
 - Completion Criteria: CRUD endpoints and manual health check available.
@@ -282,15 +291,6 @@ Linked Task: P0-003
 - Tests: Click tracking test.
 - Evidence: TODO.
 - Risks: Incorrect redirect or logging.
-
-### P0-109: Implement audit logging
-- Purpose: Record actor/action/entity for admin operations.
-- Completion Criteria: audit_logs entries for all admin actions.
-- Dependencies: P0-101.
-- Edit Files: src/ (usecases/repos/infra)
-- Tests: Audit log unit tests.
-- Evidence: TODO.
-- Risks: Missing logs for critical actions.
 
 ### P0-110: Implement first-time welcome message
 - Purpose: Send initial message once after registration.

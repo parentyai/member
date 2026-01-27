@@ -5,6 +5,13 @@ const { listLinks } = require('../../usecases/linkRegistry/listLinks');
 const { updateLink } = require('../../usecases/linkRegistry/updateLink');
 const { deleteLink } = require('../../usecases/linkRegistry/deleteLink');
 const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+
+function resolveActor(req) {
+  const actor = req && req.headers && req.headers['x-actor'];
+  if (typeof actor === 'string' && actor.trim().length > 0) return actor.trim();
+  return 'unknown';
+}
 
 function parseJson(body, res) {
   try {
@@ -20,6 +27,13 @@ async function handleCreate(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await createLink(payload);
+  await appendAuditLog({
+    actor: resolveActor(req),
+    action: 'link_registry.create',
+    entityType: 'link_registry',
+    entityId: result.id,
+    payloadSummary: { title: payload.title || null }
+  });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, id: result.id }));
 }
@@ -40,12 +54,26 @@ async function handleUpdate(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await updateLink(id, payload);
+  await appendAuditLog({
+    actor: resolveActor(req),
+    action: 'link_registry.update',
+    entityType: 'link_registry',
+    entityId: result.id,
+    payloadSummary: { fields: Object.keys(payload || {}) }
+  });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, id: result.id }));
 }
 
 async function handleDelete(req, res, id) {
   const result = await deleteLink(id);
+  await appendAuditLog({
+    actor: resolveActor(req),
+    action: 'link_registry.delete',
+    entityType: 'link_registry',
+    entityId: result.id,
+    payloadSummary: {}
+  });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, id: result.id }));
 }
@@ -54,6 +82,13 @@ async function handleHealth(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await checkLinkHealth(id, payload);
+  await appendAuditLog({
+    actor: resolveActor(req),
+    action: 'link_registry.health',
+    entityType: 'link_registry',
+    entityId: result.id,
+    payloadSummary: { state: payload.state || null, statusCode: payload.statusCode || null }
+  });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, id: result.id }));
 }

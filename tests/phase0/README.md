@@ -12,6 +12,7 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 - Test-send unit tests verify delivery creation (stubbed Firestore, push stub).
 - Link Registry unit tests verify WARN health storage (stubbed Firestore).
 - Kill Switch unit tests verify toggle persistence (stubbed Firestore).
+- Audit log unit tests verify append writes createdAt (stubbed Firestore).
 - No integration or E2E assertions.
 
 ## Scope (Next Phase)
@@ -20,4 +21,4 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 - Click tracking -> redirect
 - Kill Switch block
 - WARN link guard
- - Firestore emulator integration tests
+- Firestore emulator integration tests
