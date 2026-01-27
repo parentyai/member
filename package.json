@@ -2,6 +2,9 @@
   "name": "member",
   "version": "0.0.0",
   "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
   "scripts": {
     "test": "node --test tests/phase0/*.test.js",
     "start": "node src/index.js",

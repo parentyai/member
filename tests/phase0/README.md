@@ -6,7 +6,8 @@ Linked Task: P0-011
 Provide a minimal test scaffold for Phase0; no business logic yet.
 
 ## Scope (Now)
-- Smoke test only (always pass).
+- Smoke test (always pass).
+- Repo unit tests use an in-memory Firestore stub (no emulator).
 - No integration or E2E assertions.
 
 ## Scope (Next Phase)
@@ -15,4 +16,4 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 - Click tracking -> redirect
 - Kill Switch block
 - WARN link guard
-
+ - Firestore emulator integration tests

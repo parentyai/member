@@ -21,12 +21,12 @@ Linked Task: P0-004, P0-122
 
 | Entity (SSOT) | Planned Implementation (file::function) | Planned Tests (file::test) | Playbook | Status |
 | --- | --- | --- | --- | --- |
-| users/{lineUserId} | src/repos/firestore/usersRepo.js::createUser/getUser/updateUser/setMemberNumber/setMemberCardAsset; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"creates user doc" | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
-| notifications/{notificationId} | src/repos/firestore/notificationsRepo.js::createNotification/getNotification/listNotifications/updateNotificationStatus | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| notification_deliveries/{deliveryId} | src/repos/firestore/deliveriesRepo.js::createDelivery/markRead/markClick | tests/phase0/notifications.test.js::"delivery created on send" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| link_registry/{linkId} | src/repos/firestore/linkRegistryRepo.js::createLink/updateLink/listLinks/setHealth | tests/phase0/linkRegistry.test.js::"WARN blocks usage" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| audit_logs/{logId} | src/repos/firestore/auditLogsRepo.js::appendAuditLog | tests/phase0/audit.test.js::"audit log append" | docs/PLAYBOOK_PHASE0_INCIDENT.md | 未実装 |
-| system_flags/phase0 | src/repos/firestore/systemFlagsRepo.js::getKillSwitch/setKillSwitch | tests/phase0/killSwitch.test.js::"kill switch blocks send" | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
+| users/{lineUserId} | src/repos/firestore/usersRepo.js::createUser/getUser/updateUser/setMemberNumber/setMemberCardAsset; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"creates user doc" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo) |
+| notifications/{notificationId} | src/repos/firestore/notificationsRepo.js::createNotification/getNotification/listNotifications/updateNotificationStatus | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
+| notification_deliveries/{deliveryId} | src/repos/firestore/deliveriesRepo.js::createDelivery/markRead/markClick | tests/phase0/notifications.test.js::"delivery created on send" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
+| link_registry/{linkId} | src/repos/firestore/linkRegistryRepo.js::createLink/updateLink/listLinks/setHealth | tests/phase0/linkRegistry.test.js::"WARN blocks usage" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
+| audit_logs/{logId} | src/repos/firestore/auditLogsRepo.js::appendAuditLog | tests/phase0/audit.test.js::"audit log append" | docs/PLAYBOOK_PHASE0_INCIDENT.md | 一部実装済 (repo) |
+| system_flags/phase0 | src/repos/firestore/systemFlagsRepo.js::getKillSwitch/setKillSwitch | tests/phase0/killSwitch.test.js::"kill switch blocks send" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo) |
 
 ## SSOT 6.7: API設計
 
