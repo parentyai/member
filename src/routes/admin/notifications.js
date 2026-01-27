@@ -1,6 +1,9 @@
 'use strict';
 
 const { testSendNotification } = require('../../usecases/notifications/testSendNotification');
+const { createNotification } = require('../../usecases/notifications/createNotification');
+const { listNotifications } = require('../../usecases/notifications/listNotifications');
+const { sendNotification } = require('../../usecases/notifications/sendNotification');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 
@@ -14,15 +17,74 @@ function isKillSwitchError(err) {
   return err && typeof err.message === 'string' && err.message.includes('kill switch');
 }
 
-async function handleTestSend(req, res, body, notificationId) {
-  let payload;
+function parseJson(body, res) {
   try {
-    payload = JSON.parse(body || '{}');
+    return JSON.parse(body || '{}');
   } catch (err) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('invalid json');
+    return null;
+  }
+}
+
+function handleError(res, err) {
+  const message = err && err.message ? err.message : 'error';
+  if (message.includes('not found')) {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('not found');
     return;
   }
+  if (message.includes('required') || message.includes('invalid') || message.includes('no recipients')) {
+    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(message);
+    return;
+  }
+  res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+  res.end('error');
+}
+
+async function handleCreate(req, res, body) {
+  const payload = parseJson(body, res);
+  if (!payload) return;
+  try {
+    const result = await createNotification(payload);
+    await appendAuditLog({
+      actor: resolveActor(req),
+      action: 'notifications.create',
+      entityType: 'notification',
+      entityId: result.id,
+      payloadSummary: { title: payload.title || null }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, id: result.id }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
+async function handleList(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const limit = url.searchParams.get('limit');
+  const status = url.searchParams.get('status');
+  const scenarioKey = url.searchParams.get('scenarioKey');
+  const stepKey = url.searchParams.get('stepKey');
+  try {
+    const result = await listNotifications({
+      limit: limit ? Number(limit) : undefined,
+      status: status || undefined,
+      scenarioKey: scenarioKey || undefined,
+      stepKey: stepKey || undefined
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, items: result }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
+async function handleTestSend(req, res, body, notificationId) {
+  const payload = parseJson(body, res);
+  if (!payload) return;
 
   if (!payload.lineUserId) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
@@ -56,11 +118,42 @@ async function handleTestSend(req, res, body, notificationId) {
       res.end('kill switch on');
       return;
     }
-    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('error');
+    handleError(res, err);
+  }
+}
+
+async function handleSend(req, res, body, notificationId) {
+  const payload = parseJson(body, res);
+  if (!payload) return;
+  try {
+    const killSwitch = await getKillSwitch();
+    const result = await sendNotification({
+      notificationId,
+      sentAt: payload.sentAt,
+      killSwitch
+    });
+    await appendAuditLog({
+      actor: resolveActor(req),
+      action: 'notifications.send',
+      entityType: 'notification',
+      entityId: notificationId,
+      payloadSummary: { deliveredCount: result.deliveredCount }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount }));
+  } catch (err) {
+    if (isKillSwitchError(err)) {
+      res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('kill switch on');
+      return;
+    }
+    handleError(res, err);
   }
 }
 
 module.exports = {
-  handleTestSend
+  handleCreate,
+  handleList,
+  handleTestSend,
+  handleSend
 };

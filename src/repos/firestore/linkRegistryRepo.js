@@ -24,6 +24,15 @@ async function updateLink(id, patch) {
   return { id };
 }
 
+async function getLink(id) {
+  if (!id) throw new Error('link id required');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(id);
+  const snap = await docRef.get();
+  if (!snap.exists) return null;
+  return Object.assign({ id: snap.id }, snap.data());
+}
+
 async function listLinks(params) {
   const db = getDb();
   const opts = params || {};
@@ -47,6 +56,7 @@ async function setHealth(id, health) {
 
 module.exports = {
   createLink,
+  getLink,
   updateLink,
   listLinks,
   setHealth

@@ -42,10 +42,33 @@ async function setMemberCardAsset(lineUserId, assetObj) {
   return updateUser(lineUserId, { memberCardAsset: assetObj || null });
 }
 
+function hasMemberNumber(user) {
+  return Boolean(user && typeof user.memberNumber === 'string' && user.memberNumber.trim().length > 0);
+}
+
+async function listUsers(params) {
+  const db = getDb();
+  const opts = params || {};
+  let query = db.collection(COLLECTION);
+  if (opts.scenarioKey) query = query.where('scenarioKey', '==', opts.scenarioKey);
+  if (opts.stepKey) query = query.where('stepKey', '==', opts.stepKey);
+  if (opts.region) query = query.where('region', '==', opts.region);
+  query = query.orderBy('createdAt', 'desc');
+  const limit = typeof opts.limit === 'number' ? opts.limit : 500;
+  if (limit) query = query.limit(limit);
+  const snap = await query.get();
+  let users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  if (opts.membersOnly) {
+    users = users.filter(hasMemberNumber);
+  }
+  return users;
+}
+
 module.exports = {
   createUser,
   getUser,
   updateUser,
   setMemberNumber,
-  setMemberCardAsset
+  setMemberCardAsset,
+  listUsers
 };
