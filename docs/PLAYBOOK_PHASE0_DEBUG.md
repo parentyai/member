@@ -29,7 +29,13 @@ Linked Task: P0-006, P0-121
 - Cause: Deploy SA missing `roles/run.admin` or `roles/iam.serviceAccountUser`
 - Fix: Grant roles to deploy SA and retry
 
+### Cloud Run 403 (Unauthenticated)
+- Symptom: `403 Forbidden` when calling service URL without auth
+- Cause: Org policy blocks public invoker (`allUsers`), or service is not public
+- Fix:
+  - Use authenticated requests (`gcloud auth print-identity-token`)
+  - Or request org policy exception / allow `allUsers` for `roles/run.invoker`
+
 ## Minimal Checks
 - `gcloud run services describe $SERVICE_NAME --region $GCP_REGION --project $GCP_PROJECT_ID`
 - `gcloud projects get-iam-policy $GCP_PROJECT_ID --flatten="bindings[].members" --filter="member:member-deploy@..."`
-

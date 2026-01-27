@@ -161,6 +161,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: Org policy blocks public invoker; unauth 403 may persist.
 
+### P0-128: Update docs for authenticated-only access
+- Purpose: Align Acceptance/Runbook/Debug with org policy blocking unauth access.
+- Completion Criteria: Acceptance notes auth-only, Runbook uses auth curl, Debug includes 403 unauth guidance.
+- Dependencies: P0-127.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/RUNBOOK_PHASE0.md, docs/PLAYBOOK_PHASE0_DEBUG.md
+- Tests: None.
+- Evidence: docs/ACCEPTANCE_PHASE0.md, docs/RUNBOOK_PHASE0.md, docs/PLAYBOOK_PHASE0_DEBUG.md
+- Risks: Documentation drift from future auth policy changes.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections

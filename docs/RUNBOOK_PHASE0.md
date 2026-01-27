@@ -16,8 +16,11 @@ Expected:
 - Get service URL:
   - `SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
 - Verify HTTP endpoints:
-  - `curl -sS "$SERVICE_URL/"` returns `ok`
-  - `curl -sS "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
+  - `TOKEN=$(gcloud auth print-identity-token)`
+  - `curl -sS -H "Authorization: Bearer $TOKEN" "$SERVICE_URL/"` returns `ok`
+  - `curl -sS -H "Authorization: Bearer $TOKEN" "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
+- Optional (unauth check):
+  - `curl -i "$SERVICE_URL/"` may return `403` when org policy blocks public invoker (expected in this environment).
 - Check revisions:
   - `gcloud run revisions list --service "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --limit=5`
 
