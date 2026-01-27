@@ -16,11 +16,12 @@ Expected:
 - Get service URL:
   - `SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
 - Verify HTTP endpoints:
-  - `curl -sS "$SERVICE_URL/"` returns `ok` (unauth should be allowed for webhook)
+  - `curl -sS "$SERVICE_URL/"` returns `ok` (member service)
   - `curl -sS "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
-- If unauth is blocked:
-  - `TOKEN=$(gcloud auth print-identity-token)`
-  - `curl -sS -H "Authorization: Bearer $TOKEN" "$SERVICE_URL/"` returns `ok`
+- Webhook edge service (public):
+  - `WEBHOOK_URL=$(gcloud run services describe "member-webhook" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
+  - `curl -sS "$WEBHOOK_URL/healthz"` returns JSON with `"ok":true`
+  - `curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'` returns `401` (signature required)
 - Check revisions:
   - `gcloud run revisions list --service "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --limit=5`
 

@@ -31,9 +31,9 @@ Linked Task: P0-006, P0-121
 
 ### Cloud Run 403 (Unauthenticated)
 - Symptom: `403 Forbidden` when calling service URL without auth
-- Cause: Org policy blocks public invoker (`allUsers`), or service is not public
+- Cause: Public invoker not granted or org policy blocks `allUsers`
 - Fix:
-  - Confirm `roles/run.invoker` includes `allUsers` for the webhook service
+  - Confirm `roles/run.invoker` includes `allUsers` for `member-webhook`
   - If blocked, request org policy exception and re-apply `allUsers`
   - Temporary workaround: use authenticated requests (`gcloud auth print-identity-token`)
 
