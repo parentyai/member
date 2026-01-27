@@ -10,6 +10,7 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 - Repo unit tests use an in-memory Firestore stub (no emulator).
 - Webhook unit tests verify signature gating and user creation (stubbed Firestore).
 - Test-send unit tests verify delivery creation (stubbed Firestore, push stub).
+- Link Registry unit tests verify WARN health storage (stubbed Firestore).
 - No integration or E2E assertions.
 
 ## Scope (Next Phase)

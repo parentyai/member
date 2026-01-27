@@ -6,6 +6,14 @@ Linked Task: P0-003
 
 ## In Progress
 
+### P0-105: Implement Link Registry CRUD + health check
+- Purpose: Manage official links and WARN state.
+- Completion Criteria: CRUD endpoints and manual health check available.
+- Dependencies: P0-101.
+- Edit Files: src/routes/admin/linkRegistry.js, src/usecases/linkRegistry/*.js, src/index.js, tests/phase0/linkRegistry.test.js
+- Tests: npm test
+- Evidence: PR #TBD
+- Risks: WARN links accidentally usable.
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -246,14 +254,6 @@ Linked Task: P0-003
 - Evidence: TODO.
 - Risks: CTA/link validation gaps.
 
-### P0-105: Implement Link Registry CRUD + health check
-- Purpose: Manage official links and WARN state.
-- Completion Criteria: CRUD endpoints and manual health check available.
-- Dependencies: P0-101.
-- Edit Files: apps/admin/, src/ (routes/usecases/repos)
-- Tests: Link registry unit tests.
-- Evidence: TODO.
-- Risks: WARN links accidentally usable.
 
 ### P0-106: Implement Kill Switch
 - Purpose: Block sends when Kill Switch is ON.
