@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: None.
 - Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
 - Tests: None (doc-only change)
-- Evidence: PR #TBD
+- Evidence: PR #29
 - Risks: Evidence drift if not updated with latest runs.
 
 ### P0-110: Implement first-time welcome message
@@ -305,5 +305,4 @@ Linked Task: P0-003
 - Risks: URL changes if service is recreated.
 
 ## Parking Lot
-
 
