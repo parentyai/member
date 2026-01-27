@@ -125,6 +125,15 @@ Linked Task: P0-003
 - Evidence: docs/SSOT_DELTA_PROPOSAL.md
 - Risks: Deltas tracked outside the SSOT delta log.
 
+### P0-101: Implement Firestore repositories for Phase0 collections
+- Purpose: CRUD for users, notifications, deliveries, link_registry, audit_logs, system_flags.
+- Completion Criteria: Repo layer handles SSOT 6.6 schema with create/read/update patterns.
+- Dependencies: P0-005.
+- Edit Files: src/infra/firestore.js, src/repos/firestore/*.js, tests/phase0/*.test.js
+- Tests: npm test
+- Evidence: PR #TBD
+- Risks: Schema drift vs SSOT.
+
 ### P0-120: Setup GCP IAM + GitHub Actions OIDC (WIF) + Cloud Run deploy workflow
 - Purpose: Enable OIDC auth with deploy SA impersonation and document IAM steps.
 - Completion Criteria: docs/GCP_SETUP.md and docs/GITHUB_SETUP.md updated; .github/workflows/deploy.yml added; npm test available.
@@ -207,15 +216,6 @@ Linked Task: P0-003
 - Risks: URL changes if service is recreated.
 
 ## Parking Lot
-
-### P0-101: Implement Firestore repositories for Phase0 collections
-- Purpose: CRUD for users, notifications, deliveries, link_registry, audit_logs, system_flags.
-- Completion Criteria: Repo layer handles SSOT 6.6 schema with create/read/update patterns.
-- Dependencies: P0-005.
-- Edit Files: src/ (repos/infra to be created)
-- Tests: CRUD unit tests and smoke for schema.
-- Evidence: TODO (PR/commit links).
-- Risks: Schema drift vs SSOT.
 
 ### P0-102: Implement LINE webhook (user creation)
 - Purpose: Receive LINE events and create users.
