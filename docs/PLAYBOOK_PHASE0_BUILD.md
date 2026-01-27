@@ -31,13 +31,20 @@ Linked Task: P0-006, P0-121
 - Expected: outputs `P0-014 seed stub: no-op` and exits 0.
 
 ## LINE Connectivity (Phase0)
-Precondition: `/webhook/line` and push send exist (P0-102/P0-103).
+Precondition: `/webhook/line` exists and LINE signature verification is enabled.
 
 When available:
-1) Set LINE webhook URL to `${PUBLIC_BASE_URL}/webhook/line`.
-2) Send a test event from LINE Developer Console.
-3) Confirm 200 response and user creation in Firestore.
+1) Get webhook service URL:
+   - `WEBHOOK_URL=$(gcloud run services describe "member-webhook" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
+2) Set LINE webhook URL to `${WEBHOOK_URL}/webhook/line`.
+3) Health check:
+   - `curl -sS "${WEBHOOK_URL}/healthz"` should return JSON `{ "ok": true, "env": ... }`
+4) Signature rejection:
+   - `curl -i -X POST "${WEBHOOK_URL}/webhook/line" -d '{}'` returns `401`
+5) Send a test event from LINE Developer Console.
+6) Confirm 200 response and (when implemented) user creation in Firestore.
 
 Expected:
-- Webhook returns 200.
+- Webhook returns 200 for valid LINE signature.
+- Webhook rejects unsigned requests (401).
 - `users/{lineUserId}` is created.
