@@ -5,15 +5,6 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
-
-### P0-106: Implement Kill Switch
-- Purpose: Block sends when Kill Switch is ON.
-- Completion Criteria: Admin toggle + enforcement in send flow.
-- Dependencies: P0-101.
-- Edit Files: src/usecases/killSwitch/setKillSwitch.js, src/routes/admin/killSwitch.js, src/index.js, tests/phase0/killSwitch.test.js
-- Tests: npm test
-- Evidence: PR #TBD
-- Risks: Sends allowed during ON.
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -78,6 +69,15 @@ Linked Task: P0-003
 - Tests: None.
 - Evidence: docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Missing key ops sections (rollback, kill switch).
+
+### P0-106: Implement Kill Switch
+- Purpose: Block sends when Kill Switch is ON.
+- Completion Criteria: Admin toggle + enforcement in send flow.
+- Dependencies: P0-101.
+- Edit Files: src/usecases/killSwitch/setKillSwitch.js, src/routes/admin/killSwitch.js, src/index.js, tests/phase0/killSwitch.test.js
+- Tests: npm test
+- Evidence: PR #23
+- Risks: Sends allowed during ON.
 
 ### P0-105: Implement Link Registry CRUD + health check
 - Purpose: Manage official links and WARN state.
