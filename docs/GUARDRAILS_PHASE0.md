@@ -13,11 +13,15 @@ Linked Task: P0-002
 - Existing config files (minimal edits only)
 
 ## Prohibited in Phase0
-- Functional implementation (send flows, full UI, DB logic)
+- Functional implementation **outside SSOT Phase0 scope**
 - SSOT modifications (log deltas only)
 - Deleting existing files or mass renames
 - New entrypoints or additional listen() calls
 - URL hardcoding inside notifications (must use Link Registry)
+
+## Allowed in Phase0 (Scope-Limited)
+- Implement features explicitly defined in SSOT v0.2 (Ch. 6.x)
+- Keep implementations minimal; no extra features or speculative expansion
 
 ## Entrypoint Fixed
 - Server entrypoint is only `src/index.js` (do not add others).
@@ -34,4 +38,3 @@ Linked Task: P0-002
 
 ## Decision Rule
 - 迷ったら送らない
-
