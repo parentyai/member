@@ -81,39 +81,58 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'POST' && pathname.startsWith('/admin/notifications/')) {
-    const match = pathname.match(/^\/admin\/notifications\/([^/]+)\/test-send\/?$/);
-    if (!match) {
-      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('not found');
-      return;
-    }
-    const notificationId = match[1];
+  if (pathname.startsWith('/admin/notifications')) {
+    const match = pathname.match(/^\/admin\/notifications(?:\/([^/]+)(?:\/(test-send|send))?)?\/?$/);
+    const notificationId = match && match[1] ? match[1] : null;
+    const action = match && match[2] ? match[2] : null;
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
-    req.on('data', (chunk) => {
-      if (tooLarge) return;
-      bytes += chunk.length;
-      if (bytes > MAX_BODY_BYTES) {
-        tooLarge = true;
-        res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('payload too large');
-        req.destroy();
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+
+    const { handleCreate, handleList, handleTestSend, handleSend } = require('./routes/admin/notifications');
+
+    (async () => {
+      if (req.method === 'GET' && pathname === '/admin/notifications') {
+        await handleList(req, res);
         return;
       }
-      chunks.push(chunk);
-    });
-    req.on('end', async () => {
-      if (tooLarge) return;
-      const body = Buffer.concat(chunks).toString('utf8');
-      try {
-        const { handleTestSend } = require('./routes/admin/notifications');
-        await handleTestSend(req, res, body, notificationId);
-      } catch (err) {
-        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('error');
+      if (req.method === 'POST' && pathname === '/admin/notifications') {
+        const body = await collectBody();
+        await handleCreate(req, res, body);
+        return;
       }
+      if (req.method === 'POST' && action === 'test-send' && notificationId) {
+        const body = await collectBody();
+        await handleTestSend(req, res, body, notificationId);
+        return;
+      }
+      if (req.method === 'POST' && action === 'send' && notificationId) {
+        const body = await collectBody();
+        await handleSend(req, res, body, notificationId);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
     });
     return;
   }
