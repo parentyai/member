@@ -386,3 +386,20 @@ Expected:
   - Auth: `curl -i -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/healthz/` -> `404` with body `not found` (container)
 - Note (2026-01-27):
   - `/healthz` appears to be handled by the Google Frontend before reaching the container; use `/` for basic health checks until resolved.
+- Deploy re-run after PUBLIC_BASE_URL update (2026-01-27):
+  - Command: `gh run rerun 21345761301`
+  - Run URL: `https://github.com/parentyai/member/actions/runs/21345761301`
+  - Head SHA: `5fd3757ee717572dc5804e1429bd5cfd11590174`
+  - Result: dry-run + deploy green.
+- Cloud Run URL check (2026-01-27):
+  - Command: `gcloud run services describe member --region us-east1 --project member-485303 --format="value(status.url)"`
+  - Output: `https://member-pvxgenwkba-ue.a.run.app`
+- PUBLIC_BASE_URL reset to status.url (2026-01-27):
+  - Command: `gh variable set PUBLIC_BASE_URL -b "https://member-pvxgenwkba-ue.a.run.app" -R parentyai/member`
+  - Note: Previous value was `https://member-306972605843.us-east1.run.app`.
+- Cloud Run public invoker attempt (2026-01-27):
+  - Command: `gcloud run services add-iam-policy-binding member --member "allUsers" --role "roles/run.invoker" --region us-east1 --project member-485303`
+  - Error: `FAILED_PRECONDITION: One or more users named in the policy do not belong to a permitted customer`
+- Endpoint checks after re-run (2026-01-27):
+  - Unauth: `curl -i https://member-pvxgenwkba-ue.a.run.app/` -> `403 Forbidden`
+  - Auth: `curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/` -> `ok`
