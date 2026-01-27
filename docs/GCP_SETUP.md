@@ -506,19 +506,21 @@ curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
   - member URL:
     - `gcloud run services describe member --region us-east1 --project member-485303 --format="value(status.url)"`
     - Output: `https://member-pvxgenwkba-ue.a.run.app`
-  - member IAM (public check):
+  - member IAM (private check):
     - `gcloud run services get-iam-policy member --region us-east1 --project member-485303 --format="yaml(bindings)"`
     - Output:
       ```
       bindings:
       - members:
-        - allUsers
         - user:nshimamura@parentyai.com
         role: roles/run.invoker
       ```
-  - member unauth access (unexpected):
+  - member remove public invoker:
+    - `gcloud run services remove-iam-policy-binding member --member "allUsers" --role "roles/run.invoker" --region us-east1 --project member-485303`
+    - Result: `Updated IAM policy for service [member]`
+  - member unauth access (expected 403):
     - `curl -i https://member-pvxgenwkba-ue.a.run.app/`
-    - Output: `HTTP/2 200` and body `ok`
+    - Output: `HTTP/2 403`
   - webhook IAM (public check):
     - `gcloud run services get-iam-policy member-webhook --region us-east1 --project member-485303 --format="yaml(bindings)"`
     - Output:

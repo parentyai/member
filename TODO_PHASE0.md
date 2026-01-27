@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-135: Phase0 gate fixes (member private + LINE evidence + guardrails)
+- Purpose: Resolve remaining Phase0 gate FAIL items (C/F/H/J).
+- Completion Criteria: Gate checks A-K all PASS with evidence recorded.
+- Dependencies: P0-134.
+- Edit Files: docs/GUARDRAILS_PHASE0.md, docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
+- Tests: None (doc-only change)
+- Evidence: PR #TBD
+- Risks: Evidence drift if services/URLs change.
+
 ### P0-134: Record Phase0 gate evidence (A-K)
 - Purpose: Capture Phase0 gate checks with commands/expected/actual/evidence.
 - Completion Criteria: docs/ACCEPTANCE_PHASE0.md and docs/GCP_SETUP.md updated with gate evidence.
@@ -305,4 +314,3 @@ Linked Task: P0-003
 - Risks: URL changes if service is recreated.
 
 ## Parking Lot
-
