@@ -5,16 +5,16 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
+## Done
+
 ### P0-108: Implement click tracking + redirect
 - Purpose: Record clickAt and redirect to official URL.
 - Completion Criteria: /track/click logs and redirects.
 - Dependencies: P0-101, P0-105.
 - Edit Files: src/ (routes/usecases/repos)
 - Tests: Click tracking test.
-- Evidence: TODO.
+- Evidence: PR #26
 - Risks: Incorrect redirect or logging.
-
-## Done
 
 ### P0-104: Implement admin notification creation + send flow
 - Purpose: Admin can create/preview/send notifications.
