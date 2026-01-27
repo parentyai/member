@@ -5,6 +5,15 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
+
+### P0-106: Implement Kill Switch
+- Purpose: Block sends when Kill Switch is ON.
+- Completion Criteria: Admin toggle + enforcement in send flow.
+- Dependencies: P0-101.
+- Edit Files: src/usecases/killSwitch/setKillSwitch.js, src/routes/admin/killSwitch.js, src/index.js, tests/phase0/killSwitch.test.js
+- Tests: npm test
+- Evidence: PR #TBD
+- Risks: Sends allowed during ON.
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -255,14 +264,6 @@ Linked Task: P0-003
 - Risks: CTA/link validation gaps.
 
 
-### P0-106: Implement Kill Switch
-- Purpose: Block sends when Kill Switch is ON.
-- Completion Criteria: Admin toggle + enforcement in send flow.
-- Dependencies: P0-101.
-- Edit Files: apps/admin/, src/ (routes/usecases/repos)
-- Tests: Kill switch block test.
-- Evidence: TODO.
-- Risks: Sends allowed during ON.
 
 ### P0-107: Implement mini app inbox + checklist
 - Purpose: Show notifications and checklist per scenario/step.
