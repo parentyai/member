@@ -188,6 +188,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: Health check path `/healthz` may be intercepted by GFE (use `/healthz/`).
 
+### P0-132: Record LINE webhook verification success
+- Purpose: Capture LINE Console verification success + Cloud Run accept logs.
+- Completion Criteria: docs/GCP_SETUP.md and docs/ACCEPTANCE_PHASE0.md updated with evidence.
+- Dependencies: P0-130.
+- Edit Files: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: LINE Console verification not reproducible without valid channel secret.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections

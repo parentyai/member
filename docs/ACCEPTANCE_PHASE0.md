@@ -40,7 +40,7 @@ Note:
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- | --- |
-| A. LINE |  |  |  |  |
+| A. LINE | 2026-01-27 | arumamihsnob | (LINE Console) | Webhook verify 200 / Cloud Run log shows `accept` |
 | B. Mini App |  |  |  |  |
 | C. Admin |  |  |  |  |
 | D. Safety |  |  |  |  |

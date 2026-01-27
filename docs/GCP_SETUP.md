@@ -484,5 +484,10 @@ curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
   - Health check:
     - `curl -i https://member-webhook-306972605843.us-east1.run.app/healthz` -> `404` (GFE)
     - `curl -i https://member-webhook-306972605843.us-east1.run.app/healthz/` -> `200` with `{"ok":true,"env":"stg"}`
-  - Webhook reject (no signature):
-    - `curl -i -X POST https://member-webhook-306972605843.us-east1.run.app/webhook/line -d '{}'` -> `401 unauthorized`
+- Webhook reject (no signature):
+  - `curl -i -X POST https://member-webhook-306972605843.us-east1.run.app/webhook/line -d '{}'` -> `401 unauthorized`
+- Webhook verification success (2026-01-27):
+  - LINE Console webhook verify: 200 OK (user-confirmed)
+  - Cloud Run logs:
+    - `gcloud logging read 'resource.type="cloud_run_revision" resource.labels.service_name="member-webhook" textPayload:"accept"' --project member-485303 --limit 5`
+    - `accept` entries observed (requestId logged, no PII)
