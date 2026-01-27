@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { ensureUserFromWebhook } = require('../usecases/users/ensureUser');
+const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMessage');
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -57,8 +58,10 @@ async function handleLineWebhook(options) {
   }
 
   const userIds = extractUserIds(payload);
+  const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   for (const userId of userIds) {
     await ensureUserFromWebhook(userId);
+    await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
   }
 
   logger(`[webhook] requestId=${requestId} accept`);

@@ -55,6 +55,12 @@ Linked Task: P0-004, P0-122
 | Admin /audit | apps/admin/src/pages/audit/Index.js::AuditLogPage | src/usecases/audit/listAuditLogs.js::listAuditLogs | tests/phase0/adminUi.test.js::"audit log" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | Admin /settings | apps/admin/src/pages/settings/Index.js::SettingsPage | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | tests/phase0/adminUi.test.js::"kill switch toggle" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 
+## SSOT 6.3.4: 初回メッセージ（登録直後1回）
+
+| Requirement (SSOT) | Planned Implementation (file::function) | Planned Tests (file::test) | Playbook | Status |
+| --- | --- | --- | --- | --- |
+| 初回メッセージを1回だけ送信 | src/routes/webhookLine.js::handleLineWebhook; src/usecases/notifications/sendWelcomeMessage.js::sendWelcomeMessage | tests/phase0/welcome.test.js::"sendWelcomeMessage: sends once and records delivery" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (usecase + webhook) |
+
 ## SSOT 6.9: 実装順序（厳守）
 
 | Step | SSOT Order | Task ID | Planned Files / Functions | Planned Tests | Playbook | Status |

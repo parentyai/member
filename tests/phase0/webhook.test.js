@@ -35,7 +35,13 @@ afterEach(() => {
 test('webhook: valid signature creates user', async () => {
   const body = JSON.stringify({ events: [{ source: { userId: 'U999' } }] });
   const signature = sign(body);
-  const result = await handleLineWebhook({ signature, body, requestId: 'req1', logger: () => {} });
+  const result = await handleLineWebhook({
+    signature,
+    body,
+    requestId: 'req1',
+    logger: () => {},
+    sendWelcomeFn: async () => ({ skipped: false })
+  });
   assert.strictEqual(result.status, 200);
 
   const user = await usersRepo.getUser('U999');

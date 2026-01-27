@@ -9,7 +9,9 @@ async function getInbox(params) {
   const deliveries = await deliveriesRepo.listDeliveriesByUser(payload.lineUserId, payload.limit);
   const items = [];
   for (const delivery of deliveries) {
+    if (delivery.notificationId === 'welcome') continue;
     const notification = await notificationsRepo.getNotification(delivery.notificationId);
+    if (!notification) continue;
     items.push({
       deliveryId: delivery.id,
       notificationId: delivery.notificationId,
