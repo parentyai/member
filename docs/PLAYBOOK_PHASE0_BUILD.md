@@ -36,7 +36,7 @@ Precondition: `/webhook/line` exists and LINE signature verification is enabled.
 When available:
 1) Get webhook service URL:
    - `WEBHOOK_URL=$(gcloud run services describe "member-webhook" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
-2) Set LINE webhook URL to `${WEBHOOK_URL}/webhook/line`.
+2) Set LINE webhook URL to `${WEBHOOK_URL}/webhook/line` (current: `https://member-webhook-pvxgenwkba-ue.a.run.app/webhook/line`).
 3) Health check:
    - `curl -sS "${WEBHOOK_URL}/healthz"` should return JSON `{ "ok": true, "env": ... }`
    - If `404`, try `curl -sS "${WEBHOOK_URL}/healthz/"` (GFE may intercept `/healthz`)
