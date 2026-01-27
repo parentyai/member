@@ -6,15 +6,6 @@ Linked Task: P0-003
 
 ## In Progress
 
-### P0-102: Implement LINE webhook (user creation)
-- Purpose: Receive LINE events and create users.
-- Completion Criteria: /webhook/line creates users with scenario/step defaults.
-- Dependencies: P0-101.
-- Edit Files: src/routes/webhookLine.js, src/usecases/users/ensureUser.js, src/index.js, tests/phase0/webhook.test.js
-- Tests: npm test
-- Evidence: PR #TBD
-- Risks: Signature verification failure.
-
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -79,6 +70,15 @@ Linked Task: P0-003
 - Tests: None.
 - Evidence: docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Missing key ops sections (rollback, kill switch).
+
+### P0-102: Implement LINE webhook (user creation)
+- Purpose: Receive LINE events and create users.
+- Completion Criteria: /webhook/line creates users with scenario/step defaults.
+- Dependencies: P0-101.
+- Edit Files: src/routes/webhookLine.js, src/usecases/users/ensureUser.js, src/index.js, tests/phase0/webhook.test.js
+- Tests: npm test
+- Evidence: PR #20
+- Risks: Signature verification failure.
 
 ### P0-008: Create domain constants/validators skeletons
 - Purpose: Define fixed keys and validation entry points without implementation.
