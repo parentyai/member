@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>赴任チェックリスト</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      header { margin-bottom: 12px; }
+      .note { font-size: 12px; color: #666; }
+      li { margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>今やること</h1>
+      <div class="note">※ lineUserId が必要です（クエリで指定）</div>
+    </header>
+    <div id="meta" class="note"></div>
+    <ul id="list"></ul>
+    <script>
+      async function loadChecklist() {
+        const params = new URLSearchParams(location.search);
+        const lineUserId = params.get('lineUserId');
+        if (!lineUserId) {
+          document.getElementById('list').innerHTML = '<li>lineUserId を指定してください</li>';
+          return;
+        }
+        const res = await fetch(`/api/mini/checklist?lineUserId=${encodeURIComponent(lineUserId)}`);
+        const data = await res.json();
+        if (!data.ok) {
+          document.getElementById('list').innerHTML = `<li>error: ${data.error || 'unknown'}</li>`;
+          return;
+        }
+        document.getElementById('meta').textContent = `${data.scenarioKey || '-'} / ${data.stepKey || '-'}`;
+        if (!data.items.length) {
+          document.getElementById('list').innerHTML = '<li>対象のチェック項目がありません</li>';
+          return;
+        }
+        document.getElementById('list').innerHTML = data.items.map(item => `<li>${item.text}</li>`).join('');
+      }
+      loadChecklist();
+    </script>
+  </body>
+</html>

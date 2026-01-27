@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>公式連絡・重要通知</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      header { margin-bottom: 12px; }
+      .note { font-size: 12px; color: #666; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+      .title { font-weight: 600; margin-bottom: 6px; }
+      .meta { font-size: 12px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>公式連絡・重要通知</h1>
+      <div class="note">※ lineUserId が必要です（クエリで指定）</div>
+    </header>
+    <div id="list"></div>
+    <script>
+      async function loadInbox() {
+        const params = new URLSearchParams(location.search);
+        const lineUserId = params.get('lineUserId');
+        if (!lineUserId) {
+          document.getElementById('list').innerHTML = '<div class="note">lineUserId を指定してください</div>';
+          return;
+        }
+        const res = await fetch(`/api/mini/inbox?lineUserId=${encodeURIComponent(lineUserId)}`);
+        const data = await res.json();
+        if (!data.ok) {
+          document.getElementById('list').innerHTML = `<div class="note">error: ${data.error || 'unknown'}</div>`;
+          return;
+        }
+        if (!data.items.length) {
+          document.getElementById('list').innerHTML = '<div class="note">通知はありません</div>';
+          return;
+        }
+        document.getElementById('list').innerHTML = data.items.map(item => `
+          <div class="card">
+            <div class="title">${item.title || '通知'}</div>
+            <div>${item.body || ''}</div>
+            <div class="meta">sentAt: ${item.sentAt || '-'}</div>
+            <div class="meta">readAt: ${item.readAt || '-'}</div>
+          </div>
+        `).join('');
+      }
+      loadInbox();
+    </script>
+  </body>
+</html>

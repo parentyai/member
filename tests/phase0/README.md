@@ -16,6 +16,7 @@ Provide a minimal test scaffold for Phase0; no business logic yet.
 - Kill Switch unit tests verify toggle persistence (stubbed Firestore).
 - Audit log unit tests verify append writes createdAt (stubbed Firestore).
 - Click tracking unit tests verify clickAt and WARN block (stubbed Firestore).
+- Mini app unit tests verify inbox/checklist data shaping (stubbed Firestore).
 - No integration or E2E assertions.
 
 ## Scope (Next Phase)

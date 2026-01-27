@@ -2,6 +2,8 @@
 
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { handleLineWebhook } = require('./routes/webhookLine');
 
 const PORT = Number(process.env.PORT || 8080);
@@ -23,6 +25,17 @@ function getRequestId(req) {
     return trace.split('/')[0];
   }
   return crypto.randomUUID();
+}
+
+function serveHtml(res, filePath) {
+  try {
+    const html = fs.readFileSync(filePath, 'utf8');
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(html);
+  } catch (err) {
+    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('error');
+  }
 }
 
 function handleWebhook(req, res) {
@@ -73,6 +86,38 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && (pathname === '/healthz' || pathname === '/healthz/')) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, env: ENV_NAME }));
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/inbox') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'inbox.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/checklist') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'checklist.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && pathname.startsWith('/api/mini/')) {
+    const { handleMiniInbox, handleMiniChecklist } = require('./routes/mini');
+    (async () => {
+      if (pathname === '/api/mini/inbox') {
+        await handleMiniInbox(req, res);
+        return;
+      }
+      if (pathname === '/api/mini/checklist') {
+        await handleMiniChecklist(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
     return;
   }
 

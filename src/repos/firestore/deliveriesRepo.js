@@ -32,8 +32,19 @@ async function markClick(deliveryId, at) {
   return { id: deliveryId };
 }
 
+async function listDeliveriesByUser(lineUserId, limit) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const db = getDb();
+  let query = db.collection(COLLECTION).where('lineUserId', '==', lineUserId).orderBy('sentAt', 'desc');
+  const max = typeof limit === 'number' ? limit : 50;
+  if (max) query = query.limit(max);
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+}
+
 module.exports = {
   createDelivery,
   markRead,
-  markClick
+  markClick,
+  listDeliveriesByUser
 };
