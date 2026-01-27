@@ -34,7 +34,7 @@ Linked Task: P0-004, P0-122
 | --- | --- | --- | --- | --- |
 | POST /webhook/line | src/routes/webhookLine.js::handleLineWebhook; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"webhook: valid signature creates user" | docs/PLAYBOOK_PHASE0_BUILD.md | 一部実装済 (handler) |
 | POST /admin/notifications | src/routes/admin/notifications.js::createNotification; src/usecases/notifications/createNotification.js::createNotification; src/domain/validators.js::validateNotificationPayload | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| POST /admin/notifications/:id/test-send | src/routes/admin/notifications.js::testSendNotification; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/notifications.test.js::"test send creates delivery" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
+| POST /admin/notifications/:id/test-send | src/routes/admin/notifications.js::handleTestSend; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/testSendNotification.test.js::"testSendNotification: creates delivery after push" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | POST /admin/notifications/:id/send | src/routes/admin/notifications.js::sendNotification; src/usecases/notifications/sendNotification.js::sendNotification | tests/phase0/notifications.test.js::"send creates deliveries" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | GET /admin/notifications | src/routes/admin/notifications.js::listNotifications; src/usecases/notifications/listNotifications.js::listNotifications | tests/phase0/notifications.test.js::"list notifications" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | POST /admin/kill-switch | src/routes/admin/killSwitch.js::setKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | tests/phase0/killSwitch.test.js::"kill switch blocks send" | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
@@ -72,7 +72,7 @@ Linked Task: P0-004, P0-122
 | Requirement (SSOT) | Planned Test (file::test) | Related Implementation | Playbook | Status |
 | --- | --- | --- | --- | --- |
 | webhook受信でusersが作られる | tests/phase0/webhook.test.js::"creates user on webhook" | src/routes/webhookLine.js::handleLineWebhook | docs/PLAYBOOK_PHASE0_BUILD.md | 未実装 |
-| 通知作成→テスト送信が成功 | tests/phase0/notifications.test.js::"test send creates delivery" | src/routes/admin/notifications.js::testSendNotification | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
+| 通知作成→テスト送信が成功 | tests/phase0/testSendNotification.test.js::"testSendNotification: creates delivery after push" | src/routes/admin/notifications.js::handleTestSend | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | 配信で対象ユーザーにdeliveryが作られる | tests/phase0/notifications.test.js::"send creates deliveries" | src/routes/admin/notifications.js::sendNotification | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | クリックでclickAtが記録 | tests/phase0/click.test.js::"click records clickAt" | src/routes/trackClick.js::trackClick | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | Kill Switch ONで配信が拒否 | tests/phase0/killSwitch.test.js::"kill switch blocks send" | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
