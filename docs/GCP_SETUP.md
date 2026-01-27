@@ -501,3 +501,41 @@ curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
     - `curl -i https://member-webhook-pvxgenwkba-ue.a.run.app/healthz/` -> `200` with `{"ok":true,"env":"stg"}`
   - Webhook reject (no signature):
     - `curl -i -X POST https://member-webhook-pvxgenwkba-ue.a.run.app/webhook/line -d '{}'` -> `401 unauthorized`
+
+- Phase0 gate checks (2026-01-27):
+  - member URL:
+    - `gcloud run services describe member --region us-east1 --project member-485303 --format="value(status.url)"`
+    - Output: `https://member-pvxgenwkba-ue.a.run.app`
+  - member IAM (public check):
+    - `gcloud run services get-iam-policy member --region us-east1 --project member-485303 --format="yaml(bindings)"`
+    - Output:
+      ```
+      bindings:
+      - members:
+        - allUsers
+        - user:nshimamura@parentyai.com
+        role: roles/run.invoker
+      ```
+  - member unauth access (unexpected):
+    - `curl -i https://member-pvxgenwkba-ue.a.run.app/`
+    - Output: `HTTP/2 200` and body `ok`
+  - webhook IAM (public check):
+    - `gcloud run services get-iam-policy member-webhook --region us-east1 --project member-485303 --format="yaml(bindings)"`
+    - Output:
+      ```
+      bindings:
+      - members:
+        - allUsers
+        role: roles/run.invoker
+      ```
+  - webhook healthz:
+    - `curl -i https://member-webhook-pvxgenwkba-ue.a.run.app/healthz/`
+    - Output: `HTTP/2 200` with `{"ok":true,"env":"stg"}`
+  - webhook unsigned reject:
+    - `curl -i -X POST https://member-webhook-pvxgenwkba-ue.a.run.app/webhook/line -d '{}'`
+    - Output: `HTTP/2 401` body `unauthorized`
+  - webhook accept logs:
+    - `gcloud logging read 'resource.type="cloud_run_revision" resource.labels.service_name="member-webhook" textPayload:"accept"' --project member-485303 --limit 5 --format="value(textPayload)"`
+    - Output:
+      - `[webhook] requestId=34d0f9a069d6aaf02c397c7ff9803cb7 accept`
+      - `[webhook] requestId=4606416e2583e55f40897e2a5bb923c5 accept`
