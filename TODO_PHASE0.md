@@ -179,6 +179,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: Org policy blocks allUsers or webhook signature mismatch.
 
+### P0-131: Record webhook edge evidence (deploy + checks)
+- Purpose: Close evidence for member-webhook deployment and public access checks.
+- Completion Criteria: docs/GCP_SETUP.md includes deploy run URL, service URL, curl checks, and invoker binding.
+- Dependencies: P0-130.
+- Edit Files: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md, docs/PLAYBOOK_PHASE0_BUILD.md, docs/RUNBOOK_PHASE0.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: Health check path `/healthz` may be intercepted by GFE (use `/healthz/`).
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections

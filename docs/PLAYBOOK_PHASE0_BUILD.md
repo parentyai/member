@@ -39,6 +39,7 @@ When available:
 2) Set LINE webhook URL to `${WEBHOOK_URL}/webhook/line`.
 3) Health check:
    - `curl -sS "${WEBHOOK_URL}/healthz"` should return JSON `{ "ok": true, "env": ... }`
+   - If `404`, try `curl -sS "${WEBHOOK_URL}/healthz/"` (GFE may intercept `/healthz`)
 4) Signature rejection:
    - `curl -i -X POST "${WEBHOOK_URL}/webhook/line" -d '{}'` returns `401`
 5) Send a test event from LINE Developer Console.

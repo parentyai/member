@@ -20,7 +20,8 @@ Expected:
   - `curl -sS "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
 - Webhook edge service (public):
   - `WEBHOOK_URL=$(gcloud run services describe "member-webhook" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
-  - `curl -sS "$WEBHOOK_URL/healthz"` returns JSON with `"ok":true`
+  - `curl -sS "$WEBHOOK_URL/healthz"` returns JSON with `"ok":true` (if 404, use `/healthz/`)
+  - `curl -sS "$WEBHOOK_URL/healthz/"` returns JSON with `"ok":true`
   - `curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'` returns `401` (signature required)
 - Check revisions:
   - `gcloud run revisions list --service "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --limit=5`

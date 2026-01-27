@@ -473,3 +473,16 @@ curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
 - Endpoint checks after re-run (2026-01-27):
   - Unauth: `curl -i https://member-pvxgenwkba-ue.a.run.app/` -> `403 Forbidden`
   - Auth: `curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/` -> `ok`
+- Webhook edge deployment (2026-01-27):
+  - Deploy run: `https://github.com/parentyai/member/actions/runs/21380967358` (merge PR #15)
+  - Image: `us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:969eac9748c3b9849fc43bf6128930a196a49188`
+  - Deploy command:
+    - `gcloud run deploy member-webhook --project member-485303 --region us-east1 --image "$IMAGE" --allow-unauthenticated --service-account "306972605843-compute@developer.gserviceaccount.com" --set-env-vars "ENV_NAME=stg,SERVICE_MODE=webhook" --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest"`
+  - Service URL: `https://member-webhook-306972605843.us-east1.run.app`
+  - Public invoker:
+    - `gcloud run services add-iam-policy-binding member-webhook --member "allUsers" --role "roles/run.invoker" --region us-east1 --project member-485303`
+  - Health check:
+    - `curl -i https://member-webhook-306972605843.us-east1.run.app/healthz` -> `404` (GFE)
+    - `curl -i https://member-webhook-306972605843.us-east1.run.app/healthz/` -> `200` with `{"ok":true,"env":"stg"}`
+  - Webhook reject (no signature):
+    - `curl -i -X POST https://member-webhook-306972605843.us-east1.run.app/webhook/line -d '{}'` -> `401 unauthorized`
