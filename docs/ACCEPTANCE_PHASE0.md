@@ -44,7 +44,7 @@ Note:
 | B. Mini App |  |  |  |  |
 | C. Admin |  |  |  |  |
 | D. Safety |  |  |  |  |
-| E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21379726867 | member: `https://member-pvxgenwkba-ue.a.run.app` / webhook: (URL) / allUsers invoker enabled |
+| E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21380967358 | member: `https://member-pvxgenwkba-ue.a.run.app` / webhook: `https://member-webhook-306972605843.us-east1.run.app` / allUsers invoker enabled |
 
 ## Sign-off
 - Reviewer: 
