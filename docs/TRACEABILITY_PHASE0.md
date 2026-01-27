@@ -25,7 +25,7 @@ Linked Task: P0-004, P0-122
 | notifications/{notificationId} | src/repos/firestore/notificationsRepo.js::createNotification/getNotification/listNotifications/updateNotificationStatus | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
 | notification_deliveries/{deliveryId} | src/repos/firestore/deliveriesRepo.js::createDelivery/markRead/markClick | tests/phase0/notifications.test.js::"delivery created on send" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
 | link_registry/{linkId} | src/repos/firestore/linkRegistryRepo.js::createLink/updateLink/listLinks/setHealth; src/usecases/linkRegistry/*.js | tests/phase0/linkRegistry.test.js::"linkRegistryRepo: setHealth stores WARN state" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo + handler) |
-| audit_logs/{logId} | src/repos/firestore/auditLogsRepo.js::appendAuditLog | tests/phase0/audit.test.js::"audit log append" | docs/PLAYBOOK_PHASE0_INCIDENT.md | 一部実装済 (repo) |
+| audit_logs/{logId} | src/repos/firestore/auditLogsRepo.js::appendAuditLog; src/usecases/audit/appendAuditLog.js::appendAuditLog | tests/phase0/audit.test.js::"auditLogsRepo: append writes createdAt" | docs/PLAYBOOK_PHASE0_INCIDENT.md | 一部実装済 (repo + handler) |
 | system_flags/phase0 | src/repos/firestore/systemFlagsRepo.js::getKillSwitch/setKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch/getKillSwitch | tests/phase0/killSwitch.test.js::"killSwitch: default false, set true" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo + handler) |
 
 ## SSOT 6.7: API設計
@@ -65,7 +65,7 @@ Linked Task: P0-004, P0-122
 | 4 | 管理画面: 通知作成→テスト送信→配信 | P0-104 | src/routes/admin/notifications.js::createNotification/testSendNotification/sendNotification | tests/phase0/notifications.test.js::"send creates deliveries" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | 5 | ミニアプリ: inbox/checklist表示 | P0-107 | apps/mini/src/pages/Inbox.js::InboxPage; apps/mini/src/pages/Checklist.js::ChecklistPage | tests/phase0/miniapp.test.js::"inbox/checklist" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | 6 | クリック計測→リダイレクト | P0-108 | src/routes/trackClick.js::trackClick; src/usecases/track/recordClick.js::recordClickAndRedirect | tests/phase0/click.test.js::"click records clickAt" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| 7 | Kill Switch / 監査ログ / Link Registryヘルス | P0-106/P0-109/P0-105 | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch; src/repos/firestore/auditLogsRepo.js::appendAuditLog; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/killSwitch.test.js::"blocks send"; tests/phase0/audit.test.js::"append"; tests/phase0/linkRegistry.test.js::"health check" | docs/PLAYBOOK_PHASE0_DEBUG.md | 未実装 |
+| 7 | Kill Switch / 監査ログ / Link Registryヘルス | P0-106/P0-109/P0-105 | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch; src/repos/firestore/auditLogsRepo.js::appendAuditLog; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/killSwitch.test.js::"blocks send"; tests/phase0/audit.test.js::"auditLogsRepo: append writes createdAt"; tests/phase0/linkRegistry.test.js::"health check" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (kill switch + link registry + audit logging) |
 
 ## SSOT 6.10: 最低限テスト（Phase0合格ライン）
 

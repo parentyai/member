@@ -1,6 +1,13 @@
 'use strict';
 
 const { setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+
+function resolveActor(req) {
+  const actor = req && req.headers && req.headers['x-actor'];
+  if (typeof actor === 'string' && actor.trim().length > 0) return actor.trim();
+  return 'unknown';
+}
 
 function parseJson(body, res) {
   try {
@@ -26,6 +33,13 @@ async function handleSetKillSwitch(req, res, body) {
     return;
   }
   const result = await setKillSwitch(isOn);
+  await appendAuditLog({
+    actor: resolveActor(req),
+    action: 'kill_switch.set',
+    entityType: 'system_flags',
+    entityId: 'phase0',
+    payloadSummary: { isOn }
+  });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, killSwitch: result.killSwitch }));
 }
