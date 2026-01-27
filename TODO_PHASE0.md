@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: P0-134.
 - Edit Files: docs/GUARDRAILS_PHASE0.md, docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
 - Tests: None (doc-only change)
-- Evidence: PR #TBD
+- Evidence: PR #30
 - Risks: Evidence drift if services/URLs change.
 
 ### P0-134: Record Phase0 gate evidence (A-K)
