@@ -152,6 +152,15 @@ Linked Task: P0-003
 - Evidence: docs/TRACEABILITY_PHASE0.md
 - Risks: Planned file structure may need adjustment during implementation.
 
+### P0-127: Record deploy rerun + PUBLIC_BASE_URL sync evidence
+- Purpose: Capture deploy rerun evidence and align PUBLIC_BASE_URL with Cloud Run status.url.
+- Completion Criteria: docs/GCP_SETUP.md includes rerun URL, status.url output, PUBLIC_BASE_URL update, and curl results.
+- Dependencies: P0-120.
+- Edit Files: docs/GCP_SETUP.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: Org policy blocks public invoker; unauth 403 may persist.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
