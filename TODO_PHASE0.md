@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-110: Implement first-time welcome message
+- Purpose: Send initial message once after registration.
+- Completion Criteria: Exactly one welcome message per user.
+- Dependencies: P0-102, P0-103.
+- Edit Files: src/ (usecases/infra)
+- Tests: Welcome message idempotency test.
+- Evidence: PR #28
+- Risks: Duplicate welcome messages.
+
 ### P0-107: Implement mini app inbox + checklist
 - Purpose: Show notifications and checklist per scenario/step.
 - Completion Criteria: /inbox and /checklist render based on data.
@@ -290,13 +299,3 @@ Linked Task: P0-003
 
 
 
-
-
-### P0-110: Implement first-time welcome message
-- Purpose: Send initial message once after registration.
-- Completion Criteria: Exactly one welcome message per user.
-- Dependencies: P0-102, P0-103.
-- Edit Files: src/ (usecases/infra)
-- Tests: Welcome message idempotency test.
-- Evidence: TODO.
-- Risks: Duplicate welcome messages.
