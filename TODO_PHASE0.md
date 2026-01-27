@@ -5,16 +5,16 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
+## Done
+
 ### P0-104: Implement admin notification creation + send flow
 - Purpose: Admin can create/preview/send notifications.
 - Completion Criteria: /admin/notifications create/list/send works with constraints.
 - Dependencies: P0-101, P0-105.
 - Edit Files: apps/admin/, src/ (routes/usecases)
 - Tests: Admin API tests.
-- Evidence: TODO.
+- Evidence: PR #25
 - Risks: CTA/link validation gaps.
-
-## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
 - Purpose: Preserve Phase0 SSOT as the single in-repo reference.
