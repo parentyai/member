@@ -491,3 +491,13 @@ curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
   - Cloud Run logs:
     - `gcloud logging read 'resource.type="cloud_run_revision" resource.labels.service_name="member-webhook" textPayload:"accept"' --project member-485303 --limit 5`
     - `accept` entries observed (requestId logged, no PII)
+- Webhook service URL (2026-01-27):
+  - Command: `gcloud run services describe member-webhook --region us-east1 --project member-485303 --format="value(status.url)"`
+  - Output: `https://member-webhook-pvxgenwkba-ue.a.run.app`
+  - IAM check:
+    - `gcloud run services get-iam-policy member-webhook --region us-east1 --project member-485303`
+    - `roles/run.invoker` includes `allUsers`
+  - Health check:
+    - `curl -i https://member-webhook-pvxgenwkba-ue.a.run.app/healthz/` -> `200` with `{"ok":true,"env":"stg"}`
+  - Webhook reject (no signature):
+    - `curl -i -X POST https://member-webhook-pvxgenwkba-ue.a.run.app/webhook/line -d '{}'` -> `401 unauthorized`

@@ -197,6 +197,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: LINE Console verification not reproducible without valid channel secret.
 
+### P0-133: Record final webhook URL + curl checks
+- Purpose: Capture final member-webhook URL and curl results after merge.
+- Completion Criteria: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md, docs/PLAYBOOK_PHASE0_BUILD.md updated with final URL.
+- Dependencies: P0-130.
+- Edit Files: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md, docs/PLAYBOOK_PHASE0_BUILD.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: URL changes if service is recreated.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections
