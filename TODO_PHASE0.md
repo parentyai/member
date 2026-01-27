@@ -131,7 +131,7 @@ Linked Task: P0-003
 - Dependencies: P0-005.
 - Edit Files: src/infra/firestore.js, src/repos/firestore/*.js, tests/phase0/*.test.js
 - Tests: npm test
-- Evidence: PR #TBD
+- Evidence: PR #19
 - Risks: Schema drift vs SSOT.
 
 ### P0-120: Setup GCP IAM + GitHub Actions OIDC (WIF) + Cloud Run deploy workflow
