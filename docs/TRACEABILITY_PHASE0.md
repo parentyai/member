@@ -21,7 +21,7 @@ Linked Task: P0-004, P0-122
 
 | Entity (SSOT) | Planned Implementation (file::function) | Planned Tests (file::test) | Playbook | Status |
 | --- | --- | --- | --- | --- |
-| users/{lineUserId} | src/repos/firestore/usersRepo.js::createUser/getUser/updateUser/setMemberNumber/setMemberCardAsset; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"creates user doc" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo) |
+| users/{lineUserId} | src/repos/firestore/usersRepo.js::createUser/getUser/updateUser/setMemberNumber/setMemberCardAsset; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"webhook: valid signature creates user" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (repo + webhook) |
 | notifications/{notificationId} | src/repos/firestore/notificationsRepo.js::createNotification/getNotification/listNotifications/updateNotificationStatus | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
 | notification_deliveries/{deliveryId} | src/repos/firestore/deliveriesRepo.js::createDelivery/markRead/markClick | tests/phase0/notifications.test.js::"delivery created on send" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
 | link_registry/{linkId} | src/repos/firestore/linkRegistryRepo.js::createLink/updateLink/listLinks/setHealth | tests/phase0/linkRegistry.test.js::"WARN blocks usage" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (repo) |
@@ -32,7 +32,7 @@ Linked Task: P0-004, P0-122
 
 | API (SSOT) | Planned Implementation (file::function) | Planned Tests (file::test) | Playbook | Status |
 | --- | --- | --- | --- | --- |
-| POST /webhook/line | src/routes/webhookLine.js::handleLineWebhook; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"creates user on webhook" | docs/PLAYBOOK_PHASE0_BUILD.md | 未実装 |
+| POST /webhook/line | src/routes/webhookLine.js::handleLineWebhook; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"webhook: valid signature creates user" | docs/PLAYBOOK_PHASE0_BUILD.md | 一部実装済 (handler) |
 | POST /admin/notifications | src/routes/admin/notifications.js::createNotification; src/usecases/notifications/createNotification.js::createNotification; src/domain/validators.js::validateNotificationPayload | tests/phase0/notifications.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | POST /admin/notifications/:id/test-send | src/routes/admin/notifications.js::testSendNotification; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/notifications.test.js::"test send creates delivery" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | POST /admin/notifications/:id/send | src/routes/admin/notifications.js::sendNotification; src/usecases/notifications/sendNotification.js::sendNotification | tests/phase0/notifications.test.js::"send creates deliveries" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |

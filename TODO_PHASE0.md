@@ -71,6 +71,15 @@ Linked Task: P0-003
 - Evidence: docs/RUNBOOK_PHASE0.md, docs/ACCEPTANCE_PHASE0.md
 - Risks: Missing key ops sections (rollback, kill switch).
 
+### P0-102: Implement LINE webhook (user creation)
+- Purpose: Receive LINE events and create users.
+- Completion Criteria: /webhook/line creates users with scenario/step defaults.
+- Dependencies: P0-101.
+- Edit Files: src/routes/webhookLine.js, src/usecases/users/ensureUser.js, src/index.js, tests/phase0/webhook.test.js
+- Tests: npm test
+- Evidence: PR #20
+- Risks: Signature verification failure.
+
 ### P0-008: Create domain constants/validators skeletons
 - Purpose: Define fixed keys and validation entry points without implementation.
 - Completion Criteria: src/domain/constants.js and src/domain/validators.js exist with stub exports.
@@ -217,14 +226,6 @@ Linked Task: P0-003
 
 ## Parking Lot
 
-### P0-102: Implement LINE webhook (user creation)
-- Purpose: Receive LINE events and create users.
-- Completion Criteria: /webhook/line creates users with scenario/step defaults.
-- Dependencies: P0-101.
-- Edit Files: src/ (routes/usecases/infra)
-- Tests: Webhook integration test.
-- Evidence: TODO.
-- Risks: Signature verification failure.
 
 ### P0-103: Implement LINE push test send
 - Purpose: Test send notifications to a specific user.
