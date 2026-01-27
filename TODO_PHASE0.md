@@ -6,6 +6,15 @@ Linked Task: P0-003
 
 ## In Progress
 
+### P0-103: Implement LINE push test send
+- Purpose: Test send notifications to a specific user.
+- Completion Criteria: Admin test send triggers LINE push + delivery log.
+- Dependencies: P0-101.
+- Edit Files: src/infra/lineClient.js, src/usecases/notifications/testSendNotification.js, src/routes/admin/notifications.js, src/index.js, tests/phase0/testSendNotification.test.js
+- Tests: npm test
+- Evidence: PR #TBD
+- Risks: Token misconfiguration.
+
 ## Done
 
 ### P0-001: Save SSOT snapshot to docs/SSOT_PHASE0.md
@@ -227,14 +236,6 @@ Linked Task: P0-003
 ## Parking Lot
 
 
-### P0-103: Implement LINE push test send
-- Purpose: Test send notifications to a specific user.
-- Completion Criteria: Admin test send triggers LINE push + delivery log.
-- Dependencies: P0-101.
-- Edit Files: src/ (routes/usecases/infra)
-- Tests: Test send integration test.
-- Evidence: TODO.
-- Risks: Token misconfiguration.
 
 ### P0-104: Implement admin notification creation + send flow
 - Purpose: Admin can create/preview/send notifications.
