@@ -4,6 +4,9 @@ Linked Task: P0-007, P0-121
 
 ## Acceptance Checklist (YES/NO)
 
+Note:
+- LINE webhook requires unauthenticated access. Org policy exception must allow `allUsers` for Cloud Run invoker.
+
 ### A. LINE
 - [ ] LINE push send to a specific user works.
 - [ ] Webhook receives events and stores LINE userId.
@@ -31,6 +34,9 @@ Linked Task: P0-007, P0-121
 - [ ] WARN links cannot be linked to notifications (or hard warning).
 - [ ] Audit logs are immutable.
 
+### E. Deploy / Access
+- [ ] Cloud Run service is reachable without auth for webhook endpoint (unauth 200 expected).
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- | --- |
@@ -38,6 +44,7 @@ Linked Task: P0-007, P0-121
 | B. Mini App |  |  |  |  |
 | C. Admin |  |  |  |  |
 | D. Safety |  |  |  |  |
+| E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21379726867 | Commit `ae2a330` / Service URL `https://member-pvxgenwkba-ue.a.run.app` / allUsers invoker enabled |
 
 ## Sign-off
 - Reviewer: 

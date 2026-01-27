@@ -161,6 +161,15 @@ Linked Task: P0-003
 - Evidence: docs/GCP_SETUP.md
 - Risks: Org policy blocks public invoker; unauth 403 may persist.
 
+### P0-129: Allow allUsers invoker for webhook (org policy exception)
+- Purpose: Permit unauthenticated LINE webhook access via Cloud Run invoker exception.
+- Completion Criteria: Org policy override applied, allUsers invoker binding succeeds, docs updated.
+- Dependencies: P0-120.
+- Edit Files: docs/GCP_SETUP.md, docs/ACCEPTANCE_PHASE0.md, docs/RUNBOOK_PHASE0.md, docs/PLAYBOOK_PHASE0_DEBUG.md
+- Tests: None.
+- Evidence: docs/GCP_SETUP.md
+- Risks: Org policy change broadens IAM membership within project.
+
 ## Parking Lot
 
 ### P0-101: Implement Firestore repositories for Phase0 collections

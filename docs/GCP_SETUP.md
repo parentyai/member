@@ -386,6 +386,27 @@ Expected:
   - Auth: `curl -i -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/healthz/` -> `404` with body `not found` (container)
 - Note (2026-01-27):
   - `/healthz` appears to be handled by the Google Frontend before reaching the container; use `/` for basic health checks until resolved.
+- Org policy exception for unauth webhook (2026-01-27):
+  - Org policy detected:
+    - `gcloud org-policies describe constraints/iam.allowedPolicyMemberDomains --organization 437836372038`
+    - Allowed values: `C021oe492` (domain-restricted policy blocks `allUsers`)
+  - Enable Org Policy API:
+    - `gcloud services enable orgpolicy.googleapis.com --project member-485303`
+  - Project override to allow `allUsers`:
+    - Policy file:
+      ```
+      name: projects/member-485303/policies/iam.allowedPolicyMemberDomains
+      spec:
+        inheritFromParent: false
+        rules:
+          - allowAll: true
+      ```
+    - Apply:
+      - `gcloud org-policies set-policy /tmp/iam-allowed-policy-members.yaml`
+  - Cloud Run invoker binding:
+    - `gcloud run services add-iam-policy-binding member --member "allUsers" --role "roles/run.invoker" --region us-east1 --project member-485303`
+  - Unauth check:
+    - `curl -i https://member-pvxgenwkba-ue.a.run.app/` -> `200 OK` and body `ok`
 - Deploy re-run after PUBLIC_BASE_URL update (2026-01-27):
   - Command: `gh run rerun 21345761301`
   - Run URL: `https://github.com/parentyai/member/actions/runs/21345761301`
