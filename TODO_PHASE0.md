@@ -5,6 +5,15 @@ Linked Task: P0-003
 ## Backlog
 
 ## In Progress
+### P0-107: Implement mini app inbox + checklist
+- Purpose: Show notifications and checklist per scenario/step.
+- Completion Criteria: /inbox and /checklist render based on data.
+- Dependencies: P0-101.
+- Edit Files: apps/mini/.
+- Tests: UI smoke tests.
+- Evidence: TODO.
+- Risks: Incorrect scenario/step selection.
+
 ## Done
 
 ### P0-108: Implement click tracking + redirect
@@ -282,15 +291,6 @@ Linked Task: P0-003
 
 
 
-
-### P0-107: Implement mini app inbox + checklist
-- Purpose: Show notifications and checklist per scenario/step.
-- Completion Criteria: /inbox and /checklist render based on data.
-- Dependencies: P0-101.
-- Edit Files: apps/mini/.
-- Tests: UI smoke tests.
-- Evidence: TODO.
-- Risks: Incorrect scenario/step selection.
 
 ### P0-110: Implement first-time welcome message
 - Purpose: Send initial message once after registration.
