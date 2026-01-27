@@ -24,7 +24,13 @@ function createDbStub() {
     return {
       id,
       async set(data, options) {
-        collection.docs[id] = { data: Object.assign({}, data), options: options || null };
+        const merge = Boolean(options && options.merge);
+        if (merge && collection.docs[id]) {
+          const existing = collection.docs[id].data || {};
+          collection.docs[id] = { data: Object.assign({}, existing, data), options: options || null };
+        } else {
+          collection.docs[id] = { data: Object.assign({}, data), options: options || null };
+        }
       },
       async get() {
         const doc = collection.docs[id];

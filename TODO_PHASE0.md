@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-108: Implement click tracking + redirect
+- Purpose: Record clickAt and redirect to official URL.
+- Completion Criteria: /track/click logs and redirects.
+- Dependencies: P0-101, P0-105.
+- Edit Files: src/ (routes/usecases/repos)
+- Tests: Click tracking test.
+- Evidence: PR #26
+- Risks: Incorrect redirect or logging.
+
 ### P0-104: Implement admin notification creation + send flow
 - Purpose: Admin can create/preview/send notifications.
 - Completion Criteria: /admin/notifications create/list/send works with constraints.
@@ -282,15 +291,6 @@ Linked Task: P0-003
 - Tests: UI smoke tests.
 - Evidence: TODO.
 - Risks: Incorrect scenario/step selection.
-
-### P0-108: Implement click tracking + redirect
-- Purpose: Record clickAt and redirect to official URL.
-- Completion Criteria: /track/click logs and redirects.
-- Dependencies: P0-101, P0-105.
-- Edit Files: src/ (routes/usecases/repos)
-- Tests: Click tracking test.
-- Evidence: TODO.
-- Risks: Incorrect redirect or logging.
 
 ### P0-110: Implement first-time welcome message
 - Purpose: Send initial message once after registration.

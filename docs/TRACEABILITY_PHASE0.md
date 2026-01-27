@@ -39,7 +39,7 @@ Linked Task: P0-004, P0-122
 | GET /admin/notifications | src/routes/admin/notifications.js::handleList; src/usecases/notifications/listNotifications.js::listNotifications | tests/phase0/notifications.test.js::"listNotifications: filters by scenarioKey" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler + usecase) |
 | POST /admin/kill-switch | src/routes/admin/killSwitch.js::handleSetKillSwitch; src/usecases/killSwitch/setKillSwitch.js::setKillSwitch | tests/phase0/killSwitch.test.js::"killSwitch: default false, set true" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (handler) |
 | CRUD /admin/link-registry | src/routes/admin/linkRegistry.js::handleCreate/handleList/handleUpdate/handleDelete/handleHealth; src/usecases/linkRegistry/createLink.js::createLink; src/usecases/linkRegistry/listLinks.js::listLinks; src/usecases/linkRegistry/updateLink.js::updateLink; src/usecases/linkRegistry/deleteLink.js::deleteLink; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/linkRegistry.test.js::"linkRegistryRepo: setHealth stores WARN state" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
-| POST /track/click | src/routes/trackClick.js::trackClick; src/usecases/track/recordClick.js::recordClickAndRedirect | tests/phase0/click.test.js::"click records clickAt" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
+| POST /track/click | src/routes/trackClick.js::handleTrackClick; src/usecases/track/recordClickAndRedirect.js::recordClickAndRedirect | tests/phase0/click.test.js::"recordClickAndRedirect: marks click and returns url" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler + usecase) |
 
 ## SSOT 6.8: 画面仕様（ミニアプリ / 管理画面）
 
@@ -64,7 +64,7 @@ Linked Task: P0-004, P0-122
 | 3 | push送信（テスト送信） | P0-103 | src/infra/lineClient.js::pushMessage; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/notifications.test.js::"test send creates delivery" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | 4 | 管理画面: 通知作成→テスト送信→配信 | P0-104 | src/routes/admin/notifications.js::handleCreate/handleTestSend/handleSend | tests/phase0/notifications.test.js::"sendNotification: creates deliveries for matching users" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (create/send handlers) |
 | 5 | ミニアプリ: inbox/checklist表示 | P0-107 | apps/mini/src/pages/Inbox.js::InboxPage; apps/mini/src/pages/Checklist.js::ChecklistPage | tests/phase0/miniapp.test.js::"inbox/checklist" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
-| 6 | クリック計測→リダイレクト | P0-108 | src/routes/trackClick.js::trackClick; src/usecases/track/recordClick.js::recordClickAndRedirect | tests/phase0/click.test.js::"click records clickAt" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
+| 6 | クリック計測→リダイレクト | P0-108 | src/routes/trackClick.js::handleTrackClick; src/usecases/track/recordClickAndRedirect.js::recordClickAndRedirect | tests/phase0/click.test.js::"recordClickAndRedirect: marks click and returns url" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler + usecase) |
 | 7 | Kill Switch / 監査ログ / Link Registryヘルス | P0-106/P0-109/P0-105 | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch; src/repos/firestore/auditLogsRepo.js::appendAuditLog; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/killSwitch.test.js::"blocks send"; tests/phase0/audit.test.js::"auditLogsRepo: append writes createdAt"; tests/phase0/linkRegistry.test.js::"health check" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (kill switch + link registry + audit logging) |
 
 ## SSOT 6.10: 最低限テスト（Phase0合格ライン）
@@ -74,7 +74,7 @@ Linked Task: P0-004, P0-122
 | webhook受信でusersが作られる | tests/phase0/webhook.test.js::"creates user on webhook" | src/routes/webhookLine.js::handleLineWebhook | docs/PLAYBOOK_PHASE0_BUILD.md | 未実装 |
 | 通知作成→テスト送信が成功 | tests/phase0/testSendNotification.test.js::"testSendNotification: creates delivery after push" | src/routes/admin/notifications.js::handleTestSend | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler) |
 | 配信で対象ユーザーにdeliveryが作られる | tests/phase0/notifications.test.js::"sendNotification: creates deliveries for matching users" | src/usecases/notifications/sendNotification.js::sendNotification | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (usecase) |
-| クリックでclickAtが記録 | tests/phase0/click.test.js::"click records clickAt" | src/routes/trackClick.js::trackClick | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
+| クリックでclickAtが記録 | tests/phase0/click.test.js::"recordClickAndRedirect: marks click and returns url" | src/usecases/track/recordClickAndRedirect.js::recordClickAndRedirect | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (usecase) |
 | Kill Switch ONで配信が拒否 | tests/phase0/testSendNotification.test.js::"testSendNotification: blocked when kill switch ON" | src/usecases/notifications/testSendNotification.js::testSendNotification | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (usecase) |
 | WARNリンクが通知に紐付けできない | tests/phase0/linkRegistry.test.js::"WARN link cannot be used" | src/domain/validators.js::validateNotificationPayload | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 
