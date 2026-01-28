@@ -46,7 +46,7 @@
 - Dependencies: P1-002
 - Edit Files: src/usecases/checklists/*, src/usecases/events/*
 - Tests: tests/phase1/usecases-*.test.js
-- Evidence: PR #TBD
+- Evidence: PR #39
 - Risks: Logging failure blocks main flow
 
 ## Done
