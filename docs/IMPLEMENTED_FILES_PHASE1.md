@@ -41,3 +41,8 @@
 - src/routes/phase1Mini.js
 - src/index.js
 - tests/phase1/mini-checklist.test.js
+
+## P1-006 (Events integration)
+- src/routes/phase1Events.js
+- src/index.js
+- tests/phase1/events-integration.test.js
