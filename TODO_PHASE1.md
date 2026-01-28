@@ -31,15 +31,6 @@
 
 ## In Progress
 
-### P1-004: Admin notification flow (minimal UI)
-- Purpose: Create/send notifications from admin UI.
-- Completion Criteria: Admin can create/send; deliveries created; scenario-only targeting.
-- Dependencies: P1-003
-- Edit Files: src/usecases/notifications/*, src/routes/admin/phase1Notifications.js, src/index.js
-- Tests: tests/phase1/admin-notifications.test.js
-- Evidence: PR #TBD
-- Risks: Scenario-only targeting not enforced
-
 ## Done
 
 ### P1-001: Phase1 docs scaffolding
@@ -68,5 +59,14 @@
 - Tests: tests/phase1/usecases-*.test.js
 - Evidence: PR #39
 - Risks: Logging failure blocks main flow
+
+### P1-004: Admin notification flow (minimal UI)
+- Purpose: Create/send notifications from admin UI.
+- Completion Criteria: Admin can create/send; deliveries created; scenario-only targeting.
+- Dependencies: P1-003
+- Edit Files: src/usecases/notifications/*, src/routes/admin/phase1Notifications.js, src/index.js
+- Tests: tests/phase1/admin-notifications.test.js
+- Evidence: PR #40
+- Risks: Scenario-only targeting not enforced
 
 ## Parking Lot
