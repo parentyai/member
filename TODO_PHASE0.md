@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-136: Keep member service private on deploy
+- Purpose: Ensure main service is not publicly invokable by default.
+- Completion Criteria: CI deploy uses `--no-allow-unauthenticated` for member service.
+- Dependencies: P0-120.
+- Edit Files: .github/workflows/deploy.yml, docs/GCP_SETUP.md
+- Tests: None (config/doc change)
+- Evidence: PR #TBD
+- Risks: If set incorrectly, unauth access may be re-enabled.
+
 ### P0-135: Phase0 gate fixes (member private + LINE evidence + guardrails)
 - Purpose: Resolve remaining Phase0 gate FAIL items (C/F/H/J).
 - Completion Criteria: Gate checks A-K all PASS with evidence recorded.

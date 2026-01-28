@@ -256,7 +256,7 @@ gcloud run services add-iam-policy-binding "$WEBHOOK_SERVICE_NAME" \
 - [ ] Firestore read/write verified with runtime SA
 
 ## 9) Deploy Webhook Edge Service (member-webhook)
-Deploy the same image with webhook-only mode enabled.
+Deploy the same image with webhook-only mode enabled (public).
 
 ```sh
 IMAGE="us-east1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
@@ -275,6 +275,21 @@ Verify:
 WEBHOOK_URL=$(gcloud run services describe "$WEBHOOK_SERVICE_NAME" --region "$REGION" --project "$PROJECT_ID" --format "value(status.url)")
 curl -i "$WEBHOOK_URL/healthz"
 curl -i -X POST "$WEBHOOK_URL/webhook/line" -d '{}'
+
+## 9.5) Deploy Main Service (member) as Private
+Main service must remain private (no `allUsers` invoker). Use `--no-allow-unauthenticated` for deploy.
+
+```sh
+IMAGE="us-east1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
+gcloud run deploy "$SERVICE_NAME" \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --image "$IMAGE" \
+  --no-allow-unauthenticated \
+  --service-account "$RUNTIME_SA_EMAIL" \
+  --set-env-vars "ENV_NAME=$ENV_NAME,PUBLIC_BASE_URL=$PUBLIC_BASE_URL,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,STORAGE_BUCKET=$STORAGE_BUCKET" \
+  --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest"
+```
 ```
 
 ## Execution Evidence (member-485303)
