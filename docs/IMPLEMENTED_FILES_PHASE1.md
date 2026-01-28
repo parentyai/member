@@ -34,3 +34,10 @@
 - src/routes/admin/phase1Notifications.js
 - src/index.js
 - tests/phase1/admin-notifications.test.js
+
+## P1-005 (Mini checklist UI)
+- apps/mini/checklist_phase1.html
+- src/usecases/checklists/getChecklistWithStatus.js
+- src/routes/phase1Mini.js
+- src/index.js
+- tests/phase1/mini-checklist.test.js
