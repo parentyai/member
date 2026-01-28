@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P1-006: Event logging integration
-- Purpose: Record open/click/complete in events collection.
-- Completion Criteria: events are appended without blocking main flow; ref structure valid.
-- Dependencies: P1-003
-- Edit Files: src/usecases/events/*, src/routes/*
-- Tests: tests/phase1/events.test.js
-- Evidence: TBD
-- Risks: Error handling gaps
-
 ### P1-007: Phase1 E2E verification
 - Purpose: Demonstrate end-to-end flow for admin and mini app.
 - Completion Criteria: Playbook steps pass; evidence recorded.
@@ -22,14 +13,14 @@
 
 ## In Progress
 
-### P1-005: Mini app checklist UI
-- Purpose: Show checklist and toggle completion.
-- Completion Criteria: Checklist renders; completion persists; mismatch hides UI.
+### P1-006: Event logging integration
+- Purpose: Record open/click/complete in events collection.
+- Completion Criteria: events are appended without blocking main flow; ref structure valid.
 - Dependencies: P1-003
-- Edit Files: apps/mini/checklist_phase1.html, src/routes/phase1Mini.js, src/usecases/checklists/getChecklistWithStatus.js, src/index.js
-- Tests: tests/phase1/mini-checklist.test.js
-- Evidence: PR #41
-- Risks: Scenario/step mismatch
+- Edit Files: src/usecases/events/*, src/routes/phase1Events.js, src/index.js
+- Tests: tests/phase1/events-integration.test.js
+- Evidence: PR #TBD
+- Risks: Error handling gaps
 
 ## Done
 
@@ -69,13 +60,13 @@
 - Evidence: PR #40
 - Risks: Scenario-only targeting not enforced
 
-### P1-004: Admin notification flow (minimal UI)
-- Purpose: Create/send notifications from admin UI.
-- Completion Criteria: Admin can create/send; deliveries created; scenario-only targeting.
+### P1-005: Mini app checklist UI
+- Purpose: Show checklist and toggle completion.
+- Completion Criteria: Checklist renders; completion persists; mismatch hides UI.
 - Dependencies: P1-003
-- Edit Files: src/usecases/notifications/*, src/routes/admin/phase1Notifications.js, src/index.js
-- Tests: tests/phase1/admin-notifications.test.js
-- Evidence: PR #40
-- Risks: Scenario-only targeting not enforced
+- Edit Files: apps/mini/checklist_phase1.html, src/routes/phase1Mini.js, src/usecases/checklists/getChecklistWithStatus.js, src/index.js
+- Tests: tests/phase1/mini-checklist.test.js
+- Evidence: PR #41
+- Risks: Scenario/step mismatch
 
 ## Parking Lot
