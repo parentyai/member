@@ -2,24 +2,6 @@
 
 ## Backlog
 
-### P1-001: Phase1 docs scaffolding
-- Purpose: Establish Phase1 SSOT/Architecture/Data Model/Traceability/Playbook/Runbook/Acceptance.
-- Completion Criteria: All Phase1 docs exist and follow FIX rules.
-- Dependencies: Phase0 CLOSE
-- Edit Files: docs/SSOT_PHASE1.md, docs/ARCHITECTURE_PHASE1.md, docs/DATA_MODEL_PHASE1.md, docs/TRACEABILITY_PHASE1.md, docs/PLAYBOOK_PHASE1_BUILD.md, docs/PLAYBOOK_PHASE1_E2E.md, docs/RUNBOOK_PHASE1.md, docs/ACCEPTANCE_PHASE1.md
-- Tests: None (doc-only)
-- Evidence: TBD
-- Risks: Misalignment with FIX constraints
-
-### P1-002: Firestore repositories (Phase1)
-- Purpose: Implement repos for checklists, user_checklists, events, notification_deliveries.
-- Completion Criteria: CRUD methods exist and are unit-tested.
-- Dependencies: P1-001
-- Edit Files: src/repos/firestore/checklistsRepo.js, src/repos/firestore/userChecklistsRepo.js, src/repos/firestore/eventsRepo.js, src/repos/firestore/deliveriesRepo.js
-- Tests: tests/phase1/*
-- Evidence: TBD
-- Risks: Direct Firestore access bypassing repos
-
 ### P1-003: Usecases for checklist + events
 - Purpose: Orchestrate checklist display/complete and event logging.
 - Completion Criteria: Usecases call repos; events best-effort; type constraints enforced.
@@ -68,5 +50,23 @@
 ## In Progress
 
 ## Done
+
+### P1-001: Phase1 docs scaffolding
+- Purpose: Establish Phase1 SSOT/Architecture/Data Model/Traceability/Playbook/Runbook/Acceptance.
+- Completion Criteria: All Phase1 docs exist and follow FIX rules.
+- Dependencies: Phase0 CLOSE
+- Edit Files: docs/SSOT_PHASE1.md, docs/ARCHITECTURE_PHASE1.md, docs/DATA_MODEL_PHASE1.md, docs/TRACEABILITY_PHASE1.md, docs/PLAYBOOK_PHASE1_BUILD.md, docs/PLAYBOOK_PHASE1_E2E.md, docs/RUNBOOK_PHASE1.md, docs/ACCEPTANCE_PHASE1.md
+- Tests: None (doc-only)
+- Evidence: PR #37
+- Risks: Misalignment with FIX constraints
+
+### P1-002: Firestore repositories (Phase1)
+- Purpose: Implement repos for checklists, user_checklists, events (notification_deliveries uses existing Phase0 repo).
+- Completion Criteria: CRUD methods exist and are unit-tested.
+- Dependencies: P1-001
+- Edit Files: src/repos/firestore/checklistsRepo.js, src/repos/firestore/userChecklistsRepo.js, src/repos/firestore/eventsRepo.js
+- Tests: tests/phase1/*
+- Evidence: PR #TBD
+- Risks: Direct Firestore access bypassing repos
 
 ## Parking Lot
