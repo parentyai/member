@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-137: Phase0 close evidence + implemented files
+- Purpose: Finalize Phase0 gate evidence, runbook notes, and implemented files list.
+- Completion Criteria: Acceptance/GCP_SETUP/RUNBOOK updated; IMPLEMENTED_FILES list exists.
+- Dependencies: P0-134, P0-135, P0-136.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md, docs/RUNBOOK_PHASE0.md, docs/IMPLEMENTED_FILES_PHASE0.md
+- Tests: None (doc-only change)
+- Evidence: PR #32
+- Risks: Evidence drift if not kept current.
+
 ### P0-136: Keep member service private on deploy
 - Purpose: Ensure main service is not publicly invokable by default.
 - Completion Criteria: CI deploy uses `--no-allow-unauthenticated` for member service.
