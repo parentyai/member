@@ -16,8 +16,10 @@ Expected:
 - Get service URL:
   - `SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
 - Verify HTTP endpoints:
-  - `curl -sS "$SERVICE_URL/"` returns `ok` (member service)
-  - `curl -sS "$SERVICE_URL/healthz"` returns JSON with `"ok":true`
+  - `curl -i "$SERVICE_URL/"` returns `403` (member service is private)
+  - Authenticated check:
+    - `curl -sS -H "Authorization: Bearer $(gcloud auth print-identity-token)" "$SERVICE_URL/"` returns `ok`
+    - `curl -sS -H "Authorization: Bearer $(gcloud auth print-identity-token)" "$SERVICE_URL/healthz"` returns JSON with `"ok":true` (if 404, try `/healthz/`)
 - Webhook edge service (public):
   - `WEBHOOK_URL=$(gcloud run services describe "member-webhook" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format "value(status.url)")`
   - `curl -sS "$WEBHOOK_URL/healthz"` returns JSON with `"ok":true` (if 404, use `/healthz/`)
