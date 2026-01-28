@@ -2,24 +2,6 @@
 
 ## Backlog
 
-### P1-003: Usecases for checklist + events
-- Purpose: Orchestrate checklist display/complete and event logging.
-- Completion Criteria: Usecases call repos; events best-effort; type constraints enforced.
-- Dependencies: P1-002
-- Edit Files: src/usecases/checklists/*, src/usecases/events/*
-- Tests: tests/phase1/usecases-*.test.js
-- Evidence: TBD
-- Risks: Logging failure blocks main flow
-
-### P1-004: Admin notification flow (minimal UI)
-- Purpose: Create/send notifications from admin UI.
-- Completion Criteria: Admin can create/send; deliveries + events recorded; linkRegistryId enforced.
-- Dependencies: P1-002
-- Edit Files: apps/admin/*, src/routes/admin/*, src/usecases/notifications/*
-- Tests: tests/phase1/admin-notifications.test.js
-- Evidence: TBD
-- Risks: linkRegistryId mismatch
-
 ### P1-005: Mini app checklist UI
 - Purpose: Show checklist and toggle completion.
 - Completion Criteria: Checklist renders; completion persists; mismatch hides UI.
@@ -49,6 +31,15 @@
 
 ## In Progress
 
+### P1-004: Admin notification flow (minimal UI)
+- Purpose: Create/send notifications from admin UI.
+- Completion Criteria: Admin can create/send; deliveries created; scenario-only targeting.
+- Dependencies: P1-003
+- Edit Files: src/usecases/notifications/*, src/routes/admin/phase1Notifications.js, src/index.js
+- Tests: tests/phase1/admin-notifications.test.js
+- Evidence: PR #TBD
+- Risks: Scenario-only targeting not enforced
+
 ## Done
 
 ### P1-001: Phase1 docs scaffolding
@@ -68,5 +59,14 @@
 - Tests: tests/phase1/*
 - Evidence: PR #38
 - Risks: Direct Firestore access bypassing repos
+
+### P1-003: Usecases for checklist + events
+- Purpose: Orchestrate checklist display/complete and event logging.
+- Completion Criteria: Usecases call repos; events best-effort; type constraints enforced.
+- Dependencies: P1-002
+- Edit Files: src/usecases/checklists/*, src/usecases/events/*
+- Tests: tests/phase1/usecases-*.test.js
+- Evidence: PR #39
+- Risks: Logging failure blocks main flow
 
 ## Parking Lot
