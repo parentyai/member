@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: P0-138.
 - Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
 - Tests: None (doc-only change)
-- Evidence: PR #TBD
+- Evidence: PR #34
 - Risks: Evidence drift if additional merges occur.
 
 ### P0-138: Refresh Phase0 gate evidence after PR #32
