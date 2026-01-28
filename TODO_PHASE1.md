@@ -19,7 +19,7 @@
 - Dependencies: P1-003
 - Edit Files: src/usecases/events/*, src/routes/phase1Events.js, src/index.js
 - Tests: tests/phase1/events-integration.test.js
-- Evidence: PR #TBD
+- Evidence: PR #42
 - Risks: Error handling gaps
 
 ## Done
