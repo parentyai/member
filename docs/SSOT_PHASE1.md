@@ -74,6 +74,12 @@ ref: {
   - events = 人間の行動
 - UX判断・最適化には使用しない
 
+## 8.1 通知送信対象選定ルール（FIX追記）
+- Phase1 の送信対象は `users.scenario` の一致のみで決定する
+- `notifications.step` は Phase1では配信条件に使用しない
+- `users` に step（currentStep等）を追加して一致判定する実装は禁止
+- `notifications.step` は運用ラベル/整理ラベルとして保持のみ可
+
 ## 9. ID生成ルール（FIX）
 | Entity | ID生成方式 | 生成責務 |
 | --- | --- | --- |

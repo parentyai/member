@@ -24,6 +24,11 @@ Linked Task: P1-007
 - Then: notification_deliveries が作成され sentAt が記録される
 - Evidence: Firestore `notification_deliveries/{deliveryId}` / expected fields `notificationId, lineUserId, sentAt` / executedAt `YYYY-MM-DD` / executor `<name>`
 
+- Given: users は scenario のみ保持している
+- When: scenario 一致の通知を送信する（step は無視）
+- Then: scenario 一致ユーザーにのみ delivery が作成される
+- Evidence: Firestore `notification_deliveries/{deliveryId}` / expected fields `notificationId, lineUserId` / executedAt `YYYY-MM-DD` / executor `<name>`
+
 ## C. Mini App
 - Given: 対象ユーザーが存在
 - When: /checklist を開く
