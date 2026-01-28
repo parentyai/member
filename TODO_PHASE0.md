@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: P0-120.
 - Edit Files: .github/workflows/deploy.yml, docs/GCP_SETUP.md
 - Tests: None (config/doc change)
-- Evidence: PR #TBD
+- Evidence: PR #31
 - Risks: If set incorrectly, unauth access may be re-enabled.
 
 ### P0-135: Phase0 gate fixes (member private + LINE evidence + guardrails)
