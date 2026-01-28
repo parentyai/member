@@ -66,7 +66,7 @@
 - Dependencies: P1-001
 - Edit Files: src/repos/firestore/checklistsRepo.js, src/repos/firestore/userChecklistsRepo.js, src/repos/firestore/eventsRepo.js
 - Tests: tests/phase1/*
-- Evidence: PR #TBD
+- Evidence: PR #38
 - Risks: Direct Firestore access bypassing repos
 
 ## Parking Lot
