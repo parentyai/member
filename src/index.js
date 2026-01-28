@@ -101,6 +101,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/phase1/checklist') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'checklist_phase1.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
   if (req.method === 'GET' && pathname.startsWith('/api/mini/')) {
     const { handleMiniInbox, handleMiniChecklist } = require('./routes/mini');
     (async () => {
@@ -110,6 +116,48 @@ const server = http.createServer((req, res) => {
       }
       if (pathname === '/api/mini/checklist') {
         await handleMiniChecklist(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase1/mini/')) {
+    const { handlePhase1Checklist, handlePhase1ChecklistToggle } = require('./routes/phase1Mini');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase1/mini/checklist') {
+        await handlePhase1Checklist(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase1/mini/checklist/toggle') {
+        const body = await collectBody();
+        await handlePhase1ChecklistToggle(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
