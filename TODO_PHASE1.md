@@ -4,24 +4,6 @@
 
 ## In Progress
 
-### P1-006: Event logging integration
-- Purpose: Record open/click/complete in events collection.
-- Completion Criteria: events are appended without blocking main flow; ref structure valid.
-- Dependencies: P1-003
-- Edit Files: src/usecases/events/*, src/routes/phase1Events.js, src/index.js
-- Tests: tests/phase1/events-integration.test.js
-- Evidence: PR #42
-- Risks: Error handling gaps
-
-### P1-007: Phase1 E2E verification
-- Purpose: Demonstrate end-to-end flow for admin and mini app.
-- Completion Criteria: Playbook steps pass; evidence recorded.
-- Dependencies: P1-004, P1-005, P1-006
-- Edit Files: docs/PLAYBOOK_PHASE1_E2E.md, docs/ACCEPTANCE_PHASE1.md
-- Tests: tests/phase1/smoke.test.js
-- Evidence: PR #43
-- Risks: Missing instrumentation
-
 ## Done
 
 ### P1-001: Phase1 docs scaffolding
@@ -68,5 +50,25 @@
 - Tests: tests/phase1/mini-checklist.test.js
 - Evidence: PR #41
 - Risks: Scenario/step mismatch
+
+### P1-006: Event logging integration
+- Purpose: Record open/click/complete in events collection.
+- Completion Criteria: events are appended without blocking main flow; ref structure valid.
+- Dependencies: P1-003
+- Edit Files: src/usecases/events/*, src/routes/phase1Events.js, src/index.js
+- Tests: tests/phase1/events-integration.test.js
+- Evidence: PR #42, PR #43 / E2Eはローカル実施。Firebase未セットアップのため永続証跡なし
+- Completed: 未記録
+- Risks: Error handling gaps
+
+### P1-007: Phase1 E2E verification
+- Purpose: Demonstrate end-to-end flow for admin and mini app.
+- Completion Criteria: Playbook steps pass; evidence recorded.
+- Dependencies: P1-004, P1-005, P1-006
+- Edit Files: docs/PLAYBOOK_PHASE1_E2E.md, docs/ACCEPTANCE_PHASE1.md
+- Tests: tests/phase1/smoke.test.js
+- Evidence: PR #43 / E2Eはローカル実施。Firebase未セットアップのため永続証跡なし
+- Completed: 未記録
+- Risks: Missing instrumentation
 
 ## Parking Lot

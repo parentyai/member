@@ -65,12 +65,12 @@ Linked Task: P1-007
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- | --- |
-| A. Data Persistence |  |  |  |  |
-| B. Admin Operations |  |  |  |  |
-| C. Mini App |  |  |  |  |
-| D. Events |  |  |  |  |
-| E. Safety |  |  |  |  |
-| F. Phase1 E2E |  |  |  |  |
+| A. Data Persistence | 未実施 | 未記録 | 未実施（Firebase未セットアップ） | 未実施 |
+| B. Admin Operations | 未実施 | 未記録 | 未実施（Firebase未セットアップ） | 未実施 |
+| C. Mini App | 未実施 | 未記録 | 未実施（Firebase未セットアップ） | 未実施 |
+| D. Events | 未実施 | 未記録 | 未実施（Firebase未セットアップ） | 未実施 |
+| E. Safety | 未実施 | 未記録 | 未実施（Firebase未セットアップ） | 未実施 |
+| F. Phase1 E2E | 未記録 | 未記録 | PR #43 / ローカル実施（永続証跡なし） | Firebase未セットアップ |
 
 ## F. Phase1 E2E
 - Given: Link Registry / users / checklists が登録済み
