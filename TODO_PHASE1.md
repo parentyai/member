@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P1-007: Phase1 E2E verification
-- Purpose: Demonstrate end-to-end flow for admin and mini app.
-- Completion Criteria: Playbook steps pass; evidence recorded.
-- Dependencies: P1-004, P1-005, P1-006
-- Edit Files: docs/PLAYBOOK_PHASE1_E2E.md, docs/ACCEPTANCE_PHASE1.md
-- Tests: tests/phase1/smoke.test.js
-- Evidence: TBD
-- Risks: Missing instrumentation
-
 ## In Progress
 
 ### P1-006: Event logging integration
@@ -21,6 +12,15 @@
 - Tests: tests/phase1/events-integration.test.js
 - Evidence: PR #42
 - Risks: Error handling gaps
+
+### P1-007: Phase1 E2E verification
+- Purpose: Demonstrate end-to-end flow for admin and mini app.
+- Completion Criteria: Playbook steps pass; evidence recorded.
+- Dependencies: P1-004, P1-005, P1-006
+- Edit Files: docs/PLAYBOOK_PHASE1_E2E.md, docs/ACCEPTANCE_PHASE1.md
+- Tests: tests/phase1/smoke.test.js
+- Evidence: PR #43
+- Risks: Missing instrumentation
 
 ## Done
 

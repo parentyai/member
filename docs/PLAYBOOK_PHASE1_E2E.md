@@ -1,42 +1,43 @@
 # Playbook Phase1 E2E
 
-Linked Task: P1-005
+Linked Task: P1-007
 
 ## Goal
 Phase1の最小UX（通知 → 行動 → ログ、チェックリスト完了）を再現する。
 
-## Admin通知 → 行動ログ
+## Admin通知 → delivery
 1) Adminで通知作成
    - Given: Link Registry に対象リンクが登録済み（linkRegistryId）
-   - When: Admin画面で通知作成（linkRegistryId 指定）
+   - When: `POST /admin/phase1/notifications`
    - Then: notifications が作成される
-2) 通知送信
-   - Given: 対象ユーザーが存在
-   - When: Adminで送信実行
-   - Then: notification_deliveries が作成され sentAt が記録される
-3) 通知閲覧
-   - Given: 通知一覧を表示
-   - When: /inbox を開く
-   - Then: events(type=open) が記録される
-4) CTAクリック
-   - Given: 通知を表示
-   - When: CTAをクリック
-   - Then: events(type=click) が記録される
+2) 通知送信（scenario一致のみ）
+   - Given: users.scenario が存在
+   - When: `POST /admin/phase1/notifications/{id}/send`
+   - Then: notification_deliveries が作成される（stepは無視）
+
+## events（open/click/complete）
+1) open 記録
+   - When: `POST /api/phase1/events` (type=open, ref.notificationId)
+   - Then: events に append される
+2) click 記録
+   - When: `POST /api/phase1/events` (type=click, ref.notificationId)
+   - Then: events に append される
+3) complete 記録
+   - When: `POST /api/phase1/events` (type=complete, ref.checklistId+itemId)
+   - Then: events に append される
 
 ## チェックリスト
 1) Mini Appでチェックリスト表示
    - Given: checklists が存在
-   - When: /checklist 表示
-   - Then: items が表示される
+   - When: `GET /phase1/checklist?lineUserId=...&step=...`
+   - Then: items が表示される（completedAt反映）
 2) 完了トグル
-   - Given: 未完了の item
-   - When: 完了トグル
+   - When: `POST /api/phase1/mini/checklist/toggle`
    - Then: user_checklists が upsert され completedAt が更新される
-   - Then: events(type=complete) が記録される
 
 ## Scenario/Step不整合
 - Given: users.scenario と checklist.scenario が不整合
-- When: /checklist を開く
+- When: `/phase1/checklist` を開く
 - Then: 例外は出さず、UIは表示しない（ログのみ）
 
 ## Evidence

@@ -70,3 +70,10 @@ Linked Task: P1-007
 | C. Mini App |  |  |  |  |
 | D. Events |  |  |  |  |
 | E. Safety |  |  |  |  |
+| F. Phase1 E2E |  |  |  |  |
+
+## F. Phase1 E2E
+- Given: Link Registry / users / checklists が登録済み
+- When: Admin通知作成→送信→/phase1/checklist→トグル→events記録
+- Then: deliveries / user_checklists / events が作成される
+- Evidence: Firestore paths + Cloud Run logs / executedAt `YYYY-MM-DD` / executor `<name>`

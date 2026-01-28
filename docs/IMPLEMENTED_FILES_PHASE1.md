@@ -46,3 +46,8 @@
 - src/routes/phase1Events.js
 - src/index.js
 - tests/phase1/events-integration.test.js
+
+## P1-007 (E2E verification)
+- docs/PLAYBOOK_PHASE1_E2E.md
+- docs/ACCEPTANCE_PHASE1.md
+- tests/phase1/smoke.test.js
