@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: P0-137.
 - Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
 - Tests: None (doc-only change)
-- Evidence: PR #TBD
+- Evidence: PR #33
 - Risks: Evidence drift if more merges occur.
 
 ### P0-137: Phase0 close evidence + implemented files
