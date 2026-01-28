@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P1-003: Usecases for checklist + events
-- Purpose: Orchestrate checklist display/complete and event logging.
-- Completion Criteria: Usecases call repos; events best-effort; type constraints enforced.
-- Dependencies: P1-002
-- Edit Files: src/usecases/checklists/*, src/usecases/events/*
-- Tests: tests/phase1/usecases-*.test.js
-- Evidence: TBD
-- Risks: Logging failure blocks main flow
-
 ### P1-004: Admin notification flow (minimal UI)
 - Purpose: Create/send notifications from admin UI.
 - Completion Criteria: Admin can create/send; deliveries + events recorded; linkRegistryId enforced.
@@ -48,6 +39,15 @@
 - Risks: Missing instrumentation
 
 ## In Progress
+
+### P1-003: Usecases for checklist + events
+- Purpose: Orchestrate checklist display/complete and event logging.
+- Completion Criteria: Usecases call repos; events best-effort; type constraints enforced.
+- Dependencies: P1-002
+- Edit Files: src/usecases/checklists/*, src/usecases/events/*
+- Tests: tests/phase1/usecases-*.test.js
+- Evidence: PR #TBD
+- Risks: Logging failure blocks main flow
 
 ## Done
 
