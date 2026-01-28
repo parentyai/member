@@ -13,7 +13,7 @@ Linked Task: P0-003
 - Dependencies: P0-134, P0-135, P0-136.
 - Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md, docs/RUNBOOK_PHASE0.md, docs/IMPLEMENTED_FILES_PHASE0.md
 - Tests: None (doc-only change)
-- Evidence: PR #TBD
+- Evidence: PR #32
 - Risks: Evidence drift if not kept current.
 
 ### P0-136: Keep member service private on deploy
