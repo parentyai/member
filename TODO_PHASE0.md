@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-138: Refresh Phase0 gate evidence after PR #32
+- Purpose: Update gate evidence with latest main SHA/run.
+- Completion Criteria: Acceptance/GCP_SETUP updated to latest run evidence.
+- Dependencies: P0-137.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
+- Tests: None (doc-only change)
+- Evidence: PR #TBD
+- Risks: Evidence drift if more merges occur.
+
 ### P0-137: Phase0 close evidence + implemented files
 - Purpose: Finalize Phase0 gate evidence, runbook notes, and implemented files list.
 - Completion Criteria: Acceptance/GCP_SETUP/RUNBOOK updated; IMPLEMENTED_FILES list exists.
