@@ -16,6 +16,15 @@ Linked Task: P0-003
 - Evidence: PR #35
 - Risks: Evidence drift if more merges occur.
 
+### P0-141: Final Phase0 gate evidence after PR #35
+- Purpose: Record final A-K checks after PR #35 merge.
+- Completion Criteria: Acceptance/GCP_SETUP updated with latest SHA/run evidence.
+- Dependencies: P0-140.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
+- Tests: None (doc-only change)
+- Evidence: PR #TBD
+- Risks: Evidence drift if more merges occur.
+
 ### P0-139: Final Phase0 gate verification (post-PR33)
 - Purpose: Record final A-K checks after last merge.
 - Completion Criteria: Gate evidence updated with latest SHA/run and PASS results.
