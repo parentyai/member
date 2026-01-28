@@ -46,11 +46,11 @@ Note:
 | D. Safety |  |  |  |  |
 | E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21380967358 | member: `https://member-pvxgenwkba-ue.a.run.app` / webhook: `https://member-webhook-pvxgenwkba-ue.a.run.app` / allUsers invoker enabled |
 
-## Phase0 Gate Evidence (2026-01-28, post-PR33)
+## Phase0 Gate Evidence (2026-01-28, post-PR34)
 | Check | Command | Expected | Actual | Evidence / Notes | Status |
 | --- | --- | --- | --- | --- | --- |
-| A) main SHA | `git rev-parse HEAD` | main最新SHAと一致 | `b57621e3a40ba74959cb0817ce3aeab091dd4e6a` | https://github.com/parentyai/member/commit/b57621e3a40ba74959cb0817ce3aeab091dd4e6a | PASS |
-| B) Actions green | `gh run view 21421446012 --json url,conclusion,headSha` | dry-run/deploy が success | `conclusion=success` / headSha一致 | https://github.com/parentyai/member/actions/runs/21421446012 | PASS |
+| A) main SHA | `git rev-parse HEAD` | main最新SHAと一致 | `58d57b6978ae54c975f917dda5a3d23d1475eafd` | https://github.com/parentyai/member/commit/58d57b6978ae54c975f917dda5a3d23d1475eafd | PASS |
+| B) Actions green | `gh run view 21422561429 --json url,conclusion,headSha` | dry-run/deploy が success | `conclusion=success` / headSha一致 | https://github.com/parentyai/member/actions/runs/21422561429 | PASS |
 | C) member 非公開 | `curl -i https://member-pvxgenwkba-ue.a.run.app/` + `gcloud run services get-iam-policy member ...` | 403 または allUsers無し | `HTTP/2 403` + allUsers無し | gcloud出力に allUsers 不在 / curl 403 | PASS |
 | D) member-webhook 公開 | `gcloud run services get-iam-policy member-webhook ...` | allUsers/roles.run.invoker が存在 | `allUsers` あり | gcloud 出力に allUsers | PASS |
 | E) healthz 200 | `curl -i https://member-webhook-pvxgenwkba-ue.a.run.app/healthz/` | 200 + JSON | 200 / `{"ok":true,"env":"stg"}` | curl 出力 | PASS |
