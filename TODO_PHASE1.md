@@ -28,7 +28,7 @@
 - Dependencies: P1-003
 - Edit Files: apps/mini/checklist_phase1.html, src/routes/phase1Mini.js, src/usecases/checklists/getChecklistWithStatus.js, src/index.js
 - Tests: tests/phase1/mini-checklist.test.js
-- Evidence: PR #TBD
+- Evidence: PR #41
 - Risks: Scenario/step mismatch
 
 ## Done
