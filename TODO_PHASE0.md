@@ -7,6 +7,15 @@ Linked Task: P0-003
 ## In Progress
 ## Done
 
+### P0-139: Final Phase0 gate verification (post-PR33)
+- Purpose: Record final A-K checks after last merge.
+- Completion Criteria: Gate evidence updated with latest SHA/run and PASS results.
+- Dependencies: P0-138.
+- Edit Files: docs/ACCEPTANCE_PHASE0.md, docs/GCP_SETUP.md
+- Tests: None (doc-only change)
+- Evidence: PR #34
+- Risks: Evidence drift if additional merges occur.
+
 ### P0-138: Refresh Phase0 gate evidence after PR #32
 - Purpose: Update gate evidence with latest main SHA/run.
 - Completion Criteria: Acceptance/GCP_SETUP updated to latest run evidence.

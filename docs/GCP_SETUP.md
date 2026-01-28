@@ -610,3 +610,20 @@ gcloud run deploy "$SERVICE_NAME" \
   - member unauth access (expected 403):
     - `curl -i https://member-pvxgenwkba-ue.a.run.app/`
     - Output: `HTTP/2 403`
+
+- Phase0 gate checks (2026-01-28, post-PR33):
+  - Deploy run (PR #33):
+    - Run URL: `https://github.com/parentyai/member/actions/runs/21421446012`
+    - Head SHA: `b57621e3a40ba74959cb0817ce3aeab091dd4e6a`
+  - member IAM (private check):
+    - `gcloud run services get-iam-policy member --region us-east1 --project member-485303 --format="yaml(bindings)"`
+    - Output:
+      ```
+      bindings:
+      - members:
+        - user:nshimamura@parentyai.com
+        role: roles/run.invoker
+      ```
+  - member unauth access (expected 403):
+    - `curl -i https://member-pvxgenwkba-ue.a.run.app/`
+    - Output: `HTTP/2 403`
