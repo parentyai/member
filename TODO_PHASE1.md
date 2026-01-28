@@ -19,7 +19,7 @@
 - Dependencies: P1-004, P1-005, P1-006
 - Edit Files: docs/PLAYBOOK_PHASE1_E2E.md, docs/ACCEPTANCE_PHASE1.md
 - Tests: tests/phase1/smoke.test.js
-- Evidence: PR #TBD
+- Evidence: PR #43
 - Risks: Missing instrumentation
 
 ## Done
