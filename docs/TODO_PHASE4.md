@@ -26,13 +26,6 @@
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
 - Evidence: Pending
 
-### P4-104: Admin 集計閲覧（READ ONLY）
-- Purpose: Admin で通知の配信/既読/クリックの件数を閲覧できるようにする（読み取りのみ）
-- Dependencies: Phase3 SSOT（Admin責務の確定）
-- Blocking Decision: No（人間判断確定済み）
-- Output: /admin/read-model/notifications, apps/admin/read_model.html
-- Evidence: Pending
-
 ## Done
 ### P4-102: Mini checklist トグル（read/write）最小実装
 - Purpose:

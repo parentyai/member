@@ -18,16 +18,9 @@
 - Then: 判断項目が明記されている
 - Evidence: docs/SSOT_PHASE4.md
 
-## D. Admin Read-only Aggregation
-- Given: notifications と notification_deliveries が存在する
-- When: Admin が READ ONLY 集計一覧を閲覧する
-- Then: delivered/read/click の件数が返る
-- Evidence: PR / adminReadModel.test.js
-
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
 | A. Phase4 PREPARE Ready | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | B. Carryover Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | C. Human Decisions Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
-| D. Admin Read-only Aggregation | 未記録 | 未記録 | PR / adminReadModel.test.js | 未記録 |
