@@ -54,3 +54,12 @@
   - PR #59
   - Test: node --test tests/phase4/checklistToggle.test.js (PASS)
   - Date: 2026-01-29
+### P4-103: Mini inbox 既読反映（最小実装）
+- Purpose: Mini で通知を開いたタイミングで readAt を記録する
+- Dependencies: Phase3 SSOT（Mini inbox 責務）
+- Blocking Decision: No（人間判断確定済み）
+- Output: /api/mini/inbox/read, inbox 既読表示
+- Evidence:
+  - PR #61
+  - Test: node --test tests/phase4/inboxRead.test.js (PASS)
+  - Date: 2026-01-29
