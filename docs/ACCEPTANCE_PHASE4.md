@@ -24,6 +24,18 @@
 - Then: delivered/read/click の件数が返る
 - Evidence: PR / adminReadModel.test.js
 
+## E. Admin Operational Overview (Read-only)
+- Given: users / notifications / events が存在する
+- When: Admin が READ ONLY の運用判断支援ビューを閲覧する
+- Then: ユーザー状態一覧と通知反応一覧が取得できる
+- Evidence: PR / adminOpsSummary.test.js
+
+## F. Phase4 Interim Close
+- Given: P4-101 / P4-102 / P4-104 / P4-105 が Done
+- When: 人間が運用判断を行う
+- Then: 参照情報が揃っており、誤操作を誘発しない
+- Evidence: docs/TODO_PHASE4.md / docs/ACCEPTANCE_PHASE4.md
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -31,3 +43,5 @@
 | B. Carryover Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | C. Human Decisions Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | D. Admin Read-only Aggregation | 未記録 | 未記録 | PR / adminReadModel.test.js | 未記録 |
+| E. Admin Operational Overview (Read-only) | 未記録 | 未記録 | PR #65 / adminOpsSummary.test.js (PASS) | Admin READ ONLY 運用判断支援ビュー（ユーザー状態 / 通知反応の一覧、書き込み・自動判断なし） |
+| F. Phase4 Interim Close | 未記録 | 未記録 | docs/TODO_PHASE4.md / docs/ACCEPTANCE_PHASE4.md | 未記録 |

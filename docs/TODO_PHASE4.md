@@ -19,14 +19,23 @@
 
 ## In Progress
 
+### P4-106: 実装支援の設計（Design Pending）
+- Purpose: 人間判断を UI 上で安全に反映するための「実装支援」設計（送信・変更などの副作用はまだ発生させない）
+- Dependencies: Phase4 INTERIM CLOSE 完了 / 人間判断基準の確定
+- Blocking Decision: Design Pending（人間判断待ち）
+- Output: 未定義（設計待ち）
+- Evidence: Pending
+
+## Done
 ### P4-101: Mini memberNumber 入力
 - Purpose: Mini で memberNumber を入力/更新できるようにする
 - Dependencies: Phase3 SSOT（Mini責務の確定）
 - Blocking Decision: No（人間判断確定済み）
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
-- Evidence: Pending
-
-## Done
+- Evidence:
+  - PR #56
+  - Evidence PR #57
+  - Date: 2026-01-29
 ### P4-102: Mini checklist トグル（read/write）最小実装
 - Purpose:
   - ユーザーが checklist の各項目を完了/未完了でトグルできるようにする（自己申告）。
@@ -72,3 +81,18 @@
   - PR #63
   - Test: node --test tests/phase4/adminReadModel.test.js (PASS)
   - Date: 2026-01-29
+### P4-105: Admin 運用判断支援（READ ONLY）
+- Purpose: Admin が判断材料を一覧で確認できるようにする（読み取りのみ）
+- Dependencies: Phase3 SSOT（Admin責務の確定）
+- Blocking Decision: No（人間判断確定済み）
+- Output: /api/phase4/admin/users-summary, /api/phase4/admin/notifications-summary, apps/admin/ops_readonly.html
+- Evidence:
+  - PR #65
+  - Test: node --test tests/phase4/adminOpsSummary.test.js (PASS)
+  - Date: 2026-01-29
+
+## Phase4 INTERIM CLOSE
+- Mini: 最小書き込み（memberNumber / checklistDone）のみ
+- Admin: READ ONLY 集計のみ
+- 自動判断なし / 人間判断のみ
+- ここまでの状態は revert 可能
