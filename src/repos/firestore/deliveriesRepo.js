@@ -16,6 +16,15 @@ async function createDelivery(data) {
   return { id: docRef.id };
 }
 
+async function getDelivery(deliveryId) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(deliveryId);
+  const snap = await docRef.get();
+  if (!snap.exists) return null;
+  return Object.assign({ id: snap.id }, snap.data());
+}
+
 async function markRead(deliveryId, at) {
   if (!deliveryId) throw new Error('deliveryId required');
   const db = getDb();
@@ -44,6 +53,7 @@ async function listDeliveriesByUser(lineUserId, limit) {
 
 module.exports = {
   createDelivery,
+  getDelivery,
   markRead,
   markClick,
   listDeliveriesByUser

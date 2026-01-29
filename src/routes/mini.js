@@ -2,6 +2,17 @@
 
 const { getInbox } = require('../usecases/mini/getInbox');
 const { getChecklist } = require('../usecases/mini/getChecklist');
+const { markInboxRead } = require('../usecases/mini/markInboxRead');
+
+function parseJson(body, res) {
+  try {
+    return JSON.parse(body || '{}');
+  } catch (err) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid json' }));
+    return null;
+  }
+}
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -38,7 +49,23 @@ async function handleMiniChecklist(req, res) {
   }
 }
 
+async function handleMiniInboxRead(req, res, body) {
+  const payload = parseJson(body, res);
+  if (!payload) return;
+  try {
+    const result = await markInboxRead({
+      lineUserId: payload.lineUserId,
+      deliveryId: payload.deliveryId
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, deliveryId: result.id, readAt: result.readAt || null }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
 module.exports = {
   handleMiniInbox,
-  handleMiniChecklist
+  handleMiniChecklist,
+  handleMiniInboxRead
 };
