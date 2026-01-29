@@ -2,6 +2,8 @@
 
 const { getChecklistWithStatus } = require('../usecases/checklists/getChecklistWithStatus');
 const { toggleChecklistItem } = require('../usecases/checklists/toggleChecklistItem');
+const { getMemberProfile } = require('../usecases/users/getMemberProfile');
+const { setMemberNumber } = require('../usecases/users/setMemberNumber');
 
 function parseJson(body, res) {
   try {
@@ -54,7 +56,36 @@ async function handlePhase1ChecklistToggle(req, res, body) {
   }
 }
 
+async function handlePhase1MemberGet(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const lineUserId = url.searchParams.get('lineUserId');
+  try {
+    const profile = await getMemberProfile({ lineUserId });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, memberNumber: profile.memberNumber }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
+async function handlePhase1MemberUpdate(req, res, body) {
+  const payload = parseJson(body, res);
+  if (!payload) return;
+  try {
+    const result = await setMemberNumber({
+      lineUserId: payload.lineUserId,
+      memberNumber: payload.memberNumber
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, memberNumber: result.memberNumber }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
 module.exports = {
   handlePhase1Checklist,
-  handlePhase1ChecklistToggle
+  handlePhase1ChecklistToggle,
+  handlePhase1MemberGet,
+  handlePhase1MemberUpdate
 };

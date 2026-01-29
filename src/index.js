@@ -107,6 +107,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/phase1/member') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'member_phase4.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
   if (pathname === '/api/phase1/events') {
     let bytes = 0;
     const chunks = [];
@@ -165,7 +171,12 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname.startsWith('/api/phase1/mini/')) {
-    const { handlePhase1Checklist, handlePhase1ChecklistToggle } = require('./routes/phase1Mini');
+    const {
+      handlePhase1Checklist,
+      handlePhase1ChecklistToggle,
+      handlePhase1MemberGet,
+      handlePhase1MemberUpdate
+    } = require('./routes/phase1Mini');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -195,6 +206,15 @@ const server = http.createServer((req, res) => {
       if (req.method === 'POST' && pathname === '/api/phase1/mini/checklist/toggle') {
         const body = await collectBody();
         await handlePhase1ChecklistToggle(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/phase1/mini/member') {
+        await handlePhase1MemberGet(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase1/mini/member') {
+        const body = await collectBody();
+        await handlePhase1MemberUpdate(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
