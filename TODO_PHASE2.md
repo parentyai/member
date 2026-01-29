@@ -4,51 +4,6 @@
 
 ## In Progress
 
-### P2-001: SSOT Phase2
-- Purpose: Fix Phase2 scope/boundaries.
-- Completion Criteria: SSOT_PHASE2.md exists and matches FIX.
-- Dependencies: None
-- Edit Files: docs/SSOT_PHASE2.md
-- Tests: None (doc-only)
-- Evidence: PR TBD
-- Risks: Scope drift
-
-### P2-002: Architecture Phase2
-- Purpose: Define automation boundary.
-- Completion Criteria: ARCHITECTURE_PHASE2.md exists.
-- Dependencies: P2-001
-- Edit Files: docs/ARCHITECTURE_PHASE2.md
-- Tests: None (doc-only)
-- Evidence: PR TBD
-- Risks: Incomplete boundary
-
-### P2-003: Data Model Phase2
-- Purpose: Define read-model collections.
-- Completion Criteria: DATA_MODEL_PHASE2.md exists.
-- Dependencies: P2-001
-- Edit Files: docs/DATA_MODEL_PHASE2.md
-- Tests: None (doc-only)
-- Evidence: PR TBD
-- Risks: Schema mismatch
-
-### P2-004: TODO Phase2
-- Purpose: Phase2 ledger.
-- Completion Criteria: TODO_PHASE2.md exists with tasks.
-- Dependencies: P2-001
-- Edit Files: TODO_PHASE2.md
-- Tests: None (doc-only)
-- Evidence: PR TBD
-- Risks: Missing tasks
-
-### P2-005: Phase2 dry-run automation
-- Purpose: Implement dry-run automation with idempotency.
-- Completion Criteria: Dry-run returns summary, no writes; run log and reports for non-dry-run.
-- Dependencies: P2-001..P2-004
-- Edit Files: src/usecases/phase2/*, src/repos/firestore/*, src/routes/admin/*, src/index.js, tests/phase2/*
-- Tests: tests/phase2/runAutomation.test.js
-- Evidence: PR TBD
-- Risks: Incorrect aggregation
-
 ## Done
 
 ### P2-006: Enable automation (flag ON)
@@ -67,7 +22,7 @@
 - Dependencies: P2-006
 - Edit Files: docs/ACCEPTANCE_PHASE2.md
 - Tests: N/A (evidence)
-- Evidence: Dry-run POST /admin/phase2/automation/run (runId=run-2026-01-28-dryrun) recorded in docs/ACCEPTANCE_PHASE2.md
+- Evidence: PR #47 (commit 97d7d7a) / Dry-run POST /admin/phase2/automation/run recorded in docs/ACCEPTANCE_PHASE2.md
 - Completed: 2026-01-28
 - Risks: Missing proof
 
@@ -77,6 +32,56 @@
 - Dependencies: P2-007
 - Edit Files: docs/ACCEPTANCE_PHASE2.md, TODO_PHASE2.md
 - Tests: N/A
-- Evidence: docs/ACCEPTANCE_PHASE2.md / TODO_PHASE2.md 更新 (phase2/impl-p2-008-close)
+- Evidence: commit 33cb5de (docs/ACCEPTANCE_PHASE2.md / TODO_PHASE2.md 更新)
 - Completed: 2026-01-28
 - Risks: Premature close
+
+### P2-001: SSOT Phase2
+- Purpose: Fix Phase2 scope/boundaries.
+- Completion Criteria: SSOT_PHASE2.md exists and matches FIX.
+- Dependencies: None
+- Edit Files: docs/SSOT_PHASE2.md
+- Tests: None (doc-only)
+- Evidence: PR #45 (commit 29e155b)
+- Completed: 2026-01-28
+- Risks: Scope drift
+
+### P2-002: Architecture Phase2
+- Purpose: Define automation boundary.
+- Completion Criteria: ARCHITECTURE_PHASE2.md exists.
+- Dependencies: P2-001
+- Edit Files: docs/ARCHITECTURE_PHASE2.md
+- Tests: None (doc-only)
+- Evidence: PR #45 (commit 29e155b)
+- Completed: 2026-01-28
+- Risks: Incomplete boundary
+
+### P2-003: Data Model Phase2
+- Purpose: Define read-model collections.
+- Completion Criteria: DATA_MODEL_PHASE2.md exists.
+- Dependencies: P2-001
+- Edit Files: docs/DATA_MODEL_PHASE2.md
+- Tests: None (doc-only)
+- Evidence: PR #45 (commit 29e155b)
+- Completed: 2026-01-28
+- Risks: Schema mismatch
+
+### P2-004: TODO Phase2
+- Purpose: Phase2 ledger.
+- Completion Criteria: TODO_PHASE2.md exists with tasks.
+- Dependencies: P2-001
+- Edit Files: TODO_PHASE2.md
+- Tests: None (doc-only)
+- Evidence: PR #45 (commit 29e155b)
+- Completed: 2026-01-28
+- Risks: Missing tasks
+
+### P2-005: Phase2 dry-run automation
+- Purpose: Implement dry-run automation with idempotency.
+- Completion Criteria: Dry-run returns summary, no writes; run log and reports for non-dry-run.
+- Dependencies: P2-001..P2-004
+- Edit Files: src/usecases/phase2/*, src/repos/firestore/*, src/routes/admin/*, src/index.js, tests/phase2/*
+- Tests: tests/phase2/runAutomation.test.js
+- Evidence: PR #45 (commit 29e155b)
+- Completed: 2026-01-28
+- Risks: Incorrect aggregation
