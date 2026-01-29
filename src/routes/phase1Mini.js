@@ -1,7 +1,7 @@
 'use strict';
 
 const { getChecklistWithStatus } = require('../usecases/checklists/getChecklistWithStatus');
-const { toggleChecklistItem } = require('../usecases/checklists/toggleChecklistItem');
+const { setChecklistItemDone } = require('../usecases/checklists/setChecklistItemDone');
 const { getMemberProfile } = require('../usecases/users/getMemberProfile');
 const { setMemberNumber } = require('../usecases/users/setMemberNumber');
 
@@ -43,14 +43,18 @@ async function handlePhase1ChecklistToggle(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
-    const result = await toggleChecklistItem({
+    if (!payload.lineUserId || !payload.itemKey || typeof payload.done !== 'boolean') {
+      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'lineUserId/itemKey/done required' }));
+      return;
+    }
+    const result = await setChecklistItemDone({
       lineUserId: payload.lineUserId,
-      checklistId: payload.checklistId,
-      itemId: payload.itemId,
-      complete: Boolean(payload.complete)
+      itemKey: payload.itemKey,
+      done: payload.done
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, id: result.id, completedAt: result.completedAt }));
+    res.end(JSON.stringify({ ok: true, itemKey: result.itemKey, done: result.done }));
   } catch (err) {
     handleError(res, err);
   }

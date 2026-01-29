@@ -1,6 +1,7 @@
 'use strict';
 
 const userChecklistsRepo = require('../../repos/firestore/userChecklistsRepo');
+const usersRepo = require('../../repos/firestore/usersRepo');
 const { getChecklistForUser } = require('./getChecklistForUser');
 
 function buildCompletionMap(entries) {
@@ -28,19 +29,25 @@ async function getChecklistWithStatus(params) {
     limit: payload.limit
   });
   const completionMap = buildCompletionMap(completedEntries);
+  const user = await usersRepo.getUser(payload.lineUserId);
+  const checklistDone = user && user.checklistDone && typeof user.checklistDone === 'object'
+    ? user.checklistDone
+    : {};
 
   const items = [];
   for (const checklist of base.checklists) {
     const list = Array.isArray(checklist.items) ? checklist.items : [];
     for (const item of list) {
       const docId = `${payload.lineUserId}__${checklist.id}__${item.itemId}`;
+      const done = checklistDone[item.itemId] === true;
+      const completedAt = completionMap.has(docId) ? completionMap.get(docId) : (done ? 'DONE' : null);
       items.push({
         checklistId: checklist.id,
         itemId: item.itemId,
         title: item.title,
         linkRegistryId: item.linkRegistryId,
         order: item.order,
-        completedAt: completionMap.has(docId) ? completionMap.get(docId) : null
+        completedAt
       });
     }
   }

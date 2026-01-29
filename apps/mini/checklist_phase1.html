@@ -49,9 +49,8 @@
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({
                   lineUserId,
-                  checklistId: item.checklistId,
-                  itemId: item.itemId,
-                  complete: checkbox.checked
+                  itemKey: item.itemId,
+                  done: checkbox.checked
                 })
               }).catch(() => {
                 checkbox.checked = !checkbox.checked;
