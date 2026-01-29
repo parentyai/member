@@ -19,6 +19,14 @@
 
 ## In Progress
 
+### P4-106: 実装支援の設計（Design Pending）
+- Purpose: 人間判断を UI 上で安全に反映するための「実装支援」設計（送信・変更などの副作用はまだ発生させない）
+- Dependencies: Phase4 INTERIM CLOSE 完了 / 人間判断基準の確定
+- Blocking Decision: Design Pending（人間判断待ち）
+- Output: 未定義（設計待ち）
+- Evidence: Pending
+
+## Done
 ### P4-101: Mini memberNumber 入力
 - Purpose: Mini で memberNumber を入力/更新できるようにする
 - Dependencies: Phase3 SSOT（Mini責務の確定）
