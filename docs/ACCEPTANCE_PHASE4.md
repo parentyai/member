@@ -24,6 +24,12 @@
 - Then: delivered/read/click の件数が返る
 - Evidence: PR / adminReadModel.test.js
 
+## E. P4-106 Decision Design Ready
+- Given: P4-106 の設計対象が定義されている
+- When: 運用判断フローと判断不能ケースと Phase5 境界を参照する
+- Then: 人間判断フローが表で明文化され、判断不能時の既定動作と Phase5 境界が固定されている
+- Evidence: docs/SSOT_PHASE4.md
+
 ## E. Admin Operational Overview (Read-only)
 - Given: users / notifications / events が存在する
 - When: Admin が READ ONLY の運用判断支援ビューを閲覧する
@@ -37,4 +43,5 @@
 | B. Carryover Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | C. Human Decisions Listed | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | D. Admin Read-only Aggregation | 未記録 | 未記録 | PR / adminReadModel.test.js | 未記録 |
+| E. P4-106 Decision Design Ready | 未記録 | 未記録 | docs/SSOT_PHASE4.md | 未記録 |
 | E. Admin Operational Overview (Read-only) | 未記録 | 未記録 | PR #65 / adminOpsSummary.test.js (PASS) | Admin READ ONLY 運用判断支援ビュー（ユーザー状態 / 通知反応の一覧、書き込み・自動判断なし） |
