@@ -211,6 +211,45 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/admin/phase2/automation')) {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+
+    const { handleRunPhase2 } = require('./routes/admin/phase2Automation');
+
+    (async () => {
+      if (req.method === 'POST' && pathname === '/admin/phase2/automation/run') {
+        const body = await collectBody();
+        await handleRunPhase2(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/admin/phase1/notifications')) {
     const match = pathname.match(/^\/admin\/phase1\/notifications(?:\/([^/]+)(?:\/(send))?)?\/?$/);
     const notificationId = match && match[1] ? match[1] : null;
