@@ -32,10 +32,16 @@
 - Dependencies: Phase3 SSOT（Mini責務の確定）
 - Blocking Decision: No（人間判断確定済み）
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
-- Evidence:
-  - PR #56
-  - Evidence PR #57
-  - Date: 2026-01-29
+- Evidence: Pending
+
+### P4-105: Admin 運用判断支援（READ ONLY）
+- Purpose: Admin が判断材料を一覧で確認できるようにする（読み取りのみ）
+- Dependencies: Phase3 SSOT（Admin責務の確定）
+- Blocking Decision: No（人間判断確定済み）
+- Output: /api/phase4/admin/users-summary, /api/phase4/admin/notifications-summary, apps/admin/ops_readonly.html
+- Evidence: Pending
+
+## Done
 ### P4-102: Mini checklist トグル（read/write）最小実装
 - Purpose:
   - ユーザーが checklist の各項目を完了/未完了でトグルできるようにする（自己申告）。
@@ -90,9 +96,3 @@
   - PR #65
   - Test: node --test tests/phase4/adminOpsSummary.test.js (PASS)
   - Date: 2026-01-29
-
-## Phase4 INTERIM CLOSE
-- Mini: 最小書き込み（memberNumber / checklistDone）のみ
-- Admin: READ ONLY 集計のみ
-- 自動判断なし / 人間判断のみ
-- ここまでの状態は revert 可能
