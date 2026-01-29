@@ -26,6 +26,7 @@
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
 - Evidence: Pending
 
+## Done
 ### P4-102: Mini checklist トグル（read/write）最小実装
 - Purpose:
   - ユーザーが checklist の各項目を完了/未完了でトグルできるようにする（自己申告）。
@@ -50,6 +51,6 @@
 - Dependencies:
   - P4-101（memberNumber）DONE（PR #56 + evidence PR #57）
 - Evidence:
-  - 実装PR番号 / テストコマンド / 日付 を記録すること
-
-## Done
+  - PR #59
+  - Test: node --test tests/phase4/checklistToggle.test.js (PASS)
+  - Date: 2026-01-29
