@@ -256,6 +256,32 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/admin/ops' || pathname === '/admin/ops/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'ops_readonly.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase4/admin/')) {
+    const { handleUsersSummary, handleNotificationsSummary } = require('./routes/admin/opsOverview');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase4/admin/users-summary') {
+        await handleUsersSummary(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/phase4/admin/notifications-summary') {
+        await handleNotificationsSummary(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/admin/read-model')) {
     const { handleNotificationReadModel } = require('./routes/admin/readModel');
     (async () => {

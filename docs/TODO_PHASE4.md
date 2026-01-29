@@ -26,6 +26,13 @@
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
 - Evidence: Pending
 
+### P4-105: Admin 運用判断支援（READ ONLY）
+- Purpose: Admin が判断材料を一覧で確認できるようにする（読み取りのみ）
+- Dependencies: Phase3 SSOT（Admin責務の確定）
+- Blocking Decision: No（人間判断確定済み）
+- Output: /api/phase4/admin/users-summary, /api/phase4/admin/notifications-summary, apps/admin/ops_readonly.html
+- Evidence: Pending
+
 ## Done
 ### P4-102: Mini checklist トグル（read/write）最小実装
 - Purpose:

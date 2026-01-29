@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>運用判断支援（READ ONLY）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
+      th { background: #f7f7f7; }
+      .note { font-size: 12px; color: #666; margin-bottom: 8px; }
+      .section { margin-bottom: 24px; }
+      .btn { font-size: 12px; padding: 4px 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>運用判断支援（READ ONLY）</h1>
+    <div class="note">表示のみ。判断と操作は人間が行います。</div>
+
+    <div class="section">
+      <h2>ユーザー状態一覧</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>lineUserId</th>
+            <th>memberNumber</th>
+            <th>checklist</th>
+            <th>lastActionAt</th>
+            <th>詳細</th>
+          </tr>
+        </thead>
+        <tbody id="users-rows"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>通知状態一覧</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>notificationId</th>
+            <th>sentAt</th>
+            <th>open</th>
+            <th>click</th>
+            <th>lastReactionAt</th>
+            <th>詳細</th>
+          </tr>
+        </thead>
+        <tbody id="notifications-rows"></tbody>
+      </table>
+    </div>
+
+    <script>
+      async function loadUsers() {
+        const res = await fetch('/api/phase4/admin/users-summary');
+        const data = await res.json();
+        const rows = document.getElementById('users-rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="5">error</td></tr>';
+          return;
+        }
+        if (!data.items.length) {
+          rows.innerHTML = '<tr><td colspan="5">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = data.items.map((item) => `
+          <tr>
+            <td>${item.lineUserId}</td>
+            <td>${item.hasMemberNumber ? 'あり' : 'なし'}</td>
+            <td>${item.checklistCompleted}/${item.checklistTotal}</td>
+            <td>${item.lastActionAt || '-'}</td>
+            <td><button class="btn" disabled>詳細を見る</button></td>
+          </tr>
+        `).join('');
+      }
+
+      async function loadNotifications() {
+        const res = await fetch('/api/phase4/admin/notifications-summary');
+        const data = await res.json();
+        const rows = document.getElementById('notifications-rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="6">error</td></tr>';
+          return;
+        }
+        if (!data.items.length) {
+          rows.innerHTML = '<tr><td colspan="6">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = data.items.map((item) => `
+          <tr>
+            <td>${item.notificationId}</td>
+            <td>${item.sentAt || '-'}</td>
+            <td>${item.openCount}</td>
+            <td>${item.clickCount}</td>
+            <td>${item.lastReactionAt || '-'}</td>
+            <td><button class="btn" disabled>詳細を見る</button></td>
+          </tr>
+        `).join('');
+      }
+
+      Promise.all([loadUsers(), loadNotifications()]).catch(() => {
+        document.getElementById('users-rows').innerHTML = '<tr><td colspan="5">error</td></tr>';
+        document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
+      });
+    </script>
+  </body>
+</html>
