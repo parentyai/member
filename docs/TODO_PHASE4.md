@@ -63,3 +63,12 @@
   - PR #61
   - Test: node --test tests/phase4/inboxRead.test.js (PASS)
   - Date: 2026-01-29
+### P4-104: Admin 集計閲覧（READ ONLY）
+- Purpose: Admin で通知の配信/既読/クリックの件数を閲覧できるようにする（読み取りのみ）
+- Dependencies: Phase3 SSOT（Admin責務の確定）
+- Blocking Decision: No（人間判断確定済み）
+- Output: /admin/read-model/notifications, apps/admin/read_model.html
+- Evidence:
+  - PR #63
+  - Test: node --test tests/phase4/adminReadModel.test.js (PASS)
+  - Date: 2026-01-29
