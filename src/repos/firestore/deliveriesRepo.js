@@ -51,10 +51,18 @@ async function listDeliveriesByUser(lineUserId, limit) {
   return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
+async function listDeliveriesByNotificationId(notificationId) {
+  if (!notificationId) throw new Error('notificationId required');
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('notificationId', '==', notificationId).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+}
+
 module.exports = {
   createDelivery,
   getDelivery,
   markRead,
   markClick,
-  listDeliveriesByUser
+  listDeliveriesByUser,
+  listDeliveriesByNotificationId
 };

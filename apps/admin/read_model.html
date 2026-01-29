@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>通知集計（READ ONLY）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
+      th { background: #f7f7f7; }
+      .note { font-size: 12px; color: #666; margin-bottom: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>通知集計（READ ONLY）</h1>
+    <div class="note">表示のみ。書き込みや判断は行いません。</div>
+    <table>
+      <thead>
+        <tr>
+          <th>notificationId</th>
+          <th>title</th>
+          <th>scenario</th>
+          <th>step</th>
+          <th>delivered</th>
+          <th>read</th>
+          <th>click</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <script>
+      async function loadReadModel() {
+        const res = await fetch('/admin/read-model/notifications');
+        const data = await res.json();
+        const rows = document.getElementById('rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="7">error</td></tr>';
+          return;
+        }
+        if (!data.items.length) {
+          rows.innerHTML = '<tr><td colspan="7">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = data.items.map((item) => `
+          <tr>
+            <td>${item.notificationId}</td>
+            <td>${item.title || '-'}</td>
+            <td>${item.scenarioKey || '-'}</td>
+            <td>${item.stepKey || '-'}</td>
+            <td>${item.deliveredCount}</td>
+            <td>${item.readCount}</td>
+            <td>${item.clickCount}</td>
+          </tr>
+        `).join('');
+      }
+      loadReadModel().catch(() => {
+        document.getElementById('rows').innerHTML = '<tr><td colspan="7">error</td></tr>';
+      });
+    </script>
+  </body>
+</html>
