@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P2-007: Phase2 E2E evidence
-- Purpose: Record end-to-end evidence (dry-run + run log).
-- Completion Criteria: Evidence recorded in docs.
-- Dependencies: P2-006
-- Edit Files: docs/* (Phase2)
-- Tests: N/A (evidence)
-- Evidence: Pending
-- Risks: Missing proof
-
 ### P2-008: Phase2 CLOSE
 - Purpose: Close Phase2 with immutable evidence.
 - Completion Criteria: Docs updated and gate passed.
@@ -78,3 +69,13 @@
 - Evidence: gcloud run services update member --update-env-vars PHASE2_AUTOMATION_ENABLED=true (2026-01-29)
 - Completed: 2026-01-29
 - Risks: Unintended execution
+
+### P2-007: Phase2 E2E evidence
+- Purpose: Record end-to-end evidence (dry-run + run log).
+- Completion Criteria: Evidence recorded in docs.
+- Dependencies: P2-006
+- Edit Files: docs/ACCEPTANCE_PHASE2.md
+- Tests: N/A (evidence)
+- Evidence: Dry-run POST /admin/phase2/automation/run (runId=run-2026-01-28-dryrun) recorded in docs/ACCEPTANCE_PHASE2.md
+- Completed: 2026-01-28
+- Risks: Missing proof
