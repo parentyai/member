@@ -3,41 +3,81 @@
 ## Backlog
 
 ### P3-001: Phase3 SSOT確定
-- Purpose: Phase3の目的/境界/非目的を確定する
-- Completion Criteria: docs/SSOT_PHASE3.md が確定
+- Purpose: Phase3 の目的/境界/非目的を確定する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 目的/決めること/決めないこと/完了条件/未決定事項が明記されている
 - Dependencies: None
-- Edit Files: docs/SSOT_PHASE3.md
-- Tests: None (design-only)
+- Owner: Human
 - Evidence: Pending
-- Risks: Scope drift
 
-### P3-002: UX境界定義（Mini / Admin）
-- Purpose: UI責務の境界を確定する
-- Completion Criteria: Mini/Adminの責務が明記される
+### P3-002: UX境界定義（Mini / Admin / 人手運用）
+- Purpose: UX / 運用の責務分離を確定する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: Mini/Admin/人手運用の責務が固定されている
 - Dependencies: P3-001
-- Edit Files: docs/SSOT_PHASE3.md
-- Tests: None (design-only)
+- Owner: Human
 - Evidence: Pending
-- Risks: UX ambiguity
 
 ### P3-003: 人間運用フロー確定
 - Purpose: 運用手順と判断ポイントを明確化する
-- Completion Criteria: 運用フローが文書化される
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 誰が/いつ/何を見て/何を判断し/何を操作するかが明記されている
 - Dependencies: P3-001
-- Edit Files: docs/SSOT_PHASE3.md
-- Tests: None (design-only)
+- Owner: Human
 - Evidence: Pending
-- Risks: Operational gaps
 
-### P3-004: 未決定事項の解消計画
-- Purpose: 未決定事項の判断順序を確定する
-- Completion Criteria: 判断主体/期限が明記される
+### P3-004: 設計範囲の確定（構造化の対象）
+- Purpose: Phase3で設計する範囲を固定する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 画面遷移/状態/データ辞書/権限/監査/テンプレ運用の設計対象が明記されている
 - Dependencies: P3-001
-- Edit Files: docs/SSOT_PHASE3.md
-- Tests: None (design-only)
+- Owner: Human
 - Evidence: Pending
-- Risks: Decision deadlock
 
-## In Progress
+### P3-005: 状態モデル（設計のみ）
+- Purpose: UX/運用に必要な状態遷移を設計する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 状態名/遷移条件/責務が明記されている
+- Dependencies: P3-002, P3-003
+- Owner: Human
+- Evidence: Pending
 
-## Done
+### P3-006: データ辞書（設計のみ）
+- Purpose: 必要なデータ要素と定義を設計する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 用語/フィールド/意味/参照元が明記されている
+- Dependencies: P3-004
+- Owner: Human
+- Evidence: Pending
+
+### P3-007: 権限/監査の境界（設計のみ）
+- Purpose: 操作権限と監査対象を設計する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 役割/操作/監査対象が明記されている
+- Dependencies: P3-003
+- Owner: Human
+- Evidence: Pending
+
+### P3-008: リスク/切戻し方針（設計のみ）
+- Purpose: リスクと切戻しの前提を設計する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: 想定リスク/回避策/切戻し方針が明記されている
+- Dependencies: P3-001
+- Owner: Human
+- Evidence: Pending
+
+### P3-009: Phase4以降の実装境界
+- Purpose: Phase3とPhase4の境界を固定する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: Phase3ではやらない/Phase4でやることが明記されている
+- Dependencies: P3-001
+- Owner: Human
+- Evidence: Pending
+
+### P3-010: Acceptance整備
+- Purpose: 設計成果物の受入条件を固定する
+- Output Files: docs/ACCEPTANCE_PHASE3.md
+- Acceptance: Given/When/Then が設計成果物に対応している
+- Dependencies: P3-001
+- Owner: Human
+- Evidence: Pending
