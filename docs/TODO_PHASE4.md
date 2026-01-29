@@ -19,11 +19,12 @@
 
 ## In Progress
 
+## Done
+
 ### P4-101: Mini memberNumber 入力
 - Purpose: Mini で memberNumber を入力/更新できるようにする
 - Dependencies: Phase3 SSOT（Mini責務の確定）
 - Blocking Decision: No（人間判断確定済み）
 - Output: apps/mini/member_phase4.html, /api/phase1/mini/member, usecases/users/*
-- Evidence: Pending
-
-## Done
+- Evidence: PR #56 / node --test tests/phase4/memberNumber.test.js (pass) / 2026-01-28
+- Completed: 2026-01-28
