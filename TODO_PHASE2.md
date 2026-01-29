@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P2-008: Phase2 CLOSE
-- Purpose: Close Phase2 with immutable evidence.
-- Completion Criteria: Docs updated and gate passed.
-- Dependencies: P2-007
-- Edit Files: docs/* (Phase2)
-- Tests: N/A
-- Evidence: Pending
-- Risks: Premature close
-
 ## In Progress
 
 ### P2-001: SSOT Phase2
@@ -79,3 +70,13 @@
 - Evidence: Dry-run POST /admin/phase2/automation/run (runId=run-2026-01-28-dryrun) recorded in docs/ACCEPTANCE_PHASE2.md
 - Completed: 2026-01-28
 - Risks: Missing proof
+
+### P2-008: Phase2 CLOSE
+- Purpose: Close Phase2 with immutable evidence.
+- Completion Criteria: Docs updated and gate passed.
+- Dependencies: P2-007
+- Edit Files: docs/ACCEPTANCE_PHASE2.md, TODO_PHASE2.md
+- Tests: N/A
+- Evidence: docs/ACCEPTANCE_PHASE2.md / TODO_PHASE2.md 更新 (phase2/impl-p2-008-close)
+- Completed: 2026-01-28
+- Risks: Premature close
