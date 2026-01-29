@@ -256,6 +256,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/admin/read-model')) {
+    const { handleNotificationReadModel } = require('./routes/admin/readModel');
+    (async () => {
+      if (req.method === 'GET' && (pathname === '/admin/read-model' || pathname === '/admin/read-model/')) {
+        const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'read_model.html');
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        res.end(fs.readFileSync(filePath, 'utf8'));
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {
+        await handleNotificationReadModel(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/admin/phase2/automation')) {
     let bytes = 0;
     const chunks = [];
