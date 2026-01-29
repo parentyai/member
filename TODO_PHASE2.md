@@ -2,15 +2,6 @@
 
 ## Backlog
 
-### P2-006: Enable automation (flag ON)
-- Purpose: Turn on Phase2 automation safely.
-- Completion Criteria: Feature flag enables execution; dry-run can be toggled.
-- Dependencies: P2-005
-- Edit Files: ENV config only
-- Tests: N/A (operational)
-- Evidence: Pending
-- Risks: Unintended execution
-
 ### P2-007: Phase2 E2E evidence
 - Purpose: Record end-to-end evidence (dry-run + run log).
 - Completion Criteria: Evidence recorded in docs.
@@ -77,3 +68,13 @@
 - Risks: Incorrect aggregation
 
 ## Done
+
+### P2-006: Enable automation (flag ON)
+- Purpose: Turn on Phase2 automation safely.
+- Completion Criteria: Feature flag enables execution; dry-run can be toggled.
+- Dependencies: P2-005
+- Edit Files: ENV config only
+- Tests: N/A (operational)
+- Evidence: gcloud run services update member --update-env-vars PHASE2_AUTOMATION_ENABLED=true (2026-01-29)
+- Completed: 2026-01-29
+- Risks: Unintended execution
