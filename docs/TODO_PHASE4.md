@@ -2,6 +2,32 @@
 
 ## Backlog
 
+### P4-102: Mini checklist トグル（read/write）最小実装
+- Purpose:
+  - ユーザーが checklist の各項目を完了/未完了でトグルできるようにする（自己申告）。
+- Input:
+  - lineUserId（既存識別）
+  - itemKey（チェックリスト項目ID）
+  - done:boolean
+- Output:
+  - GET: checklist 表示に done 状態が反映される
+  - POST: done 状態が保存される
+- Allowed Writes (MUST):
+  - users/{lineUserId} 配下の checklist 状態（最小フィールドのみ）
+  - それ以外のコレクション・フィールド追加は禁止（必要なら SSOT delta → 人間判断）
+- Non-goals:
+  - checklist項目の自動生成/推定
+  - 集計ダッシュボード/運用自動化
+  - UIの装飾改善
+- Acceptance (minimum):
+  - toggle API が 200 を返す（不正入力は 400）
+  - toggle 後に GET checklist で反映される
+  - `npm test` で追加テストが pass
+- Dependencies:
+  - P4-101（memberNumber）DONE（PR #56 + evidence PR #57）
+- Evidence:
+  - 実装PR番号 / テストコマンド / 日付 を記録すること
+
 ### P4-001: Phase4 SSOT準備
 - Purpose: Phase4 の目的/スコープ/非目的を明文化する
 - Dependencies: Phase3 SSOT / CLOSE
