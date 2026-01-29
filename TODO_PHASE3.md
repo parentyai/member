@@ -2,6 +2,24 @@
 
 ## Backlog
 
+### P3-009: Phase4以降の実装境界
+- Purpose: Phase3とPhase4の境界を固定する
+- Output Files: docs/SSOT_PHASE3.md
+- Acceptance: Phase3ではやらない/Phase4でやることが明記されている
+- Dependencies: P3-001
+- Owner: Human
+- Evidence: Pending
+
+### P3-010: Acceptance整備
+- Purpose: 設計成果物の受入条件を固定する
+- Output Files: docs/ACCEPTANCE_PHASE3.md
+- Acceptance: Given/When/Then が設計成果物に対応している
+- Dependencies: P3-001
+- Owner: Human
+- Evidence: Pending
+
+## In Progress
+
 ### P3-001: Phase3 SSOT確定
 - Purpose: Phase3 の目的/境界/非目的を確定する
 - Output Files: docs/SSOT_PHASE3.md
