@@ -42,6 +42,6 @@
 - Dependencies: P5-103
 - Blocking Decision: Human GO
 - Evidence:
-  - PR: 未記録
+  - PR: https://github.com/parentyai/member/pull/76
   - Test: node --test tests/phase5/opsReview.test.js (PASS)
   - Date: 2026-01-30
