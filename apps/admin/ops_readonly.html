@@ -20,6 +20,7 @@
 
     <div class="section">
       <h2>ユーザー状態一覧</h2>
+      <div class="note" id="user-summary-note"></div>
       <table>
         <thead>
           <tr>
@@ -56,6 +57,7 @@
         const res = await fetch('/api/phase4/admin/users-summary');
         const data = await res.json();
         const rows = document.getElementById('users-rows');
+        const note = document.getElementById('user-summary-note');
         if (!data.ok) {
           rows.innerHTML = '<tr><td colspan="5">error</td></tr>';
           return;
@@ -73,6 +75,21 @@
             <td><button class="btn" disabled>詳細を見る</button></td>
           </tr>
         `).join('');
+
+        const params = new URLSearchParams(location.search);
+        const lineUserId = params.get('lineUserId');
+        if (!lineUserId) {
+          note.textContent = 'lineUserId を指定すると個別の状態サマリを表示します';
+          return;
+        }
+        const summaryRes = await fetch(`/api/phase5/state/summary?lineUserId=${encodeURIComponent(lineUserId)}`);
+        const summary = await summaryRes.json();
+        if (summary.ok && summary.item) {
+          const item = summary.item;
+          note.textContent = `summary: ${item.lineUserId} / memberNumber: ${item.hasMemberNumber ? 'あり' : 'なし'} / checklist: ${item.checklistCompleted}/${item.checklistTotal} / lastActionAt: ${item.lastActionAt || '-'}`;
+        } else {
+          note.textContent = 'summary: unavailable';
+        }
       }
 
       async function loadNotifications() {
