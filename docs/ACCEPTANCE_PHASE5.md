@@ -42,6 +42,12 @@
 - Then: memberNumber未入力 / checklist未完了 / stale のいずれかで Yes が表示される
 - Evidence: PR / tests/phase5/opsAttention.test.js
 
+## H. P5-106 Ops Review Evidence Write
+- Given: Ops でレビュー操作を行う
+- When: Reviewed を押下する
+- Then: opsReviewLastReviewedAt / opsReviewLastReviewedBy が更新される
+- Evidence: PR / tests/phase5/opsReviewWrite.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -52,3 +58,4 @@
 | E. P5-102 Ops Read-only Filters | 未記録 | 未記録 | PR #73 / tests/phase5/opsFilter.test.js (PASS) | 未記録 |
 | F. P5-104 Ops Manual Review Evidence | 未記録 | 未記録 | PR #76 / tests/phase5/opsReview.test.js (PASS) | 未記録 |
 | G. P5-105 Ops Attention Summary | 未記録 | 未記録 | PR #79 / tests/phase5/opsAttention.test.js (PASS) | 未記録 |
+| H. P5-106 Ops Review Evidence Write | 未記録 | 未記録 | PR #81 / tests/phase5/opsReviewWrite.test.js (PASS) | 未記録 |
