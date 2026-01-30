@@ -2,12 +2,6 @@
 
 ## Backlog
 
-### P5-101: 状態の可視化（READ ONLY）
-- Purpose: 既存データの集計・表示のみを追加する
-- Dependencies: P5-001
-- Blocking Decision: Human GO
-- Evidence: 未記録
-
 ### P5-102: Ops向け READ ONLY 拡張
 - Purpose: フィルタ・期間指定など閲覧のみの拡張
 - Dependencies: P5-101
@@ -28,10 +22,20 @@
 
 ## In Progress
 
+## Done
 ### P5-001: Phase5 Bootstrap（docs-only）
 - Purpose: SSOT / Acceptance / TODO / Guard を作成する
 - Dependencies: Phase4 INTERIM CLOSE
 - Blocking Decision: No
-- Evidence: Pending
+- Evidence:
+  - PR #70
+  - Date: 2026-01-29
 
-## Done
+### P5-101: 状態の可視化（READ ONLY）
+- Purpose: 既存データの集計・表示のみを追加する
+- Dependencies: P5-001
+- Blocking Decision: Human GO
+- Evidence:
+  - PR #71
+  - Test: node --test tests/phase5/stateSummary.test.js (PASS)
+  - Date: 2026-01-29
