@@ -3,6 +3,18 @@
 const { getUsersSummaryFiltered } = require('../usecases/phase5/getUsersSummaryFiltered');
 const { getNotificationsSummaryFiltered } = require('../usecases/phase5/getNotificationsSummaryFiltered');
 const { getStaleMemberNumberUsers } = require('../usecases/phase5/getStaleMemberNumberUsers');
+const { getOpsState } = require('../repos/firestore/opsStateRepo');
+
+function formatTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
 
 function parseDateParam(value, endOfDay) {
   if (!value) return null;
@@ -40,9 +52,18 @@ async function handleUsersSummaryFiltered(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const range = parseRange(url);
-    const items = await getUsersSummaryFiltered(range);
+    const [items, opsState] = await Promise.all([
+      getUsersSummaryFiltered(range),
+      getOpsState()
+    ]);
+    const review = opsState
+      ? {
+          lastReviewedAt: formatTimestamp(opsState.lastReviewedAt),
+          lastReviewedBy: opsState.lastReviewedBy || null
+        }
+      : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items }));
+    res.end(JSON.stringify({ ok: true, items, review }));
   } catch (err) {
     handleError(res, err);
   }
