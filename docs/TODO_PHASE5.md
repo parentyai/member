@@ -2,12 +2,6 @@
 
 ## Backlog
 
-### P5-103: 人間判断トリガ（表示/ログのみ）
-- Purpose: 判断すべき状態の検知を表示またはログで提供
-- Dependencies: P5-102
-- Blocking Decision: Human GO
-- Evidence: 未記録
-
 ## In Progress
 
 ## Done
@@ -36,6 +30,15 @@
   - PR #73
   - Test: node --test tests/phase5/opsFilter.test.js (PASS)
   - Date: 2026-01-29
+
+### P5-103: 人間判断トリガ（表示/ログのみ）
+- Purpose: 判断すべき状態の検知を表示またはログで提供
+- Dependencies: P5-102
+- Blocking Decision: Human GO
+- Evidence:
+  - PR: https://github.com/parentyai/member/pull/85
+  - Test: node --test tests/phase5/opsFlags.test.js (PASS)
+  - Date: 2026-01-30
 
 ### P5-104: 運用確認用メタ情報
 - Purpose: 最終更新日/最終確認者などのメタ情報（手動更新のみ）
