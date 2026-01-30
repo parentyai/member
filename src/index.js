@@ -299,7 +299,11 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname.startsWith('/api/phase5/ops/')) {
-    const { handleUsersSummaryFiltered, handleNotificationsSummaryFiltered } = require('./routes/phase5Ops');
+    const {
+      handleUsersSummaryFiltered,
+      handleNotificationsSummaryFiltered,
+      handleStaleMemberNumber
+    } = require('./routes/phase5Ops');
     (async () => {
       if (req.method === 'GET' && pathname === '/api/phase5/ops/users-summary') {
         await handleUsersSummaryFiltered(req, res);
@@ -307,6 +311,10 @@ const server = http.createServer((req, res) => {
       }
       if (req.method === 'GET' && pathname === '/api/phase5/ops/notifications-summary') {
         await handleNotificationsSummaryFiltered(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/phase5/ops/member-number-stale') {
+        await handleStaleMemberNumber(req, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
