@@ -42,6 +42,15 @@ async function setMemberCardAsset(lineUserId, assetObj) {
   return updateUser(lineUserId, { memberCardAsset: assetObj || null });
 }
 
+async function setOpsReview(lineUserId, reviewedBy) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const actor = reviewedBy && String(reviewedBy).trim().length > 0 ? reviewedBy : 'unknown';
+  return updateUser(lineUserId, {
+    opsReviewLastReviewedAt: serverTimestamp(),
+    opsReviewLastReviewedBy: actor
+  });
+}
+
 function hasMemberNumber(user) {
   return Boolean(user && typeof user.memberNumber === 'string' && user.memberNumber.trim().length > 0);
 }
@@ -70,5 +79,6 @@ module.exports = {
   updateUser,
   setMemberNumber,
   setMemberCardAsset,
+  setOpsReview,
   listUsers
 };

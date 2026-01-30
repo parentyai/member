@@ -98,6 +98,8 @@ async function getUserOperationalSummary() {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
       createdAtMs,
+      opsReviewLastReviewedAt: formatTimestamp(data.opsReviewLastReviewedAt),
+      opsReviewLastReviewedBy: data.opsReviewLastReviewedBy || null,
       hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
       checklistCompleted: completed,
       checklistTotal: total,
