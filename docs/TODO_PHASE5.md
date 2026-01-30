@@ -63,3 +63,12 @@
   - PR: https://github.com/parentyai/member/pull/81
   - Test: node --test tests/phase5/opsReviewWrite.test.js (PASS)
   - Date: 2026-01-30
+
+### P5-107: Ops user list filters
+- Purpose: Ops user summary を filters で絞り込めるようにする（READ ONLY）
+- Dependencies: P5-106
+- Blocking Decision: Human GO
+- Evidence:
+  - PR: https://github.com/parentyai/member/pull/83
+  - Test: node --test tests/phase5/opsFilters.test.js (PASS)
+  - Date: 2026-01-30
