@@ -26,6 +26,12 @@
         to: <input type="date" id="users-to" />
         <button class="btn" id="users-apply">適用</button>
       </div>
+      <div class="note">
+        <label><input type="checkbox" id="filter-needsAttention" /> needsAttention</label>
+        <label><input type="checkbox" id="filter-stale" /> stale</label>
+        <label><input type="checkbox" id="filter-unreviewed" /> unreviewed</label>
+        <label>reviewAgeDays: <input type="number" id="filter-reviewAgeDays" min="1" max="365" /></label>
+      </div>
       <div class="note" id="user-summary-note"></div>
       <table>
         <thead>
@@ -101,8 +107,71 @@
         return qs ? `?${qs}` : '';
       }
 
+      function buildUsersQuery() {
+        const params = new URLSearchParams();
+        const from = document.getElementById('users-from').value;
+        const to = document.getElementById('users-to').value;
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+
+        if (document.getElementById('filter-needsAttention').checked) {
+          params.set('needsAttention', '1');
+        }
+        if (document.getElementById('filter-stale').checked) {
+          params.set('stale', '1');
+        }
+        if (document.getElementById('filter-unreviewed').checked) {
+          params.set('unreviewed', '1');
+        }
+        const reviewAgeDays = document.getElementById('filter-reviewAgeDays').value;
+        if (reviewAgeDays) {
+          params.set('reviewAgeDays', reviewAgeDays);
+        }
+
+        const qs = params.toString();
+        return qs ? `?${qs}` : '';
+      }
+
+      function hydrateUsersFilters() {
+        const params = new URLSearchParams(location.search);
+        const from = params.get('from');
+        const to = params.get('to');
+        if (from) document.getElementById('users-from').value = from;
+        if (to) document.getElementById('users-to').value = to;
+
+        document.getElementById('filter-needsAttention').checked = params.get('needsAttention') === '1';
+        document.getElementById('filter-stale').checked = params.get('stale') === '1';
+        document.getElementById('filter-unreviewed').checked = params.get('unreviewed') === '1';
+        const reviewAgeDays = params.get('reviewAgeDays');
+        if (reviewAgeDays) document.getElementById('filter-reviewAgeDays').value = reviewAgeDays;
+      }
+
+      function syncUsersQueryToUrl() {
+        const params = new URLSearchParams(location.search);
+        const from = document.getElementById('users-from').value;
+        const to = document.getElementById('users-to').value;
+        if (from) params.set('from', from); else params.delete('from');
+        if (to) params.set('to', to); else params.delete('to');
+        const lineUserId = params.get('lineUserId');
+        if (lineUserId) params.set('lineUserId', lineUserId);
+
+        const needsAttention = document.getElementById('filter-needsAttention').checked;
+        const stale = document.getElementById('filter-stale').checked;
+        const unreviewed = document.getElementById('filter-unreviewed').checked;
+        const reviewAgeDays = document.getElementById('filter-reviewAgeDays').value;
+
+        if (needsAttention) params.set('needsAttention', '1'); else params.delete('needsAttention');
+        if (stale) params.set('stale', '1'); else params.delete('stale');
+        if (unreviewed) params.set('unreviewed', '1'); else params.delete('unreviewed');
+        if (reviewAgeDays) params.set('reviewAgeDays', reviewAgeDays); else params.delete('reviewAgeDays');
+
+        const qs = params.toString();
+        const nextUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
+        history.replaceState(null, '', nextUrl);
+      }
+
       async function loadUsers() {
-        const res = await fetch(`/api/phase5/ops/users-summary${buildRangeQuery('users')}`);
+        const res = await fetch(`/api/phase5/ops/users-summary${buildUsersQuery()}`);
         const data = await res.json();
         const rows = document.getElementById('users-rows');
         const note = document.getElementById('user-summary-note');
@@ -220,12 +289,14 @@
       }
 
       document.getElementById('users-apply').addEventListener('click', () => {
+        syncUsersQueryToUrl();
         loadUsers().catch(() => {});
       });
       document.getElementById('notifications-apply').addEventListener('click', () => {
         loadNotifications().catch(() => {});
       });
 
+      hydrateUsersFilters();
       Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber()]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
