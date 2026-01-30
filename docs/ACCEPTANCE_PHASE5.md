@@ -18,9 +18,16 @@
 - Then: 禁止事項が明文化されている
 - Evidence: docs/GUARDRAILS_PHASE5.md
 
+## D. P5-101 Read-only State Visibility
+- Given: 既存データが存在する
+- When: READ ONLY の状態可視化を参照する
+- Then: checklist 完了率 / memberNumber 有無が確認できる
+- Evidence: PR / tests/phase5/stateSummary.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
 | A. SSOT Created | 未記録 | 未記録 | docs/SSOT_PHASE5.md | 未記録 |
 | B. TODO Created | 未記録 | 未記録 | docs/TODO_PHASE5.md | 未記録 |
 | C. Guardrails Created | 未記録 | 未記録 | docs/GUARDRAILS_PHASE5.md | 未記録 |
+| D. P5-101 Read-only State Visibility | 未記録 | 未記録 | PR #71 / tests/phase5/stateSummary.test.js (PASS) | 未記録 |
