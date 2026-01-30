@@ -2,6 +2,7 @@
 
 const { getUsersSummaryFiltered } = require('../usecases/phase5/getUsersSummaryFiltered');
 const { getNotificationsSummaryFiltered } = require('../usecases/phase5/getNotificationsSummaryFiltered');
+const { getStaleMemberNumberUsers } = require('../usecases/phase5/getStaleMemberNumberUsers');
 
 function parseDateParam(value, endOfDay) {
   if (!value) return null;
@@ -59,7 +60,18 @@ async function handleNotificationsSummaryFiltered(req, res) {
   }
 }
 
+async function handleStaleMemberNumber(req, res) {
+  try {
+    const result = await getStaleMemberNumberUsers();
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, count: result.count, items: result.items }));
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+
 module.exports = {
   handleUsersSummaryFiltered,
-  handleNotificationsSummaryFiltered
+  handleNotificationsSummaryFiltered,
+  handleStaleMemberNumber
 };
