@@ -33,6 +33,8 @@
             <th>lineUserId</th>
             <th>memberNumber</th>
             <th>checklist</th>
+            <th>stale</th>
+            <th>needsAttention</th>
             <th>lastActionAt</th>
             <th>詳細</th>
           </tr>
@@ -104,11 +106,11 @@
         const note = document.getElementById('user-summary-note');
         renderReview(data.review);
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="5">error</td></tr>';
+          rows.innerHTML = '<tr><td colspan="7">error</td></tr>';
           return;
         }
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="5">no data</td></tr>';
+          rows.innerHTML = '<tr><td colspan="7">no data</td></tr>';
           return;
         }
         rows.innerHTML = data.items.map((item) => `
@@ -116,6 +118,8 @@
             <td>${item.lineUserId}</td>
             <td>${item.hasMemberNumber ? 'あり' : 'なし'}</td>
             <td>${item.checklistCompleted}/${item.checklistTotal}</td>
+            <td>${item.stale ? 'Yes' : 'No'}</td>
+            <td>${item.needsAttention ? 'Yes' : 'No'}</td>
             <td>${item.lastActionAt || '-'}</td>
             <td><button class="btn" disabled>詳細を見る</button></td>
           </tr>
@@ -206,7 +210,7 @@
       });
 
       Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber()]).catch(() => {
-        document.getElementById('users-rows').innerHTML = '<tr><td colspan="5">error</td></tr>';
+        document.getElementById('users-rows').innerHTML = '<tr><td colspan="7">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
         document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
       });
