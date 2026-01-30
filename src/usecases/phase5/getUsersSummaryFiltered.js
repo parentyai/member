@@ -70,7 +70,10 @@ async function getUsersSummaryFiltered(params) {
     return Object.assign({}, item, {
       stale,
       checklistIncomplete,
-      needsAttention
+      needsAttention,
+      opsFlags: {
+        memberNumberStale: stale
+      }
     });
   });
   return enriched
