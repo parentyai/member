@@ -28,7 +28,7 @@ function parseDateParam(value, endOfDay) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('invalid date')) {
+  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays')) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
@@ -48,12 +48,33 @@ function parseRange(url) {
   return { fromMs, toMs };
 }
 
+function parseReviewAgeDays(value) {
+  if (!value) return null;
+  const num = Number(value);
+  if (!Number.isInteger(num)) return null;
+  if (num < 1 || num > 365) return null;
+  return num;
+}
+
 async function handleUsersSummaryFiltered(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const range = parseRange(url);
+    const needsAttention = url.searchParams.get('needsAttention') === '1';
+    const stale = url.searchParams.get('stale') === '1';
+    const unreviewed = url.searchParams.get('unreviewed') === '1';
+    const reviewAgeRaw = url.searchParams.get('reviewAgeDays');
+    const reviewAgeDays = parseReviewAgeDays(reviewAgeRaw);
+    if (reviewAgeRaw && !reviewAgeDays) {
+      throw new Error('invalid reviewAgeDays');
+    }
     const [items, opsState] = await Promise.all([
-      getUsersSummaryFiltered(range),
+      getUsersSummaryFiltered(Object.assign({}, range, {
+        needsAttention,
+        stale,
+        unreviewed,
+        reviewAgeDays
+      })),
       getOpsState()
     ]);
     const review = opsState

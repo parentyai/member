@@ -36,6 +36,29 @@ function isStaleMemberNumber(item, nowMs) {
   return nowMs - item.createdAtMs >= STALE_DAYS * DAY_MS;
 }
 
+function filterByNeedsAttention(item, flag) {
+  if (!flag) return true;
+  return item.needsAttention === true;
+}
+
+function filterByStale(item, flag) {
+  if (!flag) return true;
+  return item.stale === true;
+}
+
+function filterByUnreviewed(item, flag) {
+  if (!flag) return true;
+  return !item.opsReviewLastReviewedAt;
+}
+
+function filterByReviewAge(item, reviewAgeDays, nowMs) {
+  if (!reviewAgeDays) return true;
+  if (!item.opsReviewLastReviewedAt) return true;
+  const reviewedMs = toMillis(item.opsReviewLastReviewedAt);
+  if (!reviewedMs) return true;
+  return nowMs - reviewedMs >= reviewAgeDays * DAY_MS;
+}
+
 async function getUsersSummaryFiltered(params) {
   const payload = params || {};
   const items = await getUserOperationalSummary();
@@ -50,7 +73,12 @@ async function getUsersSummaryFiltered(params) {
       needsAttention
     });
   });
-  return enriched.filter((item) => inRange(item.lastActionAt, payload.fromMs, payload.toMs));
+  return enriched
+    .filter((item) => inRange(item.lastActionAt, payload.fromMs, payload.toMs))
+    .filter((item) => filterByNeedsAttention(item, payload.needsAttention))
+    .filter((item) => filterByStale(item, payload.stale))
+    .filter((item) => filterByUnreviewed(item, payload.unreviewed))
+    .filter((item) => filterByReviewAge(item, payload.reviewAgeDays, nowMs));
 }
 
 module.exports = {
