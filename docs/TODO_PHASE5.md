@@ -54,3 +54,12 @@
   - PR: https://github.com/parentyai/member/pull/79
   - Test: node --test tests/phase5/opsAttention.test.js (PASS)
   - Date: 2026-01-30
+
+### P5-106: Ops Review Evidence Write
+- Purpose: Ops でユーザー単位の最終確認証跡を手動で保存する
+- Dependencies: P5-105
+- Blocking Decision: Human GO
+- Evidence:
+  - PR: https://github.com/parentyai/member/pull/81
+  - Test: node --test tests/phase5/opsReviewWrite.test.js (PASS)
+  - Date: 2026-01-30
