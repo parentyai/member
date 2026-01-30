@@ -36,6 +36,12 @@
 - Then: lastReviewedAt / lastReviewedBy が表示される
 - Evidence: PR / tests/phase5/opsReview.test.js
 
+## G. P5-105 Ops Attention Summary
+- Given: Ops user summary が参照できる
+- When: Needs attention を確認する
+- Then: memberNumber未入力 / checklist未完了 / stale のいずれかで Yes が表示される
+- Evidence: PR / tests/phase5/opsAttention.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -45,3 +51,4 @@
 | D. P5-101 Read-only State Visibility | 未記録 | 未記録 | PR #71 / tests/phase5/stateSummary.test.js (PASS) | 未記録 |
 | E. P5-102 Ops Read-only Filters | 未記録 | 未記録 | PR #73 / tests/phase5/opsFilter.test.js (PASS) | 未記録 |
 | F. P5-104 Ops Manual Review Evidence | 未記録 | 未記録 | PR #76 / tests/phase5/opsReview.test.js (PASS) | 未記録 |
+| G. P5-105 Ops Attention Summary | 未記録 | 未記録 | PR #79 / tests/phase5/opsAttention.test.js (PASS) | 未記録 |
