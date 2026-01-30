@@ -35,8 +35,10 @@
             <th>checklist</th>
             <th>stale</th>
             <th>needsAttention</th>
+            <th>lastReviewedAt</th>
+            <th>lastReviewedBy</th>
             <th>lastActionAt</th>
-            <th>詳細</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody id="users-rows"></tbody>
@@ -106,11 +108,11 @@
         const note = document.getElementById('user-summary-note');
         renderReview(data.review);
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="7">error</td></tr>';
+          rows.innerHTML = '<tr><td colspan="9">error</td></tr>';
           return;
         }
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="7">no data</td></tr>';
+          rows.innerHTML = '<tr><td colspan="9">no data</td></tr>';
           return;
         }
         rows.innerHTML = data.items.map((item) => `
@@ -120,10 +122,25 @@
             <td>${item.checklistCompleted}/${item.checklistTotal}</td>
             <td>${item.stale ? 'Yes' : 'No'}</td>
             <td>${item.needsAttention ? 'Yes' : 'No'}</td>
+            <td>${item.opsReviewLastReviewedAt || '-'}</td>
+            <td>${item.opsReviewLastReviewedBy || '-'}</td>
             <td>${item.lastActionAt || '-'}</td>
-            <td><button class="btn" disabled>詳細を見る</button></td>
+            <td><button class="btn" data-review="${item.lineUserId}">Reviewed</button></td>
           </tr>
         `).join('');
+
+        rows.querySelectorAll('button[data-review]').forEach((btn) => {
+          btn.addEventListener('click', async (event) => {
+            const lineUserId = event.currentTarget.getAttribute('data-review');
+            if (!lineUserId) return;
+            await fetch('/api/phase5/admin/users/review', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json; charset=utf-8' },
+              body: JSON.stringify({ lineUserId })
+            });
+            await loadUsers();
+          });
+        });
 
         const params = new URLSearchParams(location.search);
         const lineUserId = params.get('lineUserId');
@@ -210,7 +227,7 @@
       });
 
       Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber()]).catch(() => {
-        document.getElementById('users-rows').innerHTML = '<tr><td colspan="7">error</td></tr>';
+        document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
         document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
       });
