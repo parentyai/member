@@ -24,6 +24,7 @@
 - Dependencies: Phase4 INTERIM CLOSE 完了 / 人間判断基準の確定
 - Blocking Decision: Design Pending（人間判断待ち）
 - Output: 未定義（設計待ち）
+- Acceptance: 運用判断フロー/判断不能ケース/Phase5境界が docs/SSOT_PHASE4.md に明文化されている
 - Evidence: Pending
 
 ## Done
