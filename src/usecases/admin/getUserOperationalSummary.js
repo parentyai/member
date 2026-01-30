@@ -86,6 +86,7 @@ async function getUserOperationalSummary() {
 
   return users.map((user) => {
     const data = user.data || {};
+    const createdAtMs = toMillis(data.createdAt);
     const scenarioKey = data.scenarioKey;
     const stepKey = data.stepKey;
     const key = scenarioKey && stepKey ? `${scenarioKey}__${stepKey}` : null;
@@ -95,6 +96,8 @@ async function getUserOperationalSummary() {
     const latest = latestActionByUser.get(user.id);
     return {
       lineUserId: user.id,
+      createdAt: formatTimestamp(data.createdAt),
+      createdAtMs,
       hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
       checklistCompleted: completed,
       checklistTotal: total,
