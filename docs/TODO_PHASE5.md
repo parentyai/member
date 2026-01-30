@@ -9,6 +9,11 @@
 - Evidence: 未記録
 
 ## In Progress
+### P5-105: Ops 運用サマリ（判断材料の集合）
+- Purpose: Ops / Admin が次に何をすべきかを迷わない READ ONLY サマリを提供する
+- Dependencies: P5-102, P5-103, P5-104
+- Blocking Decision: Human GO
+- Evidence: 未記録
 
 ## Done
 ### P5-001: Phase5 Bootstrap（docs-only）
