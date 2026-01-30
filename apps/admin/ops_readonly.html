@@ -79,6 +79,13 @@
       </table>
     </div>
 
+    <div class="section">
+      <h2>Last reviewed</h2>
+      <div class="note">手動入力のみ（閲覧や集計では更新しない）</div>
+      <div>At: <span id="ops-review-at">-</span></div>
+      <div>By: <span id="ops-review-by">-</span></div>
+    </div>
+
     <script>
       function buildRangeQuery(prefix) {
         const from = document.getElementById(`${prefix}-from`).value;
@@ -95,6 +102,7 @@
         const data = await res.json();
         const rows = document.getElementById('users-rows');
         const note = document.getElementById('user-summary-note');
+        renderReview(data.review);
         if (!data.ok) {
           rows.innerHTML = '<tr><td colspan="5">error</td></tr>';
           return;
@@ -175,6 +183,19 @@
             <td>${item.daysSinceCreated}</td>
           </tr>
         `).join('');
+      }
+
+      function renderReview(review) {
+        const atEl = document.getElementById('ops-review-at');
+        const byEl = document.getElementById('ops-review-by');
+        if (!atEl || !byEl) return;
+        if (!review || !review.lastReviewedAt || !review.lastReviewedBy) {
+          atEl.textContent = '-';
+          byEl.textContent = '-';
+          return;
+        }
+        atEl.textContent = review.lastReviewedAt;
+        byEl.textContent = review.lastReviewedBy;
       }
 
       document.getElementById('users-apply').addEventListener('click', () => {

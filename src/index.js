@@ -262,6 +262,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/admin/review' || pathname === '/admin/review/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'review.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
   if (pathname.startsWith('/api/phase4/admin/')) {
     const { handleUsersSummary, handleNotificationsSummary } = require('./routes/admin/opsOverview');
     (async () => {
@@ -271,6 +277,43 @@ const server = http.createServer((req, res) => {
       }
       if (req.method === 'GET' && pathname === '/api/phase4/admin/notifications-summary') {
         await handleNotificationsSummary(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase5/admin/ops/')) {
+    const { handleOpsReview } = require('./routes/phase5Review');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase5/admin/ops/review') {
+        const body = await collectBody();
+        await handleOpsReview(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
