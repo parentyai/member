@@ -1,0 +1,37 @@
+# TODO Phase5 Ledger
+
+## Backlog
+
+### P5-101: 状態の可視化（READ ONLY）
+- Purpose: 既存データの集計・表示のみを追加する
+- Dependencies: P5-001
+- Blocking Decision: Human GO
+- Evidence: 未記録
+
+### P5-102: Ops向け READ ONLY 拡張
+- Purpose: フィルタ・期間指定など閲覧のみの拡張
+- Dependencies: P5-101
+- Blocking Decision: Human GO
+- Evidence: 未記録
+
+### P5-103: 人間判断トリガ（表示/ログのみ）
+- Purpose: 判断すべき状態の検知を表示またはログで提供
+- Dependencies: P5-102
+- Blocking Decision: Human GO
+- Evidence: 未記録
+
+### P5-104: 運用確認用メタ情報
+- Purpose: 最終更新日/最終確認者などのメタ情報（手動更新のみ）
+- Dependencies: P5-103
+- Blocking Decision: Human GO
+- Evidence: 未記録
+
+## In Progress
+
+### P5-001: Phase5 Bootstrap（docs-only）
+- Purpose: SSOT / Acceptance / TODO / Guard を作成する
+- Dependencies: Phase4 INTERIM CLOSE
+- Blocking Decision: No
+- Evidence: Pending
+
+## Done
