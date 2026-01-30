@@ -30,6 +30,12 @@
 - Then: 期間フィルタに応じて閲覧対象が絞り込まれる
 - Evidence: PR / tests/phase5/opsFilter.test.js
 
+## F. P5-104 Ops Manual Review Evidence
+- Given: 運用者が手動でレビュー情報を記録する
+- When: Admin READ ONLY で Last reviewed を参照する
+- Then: lastReviewedAt / lastReviewedBy が表示される
+- Evidence: PR / tests/phase5/opsReview.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -38,3 +44,4 @@
 | C. Guardrails Created | 未記録 | 未記録 | docs/GUARDRAILS_PHASE5.md | 未記録 |
 | D. P5-101 Read-only State Visibility | 未記録 | 未記録 | PR #71 / tests/phase5/stateSummary.test.js (PASS) | 未記録 |
 | E. P5-102 Ops Read-only Filters | 未記録 | 未記録 | PR #73 / tests/phase5/opsFilter.test.js (PASS) | 未記録 |
+| F. P5-104 Ops Manual Review Evidence | 未記録 | 未記録 | PR 未記録 / tests/phase5/opsReview.test.js (PASS) | 未記録 |

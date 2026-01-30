@@ -8,12 +8,6 @@
 - Blocking Decision: Human GO
 - Evidence: 未記録
 
-### P5-104: 運用確認用メタ情報
-- Purpose: 最終更新日/最終確認者などのメタ情報（手動更新のみ）
-- Dependencies: P5-103
-- Blocking Decision: Human GO
-- Evidence: 未記録
-
 ## In Progress
 
 ## Done
@@ -42,3 +36,12 @@
   - PR #73
   - Test: node --test tests/phase5/opsFilter.test.js (PASS)
   - Date: 2026-01-29
+
+### P5-104: 運用確認用メタ情報
+- Purpose: 最終更新日/最終確認者などのメタ情報（手動更新のみ）
+- Dependencies: P5-103
+- Blocking Decision: Human GO
+- Evidence:
+  - PR: 未記録
+  - Test: node --test tests/phase5/opsReview.test.js (PASS)
+  - Date: 2026-01-30
