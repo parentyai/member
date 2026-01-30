@@ -48,6 +48,12 @@
 - Then: opsReviewLastReviewedAt / opsReviewLastReviewedBy が更新される
 - Evidence: PR / tests/phase5/opsReviewWrite.test.js
 
+## I. P5-107 Ops User List Filters
+- Given: Ops user summary が参照できる
+- When: needsAttention / stale / unreviewed / reviewAgeDays で絞り込む
+- Then: 条件に一致するユーザーのみ表示される
+- Evidence: PR / tests/phase5/opsFilters.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -59,3 +65,4 @@
 | F. P5-104 Ops Manual Review Evidence | 未記録 | 未記録 | PR #76 / tests/phase5/opsReview.test.js (PASS) | 未記録 |
 | G. P5-105 Ops Attention Summary | 未記録 | 未記録 | PR #79 / tests/phase5/opsAttention.test.js (PASS) | 未記録 |
 | H. P5-106 Ops Review Evidence Write | 未記録 | 未記録 | PR #81 / tests/phase5/opsReviewWrite.test.js (PASS) | 未記録 |
+| I. P5-107 Ops User List Filters | 未記録 | 未記録 | PR #83 / tests/phase5/opsFilters.test.js (PASS) | 未記録 |
