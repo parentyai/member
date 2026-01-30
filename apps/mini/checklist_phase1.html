@@ -13,6 +13,7 @@
 <body>
   <h1>Checklist (Phase1)</h1>
   <div id="status"></div>
+  <div id="summary"></div>
   <div id="list"></div>
 
   <script>
@@ -20,11 +21,23 @@
     const lineUserId = params.get('lineUserId');
     const step = params.get('step');
     const statusEl = document.getElementById('status');
+    const summaryEl = document.getElementById('summary');
     const listEl = document.getElementById('list');
 
     if (!lineUserId || !step) {
       statusEl.textContent = 'lineUserId/step required';
     } else {
+      fetch(`/api/phase5/state/summary?lineUserId=${encodeURIComponent(lineUserId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.ok) return;
+          const item = data.item || {};
+          summaryEl.textContent = `memberNumber: ${item.hasMemberNumber ? 'あり' : 'なし'} / checklist: ${item.checklistCompleted}/${item.checklistTotal} / lastActionAt: ${item.lastActionAt || '-'}`;
+        })
+        .catch(() => {
+          summaryEl.textContent = '';
+        });
+
       fetch(`/api/phase1/mini/checklist?lineUserId=${encodeURIComponent(lineUserId)}&step=${encodeURIComponent(step)}`)
         .then((res) => res.json())
         .then((data) => {
