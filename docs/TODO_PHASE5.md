@@ -2,12 +2,6 @@
 
 ## Backlog
 
-### P5-102: Ops向け READ ONLY 拡張
-- Purpose: フィルタ・期間指定など閲覧のみの拡張
-- Dependencies: P5-101
-- Blocking Decision: Human GO
-- Evidence: 未記録
-
 ### P5-103: 人間判断トリガ（表示/ログのみ）
 - Purpose: 判断すべき状態の検知を表示またはログで提供
 - Dependencies: P5-102
@@ -38,4 +32,13 @@
 - Evidence:
   - PR #71
   - Test: node --test tests/phase5/stateSummary.test.js (PASS)
+  - Date: 2026-01-29
+
+### P5-102: Ops向け READ ONLY 拡張
+- Purpose: フィルタ・期間指定など閲覧のみの拡張
+- Dependencies: P5-101
+- Blocking Decision: Human GO
+- Evidence:
+  - PR #73
+  - Test: node --test tests/phase5/opsFilter.test.js (PASS)
   - Date: 2026-01-29
