@@ -19,7 +19,13 @@
     <div class="note">表示のみ。判断と操作は人間が行います。</div>
 
     <div class="section">
-      <h2>ユーザー状態一覧</h2>
+      <h2>ユーザー状態一覧（READ ONLY）</h2>
+      <div class="note">期間フィルタ（UTC）</div>
+      <div class="note">
+        from: <input type="date" id="users-from" />
+        to: <input type="date" id="users-to" />
+        <button class="btn" id="users-apply">適用</button>
+      </div>
       <div class="note" id="user-summary-note"></div>
       <table>
         <thead>
@@ -37,6 +43,12 @@
 
     <div class="section">
       <h2>通知状態一覧</h2>
+      <div class="note">期間フィルタ（UTC）</div>
+      <div class="note">
+        from: <input type="date" id="notifications-from" />
+        to: <input type="date" id="notifications-to" />
+        <button class="btn" id="notifications-apply">適用</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -53,8 +65,18 @@
     </div>
 
     <script>
+      function buildRangeQuery(prefix) {
+        const from = document.getElementById(`${prefix}-from`).value;
+        const to = document.getElementById(`${prefix}-to`).value;
+        const params = new URLSearchParams();
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        const qs = params.toString();
+        return qs ? `?${qs}` : '';
+      }
+
       async function loadUsers() {
-        const res = await fetch('/api/phase4/admin/users-summary');
+        const res = await fetch(`/api/phase5/ops/users-summary${buildRangeQuery('users')}`);
         const data = await res.json();
         const rows = document.getElementById('users-rows');
         const note = document.getElementById('user-summary-note');
@@ -93,7 +115,7 @@
       }
 
       async function loadNotifications() {
-        const res = await fetch('/api/phase4/admin/notifications-summary');
+        const res = await fetch(`/api/phase5/ops/notifications-summary${buildRangeQuery('notifications')}`);
         const data = await res.json();
         const rows = document.getElementById('notifications-rows');
         if (!data.ok) {
@@ -115,6 +137,13 @@
           </tr>
         `).join('');
       }
+
+      document.getElementById('users-apply').addEventListener('click', () => {
+        loadUsers().catch(() => {});
+      });
+      document.getElementById('notifications-apply').addEventListener('click', () => {
+        loadNotifications().catch(() => {});
+      });
 
       Promise.all([loadUsers(), loadNotifications()]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="5">error</td></tr>';

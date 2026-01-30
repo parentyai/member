@@ -298,6 +298,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase5/ops/')) {
+    const { handleUsersSummaryFiltered, handleNotificationsSummaryFiltered } = require('./routes/phase5Ops');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase5/ops/users-summary') {
+        await handleUsersSummaryFiltered(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/phase5/ops/notifications-summary') {
+        await handleNotificationsSummaryFiltered(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/admin/read-model')) {
     const { handleNotificationReadModel } = require('./routes/admin/readModel');
     (async () => {
