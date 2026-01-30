@@ -24,6 +24,12 @@
 - Then: checklist 完了率 / memberNumber 有無が確認できる
 - Evidence: PR / tests/phase5/stateSummary.test.js
 
+## E. P5-102 Ops Read-only Filters
+- Given: 既存データが存在する
+- When: Ops 向け READ ONLY フィルタを参照する
+- Then: 期間フィルタに応じて閲覧対象が絞り込まれる
+- Evidence: PR / tests/phase5/opsFilter.test.js
+
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
@@ -31,3 +37,4 @@
 | B. TODO Created | 未記録 | 未記録 | docs/TODO_PHASE5.md | 未記録 |
 | C. Guardrails Created | 未記録 | 未記録 | docs/GUARDRAILS_PHASE5.md | 未記録 |
 | D. P5-101 Read-only State Visibility | 未記録 | 未記録 | PR #71 / tests/phase5/stateSummary.test.js (PASS) | 未記録 |
+| E. P5-102 Ops Read-only Filters | 未記録 | 未記録 | PR #73 / tests/phase5/opsFilter.test.js (PASS) | 未記録 |
