@@ -15,6 +15,7 @@
 - Purpose: CO-002 を Phase8 で確定する
 - Type: design-only
 - Dependencies: Phase7 CLOSE
+- Human Decision Items: HD8-003, HD8-004
 - Evidence: UNKNOWN
 
 ### P8-003: CO-003 対応
