@@ -13,19 +13,19 @@ Validate admin -> test send -> mini app -> click tracking flow end-to-end.
 - Link Registry has at least one `OK` link.
 
 ## Variables
-- `ADMIN_BASE_URL`: admin UI base (example: https://<service-url>/admin)
-- `MINIAPP_BASE_URL`: mini app base (example: https://<service-url>)
+- `ADMIN_BASE_URL`: https://member-pvxgenwkba-ue.a.run.app/admin
+- `MINIAPP_BASE_URL`: https://member-pvxgenwkba-ue.a.run.app
 - `TEST_LINE_USER_ID`: a LINE user ID that can receive test pushes
 
 ## Steps
-1) Open `${ADMIN_BASE_URL}/notifications/new`.
+1) Open `https://member-pvxgenwkba-ue.a.run.app/admin/notifications/new`.
 2) Create a notification:
    - Scenario: A
    - Step: 3mo
    - Title/Body/CTA: any SSOT-conform text
    - Link: select an `OK` Link Registry entry
 3) Use Test Send for `TEST_LINE_USER_ID`.
-4) Open `${MINIAPP_BASE_URL}/inbox` and confirm the notification appears.
+4) Open `https://member-pvxgenwkba-ue.a.run.app/inbox` and confirm the notification appears.
 5) Click the CTA.
 
 ## Expected Results
@@ -38,4 +38,3 @@ Validate admin -> test send -> mini app -> click tracking flow end-to-end.
 - Delivery ID
 - Click timestamp
 - Screenshot or logs from admin history
-
