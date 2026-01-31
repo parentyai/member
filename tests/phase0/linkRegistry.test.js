@@ -30,3 +30,10 @@ test('linkRegistryRepo: setHealth stores WARN state', async () => {
   assert.strictEqual(list.length, 1);
   assert.strictEqual(list[0].lastHealth.state, 'WARN');
 });
+
+test('linkRegistryRepo: delete removes link', async () => {
+  const created = await linkRegistryRepo.createLink({ title: 'y', url: 'https://y' });
+  await linkRegistryRepo.deleteLink(created.id);
+  const list = await linkRegistryRepo.listLinks();
+  assert.strictEqual(list.length, 0);
+});

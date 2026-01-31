@@ -39,6 +39,9 @@ function createDbStub() {
           exists: Boolean(doc),
           data: () => (doc ? Object.assign({}, doc.data) : undefined)
         };
+      },
+      async delete() {
+        delete collection.docs[id];
       }
     };
   }

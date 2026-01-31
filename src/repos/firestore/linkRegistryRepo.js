@@ -54,10 +54,18 @@ async function setHealth(id, health) {
   return { id };
 }
 
+async function deleteLink(id) {
+  if (!id) throw new Error('link id required');
+  const db = getDb();
+  await db.collection(COLLECTION).doc(id).delete();
+  return { id };
+}
+
 module.exports = {
   createLink,
   getLink,
   updateLink,
   listLinks,
-  setHealth
+  setHealth,
+  deleteLink
 };
