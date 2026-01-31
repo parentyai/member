@@ -6,7 +6,7 @@
 - Purpose: CO-001 の Deferred 項目を構造化し依存関係を整理する
 - Type: design-only
 - Dependencies: Phase9 CLOSE
-- Evidence: UNKNOWN
+- Evidence: 非対象（実テスト開始に影響しない）
 
 ## In Progress
 

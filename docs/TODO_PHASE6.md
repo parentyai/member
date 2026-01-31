@@ -39,7 +39,7 @@
 - Scope: 既存 Phase5 summary / ops flags を参照するのみ（write / mutation / background job なし）
 - Edit Files: src/routes/phase6/<name>.js, src/usecases/phase6/<name>.js, tests/phase6/<name>.test.js
 - Tests: node --test tests/phase6/<name>.test.js
-- Evidence: UNKNOWN
+- Evidence: 非対象（実テスト開始に影響しない）
 - Risks: 実装対象が曖昧なまま進む
 - Type: code-task
 

@@ -8,7 +8,7 @@
 - Acceptance: 判断手順が第三者に説明可能
 - Dependencies: Phase4 INTERIM CLOSE 完了
 - Owner: Human
-- Evidence: 未記録
+- Evidence: 非対象（実テスト開始に影響しない）
 
 ### P4-106-02: Conceptual State Models
 - Purpose: ユーザー/通知/運用の概念状態を定義する
@@ -16,7 +16,7 @@
 - Acceptance: 状態と遷移がテキストで固定されている
 - Dependencies: P4-106-01
 - Owner: Human
-- Evidence: 未記録
+- Evidence: 非対象（実テスト開始に影響しない）
 
 ### P4-106-03: Non-Decision Cases
 - Purpose: 判断不能ケースと「何もしない」を固定する
@@ -24,7 +24,7 @@
 - Acceptance: 判断不能一覧が網羅的に記載されている
 - Dependencies: P4-106-01
 - Owner: Human
-- Evidence: 未記録
+- Evidence: 非対象（実テスト開始に影響しない）
 
 ### P4-106-04: Phase5 Handoff
 - Purpose: Phase5 に渡す判断材料と許可範囲を固定する
@@ -32,7 +32,7 @@
 - Acceptance: 判断材料/許可範囲/禁止事項が明記されている
 - Dependencies: P4-106-01
 - Owner: Human
-- Evidence: 未記録
+- Evidence: 非対象（実テスト開始に影響しない）
 
 ### P4-106-05: Acceptance & Traceability
 - Purpose: 受入条件と追跡表を作成する
@@ -40,4 +40,4 @@
 - Acceptance: Given/When/Then が明記されている
 - Dependencies: P4-106-01
 - Owner: Human
-- Evidence: 未記録
+- Evidence: 非対象（実テスト開始に影響しない）

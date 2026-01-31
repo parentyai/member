@@ -30,17 +30,17 @@ rg -n "Evidence:\\s*UNKNOWN|未記録|未確認|未実施" docs TODO_*.md docs/A
 | docs/ACCEPTANCE_P4-106.md | 24 | 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
 | docs/ACCEPTANCE_P4-106.md | 25 | 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
 | docs/ACCEPTANCE_P4-106.md | 26 | 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_P4-106.md | 11 | Evidence: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_P4-106.md | 19 | Evidence: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_P4-106.md | 27 | Evidence: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_P4-106.md | 35 | Evidence: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_P4-106.md | 43 | Evidence: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE6.md | 42 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE8.md | 13 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE8.md | 21 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE8.md | 29 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE9.md | 11 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
-| docs/TODO_PHASE10.md | 9 | Evidence: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_P4-106.md | 11 | EvidenceStatus: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_P4-106.md | 19 | EvidenceStatus: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_P4-106.md | 27 | EvidenceStatus: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_P4-106.md | 35 | EvidenceStatus: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_P4-106.md | 43 | EvidenceStatus: 未記録 | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE6.md | 42 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE8.md | 13 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE8.md | 21 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE8.md | 29 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE9.md | 11 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
+| docs/TODO_PHASE10.md | 9 | EvidenceStatus: UNKNOWN | 非対象 | 実テスト開始に直接影響しないため除外 |
 
 ## Summary
 - 必要範囲に該当する UNKNOWN/未記録/未確認/未実施: 0件
