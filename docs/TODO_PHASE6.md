@@ -31,15 +31,17 @@
 - Risks: 責務の曖昧化による逸脱
 - Type: docs-only
 
-### P6-003: Phase6 受入条件の設計（Design Pending）
-- Purpose: Phase6 の受入条件とEvidenceの形式を固定する
-- Completion Criteria: ACCEPTANCE_PHASE6.md が作成され、Evidence欄が定義されている
-- Dependencies: P6-001
-- Edit Files: docs/ACCEPTANCE_PHASE6.md
-- Tests: N/A (docs-only)
-- Evidence: PR #89 (docs-only PREPARE), 2026-01-31
-- Risks: 受入判断が不可能になる
-- Type: docs-only
+### P6-003: Phase6 READ ONLY 最小API追加（Design Pending）
+- Purpose: Phase6 における READ ONLY 実装の最小単位を1点追加する
+- Completion Criteria: /api/phase6/member/summary が READ ONLY で応答し、単体テストがPASSする
+- Dependencies: P6-001, P6-002
+- Implementation Target: /api/phase6/member/summary
+- Scope: 既存 Phase5 summary / ops flags を参照するのみ（write / mutation / background job なし）
+- Edit Files: src/routes/phase6/<name>.js, src/usecases/phase6/<name>.js, tests/phase6/<name>.test.js
+- Tests: node --test tests/phase6/<name>.test.js
+- Evidence: UNKNOWN
+- Risks: 実装対象が曖昧なまま進む
+- Type: code-task
 
 ## In Progress
 
