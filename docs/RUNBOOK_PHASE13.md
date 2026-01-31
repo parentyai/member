@@ -18,6 +18,13 @@
 - 結果: 403 Forbidden
 - 判定: FAIL
 
+## 403 切り分け（事実ベース）
+- 認証必須: YES（deploy.yml に `--no-allow-unauthenticated` が設定されている）
+- 認証方式: Cloud Run IAM（Authorization: Bearer の認証付きリクエスト）
+- 未認証時の期待挙動: 403 Forbidden
+- 正常系入口: Cloud Run URL に認証付きアクセス
+  - 例: `curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" https://member-pvxgenwkba-ue.a.run.app/admin/notifications/new`
+
 ## Daily
 - API: `${PUBLIC_BASE_URL}/admin/implementation-targets`
   - 配列 / length=1 / id=CO1-D-001-A01 / status=IN
