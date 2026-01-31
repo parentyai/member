@@ -20,6 +20,12 @@
 - Then: Prohibitions are explicitly listed
 - Evidence: docs/GUARDRAILS_PHASE9.md
 
+### CO-001: Decision Scope Fixed (Frame)
+- Given: CO-001 is in scope for Phase9
+- When: CO-001 decision scope is recorded in SSOT/TODO
+- Then: MUST / MUST NOT / DEFERRED are listed without implementation details
+- Evidence: docs/SSOT_PHASE9.md, docs/TODO_PHASE9.md
+
 ## Evidence Log
 | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- |
