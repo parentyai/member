@@ -103,36 +103,29 @@ Phase7 は **「設計フェーズ」**であり、
 
 - HD-001: Phase7 の具体的設計対象一覧を確定する
   - Role: 管理責任者
-  - 判定値: UNKNOWN
-  - 理由: Phase7 では詳細対象の判断基準が未確定のため
-  - 持ち越し先: Phase8
+  - 判定値: No（Phase7では判断しない）
+  - Phase8 持ち越し: CO-001
 
 - HD-002: Phase7 で固定する判断基準の範囲を確定する
   - Role: 管理責任者
-  - 判定値: UNKNOWN
-  - 理由: 判断基準の定量化が未確定のため
-  - 持ち越し先: Phase8
+  - 判定値: No（Phase7では判断しない）
+  - Phase8 持ち越し: CO-002
 
 - HD-003: Phase7 で残す未決定事項の扱いを確定する
   - Role: 管理責任者
-  - 判定値: UNKNOWN
-  - 理由: 未決定事項の分類ルールが未確定のため
-  - 持ち越し先: Phase8
+  - 判定値: No（Phase7では判断しない）
+  - Phase8 持ち越し: CO-003
 
 ---
 
 ## P7-002: Phase7 CLOSE 条件との関係
 
 - CLOSE 可能:
-  - HD-001 が Yes である
-  - HD-002 が Yes である
-  - HD-003 が Yes である
-
-- CLOSE 可能（UNKNOWN 残存条件）:
-  - UNKNOWN が残る場合は Phase7 CLOSE 不可とする
+  - HD-001/HD-002/HD-003 がすべて No（Phase7では判断しない）
+  - それぞれ対応する CO-001/CO-002/CO-003 が定義済み
 
 - CLOSE 不可:
-  - いずれかが No / Hold / UNKNOWN の場合
+  - いずれかが UNKNOWN / Hold のまま残っている場合
 
 ---
 
@@ -159,5 +152,5 @@ Phase7 は **「設計フェーズ」**であり、
 ---
 
 ## P7-003: Phase7 CLOSE との関係
-- 持ち越しが存在しても Phase7 CLOSE は不可とする
-- CLOSE は HD-001/002/003 がすべて Yes の場合のみ可能
+- 持ち越しが CO-001/CO-002/CO-003 として定義済みであれば CLOSE 可能
+- HD-001/002/003 が No であることを前提とする
