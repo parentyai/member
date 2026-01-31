@@ -1,11 +1,10 @@
 'use strict';
 
-const { getDb } = require('../../infra/firestore');
+const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 
 async function deleteLink(id) {
   if (!id) throw new Error('link id required');
-  const db = getDb();
-  await db.collection('link_registry').doc(id).delete();
+  await linkRegistryRepo.deleteLink(id);
   return { id };
 }
 
