@@ -20,6 +20,12 @@
 - Then: Prohibitions are explicitly listed
 - Evidence: docs/GUARDRAILS_PHASE8.md
 
+### CO-001: Design Completion (Frame)
+- Given: CO-001 design inputs are available
+- When: CO-001 design is recorded in SSOT/TODO
+- Then: Purpose/Inputs/Constraints are documented and decisions remain UNDECIDED
+- Evidence: docs/SSOT_PHASE8.md, docs/TODO_PHASE8.md
+
 ## Evidence Log
 | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- |
