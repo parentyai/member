@@ -4,6 +4,18 @@
 - Phase8 は Phase7 からの Carry-Over Items のみを確定する設計フェーズである。
 - Phase8 は設計フェーズであり、実装を行わない。
 
+## CO-001 (Design Fix)
+### MUST
+- Phase7 の具体的設計対象一覧を「詳細化」するために、Phase8で確定する
+### PRECONDITION
+- 判断基準の範囲が Yes/No で確定していること
+### MUST NOT
+- 実装方法・API/UI/DBの具体記述
+- CO-001 以外の対象に言及すること
+### UNDECIDED
+- HD8-001: 具体的設計対象一覧の詳細化内容を確定する（UNDECIDED）
+- HD8-002: 判断基準の範囲が Yes/No で確定しているか確認する（UNDECIDED）
+
 ## In Scope
 - CO-001
 - CO-002
