@@ -16,6 +16,18 @@
 - HD8-001: 具体的設計対象一覧の詳細化内容を確定する（UNDECIDED）
 - HD8-002: 判断基準の範囲が Yes/No で確定しているか確認する（UNDECIDED）
 
+## CO-002 (Design Fix)
+### MUST
+- Phase7 で固定する判断基準の定量化を Phase8 で扱う
+### PRECONDITION
+- 判断対象の一覧が確定していること
+### MUST NOT
+- 実装方法・API/UI/DBの具体記述
+- CO-002 以外の対象に言及すること
+### UNDECIDED
+- HD8-003: 判断基準の定量化内容を確定する（UNDECIDED）
+- HD8-004: 判断対象の一覧が確定しているか確認する（UNDECIDED）
+
 ## In Scope
 - CO-001
 - CO-002
