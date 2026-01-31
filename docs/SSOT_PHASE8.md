@@ -28,6 +28,18 @@
 - HD8-003: 判断基準の定量化内容を確定する（UNDECIDED）
 - HD8-004: 判断対象の一覧が確定しているか確認する（UNDECIDED）
 
+## CO-003 (Design Fix)
+### MUST
+- 未決定事項の最終扱い（採用 / 却下 / 実験）を Phase8 で扱う
+### PRECONDITION
+- 判断主体と決裁範囲が確定していること
+### MUST NOT
+- 実装方法・API/UI/DBの具体記述
+- CO-003 以外の対象に言及すること
+### UNDECIDED
+- HD8-005: 未決定事項の最終扱いを確定する（UNDECIDED）
+- HD8-006: 判断主体と決裁範囲が確定しているか確認する（UNDECIDED）
+
 ## In Scope
 - CO-001
 - CO-002

@@ -22,6 +22,7 @@
 - Purpose: CO-003 を Phase8 で確定する
 - Type: design-only
 - Dependencies: Phase7 CLOSE
+- Human Decision Items: HD8-005, HD8-006
 - Evidence: UNKNOWN
 
 ## Done
