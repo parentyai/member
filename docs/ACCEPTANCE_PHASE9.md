@@ -26,6 +26,12 @@
 - Then: MUST / MUST NOT / DEFERRED are listed without implementation details
 - Evidence: docs/SSOT_PHASE9.md, docs/TODO_PHASE9.md
 
+### CO-002: Decision Scope Fixed (Frame)
+- Given: CO-002 is in scope for Phase9
+- When: CO-002 decision scope is recorded in SSOT/TODO
+- Then: IN / OUT / GRAY ZONE are listed without implementation details
+- Evidence: docs/SSOT_PHASE9.md, docs/TODO_PHASE9.md
+
 ## Evidence Log
 | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- |
