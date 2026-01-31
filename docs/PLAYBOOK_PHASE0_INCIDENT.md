@@ -2,12 +2,12 @@
 
 Linked Task: P0-006, P0-121
 
-## Contacts (fill before go-live)
-- Incident Commander: [name, email]
-- Ops Owner: [name, email]
-- Product Owner: [name, email]
-- Security/Compliance: [name, email]
-- Content/Link Owner: [name, email]
+## Contacts
+- Incident Commander: Nobuhide Shimamura, nshimamura@parentyai.com
+- Ops Owner: Nobuhide Shimamura, nshimamura@parentyai.com
+- Product Owner: Nobuhide Shimamura, nshimamura@parentyai.com
+- Security/Compliance: Hinomaru Arumamihs, arumamihs.nob@gmail.com
+- Content/Link Owner: Hinomaru Arumamihs, arumamihs.nob@gmail.com
 
 ## Mis-send (Wrong Target)
 1) Enable Kill Switch immediately (admin settings).
