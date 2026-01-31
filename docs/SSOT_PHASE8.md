@@ -2,6 +2,7 @@
 
 ## Purpose
 - Phase8 は Phase7 からの Carry-Over Items のみを確定する設計フェーズである。
+- Phase8 は設計フェーズであり、実装を行わない。
 
 ## In Scope
 - CO-001

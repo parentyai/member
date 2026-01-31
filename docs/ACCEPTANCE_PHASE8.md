@@ -1,5 +1,8 @@
 # Acceptance Phase8 (Prepare)
 
+- Phase8 Status: STARTED
+- Start Date: 2026-01-31
+
 ## Checklist (Given / When / Then)
 
 ### A1: Phase8 SSOT
