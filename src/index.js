@@ -268,6 +268,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/admin/implementation-targets') {
+    const { handleImplementationTargets } = require('./routes/admin/implementationTargets');
+    handleImplementationTargets(req, res);
+    return;
+  }
+
   if (pathname.startsWith('/api/phase4/admin/')) {
     const { handleUsersSummary, handleNotificationsSummary } = require('./routes/admin/opsOverview');
     (async () => {
