@@ -63,13 +63,13 @@
 ## Evidence Log
 | Area | Date (YYYY-MM-DD) | Executor | Evidence | Notes |
 | --- | --- | --- | --- | --- |
-| A. SSOT Created | 未記録 | 未記録 | docs/SSOT_PHASE5.md | 未記録 |
-| B. TODO Created | 未記録 | 未記録 | docs/TODO_PHASE5.md | 未記録 |
-| C. Guardrails Created | 未記録 | 未記録 | docs/GUARDRAILS_PHASE5.md | 未記録 |
-| D. P5-101 Read-only State Visibility | 未記録 | 未記録 | PR #71 / tests/phase5/stateSummary.test.js (PASS) | 未記録 |
-| E. P5-102 Ops Read-only Filters | 未記録 | 未記録 | PR #73 / tests/phase5/opsFilter.test.js (PASS) | 未記録 |
-| E2. P5-103 Ops Flags (Log only) | 未記録 | 未記録 | PR #85 / tests/phase5/opsFlags.test.js (PASS) | 未記録 |
-| F. P5-104 Ops Manual Review Evidence | 未記録 | 未記録 | PR #76 / tests/phase5/opsReview.test.js (PASS) | 未記録 |
-| G. P5-105 Ops Attention Summary | 未記録 | 未記録 | PR #79 / tests/phase5/opsAttention.test.js (PASS) | 未記録 |
-| H. P5-106 Ops Review Evidence Write | 未記録 | 未記録 | PR #81 / tests/phase5/opsReviewWrite.test.js (PASS) | 未記録 |
-| I. P5-107 Ops User List Filters | 未記録 | 未記録 | PR #83 / tests/phase5/opsFilters.test.js (PASS) | 未記録 |
+| A. SSOT Created | 2026-01-29 | UNKNOWN | https://github.com/parentyai/member/pull/70 | Test: UNKNOWN |
+| B. TODO Created | 2026-01-29 | UNKNOWN | https://github.com/parentyai/member/pull/70 | Test: UNKNOWN |
+| C. Guardrails Created | 2026-01-29 | UNKNOWN | https://github.com/parentyai/member/pull/70 | Test: UNKNOWN |
+| D. P5-101 Read-only State Visibility | 2026-01-29 | UNKNOWN | https://github.com/parentyai/member/pull/71 | Test: node --test tests/phase5/stateSummary.test.js (PASS) |
+| E. P5-102 Ops Read-only Filters | 2026-01-29 | UNKNOWN | https://github.com/parentyai/member/pull/73 | Test: node --test tests/phase5/opsFilter.test.js (PASS) |
+| E2. P5-103 Ops Flags (Log only) | 2026-01-30 | UNKNOWN | https://github.com/parentyai/member/pull/85 | Test: node --test tests/phase5/opsFlags.test.js (PASS) |
+| F. P5-104 Ops Manual Review Evidence | 2026-01-30 | UNKNOWN | https://github.com/parentyai/member/pull/76 | Test: node --test tests/phase5/opsReview.test.js (PASS) |
+| G. P5-105 Ops Attention Summary | 2026-01-30 | UNKNOWN | https://github.com/parentyai/member/pull/79 | Test: node --test tests/phase5/opsAttention.test.js (PASS) |
+| H. P5-106 Ops Review Evidence Write | 2026-01-30 | UNKNOWN | https://github.com/parentyai/member/pull/81 | Test: node --test tests/phase5/opsReviewWrite.test.js (PASS) |
+| I. P5-107 Ops User List Filters | 2026-01-30 | UNKNOWN | https://github.com/parentyai/member/pull/83 | Test: node --test tests/phase5/opsFilters.test.js (PASS) |
