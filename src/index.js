@@ -406,6 +406,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase6/member/')) {
+    const { handlePhase6MemberSummary } = require('./routes/phase6MemberSummary');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase6/member/summary') {
+        await handlePhase6MemberSummary(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/admin/read-model')) {
     const { handleNotificationReadModel } = require('./routes/admin/readModel');
     (async () => {
