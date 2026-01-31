@@ -17,7 +17,7 @@
 - Dependencies: Phase5 CLOSE
 - Edit Files: docs/SSOT_PHASE6.md
 - Tests: N/A (docs-only)
-- Evidence: UNKNOWN
+- Evidence: PR #89 (docs-only PREPARE), 2026-01-31
 - Risks: SSOTが未確定のまま実装が進む
 - Type: docs-only
 
@@ -27,7 +27,7 @@
 - Dependencies: P6-001
 - Edit Files: docs/ARCHITECTURE_PHASE6.md
 - Tests: N/A (docs-only)
-- Evidence: UNKNOWN
+- Evidence: PR #89 (docs-only PREPARE), 2026-01-31
 - Risks: 責務の曖昧化による逸脱
 - Type: docs-only
 
