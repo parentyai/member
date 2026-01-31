@@ -32,6 +32,12 @@
 - Then: IN / OUT / GRAY ZONE are listed without implementation details
 - Evidence: docs/SSOT_PHASE9.md, docs/TODO_PHASE9.md
 
+### CO-003: Decision Scope Fixed (Frame)
+- Given: CO-003 is in scope for Phase9
+- When: CO-003 decision scope is recorded in SSOT/TODO
+- Then: IN / OUT / HARD NO / BOUNDARY are listed without implementation details
+- Evidence: docs/SSOT_PHASE9.md, docs/TODO_PHASE9.md
+
 ## Evidence Log
 | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- |
