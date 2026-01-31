@@ -10,12 +10,15 @@
 
 ## Backlog
 
+## In Progress
+
+## Done
 ### P7-001: Phase7 SSOT確定
 - Purpose: Phase7 の目的・非目的・CLOSE条件を固定する
 - Type: docs-only
 - Dependencies: Phase6 INTERIM CLOSE
 - Blocking Human Decision (Yes/No): Yes
-- Evidence: UNKNOWN
+- Evidence: PR #95 (docs-only / no implementation), 2026-01-30
 - Risks: Phase7 スコープが曖昧なまま進む
 
 ### P7-002: 判断項目一覧の確定
@@ -23,7 +26,7 @@
 - Type: design-only
 - Dependencies: P7-001
 - Blocking Human Decision (Yes/No): Yes
-- Evidence: UNKNOWN
+- Evidence: PR #97 (docs-only / no implementation), 2026-01-30
 - Risks: 判断基準が未定義のまま進む
 
 ### P7-003: Phase7 Acceptance定義
@@ -31,9 +34,5 @@
 - Type: docs-only
 - Dependencies: P7-001
 - Blocking Human Decision (Yes/No): No
-- Evidence: UNKNOWN
+- Evidence: PR #98 (docs-only / no implementation), 2026-01-30
 - Risks: CLOSE 判定ができない
-
-## In Progress
-
-## Done
