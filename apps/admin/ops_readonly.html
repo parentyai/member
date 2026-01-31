@@ -17,6 +17,10 @@
   <body>
     <h1>運用判断支援（READ ONLY）</h1>
     <div class="note">表示のみ。判断と操作は人間が行います。</div>
+    <div class="note">
+      <a href="/admin/read-model">通知集計</a> |
+      <a href="#implementation-targets">Implementation Targets</a>
+    </div>
 
     <div class="section">
       <h2>ユーザー状態一覧（READ ONLY）</h2>
@@ -94,6 +98,22 @@
       <div class="note">手動入力のみ（閲覧や集計では更新しない）</div>
       <div>At: <span id="ops-review-at">-</span></div>
       <div>By: <span id="ops-review-by">-</span></div>
+    </div>
+
+    <div class="section" id="implementation-targets">
+      <h2>Implementation Targets</h2>
+      <div class="note">READ ONLY（参照のみ）</div>
+      <table>
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>name</th>
+            <th>tag</th>
+            <th>status</th>
+          </tr>
+        </thead>
+        <tbody id="implementation-targets-rows"></tbody>
+      </table>
     </div>
 
     <script>
@@ -288,6 +308,28 @@
         byEl.textContent = review.lastReviewedBy;
       }
 
+      async function loadImplementationTargets() {
+        const res = await fetch('/admin/implementation-targets');
+        const rows = document.getElementById('implementation-targets-rows');
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          return;
+        }
+        if (!data.length) {
+          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = data.map((item) => `
+          <tr>
+            <td>${item.id}</td>
+            <td>${item.name || '-'}</td>
+            <td>${item.tag || '-'}</td>
+            <td>${item.status || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
       document.getElementById('users-apply').addEventListener('click', () => {
         syncUsersQueryToUrl();
         loadUsers().catch(() => {});
@@ -297,10 +339,11 @@
       });
 
       hydrateUsersFilters();
-      Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber()]).catch(() => {
+      Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber(), loadImplementationTargets()]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
         document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
+        document.getElementById('implementation-targets-rows').innerHTML = '<tr><td colspan="4">error</td></tr>';
       });
     </script>
   </body>
