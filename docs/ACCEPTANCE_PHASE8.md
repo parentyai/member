@@ -35,6 +35,12 @@
 - Then: Purpose/Inputs/Constraints are documented and decisions remain UNDECIDED
 - Evidence: docs/SSOT_PHASE8.md, docs/TODO_PHASE8.md
 
+### CO-003: Design Completion (Frame)
+- Given: CO-003 design inputs are available
+- When: CO-003 design is recorded in SSOT/TODO
+- Then: Purpose/Inputs/Constraints are documented and decisions remain UNDECIDED
+- Evidence: docs/SSOT_PHASE8.md, docs/TODO_PHASE8.md
+
 ## Evidence Log
 | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- |
