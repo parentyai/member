@@ -52,6 +52,8 @@
 ## Human Decision
 - 判断してよい項目: CO-001 / CO-002 / CO-003
 - 判断しない項目: CO-001〜003 以外の全て
+- Phase8 では判断を確定しない
+- HD8-* は Phase9 に持ち越す
 
 ## CLOSE 条件（Yes/No）
 | チェック項目 | 判定 |
@@ -61,6 +63,7 @@
 | ACCEPTANCE_PHASE8.md が存在する | Yes / No |
 | GUARDRAILS_PHASE8.md が存在する | Yes / No |
 | In Scope が CO-001〜003 のみ | Yes / No |
+| 判断が未確定であることが明示されている | Yes / No |
 
 ## UNKNOWN
 - UNKNOWN を追加する場合は理由と次フェーズを必ず明記する
