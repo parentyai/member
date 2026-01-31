@@ -23,6 +23,12 @@
 - Then: Prohibitions are explicitly listed
 - Evidence: docs/GUARDRAILS_PHASE8.md
 
+### Human Decision Carry-Over (Frame)
+- Given: Phase8 is design-only
+- When: Human Decision items remain UNDECIDED
+- Then: HD8-* are explicitly marked as carried over to Phase9
+- Evidence: docs/SSOT_PHASE8.md
+
 ### CO-001: Design Completion (Frame)
 - Given: CO-001 design inputs are available
 - When: CO-001 design is recorded in SSOT/TODO
