@@ -1,5 +1,7 @@
 'use strict';
 
+// Phase12: implementationTargetsAcceptance
+
 const assert = require('assert');
 const { test } = require('node:test');
 
