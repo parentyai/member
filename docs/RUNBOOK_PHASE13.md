@@ -68,3 +68,12 @@
 
 ## Rollback
 - 該当PRの revert のみ
+
+## Phase13 CLOSE 固定
+- Phase13 状態: CLOSED
+- CLOSE条件:
+  - 管理API /admin/implementation-targets: PASS
+  - 管理UI /admin/ops: PASS（200 OK）
+  - npm ci: PASS
+  - GO_SCOPE UNKNOWN: 0
+- 再解釈禁止: Phase13 の再判断・再評価は禁止
