@@ -27,6 +27,11 @@
 - クローズ根拠:
   - RUNBOOK_PHASE13.md における実テスト PASS
   - ACCEPTANCE_PHASE13.md における Evidence 固定
+- CLOSE条件（監査確定）:
+  - 管理API /admin/implementation-targets: PASS
+  - 管理UI /admin/ops: PASS（200 OK）
+  - npm ci: PASS
+  - GO_SCOPE UNKNOWN: 0
 - 対象外明示:
   - ミニアプリ
   - 通知送信
