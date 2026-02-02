@@ -52,6 +52,7 @@ function handleWebhook(req, res) {
     if (bytes > MAX_BODY_BYTES) {
       tooLarge = true;
       console.log(`[webhook] requestId=${requestId} reject=payload-too-large`);
+      console.log(`[OBS] action=webhook result=reject requestId=${requestId}`); // WIP: Phase16-T01-OBS
       res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('payload too large');
       req.destroy();
@@ -70,10 +71,17 @@ function handleWebhook(req, res) {
         requestId,
         logger: (msg) => console.log(msg)
       });
+      const obsResult = result.status >= 200 && result.status < 300 ? 'ok' : 'reject';
+      const obsParts = [
+        `[OBS] action=webhook result=${obsResult} requestId=${requestId}`
+      ];
+      if (result.firstUserId) obsParts.push(`lineUserId=${result.firstUserId}`);
+      console.log(obsParts.join(' ')); // WIP: Phase16-T01-OBS
       res.writeHead(result.status, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(result.body);
     } catch (err) {
       console.log(`[webhook] requestId=${requestId} reject=exception`);
+      console.log(`[OBS] action=webhook result=error requestId=${requestId}`); // WIP: Phase16-T01-OBS
       res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('server error');
     }
