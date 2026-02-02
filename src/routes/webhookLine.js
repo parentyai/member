@@ -58,6 +58,7 @@ async function handleLineWebhook(options) {
   }
 
   const userIds = extractUserIds(payload);
+  const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   for (const userId of userIds) {
     await ensureUserFromWebhook(userId);
@@ -65,7 +66,7 @@ async function handleLineWebhook(options) {
   }
 
   logger(`[webhook] requestId=${requestId} accept`);
-  return { status: 200, body: 'ok', userCount: userIds.length };
+  return { status: 200, body: 'ok', userCount: userIds.length, firstUserId };
 }
 
 module.exports = {

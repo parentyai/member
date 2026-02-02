@@ -13,6 +13,23 @@ function resolveActor(req) {
   return 'unknown';
 }
 
+function resolveRequestId(req) {
+  const headerId = req && req.headers && req.headers['x-request-id'];
+  if (typeof headerId === 'string' && headerId.length > 0) return headerId;
+  const trace = req && req.headers && req.headers['x-cloud-trace-context'];
+  if (typeof trace === 'string' && trace.length > 0) return trace.split('/')[0];
+  return 'unknown';
+}
+
+function logObs(action, result, fields) {
+  const parts = [`[OBS] action=${action} result=${result}`];
+  if (fields && fields.requestId) parts.push(`requestId=${fields.requestId}`);
+  if (fields && fields.lineUserId) parts.push(`lineUserId=${fields.lineUserId}`);
+  if (fields && fields.notificationId) parts.push(`notificationId=${fields.notificationId}`);
+  if (fields && fields.deliveryId) parts.push(`deliveryId=${fields.deliveryId}`);
+  console.log(parts.join(' ')); // WIP: Phase16-T01-OBS
+}
+
 function isKillSwitchError(err) {
   return err && typeof err.message === 'string' && err.message.includes('kill switch');
 }
@@ -85,10 +102,12 @@ async function handleList(req, res) {
 async function handleTestSend(req, res, body, notificationId) {
   const payload = parseJson(body, res);
   if (!payload) return;
+  const requestId = resolveRequestId(req);
 
   if (!payload.lineUserId) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('lineUserId required');
+    logObs('test-send', 'reject', { requestId });
     return;
   }
 
@@ -110,14 +129,30 @@ async function handleTestSend(req, res, body, notificationId) {
         textLength: typeof payload.text === 'string' ? payload.text.length : 0
       }
     });
+    logObs('test-send', 'ok', {
+      requestId,
+      lineUserId: payload.lineUserId,
+      notificationId: notificationId || payload.notificationId,
+      deliveryId: result.id
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, id: result.id }));
   } catch (err) {
     if (isKillSwitchError(err)) {
+      logObs('test-send', 'reject', {
+        requestId,
+        lineUserId: payload.lineUserId,
+        notificationId: notificationId || payload.notificationId
+      });
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('kill switch on');
       return;
     }
+    logObs('test-send', 'error', {
+      requestId,
+      lineUserId: payload.lineUserId,
+      notificationId: notificationId || payload.notificationId
+    });
     handleError(res, err);
   }
 }
