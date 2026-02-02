@@ -10,14 +10,10 @@ Note:
 ### A. LINE
 - [ ] LINE push send to a specific user works.
 - [ ] Webhook receives events and stores LINE userId.
-- [ ] Rich menu 4 slots link to mini app/external URLs.
 - [ ] First-time welcome message sent exactly once.
 
-### B. Mini App (Minimum)
-- [ ] Auto-identification by LINE userId (no ID/pass).
-- [ ] Inbox screen shows notifications with read/unread.
-- [ ] Checklist screen shows 3-5 items by scenario/step.
-- [ ] Each item has exactly one CTA and records click.
+### B. Mini App
+- Mini app was removed in Phase14 and is out of scope.
 
 ### C. Admin
 - [ ] Create notification (title/body/CTA/link).
@@ -41,7 +37,7 @@ Note:
 | Area | Date (YYYY-MM-DD) | Executor | Evidence link | Notes |
 | --- | --- | --- | --- | --- |
 | A. LINE | 2026-01-27 | arumamihsnob | LINE Console screenshot (2026-01-27) | Webhook verify 200 / Cloud Run log shows `accept` / webhook URL `https://member-webhook-pvxgenwkba-ue.a.run.app` |
-| B. Mini App |  |  |  |  |
+| B. Mini App |  |  | docs/SSOT_PHASE14.md | Withdrawn in Phase14 (out of scope) |
 | C. Admin |  |  |  |  |
 | D. Safety |  |  |  |  |
 | E. Deploy / Access | 2026-01-27 | arumamihsnob | https://github.com/parentyai/member/actions/runs/21380967358 | member: `https://member-pvxgenwkba-ue.a.run.app` / webhook: `https://member-webhook-pvxgenwkba-ue.a.run.app` / allUsers invoker enabled |

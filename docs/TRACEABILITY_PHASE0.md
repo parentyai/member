@@ -43,11 +43,10 @@ Linked Task: P0-004, P0-122
 
 ## SSOT 6.8: 画面仕様（ミニアプリ / 管理画面）
 
+Note: Mini app was removed in Phase14 and is out of scope. Mini app entries withdrawn.
+
 | Screen (SSOT) | Planned UI File::Component | Planned API Calls | Planned Tests (file::test) | Playbook | Status |
 | --- | --- | --- | --- | --- | --- |
-| Mini App /inbox | apps/mini/inbox.html | src/usecases/mini/getInbox.js::getInbox | tests/phase0/miniapp.test.js::"getInbox: returns deliveries with notification data" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (static UI + usecase) |
-| Mini App /checklist | apps/mini/checklist.html | src/usecases/mini/getChecklist.js::getChecklist | tests/phase0/miniapp.test.js::"getChecklist: returns items for scenario/step" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (static UI + usecase) |
-| Mini App /member | apps/mini/src/pages/Member.js::MemberPage | src/usecases/mini/updateMember.js::updateMember | tests/phase0/miniapp.test.js::"member number update" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | Admin /dashboard | apps/admin/src/pages/Dashboard.js::DashboardPage | src/usecases/notifications/listNotifications.js::listNotifications | tests/phase0/adminUi.test.js::"dashboard renders" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | Admin /notifications/new | apps/admin/src/pages/notifications/New.js::NotificationNewPage | src/usecases/notifications/createNotification.js::createNotification | tests/phase0/adminUi.test.js::"create notification" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | Admin /notifications | apps/admin/src/pages/notifications/Index.js::NotificationListPage | src/usecases/notifications/listNotifications.js::listNotifications | tests/phase0/adminUi.test.js::"list notifications" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
@@ -69,7 +68,7 @@ Linked Task: P0-004, P0-122
 | 2 | LINE webhookでuserId取得→users作成 | P0-102 | src/routes/webhookLine.js::handleLineWebhook; src/usecases/users/ensureUser.js::ensureUserFromWebhook | tests/phase0/webhook.test.js::"creates user" | docs/PLAYBOOK_PHASE0_BUILD.md | 未実装 |
 | 3 | push送信（テスト送信） | P0-103 | src/infra/lineClient.js::pushMessage; src/usecases/notifications/testSendNotification.js::testSendNotification | tests/phase0/notifications.test.js::"test send creates delivery" | docs/PLAYBOOK_PHASE0_E2E.md | 未実装 |
 | 4 | 管理画面: 通知作成→テスト送信→配信 | P0-104 | src/routes/admin/notifications.js::handleCreate/handleTestSend/handleSend | tests/phase0/notifications.test.js::"sendNotification: creates deliveries for matching users" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (create/send handlers) |
-| 5 | ミニアプリ: inbox/checklist表示 | P0-107 | apps/mini/inbox.html; apps/mini/checklist.html; src/usecases/mini/getInbox.js::getInbox; src/usecases/mini/getChecklist.js::getChecklist | tests/phase0/miniapp.test.js::"getInbox/getChecklist" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (static UI + usecase) |
+| 5 | ミニアプリ: inbox/checklist表示 | P0-107 | (withdrawn) | (withdrawn) | (withdrawn) | 撤回（Phase14 removed） |
 | 6 | クリック計測→リダイレクト | P0-108 | src/routes/trackClick.js::handleTrackClick; src/usecases/track/recordClickAndRedirect.js::recordClickAndRedirect | tests/phase0/click.test.js::"recordClickAndRedirect: marks click and returns url" | docs/PLAYBOOK_PHASE0_E2E.md | 一部実装済 (handler + usecase) |
 | 7 | Kill Switch / 監査ログ / Link Registryヘルス | P0-106/P0-109/P0-105 | src/usecases/killSwitch/setKillSwitch.js::setKillSwitch; src/repos/firestore/auditLogsRepo.js::appendAuditLog; src/usecases/linkRegistry/checkLinkHealth.js::checkLinkHealth | tests/phase0/killSwitch.test.js::"blocks send"; tests/phase0/audit.test.js::"auditLogsRepo: append writes createdAt"; tests/phase0/linkRegistry.test.js::"health check" | docs/PLAYBOOK_PHASE0_DEBUG.md | 一部実装済 (kill switch + link registry + audit logging) |
 
