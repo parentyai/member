@@ -22,18 +22,6 @@ const STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
 
 const RICH_MENU_ITEMS = Object.freeze([
   {
-    key: 'inbox',
-    label: '📩 公式連絡・重要通知',
-    target: 'miniapp',
-    path: '/inbox'
-  },
-  {
-    key: 'checklist',
-    label: '✅ 赴任チェックリスト',
-    target: 'miniapp',
-    path: '/checklist'
-  },
-  {
     key: 'faq',
     label: '📖 よくある質問',
     target: 'external',
