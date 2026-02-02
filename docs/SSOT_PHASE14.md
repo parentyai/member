@@ -3,6 +3,10 @@
 ## Purpose
 - Phase13 CLOSED を前提に、Phase14 の作業境界を固定する
 
+## Status
+- Phase14 Status: CLOSED
+- Close evidence: docs/RUNBOOK_PHASE13.md, docs/ACCEPTANCE_PHASE13.md
+
 ## Entry Condition
 - Phase13 CLOSED
 - Phase13 Acceptance PASS
