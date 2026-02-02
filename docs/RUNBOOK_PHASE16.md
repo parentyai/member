@@ -44,3 +44,18 @@
 - クリック記録: Yes/No
 - OBSログ抜粋:
 - 判定: PASS / FAIL
+
+---
+
+## 実テスト結果（Phase16-T03）
+- 実行日時(UTC): 2026-02-02 23:47:43
+- main SHA: 5c6a2e4b92f772564fff23c71e542f1114b26890
+- BASE_URL: https://member-pvxgenwkba-ue.a.run.app
+- requestId: 6e3a95ab-3f3c-43c2-8eaf-e03fadc11966
+- notificationId: FCq6dNq1VFfJFR2hiLs6
+- lineUserId(マスク): U303…c680
+- curl HTTP status: 500
+- LINE受信: 未実施（HTTP 500 のため送信停止）
+- クリック記録: 未実施
+- OBSログ抜粋: [OBS] action=test-send result=error requestId=6e3a95ab-3f3c-43c2-8eaf-e03fadc11966 lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=FCq6dNq1VFfJFR2hiLs6
+- 判定: FAIL
