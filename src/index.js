@@ -89,30 +89,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && pathname === '/inbox') {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'inbox.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/checklist') {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'checklist.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/phase1/checklist') {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'checklist_phase1.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
-  if (req.method === 'GET' && pathname === '/phase1/member') {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'mini', 'member_phase4.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
   if (pathname === '/api/phase1/events') {
     let bytes = 0;
     const chunks = [];
@@ -139,107 +115,6 @@ const server = http.createServer((req, res) => {
       if (req.method === 'POST') {
         const body = await collectBody();
         await handlePhase1Event(req, res, body);
-        return;
-      }
-      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('not found');
-    })().catch(() => {
-      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('error');
-    });
-    return;
-  }
-
-  if (pathname.startsWith('/api/mini/')) {
-    const { handleMiniInbox, handleMiniChecklist, handleMiniInboxRead } = require('./routes/mini');
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    const collectBody = () => new Promise((resolve) => {
-      req.on('data', (chunk) => {
-        if (tooLarge) return;
-        bytes += chunk.length;
-        if (bytes > MAX_BODY_BYTES) {
-          tooLarge = true;
-          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-          res.end('payload too large');
-          req.destroy();
-          return;
-        }
-        chunks.push(chunk);
-      });
-      req.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf8'));
-      });
-    });
-    (async () => {
-      if (req.method === 'GET' && pathname === '/api/mini/inbox') {
-        await handleMiniInbox(req, res);
-        return;
-      }
-      if (req.method === 'GET' && pathname === '/api/mini/checklist') {
-        await handleMiniChecklist(req, res);
-        return;
-      }
-      if (req.method === 'POST' && pathname === '/api/mini/inbox/read') {
-        const body = await collectBody();
-        await handleMiniInboxRead(req, res, body);
-        return;
-      }
-      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('not found');
-    })().catch(() => {
-      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('error');
-    });
-    return;
-  }
-
-  if (pathname.startsWith('/api/phase1/mini/')) {
-    const {
-      handlePhase1Checklist,
-      handlePhase1ChecklistToggle,
-      handlePhase1MemberGet,
-      handlePhase1MemberUpdate
-    } = require('./routes/phase1Mini');
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    const collectBody = () => new Promise((resolve) => {
-      req.on('data', (chunk) => {
-        if (tooLarge) return;
-        bytes += chunk.length;
-        if (bytes > MAX_BODY_BYTES) {
-          tooLarge = true;
-          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-          res.end('payload too large');
-          req.destroy();
-          return;
-        }
-        chunks.push(chunk);
-      });
-      req.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf8'));
-      });
-    });
-
-    (async () => {
-      if (req.method === 'GET' && pathname === '/api/phase1/mini/checklist') {
-        await handlePhase1Checklist(req, res);
-        return;
-      }
-      if (req.method === 'POST' && pathname === '/api/phase1/mini/checklist/toggle') {
-        const body = await collectBody();
-        await handlePhase1ChecklistToggle(req, res, body);
-        return;
-      }
-      if (req.method === 'GET' && pathname === '/api/phase1/mini/member') {
-        await handlePhase1MemberGet(req, res);
-        return;
-      }
-      if (req.method === 'POST' && pathname === '/api/phase1/mini/member') {
-        const body = await collectBody();
-        await handlePhase1MemberUpdate(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
