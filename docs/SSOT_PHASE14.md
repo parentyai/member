@@ -14,4 +14,5 @@
 - 判断の再解釈
 - 仕様変更
 - 実装対象の拡張
-- ミニアプリ（UI / API / 実テスト）は撤回・削除済み。Phase14 以降も対象外
+- Mini app（LINE Mini App / inbox / checklist）は撤回・削除済み。Phase14 以降も対象外
+- Mini app の再導入には新Phaseの意思決定が必要（Phase14では判断しない）
