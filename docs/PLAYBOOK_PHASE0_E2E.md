@@ -3,18 +3,15 @@
 Linked Task: P0-006, P0-121
 
 ## Goal
-Validate admin -> test send -> mini app -> click tracking flow end-to-end.
+Validate admin -> test send flow end-to-end. Mini app was removed in Phase14 and is out of scope.
 
 ## Preconditions
 - Admin API and UI implemented (P0-104).
-- Mini app inbox/checklist implemented (P0-107).
-- Click tracking implemented (P0-108).
 - Kill Switch is OFF.
 - Link Registry has at least one `OK` link.
 
 ## Variables
 - `ADMIN_BASE_URL`: https://member-pvxgenwkba-ue.a.run.app/admin
-- `MINIAPP_BASE_URL`: https://member-pvxgenwkba-ue.a.run.app
 - `TEST_LINE_USER_ID`: a LINE user ID that can receive test pushes
 
 ## Steps
@@ -25,16 +22,13 @@ Validate admin -> test send -> mini app -> click tracking flow end-to-end.
    - Title/Body/CTA: any SSOT-conform text
    - Link: select an `OK` Link Registry entry
 3) Use Test Send for `TEST_LINE_USER_ID`.
-4) Open `https://member-pvxgenwkba-ue.a.run.app/inbox` and confirm the notification appears.
-5) Click the CTA.
+4) Mini app steps are removed (withdrawn in Phase14).
 
 ## Expected Results
 - A `notification_deliveries` record is created for the test user.
-- Notification appears in inbox as unread then read after opening.
-- Click event recorded and redirected to the official link.
+Mini app verification is out of scope (withdrawn in Phase14).
 
 ## Evidence to Capture
 - Notification ID
 - Delivery ID
-- Click timestamp
 - Screenshot or logs from admin history
