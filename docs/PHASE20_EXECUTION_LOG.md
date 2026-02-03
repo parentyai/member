@@ -10,5 +10,9 @@
   - Script: scripts/phase20_cta_ab_stats.js
   - Conditions: ctaTextA="open", ctaTextB="open"
   - Output: {"utc":"2026-02-03T04:28:27.547Z","projectId":"member-485303","ctaTextA":"open","ctaTextB":"open","sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+- UTC: 2026-02-03T04:53:19.653Z
+  - Script: scripts/phase20_cta_ab_stats.js
+  - Conditions: ctaTextA="openA", ctaTextB="openB", fromUtc="2026-02-03T00:00:00Z", toUtc="2026-02-04T00:00:00Z"
+  - Output: {"utc":"2026-02-03T04:53:19.653Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
 
 ## 推論ログ
