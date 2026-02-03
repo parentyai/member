@@ -50,5 +50,12 @@
   - Script: scripts/phase20_cta_ab_stats.js
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
   - Output: {"utc":"2026-02-03T17:38:50.800Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+- UTC: 2026-02-03T23:35:38Z
+  - Track service: member-track (projectId="member-485303", region="us-east1"), url="https://member-track-pvxgenwkba-ue.a.run.app"
+  - requestId: "05370f41-5be1-4822-8a39-7364e82faef5"
+  - Input: deliveryId="wa1naEZ2vTYKbqHsK6Os", linkRegistryId="c5JfFu6bBqhbLtw32KLF"
+  - Command: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: 05370f41-5be1-4822-8a39-7364e82faef5" --data '{"deliveryId":"wa1naEZ2vTYKbqHsK6Os","linkRegistryId":"c5JfFu6bBqhbLtw32KLF"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
+  - Result: httpStatus=302, location="https://example.com"
+  - Saved log: /tmp/phase20_t04a_track_click_unauth.log
 
 ## 推論ログ
