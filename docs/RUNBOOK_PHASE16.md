@@ -74,3 +74,24 @@
 - クリック記録: No（CTAなし）
 - OBSログ抜粋: [OBS] action=test-send result=ok requestId=4d39ab69-8da1-4f0d-b303-09814ee6c1aa lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=FCq6dNq1VFfJFR2hiLs6 deliveryId=RPrGhBJxcseyBaWnT188
 - 判定: PASS
+
+---
+
+## 実テスト結果（Phase16-T03 CTAクリック）
+- 実行日時(UTC): 2026-02-03 02:32:43
+- 実行者: Nobuhide Shimamura
+- main SHA: 62b196037405324e1ef30389404e8363deeb82de
+- BASE_URL: https://member-pvxgenwkba-ue.a.run.app
+- requestId (test-send): 9da52a7a-a2bb-4fb6-9f4c-182750d6eb2c
+- requestId (click): dc427de4-cf11-45f2-b927-945cb7822eff
+- notificationId: AXe0e2INxRyKPGxNMeBw
+- linkRegistryId: 1AYUKDAVhs873twOEY0s
+- deliveryId: XRlfRXROm36f4UWWZCKs
+- lineUserId(マスク): U303…c680
+- curl HTTP status: 200
+- LINE受信: Yes
+- クリック記録: Yes
+- OBSログ抜粋:
+  - [OBS] action=test-send result=ok requestId=9da52a7a-a2bb-4fb6-9f4c-182750d6eb2c lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=AXe0e2INxRyKPGxNMeBw deliveryId=XRlfRXROm36f4UWWZCKs
+  - [OBS] action=click result=ok requestId=dc427de4-cf11-45f2-b927-945cb7822eff deliveryId=XRlfRXROm36f4UWWZCKs linkRegistryId=1AYUKDAVhs873twOEY0s
+- 判定: PASS
