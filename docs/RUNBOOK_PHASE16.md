@@ -59,3 +59,18 @@
 - クリック記録: 未実施
 - OBSログ抜粋: [OBS] action=test-send result=error requestId=6e3a95ab-3f3c-43c2-8eaf-e03fadc11966 lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=FCq6dNq1VFfJFR2hiLs6
 - 判定: FAIL
+
+---
+
+## 実テスト結果（Phase16-T03 再実行）
+- 実行日時(UTC): 2026-02-03 00:59:11.257262
+- main SHA: 99daf39e0853d763e5ca1f60740f99c8df1e5d26
+- BASE_URL: https://member-pvxgenwkba-ue.a.run.app
+- requestId: 4d39ab69-8da1-4f0d-b303-09814ee6c1aa
+- notificationId: FCq6dNq1VFfJFR2hiLs6
+- lineUserId(マスク): U303…c680
+- curl HTTP status: 200
+- LINE受信: Yes
+- クリック記録: No（CTAなし）
+- OBSログ抜粋: [OBS] action=test-send result=ok requestId=4d39ab69-8da1-4f0d-b303-09814ee6c1aa lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=FCq6dNq1VFfJFR2hiLs6 deliveryId=RPrGhBJxcseyBaWnT188
+- 判定: PASS
