@@ -24,5 +24,21 @@
 - OBSログ抜粋: [OBS] action=test-send result=ok requestId=4d39ab69-8da1-4f0d-b303-09814ee6c1aa lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=FCq6dNq1VFfJFR2hiLs6 deliveryId=RPrGhBJxcseyBaWnT188
 - 判定: PASS
 
+---
+
+## Evidence Log（CTA付き通知・クリック成立）
+- 実行日時(UTC): 2026-02-03 02:32:43
+- 実行者: Nobuhide Shimamura
+- main SHA: 62b196037405324e1ef30389404e8363deeb82de
+- BASE_URL: https://member-pvxgenwkba-ue.a.run.app
+- linkRegistryId: 1AYUKDAVhs873twOEY0s
+- notificationId: AXe0e2INxRyKPGxNMeBw
+- deliveryId: XRlfRXROm36f4UWWZCKs
+- test-send HTTP status: 200
+- OBSログ抜粋:
+  - [OBS] action=test-send result=ok requestId=9da52a7a-a2bb-4fb6-9f4c-182750d6eb2c lineUserId=U3037952f2f6531a3d8b24fd13ca3c680 notificationId=AXe0e2INxRyKPGxNMeBw deliveryId=XRlfRXROm36f4UWWZCKs
+  - [OBS] action=click result=ok requestId=dc427de4-cf11-45f2-b927-945cb7822eff deliveryId=XRlfRXROm36f4UWWZCKs linkRegistryId=1AYUKDAVhs873twOEY0s
+- 判定: PASS
+
 ## Reference
 - docs/RUNBOOK_PHASE16.md
