@@ -6,6 +6,7 @@ const usersRepo = require('../../repos/firestore/usersRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
+const { recordSent } = require('../phase18/recordCtaStats');
 
 function buildTextMessage(notification) {
   const text = notification.body || notification.title || '';
@@ -58,6 +59,15 @@ async function sendNotification(params) {
       sentAt,
       delivered: true
     });
+    try {
+      await recordSent({
+        notificationId,
+        ctaText: notification.ctaText || null,
+        linkRegistryId: notification.linkRegistryId || null
+      });
+    } catch (err) {
+      // WIP: Phase18 CTA stats should not block delivery
+    }
   }
 
   await notificationsRepo.updateNotificationStatus(notificationId, {
