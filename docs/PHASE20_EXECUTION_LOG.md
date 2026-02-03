@@ -32,5 +32,14 @@
   - Script: scripts/phase20_cta_ab_stats.js
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
   - Output: {"utc":"2026-02-03T15:58:19.157Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+- UTC: 2026-02-03T17:16:03.174Z
+  - LinkRegistry: linkRegistryId="wKr9J9x40U1q3bI2HTmT", url="https://example.com"
+  - Notifications: notificationIdA="BfuRnwZtlkDvzxqmCXIa" (ctaText="openA"), notificationIdB="S2XLX8rqF8pxSqYSQt3C" (ctaText="openB")
+  - test-send: attemptsA=10, attemptsB=10
+  - Deliveries: deliveryIdA="eMKz7gnT7WfsDrEKztz2", deliveryIdB="vvago2nmzAqYUC5TFfV7"
+  - track/click: clickA httpStatus=403 (saved to /tmp/phase20_click_A.log), clickB httpStatus=403 (saved to /tmp/phase20_click_B.log)
+  - Script: scripts/phase20_cta_ab_stats.js
+  - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
+  - Output: {"utc":"2026-02-03T17:16:03.174Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
 
 ## 推論ログ
