@@ -88,12 +88,51 @@ function handleWebhook(req, res) {
   });
 }
 
+function handleTrackClickRoute(req, res) {
+  let bytes = 0;
+  const chunks = [];
+  let tooLarge = false;
+  req.on('data', (chunk) => {
+    if (tooLarge) return;
+    bytes += chunk.length;
+    if (bytes > MAX_BODY_BYTES) {
+      tooLarge = true;
+      res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('payload too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+  req.on('end', async () => {
+    if (tooLarge) return;
+    const body = Buffer.concat(chunks).toString('utf8');
+    try {
+      const { handleTrackClick } = require('./routes/trackClick');
+      await handleTrackClick(req, res, body);
+    } catch (err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+  });
+}
+
 const server = http.createServer((req, res) => {
   const pathname = getPathname(req.url);
 
   if (req.method === 'GET' && (pathname === '/healthz' || pathname === '/healthz/')) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, env: ENV_NAME }));
+    return;
+  }
+
+  if (SERVICE_MODE === 'track') {
+    if (req.method === 'POST' && pathname === '/track/click') {
+      handleTrackClickRoute(req, res);
+      return;
+    }
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('not found');
     return;
   }
 
@@ -565,32 +604,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/track/click') {
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    req.on('data', (chunk) => {
-      if (tooLarge) return;
-      bytes += chunk.length;
-      if (bytes > MAX_BODY_BYTES) {
-        tooLarge = true;
-        res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('payload too large');
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', async () => {
-      if (tooLarge) return;
-      const body = Buffer.concat(chunks).toString('utf8');
-      try {
-        const { handleTrackClick } = require('./routes/trackClick');
-        await handleTrackClick(req, res, body);
-      } catch (err) {
-        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('error');
-      }
-    });
+    handleTrackClickRoute(req, res);
     return;
   }
 
