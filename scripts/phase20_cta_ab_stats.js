@@ -6,7 +6,7 @@ const fs = require('fs');
 const { execFileSync } = require('child_process');
 
 function usage() {
-  console.error('Usage: node scripts/phase20_cta_ab_stats.js "CTA_TEXT_A" "CTA_TEXT_B"');
+  console.error('Usage: node scripts/phase20_cta_ab_stats.js "CTA_TEXT_A" "CTA_TEXT_B" [FROM_UTC] [TO_UTC]');
 }
 
 function buildGcloudEnv() {
@@ -47,6 +47,13 @@ function readFieldNumber(field) {
   return 0;
 }
 
+function readFieldTimestamp(field) {
+  if (!field || !field.timestampValue) return null;
+  const value = new Date(field.timestampValue);
+  if (Number.isNaN(value.getTime())) return null;
+  return value;
+}
+
 function fetchJson(url, token) {
   return new Promise((resolve, reject) => {
     const req = https.request(url, {
@@ -79,6 +86,10 @@ async function main() {
   }
   const ctaTextA = args[0];
   const ctaTextB = args[1];
+  const fromUtc = args[2] || null;
+  const toUtc = args[3] || null;
+  const fromDate = fromUtc ? new Date(fromUtc) : null;
+  const toDate = toUtc ? new Date(toUtc) : null;
 
   const projectId = resolveProjectId();
   const token = getAccessToken();
@@ -90,6 +101,7 @@ async function main() {
   let sentB = 0;
   let clickB = 0;
   let totalDocs = 0;
+  const records = [];
 
   while (true) {
     const url = pageToken ? `${baseUrl}?pageSize=1000&pageToken=${encodeURIComponent(pageToken)}` : `${baseUrl}?pageSize=1000`;
@@ -98,27 +110,76 @@ async function main() {
     docs.forEach((doc) => {
       totalDocs += 1;
       const fields = doc.fields || {};
-      const ctaText = readFieldString(fields.ctaText);
-      const sent = readFieldNumber(fields.sentCount);
-      const click = readFieldNumber(fields.clickCount);
-      if (ctaText === ctaTextA) {
-        sentA += sent;
-        clickA += click;
-      }
-      if (ctaText === ctaTextB) {
-        sentB += sent;
-        clickB += click;
-      }
+      records.push({
+        ctaText: readFieldString(fields.ctaText),
+        sent: readFieldNumber(fields.sentCount),
+        click: readFieldNumber(fields.clickCount),
+        createdAt: readFieldTimestamp(fields.createdAt),
+        updatedAt: readFieldTimestamp(fields.updatedAt)
+      });
     });
     if (!data.nextPageToken) break;
     pageToken = data.nextPageToken;
   }
+
+  let filterField = null;
+  let hasCreatedAt = false;
+  let hasUpdatedAt = false;
+  records.forEach((record) => {
+    if (record.createdAt) hasCreatedAt = true;
+    if (record.updatedAt) hasUpdatedAt = true;
+  });
+  if (fromUtc || toUtc) {
+    if (hasCreatedAt) {
+      filterField = 'createdAt';
+    } else if (hasUpdatedAt) {
+      filterField = 'updatedAt';
+    }
+    if (!filterField) {
+      const result = {
+        utc: new Date().toISOString(),
+        projectId,
+        ctaTextA,
+        ctaTextB,
+        fromUtc,
+        toUtc,
+        filterField: null,
+        sentCountA: 0,
+        clickCountA: 0,
+        sentCountB: 0,
+        clickCountB: 0,
+        scannedDocs: 0
+      };
+      console.log(JSON.stringify(result));
+      return;
+    }
+  }
+
+  records.forEach((record) => {
+    if (filterField) {
+      const ts = filterField === 'createdAt' ? record.createdAt : record.updatedAt;
+      if (!ts) return;
+      if (fromDate && ts < fromDate) return;
+      if (toDate && ts > toDate) return;
+    }
+    if (record.ctaText === ctaTextA) {
+      sentA += record.sent;
+      clickA += record.click;
+    }
+    if (record.ctaText === ctaTextB) {
+      sentB += record.sent;
+      clickB += record.click;
+    }
+  });
 
   const result = {
     utc: new Date().toISOString(),
     projectId,
     ctaTextA,
     ctaTextB,
+    fromUtc,
+    toUtc,
+    filterField: filterField,
     sentCountA: sentA,
     clickCountA: clickA,
     sentCountB: sentB,
