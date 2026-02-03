@@ -3,6 +3,16 @@
 ## 目的
 - 7日運用の代替として、同一フローを短時間に集中実行し、OBSログで相関確認可能な事実を残す
 
+## 実行サマリ（2026-02-03 02:45:23 UTC）
+- 実行回数: 20
+- 成功回数: 20
+- 失敗回数: 0
+- result=ok: 20
+- result=reject: 0
+- result=error: 0
+- action=click: 0
+- duplicate click: 0
+
 ## 実行サマリ
 - 実行方式: scripts/phase17_burst_test.sh
 - 実行回数: 20
