@@ -23,5 +23,12 @@
   - Script: scripts/phase20_cta_ab_stats.js
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
   - Output: {"utc":"2026-02-03T15:18:27.540Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+- UTC: 2026-02-03T15:26:43Z
+  - Task: Phase20-T03 CTA A/B stats verification (post-merge)
+  - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
+  - Output:
+    ```json
+    {"utc":"2026-02-03T15:26:43.471Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+    ```
 
 ## 推論ログ
