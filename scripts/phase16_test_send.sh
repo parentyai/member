@@ -20,7 +20,8 @@ if [[ -z "${LINE_USER_ID:-}" ]]; then
   exit 1
 fi
 
-REQUEST_ID="$(node -e "console.log(require('crypto').randomUUID())")"
+REQUEST_ID="${REQUEST_ID:-$(node -e "console.log(require('crypto').randomUUID())")}"
+echo "requestId=${REQUEST_ID}"
 TOKEN="$(gcloud auth print-identity-token)"
 if [[ -z "$TOKEN" ]]; then
   echo "Failed to get identity token" >&2
@@ -40,4 +41,3 @@ curl -i \
   -H "x-request-id: ${REQUEST_ID}" \
   --data "${BODY}" \
   "${ENDPOINT}"
-
