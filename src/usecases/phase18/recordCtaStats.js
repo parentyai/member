@@ -3,6 +3,9 @@
 const phase18StatsRepo = require('../../repos/firestore/phase18StatsRepo');
 
 function isEnabled() {
+  // Phase20: member-track service must record CTA stats for unauth click flow.
+  // This does not affect the private member service because SERVICE_MODE differs.
+  if (process.env.SERVICE_MODE === 'track') return true;
   return process.env.PHASE18_CTA_EXPERIMENT === '1';
 }
 
