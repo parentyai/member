@@ -65,5 +65,14 @@
   - Result A: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_A_unauth.log)
   - Command B: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: a08cc3f9-1de4-452c-8467-fe160474251c" --data '{"deliveryId":"TpUwG4XQXdNdi6GwTJ12","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
   - Result B: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_B_unauth.log)
+- UTC: 2026-02-04T01:30:43.502Z
+  - LinkRegistry: linkRegistryId="hP8yzomr9t99YjdhZrVL", url="https://example.com"
+  - Notifications: notificationIdA="tX8xQusMeCyEtyCApyyu" (ctaText="openA"), notificationIdB="dV2jxKc1lsT9YJu41ZVN" (ctaText="openB")
+  - test-send: attemptsA=10, attemptsB=10
+  - Deliveries: deliveryIdA="zH6RE9sL9yAE5gmws2gW", deliveryIdB="dWYTEQla2hF2ecrtByoI"
+  - track/click: clickA httpStatus=403 (saved to /tmp/phase20_click_A.log), clickB httpStatus=403 (saved to /tmp/phase20_click_B.log)
+  - Script: scripts/phase20_cta_ab_stats.js
+  - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
+  - Output: {"utc":"2026-02-04T01:30:43.502Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
 
 ## 推論ログ
