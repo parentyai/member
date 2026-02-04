@@ -75,5 +75,15 @@
   - Script: scripts/phase20_cta_ab_stats.js
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
   - Output: {"utc":"2026-02-04T01:17:26.800Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
+- UTC: 2026-02-04T02:07:00.976Z
+  - Base: member (projectId="member-485303"), url="https://member-pvxgenwkba-ue.a.run.app"
+  - LinkRegistry: linkRegistryId="EOO7eirlAMrBfpipGjs2", url="https://example.com"
+  - Notifications: notificationIdA="RIEe0T08qMmHxlC2x5lO" (ctaText="openA"), notificationIdB="c3PVaR1tqajJ5o7QU3v9" (ctaText="openB")
+  - test-send: attemptsA=10, attemptsB=10
+  - Deliveries: deliveryIdA="yCxLPI4f8ik2vozJ2PRh", deliveryIdB="w40cB4xRfrNxGRlhdUc8"
+  - track/click (base member): clickA httpStatus=403 (saved to /tmp/phase20_click_A.log), clickB httpStatus=403 (saved to /tmp/phase20_click_B.log)
+  - Script: scripts/phase20_cta_ab_stats.js
+  - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
+  - Output: {"utc":"2026-02-04T02:07:00.976Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
 
 ## 推論ログ
