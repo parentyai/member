@@ -65,5 +65,14 @@
   - Result A: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_A_unauth.log)
   - Command B: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: a08cc3f9-1de4-452c-8467-fe160474251c" --data '{"deliveryId":"TpUwG4XQXdNdi6GwTJ12","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
   - Result B: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_B_unauth.log)
+- UTC: 2026-02-04T01:51:59Z
+  - mainSHA: 1518248884c4bd5388112039628ec8d26266764c
+  - Track service: member-track (projectId="member-485303", region="us-east1"), url="https://member-track-pvxgenwkba-ue.a.run.app"
+  - Inputs: linkRegistryId="Ls61KJFtn3YtYLpkzf1q", deliveryIdA="rA2PagUnCtcIRiloYHvm", deliveryIdB="TpUwG4XQXdNdi6GwTJ12"
+  - RequestIds: requestIdA="0c991464-b632-45e5-80fb-89cbb237571d", requestIdB="9b5c2f2c-2976-4b3d-aa10-0ac8b642ed5c"
+  - Command A: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: 0c991464-b632-45e5-80fb-89cbb237571d" --data '{"deliveryId":"rA2PagUnCtcIRiloYHvm","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
+  - Result A: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_A_unauth.log)
+  - Command B: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: 9b5c2f2c-2976-4b3d-aa10-0ac8b642ed5c" --data '{"deliveryId":"TpUwG4XQXdNdi6GwTJ12","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
+  - Result B: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_B_unauth.log)
 
 ## 推論ログ
