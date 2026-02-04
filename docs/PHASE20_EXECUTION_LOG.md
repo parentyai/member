@@ -65,5 +65,15 @@
   - Result A: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_A_unauth.log)
   - Command B: curl -i -H "content-type: application/json; charset=utf-8" -H "x-request-id: a08cc3f9-1de4-452c-8467-fe160474251c" --data '{"deliveryId":"TpUwG4XQXdNdi6GwTJ12","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
   - Result B: httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t04a_click_B_unauth.log)
+- UTC: 2026-02-04T00:39:18Z
+  - Task: Phase20-T04B-DEBUG (403 origin check)
+  - main SHA: 1518248884c4bd5388112039628ec8d26266764c
+  - PUBLIC_BASE_URL: "https://member-pvxgenwkba-ue.a.run.app"
+  - TRACK_BASE_URL: "https://member-track-pvxgenwkba-ue.a.run.app"
+  - Input: deliveryId="MFRYxyNVr2gOIthISRgW", linkRegistryId="gBNSkcwTWpeHflgLOEaK"
+  - Command (member): curl -sS -D /tmp/click_member_headers.txt -o /tmp/click_member_body.txt -X POST "https://member-pvxgenwkba-ue.a.run.app/track/click" -H "content-type: application/json; charset=utf-8" -d '{"deliveryId":"MFRYxyNVr2gOIthISRgW","linkRegistryId":"gBNSkcwTWpeHflgLOEaK"}'
+  - Result (member): httpStatus=403, location=<none> (saved to /tmp/click_member_headers.txt, /tmp/click_member_body.txt)
+  - Command (track): curl -sS -D /tmp/click_track_headers.txt -o /tmp/click_track_body.txt -X POST "https://member-track-pvxgenwkba-ue.a.run.app/track/click" -H "content-type: application/json; charset=utf-8" -d '{"deliveryId":"MFRYxyNVr2gOIthISRgW","linkRegistryId":"gBNSkcwTWpeHflgLOEaK"}'
+  - Result (track): httpStatus=302, location="https://example.com" (saved to /tmp/click_track_headers.txt, /tmp/click_track_body.txt)
 
 ## 推論ログ
