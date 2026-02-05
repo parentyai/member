@@ -140,3 +140,4 @@
   - 判定: Phase20 CLOSE = YES（理由: unauth click が HTTP 302 + Location を返し、stats の clickCount が 0 以外であるため）
 
 ## 推論ログ
+Phase20-T06 判定: CTA click が実測で集計されることを確認（CLOSE 可）
