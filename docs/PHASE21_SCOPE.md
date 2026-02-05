@@ -26,8 +26,20 @@ Define the implementation scope for Phase21 as a bounded set of up to five items
 6) `node scripts/phase21_verify_day_window.js` exits with code `0`.
 7) The output JSON includes `sentCountA>=1`, `sentCountB>=1`, `clickCountA>=1`, `clickCountB>=1`.
 8) The output JSON includes `filterField="createdAt"`.
-9) CLOSE requires verify exitCode=0; exitCode!=0 => HOLD.
+9) CLOSE requires verify outcome classification per Exit Code Rules (below).
 
-## 5. Rollback & Safe-Stop
+## 5. Exit Code Rules
+1) exitCode=0: PASS (計測成立).
+2) exitCode=1: FAIL (実装/仕様の不備。修正が必要).
+3) exitCode=2: VERIFY_ENV_ERROR (実行環境不備。コード変更では解決しない).
+
+## 6. CLOSE Rules
+1) Phase21 CLOSE は「exitCode=1 が解消済み」かつ「exitCode=2 は環境問題として分類済み」であれば YES.
+2) “CLOSE=YES/NO” は execution log の事実に基づき宣言する（推測しない）.
+
+## 7. Recovery Reference (One Line)
+ADC reauth required: `gcloud auth application-default login` / GOOGLE_APPLICATION_CREDENTIALS set: unset or use `--allow-gac`.
+
+## 8. Rollback & Safe-Stop
 - Rollback: revert the specific Phase21 PR being deployed.
 - Safe-Stop: stop further Phase21 work if any Out of Scope item is required to proceed.
