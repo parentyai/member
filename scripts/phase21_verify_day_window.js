@@ -64,7 +64,14 @@ function parseArgs(argv) {
   if (args['track-base-url'] && !args.trackBaseUrl) {
     args.trackBaseUrl = args['track-base-url'];
   }
+  if (args['allow-gac'] && !args.allowGac) {
+    args.allowGac = true;
+  }
   return args;
+}
+
+function isGacBlocked(args, env) {
+  return Boolean(env && env.GOOGLE_APPLICATION_CREDENTIALS) && !args.allowGac;
 }
 
 function utcRangeDefaults() {
@@ -146,6 +153,10 @@ async function createDelivery(notificationId, lineUserId) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (isGacBlocked(args, process.env)) {
+    console.error('VERIFY_ENV_ERROR: GOOGLE_APPLICATION_CREDENTIALS is set; unset it or use --allow-gac');
+    process.exit(2);
+  }
   const defaults = utcRangeDefaults();
 
   const fromUtc = args.fromUtc || defaults.fromUtc;
@@ -263,4 +274,4 @@ if (require.main === module) {
   main().catch(handleMainError);
 }
 
-module.exports = { loadFirestoreDeps };
+module.exports = { loadFirestoreDeps, isGacBlocked };
