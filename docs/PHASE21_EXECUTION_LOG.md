@@ -15,20 +15,12 @@ Basis: "PHASE21_SCOPE.md fixed + scope-facts merged"
 NonGoals: "no implementation / no decision / no behavior change"
 Test: "npm test PASS (75/75, fail 0)"
 
-UTC: 2026-02-05T03:59:17Z
+UTC: 2026-02-05T04:05:44Z
 main SHA: 881f07c90e9642e512c8fd8a247cb4d974e7bd78
-Action: "Phase21 T06/T07 implemented (code-only)"
-PR: #196 https://github.com/parentyai/member/pull/196
-Changed: "package.json | 3 +-, scripts/phase21_verify_day_window.js | 207 +, tests/phase21/phase21_t06_click_b_day_window.test.js | 105 +; 3 files changed, 314 insertions(+), 1 deletion(-)"
-Test: "npm test PASS (81 passed)"
-Script: "scripts/phase21_verify_day_window.js (exists)"
-Test: "tests/phase21/phase21_t06_click_b_day_window.test.js (exists)"
-
-UTC: 2026-02-05T13:02:40Z
-main SHA: bf604e3816675edebf12882a7db0dc97e5550b01
-Action: "Phase21 verify failed reason extracted"
-Command: "node scripts/phase21_verify_day_window.js"
+Action: "Phase21 CLOSE verification run"
+Command: "GOOGLE_APPLICATION_CREDENTIALS= FIRESTORE_PROJECT_ID=member-485303 ENV_NAME=stg node scripts/phase21_verify_day_window.js --trackBaseUrl=\"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId=\"Ls61KJFtn3YtYLpkzf1q\""
 Result: "exitCode=1"
-Output: "/tmp/phase21_t11_verify_out.txt"
-Reason: "trackBaseUrl required"
+Output: "/tmp/phase21_t10_verify.txt"
 Test: "npm test PASS (81 passed, fail 0)"
+Decision: "Phase21 CLOSE = NO"
+Reason: "criteria not satisfied"
