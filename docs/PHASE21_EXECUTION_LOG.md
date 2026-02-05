@@ -57,3 +57,15 @@ require.resolve(firebase-admin): "ok (/Users/parentyai.com/Projects/Member/node_
 Command: "node scripts/phase21_verify_day_window.js --track-base-url \"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId \"Ls61KJFtn3YtYLpkzf1q\" > /tmp/phase21_t16_verify_stdout.txt 2> /tmp/phase21_t16_verify_stderr.txt"
 Result: "exitCode=1"
 Output: "stdout=/tmp/phase21_t16_verify_stdout.txt stderr=/tmp/phase21_t16_verify_stderr.txt exit=/tmp/phase21_t16_exit_code.txt"
+
+UTC: 2026-02-05T23:20:01Z
+main SHA: c0dfa2c61e28e6ec8959529cc73d6cb9c67cefb5
+Action: "Phase21 CLOSE declared (docs-only)"
+Basis:
+- "PHASE21_SCOPE.md updated with Exit Code Rules + CLOSE Rules (PR #208)"
+- "npm test PASS (88)"
+Rule:
+- "exitCode=1 => implementation/spec failure"
+- "exitCode=2 => VERIFY_ENV_ERROR (environment); not an implementation defect"
+Decision: "Phase21 CLOSE = YES"
+Rollback: "revert this PR"
