@@ -156,11 +156,13 @@ async function main() {
   if (!trackBaseUrl) {
     usage();
     console.error('trackBaseUrl required');
+    console.error('exitCode=2 reason=trackBaseUrl_required');
     process.exit(2);
   }
   if (!linkRegistryId) {
     usage();
     console.error('linkRegistryId required');
+    console.error('exitCode=2 reason=linkRegistryId_required');
     process.exit(2);
   }
 
@@ -226,6 +228,7 @@ async function main() {
     stats = JSON.parse(statsOutput);
   } catch (err) {
     console.error('STOP: stats parse error');
+    console.error('exitCode=2 reason=stats_parse_error');
     process.exit(2);
   }
 
@@ -236,19 +239,28 @@ async function main() {
 
   if (!pass) {
     console.log(`STOP: sentCountA=${stats.sentCountA} sentCountB=${stats.sentCountB} clickCountA=${stats.clickCountA} clickCountB=${stats.clickCountB}`);
+    console.error('exitCode=1 reason=thresholds_not_met');
     console.log('Phase21 VERIFY day-window FAIL');
-    process.exit(2);
+    process.exit(1);
   }
 
   console.log('Phase21 VERIFY day-window PASS');
 }
 
-main().catch((err) => {
+function handleMainError(err) {
   const message = err && err.message ? err.message : String(err);
   if (err && err.code === 'VERIFY_ENV_ERROR') {
     console.error(message);
+    console.error('exitCode=2 reason=VERIFY_ENV_ERROR');
     process.exit(2);
   }
   console.error(message);
-  process.exit(2);
-});
+  console.error('exitCode=1 reason=runtime_error');
+  process.exit(1);
+}
+
+if (require.main === module) {
+  main().catch(handleMainError);
+}
+
+module.exports = { loadFirestoreDeps };
