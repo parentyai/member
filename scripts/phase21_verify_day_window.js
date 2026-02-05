@@ -74,6 +74,14 @@ function isGacBlocked(args, env) {
   return Boolean(env && env.GOOGLE_APPLICATION_CREDENTIALS) && !args.allowGac;
 }
 
+function isAdcReauthError(message) {
+  const text = (message || '').toLowerCase();
+  return text.includes('invalid_rapt')
+    || text.includes('reauth related error')
+    || text.includes('invalid_grant')
+    || text.includes('getting metadata from plugin failed');
+}
+
 function utcRangeDefaults() {
   const now = new Date();
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
@@ -265,6 +273,11 @@ function handleMainError(err) {
     console.error('exitCode=2 reason=VERIFY_ENV_ERROR');
     process.exit(2);
   }
+  if (isAdcReauthError(message)) {
+    console.error('VERIFY_ENV_ERROR: ADC reauth required. Run: gcloud auth application-default login. If blocked, try a different account or service account.');
+    console.error('exitCode=2 reason=VERIFY_ENV_ERROR');
+    process.exit(2);
+  }
   console.error(message);
   console.error('exitCode=1 reason=runtime_error');
   process.exit(1);
@@ -274,4 +287,10 @@ if (require.main === module) {
   main().catch(handleMainError);
 }
 
-module.exports = { loadFirestoreDeps, isGacBlocked };
+module.exports = {
+  loadFirestoreDeps,
+  isGacBlocked,
+  isAdcReauthError,
+  main,
+  handleMainError
+};
