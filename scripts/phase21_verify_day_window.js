@@ -8,6 +8,10 @@ const { execFileSync } = require('child_process');
 const notificationsRepo = require('../src/repos/firestore/notificationsRepo');
 const { testSendNotification } = require('../src/usecases/notifications/testSendNotification');
 
+function usage() {
+  console.error('Usage: node scripts/phase21_verify_day_window.js --track-base-url "<url>" --linkRegistryId "<id>" [--fromUtc "<utc>"] [--toUtc "<utc>"] [--deliveryIdA "<id>"] [--deliveryIdB "<id>"]');
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -26,6 +30,9 @@ function parseArgs(argv) {
     } else {
       args[key] = true;
     }
+  }
+  if (args['track-base-url'] && !args.trackBaseUrl) {
+    args.trackBaseUrl = args['track-base-url'];
   }
   return args;
 }
@@ -111,14 +118,16 @@ async function main() {
 
   const fromUtc = args.fromUtc || defaults.fromUtc;
   const toUtc = args.toUtc || defaults.toUtc;
-  const trackBaseUrl = args.trackBaseUrl;
+  const trackBaseUrl = args.trackBaseUrl || process.env.TRACK_BASE_URL;
   const linkRegistryId = args.linkRegistryId;
 
   if (!trackBaseUrl) {
+    usage();
     console.error('trackBaseUrl required');
     process.exit(1);
   }
   if (!linkRegistryId) {
+    usage();
     console.error('linkRegistryId required');
     process.exit(1);
   }
