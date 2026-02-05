@@ -10,6 +10,14 @@ function buildTextMessage(text) {
   return { type: 'text', text: text || '' };
 }
 
+function logSentWriteError(fields) {
+  if (process.env.SERVICE_MODE !== 'track') return;
+  const parts = ['[OBS] action=sent-write result=error'];
+  if (fields && fields.notificationId) parts.push(`notificationId=${fields.notificationId}`);
+  if (fields && fields.lineUserId) parts.push(`lineUserId=${fields.lineUserId}`);
+  console.log(parts.join(' '));
+}
+
 async function testSendNotification(params) {
   const payload = params || {};
   const lineUserId = payload.lineUserId;
@@ -25,16 +33,6 @@ async function testSendNotification(params) {
 
   await pushFn(lineUserId, buildTextMessage(text));
 
-  // Best-effort: do not let stats recording break sending.
-  try {
-    const notif = await notificationsRepo.getNotification(notificationId);
-    const ctaText = notif && typeof notif.ctaText === 'string' ? notif.ctaText : null;
-    const linkRegistryId = notif && typeof notif.linkRegistryId === 'string' ? notif.linkRegistryId : null;
-    await recordSent({ notificationId, ctaText, linkRegistryId });
-  } catch (_err) {
-    // Intentionally ignored (member service mode must stay quiet; best-effort only).
-  }
-
   const delivery = {
     notificationId,
     lineUserId,
@@ -42,6 +40,17 @@ async function testSendNotification(params) {
     delivered: true
   };
   const result = await deliveriesRepo.createDelivery(delivery);
+
+  // Best-effort: do not let stats recording break sending.
+  try {
+    const notif = await notificationsRepo.getNotification(notificationId);
+    const ctaText = notif && typeof notif.ctaText === 'string' ? notif.ctaText : null;
+    const linkRegistryId = notif && typeof notif.linkRegistryId === 'string' ? notif.linkRegistryId : null;
+    await recordSent({ notificationId, ctaText, linkRegistryId });
+  } catch (_err) {
+    logSentWriteError({ notificationId, lineUserId });
+  }
+
   return { id: result.id };
 }
 
