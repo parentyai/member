@@ -26,6 +26,7 @@ Define the implementation scope for Phase21 as a bounded set of up to five items
 6) `node scripts/phase21_verify_day_window.js` exits with code `0`.
 7) The output JSON includes `sentCountA>=1`, `sentCountB>=1`, `clickCountA>=1`, `clickCountB>=1`.
 8) The output JSON includes `filterField="createdAt"`.
+9) CLOSE requires verify exitCode=0; exitCode!=0 => HOLD.
 
 ## 5. Rollback & Safe-Stop
 - Rollback: revert the specific Phase21 PR being deployed.
