@@ -117,4 +117,15 @@
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
   - Output: {"utc":"2026-02-04T03:36:52.803Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":null,"sentCountA":0,"clickCountA":0,"sentCountB":0,"clickCountB":0,"scannedDocs":0}
 
+- UTC: 2026-02-05T00:58:06Z
+  - main SHA: d655cc351fbe0dcb171d3ee88913869592e08beb
+  - Track service: member-track (projectId="member-485303"), url="https://member-track-pvxgenwkba-ue.a.run.app"
+  - Inputs: linkRegistryId="Ls61KJFtn3YtYLpkzf1q", deliveryId="rA2PagUnCtcIRiloYHvm", requestId="cafe23e9-0ce2-48b3-8545-1031036563ab"
+  - Command (unauth click): curl -i -H "x-request-id: cafe23e9-0ce2-48b3-8545-1031036563ab" -H "content-type: application/json; charset=utf-8" --data '{"deliveryId":"rA2PagUnCtcIRiloYHvm","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
+  - Result (unauth click): httpStatus=302, location="https://example.com" (saved to /tmp/t05_click_headers_after_merge_cafe23e9-0ce2-48b3-8545-1031036563ab.txt)
+  - Log (member-track): [OBS] action=click-write result=ok deliveryId=rA2PagUnCtcIRiloYHvm ctaText=openA linkRegistryId=Ls61KJFtn3YtYLpkzf1q (saved to /tmp/t05_track_logs_after_merge_cafe23e9-0ce2-48b3-8545-1031036563ab.txt)
+  - Script: scripts/phase20_cta_ab_stats.js
+  - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-04T00:00:00Z"
+  - Output: {"utc":"2026-02-05T00:57:22.634Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-04T00:00:00Z","filterField":"createdAt","sentCountA":0,"clickCountA":3,"sentCountB":0,"clickCountB":0,"scannedDocs":1} (saved to /tmp/t05_stats_after_merge_cafe23e9-0ce2-48b3-8545-1031036563ab.json)
+
 ## 推論ログ
