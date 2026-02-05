@@ -32,3 +32,18 @@ Action: "Phase21 CLOSE verification run (T13)"
 Command: "node scripts/phase21_verify_day_window.js --track-base-url \"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId \"Ls61KJFtn3YtYLpkzf1q\""
 Result: "FAIL (exitCode=1)"
 Output: "/tmp/phase21_t13_verify.txt"
+
+UTC: 2026-02-05T13:51:07Z
+main SHA: 5a213513cf0d19d003cf108cab3e558a73e35180
+Action: "Phase21 verify rerun (T14) for failure evidence"
+Command: "node scripts/phase21_verify_day_window.js --track-base-url \"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId \"Ls61KJFtn3YtYLpkzf1q\" > /tmp/phase21_t14_verify_stdout.txt 2> /tmp/phase21_t14_verify_stderr.txt"
+Result: "exitCode=1"
+Output: "stdout=/tmp/phase21_t14_verify_stdout.txt stderr=/tmp/phase21_t14_verify_stderr.txt exit=/tmp/phase21_t14_exit_code.txt"
+stdout (head):
+{"trackBaseUrl":"https://member-track-pvxgenwkba-ue.a.run.app","fromUtc":"2026-02-05T00:00:00.000Z","toUtc":"2026-02-06T00:00:00.000Z","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}
+stderr (head):
+Cannot find module 'firebase-admin'
+Require stack:
+- /Users/parentyai.com/Projects/Member/src/infra/firestore.js
+- /Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js
+- /Users/parentyai.com/Projects/Member/scripts/phase21_verify_day_window.js
