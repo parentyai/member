@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 function runScript(args, env) {
   return spawnSync(process.execPath, ['scripts/phase21_verify_day_window.js'].concat(args), {
     encoding: 'utf8',
-    env: Object.assign({}, process.env, env || {})
+    env: Object.assign({}, process.env, { GOOGLE_APPLICATION_CREDENTIALS: '' }, env || {})
   });
 }
 
