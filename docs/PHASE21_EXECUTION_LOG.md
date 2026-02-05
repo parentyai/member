@@ -14,3 +14,12 @@ DeclaredBy: "nobu"
 Basis: "PHASE21_SCOPE.md fixed + scope-facts merged"
 NonGoals: "no implementation / no decision / no behavior change"
 Test: "npm test PASS (75/75, fail 0)"
+
+UTC: 2026-02-05T03:59:17Z
+main SHA: 881f07c90e9642e512c8fd8a247cb4d974e7bd78
+Action: "Phase21 T06/T07 implemented (code-only)"
+PR: #196 https://github.com/parentyai/member/pull/196
+Changed: "package.json | 3 +-, scripts/phase21_verify_day_window.js | 207 +, tests/phase21/phase21_t06_click_b_day_window.test.js | 105 +; 3 files changed, 314 insertions(+), 1 deletion(-)"
+Test: "npm test PASS (81 passed)"
+Script: "scripts/phase21_verify_day_window.js (exists)"
+Test: "tests/phase21/phase21_t06_click_b_day_window.test.js (exists)"

@@ -23,8 +23,10 @@ Define the implementation scope for Phase21 as a bounded set of up to five items
 3) The same JSON includes `sentCountA + sentCountB >= 1`.
 4) `POST /track/click` on `member-track` returns HTTP status `302` with a `Location` header present.
 5) `npm test` returns `fail 0`.
+6) `node scripts/phase21_verify_day_window.js` exits with code `0`.
+7) The output JSON includes `sentCountA>=1`, `sentCountB>=1`, `clickCountA>=1`, `clickCountB>=1`.
+8) The output JSON includes `filterField="createdAt"`.
 
 ## 5. Rollback & Safe-Stop
 - Rollback: revert the specific Phase21 PR being deployed.
 - Safe-Stop: stop further Phase21 work if any Out of Scope item is required to proceed.
-
