@@ -5,11 +5,41 @@ const https = require('https');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 
-const notificationsRepo = require('../src/repos/firestore/notificationsRepo');
-const { testSendNotification } = require('../src/usecases/notifications/testSendNotification');
+let notificationsRepo = null;
+let testSendNotification = null;
 
 function usage() {
   console.error('Usage: node scripts/phase21_verify_day_window.js --track-base-url "<url>" --linkRegistryId "<id>" [--fromUtc "<utc>"] [--toUtc "<utc>"] [--deliveryIdA "<id>"] [--deliveryIdB "<id>"]');
+}
+
+function loadFirestoreDeps() {
+  if (notificationsRepo && testSendNotification) return;
+  try {
+    notificationsRepo = require('../src/repos/firestore/notificationsRepo');
+    ({ testSendNotification } = require('../src/usecases/notifications/testSendNotification'));
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    if (err && err.code === 'MODULE_NOT_FOUND' && message.includes('firebase-admin')) {
+      const error = new Error('VERIFY_ENV_ERROR: firebase-admin missing');
+      error.code = 'VERIFY_ENV_ERROR';
+      throw error;
+    }
+    throw err;
+  }
+}
+
+async function withFirebaseAdmin(fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    if (err && err.code === 'MODULE_NOT_FOUND' && message.includes('firebase-admin')) {
+      const error = new Error('VERIFY_ENV_ERROR: firebase-admin missing');
+      error.code = 'VERIFY_ENV_ERROR';
+      throw error;
+    }
+    throw err;
+  }
 }
 
 function parseArgs(argv) {
@@ -92,23 +122,25 @@ function formatHttpResponse(response) {
 }
 
 async function createNotificationWithCta(ctaText, linkRegistryId) {
-  return notificationsRepo.createNotification({
+  loadFirestoreDeps();
+  return withFirebaseAdmin(() => notificationsRepo.createNotification({
     title: `phase21 verify ${ctaText}`,
     body: 'click: https://example.com',
     ctaText,
     linkRegistryId,
     scenarioKey: 'A',
     stepKey: '3mo'
-  });
+  }));
 }
 
 async function createDelivery(notificationId, lineUserId) {
-  const result = await testSendNotification({
+  loadFirestoreDeps();
+  const result = await withFirebaseAdmin(() => testSendNotification({
     lineUserId,
     text: 'phase21 verify send',
     notificationId,
     pushFn: async () => {}
-  });
+  }));
   return result.id;
 }
 
@@ -124,12 +156,12 @@ async function main() {
   if (!trackBaseUrl) {
     usage();
     console.error('trackBaseUrl required');
-    process.exit(1);
+    process.exit(2);
   }
   if (!linkRegistryId) {
     usage();
     console.error('linkRegistryId required');
-    process.exit(1);
+    process.exit(2);
   }
 
   console.log(JSON.stringify({ trackBaseUrl, fromUtc, toUtc, linkRegistryId }));
@@ -141,6 +173,7 @@ async function main() {
   let notificationIdB = null;
 
   if (!deliveryIdA || !deliveryIdB) {
+    loadFirestoreDeps();
     const notifA = await createNotificationWithCta('openA', linkRegistryId);
     const notifB = await createNotificationWithCta('openB', linkRegistryId);
     notificationIdA = notifA.id;
@@ -211,6 +244,11 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err && err.message ? err.message : String(err));
-  process.exit(1);
+  const message = err && err.message ? err.message : String(err);
+  if (err && err.code === 'VERIFY_ENV_ERROR') {
+    console.error(message);
+    process.exit(2);
+  }
+  console.error(message);
+  process.exit(2);
 });
