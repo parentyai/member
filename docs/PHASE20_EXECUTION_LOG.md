@@ -130,13 +130,14 @@
 
 - UTC: 2026-02-05T01:36:56.707Z
   - main SHA: f3486fcfb32718e374d9574940cbd540adb1e758
-  - Track service: member-track (projectId="member-485303"), url="https://member-track-pvxgenwkba-ue.a.run.app"
-  - Inputs: linkRegistryId="Ls61KJFtn3YtYLpkzf1q", deliveryId="rA2PagUnCtcIRiloYHvm"
+  - TRACK_BASE_URL: https://member-track-pvxgenwkba-ue.a.run.app
   - Command (unauth click): curl -i -H "content-type: application/json; charset=utf-8" --data '{"deliveryId":"rA2PagUnCtcIRiloYHvm","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q"}' "https://member-track-pvxgenwkba-ue.a.run.app/track/click"
+  - Expected (unauth click): httpStatus=302 + location header
   - Result (unauth click): httpStatus=302, location="https://example.com" (saved to /tmp/phase20_t06_click_20260205T013653Z.txt)
   - Script: scripts/phase20_cta_ab_stats.js
   - Command: node scripts/phase20_cta_ab_stats.js "openA" "openB" "2026-02-03T00:00:00Z" "2026-02-05T00:00:00Z"
   - Output: {"utc":"2026-02-05T01:36:56.707Z","projectId":"member-485303","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-03T00:00:00Z","toUtc":"2026-02-05T00:00:00Z","filterField":"createdAt","sentCountA":0,"clickCountA":4,"sentCountB":0,"clickCountB":0,"scannedDocs":1} (saved to /tmp/phase20_t06_stats_20260205T013655Z.json)
+  - 判定: Phase20 CLOSE = YES（理由: unauth click が HTTP 302 + Location を返し、stats の clickCount が 0 以外であるため）
 
 ## 推論ログ
 Phase20-T06 判定: CTA click が実測で集計されることを確認（CLOSE 可）
