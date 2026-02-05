@@ -47,3 +47,13 @@ Require stack:
 - /Users/parentyai.com/Projects/Member/src/infra/firestore.js
 - /Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js
 - /Users/parentyai.com/Projects/Member/scripts/phase21_verify_day_window.js
+
+UTC: 2026-02-05T16:45:00Z
+main SHA: da439c69882f1440aa86262ef9b4e4b9d989910a
+Action: "Phase21 verify rerun with npm ci (T16)"
+node_modules: "absent (no rm)"
+npm ci: "executed"
+require.resolve(firebase-admin): "ok (/Users/parentyai.com/Projects/Member/node_modules/firebase-admin/lib/index.js)"
+Command: "node scripts/phase21_verify_day_window.js --track-base-url \"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId \"Ls61KJFtn3YtYLpkzf1q\" > /tmp/phase21_t16_verify_stdout.txt 2> /tmp/phase21_t16_verify_stderr.txt"
+Result: "exitCode=1"
+Output: "stdout=/tmp/phase21_t16_verify_stdout.txt stderr=/tmp/phase21_t16_verify_stderr.txt exit=/tmp/phase21_t16_exit_code.txt"
