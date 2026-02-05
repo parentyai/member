@@ -24,3 +24,11 @@ Output: "/tmp/phase21_t10_verify.txt"
 Test: "npm test PASS (81 passed, fail 0)"
 Decision: "Phase21 CLOSE = NO"
 Reason: "criteria not satisfied"
+
+UTC: 2026-02-05T13:46:34Z
+main SHA: 3a0d45a00b37dd5b156cb109cdcb94e3dbc47505
+PR: #200
+Action: "Phase21 CLOSE verification run (T13)"
+Command: "node scripts/phase21_verify_day_window.js --track-base-url \"https://member-track-pvxgenwkba-ue.a.run.app\" --linkRegistryId \"Ls61KJFtn3YtYLpkzf1q\""
+Result: "FAIL (exitCode=1)"
+Output: "/tmp/phase21_t13_verify.txt"
