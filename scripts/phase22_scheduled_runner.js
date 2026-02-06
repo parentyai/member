@@ -45,14 +45,29 @@ function buildInputs(args) {
   };
 }
 
-function buildFallbackOutput(args, utc) {
-  return {
+function buildFallbackOutput(args, utc, reasonCode) {
+  const output = {
     utc,
     inputs: buildInputs(args),
     kpi: null,
     gate: null,
     result: 'FAIL'
   };
+  if (reasonCode) {
+    output.reasonCode = reasonCode;
+  }
+  return output;
+}
+
+function reasonForExitCode(exitCode) {
+  if (exitCode === 2) return 'RUNNER_ENV_ERROR';
+  return 'RUNNER_FAILED';
+}
+
+function ensureReason(output, reasonCode) {
+  if (!output || typeof output !== 'object') return output;
+  if (output.reasonCode) return output;
+  return Object.assign({}, output, { reasonCode });
 }
 
 async function runScheduled(argv, deps) {
@@ -63,19 +78,20 @@ async function runScheduled(argv, deps) {
 
   let runResult;
   try {
-    runResult = runAndGate(args);
+    runResult = await runAndGate(args);
   } catch (_err) {
-    const output = buildFallbackOutput(args, nowIso());
+    const output = buildFallbackOutput(args, nowIso(), 'RUNNER_RUNTIME_ERROR');
     return { exitCode: 1, output };
   }
 
   if (!runResult || !runResult.output) {
-    const output = buildFallbackOutput(args, nowIso());
+    const output = buildFallbackOutput(args, nowIso(), 'RUNNER_NO_OUTPUT');
     return { exitCode: 1, output };
   }
 
   if (runResult.exitCode !== 0) {
-    return { exitCode: runResult.exitCode, output: runResult.output };
+    const reasonCode = reasonForExitCode(runResult.exitCode);
+    return { exitCode: runResult.exitCode, output: ensureReason(runResult.output, reasonCode) };
   }
 
   const write = toWriteFlag(args.write);
@@ -86,11 +102,15 @@ async function runScheduled(argv, deps) {
   try {
     const recordResult = await runGateAndRecord(argv, { runAndGate: () => runResult });
     if (recordResult && recordResult.output) {
+      if (recordResult.exitCode !== 0) {
+        const reasonCode = reasonForExitCode(recordResult.exitCode);
+        return { exitCode: recordResult.exitCode, output: ensureReason(recordResult.output, reasonCode) };
+      }
       return { exitCode: recordResult.exitCode, output: recordResult.output };
     }
     return { exitCode: runResult.exitCode, output: runResult.output };
   } catch (_err) {
-    const output = buildFallbackOutput(args, nowIso());
+    const output = buildFallbackOutput(args, nowIso(), 'RUNNER_RECORD_ERROR');
     return { exitCode: 1, output };
   }
 }
