@@ -39,6 +39,25 @@ jobs:
           echo "$code" > exit_code.txt
           set -e
           exit "$code"
+      - name: Write Phase22 summary
+        if: always()
+        run: |
+          set +e
+          stdout_head="$(head -n 1 stdout.txt | head -c 2000)"
+          reason="stdout_parse_error"
+          stage="stdout_parse_error"
+          node_output=$(node -e 'const fs=require("fs"); const line=(fs.readFileSync("stdout.txt","utf8").split(/\\r?\\n/)[0]||""); const data=JSON.parse(line); console.log(String(data.reasonCode||"")); console.log(String(data.stage||""));' 2>/dev/null)
+          if [ $? -eq 0 ]; then
+            reason="$(printf "%s" "$node_output" | sed -n '1p')"
+            stage="$(printf "%s" "$node_output" | sed -n '2p')"
+            if [ -z "$reason" ]; then reason="(empty)"; fi
+            if [ -z "$stage" ]; then stage="(empty)"; fi
+          fi
+          {
+            echo "stdout_head: ${stdout_head}"
+            echo "reasonCode: ${reason}"
+            echo "stage: ${stage}"
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
