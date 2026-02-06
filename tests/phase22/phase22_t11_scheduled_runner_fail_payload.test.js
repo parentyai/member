@@ -36,7 +36,8 @@ test('phase22 t11: FAIL output includes reasonCode', async () => {
         gate: null,
         result: 'FAIL'
       }
-    })
+    }),
+    captureSnapshotStderr: () => ({ stderrHead: '', stderrBytes: 0, stderrCapture: 'empty' })
   };
   const result = await runner.runScheduled(baseArgs(), deps);
   assert.equal(result.exitCode, 1);
