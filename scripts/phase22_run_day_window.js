@@ -55,7 +55,11 @@ function runScript(scriptPath, args) {
 }
 
 function buildVerifyArgs(trackBaseUrl, linkRegistryId) {
-  return ['--track-base-url', trackBaseUrl, '--linkRegistryId', linkRegistryId];
+  const args = ['--track-base-url', trackBaseUrl, '--linkRegistryId', linkRegistryId];
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    args.push('--allow-gac');
+  }
+  return args;
 }
 
 function buildKpiArgs(ctaA, ctaB, fromUtc, toUtc) {
