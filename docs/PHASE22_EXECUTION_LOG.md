@@ -116,3 +116,22 @@ Artifacts (stderr head 10 lines):
 Extracted:
 - "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation subReason=exitCode=1 stderrBytes=28 stderrCapture=captured"
 - "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation subReason=exitCode=1 stderrBytes=28 stderrCapture=captured"
+
+UTC: 2026-02-06T11:51:06Z
+main SHA: 562c4812cbb9a4af129c2d3f251394f9bbfa828a
+Action: "Phase22 scheduled workflows rerun (T21) after projectId env fix"
+Run URLs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21749511589"
+- "write: https://github.com/parentyai/member/actions/runs/21749513632"
+Conclusions:
+- "dryrun: failure"
+- "write: failure"
+Artifacts (stdout head 1 line):
+- "dryrun_stdout_head: {\"utc\":\"2026-02-06T11:49:43.152Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"IMPL\",\"nextAction\":\"inspect script error and fix implementation\",\"errorSignature\":\"KPI_NULL_EXIT_1\",\"stderrHead\":\"(unset)\\nproject id required\",\"stderrBytes\":28,\"stderrCapture\":\"captured\",\"subReason\":\"exitCode=1\"}"
+- "write_stdout_head: {\"utc\":\"2026-02-06T11:49:46.611Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"IMPL\",\"nextAction\":\"inspect script error and fix implementation\",\"errorSignature\":\"KPI_NULL_EXIT_1\",\"stderrHead\":\"(unset)\\nproject id required\",\"stderrBytes\":28,\"stderrCapture\":\"captured\",\"subReason\":\"exitCode=1\"}"
+Artifacts (stderr head 10 lines):
+- "dryrun_stderr_head: (empty)"
+- "write_stderr_head: (empty)"
+Summary (keys):
+- "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
+- "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
