@@ -41,7 +41,8 @@ function kpiNullResult(stderr) {
 
 test('phase22 t16: invalid_rapt => ENV classification', async () => {
   const deps = {
-    runAndGate: () => kpiNullResult('invalid_rapt: reauth required')
+    runAndGate: () => kpiNullResult('invalid_rapt: reauth required'),
+    captureSnapshotStderr: () => ({ stderrHead: 'invalid_rapt: reauth required', stderrBytes: 30, stderrCapture: 'captured' })
   };
   const result = await runner.runScheduled(baseArgs(), deps);
   assert.equal(result.output.reasonCode, 'KPI_NULL');
@@ -53,7 +54,8 @@ test('phase22 t16: invalid_rapt => ENV classification', async () => {
 
 test('phase22 t16: firebase-admin missing => ENV classification', async () => {
   const deps = {
-    runAndGate: () => kpiNullResult("Cannot find module 'firebase-admin'")
+    runAndGate: () => kpiNullResult("Cannot find module 'firebase-admin'"),
+    captureSnapshotStderr: () => ({ stderrHead: "Cannot find module 'firebase-admin'", stderrBytes: 36, stderrCapture: 'captured' })
   };
   const result = await runner.runScheduled(baseArgs(), deps);
   assert.equal(result.output.failure_class, 'ENV');
@@ -62,7 +64,8 @@ test('phase22 t16: firebase-admin missing => ENV classification', async () => {
 
 test('phase22 t16: generic stderr => IMPL classification', async () => {
   const deps = {
-    runAndGate: () => kpiNullResult('boom')
+    runAndGate: () => kpiNullResult('boom'),
+    captureSnapshotStderr: () => ({ stderrHead: 'boom', stderrBytes: 4, stderrCapture: 'captured' })
   };
   const result = await runner.runScheduled(baseArgs(), deps);
   assert.equal(result.output.failure_class, 'IMPL');
@@ -71,10 +74,11 @@ test('phase22 t16: generic stderr => IMPL classification', async () => {
 
 test('phase22 t16: empty stderr => UNKNOWN classification', async () => {
   const deps = {
-    runAndGate: () => kpiNullResult('')
+    runAndGate: () => kpiNullResult(''),
+    captureSnapshotStderr: () => ({ stderrHead: '', stderrBytes: 0, stderrCapture: 'empty' })
   };
   const result = await runner.runScheduled(baseArgs(), deps);
-  assert.equal(result.output.failure_class, 'UNKNOWN');
-  assert.equal(result.output.errorSignature, 'STDERR_EMPTY');
+  assert.equal(result.output.failure_class, 'IMPL');
+  assert.equal(result.output.errorSignature, 'STDERR_ZERO_BYTES');
   assert.equal(result.output.stderrHead, '');
 });

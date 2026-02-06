@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('path');
+const { spawn } = require('child_process');
+
 function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -61,6 +64,18 @@ function normalizeStderrHead(value) {
   return lines.join('\n').trimEnd();
 }
 
+function buildStderrContextFromRaw(raw) {
+  if (raw === undefined || raw === null) {
+    return { stderrHead: '', stderrBytes: 0, stderrCapture: 'not_available' };
+  }
+  const text = String(raw);
+  const bytes = Buffer.byteLength(text, 'utf8');
+  if (bytes === 0) {
+    return { stderrHead: '', stderrBytes: 0, stderrCapture: 'empty' };
+  }
+  return { stderrHead: normalizeStderrHead(text), stderrBytes: bytes, stderrCapture: 'captured' };
+}
+
 function buildFailureOutput(args, utc, details) {
   const output = {
     utc,
@@ -82,6 +97,12 @@ function buildFailureOutput(args, utc, details) {
   }
   if (details.stderrHead !== undefined) {
     output.stderrHead = details.stderrHead;
+  }
+  if (details.stderrBytes !== undefined) {
+    output.stderrBytes = details.stderrBytes;
+  }
+  if (details.stderrCapture !== undefined) {
+    output.stderrCapture = details.stderrCapture;
   }
   const subReason = normalizeSubReason(details.subReason);
   if (subReason) {
@@ -105,6 +126,12 @@ function ensureFailureDetails(output, details) {
   }
   if (details.stderrHead !== undefined) {
     next.stderrHead = details.stderrHead;
+  }
+  if (details.stderrBytes !== undefined) {
+    next.stderrBytes = details.stderrBytes;
+  }
+  if (details.stderrCapture !== undefined) {
+    next.stderrCapture = details.stderrCapture;
   }
   const subReason = normalizeSubReason(details.subReason);
   if (subReason) {
@@ -149,14 +176,28 @@ function classifyByReasonCode(reasonCode) {
   };
 }
 
-function classifyKpiNull(stderrHead) {
-  const head = stderrHead || '';
+function classifyKpiNull(context) {
+  const head = (context && context.stderrHead) ? context.stderrHead : '';
   const lower = head.toLowerCase();
-  if (!head) {
+  if (context && context.errorSignature === 'SPAWN_ERROR') {
     return {
-      failureClass: 'UNKNOWN',
-      nextAction: 'inspect artifacts',
-      errorSignature: 'STDERR_EMPTY'
+      failureClass: 'IMPL',
+      nextAction: 'inspect script error and fix implementation',
+      errorSignature: 'SPAWN_ERROR'
+    };
+  }
+  if (context && context.stderrCapture === 'empty') {
+    return {
+      failureClass: 'IMPL',
+      nextAction: 'inspect script error and fix implementation',
+      errorSignature: 'STDERR_ZERO_BYTES'
+    };
+  }
+  if (context && context.stderrCapture === 'not_available') {
+    return {
+      failureClass: 'IMPL',
+      nextAction: 'inspect script error and fix implementation',
+      errorSignature: 'STDERR_NOT_AVAILABLE'
     };
   }
   if (head.includes('VERIFY_ENV_ERROR')) {
@@ -208,7 +249,7 @@ function classifyKpiNull(stderrHead) {
   };
 }
 
-function classifyMissing(output, exitCode, stderrHead) {
+function classifyMissing(output, exitCode, stderrContext) {
   const suffix = exitCode !== undefined ? `exitCode=${exitCode}` : undefined;
   if (!output || typeof output !== 'object') {
     const meta = classifyByReasonCode('RUNTIME_ERROR');
@@ -219,11 +260,13 @@ function classifyMissing(output, exitCode, stderrHead) {
       failureClass: meta.failureClass,
       nextAction: meta.nextAction,
       errorSignature: meta.errorSignature,
-      stderrHead
+      stderrHead: stderrContext ? stderrContext.stderrHead : undefined,
+      stderrBytes: stderrContext ? stderrContext.stderrBytes : undefined,
+      stderrCapture: stderrContext ? stderrContext.stderrCapture : undefined
     };
   }
   if (output.kpi === null || output.kpi === undefined) {
-    const meta = classifyKpiNull(stderrHead);
+    const meta = classifyKpiNull(stderrContext);
     return {
       reasonCode: 'KPI_NULL',
       stage: 'kpi_snapshot',
@@ -231,7 +274,9 @@ function classifyMissing(output, exitCode, stderrHead) {
       failureClass: meta.failureClass,
       nextAction: meta.nextAction,
       errorSignature: meta.errorSignature,
-      stderrHead
+      stderrHead: stderrContext ? stderrContext.stderrHead : undefined,
+      stderrBytes: stderrContext ? stderrContext.stderrBytes : undefined,
+      stderrCapture: stderrContext ? stderrContext.stderrCapture : undefined
     };
   }
   if (output.gate === null || output.gate === undefined) {
@@ -243,7 +288,9 @@ function classifyMissing(output, exitCode, stderrHead) {
       failureClass: meta.failureClass,
       nextAction: meta.nextAction,
       errorSignature: meta.errorSignature,
-      stderrHead
+      stderrHead: stderrContext ? stderrContext.stderrHead : undefined,
+      stderrBytes: stderrContext ? stderrContext.stderrBytes : undefined,
+      stderrCapture: stderrContext ? stderrContext.stderrCapture : undefined
     };
   }
   const meta = classifyByReasonCode('SUBPROCESS_EXIT_NONZERO');
@@ -254,17 +301,83 @@ function classifyMissing(output, exitCode, stderrHead) {
     failureClass: meta.failureClass,
     nextAction: meta.nextAction,
     errorSignature: meta.errorSignature,
-    stderrHead
+    stderrHead: stderrContext ? stderrContext.stderrHead : undefined,
+    stderrBytes: stderrContext ? stderrContext.stderrBytes : undefined,
+    stderrCapture: stderrContext ? stderrContext.stderrCapture : undefined
   };
 }
 
-function extractStderrHead(runResult) {
-  if (!runResult) return '';
-  const raw = runResult.stderr
-    || runResult.stderrHead
-    || (runResult.output && runResult.output.stderrHead)
-    || '';
-  return normalizeStderrHead(raw);
+function stderrContextFromRunResult(runResult) {
+  if (!runResult) return { stderrHead: '', stderrBytes: 0, stderrCapture: 'not_available' };
+  if (runResult.stderr !== undefined) {
+    return buildStderrContextFromRaw(runResult.stderr);
+  }
+  if (runResult.stderrHead !== undefined) {
+    return buildStderrContextFromRaw(runResult.stderrHead);
+  }
+  if (runResult.output && runResult.output.stderrHead !== undefined) {
+    return buildStderrContextFromRaw(runResult.output.stderrHead);
+  }
+  if (runResult.output && runResult.output.stderrCapture) {
+    return {
+      stderrHead: runResult.output.stderrHead || '',
+      stderrBytes: runResult.output.stderrBytes,
+      stderrCapture: runResult.output.stderrCapture
+    };
+  }
+  return { stderrHead: '', stderrBytes: 0, stderrCapture: 'not_available' };
+}
+
+async function captureSnapshotStderr(args, deps) {
+  if (deps && typeof deps.captureSnapshotStderr === 'function') {
+    return deps.captureSnapshotStderr(args);
+  }
+  return new Promise((resolve) => {
+    const scriptPath = path.resolve(__dirname, 'phase22_cta_kpi_snapshot.js');
+    const child = spawn(process.execPath, [
+      scriptPath,
+      '--ctaA', String(args.ctaA),
+      '--ctaB', String(args.ctaB),
+      '--from', String(args.from),
+      '--to', String(args.to)
+    ], { stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    if (child.stderr) {
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+    }
+    child.on('error', (err) => {
+      resolve({
+        stderrHead: '',
+        stderrBytes: 0,
+        stderrCapture: 'not_available',
+        errorSignature: 'SPAWN_ERROR',
+        subReason: err && err.message ? err.message : 'spawn error'
+      });
+    });
+    child.on('close', () => {
+      resolve(buildStderrContextFromRaw(stderr));
+    });
+  });
+}
+
+async function resolveStderrContext(args, runResult, deps) {
+  const base = stderrContextFromRunResult(runResult);
+  if (base.stderrCapture === 'captured') return base;
+  if (runResult && runResult.output && (runResult.output.kpi === null || runResult.output.kpi === undefined)) {
+    const captured = await captureSnapshotStderr(args, deps);
+    if (captured && captured.errorSignature) {
+      return captured;
+    }
+    if (captured && captured.stderrCapture === 'captured') {
+      return captured;
+    }
+    if (captured && (captured.stderrCapture || captured.stderrBytes !== undefined)) {
+      return captured;
+    }
+  }
+  return base;
 }
 
 async function runScheduled(argv, deps) {
@@ -324,8 +437,8 @@ async function runScheduled(argv, deps) {
   }
 
   if (runResult.exitCode !== 0) {
-    const stderrHead = extractStderrHead(runResult);
-    const details = classifyMissing(runResult.output, runResult.exitCode, stderrHead);
+    const stderrContext = await resolveStderrContext(args, runResult, deps);
+    const details = classifyMissing(runResult.output, runResult.exitCode, stderrContext);
     return { exitCode: runResult.exitCode, output: ensureFailureDetails(runResult.output, details) };
   }
 
@@ -338,8 +451,8 @@ async function runScheduled(argv, deps) {
     const recordResult = await runGateAndRecord(argv, { runAndGate: () => runResult });
     if (recordResult && recordResult.output) {
       if (recordResult.exitCode !== 0) {
-        const stderrHead = extractStderrHead(recordResult);
-        const details = classifyMissing(recordResult.output, recordResult.exitCode, stderrHead);
+        const stderrContext = await resolveStderrContext(args, recordResult, deps);
+        const details = classifyMissing(recordResult.output, recordResult.exitCode, stderrContext);
         details.stage = 'record_write';
         return { exitCode: recordResult.exitCode, output: ensureFailureDetails(recordResult.output, details) };
       }
