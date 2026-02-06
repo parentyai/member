@@ -30,3 +30,19 @@ Note:
 - "stdout JSON could not be collected because artifacts were not produced."
 Next:
 - "Create separate implementation task to ensure artifacts upload even on failure (T10A)."
+
+UTC: 2026-02-06T02:02:39Z
+main SHA: 717856009f56932bfc22ea649300bfc361c72cd8
+Action: "Phase22 T10 rerun evidence (artifact collected)"
+Runs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21735911652"
+- "write: https://github.com/parentyai/member/actions/runs/21735912730"
+Artifacts:
+- "dryrun: phase22-dryrun (stdout/stderr/exit_code)"
+- "write: phase22-write (stdout/stderr/exit_code)"
+Evidence (stdout head 1 line):
+- "dryrun_stdout_head: {\"utc\":\"2026-02-06T02:01:40.151Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\"}"
+- "write_stdout_head: {\"utc\":\"2026-02-06T02:01:45.441Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\"}"
+ExitCode:
+- "dryrun: 1"
+- "write: 1"
