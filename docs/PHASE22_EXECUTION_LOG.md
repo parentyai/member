@@ -13,3 +13,20 @@ NonGoals:
 - "no behavior change"
 Rollback:
 - "revert this PR"
+
+UTC: 2026-02-06T01:39:13Z
+main SHA: e31ef7c191763dccc6b88c534dad1a7641c7e1e7
+Action: "Phase22 T10 manual dispatch evidence (failure, no artifacts)"
+Runs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21735245097"
+- "write: https://github.com/parentyai/member/actions/runs/21735247610"
+Result:
+- "dryrun: failure"
+- "write: failure"
+Artifacts:
+- "dryrun: none (not generated)"
+- "write: none (not generated)"
+Note:
+- "stdout JSON could not be collected because artifacts were not produced."
+Next:
+- "Create separate implementation task to ensure artifacts upload even on failure (T10A)."
