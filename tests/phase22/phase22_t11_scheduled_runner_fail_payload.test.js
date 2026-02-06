@@ -41,5 +41,6 @@ test('phase22 t11: FAIL output includes reasonCode', async () => {
   const result = await runner.runScheduled(baseArgs(), deps);
   assert.equal(result.exitCode, 1);
   assert.equal(result.output.result, 'FAIL');
-  assert.equal(result.output.reasonCode, 'RUNNER_FAILED');
+  assert.equal(result.output.reasonCode, 'KPI_NULL');
+  assert.equal(result.output.stage, 'kpi_snapshot');
 });
