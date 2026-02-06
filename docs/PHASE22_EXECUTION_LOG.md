@@ -135,3 +135,15 @@ Artifacts (stderr head 10 lines):
 Summary (keys):
 - "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
 - "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
+
+UTC: 2026-02-06T13:22:45Z
+main SHA: 10326707e0f7cd84ffdefbb89213aa0f1ce36d46
+Action: "Phase22 CLOSE evaluation"
+Evidence:
+- "T22 smoke artifacts present"
+- "Failure classified as ENV (gcloud auth missing)"
+Decision:
+- "Phase22 CLOSE = YES"
+Rationale:
+- "ENV failures do not block CLOSE per Phase22 rules"
+Rollback: revert this PR
