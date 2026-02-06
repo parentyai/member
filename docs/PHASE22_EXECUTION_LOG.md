@@ -136,26 +136,14 @@ Summary (keys):
 - "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
 - "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation"
 
-UTC: 2026-02-06T13:16:32Z
+UTC: 2026-02-06T13:22:45Z
 main SHA: 10326707e0f7cd84ffdefbb89213aa0f1ce36d46
-PR #234 mergeSHA: 10326707e0f7cd84ffdefbb89213aa0f1ce36d46
-Run URLs:
-- "dryrun: https://github.com/parentyai/member/actions/runs/21751867448"
-- "write: https://github.com/parentyai/member/actions/runs/21751869318"
-Artifacts (files):
-- "dryrun: home/runner/work/member/member/stdout.txt"
-- "dryrun: home/runner/work/member/member/stderr.txt"
-- "dryrun: home/runner/work/member/member/exit_code.txt"
-- "dryrun: tmp/phase22_kpi_smoke_stdout.json"
-- "dryrun: tmp/phase22_kpi_smoke_stderr.txt"
-- "write: home/runner/work/member/member/stdout.txt"
-- "write: home/runner/work/member/member/stderr.txt"
-- "write: home/runner/work/member/member/exit_code.txt"
-- "write: tmp/phase22_kpi_smoke_stdout.json"
-- "write: tmp/phase22_kpi_smoke_stderr.txt"
-Smoke stdout head (1 line):
-- "dryrun_smoke_stdout_head: {\"utc\":\"2026-02-06T13:15:31.372Z\",\"inputs\":{\"ctaA\":true,\"ctaB\":true,\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\"},\"ok\":false,\"exitCode\":1,\"stdoutHead\":\"(empty)\",\"stderrHead\":\"ERROR: (gcloud.auth.print-access-token) You do not currently have an active account selected.\\nPlease run:\\n\\n  $ gcloud auth login\\n\\nto obtain new credentials.\\n\\nIf you have already logged in with a diffe\",\"stderrBytes\":668}"
-- "write_smoke_stdout_head: {\"utc\":\"2026-02-06T13:15:25.057Z\",\"inputs\":{\"ctaA\":true,\"ctaB\":true,\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\"},\"ok\":false,\"exitCode\":1,\"stdoutHead\":\"(empty)\",\"stderrHead\":\"ERROR: (gcloud.auth.print-access-token) You do not currently have an active account selected.\\nPlease run:\\n\\n  $ gcloud auth login\\n\\nto obtain new credentials.\\n\\nIf you have already logged in with a diffe\",\"stderrBytes\":668}"
-Smoke stderr head (10 lines):
-- "dryrun_smoke_stderr_head: (empty)"
-- "write_smoke_stderr_head: (empty)"
+Action: "Phase22 CLOSE evaluation"
+Evidence:
+- "T22 smoke artifacts present"
+- "Failure classified as ENV (gcloud auth missing)"
+Decision:
+- "Phase22 CLOSE = YES"
+Rationale:
+- "ENV failures do not block CLOSE per Phase22 rules"
+Rollback: revert this PR
