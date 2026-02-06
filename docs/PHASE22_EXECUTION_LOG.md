@@ -71,3 +71,26 @@ Decision Hint:
 - "If both result=PASS => CLOSE candidate"
 - "If FAIL and failure_class=ENV => not impl defect; HOLD allowed"
 - "If FAIL and failure_class in (IMPL,CONFIG) => implementation/spec defect"
+
+UTC: 2026-02-06T04:11:20Z
+main SHA: 3dbfca22aea9bf8cf0545896e73b1e73b260e6fe
+Action: "Phase22 scheduled workflows rerun (T17)"
+Run URLs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21738344142"
+- "write: https://github.com/parentyai/member/actions/runs/21738346448"
+Inputs:
+- "trackBaseUrl: https://member-track-pvxgenwkba-ue.a.run.app"
+- "linkRegistryId: Ls61KJFtn3YtYLpkzf1q"
+- "ctaA: openA"
+- "ctaB: openB"
+- "from: 2026-02-05T00:00:00Z"
+- "to: 2026-02-06T00:00:00Z"
+- "runs: 2"
+Artifacts (stdout head 1 line):
+- "dryrun_stdout_head: {\"utc\":\"2026-02-06T04:09:28.639Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"UNKNOWN\",\"nextAction\":\"inspect artifacts\",\"errorSignature\":\"STDERR_EMPTY\",\"stderrHead\":\"\",\"subReason\":\"exitCode=1\"}"
+- "write_stdout_head: {\"utc\":\"2026-02-06T04:09:35.458Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"UNKNOWN\",\"nextAction\":\"inspect artifacts\",\"errorSignature\":\"STDERR_EMPTY\",\"stderrHead\":\"\",\"subReason\":\"exitCode=1\"}"
+Extracted:
+- "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=UNKNOWN errorSignature=STDERR_EMPTY nextAction=inspect artifacts"
+- "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=UNKNOWN errorSignature=STDERR_EMPTY nextAction=inspect artifacts"
+Rule Applied (one line):
+- "If FAIL and failure_class in (IMPL,CONFIG) => implementation/spec defect"
