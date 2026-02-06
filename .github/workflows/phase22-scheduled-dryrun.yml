@@ -110,6 +110,25 @@ jobs:
               nextAction="inspect artifacts"
               ;;
           esac
+          humanDecisionHint="INSPECT_ARTIFACTS"
+          if [ "$result" = "PASS" ]; then
+            humanDecisionHint="NO_ACTION"
+          else
+            case "$failure_class" in
+              ENV)
+                humanDecisionHint="HOLD_AND_RERUN"
+                ;;
+              IMPL)
+                humanDecisionHint="FIX_BEFORE_RERUN"
+                ;;
+              UNKNOWN)
+                humanDecisionHint="INSPECT_ARTIFACTS"
+                ;;
+              *)
+                humanDecisionHint="INSPECT_ARTIFACTS"
+                ;;
+            esac
+          fi
           {
             echo "stdout_head: ${stdout_head}"
             echo "result: ${result}"
@@ -117,6 +136,7 @@ jobs:
             echo "stage: ${stage}"
             echo "failure_class: ${failure_class}"
             echo "nextAction: ${nextAction}"
+            echo "humanDecisionHint: ${humanDecisionHint}"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
