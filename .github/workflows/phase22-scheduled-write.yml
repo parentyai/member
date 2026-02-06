@@ -5,11 +5,25 @@ on:
     - cron: "0 3 * * 1"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+          token_format: access_token
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -44,6 +58,8 @@ jobs:
       - name: KPI snapshot smoke (evidence)
         if: always()
         env:
+          CTA_A: ${{ vars.CTA_A }}
+          CTA_B: ${{ vars.CTA_B }}
           FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
         run: |
           FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
