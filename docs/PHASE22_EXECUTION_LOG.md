@@ -94,3 +94,25 @@ Extracted:
 - "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=UNKNOWN errorSignature=STDERR_EMPTY nextAction=inspect artifacts"
 Rule Applied (one line):
 - "If FAIL and failure_class in (IMPL,CONFIG) => implementation/spec defect"
+
+UTC: 2026-02-06T04:32:10Z
+main SHA: 2c78e8f6d0959eda35a2d893a0bd007a48e0713a
+Action: "Phase22 scheduled workflows rerun (T19)"
+Run URLs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21738746995"
+- "write: https://github.com/parentyai/member/actions/runs/21738748862"
+Conclusions:
+- "dryrun: failure"
+- "write: failure"
+Artifacts:
+- "dryrun: phase22-dryrun"
+- "write: phase22-write"
+Artifacts (stdout head 1 line):
+- "dryrun_stdout_head: {\"utc\":\"2026-02-06T04:30:38.365Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"IMPL\",\"nextAction\":\"inspect script error and fix implementation\",\"errorSignature\":\"KPI_NULL_EXIT_1\",\"stderrHead\":\"(unset)\\nproject id required\",\"stderrBytes\":28,\"stderrCapture\":\"captured\",\"subReason\":\"exitCode=1\"}"
+- "write_stdout_head: {\"utc\":\"2026-02-06T04:30:45.914Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"failure_class\":\"IMPL\",\"nextAction\":\"inspect script error and fix implementation\",\"errorSignature\":\"KPI_NULL_EXIT_1\",\"stderrHead\":\"(unset)\\nproject id required\",\"stderrBytes\":28,\"stderrCapture\":\"captured\",\"subReason\":\"exitCode=1\"}"
+Artifacts (stderr head 10 lines):
+- "dryrun_stderr_head: (empty)"
+- "write_stderr_head: (empty)"
+Extracted:
+- "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation subReason=exitCode=1 stderrBytes=28 stderrCapture=captured"
+- "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=IMPL errorSignature=KPI_NULL_EXIT_1 nextAction=inspect script error and fix implementation subReason=exitCode=1 stderrBytes=28 stderrCapture=captured"
