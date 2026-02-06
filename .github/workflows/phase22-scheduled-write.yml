@@ -41,6 +41,19 @@ jobs:
           echo "$code" > exit_code.txt
           set -e
           exit "$code"
+      - name: KPI snapshot smoke (evidence)
+        if: always()
+        env:
+          FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+        run: |
+          FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
+          TO_UTC=$(date -u +%Y-%m-%dT00:00:00Z)
+          node scripts/phase22_kpi_snapshot_smoke.js \
+            --ctaA "$CTA_A" \
+            --ctaB "$CTA_B" \
+            --from "$FROM_UTC" \
+            --to "$TO_UTC" \
+            > /tmp/phase22_kpi_smoke_stdout.json 2> /tmp/phase22_kpi_smoke_stderr.txt
       - name: Write Phase22 summary
         if: always()
         run: |
@@ -98,3 +111,5 @@ jobs:
             stdout.txt
             stderr.txt
             exit_code.txt
+            /tmp/phase22_kpi_smoke_stdout.json
+            /tmp/phase22_kpi_smoke_stderr.txt
