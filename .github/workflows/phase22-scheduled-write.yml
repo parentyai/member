@@ -21,6 +21,7 @@ jobs:
           CTA_A: ${{ vars.CTA_A }}
           CTA_B: ${{ vars.CTA_B }}
         run: |
+          set +e
           FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
           TO_UTC=$(date -u +%Y-%m-%dT00:00:00Z)
           node scripts/phase22_scheduled_runner.js \
@@ -34,8 +35,16 @@ jobs:
             --min-total-sent 2 \
             --min-delta-ctr 0 \
             --write 1 \
-            > /tmp/phase22_write_${{ github.run_id }}.json
+            > stdout.txt 2> stderr.txt
+          code=$?
+          echo "$code" > exit_code.txt
+          set -e
+          exit "$code"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: phase22-write
-          path: /tmp/phase22_write_${{ github.run_id }}.json
+          path: |
+            stdout.txt
+            stderr.txt
+            exit_code.txt
