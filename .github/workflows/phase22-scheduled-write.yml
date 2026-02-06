@@ -1,0 +1,41 @@
+name: phase22-scheduled-write
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Run Phase22 write
+        env:
+          TRACK_BASE_URL: ${{ vars.TRACK_BASE_URL }}
+          LINK_REGISTRY_ID: ${{ vars.LINK_REGISTRY_ID }}
+          CTA_A: ${{ vars.CTA_A }}
+          CTA_B: ${{ vars.CTA_B }}
+        run: |
+          FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
+          TO_UTC=$(date -u +%Y-%m-%dT00:00:00Z)
+          node scripts/phase22_scheduled_runner.js \
+            --track-base-url "$TRACK_BASE_URL" \
+            --linkRegistryId "$LINK_REGISTRY_ID" \
+            --ctaA "$CTA_A" \
+            --ctaB "$CTA_B" \
+            --from "$FROM_UTC" \
+            --to "$TO_UTC" \
+            --runs 2 \
+            --min-total-sent 2 \
+            --min-delta-ctr 0 \
+            --write 1 \
+            > /tmp/phase22_write_${{ github.run_id }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase22-write
+          path: /tmp/phase22_write_${{ github.run_id }}.json
