@@ -46,3 +46,28 @@ Evidence (stdout head 1 line):
 ExitCode:
 - "dryrun: 1"
 - "write: 1"
+
+UTC: 2026-02-06T03:55:48Z
+main SHA: cdc779261862c516b19ecc3478be7306fdd7741f
+Action: "Phase22 scheduled workflows rerun (T15)"
+Run URLs:
+- "dryrun: https://github.com/parentyai/member/actions/runs/21738063711"
+- "write: https://github.com/parentyai/member/actions/runs/21738065473"
+Inputs:
+- "trackBaseUrl: https://member-track-pvxgenwkba-ue.a.run.app"
+- "linkRegistryId: Ls61KJFtn3YtYLpkzf1q"
+- "ctaA: openA"
+- "ctaB: openB"
+- "from: 2026-02-05T00:00:00Z"
+- "to: 2026-02-06T00:00:00Z"
+- "runs: 2"
+Artifacts (stdout head 1 line):
+- "dryrun_stdout_head: {\"utc\":\"2026-02-06T03:54:38.615Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"subReason\":\"exitCode=1\"}"
+- "write_stdout_head: {\"utc\":\"2026-02-06T03:54:44.583Z\",\"inputs\":{\"trackBaseUrl\":\"https://member-track-pvxgenwkba-ue.a.run.app\",\"linkRegistryId\":\"Ls61KJFtn3YtYLpkzf1q\",\"ctaA\":\"openA\",\"ctaB\":\"openB\",\"from\":\"2026-02-05T00:00:00Z\",\"to\":\"2026-02-06T00:00:00Z\",\"runs\":\"2\"},\"kpi\":null,\"gate\":null,\"result\":\"FAIL\",\"reasonCode\":\"KPI_NULL\",\"stage\":\"kpi_snapshot\",\"subReason\":\"exitCode=1\"}"
+Summary (keys):
+- "dryrun: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=UNKNOWN nextAction=inspect artifacts"
+- "write: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot failure_class=UNKNOWN nextAction=inspect artifacts"
+Decision Hint:
+- "If both result=PASS => CLOSE candidate"
+- "If FAIL and failure_class=ENV => not impl defect; HOLD allowed"
+- "If FAIL and failure_class in (IMPL,CONFIG) => implementation/spec defect"
