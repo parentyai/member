@@ -15,13 +15,14 @@ test('phase25 t04: console recommendedNextAction flows into submit', async () =>
       opsState: null
     }),
     getMemberSummary: async () => ({ ok: true }),
-    decisionLogsRepo: { getLatestDecision: async () => null }
+    decisionLogsRepo: { getLatestDecision: async () => null },
+    getOpsDecisionConsistency: async () => ({ status: 'OK', issues: [] })
   };
 
   const consoleResult = await getOpsConsole({ lineUserId: 'U1' }, deps);
   assert.strictEqual(consoleResult.recommendedNextAction, 'STOP_AND_ESCALATE');
   assert.ok(Array.isArray(consoleResult.allowedNextActions));
-  assert.ok(consoleResult.allowedNextActions.includes(consoleResult.recommendedNextAction));
+  assert.deepStrictEqual(consoleResult.allowedNextActions, ['STOP_AND_ESCALATE']);
 
   const submitDeps = {
     getOpsConsole: async () => consoleResult,
