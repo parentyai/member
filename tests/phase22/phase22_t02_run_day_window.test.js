@@ -18,7 +18,7 @@ function withPatchedSpawnSync(stub, fn) {
 
 test('phase22 t02: verify then kpi order with args', () => {
   const calls = [];
-  const verifyArgs = runner.buildVerifyArgs('https://track', 'lr1');
+  const verifyArgs = runner.buildVerifyArgs('https://track', 'lr1', '2026-02-05T00:00:00Z', '2026-02-06T00:00:00Z');
   const kpiArgs = runner.buildKpiArgs('openA', 'openB', '2026-02-05T00:00:00Z', '2026-02-06T00:00:00Z');
 
   withPatchedSpawnSync((cmd, args) => {

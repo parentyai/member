@@ -285,7 +285,7 @@ async function firestoreCreateDocWithId(collection, id, fields) {
   return res.body || null;
 }
 
-async function createNotificationWithCta(ctaText, linkRegistryId) {
+async function createNotificationWithCta(ctaText, linkRegistryId, createdAt) {
   loadFirestoreDeps();
   return withFirebaseAdmin(() => notificationsRepo.createNotification({
     title: `phase21 verify ${ctaText}`,
@@ -293,12 +293,12 @@ async function createNotificationWithCta(ctaText, linkRegistryId) {
     ctaText,
     linkRegistryId,
     scenarioKey: 'A',
-    stepKey: '3mo'
+    stepKey: '3mo',
+    createdAt
   }));
 }
 
-async function createNotificationWithCtaRest(ctaText, linkRegistryId) {
-  const createdAt = new Date().toISOString();
+async function createNotificationWithCtaRest(ctaText, linkRegistryId, createdAt) {
   const fields = {
     title: firestoreFieldString(`phase21 verify ${ctaText}`),
     body: firestoreFieldString('click: https://example.com'),
@@ -312,19 +312,19 @@ async function createNotificationWithCtaRest(ctaText, linkRegistryId) {
   return { id: result.id, createdAt };
 }
 
-async function createDelivery(notificationId, lineUserId) {
+async function createDelivery(notificationId, lineUserId, sentAt) {
   loadFirestoreDeps();
   const result = await withFirebaseAdmin(() => testSendNotification({
     lineUserId,
     text: 'phase21 verify send',
     notificationId,
-    pushFn: async () => {}
+    pushFn: async () => {},
+    sentAt
   }));
   return result.id;
 }
 
-async function createDeliveryRest(notificationId, lineUserId) {
-  const sentAt = new Date().toISOString();
+async function createDeliveryRest(notificationId, lineUserId, sentAt) {
   const fields = {
     notificationId: firestoreFieldString(notificationId),
     lineUserId: firestoreFieldString(lineUserId),
@@ -368,6 +368,7 @@ async function main() {
 
   const fromUtc = args.fromUtc || defaults.fromUtc;
   const toUtc = args.toUtc || defaults.toUtc;
+  const windowTimestamp = fromUtc;
   const trackBaseUrl = args.trackBaseUrl || process.env.TRACK_BASE_URL;
   const linkRegistryId = args.linkRegistryId;
 
@@ -401,34 +402,34 @@ async function main() {
 
   if (!deliveryIdA || !deliveryIdB) {
     if (restMode) {
-      const notifA = await createNotificationWithCtaRest('openA', linkRegistryId);
-      const notifB = await createNotificationWithCtaRest('openB', linkRegistryId);
+      const notifA = await createNotificationWithCtaRest('openA', linkRegistryId, windowTimestamp);
+      const notifB = await createNotificationWithCtaRest('openB', linkRegistryId, windowTimestamp);
       notificationIdA = notifA.id;
       notificationIdB = notifB.id;
       createdAtA = notifA.createdAt;
       createdAtB = notifB.createdAt;
 
       if (!deliveryIdA) {
-        deliveryIdA = await createDeliveryRest(notificationIdA, 'U1');
+        deliveryIdA = await createDeliveryRest(notificationIdA, 'U1', windowTimestamp);
       }
       if (!deliveryIdB) {
-        deliveryIdB = await createDeliveryRest(notificationIdB, 'U2');
+        deliveryIdB = await createDeliveryRest(notificationIdB, 'U2', windowTimestamp);
       }
 
       await recordSentRest(notificationIdA, 'openA', linkRegistryId, createdAtA);
       await recordSentRest(notificationIdB, 'openB', linkRegistryId, createdAtB);
     } else {
       loadFirestoreDeps();
-      const notifA = await createNotificationWithCta('openA', linkRegistryId);
-      const notifB = await createNotificationWithCta('openB', linkRegistryId);
+      const notifA = await createNotificationWithCta('openA', linkRegistryId, windowTimestamp);
+      const notifB = await createNotificationWithCta('openB', linkRegistryId, windowTimestamp);
       notificationIdA = notifA.id;
       notificationIdB = notifB.id;
 
       if (!deliveryIdA) {
-        deliveryIdA = await createDelivery(notificationIdA, 'U1');
+        deliveryIdA = await createDelivery(notificationIdA, 'U1', windowTimestamp);
       }
       if (!deliveryIdB) {
-        deliveryIdB = await createDelivery(notificationIdB, 'U2');
+        deliveryIdB = await createDelivery(notificationIdB, 'U2', windowTimestamp);
       }
     }
 
