@@ -38,6 +38,7 @@ async function recordOpsNextAction(input, deps) {
     subjectType: 'user',
     subjectId: lineUserId,
     decision: mapDecision(nextAction),
+    nextAction,
     decidedBy,
     reason
   });

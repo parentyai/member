@@ -64,6 +64,30 @@ test('getUserStateSummary: returns read-only state', async () => {
       completeRule: 'ALL_ITEMS'
     }
   });
+  assert.strictEqual(result.opsState, null);
+  assert.deepStrictEqual(result.opsStateCompleteness, {
+    status: 'WARN',
+    missing: ['missing_ops_state']
+  });
+  assert.deepStrictEqual(result.opsDecisionCompleteness, {
+    status: 'WARN',
+    missing: ['missing_ops_state']
+  });
+  assert.deepStrictEqual(result.userSummaryCompleteness, {
+    ok: true,
+    missing: [],
+    needsAttention: false,
+    severity: 'INFO'
+  });
+  assert.deepStrictEqual(result.overallDecisionReadiness, {
+    status: 'NOT_READY',
+    blocking: [
+      'missing_notification_summary',
+      'checklist:missing_required_item',
+      'ops_state:missing_ops_state',
+      'ops_decision:missing_ops_state'
+    ]
+  });
   assert.deepStrictEqual(result.registrationCompleteness, {
     ok: true,
     missing: [],

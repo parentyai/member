@@ -63,3 +63,19 @@ Phase24 は member の本線を「ユーザー価値の連鎖」として固定�
 - 入力: { lineUserId, nextAction, failure_class, reasonCode?, stage?, note? }
 - 出力: ops_states { nextAction, updatedAt, sourceDecisionLogId, failure_class, reasonCode?, stage? }
 - 証跡: tests/phase24/phase24_t07_ops_states_repo.test.js
+
+## T08実装状況
+- 入力: ops_states (lineUserId)
+- 出力: opsState + opsStateCompleteness { status, missing }
+- 証跡: tests/phase24/phase24_t08_ops_state_in_summary.test.js
+
+## T09実装状況
+- 入力: ops_states + decision_logs
+- 出力: opsDecisionCompleteness { status, missing }
+- 証跡: tests/phase24/phase24_t09_ops_decision_completeness.test.js
+
+## T10実装状況
+- 入力: registration/userSummary/notification/checklist/opsState/opsDecision
+- 出力: overallDecisionReadiness { status, blocking }
+- 判断不能状態: status=NOT_READY（blockingに欠落/矛盾がある）
+- 証跡: tests/phase24/phase24_t10_overall_decision_readiness.test.js

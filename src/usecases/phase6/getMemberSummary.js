@@ -3,6 +3,10 @@
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
 const { evaluateRegistrationCompleteness } = require('../phase24/registrationCompleteness');
+const { evaluateOpsStateCompleteness } = require('../phase24/opsStateCompleteness');
+const { evaluateOpsDecisionCompleteness } = require('../phase24/opsDecisionCompleteness');
+const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
+const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -66,6 +70,18 @@ async function getMemberSummary(params) {
   summary.completeness = evaluateUserSummaryCompleteness(summary);
   summary.registrationCompleteness = await evaluateRegistrationCompleteness(user, {
     listUsersByMemberNumber: usersRepo.listUsersByMemberNumber
+  });
+  const opsState = await opsStatesRepo.getOpsState(lineUserId);
+  summary.opsState = opsState;
+  summary.opsStateCompleteness = evaluateOpsStateCompleteness(opsState);
+  summary.opsDecisionCompleteness = await evaluateOpsDecisionCompleteness(opsState);
+  summary.overallDecisionReadiness = evaluateOverallDecisionReadiness({
+    registrationCompleteness: summary.registrationCompleteness,
+    userSummaryCompleteness: summary.completeness,
+    notificationSummaryCompleteness: null,
+    checklistCompleteness: null,
+    opsStateCompleteness: summary.opsStateCompleteness,
+    opsDecisionCompleteness: summary.opsDecisionCompleteness
   });
   return summary;
 }

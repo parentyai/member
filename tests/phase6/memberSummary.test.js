@@ -92,6 +92,24 @@ test('phase6 member summary: returns minimal summary', async () => {
     severity: 'OK',
     reasons: []
   });
+  assert.strictEqual(payload.opsState, null);
+  assert.deepStrictEqual(payload.opsStateCompleteness, {
+    status: 'WARN',
+    missing: ['missing_ops_state']
+  });
+  assert.deepStrictEqual(payload.opsDecisionCompleteness, {
+    status: 'WARN',
+    missing: ['missing_ops_state']
+  });
+  assert.deepStrictEqual(payload.overallDecisionReadiness, {
+    status: 'NOT_READY',
+    blocking: [
+      'missing_notification_summary',
+      'missing_checklist',
+      'ops_state:missing_ops_state',
+      'ops_decision:missing_ops_state'
+    ]
+  });
   assert.strictEqual(payload.meta.source, 'phase5-derived');
   assert.ok(typeof payload.meta.generatedAt === 'string');
 });
