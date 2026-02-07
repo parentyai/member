@@ -48,11 +48,15 @@ async function submitOpsDecision(input, deps) {
 
   const consoleResult = await consoleFn({ lineUserId });
   const readiness = consoleResult ? consoleResult.readiness : null;
+  const consistency = consoleResult ? consoleResult.consistency : null;
   const allowedNextActions = consoleResult && Array.isArray(consoleResult.allowedNextActions)
     ? consoleResult.allowedNextActions
     : [];
   const audit = buildAudit(consoleResult);
 
+  if (consistency && consistency.status === 'FAIL') {
+    throw new Error('invalid consistency');
+  }
   if (allowedNextActions.length && !allowedNextActions.includes(nextAction)) {
     throw new Error('invalid nextAction');
   }

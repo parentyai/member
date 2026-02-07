@@ -15,8 +15,8 @@ test('phase25 t04: console recommendedNextAction flows into submit', async () =>
       opsState: null
     }),
     getMemberSummary: async () => ({ ok: true }),
-    decisionLogsRepo: { getLatestDecision: async () => null },
-    getOpsDecisionConsistency: async () => ({ status: 'OK', issues: [] })
+    getOpsDecisionConsistency: async () => ({ status: 'OK', issues: [] }),
+    decisionLogsRepo: { getLatestDecision: async () => null }
   };
 
   const consoleResult = await getOpsConsole({ lineUserId: 'U1' }, deps);

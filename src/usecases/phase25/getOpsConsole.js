@@ -58,10 +58,8 @@ async function getOpsConsole(params, deps) {
     });
   }
 
-  const allowedNextActions = effectiveReadiness && effectiveReadiness.status === 'READY'
-    ? ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE']
-    : ['STOP_AND_ESCALATE'];
-  const recommendedNextAction = effectiveReadiness && effectiveReadiness.status === 'READY'
+  const readinessForAction = effectiveReadiness || readiness;
+  const recommendedNextAction = readinessForAction && readinessForAction.status === 'READY'
     ? 'NO_ACTION'
     : 'STOP_AND_ESCALATE';
 
