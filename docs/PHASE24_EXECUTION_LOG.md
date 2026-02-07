@@ -18,3 +18,17 @@ Phase24 CLOSE:
 - CLOSE = YES (Top5 items implemented + evidence fixed on main + Phase23 unchanged)
 Rollback:
 - revert PR #253 then revert PR #252
+UTC: 2026-02-07T20:39:02Z
+main SHA: 8b73ee956b7d08698ad1d78d3ae0947d11cf7492
+Action: "Phase24 CLOSE declaration"
+Evidence:
+- merged PRs: #251 #252 #253 #254
+- CI evidence run: https://github.com/parentyai/member/actions/runs/21786074395
+Scope lock:
+- Phase23 foundation unchanged: YES
+- Phase24 changes summary: decisionLogs + completeness(user/notification/checklist/registration/opsState) + ops nextAction + readiness aggregation
+Close decision:
+- Phase24 CLOSE = YES
+- Why: Top5が入力/出力/証跡で固定され、運用判断までの一本道が揃った
+Rollback:
+- revert this PR
