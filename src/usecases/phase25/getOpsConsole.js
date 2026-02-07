@@ -43,8 +43,14 @@ async function getOpsConsole(params, deps) {
     ? userStateSummary.overallDecisionReadiness
     : buildReadiness(userStateSummary, readinessFn);
 
+  const allowedNextActions = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
+
   const latestDecisionLog = await decisionLogs.getLatestDecision('user', lineUserId);
   const opsState = userStateSummary ? userStateSummary.opsState : null;
+  const opsNextAction = opsState ? opsState.nextAction : null;
+  const recommendedNextAction = readiness && readiness.status === 'READY'
+    ? (allowedNextActions.includes(opsNextAction) ? opsNextAction : 'NO_ACTION')
+    : 'STOP_AND_ESCALATE';
 
   return {
     ok: true,
@@ -53,6 +59,8 @@ async function getOpsConsole(params, deps) {
     userStateSummary,
     memberSummary,
     readiness,
+    recommendedNextAction,
+    allowedNextActions,
     opsState,
     latestDecisionLog
   };

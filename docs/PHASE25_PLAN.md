@@ -35,3 +35,8 @@ Phase24で固定した decisionLogs / opsState / completeness / readiness を運
 - 入力: /api/phase25/ops/console?lineUserId=...
 - 出力: userStateSummary / memberSummary / readiness / opsState / latestDecisionLog
 - 証跡: tests/phase25/phase25_t03_ops_console_view.test.js
+
+## T04実装状況
+- 入力: ops console + submit decision
+- 出力: recommendedNextAction / allowedNextActions + decisionLogId / opsState
+- 証跡: tests/phase25/phase25_t04_console_to_submit_flow.test.js
