@@ -58,3 +58,8 @@ Phase24 は member の本線を「ユーザー価値の連鎖」として固定�
 - 入力: user (registration data)
 - 出力: registrationCompleteness { ok, missing, needsAttention, severity, reasons }
 - 証跡: tests/phase24/phase24_t06_registration_completeness.test.js
+
+## T07実装状況
+- 入力: { lineUserId, nextAction, failure_class, reasonCode?, stage?, note? }
+- 出力: ops_states { nextAction, updatedAt, sourceDecisionLogId, failure_class, reasonCode?, stage? }
+- 証跡: tests/phase24/phase24_t07_ops_states_repo.test.js
