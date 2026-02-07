@@ -4,6 +4,7 @@ const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
 const { getMemberSummary } = require('../phase6/getMemberSummary');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
+const { getOpsDecisionConsistency } = require('./opsDecisionConsistency');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -32,6 +33,9 @@ async function getOpsConsole(params, deps) {
   const readinessFn = deps && deps.evaluateOverallDecisionReadiness
     ? deps.evaluateOverallDecisionReadiness
     : evaluateOverallDecisionReadiness;
+  const consistencyFn = deps && deps.getOpsDecisionConsistency
+    ? deps.getOpsDecisionConsistency
+    : getOpsDecisionConsistency;
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
 
   const [userStateSummary, memberSummary] = await Promise.all([
@@ -43,6 +47,21 @@ async function getOpsConsole(params, deps) {
     ? userStateSummary.overallDecisionReadiness
     : buildReadiness(userStateSummary, readinessFn);
 
+  const consistency = await consistencyFn({ lineUserId }, deps);
+  let effectiveReadiness = readiness;
+  if (consistency && consistency.status !== 'OK') {
+    const existing = readiness && Array.isArray(readiness.blocking) ? readiness.blocking : [];
+    const extra = (consistency.issues || []).map((issue) => `consistency:${issue}`);
+    effectiveReadiness = Object.assign({}, readiness || {}, {
+      status: 'NOT_READY',
+      blocking: existing.concat(extra)
+    });
+  }
+
+  const readinessForAction = effectiveReadiness || readiness;
+  const recommendedNextAction = readinessForAction && readinessForAction.status === 'READY'
+    ? 'NO_ACTION'
+    : 'STOP_AND_ESCALATE';
   const allowedNextActions = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
 
   const latestDecisionLog = await decisionLogs.getLatestDecision('user', lineUserId);
@@ -58,11 +77,12 @@ async function getOpsConsole(params, deps) {
     lineUserId,
     userStateSummary,
     memberSummary,
-    readiness,
+    readiness: effectiveReadiness,
     recommendedNextAction,
     allowedNextActions,
     opsState,
-    latestDecisionLog
+    latestDecisionLog,
+    consistency
   };
 }
 

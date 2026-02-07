@@ -40,3 +40,13 @@ Phase24で固定した decisionLogs / opsState / completeness / readiness を運
 - 入力: ops console + submit decision
 - 出力: recommendedNextAction / allowedNextActions + decisionLogId / opsState
 - 証跡: tests/phase25/phase25_t04_console_to_submit_flow.test.js
+
+## T05実装状況
+- 入力: ops decision submit (server-calculated console)
+- 出力: decisionLog.audit { readinessStatus, blocking, recommendedNextAction, allowedNextActions, consoleServerTime }
+- 証跡: tests/phase25/phase25_t05_submit_audit_snapshot.test.js
+
+## T06実装状況
+- 入力: opsState + latest decisionLog
+- 出力: opsDecisionConsistency { status, issues }
+- 証跡: tests/phase25/phase25_t06_decision_consistency_guard.test.js

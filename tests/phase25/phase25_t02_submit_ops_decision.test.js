@@ -5,22 +5,16 @@ const { test } = require('node:test');
 
 const { submitOpsDecision } = require('../../src/usecases/phase25/submitOpsDecision');
 
-function createSummary() {
-  return {
-    registrationCompleteness: { ok: true, missing: [] },
-    userSummaryCompleteness: { ok: true, missing: [] },
-    checklist: { completeness: { ok: true, missing: [] } },
-    opsStateCompleteness: { status: 'OK', missing: [] },
-    opsDecisionCompleteness: { status: 'OK', missing: [] }
-  };
-}
-
 test('phase25 t02: dryRun does not write and returns readiness', async () => {
   let called = 0;
   const readiness = { status: 'NOT_READY', blocking: ['ops_state:missing_ops_state'] };
   const deps = {
-    getUserStateSummary: async () => createSummary(),
-    evaluateOverallDecisionReadiness: () => readiness,
+    getOpsConsole: async () => ({
+      readiness,
+      recommendedNextAction: 'STOP_AND_ESCALATE',
+      allowedNextActions: ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'],
+      serverTime: '2026-02-07T21:30:00.000Z'
+    }),
     recordOpsNextAction: async () => {
       called += 1;
       return { decisionLogId: 'd1', opsState: { id: 'U1' } };
@@ -30,7 +24,7 @@ test('phase25 t02: dryRun does not write and returns readiness', async () => {
   const result = await submitOpsDecision({
     lineUserId: 'U1',
     decision: {
-      nextAction: 'FIX_AND_RERUN',
+      nextAction: 'STOP_AND_ESCALATE',
       failure_class: 'IMPL',
       reasonCode: 'SUBPROCESS_EXIT_NONZERO',
       stage: 'kpi_gate',
@@ -43,16 +37,21 @@ test('phase25 t02: dryRun does not write and returns readiness', async () => {
   assert.strictEqual(called, 0);
   assert.strictEqual(result.ok, true);
   assert.deepStrictEqual(result.readiness, readiness);
+  assert.deepStrictEqual(result.audit.blocking, readiness.blocking);
   assert.strictEqual(result.decisionLogId, null);
-  assert.strictEqual(result.opsState.nextAction, 'FIX_AND_RERUN');
+  assert.strictEqual(result.opsState.nextAction, 'STOP_AND_ESCALATE');
   assert.strictEqual(result.dryRun, true);
 });
 
 test('phase25 t02: dryRun false writes and returns decisionLogId', async () => {
   let called = 0;
   const deps = {
-    getUserStateSummary: async () => createSummary(),
-    evaluateOverallDecisionReadiness: () => ({ status: 'READY', blocking: [] }),
+    getOpsConsole: async () => ({
+      readiness: { status: 'READY', blocking: [] },
+      recommendedNextAction: 'NO_ACTION',
+      allowedNextActions: ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'],
+      serverTime: '2026-02-07T21:30:00.000Z'
+    }),
     recordOpsNextAction: async () => {
       called += 1;
       return { decisionLogId: 'd123', opsState: { id: 'U1', nextAction: 'NO_ACTION' } };
@@ -75,14 +74,18 @@ test('phase25 t02: dryRun false writes and returns decisionLogId', async () => {
 
 test('phase25 t02: readiness NOT_READY still returns ok', async () => {
   const deps = {
-    getUserStateSummary: async () => createSummary(),
-    evaluateOverallDecisionReadiness: () => ({ status: 'NOT_READY', blocking: ['missing_notification_summary'] }),
+    getOpsConsole: async () => ({
+      readiness: { status: 'NOT_READY', blocking: ['missing_notification_summary'] },
+      recommendedNextAction: 'STOP_AND_ESCALATE',
+      allowedNextActions: ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'],
+      serverTime: '2026-02-07T21:30:00.000Z'
+    }),
     recordOpsNextAction: async () => ({ decisionLogId: 'd9', opsState: { id: 'U1' } })
   };
 
   const result = await submitOpsDecision({
     lineUserId: 'U1',
-    decision: { nextAction: 'RERUN_MAIN', failure_class: 'ENV' },
+    decision: { nextAction: 'STOP_AND_ESCALATE', failure_class: 'ENV' },
     decidedBy: 'ops',
     dryRun: false
   }, deps);
