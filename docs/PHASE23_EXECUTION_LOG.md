@@ -25,42 +25,24 @@ Evidence (rerun smoke):
 - stderrHead: "unauthorized_client" (gcloud auth print-access-token attribute condition)
 Rollback: revert this PR
 
-UTC: 2026-02-07T06:27:40Z
-main SHA: f8dc0f7d72682c7bfe222ba810a1578aac3ac272
-Action: "Phase23-T06 WIF attribute condition check + main auth evidence"
-Root cause:
-- attribute.ref mismatch (condition requires refs/heads/main; failure run headBranch=phase23/t05-fix-phase22-scheduled-exit1)
-- unauthorized_client in /tmp/phase23_t06_evidence/run_21774435477_auth.log
-Evidence:
-- provider_describe: /tmp/phase23_t06_evidence/provider_20260207T062341Z.yaml
-- provider_post: /tmp/phase23_t06_evidence/provider_post_20260207T062704Z.yaml
-- sa_policy: /tmp/phase23_t06_evidence/sa_policy_20260207T062403Z.yaml
-- failed_run (rerun/dispatch): https://github.com/parentyai/member/actions/runs/21774435477
-Fix:
-- attributeCondition (unchanged): assertion.repository=='parentyai/member' && assertion.ref=='refs/heads/main'
-- run workflows on main for schedule/workflow_dispatch/rerun
-Auth success (main):
-- dryrun: https://github.com/parentyai/member/actions/runs/21775653534
-  auth_log: /tmp/phase23_t06_evidence/run_21775653534_auth.log
-- write: https://github.com/parentyai/member/actions/runs/21775654429
-  auth_log: /tmp/phase23_t06_evidence/run_21775654429_auth.log
-Rollback:
-- gcloud iam workload-identity-pools providers update-oidc github-provider     --workload-identity-pool=github-pool     --location=global     --project=member-485303     --attribute-condition="assertion.repository=='parentyai/member' && assertion.ref=='refs/heads/main'"
-- backup: /tmp/phase23_t06_evidence/provider_20260207T062341Z.yaml
-Auth success (schedule main):
-- dryrun: https://github.com/parentyai/member/actions/runs/21773790707
-  auth_log: /tmp/phase23_t06_evidence/run_21773790707_auth_success.log
-
-UTC: 2026-02-07T14:34:16Z
-main SHA: f8dc0f7d72682c7bfe222ba810a1578aac3ac272
-Action: "Phase23-T06 CLOSE evidence finalization"
-Evidence URLs:
-- workflow_dispatch dryrun: https://github.com/parentyai/member/actions/runs/21775653534
-- workflow_dispatch write: https://github.com/parentyai/member/actions/runs/21775654429
-- schedule dryrun: https://github.com/parentyai/member/actions/runs/21773790707
-Evidence files:
-- provider_describe: /tmp/phase23_t06_evidence/provider_20260207T062341Z.yaml
-- sa_policy: /tmp/phase23_t06_evidence/sa_policy_20260207T062403Z.yaml
-Decision Note:
-- branch rerun unauthorized_client is expected under condition: assertion.repository=='parentyai/member' && assertion.ref=='refs/heads/main'
-Rollback: revert this PR
+UTC: 2026-02-07T05:56:06Z
+main SHA: 1713ff853e299f4652adc45945723822e2930960
+Action: "Phase23-T06 Phase22 scheduled PASS evidence (branch run)"
+PR: https://github.com/parentyai/member/pull/242
+Branch: phase23/t06-fix-phase22-scheduled-exit1
+Branch SHA: 5227c96dcfcbfbfaf5aa28a4950831803c413a40
+Runs:
+- dryrun: https://github.com/parentyai/member/actions/runs/21775248303
+- write: https://github.com/parentyai/member/actions/runs/21775248482
+Stdout head:
+- dryrun_stdout_head: {"utc":"2026-02-07T05:54:05.002Z","inputs":{"trackBaseUrl":"https://member-track-pvxgenwkba-ue.a.run.app","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q","ctaA":"openA","ctaB":"openB","from":"2026-02-06T00:00:00Z","to":"2026-02-07T00:00:00Z","runs":"2"},"kpi":{"utc":"2026-02-07T05:54:16.879Z","ctaA":"openA","ctaB":"openB","sentA":4,"clickA":4,"ctrA":1,"sentB":4,"clickB":4,"ctrB":1,"deltaCTR":0},"gate":{"ok":true,"reasons":[],"params":{"minTotalSent":2,"minPerVariantSent":0,"minTotalClick":0,"minDeltaCtr":0},"kpi":{"utc":"2026-02-07T05:54:16.879Z","ctaA":"openA","ctaB":"openB","sentA":4,"clickA":4,"ctrA":1,"sentB":4,"clickB":4,"ctrB":1,"deltaCTR":0}},"result":"PASS"}
+- write_stdout_head: {"utc":"2026-02-07T05:54:01.421Z","inputs":{"trackBaseUrl":"https://member-track-pvxgenwkba-ue.a.run.app","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q","ctaA":"openA","ctaB":"openB","from":"2026-02-06T00:00:00Z","to":"2026-02-07T00:00:00Z","runs":"2"},"kpi":{"utc":"2026-02-07T05:54:13.524Z","ctaA":"openA","ctaB":"openB","sentA":3,"clickA":3,"ctrA":1,"sentB":3,"clickB":3,"ctrB":1,"deltaCTR":0},"gate":{"ok":true,"reasons":[],"params":{"minTotalSent":2,"minPerVariantSent":0,"minTotalClick":0,"minDeltaCtr":0},"kpi":{"utc":"2026-02-07T05:54:13.524Z","ctaA":"openA","ctaB":"openB","sentA":3,"clickA":3,"ctrA":1,"sentB":3,"clickB":3,"ctrB":1,"deltaCTR":0}},"result":"PASS"}
+Smoke stdout head:
+- dryrun_smoke_stdout_head: {"utc":"2026-02-07T05:54:17.556Z","ctaA":"openA","ctaB":"openB","sentA":4,"clickA":4,"ctrA":1,"sentB":4,"clickB":4,"ctrB":1,"deltaCTR":0}
+- write_smoke_stdout_head: {"utc":"2026-02-07T05:54:14.336Z","ctaA":"openA","ctaB":"openB","sentA":4,"clickA":3,"ctrA":0.75,"sentB":3,"clickB":3,"ctrB":1,"deltaCTR":-0.25}
+Query log (smoke stderr head):
+- dryrun: {"action":"phase22_kpi_query","projectId":"member-485303","collection":"phase18_cta_stats","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-06T00:00:00Z","toUtc":"2026-02-07T00:00:00Z","filter
+- write: {"action":"phase22_kpi_query","projectId":"member-485303","collection":"phase18_cta_stats","ctaTextA":"openA","ctaTextB":"openB","fromUtc":"2026-02-06T00:00:00Z","toUtc":"2026-02-07T00:00:00Z","filter
+Result: PASS (branch run)
+Note: PR #242 requires approval to merge before main re-run.
+Rollback: revert PR #242
