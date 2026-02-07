@@ -8,3 +8,9 @@ Action: "Phase25-T03 ops console view added"
 PR URL: https://github.com/parentyai/member/pull/258
 npm test: pass 192 fail 0
 API: GET /api/phase25/ops/console => { ok, serverTime, userStateSummary, memberSummary, readiness, opsState, latestDecisionLog }
+UTC: 2026-02-07T21:27:06Z
+main SHA: c984b4627f2ceb81971b5be967cbe7cb4f2416c7
+Action: "Phase25-T04 console->submit flow fixed"
+PR URL: https://github.com/parentyai/member/pull/259
+npm test: pass 193 fail 0
+API: console returns recommendedNextAction + allowedNextActions
