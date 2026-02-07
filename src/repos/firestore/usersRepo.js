@@ -73,6 +73,17 @@ async function listUsers(params) {
   return users;
 }
 
+async function listUsersByMemberNumber(memberNumber, limit) {
+  const value = typeof memberNumber === 'string' ? memberNumber.trim() : '';
+  if (!value) return [];
+  const db = getDb();
+  let query = db.collection(COLLECTION).where('memberNumber', '==', value);
+  const cap = typeof limit === 'number' ? limit : 20;
+  if (cap) query = query.limit(cap);
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+}
+
 module.exports = {
   createUser,
   getUser,
@@ -80,5 +91,6 @@ module.exports = {
   setMemberNumber,
   setMemberCardAsset,
   setOpsReview,
-  listUsers
+  listUsers,
+  listUsersByMemberNumber
 };

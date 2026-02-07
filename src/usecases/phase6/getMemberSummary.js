@@ -1,6 +1,8 @@
 'use strict';
 
 const usersRepo = require('../../repos/firestore/usersRepo');
+const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
+const { evaluateRegistrationCompleteness } = require('../phase24/registrationCompleteness');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -43,7 +45,7 @@ async function getMemberSummary(params) {
   const hasNumber = hasMemberNumber(user);
   const stale = isMemberNumberStale(user, nowMs);
 
-  return {
+  const summary = {
     ok: true,
     lineUserId,
     member: {
@@ -60,6 +62,12 @@ async function getMemberSummary(params) {
       generatedAt: new Date(nowMs).toISOString()
     }
   };
+
+  summary.completeness = evaluateUserSummaryCompleteness(summary);
+  summary.registrationCompleteness = await evaluateRegistrationCompleteness(user, {
+    listUsersByMemberNumber: usersRepo.listUsersByMemberNumber
+  });
+  return summary;
 }
 
 module.exports = {

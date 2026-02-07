@@ -45,4 +45,10 @@ test('getNotificationReadModel: counts delivered/read/click', async () => {
   assert.strictEqual(result[0].deliveredCount, 3);
   assert.strictEqual(result[0].readCount, 2);
   assert.strictEqual(result[0].clickCount, 2);
+  assert.deepStrictEqual(result[0].completeness, {
+    ok: false,
+    missing: ['missing_link_registry', 'invalid_cta_text'],
+    needsAttention: true,
+    severity: 'BLOCK'
+  });
 });

@@ -2,6 +2,7 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
+const { evaluateNotificationSummaryCompleteness } = require('../phase24/notificationSummaryCompleteness');
 
 async function getNotificationReadModel(params) {
   const opts = params || {};
@@ -23,15 +24,19 @@ async function getNotificationReadModel(params) {
       if (delivery.readAt) readCount += 1;
       if (delivery.clickAt) clickCount += 1;
     }
-    items.push({
+    const item = {
       notificationId: notification.id,
       title: notification.title || null,
       scenarioKey: notification.scenarioKey || null,
       stepKey: notification.stepKey || null,
+      ctaText: notification.ctaText || null,
+      linkRegistryId: notification.linkRegistryId || null,
       deliveredCount,
       readCount,
       clickCount
-    });
+    };
+    item.completeness = evaluateNotificationSummaryCompleteness(item);
+    items.push(item);
   }
 
   return items;

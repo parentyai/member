@@ -79,6 +79,19 @@ test('phase6 member summary: returns minimal summary', async () => {
     needsAttention: false,
     reasonCodes: []
   });
+  assert.deepStrictEqual(payload.completeness, {
+    ok: true,
+    missing: [],
+    needsAttention: false,
+    severity: 'INFO'
+  });
+  assert.deepStrictEqual(payload.registrationCompleteness, {
+    ok: true,
+    missing: [],
+    needsAttention: false,
+    severity: 'OK',
+    reasons: []
+  });
   assert.strictEqual(payload.meta.source, 'phase5-derived');
   assert.ok(typeof payload.meta.generatedAt === 'string');
 });
