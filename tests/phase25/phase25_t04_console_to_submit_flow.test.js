@@ -24,14 +24,7 @@ test('phase25 t04: console recommendedNextAction flows into submit', async () =>
   assert.ok(consoleResult.allowedNextActions.includes(consoleResult.recommendedNextAction));
 
   const submitDeps = {
-    getUserStateSummary: async () => ({
-      registrationCompleteness: { ok: true, missing: [] },
-      userSummaryCompleteness: { ok: true, missing: [] },
-      checklist: { completeness: { ok: true, missing: [] } },
-      opsStateCompleteness: { status: 'WARN', missing: ['missing_ops_state'] },
-      opsDecisionCompleteness: { status: 'WARN', missing: ['missing_ops_state'] }
-    }),
-    evaluateOverallDecisionReadiness: () => readiness,
+    getOpsConsole: async () => consoleResult,
     recordOpsNextAction: async () => ({ decisionLogId: 'd1', opsState: { id: 'U1', nextAction: 'STOP_AND_ESCALATE' } })
   };
 

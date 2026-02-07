@@ -1,7 +1,6 @@
 'use strict';
 
-const { getUserStateSummary } = require('../phase5/getUserStateSummary');
-const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
+const { getOpsConsole } = require('./getOpsConsole');
 const {
   recordOpsNextAction,
   NEXT_ACTIONS,
@@ -19,16 +18,17 @@ function requireEnum(value, label, allowed) {
   return value;
 }
 
-function buildReadiness(summary, evaluator) {
-  const checklistCompleteness = summary && summary.checklist ? summary.checklist.completeness : null;
-  return evaluator({
-    registrationCompleteness: summary ? summary.registrationCompleteness : null,
-    userSummaryCompleteness: summary ? summary.userSummaryCompleteness : null,
-    notificationSummaryCompleteness: null,
-    checklistCompleteness,
-    opsStateCompleteness: summary ? summary.opsStateCompleteness : null,
-    opsDecisionCompleteness: summary ? summary.opsDecisionCompleteness : null
-  });
+function buildAudit(consoleResult) {
+  const readiness = consoleResult && consoleResult.readiness ? consoleResult.readiness : null;
+  return {
+    readinessStatus: readiness && readiness.status ? readiness.status : null,
+    blocking: readiness && Array.isArray(readiness.blocking) ? readiness.blocking : [],
+    recommendedNextAction: consoleResult ? consoleResult.recommendedNextAction : null,
+    allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
+      ? consoleResult.allowedNextActions
+      : [],
+    consoleServerTime: consoleResult && consoleResult.serverTime ? consoleResult.serverTime : null
+  };
 }
 
 async function submitOpsDecision(input, deps) {
@@ -43,19 +43,28 @@ async function submitOpsDecision(input, deps) {
   const note = typeof decision.note === 'string' ? decision.note : '';
   const dryRun = Boolean(payload.dryRun);
 
-  const summaryFn = deps && deps.getUserStateSummary ? deps.getUserStateSummary : getUserStateSummary;
-  const readinessFn = deps && deps.evaluateOverallDecisionReadiness
-    ? deps.evaluateOverallDecisionReadiness
-    : evaluateOverallDecisionReadiness;
+  const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
 
-  const summary = await summaryFn({ lineUserId });
-  const readiness = buildReadiness(summary, readinessFn);
+  const consoleResult = await consoleFn({ lineUserId });
+  const readiness = consoleResult ? consoleResult.readiness : null;
+  const allowedNextActions = consoleResult && Array.isArray(consoleResult.allowedNextActions)
+    ? consoleResult.allowedNextActions
+    : [];
+  const audit = buildAudit(consoleResult);
+
+  if (allowedNextActions.length && !allowedNextActions.includes(nextAction)) {
+    throw new Error('invalid nextAction');
+  }
+  if (readiness && readiness.status === 'NOT_READY' && nextAction !== 'STOP_AND_ESCALATE') {
+    throw new Error('invalid nextAction');
+  }
 
   if (dryRun) {
     return {
       ok: true,
       readiness,
+      audit,
       decisionLogId: null,
       opsState: {
         id: lineUserId,
@@ -78,12 +87,14 @@ async function submitOpsDecision(input, deps) {
     reasonCode,
     stage,
     note,
-    decidedBy
+    decidedBy,
+    audit
   });
 
   return {
     ok: true,
     readiness,
+    audit,
     decisionLogId: result.decisionLogId,
     opsState: result.opsState,
     dryRun: false
