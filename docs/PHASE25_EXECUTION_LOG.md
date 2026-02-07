@@ -21,3 +21,10 @@ PR URL: https://github.com/parentyai/member/pull/260
 npm test: pass 200 fail 0
 Audit fields: readinessStatus, blocking, recommendedNextAction, allowedNextActions, consoleServerTime
 Rollback: revert this PR
+UTC: 2026-02-07T21:48:33Z
+main SHA: 7a50bc69dd87d6e367f9fce535687727e17a5b81
+Action: "Phase25-T06 decision consistency guard"
+PR URL: https://github.com/parentyai/member/pull/261
+npm test: pass 202 fail 0
+Consistency issues: missing_ops_state, missing_latest_decision_log, ops_state_source_mismatch, missing_audit_snapshot, not_ready_but_non_escalate
+Rollback: revert this PR

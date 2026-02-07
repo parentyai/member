@@ -15,6 +15,7 @@ test('phase25 t04: console recommendedNextAction flows into submit', async () =>
       opsState: null
     }),
     getMemberSummary: async () => ({ ok: true }),
+    getOpsDecisionConsistency: async () => ({ status: 'OK', issues: [] }),
     decisionLogsRepo: { getLatestDecision: async () => null }
   };
 
