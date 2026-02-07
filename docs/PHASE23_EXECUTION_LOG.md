@@ -53,6 +53,23 @@ main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
 Action: "Phase23-T09 CLOSE criteria SSOT"
 Principle: "Phase CLOSE is rule-based, not discretionary." phaseResult=NO_MAIN_RUN closeDecision=NO_CLOSE
 
+UTC: 2026-02-07T17:31:12Z
+main SHA: 43f32b7a637feb904353790c4d5b9b512e970425
+Action: "Phase23-T11 main evidence + close decision"
+Evidence URLs:
+- main dryrun: https://github.com/parentyai/member/actions/runs/21783994163
+- main write: https://github.com/parentyai/member/actions/runs/21783995843
+Artifacts:
+- dryrun: /tmp/phase23_t11_main_dryrun_YQNw
+- write: /tmp/phase23_t11_main_write_oObe
+Decision:
+- phaseResult=ANY_IMPL_FAIL
+- closeDecision=NO_CLOSE
+Notes:
+- dryrun stdout_head: result=FAIL reasonCode=SUBPROCESS_EXIT_NONZERO stage=kpi_gate failure_class=IMPL nextAction=check gate reasons + thresholds
+- write stdout_head: result=PASS
+Rollback: revert this PR
+
 UTC: 2026-02-07T17:20:28Z
 main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
 Action: "Phase23-T10 CI fail3 eradication"
