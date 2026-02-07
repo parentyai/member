@@ -24,3 +24,19 @@ Rerun result: FAIL (ENV)
 Evidence (rerun smoke):
 - stderrHead: "unauthorized_client" (gcloud auth print-access-token attribute condition)
 Rollback: revert this PR
+
+UTC: 2026-02-07T05:13:20Z
+main SHA: 28683c8e3fff0c17b52b076bdc8863b7f5f4e3ed
+Action: "Phase23-T05 WIF/IAM fix + rerun evidence"
+WIF provider condition: assertion.repository=='parentyai/member' && (assertion.ref=='refs/heads/main' || assertion.ref=='refs/heads/phase23/t05-fix-phase22-scheduled-exit1')
+SA IAM: roles/datastore.user added to member-deploy@member-485303.iam.gserviceaccount.com
+Rerun (branch):
+- dryrun: https://github.com/parentyai/member/actions/runs/21774690030
+- write: https://github.com/parentyai/member/actions/runs/21774690295
+Rerun result: FAIL (KPI_NULL)
+Evidence (dryrun):
+- stdout_head: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot errorSignature=STDERR_ZERO_BYTES
+- smoke_stdout_head: sentA=0 clickA=0 sentB=0 clickB=0
+Evidence (write):
+- stdout_head: result=FAIL reasonCode=KPI_NULL stage=kpi_snapshot errorSignature=STDERR_ZERO_BYTES
+- smoke_stdout_head: sentA=0 clickA=0 sentB=0 clickB=0
