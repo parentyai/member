@@ -25,10 +25,6 @@ Evidence (rerun smoke):
 - stderrHead: "unauthorized_client" (gcloud auth print-access-token attribute condition)
 Rollback: revert this PR
 
-UTC: 2026-02-07T15:40:18Z
-main SHA: 9595c3232b9f7e1ee8ac115dbb102fe0d4c03cc0
-Action: "Phase23-T08 Runbook minimal routing inputs SSOT"
-Principle: "Runbook routing uses minimal inputs; other keys are diagnostic only."
 
 UTC: 2026-02-07T05:56:06Z
 main SHA: 1713ff853e299f4652adc45945723822e2930960
@@ -51,3 +47,8 @@ Query log (smoke stderr head):
 Result: PASS (branch run)
 Note: PR #242 requires approval to merge before main re-run.
 Rollback: revert PR #242
+
+UTC: 2026-02-07T15:40:18Z
+main SHA: 9595c3232b9f7e1ee8ac115dbb102fe0d4c03cc0
+Action: "Phase23-T08 Runbook minimal routing inputs SSOT"
+Principle: "Runbook routing uses minimal inputs; other keys are diagnostic only."
