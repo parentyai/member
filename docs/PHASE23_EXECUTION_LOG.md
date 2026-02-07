@@ -87,6 +87,24 @@ Fix:
 - tests/phase22/phase22_t03_kpi_gate.test.js: add minDeltaCtr=0 negative delta PASS
 Rollback: revert this PR
 
+UTC: 2026-02-07T17:45:24Z
+main SHA: 6fc5a90f0e4d950a536332a14f4c2d0b4e3e7766
+Action: "Phase23-T13 main PASS evidence for CLOSE"
+Evidence URLs:
+- main dryrun: https://github.com/parentyai/member/actions/runs/21784216598
+- main write: https://github.com/parentyai/member/actions/runs/21784217767
+Artifacts:
+- dryrun: /tmp/phase23_t13_main_dryrun_c3Lq
+- write: /tmp/phase23_t13_main_write_iUDD
+Stdout head:
+- dryrun: {"utc":"2026-02-07T17:44:14.526Z","inputs":{"trackBaseUrl":"https://member-track-pvxgenwkba-ue.a.run.app","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q","ctaA":"openA","ctaB":"openB","from":"2026-02-06T00:00:00Z","to":"2026-02-07T00:00:00Z","runs":"2"},"kpi":{"utc":"2026-02-07T17:44:28.065Z","ctaA":"openA","ctaB":"openB","sentA":16,"clickA":16,"ctrA":1,"sentB":16,"clickB":15,"ctrB":0.9375,"deltaCTR":0.0625},"gate":{"ok":true,"reasons":[],"params":{"minTotalSent":2,"minPerVariantSent":0,"minTotalClick":0,"minDeltaCtr":0},"kpi":{"utc":"2026-02-07T17:44:28.065Z","ctaA":"openA","ctaB":"openB","sentA":16,"clickA":16,"ctrA":1,"sentB":16,"clickB":15,"ctrB":0.9375,"deltaCTR":0.0625}},"result":"PASS"}
+- write: {"utc":"2026-02-07T17:44:17.263Z","inputs":{"trackBaseUrl":"https://member-track-pvxgenwkba-ue.a.run.app","linkRegistryId":"Ls61KJFtn3YtYLpkzf1q","ctaA":"openA","ctaB":"openB","from":"2026-02-06T00:00:00Z","to":"2026-02-07T00:00:00Z","runs":"2"},"kpi":{"utc":"2026-02-07T17:44:30.582Z","ctaA":"openA","ctaB":"openB","sentA":16,"clickA":16,"ctrA":1,"sentB":16,"clickB":16,"ctrB":1,"deltaCTR":0},"gate":{"ok":true,"reasons":[],"params":{"minTotalSent":2,"minPerVariantSent":0,"minTotalClick":0,"minDeltaCtr":0},"kpi":{"utc":"2026-02-07T17:44:30.582Z","ctaA":"openA","ctaB":"openB","sentA":16,"clickA":16,"ctrA":1,"sentB":16,"clickB":16,"ctrB":1,"deltaCTR":0}},"result":"PASS"}
+Summary keys: result, reasonCode, stage, failure_class, nextAction, humanDecisionHint
+Decision:
+- phaseResult=ALL_PASS
+- closeDecision=CLOSE
+Rollback: revert this PR
+
 UTC: 2026-02-07T17:20:28Z
 main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
 Action: "Phase23-T10 CI fail3 eradication"
