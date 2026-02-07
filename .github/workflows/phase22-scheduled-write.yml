@@ -36,6 +36,7 @@ jobs:
           CTA_B: ${{ vars.CTA_B }}
           FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
           SERVICE_MODE: member
+          PHASE21_VERIFY_REST: "1"
         run: |
           set +e
           FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
