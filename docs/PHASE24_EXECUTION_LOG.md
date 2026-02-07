@@ -18,3 +18,4 @@ Phase24 CLOSE:
 - CLOSE = YES (Top5 items implemented + evidence fixed on main + Phase23 unchanged)
 Rollback:
 - revert PR #253 then revert PR #252
+UTC: 2026-02-07T20:44:38Z main SHA: 8b73ee956b7d08698ad1d78d3ae0947d11cf7492 Action: Phase25 START declared (docs only)
