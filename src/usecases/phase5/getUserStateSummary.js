@@ -6,6 +6,8 @@ const {
   listAllChecklists,
   listAllUserChecklists
 } = require('../../repos/firestore/phase2ReadRepo');
+const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
+const { evaluateRegistrationCompleteness } = require('../phase24/registrationCompleteness');
 
 function toMillis(value) {
   if (!value) return null;
@@ -90,11 +92,19 @@ async function getUserStateSummary(params) {
   const checklistCompleted = countChecklistCompletedByUser(user, userChecklists);
   const lastActionAt = findLatestAction(events, user.id);
 
+  const checklistEval = evaluateChecklistCompleteness(
+    { totalItems: checklistTotal },
+    { completedCount: checklistCompleted }
+  );
+  const registrationCompleteness = await evaluateRegistrationCompleteness(user, { allUsers: users });
+
   return {
     lineUserId: user.id,
     hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
     checklistCompleted,
     checklistTotal,
+    checklist: checklistEval,
+    registrationCompleteness,
     lastActionAt
   };
 }

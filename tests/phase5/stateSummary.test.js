@@ -52,5 +52,24 @@ test('getUserStateSummary: returns read-only state', async () => {
   assert.strictEqual(result.hasMemberNumber, true);
   assert.strictEqual(result.checklistCompleted, 1);
   assert.strictEqual(result.checklistTotal, 2);
+  assert.deepStrictEqual(result.checklist, {
+    completeness: {
+      ok: false,
+      missing: ['missing_required_item'],
+      needsAttention: true,
+      severity: 'BLOCK'
+    },
+    completion: {
+      isComplete: false,
+      completeRule: 'ALL_ITEMS'
+    }
+  });
+  assert.deepStrictEqual(result.registrationCompleteness, {
+    ok: true,
+    missing: [],
+    needsAttention: false,
+    severity: 'OK',
+    reasons: []
+  });
   assert.ok(result.lastActionAt && result.lastActionAt.startsWith('2026-01-02'));
 });
