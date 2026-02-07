@@ -8,6 +8,23 @@ const { execFileSync } = require('child_process');
 let notificationsRepo = null;
 let testSendNotification = null;
 
+function runGcloud(args) {
+  return execFileSync('gcloud', args, { encoding: 'utf8' }).trim();
+}
+
+function resolveProjectId() {
+  if (process.env.FIRESTORE_PROJECT_ID && process.env.FIRESTORE_PROJECT_ID.trim()) {
+    return process.env.FIRESTORE_PROJECT_ID.trim();
+  }
+  const value = runGcloud(['config', 'get-value', 'project']);
+  if (!value || value === '(unset)') throw new Error('project id required');
+  return value;
+}
+
+function getAccessToken() {
+  return runGcloud(['auth', 'print-access-token']);
+}
+
 function usage() {
   console.error('Usage: node scripts/phase21_verify_day_window.js --track-base-url "<url>" --linkRegistryId "<id>" [--fromUtc "<utc>"] [--toUtc "<utc>"] [--deliveryIdA "<id>"] [--deliveryIdB "<id>"]');
 }
@@ -93,6 +110,21 @@ function timestampTag() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, 'Z');
 }
 
+async function canUseFirebaseAdmin() {
+  try {
+    loadFirestoreDeps();
+    if (!notificationsRepo || typeof notificationsRepo.getNotification !== 'function') {
+      return true;
+    }
+    await withFirebaseAdmin(() => notificationsRepo.getNotification('phase21_verify_probe'));
+    return true;
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    if (message.includes('Invalid contents in the credentials file')) return false;
+    throw err;
+  }
+}
+
 function postJson(url, payload) {
   const data = JSON.stringify(payload);
   return new Promise((resolve, reject) => {
@@ -136,7 +168,124 @@ function formatHttpResponse(response) {
   return lines.join('\n');
 }
 
-async function createNotificationWithCta(ctaText, linkRegistryId) {
+function firestoreFieldString(value) {
+  return { stringValue: String(value) };
+}
+
+function firestoreFieldBool(value) {
+  return { booleanValue: Boolean(value) };
+}
+
+function firestoreFieldTimestamp(value) {
+  return { timestampValue: value };
+}
+
+function firestoreFieldNumber(value) {
+  if (Number.isInteger(value)) return { integerValue: String(value) };
+  return { doubleValue: Number(value) };
+}
+
+function firestoreReadNumber(field) {
+  if (!field) return 0;
+  if (field.integerValue !== undefined) return Number(field.integerValue);
+  if (field.doubleValue !== undefined) return Number(field.doubleValue);
+  return 0;
+}
+
+function firestoreBaseUrl(projectId) {
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+}
+
+function firestoreParseId(docName) {
+  if (!docName) return null;
+  const parts = String(docName).split('/');
+  return parts[parts.length - 1] || null;
+}
+
+function firestoreRequest(method, url, token, body) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : '';
+    const req = https.request(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'content-type': 'application/json; charset=utf-8',
+        'content-length': Buffer.byteLength(data || '')
+      }
+    }, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => {
+        raw += chunk;
+      });
+      res.on('end', () => {
+        let parsed = null;
+        try {
+          parsed = raw ? JSON.parse(raw) : null;
+        } catch (err) {
+          return reject(err);
+        }
+        resolve({ statusCode: res.statusCode, body: parsed });
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+async function firestoreCreateDoc(collection, fields) {
+  const projectId = resolveProjectId();
+  const token = getAccessToken();
+  const url = `${firestoreBaseUrl(projectId)}/${collection}`;
+  const res = await firestoreRequest('POST', url, token, { fields });
+  if (!res || res.statusCode >= 300) {
+    throw new Error('firestore create failed');
+  }
+  const id = firestoreParseId(res.body && res.body.name);
+  return { id, fields: res.body && res.body.fields ? res.body.fields : null };
+}
+
+async function firestoreGetDoc(collection, id) {
+  const projectId = resolveProjectId();
+  const token = getAccessToken();
+  const url = `${firestoreBaseUrl(projectId)}/${collection}/${id}`;
+  const res = await firestoreRequest('GET', url, token);
+  if (res && res.statusCode === 404) return null;
+  if (!res || res.statusCode >= 300) {
+    throw new Error('firestore get failed');
+  }
+  return res.body || null;
+}
+
+function buildUpdateMask(fields) {
+  const keys = Object.keys(fields);
+  return keys.map((key) => `updateMask.fieldPaths=${encodeURIComponent(key)}`).join('&');
+}
+
+async function firestorePatchDoc(collection, id, fields) {
+  const projectId = resolveProjectId();
+  const token = getAccessToken();
+  const mask = buildUpdateMask(fields);
+  const url = `${firestoreBaseUrl(projectId)}/${collection}/${id}?${mask}`;
+  const res = await firestoreRequest('PATCH', url, token, { fields });
+  if (!res || res.statusCode >= 300) {
+    throw new Error('firestore patch failed');
+  }
+  return res.body || null;
+}
+
+async function firestoreCreateDocWithId(collection, id, fields) {
+  const projectId = resolveProjectId();
+  const token = getAccessToken();
+  const url = `${firestoreBaseUrl(projectId)}/${collection}?documentId=${encodeURIComponent(id)}`;
+  const res = await firestoreRequest('POST', url, token, { fields });
+  if (!res || res.statusCode >= 300) {
+    throw new Error('firestore create with id failed');
+  }
+  return res.body || null;
+}
+
+async function createNotificationWithCta(ctaText, linkRegistryId, createdAt) {
   loadFirestoreDeps();
   return withFirebaseAdmin(() => notificationsRepo.createNotification({
     title: `phase21 verify ${ctaText}`,
@@ -144,19 +293,69 @@ async function createNotificationWithCta(ctaText, linkRegistryId) {
     ctaText,
     linkRegistryId,
     scenarioKey: 'A',
-    stepKey: '3mo'
+    stepKey: '3mo',
+    createdAt
   }));
 }
 
-async function createDelivery(notificationId, lineUserId) {
+async function createNotificationWithCtaRest(ctaText, linkRegistryId, createdAt) {
+  const fields = {
+    title: firestoreFieldString(`phase21 verify ${ctaText}`),
+    body: firestoreFieldString('click: https://example.com'),
+    ctaText: firestoreFieldString(ctaText),
+    linkRegistryId: firestoreFieldString(linkRegistryId),
+    scenarioKey: firestoreFieldString('A'),
+    stepKey: firestoreFieldString('3mo'),
+    createdAt: firestoreFieldTimestamp(createdAt)
+  };
+  const result = await firestoreCreateDoc('notifications', fields);
+  return { id: result.id, createdAt };
+}
+
+async function createDelivery(notificationId, lineUserId, sentAt) {
   loadFirestoreDeps();
   const result = await withFirebaseAdmin(() => testSendNotification({
     lineUserId,
     text: 'phase21 verify send',
     notificationId,
-    pushFn: async () => {}
+    pushFn: async () => {},
+    sentAt
   }));
   return result.id;
+}
+
+async function createDeliveryRest(notificationId, lineUserId, sentAt) {
+  const fields = {
+    notificationId: firestoreFieldString(notificationId),
+    lineUserId: firestoreFieldString(lineUserId),
+    sentAt: firestoreFieldTimestamp(sentAt),
+    delivered: firestoreFieldBool(true)
+  };
+  const result = await firestoreCreateDoc('notification_deliveries', fields);
+  return result.id;
+}
+
+async function recordSentRest(notificationId, ctaText, linkRegistryId, createdAt) {
+  const existing = await firestoreGetDoc('phase18_cta_stats', notificationId);
+  const existingFields = existing && existing.fields ? existing.fields : {};
+  const prevSent = firestoreReadNumber(existingFields.sentCount);
+  const prevClick = firestoreReadNumber(existingFields.clickCount);
+  const updatedAt = new Date().toISOString();
+  const fields = {
+    notificationId: firestoreFieldString(notificationId),
+    ctaText: firestoreFieldString(ctaText),
+    linkRegistryId: firestoreFieldString(linkRegistryId),
+    sentCount: firestoreFieldNumber(prevSent + 1),
+    clickCount: firestoreFieldNumber(prevClick),
+    updatedAt: firestoreFieldTimestamp(updatedAt)
+  };
+  const created = existingFields.createdAt ? existingFields.createdAt : firestoreFieldTimestamp(createdAt);
+  if (created) fields.createdAt = created;
+  if (existing) {
+    await firestorePatchDoc('phase18_cta_stats', notificationId, fields);
+    return;
+  }
+  await firestoreCreateDocWithId('phase18_cta_stats', notificationId, fields);
 }
 
 async function main() {
@@ -169,6 +368,7 @@ async function main() {
 
   const fromUtc = args.fromUtc || defaults.fromUtc;
   const toUtc = args.toUtc || defaults.toUtc;
+  const windowTimestamp = fromUtc;
   const trackBaseUrl = args.trackBaseUrl || process.env.TRACK_BASE_URL;
   const linkRegistryId = args.linkRegistryId;
 
@@ -192,19 +392,45 @@ async function main() {
   let deliveryIdB = args.deliveryIdB || null;
   let notificationIdA = null;
   let notificationIdB = null;
+  let createdAtA = null;
+  let createdAtB = null;
+
+  let restMode = process.env.PHASE21_VERIFY_REST === '1';
+  if (!restMode) {
+    restMode = !(await canUseFirebaseAdmin());
+  }
 
   if (!deliveryIdA || !deliveryIdB) {
-    loadFirestoreDeps();
-    const notifA = await createNotificationWithCta('openA', linkRegistryId);
-    const notifB = await createNotificationWithCta('openB', linkRegistryId);
-    notificationIdA = notifA.id;
-    notificationIdB = notifB.id;
+    if (restMode) {
+      const notifA = await createNotificationWithCtaRest('openA', linkRegistryId, windowTimestamp);
+      const notifB = await createNotificationWithCtaRest('openB', linkRegistryId, windowTimestamp);
+      notificationIdA = notifA.id;
+      notificationIdB = notifB.id;
+      createdAtA = notifA.createdAt;
+      createdAtB = notifB.createdAt;
 
-    if (!deliveryIdA) {
-      deliveryIdA = await createDelivery(notificationIdA, 'U1');
-    }
-    if (!deliveryIdB) {
-      deliveryIdB = await createDelivery(notificationIdB, 'U2');
+      if (!deliveryIdA) {
+        deliveryIdA = await createDeliveryRest(notificationIdA, 'U1', windowTimestamp);
+      }
+      if (!deliveryIdB) {
+        deliveryIdB = await createDeliveryRest(notificationIdB, 'U2', windowTimestamp);
+      }
+
+      await recordSentRest(notificationIdA, 'openA', linkRegistryId, createdAtA);
+      await recordSentRest(notificationIdB, 'openB', linkRegistryId, createdAtB);
+    } else {
+      loadFirestoreDeps();
+      const notifA = await createNotificationWithCta('openA', linkRegistryId, windowTimestamp);
+      const notifB = await createNotificationWithCta('openB', linkRegistryId, windowTimestamp);
+      notificationIdA = notifA.id;
+      notificationIdB = notifB.id;
+
+      if (!deliveryIdA) {
+        deliveryIdA = await createDelivery(notificationIdA, 'U1', windowTimestamp);
+      }
+      if (!deliveryIdB) {
+        deliveryIdB = await createDelivery(notificationIdB, 'U2', windowTimestamp);
+      }
     }
 
     const ids = {

@@ -3,6 +3,8 @@
 
 const path = require('path');
 
+const COLLECTION = 'phase18_cta_stats';
+
 function usage() {
   console.error('Usage: node scripts/phase22_cta_kpi_snapshot.js --ctaA "openA" --ctaB "openB" --from "2026-02-05T00:00:00Z" --to "2026-02-06T00:00:00Z"');
 }
@@ -60,6 +62,20 @@ function buildSnapshot(stats, ctaA, ctaB, now) {
     ctrB,
     deltaCTR: ctrA - ctrB
   };
+}
+
+function logQuery(stats, ctaA, ctaB, fromUtc, toUtc) {
+  const payload = {
+    action: 'phase22_kpi_query',
+    projectId: stats && stats.projectId ? stats.projectId : null,
+    collection: COLLECTION,
+    ctaTextA: ctaA,
+    ctaTextB: ctaB,
+    fromUtc,
+    toUtc,
+    filterField: stats && stats.filterField ? stats.filterField : null
+  };
+  console.error(JSON.stringify(payload));
 }
 
 async function runPhase20Stats(ctaA, ctaB, fromUtc, toUtc) {
@@ -146,6 +162,7 @@ async function main() {
     process.exit(1);
   }
 
+  logQuery(stats, ctaA, ctaB, fromUtc, toUtc);
   const snapshot = buildSnapshot(stats, ctaA, ctaB);
   console.log(JSON.stringify(snapshot));
 }

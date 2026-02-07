@@ -54,8 +54,14 @@ function runScript(scriptPath, args) {
   };
 }
 
-function buildVerifyArgs(trackBaseUrl, linkRegistryId) {
+function buildVerifyArgs(trackBaseUrl, linkRegistryId, fromUtc, toUtc) {
   const args = ['--track-base-url', trackBaseUrl, '--linkRegistryId', linkRegistryId];
+  if (fromUtc) {
+    args.push('--fromUtc', fromUtc);
+  }
+  if (toUtc) {
+    args.push('--toUtc', toUtc);
+  }
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     args.push('--allow-gac');
   }
@@ -85,7 +91,7 @@ function run() {
   const kpiPath = path.resolve(__dirname, 'phase22_cta_kpi_snapshot.js');
 
   for (let i = 0; i < runs; i += 1) {
-    const result = runScript(verifyPath, buildVerifyArgs(trackBaseUrl, linkRegistryId));
+    const result = runScript(verifyPath, buildVerifyArgs(trackBaseUrl, linkRegistryId, fromUtc, toUtc));
     if (result.status !== 0) {
       const reason = classifyExit(result.stderr);
       if (result.stderr) console.error(result.stderr.trim());
