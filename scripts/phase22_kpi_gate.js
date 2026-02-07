@@ -63,7 +63,7 @@ function evaluateKpi(kpi, params) {
   if (sentA < params.minPerVariantSent) reasons.push('sentA_lt_min');
   if (sentB < params.minPerVariantSent) reasons.push('sentB_lt_min');
   if (totalClick < params.minTotalClick) reasons.push('total_click_lt_min');
-  if (deltaCTR < params.minDeltaCtr) reasons.push('delta_ctr_lt_min');
+  if (params.minDeltaCtr > 0 && deltaCTR < params.minDeltaCtr) reasons.push('delta_ctr_lt_min');
 
   return { ok: reasons.length === 0, reasons };
 }
