@@ -35,6 +35,13 @@ test('phase22 t03: FAIL when deltaCTR below threshold', () => {
   assert.ok(result.reasons.includes('delta_ctr_lt_min'));
 });
 
+test('phase22 t03: PASS when minDeltaCtr is 0 even if deltaCTR negative', () => {
+  const kpi = { sentA: 1, sentB: 1, clickA: 0, clickB: 0, ctrA: 0, ctrB: 0, deltaCTR: -0.1 };
+  const result = gate.evaluateKpi(kpi, params({ minDeltaCtr: 0 }));
+  assert.equal(result.ok, true);
+  assert.equal(result.reasons.length, 0);
+});
+
 test('phase22 t03: FAIL when required key missing', () => {
   const kpi = { sentA: 1, sentB: 1, clickA: 0, ctrA: 0, ctrB: 0, deltaCTR: 0 };
   const result = gate.evaluateKpi(kpi, params());

@@ -70,6 +70,23 @@ Notes:
 - write stdout_head: result=PASS
 Rollback: revert this PR
 
+UTC: 2026-02-07T17:37:46Z
+main SHA: c659efe0880fc3e84d071bb58cc42a5bf737869b
+Action: "Phase23-T12 fix kpi_gate delta threshold handling"
+Evidence:
+- dryrun fail run: https://github.com/parentyai/member/actions/runs/21783994163
+- write pass run: https://github.com/parentyai/member/actions/runs/21783995843
+Artifacts:
+- dryrun: /tmp/phase23_t12_dryrun_fail
+- write: /tmp/phase23_t12_write_pass
+Observations:
+- dryrun stdout_head: result=FAIL reasonCode=SUBPROCESS_EXIT_NONZERO stage=kpi_gate failure_class=IMPL gate_reason=delta_ctr_lt_min params.minDeltaCtr=0 deltaCTR=-0.08333333333333337
+- write stdout_head: result=PASS params.minDeltaCtr=0 deltaCTR=0
+Fix:
+- scripts/phase22_kpi_gate.js: skip delta_ctr_lt_min when minDeltaCtr=0
+- tests/phase22/phase22_t03_kpi_gate.test.js: add minDeltaCtr=0 negative delta PASS
+Rollback: revert this PR
+
 UTC: 2026-02-07T17:20:28Z
 main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
 Action: "Phase23-T10 CI fail3 eradication"
