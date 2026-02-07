@@ -30,3 +30,8 @@ Phase24で固定した decisionLogs / opsState / completeness / readiness を運
 - 運用ループ（Inputs/Signals/Decision/Action/Record）が docs とコードで固定されている
 - Top5の実装が完了し、証跡（tests/execution log）が揃っている
 - 運用手順が最小単位で再現可能
+
+## T03実装状況
+- 入力: /api/phase25/ops/console?lineUserId=...
+- 出力: userStateSummary / memberSummary / readiness / opsState / latestDecisionLog
+- 証跡: tests/phase25/phase25_t03_ops_console_view.test.js

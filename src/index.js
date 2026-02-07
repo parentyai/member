@@ -424,32 +424,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname.startsWith('/api/phase25/ops/decision')) {
-    const { handleSubmitOpsDecision } = require('./routes/phase25OpsDecision');
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    const collectBody = () => new Promise((resolve) => {
-      req.on('data', (chunk) => {
-        if (tooLarge) return;
-        bytes += chunk.length;
-        if (bytes > MAX_BODY_BYTES) {
-          tooLarge = true;
-          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-          res.end('payload too large');
-          req.destroy();
-          return;
-        }
-        chunks.push(chunk);
-      });
-      req.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf8'));
-      });
-    });
+  if (pathname.startsWith('/api/phase25/ops/console')) {
+    const { handleGetOpsConsole } = require('./routes/phase25OpsConsole');
     (async () => {
-      if (req.method === 'POST' && pathname === '/api/phase25/ops/decision') {
-        const body = await collectBody();
-        await handleSubmitOpsDecision(req, res, body);
+      if (req.method === 'GET' && pathname === '/api/phase25/ops/console') {
+        await handleGetOpsConsole(req, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
