@@ -15,3 +15,8 @@
 - Reinterpreting Phase21 evidence, exitCode meanings, or verification criteria.
 - Changing Phase21 measurement logic or stats window definitions.
 - Adding new experiments or decision logic under Phase22 PREPARE.
+
+## Scheduled KPI Preconditions
+- The verification run must write CTA stats with `createdAt` inside the scheduled `fromUtc`/`toUtc` window.
+- Manual and scheduled KPI snapshot query keys must match (projectId, collection, ctaTextA/B, fromUtc/toUtc).
+- If the preconditions above are not met, FAIL is correct.
