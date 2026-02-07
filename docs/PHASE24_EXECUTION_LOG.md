@@ -4,5 +4,3 @@ UTC: 2026-02-07T19:10:35Z main SHA: ed3f09dae32004567894cdd7e34bf3b71cbd4eaa Act
 UTC: 2026-02-07T19:16:25Z main SHA: ed3f09dae32004567894cdd7e34bf3b71cbd4eaa Action: Phase24-T05 checklist completion SSOT
 UTC: 2026-02-07T19:21:10Z main SHA: ed3f09dae32004567894cdd7e34bf3b71cbd4eaa Action: Phase24-T06 registration data quality minimal audit
 UTC: 2026-02-07T19:30:59Z main SHA: fce84ea2ea47e5f1f7df76aa4c7c91b1226ad651 Action: Phase24-T07 ops nextAction executor added
-UTC: 2026-02-07T19:35:46Z main SHA: fce84ea2ea47e5f1f7df76aa4c7c91b1226ad651 Action: Phase24-T08 opsState exposed in summaries
-UTC: 2026-02-07T19:57:12Z main SHA: fce84ea2ea47e5f1f7df76aa4c7c91b1226ad651 Action: Phase24-T09/T10 decision audit & readiness aggregation
