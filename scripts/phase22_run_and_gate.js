@@ -137,6 +137,7 @@ function runOrchestrator(args, deps) {
       const exitCode = classifyExit(runnerResult);
       return {
         exitCode,
+        stderr: runnerResult.stderr || '',
         output: {
           utc,
           inputs,
