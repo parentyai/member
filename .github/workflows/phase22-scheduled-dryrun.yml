@@ -35,6 +35,7 @@ jobs:
           CTA_A: ${{ vars.CTA_A }}
           CTA_B: ${{ vars.CTA_B }}
           FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+          SERVICE_MODE: member
         run: |
           set +e
           FROM_UTC=$(date -u -d "yesterday" +%Y-%m-%dT00:00:00Z)
