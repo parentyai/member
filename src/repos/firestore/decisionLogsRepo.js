@@ -48,8 +48,18 @@ async function listDecisions(subjectType, subjectId, limit) {
   return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
+async function getDecisionById(decisionLogId) {
+  if (!decisionLogId) throw new Error('decisionLogId required');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(decisionLogId);
+  const snap = await docRef.get();
+  if (!snap.exists) return null;
+  return Object.assign({ id: snap.id }, snap.data());
+}
+
 module.exports = {
   appendDecision,
   getLatestDecision,
-  listDecisions
+  listDecisions,
+  getDecisionById
 };

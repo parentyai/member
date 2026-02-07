@@ -7,7 +7,15 @@ const {
   listAllUserChecklists
 } = require('../../repos/firestore/phase2ReadRepo');
 const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
+const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
 const { evaluateRegistrationCompleteness } = require('../phase24/registrationCompleteness');
+const { evaluateOpsStateCompleteness } = require('../phase24/opsStateCompleteness');
+const { evaluateOpsDecisionCompleteness } = require('../phase24/opsDecisionCompleteness');
+const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
+const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const STALE_DAYS = 14;
 
 function toMillis(value) {
   if (!value) return null;
@@ -29,6 +37,14 @@ function formatTimestamp(value) {
     if (!Number.isNaN(date.getTime())) return date.toISOString();
   }
   return value;
+}
+
+function isMemberNumberStale(data, nowMs) {
+  const memberNumber = data && data.memberNumber ? String(data.memberNumber).trim() : '';
+  if (memberNumber.length > 0) return false;
+  const createdAtMs = toMillis(data && data.createdAt);
+  if (!createdAtMs) return false;
+  return nowMs - createdAtMs >= STALE_DAYS * DAY_MS;
 }
 
 function countChecklistTotal(checklists, scenarioKey, stepKey) {
@@ -87,6 +103,9 @@ async function getUserStateSummary(params) {
   const user = users.find((entry) => entry.id === payload.lineUserId);
   if (!user) throw new Error('user not found');
   const data = user.data || {};
+  const nowMs = Date.now();
+  const hasMemberNumber = Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0);
+  const memberNumberStale = isMemberNumberStale(data, nowMs);
 
   const checklistTotal = countChecklistTotal(checklists, data.scenarioKey, data.stepKey);
   const checklistCompleted = countChecklistCompletedByUser(user, userChecklists);
@@ -97,13 +116,32 @@ async function getUserStateSummary(params) {
     { completedCount: checklistCompleted }
   );
   const registrationCompleteness = await evaluateRegistrationCompleteness(user, { allUsers: users });
+  const opsState = await opsStatesRepo.getOpsState(user.id);
+  const opsStateCompleteness = evaluateOpsStateCompleteness(opsState);
+  const userSummaryCompleteness = evaluateUserSummaryCompleteness({
+    member: { hasMemberNumber, memberNumberStale }
+  });
+  const opsDecisionCompleteness = await evaluateOpsDecisionCompleteness(opsState);
+  const overallDecisionReadiness = evaluateOverallDecisionReadiness({
+    registrationCompleteness,
+    userSummaryCompleteness,
+    notificationSummaryCompleteness: null,
+    checklistCompleteness: checklistEval.completeness,
+    opsStateCompleteness,
+    opsDecisionCompleteness
+  });
 
   return {
     lineUserId: user.id,
-    hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
+    hasMemberNumber,
     checklistCompleted,
     checklistTotal,
     checklist: checklistEval,
+    opsState,
+    opsStateCompleteness,
+    opsDecisionCompleteness,
+    userSummaryCompleteness,
+    overallDecisionReadiness,
     registrationCompleteness,
     lastActionAt
   };
