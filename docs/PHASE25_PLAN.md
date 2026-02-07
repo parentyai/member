@@ -45,3 +45,22 @@ Phase24で固定した decisionLogs / opsState / completeness / readiness を運
 - 入力: ops decision submit (server-calculated console)
 - 出力: decisionLog.audit { readinessStatus, blocking, recommendedNextAction, allowedNextActions, consoleServerTime }
 - 証跡: tests/phase25/phase25_t05_submit_audit_snapshot.test.js
+
+## T06実装状況
+- 入力: opsState + latest decisionLog
+- 出力: opsDecisionConsistency { status, issues }
+- 証跡: tests/phase25/phase25_t06_decision_consistency_guard.test.js
+
+## Ops Console Contract
+| readiness.status | recommendedNextAction | allowedNextActions |
+| --- | --- | --- |
+| READY | NO_ACTION | NO_ACTION, RERUN_MAIN, FIX_AND_RERUN, STOP_AND_ESCALATE |
+| NOT_READY | STOP_AND_ESCALATE | STOP_AND_ESCALATE |
+
+## Phase25 CLOSE判定表
+| phaseResult | requiredEvidence | closeDecision |
+| --- | --- | --- |
+| ALL_PASS | PRs T01-T07 merged + npm test PASS + execution log entries (T01-T07) + console contract table | CLOSE |
+| ANY_TEST_FAIL | npm test fail | NO_CLOSE |
+| MISSING_EVIDENCE | missing execution log or contract table | NO_CLOSE |
+| NO_MAIN_EVIDENCE | main SHA/PR evidence missing | NO_CLOSE |
