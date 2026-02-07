@@ -48,6 +48,16 @@ Result: PASS (branch run)
 Note: PR #242 requires approval to merge before main re-run.
 Rollback: revert PR #242
 
+UTC: 2026-02-07T17:18:37Z
+main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
+Action: "Phase23-T09 CLOSE criteria SSOT"
+Principle: "Phase CLOSE is rule-based, not discretionary." phaseResult=NO_MAIN_RUN closeDecision=NO_CLOSE
+
+UTC: 2026-02-07T17:20:28Z
+main SHA: 695116dd82940f99632e26aed07a6bd5a71ca9a6
+Action: "Phase23-T10 CI fail3 eradication"
+Evidence: https://github.com/parentyai/member/actions/runs/21783879563
+
 UTC: 2026-02-07T15:40:18Z
 main SHA: 9595c3232b9f7e1ee8ac115dbb102fe0d4c03cc0
 Action: "Phase23-T08 Runbook minimal routing inputs SSOT"
