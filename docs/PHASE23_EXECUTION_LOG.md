@@ -46,3 +46,8 @@ Query log (smoke stderr head):
 Result: PASS (branch run)
 Note: PR #242 requires approval to merge before main re-run.
 Rollback: revert PR #242
+
+UTC: 2026-02-07T16:37:25Z
+main SHA: 9595c3232b9f7e1ee8ac115dbb102fe0d4c03cc0
+Action: "Phase23-T09 CLOSE criteria SSOT"
+Principle: "Phase CLOSE is rule-based, not discretionary." phaseResult=NO_MAIN_RUN closeDecision=NO_CLOSE
