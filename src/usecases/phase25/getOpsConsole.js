@@ -58,14 +58,14 @@ async function getOpsConsole(params, deps) {
     });
   }
 
-  const readinessForAction = effectiveReadiness || readiness;
-  const recommendedNextAction = readinessForAction && readinessForAction.status === 'READY'
-    ? 'NO_ACTION'
-    : 'STOP_AND_ESCALATE';
-  const allowedNextActions = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
-
   const latestDecisionLog = await decisionLogs.getLatestDecision('user', lineUserId);
   const opsState = userStateSummary ? userStateSummary.opsState : null;
+  let allowedNextActions = ['STOP_AND_ESCALATE'];
+  let recommendedNextAction = 'STOP_AND_ESCALATE';
+  if (effectiveReadiness && effectiveReadiness.status === 'READY') {
+    allowedNextActions = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
+    recommendedNextAction = opsState && opsState.nextAction ? opsState.nextAction : 'NO_ACTION';
+  }
 
   return {
     ok: true,
