@@ -30,6 +30,7 @@ async function recordOpsNextAction(input, deps) {
   const failureClass = requireEnum(payload.failure_class, 'failure_class', FAILURE_CLASSES);
   const decidedBy = requireString(payload.decidedBy || 'ops', 'decidedBy');
   const reason = typeof payload.note === 'string' ? payload.note : '';
+  const audit = payload.audit && typeof payload.audit === 'object' ? payload.audit : null;
 
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
   const opsStates = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
@@ -40,7 +41,8 @@ async function recordOpsNextAction(input, deps) {
     decision: mapDecision(nextAction),
     nextAction,
     decidedBy,
-    reason
+    reason,
+    audit
   });
 
   const opsStatePayload = {
