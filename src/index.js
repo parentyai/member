@@ -493,6 +493,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase42/ops-console')) {
+    const { handleOpsConsoleView } = require('./routes/phase42OpsConsoleView');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase42/ops-console/view') {
+        await handleOpsConsoleView(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase32/ops-decision')) {
     const { handleSuggestOpsDecision } = require('./routes/phase32OpsDecisionSuggest');
     (async () => {
