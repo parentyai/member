@@ -3,6 +3,7 @@
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const { evaluateNotificationSummaryCompleteness } = require('../phase24/notificationSummaryCompleteness');
+const { getNotificationDecisionTrace } = require('../phase37/getNotificationDecisionTrace');
 
 async function getNotificationReadModel(params) {
   const opts = params || {};
@@ -35,6 +36,7 @@ async function getNotificationReadModel(params) {
       readCount,
       clickCount
     };
+    item.decisionTrace = await getNotificationDecisionTrace(notification.id);
     item.completeness = evaluateNotificationSummaryCompleteness(item);
     items.push(item);
   }

@@ -1,6 +1,7 @@
 'use strict';
 
 const eventsRepo = require('../../repos/firestore/eventsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 
 function validateEventInput(type, ref) {
   if (!type) return { ok: false, error: 'type required' };
@@ -26,8 +27,36 @@ async function logEventBestEffort(params) {
       type: payload.type,
       ref: payload.ref
     });
+    if (payload.type === 'open' || payload.type === 'click') {
+      try {
+        await decisionTimelineRepo.appendTimelineEntry({
+          lineUserId: payload.lineUserId,
+          source: 'notification',
+          action: payload.type.toUpperCase(),
+          refId: payload.ref.notificationId,
+          notificationId: payload.ref.notificationId,
+          snapshot: { ok: true, eventId: created.id }
+        });
+      } catch (err) {
+        // best-effort only
+      }
+    }
     return { ok: true, id: created.id };
   } catch (error) {
+    if (payload.type === 'open' || payload.type === 'click') {
+      try {
+        await decisionTimelineRepo.appendTimelineEntry({
+          lineUserId: payload.lineUserId,
+          source: 'notification',
+          action: payload.type.toUpperCase(),
+          refId: payload.ref.notificationId,
+          notificationId: payload.ref.notificationId,
+          snapshot: { ok: false, error: error.message }
+        });
+      } catch (err) {
+        // best-effort only
+      }
+    }
     return { ok: false, error: error.message };
   }
 }

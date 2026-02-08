@@ -2,6 +2,7 @@
 
 const { getOpsConsole } = require('./getOpsConsole');
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const {
   recordOpsNextAction,
   NEXT_ACTIONS,
@@ -72,7 +73,7 @@ function buildPostCheck(params) {
   return { ok: checks.every((check) => check.ok), checks };
 }
 
-function buildAudit(consoleResult) {
+function buildAudit(consoleResult, notificationId) {
   const readiness = consoleResult && consoleResult.readiness ? consoleResult.readiness : null;
   return {
     readinessStatus: readiness && readiness.status ? readiness.status : null,
@@ -84,8 +85,61 @@ function buildAudit(consoleResult) {
     consoleServerTime: consoleResult && consoleResult.serverTime ? consoleResult.serverTime : null,
     phaseResult: consoleResult && consoleResult.phaseResult ? consoleResult.phaseResult : null,
     closeDecision: consoleResult && consoleResult.closeDecision ? consoleResult.closeDecision : null,
-    closeReason: consoleResult && consoleResult.closeReason ? consoleResult.closeReason : null
+    closeReason: consoleResult && consoleResult.closeReason ? consoleResult.closeReason : null,
+    notificationId: notificationId || null
   };
+}
+
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.getTime();
+  }
+  return null;
+}
+
+function evaluateSafetyGuard(params) {
+  const payload = params || {};
+  const reasons = [];
+  const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
+  const maxAgeMs = typeof payload.maxConsoleAgeMs === 'number' ? payload.maxConsoleAgeMs : 5 * 60 * 1000;
+  if (payload.consoleServerTime !== undefined && payload.consoleServerTime !== null) {
+    const consoleMs = toMillis(payload.consoleServerTime);
+    if (!consoleMs) {
+      reasons.push('invalid_console_time');
+    } else if (nowMs - consoleMs > maxAgeMs) {
+      reasons.push('stale_console');
+    }
+  }
+  const consoleResult = payload.consoleResult || null;
+  const opsState = consoleResult ? consoleResult.opsState : null;
+  const latestDecisionLog = consoleResult ? consoleResult.latestDecisionLog : null;
+  if (
+    opsState &&
+    opsState.sourceDecisionLogId &&
+    latestDecisionLog &&
+    latestDecisionLog.id &&
+    opsState.sourceDecisionLogId !== latestDecisionLog.id
+  ) {
+    reasons.push('decision_source_mismatch');
+  }
+  return {
+    ok: reasons.length === 0,
+    status: reasons.length === 0 ? 'OK' : 'FAIL',
+    reasons
+  };
+}
+
+async function appendTimelineBestEffort(repo, entry) {
+  if (!repo || typeof repo.appendTimelineEntry !== 'function') return;
+  try {
+    await repo.appendTimelineEntry(entry);
+  } catch (err) {
+    // best-effort only
+  }
 }
 
 async function submitOpsDecision(input, deps) {
@@ -99,12 +153,29 @@ async function submitOpsDecision(input, deps) {
   const stage = decision.stage || null;
   const note = typeof decision.note === 'string' ? decision.note : '';
   const dryRun = Boolean(payload.dryRun);
+  const notificationId = payload.notificationId || null;
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
   const decisionLogs = deps && deps.decisionLogsRepo
     ? deps.decisionLogsRepo
     : (deps && deps.recordOpsNextAction ? null : decisionLogsRepo);
+  const timelineRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'decisionTimelineRepo')
+    ? deps.decisionTimelineRepo
+    : (deps ? null : decisionTimelineRepo);
+  let decideTimelineWritten = false;
+  const appendDecideTimeline = async (refId, snapshot) => {
+    if (decideTimelineWritten) return;
+    decideTimelineWritten = true;
+    await appendTimelineBestEffort(timelineRepo, {
+      lineUserId,
+      source: 'ops',
+      action: 'DECIDE',
+      refId,
+      notificationId,
+      snapshot
+    });
+  };
 
   const consoleResult = await consoleFn({ lineUserId });
   const readiness = consoleResult ? consoleResult.readiness : null;
@@ -113,55 +184,107 @@ async function submitOpsDecision(input, deps) {
     ? consoleResult.allowedNextActions
     : [];
   const closeDecision = consoleResult ? consoleResult.closeDecision : null;
-  const audit = buildAudit(consoleResult);
+  const audit = buildAudit(consoleResult, notificationId);
+  const safetyGuard = evaluateSafetyGuard({
+    consoleResult,
+    consoleServerTime: payload.consoleServerTime,
+    maxConsoleAgeMs: payload.maxConsoleAgeMs
+  });
+  if (!safetyGuard.ok) {
+    await appendDecideTimeline(null, {
+      ok: false,
+      error: 'ops_safety_guard_failed',
+      guard: safetyGuard,
+      nextAction,
+      failure_class: failureClass,
+      reasonCode,
+      stage,
+      note,
+      decidedBy
+    });
+    throw new Error('ops safety guard failed');
+  }
 
-  if (consistency && consistency.status === 'FAIL') {
-    throw new Error('invalid consistency');
-  }
-  if (closeDecision === 'CLOSE') {
-    throw new Error('closeDecision closed');
-  }
-  if (closeDecision === 'NO_CLOSE' && nextAction !== 'NO_ACTION' && nextAction !== 'STOP_AND_ESCALATE') {
-    throw new Error('closeDecision: NO_CLOSE');
-  }
-  if (allowedNextActions.length && !allowedNextActions.includes(nextAction)) {
-    throw new Error('invalid nextAction');
-  }
-  if (readiness && readiness.status === 'NOT_READY' && nextAction !== 'STOP_AND_ESCALATE') {
-    throw new Error('invalid nextAction');
-  }
+  try {
+    if (consistency && consistency.status === 'FAIL') {
+      throw new Error('invalid consistency');
+    }
+    if (closeDecision === 'CLOSE') {
+      throw new Error('closeDecision closed');
+    }
+    if (closeDecision === 'NO_CLOSE' && nextAction !== 'NO_ACTION' && nextAction !== 'STOP_AND_ESCALATE') {
+      throw new Error('closeDecision: NO_CLOSE');
+    }
+    if (allowedNextActions.length && !allowedNextActions.includes(nextAction)) {
+      throw new Error('invalid nextAction');
+    }
+    if (readiness && readiness.status === 'NOT_READY' && nextAction !== 'STOP_AND_ESCALATE') {
+      throw new Error('invalid nextAction');
+    }
 
-  if (dryRun) {
-    return {
-      ok: true,
-      readiness,
-      audit,
-      decisionLogId: null,
-      opsState: {
-        id: lineUserId,
+    if (dryRun) {
+      return {
+        ok: true,
+        readiness,
+        audit,
+        decisionLogId: null,
+        opsState: {
+          id: lineUserId,
+          nextAction,
+          failure_class: failureClass,
+          reasonCode,
+          stage,
+          note,
+          sourceDecisionLogId: null,
+          updatedAt: null
+        },
+        postCheck: { ok: true, checks: [] },
+        dryRun: true
+      };
+    }
+  } catch (err) {
+    if (!dryRun) {
+      await appendDecideTimeline(null, {
+        ok: false,
+        error: err && err.message ? err.message : 'decision_failed',
+        guard: safetyGuard,
         nextAction,
         failure_class: failureClass,
         reasonCode,
         stage,
         note,
-        sourceDecisionLogId: null,
-        updatedAt: null
-      },
-      postCheck: { ok: true, checks: [] },
-      dryRun: true
-    };
+        decidedBy
+      });
+    }
+    throw err;
   }
 
-  const result = await recordFn({
-    lineUserId,
-    nextAction,
-    failure_class: failureClass,
-    reasonCode,
-    stage,
-    note,
-    decidedBy,
-    audit
-  });
+  let result;
+  try {
+    result = await recordFn({
+      lineUserId,
+      nextAction,
+      failure_class: failureClass,
+      reasonCode,
+      stage,
+      note,
+      decidedBy,
+      audit
+    });
+  } catch (err) {
+    await appendDecideTimeline(null, {
+      ok: false,
+      error: err && err.message ? err.message : 'record_failed',
+      guard: safetyGuard,
+      nextAction,
+      failure_class: failureClass,
+      reasonCode,
+      stage,
+      note,
+      decidedBy
+    });
+    throw err;
+  }
 
   let decisionLog = null;
   if (decisionLogs && typeof decisionLogs.getDecisionById === 'function') {
@@ -173,6 +296,26 @@ async function submitOpsDecision(input, deps) {
     decisionLog,
     readinessStatus: readiness ? readiness.status : null,
     allowedNextActions: audit.allowedNextActions
+  });
+
+  await appendDecideTimeline(result.decisionLogId, {
+    ok: true,
+    guard: safetyGuard,
+    nextAction,
+    failure_class: failureClass,
+    reasonCode,
+    stage,
+    note,
+    decidedBy
+  });
+
+  await appendTimelineBestEffort(timelineRepo, {
+    lineUserId,
+    source: 'system',
+    action: 'POSTCHECK',
+    refId: result.decisionLogId,
+    notificationId,
+    snapshot: postCheck
   });
 
   return {
