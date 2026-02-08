@@ -10,8 +10,10 @@ const { emitObs } = require('../../ops/obs');
 const DEFAULT_CONFIG = {
   enabled: false,
   allowedActions: [],
-  requireConfirmation: true
+  requireConfirmation: true,
+  mode: 'OFF'
 };
+const MODES = new Set(['OFF', 'DRY_RUN_ONLY', 'EXECUTE']);
 
 function toMillis(value) {
   if (!value) return null;
@@ -29,8 +31,11 @@ function resolveConfig(config) {
   const allowed = Array.isArray(config.allowedActions)
     ? config.allowedActions
     : (Array.isArray(config.allowNextActions) ? config.allowNextActions : []);
+  const rawMode = typeof config.mode === 'string' ? config.mode.toUpperCase() : null;
+  const mode = MODES.has(rawMode) ? rawMode : (config.enabled ? 'EXECUTE' : 'OFF');
   return {
-    enabled: Boolean(config.enabled),
+    enabled: mode !== 'OFF',
+    mode,
     allowedActions: allowed,
     requireConfirmation: config.requireConfirmation !== false
   };
@@ -59,6 +64,15 @@ function evaluateAutomationGuard(params) {
   };
 }
 
+function resolveRecentDryRun(payload) {
+  if (payload.recentDryRun === true) return { ok: true };
+  const atMs = toMillis(payload.recentDryRunAt);
+  if (!atMs) return { ok: false };
+  const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
+  const maxAgeMs = typeof payload.maxDryRunAgeMs === 'number' ? payload.maxDryRunAgeMs : 10 * 60 * 1000;
+  return { ok: nowMs - atMs <= maxAgeMs };
+}
+
 async function appendTimelineBestEffort(repo, entry) {
   if (!repo || typeof repo.appendTimelineEntry !== 'function') return;
   try {
@@ -84,8 +98,22 @@ async function executeAutomationDecision(params, deps) {
 
   const storedConfig = await configRepo.getLatestAutomationConfig();
   const config = resolveConfig(storedConfig);
-  if (!config.enabled) {
+  if (config.mode === 'OFF') {
     const response = { ok: false, skipped: true, reason: 'automation_disabled', config };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
+  }
+  if (config.mode === 'DRY_RUN_ONLY') {
+    const response = { ok: false, skipped: true, reason: 'automation_dry_run_only', config };
     try {
       emitObs({
         action: 'automation_execute',
@@ -114,6 +142,21 @@ async function executeAutomationDecision(params, deps) {
   }
   if (config.allowedActions.length && !config.allowedActions.includes(payload.action)) {
     const response = { ok: false, skipped: true, reason: 'action_not_allowed', config };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
+  }
+  const recentDryRun = resolveRecentDryRun(payload);
+  if (!recentDryRun.ok) {
+    const response = { ok: false, skipped: true, reason: 'recent_dry_run_required', config };
     try {
       emitObs({
         action: 'automation_execute',

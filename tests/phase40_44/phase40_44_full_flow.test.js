@@ -47,6 +47,7 @@ test('phase40-44: full flow returns view + automation executes', async () => {
     action: 'NO_ACTION',
     confirmed: true,
     confirmedBy: 'ops',
+    recentDryRun: true,
     nowMs: new Date('2026-02-08T00:00:00Z').getTime(),
     maxOpsStateAgeMs: 60 * 60 * 1000
   }, {

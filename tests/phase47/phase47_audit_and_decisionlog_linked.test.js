@@ -34,6 +34,7 @@ test('phase47: automation timeline links decision log', async () => {
     decisionLogId: 'd1',
     action: 'NO_ACTION',
     confirmed: true,
+    recentDryRun: true,
     nowMs: new Date('2026-02-08T00:00:00Z').getTime(),
     maxOpsStateAgeMs: 60 * 60 * 1000
   }, deps);

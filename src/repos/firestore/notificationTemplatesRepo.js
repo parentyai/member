@@ -3,35 +3,58 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'notification_templates';
+const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
+const ALLOWED_STATUSES = new Set(['draft', 'active', 'inactive']);
 
 function resolveTimestamp() {
   return serverTimestamp();
 }
 
+function normalizeKey(key) {
+  if (typeof key !== 'string' || key.trim().length === 0) throw new Error('key required');
+  const trimmed = key.trim();
+  if (!KEY_PATTERN.test(trimmed)) throw new Error('invalid key');
+  return trimmed;
+}
+
+function normalizeStatus(status, fallback) {
+  if (status === undefined || status === null || status === '') return fallback;
+  const value = String(status).trim().toLowerCase();
+  if (!ALLOWED_STATUSES.has(value)) throw new Error('invalid status');
+  return value;
+}
+
 async function createTemplate(data) {
   const payload = data || {};
-  if (!payload.key) throw new Error('key required');
+  const key = normalizeKey(payload.key);
+  const status = normalizeStatus(payload.status, 'draft');
   const db = getDb();
+  const existing = await getTemplateByKey(key);
+  if (existing) throw new Error('template exists');
   const docRef = db.collection(COLLECTION).doc();
-  const record = Object.assign({}, payload, { createdAt: resolveTimestamp() });
+  const record = Object.assign({}, payload, { key, status, createdAt: resolveTimestamp() });
   await docRef.set(record, { merge: false });
   return { id: docRef.id };
 }
 
-async function listTemplates(limit) {
+async function listTemplates(options) {
   const db = getDb();
-  let query = db.collection(COLLECTION).orderBy('createdAt', 'desc');
-  const cap = typeof limit === 'number' ? limit : 50;
+  const opts = typeof options === 'number' ? { limit: options } : (options || {});
+  const status = opts.status ? normalizeStatus(opts.status, null) : null;
+  let query = db.collection(COLLECTION);
+  if (status) query = query.where('status', '==', status);
+  query = query.orderBy('createdAt', 'desc');
+  const cap = typeof opts.limit === 'number' ? opts.limit : 50;
   if (cap) query = query.limit(cap);
   const snap = await query.get();
   return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 async function getTemplateByKey(key) {
-  if (!key) throw new Error('key required');
+  const normalized = normalizeKey(key);
   const db = getDb();
   const snap = await db.collection(COLLECTION)
-    .where('key', '==', key)
+    .where('key', '==', normalized)
     .limit(1)
     .get();
   if (!snap.docs.length) return null;
@@ -42,5 +65,41 @@ async function getTemplateByKey(key) {
 module.exports = {
   createTemplate,
   listTemplates,
-  getTemplateByKey
+  getTemplateByKey,
+  async updateTemplate(key, patch) {
+    const normalized = normalizeKey(key);
+    const payload = patch && typeof patch === 'object' ? patch : {};
+    const template = await getTemplateByKey(normalized);
+    if (!template) throw new Error('template not found');
+    const status = template.status || 'draft';
+    if (status !== 'draft') throw new Error('template not editable');
+    const updates = {};
+    const fields = ['title', 'body', 'ctaText', 'linkRegistryId', 'text'];
+    for (const field of fields) {
+      if (payload[field] !== undefined) updates[field] = payload[field];
+    }
+    updates.updatedAt = resolveTimestamp();
+    const db = getDb();
+    await db.collection(COLLECTION).doc(template.id).set(updates, { merge: true });
+    return { id: template.id };
+  },
+  async setStatus(key, status) {
+    const normalized = normalizeKey(key);
+    const next = normalizeStatus(status, null);
+    const template = await getTemplateByKey(normalized);
+    if (!template) throw new Error('template not found');
+    const current = template.status || 'draft';
+    const allowed = (
+      (current === 'draft' && (next === 'draft' || next === 'active')) ||
+      (current === 'active' && (next === 'draft' || next === 'inactive')) ||
+      (current === 'inactive' && next === 'inactive')
+    );
+    if (!allowed) throw new Error('invalid status transition');
+    const db = getDb();
+    await db.collection(COLLECTION).doc(template.id).set({
+      status: next,
+      updatedAt: resolveTimestamp()
+    }, { merge: true });
+    return { id: template.id, status: next };
+  }
 };

@@ -1,15 +1,14 @@
 'use strict';
 
-const crypto = require('crypto');
-
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
+const { encodeCursor, decodeCursor } = require('../../infra/cursorSigner');
 
 const STATUS = new Set(['READY', 'NOT_READY', 'ALL']);
 const READY_ACTIONS = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
 const NOT_READY_ACTIONS = ['STOP_AND_ESCALATE'];
 const CURSOR_STATUSES = new Set(['READY', 'NOT_READY']);
-const DEFAULT_CURSOR_SIGNING = Object.freeze({ secret: null, enforce: false });
+const DEFAULT_CURSOR_SIGNING = Object.freeze({ secret: null, enforce: false, allowUnsigned: true });
 
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return 'ALL';
@@ -50,89 +49,24 @@ function parseBoolean(value) {
 function resolveCursorSigning(deps) {
   const candidate = deps && typeof deps.cursorSecret === 'string'
     ? deps.cursorSecret
-    : process.env.OPS_CONSOLE_CURSOR_SECRET;
+    : (process.env.OPS_CURSOR_HMAC_SECRET || process.env.OPS_CONSOLE_CURSOR_SECRET);
   const secret = typeof candidate === 'string' && candidate.trim().length > 0 ? candidate : null;
   const enforceCandidate = deps && Object.prototype.hasOwnProperty.call(deps, 'cursorEnforce')
     ? deps.cursorEnforce
-    : process.env.OPS_CONSOLE_CURSOR_ENFORCE;
+    : (process.env.OPS_CURSOR_HMAC_ENFORCE || process.env.OPS_CONSOLE_CURSOR_ENFORCE);
   const enforce = parseBoolean(enforceCandidate);
-  return { secret, enforce };
-}
-
-function computeCursorSignature(payloadB64, secret) {
-  return crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
-}
-
-function verifyCursorSignature(payloadB64, signatureB64, secret) {
-  const expected = computeCursorSignature(payloadB64, secret);
-  const left = Buffer.from(expected, 'utf8');
-  const right = Buffer.from(signatureB64, 'utf8');
-  if (left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
-}
-
-function splitCursorToken(value) {
-  const token = String(value).trim();
-  const dotIndex = token.indexOf('.');
-  if (dotIndex === -1) return { payload: token, signature: null };
-  const payload = token.slice(0, dotIndex);
-  const signature = token.slice(dotIndex + 1);
-  if (!payload || !signature) throw new Error('invalid cursor');
-  return { payload, signature };
-}
-
-function parseCursor(value, signing) {
-  if (value === undefined || value === null || value === '') return null;
-  if (typeof value !== 'string') throw new Error('invalid cursor');
-  const cfg = signing || DEFAULT_CURSOR_SIGNING;
-
-  const { payload: payloadB64, signature } = splitCursorToken(value);
-
-  if (cfg.secret) {
-    if (signature) {
-      if (!verifyCursorSignature(payloadB64, signature, cfg.secret)) throw new Error('invalid cursor');
-    } else if (cfg.enforce) {
-      throw new Error('invalid cursor');
-    }
-  }
-
-  let payload;
-  try {
-    const decoded = Buffer.from(payloadB64, 'base64url').toString('utf8');
-    payload = JSON.parse(decoded);
-  } catch (err) {
-    throw new Error('invalid cursor');
-  }
-  if (!payload || typeof payload !== 'object') throw new Error('invalid cursor');
-  const status = typeof payload.s === 'string' ? payload.s : '';
-  const lineUserId = typeof payload.id === 'string' ? payload.id.trim() : '';
-  if (!CURSOR_STATUSES.has(status)) throw new Error('invalid cursor');
-  if (!lineUserId) throw new Error('invalid cursor');
-  const cursorCandidate = payload.t === null ? null : payload.t;
-  if (cursorCandidate !== null) {
-    if (typeof cursorCandidate !== 'string') throw new Error('invalid cursor');
-    const date = new Date(cursorCandidate);
-    if (Number.isNaN(date.getTime())) throw new Error('invalid cursor');
-  }
-  return {
-    status,
-    cursorCandidate,
-    lineUserId
-  };
-}
-
-function encodeCursor(payload, signing) {
-  if (!payload) return null;
-  const cfg = signing || DEFAULT_CURSOR_SIGNING;
-  const json = JSON.stringify({
-    s: payload.status,
-    t: payload.cursorCandidate || null,
-    id: payload.lineUserId
-  });
-  const payloadB64 = Buffer.from(json, 'utf8').toString('base64url');
-  if (!cfg.secret) return payloadB64;
-  const signatureB64 = computeCursorSignature(payloadB64, cfg.secret);
-  return `${payloadB64}.${signatureB64}`;
+  const allowUnsignedCandidate = deps && Object.prototype.hasOwnProperty.call(deps, 'allowUnsignedCursor')
+    ? deps.allowUnsignedCursor
+    : process.env.OPS_CURSOR_HMAC_ALLOW_UNSIGNED;
+  const envName = process.env.ENV_NAME || 'local';
+  const allowUnsignedDefault = envName === 'local'
+    || process.env.NODE_ENV === 'test'
+    || process.env.CI === 'true'
+    || process.env.GITHUB_ACTIONS === 'true';
+  const allowUnsigned = allowUnsignedCandidate === undefined
+    ? allowUnsignedDefault
+    : parseBoolean(allowUnsignedCandidate);
+  return { secret, enforce, allowUnsigned };
 }
 
 function normalizeReadiness(readiness) {
@@ -221,7 +155,8 @@ async function listOpsConsole(params, deps) {
   const status = parseStatus(payload.status);
   const limit = parseLimit(payload.limit);
   const cursorSigning = resolveCursorSigning(deps);
-  const cursor = parseCursor(payload.cursor, cursorSigning);
+  const cursorPayload = decodeCursor(payload.cursor, cursorSigning);
+  const cursor = cursorPayload ? cursorPayload.lastSortKey : null;
   const cursorInfo = {
     mode: cursorSigning.secret ? 'SIGNED' : 'UNSIGNED',
     enforce: Boolean(cursorSigning.enforce)
@@ -267,7 +202,7 @@ async function listOpsConsole(params, deps) {
   let filtered = sorted;
   if (cursor) {
     const cursorKey = {
-      rank: readinessRank(cursor.status),
+      rank: cursor.readinessRank,
       cursorCandidate: cursor.cursorCandidate,
       lineUserId: cursor.lineUserId
     };
@@ -282,9 +217,11 @@ async function listOpsConsole(params, deps) {
   const nextCursorCandidate = extractCursorCandidate(lastItem);
   const nextCursor = hasNext && lastItem
     ? encodeCursor({
-        status: lastItem.readiness.status,
-        cursorCandidate: nextCursorCandidate,
-        lineUserId: lastItem.lineUserId
+        lastSortKey: {
+          readinessRank: readinessRank(lastItem.readiness.status),
+          cursorCandidate: nextCursorCandidate,
+          lineUserId: lastItem.lineUserId
+        }
       }, cursorSigning)
     : null;
 

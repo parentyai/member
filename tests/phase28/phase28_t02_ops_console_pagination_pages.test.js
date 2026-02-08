@@ -4,11 +4,7 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const { listOpsConsole } = require('../../src/usecases/phase26/listOpsConsole');
-
-function decodeCursor(value) {
-  const decoded = Buffer.from(value, 'base64url').toString('utf8');
-  return JSON.parse(decoded);
-}
+const { decodeCursor } = require('../../src/infra/cursorSigner');
 
 test('phase28 t02: pagination returns page1/page2 without overlap and stable order', async () => {
   const deps = {
@@ -69,7 +65,8 @@ test('phase28 t02: pagination returns page1/page2 without overlap and stable ord
   const combined = page1Ids.concat(page2Ids);
   assert.deepStrictEqual(combined, ['U1', 'U2', 'U3', 'U4']);
 
-  const cursorPayload = decodeCursor(page1.pageInfo.nextCursor);
-  assert.ok(['READY', 'NOT_READY'].includes(cursorPayload.s));
-  assert.ok(typeof cursorPayload.id === 'string');
+  const cursorPayload = decodeCursor(page1.pageInfo.nextCursor, { allowUnsigned: true });
+  assert.ok(cursorPayload.lastSortKey);
+  assert.ok([0, 1].includes(cursorPayload.lastSortKey.readinessRank));
+  assert.ok(typeof cursorPayload.lastSortKey.lineUserId === 'string');
 });
