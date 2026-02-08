@@ -213,6 +213,10 @@ async function listOpsConsole(params, deps) {
   const limit = parseLimit(payload.limit);
   const cursorSigning = resolveCursorSigning(deps);
   const cursor = parseCursor(payload.cursor, cursorSigning);
+  const cursorInfo = {
+    mode: cursorSigning.secret ? 'SIGNED' : 'UNSIGNED',
+    enforce: Boolean(cursorSigning.enforce)
+  };
 
   const listUsersFn = deps && deps.listUsers ? deps.listUsers : usersRepo.listUsers;
   const getOpsConsoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
@@ -281,7 +285,8 @@ async function listOpsConsole(params, deps) {
     nextPageToken: nextCursor,
     pageInfo: {
       hasNext,
-      nextCursor
+      nextCursor,
+      cursorInfo
     }
   };
 }
