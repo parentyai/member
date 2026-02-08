@@ -709,6 +709,112 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase65/ops/jobs')) {
+    const { handleOpsDailyJob } = require('./routes/phase65OpsDailyJob');
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase65/ops/jobs/daily-report') {
+        await handleOpsDailyJob(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase66/segments')) {
+    const { handleSendTargets } = require('./routes/phase66Segments');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase66/segments/send-targets') {
+        await handleSendTargets(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase67/send')) {
+    const { handlePlanSend } = require('./routes/phase67PlanSend');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase67/send/plan') {
+        const body = await collectBody();
+        await handlePlanSend(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase68/send')) {
+    const { handleExecuteSend } = require('./routes/phase68ExecuteSend');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase68/send/execute') {
+        const body = await collectBody();
+        await handleExecuteSend(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase6/member/')) {
     const { handlePhase6MemberSummary } = require('./routes/phase6MemberSummary');
     (async () => {
