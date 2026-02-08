@@ -98,7 +98,18 @@ async function getOpsAssistForConsole(params, deps) {
     }
   }
 
-  return Object.assign({}, view, { llmSuggestion: llmSuggestion || null });
+  const suggestionSchema = llmSuggestion && llmSuggestion.suggestionSchema
+    ? llmSuggestion.suggestionSchema
+    : (llmSuggestion && llmSuggestion.suggestion ? llmSuggestion.suggestion : null);
+  const lastSuggestionAuditId = llmSuggestion && llmSuggestion.suggestionAuditId
+    ? llmSuggestion.suggestionAuditId
+    : null;
+
+  return Object.assign({}, view, {
+    llmSuggestion: llmSuggestion || null,
+    suggestion: suggestionSchema,
+    lastSuggestionAuditId
+  });
 }
 
 module.exports = {

@@ -155,6 +155,10 @@ async function submitOpsDecision(input, deps) {
   const note = typeof decision.note === 'string' ? decision.note : '';
   const dryRun = Boolean(payload.dryRun);
   const notificationId = payload.notificationId || null;
+  const source = typeof payload.source === 'string' ? payload.source : 'ops_console';
+  const suggestionSnapshot = payload.suggestionSnapshot && typeof payload.suggestionSnapshot === 'object'
+    ? payload.suggestionSnapshot
+    : null;
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
@@ -284,7 +288,9 @@ async function submitOpsDecision(input, deps) {
       stage,
       note,
       decidedBy,
-      audit
+      audit,
+      source,
+      suggestionSnapshot
     });
   } catch (err) {
     await appendDecideTimeline(null, {

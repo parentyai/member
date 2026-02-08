@@ -16,7 +16,9 @@ async function appendLlmSuggestionAudit(params, deps) {
   const entry = {
     action: 'LLM_SUGGESTION',
     eventType: 'LLM_SUGGESTION',
+    type: 'OPS_ASSIST_SUGGESTION',
     lineUserId,
+    notificationId: payload.notificationId || null,
     inputHash: payload.inputHash || null,
     suggestion: payload.suggestion || null,
     safety: payload.safety || null,

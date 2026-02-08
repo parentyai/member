@@ -122,6 +122,9 @@
       <pre id="ops-console-detail-member-summary">-</pre>
       <div>llmSuggestion:</div>
       <pre id="ops-console-detail-llm-suggestion">-</pre>
+      <div>suggestion(schema):</div>
+      <pre id="ops-console-detail-suggestion-schema">-</pre>
+      <div>lastSuggestionAuditId: <span id="ops-console-detail-suggestion-audit-id">-</span></div>
       <div>llmSuggestion summary:</div>
       <div>suggestedNextAction: <span id="ops-console-detail-suggested-action">-</span></div>
       <div>safety:</div>
@@ -694,6 +697,14 @@
       function renderOpsAssistDetail(assist) {
         const suggestion = assist ? assist.llmSuggestion : null;
         setText(document.getElementById('ops-console-detail-llm-suggestion'), formatJson(suggestion));
+        setText(
+          document.getElementById('ops-console-detail-suggestion-schema'),
+          formatJson(assist ? assist.suggestion : null)
+        );
+        setText(
+          document.getElementById('ops-console-detail-suggestion-audit-id'),
+          assist && assist.lastSuggestionAuditId ? assist.lastSuggestionAuditId : '-'
+        );
         setText(document.getElementById('ops-console-detail-suggested-action'), extractSuggestedAction(suggestion));
         setText(document.getElementById('ops-console-detail-safety'), formatJson(suggestion ? suggestion.safety : null));
         setText(document.getElementById('ops-console-detail-evidence'), formatJson(suggestion ? suggestion.evidence : null));

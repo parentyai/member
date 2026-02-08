@@ -23,6 +23,12 @@ async function getOpsConsoleView(params, deps) {
   const llmSuggestion = includeAssist
     ? await suggestionFn({ lineUserId, notificationId, context }, deps)
     : null;
+  const suggestionSchema = llmSuggestion && llmSuggestion.suggestionSchema
+    ? llmSuggestion.suggestionSchema
+    : (llmSuggestion && llmSuggestion.suggestion ? llmSuggestion.suggestion : null);
+  const lastSuggestionAuditId = llmSuggestion && llmSuggestion.suggestionAuditId
+    ? llmSuggestion.suggestionAuditId
+    : null;
 
   return {
     ok: true,
@@ -32,6 +38,8 @@ async function getOpsConsoleView(params, deps) {
     opsState: consoleResult ? consoleResult.opsState : null,
     decisionTimeline: Array.isArray(context && context.decisionTimeline) ? context.decisionTimeline : [],
     llmSuggestion,
+    suggestion: suggestionSchema,
+    lastSuggestionAuditId,
     allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
       ? consoleResult.allowedNextActions
       : [],

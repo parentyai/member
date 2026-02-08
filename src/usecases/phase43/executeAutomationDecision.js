@@ -2,6 +2,7 @@
 
 const automationConfigRepo = require('../../repos/firestore/automationConfigRepo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 const { submitOpsDecision } = require('../phase25/submitOpsDecision');
 const { executeOpsNextAction } = require('../phase33/executeOpsNextAction');
@@ -92,9 +93,20 @@ async function executeAutomationDecision(params, deps) {
   const timelineRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'decisionTimelineRepo')
     ? deps.decisionTimelineRepo
     : (deps ? null : decisionTimelineRepo);
+  const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const submitFn = deps && deps.submitOpsDecision ? deps.submitOpsDecision : submitOpsDecision;
   const executeFn = deps && deps.executeOpsNextAction ? deps.executeOpsNextAction : executeOpsNextAction;
+
+  let killSwitch = false;
+  try {
+    killSwitch = await killSwitchFn();
+  } catch (err) {
+    killSwitch = false;
+  }
+  if (killSwitch) {
+    return { ok: false, skipped: true, reason: 'kill_switch_on', status: 409 };
+  }
 
   const storedConfig = await configRepo.getLatestAutomationConfig();
   const config = resolveConfig(storedConfig);
@@ -205,7 +217,8 @@ async function executeAutomationDecision(params, deps) {
         stage: 'phase44',
         note: 'automation_guard_failed',
         dryRun: false,
-        notificationId: payload.notificationId || null
+        notificationId: payload.notificationId || null,
+        source: 'automation'
       }, deps);
     } catch (err) {
       const response = {

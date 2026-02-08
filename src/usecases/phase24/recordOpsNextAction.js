@@ -31,6 +31,10 @@ async function recordOpsNextAction(input, deps) {
   const decidedBy = requireString(payload.decidedBy || 'ops', 'decidedBy');
   const reason = typeof payload.note === 'string' ? payload.note : '';
   const audit = payload.audit && typeof payload.audit === 'object' ? payload.audit : null;
+  const source = typeof payload.source === 'string' ? payload.source : 'ops_console';
+  const suggestionSnapshot = payload.suggestionSnapshot && typeof payload.suggestionSnapshot === 'object'
+    ? payload.suggestionSnapshot
+    : null;
 
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
   const opsStates = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
@@ -42,7 +46,9 @@ async function recordOpsNextAction(input, deps) {
     nextAction,
     decidedBy,
     reason,
-    audit
+    audit,
+    source,
+    suggestionSnapshot
   });
 
   const opsStatePayload = {
