@@ -4,6 +4,8 @@ const { getOpsConsole } = require('../phase25/getOpsConsole');
 const { runPhase2Automation } = require('../phase2/runAutomation');
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
+const decisionDriftsRepo = require('../../repos/firestore/decisionDriftsRepo');
+const { detectDecisionDrift } = require('../phase34/detectDecisionDrift');
 const { createNotification } = require('../notifications/createNotification');
 const { sendNotification } = require('../notifications/sendNotification');
 
@@ -83,6 +85,8 @@ async function executeOpsNextAction(params, deps) {
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
   const opsStates = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
+  const decisionDrifts = deps && deps.decisionDriftsRepo ? deps.decisionDriftsRepo : decisionDriftsRepo;
+  const detectDriftFn = deps && deps.detectDecisionDrift ? deps.detectDecisionDrift : detectDecisionDrift;
   const now = deps && typeof deps.nowFn === 'function' ? deps.nowFn() : new Date();
 
   const [consoleResult, already] = await Promise.all([
@@ -181,11 +185,43 @@ async function executeOpsNextAction(params, deps) {
     }
   });
 
+  let decisionDrift = null;
+  const llmSuggestion = payload.llmSuggestion || null;
+  if (llmSuggestion) {
+    const opsDecisionSnapshot = payload.opsDecisionSnapshot || {
+      lineUserId,
+      readiness,
+      allowedNextActions,
+      selectedAction: existingDecision ? existingDecision.nextAction : action
+    };
+    decisionDrift = await detectDriftFn({
+      decisionLog: existingDecision,
+      opsDecisionSnapshot,
+      llmSuggestion,
+      executionResult: { execution }
+    }, deps);
+    if (decisionDrift && decisionDrift.driftDetected) {
+      await decisionDrifts.appendDecisionDrift({
+        decisionLogId,
+        lineUserId,
+        driftTypes: decisionDrift.driftTypes,
+        severity: decisionDrift.severity,
+        snapshot: {
+          decisionLog: existingDecision,
+          opsDecisionSnapshot,
+          llmSuggestion,
+          executionResult: { execution }
+        }
+      });
+    }
+  }
+
   return {
     ok: execution.result === 'SUCCESS',
     execution,
     executionLogId: executionLog.id,
-    error
+    error,
+    decisionDrift
   };
 }
 

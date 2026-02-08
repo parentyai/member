@@ -1,6 +1,7 @@
 'use strict';
 
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
+const decisionDriftsRepo = require('../../repos/firestore/decisionDriftsRepo');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
 const { getMemberSummary } = require('../phase6/getMemberSummary');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
@@ -25,6 +26,17 @@ function buildReadiness(summary, evaluator) {
   });
 }
 
+function resolveTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
+
 async function getOpsConsole(params, deps) {
   const payload = params || {};
   const lineUserId = requireString(payload.lineUserId, 'lineUserId');
@@ -38,6 +50,9 @@ async function getOpsConsole(params, deps) {
     ? deps.getOpsDecisionConsistency
     : getOpsDecisionConsistency;
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
+  const decisionDrifts = deps && Object.prototype.hasOwnProperty.call(deps, 'decisionDriftsRepo')
+    ? deps.decisionDriftsRepo
+    : (deps ? null : decisionDriftsRepo);
 
   const [userStateSummary, memberSummary] = await Promise.all([
     userSummaryFn({ lineUserId }),
@@ -59,7 +74,12 @@ async function getOpsConsole(params, deps) {
     });
   }
 
-  const latestDecisionLog = await decisionLogs.getLatestDecision('user', lineUserId);
+  const [latestDecisionLog, latestDecisionDrift] = await Promise.all([
+    decisionLogs.getLatestDecision('user', lineUserId),
+    decisionDrifts && typeof decisionDrifts.getLatestDecisionDrift === 'function'
+      ? decisionDrifts.getLatestDecisionDrift(lineUserId)
+      : Promise.resolve(null)
+  ]);
   const opsState = userStateSummary ? userStateSummary.opsState : null;
   const opsNextAction = opsState ? opsState.nextAction : null;
   let allowedNextActions = ['STOP_AND_ESCALATE'];
@@ -69,6 +89,15 @@ async function getOpsConsole(params, deps) {
     recommendedNextAction = allowedNextActions.includes(opsNextAction) ? opsNextAction : 'NO_ACTION';
   }
   const closeDecision = evaluateCloseDecision({ readiness: effectiveReadiness, consistency });
+  let decisionDrift = { status: 'NONE', lastDetectedAt: null, types: [] };
+  if (latestDecisionDrift) {
+    const severity = latestDecisionDrift.severity === 'CRITICAL' ? 'CRITICAL' : 'WARN';
+    decisionDrift = {
+      status: severity,
+      lastDetectedAt: resolveTimestamp(latestDecisionDrift.createdAt),
+      types: Array.isArray(latestDecisionDrift.driftTypes) ? latestDecisionDrift.driftTypes : []
+    };
+  }
 
   return {
     ok: true,
@@ -84,7 +113,8 @@ async function getOpsConsole(params, deps) {
     phaseResult: closeDecision.phaseResult,
     opsState,
     latestDecisionLog,
-    consistency
+    consistency,
+    decisionDrift
   };
 }
 
