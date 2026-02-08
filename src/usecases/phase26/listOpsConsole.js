@@ -157,6 +157,15 @@ function normalizeAllowedNextActions(value, readinessStatus) {
   return readinessStatus === 'READY' ? READY_ACTIONS.slice() : NOT_READY_ACTIONS.slice();
 }
 
+function normalizeExecutionStatus(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const lastExecutionResult = typeof payload.lastExecutionResult === 'string'
+    ? payload.lastExecutionResult
+    : 'UNKNOWN';
+  const lastExecutedAt = resolveTimestamp(payload.lastExecutedAt);
+  return { lastExecutionResult, lastExecutedAt };
+}
+
 function readinessRank(status) {
   return status === 'READY' ? 0 : 1;
 }
@@ -244,7 +253,8 @@ async function listOpsConsole(params, deps) {
         readinessStatus
       ),
       opsState: consoleResult && consoleResult.opsState ? consoleResult.opsState : null,
-      latestDecisionLog: consoleResult && consoleResult.latestDecisionLog ? consoleResult.latestDecisionLog : null
+      latestDecisionLog: consoleResult && consoleResult.latestDecisionLog ? consoleResult.latestDecisionLog : null,
+      executionStatus: normalizeExecutionStatus(consoleResult ? consoleResult.executionStatus : null)
     });
   }
 

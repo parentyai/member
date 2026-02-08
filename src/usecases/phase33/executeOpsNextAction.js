@@ -99,6 +99,7 @@ async function executeOpsNextAction(params, deps) {
   if (!existingDecision) throw new Error('decisionLogId not found');
 
   const readiness = consoleResult ? consoleResult.readiness : null;
+  const opsState = consoleResult && consoleResult.opsState ? consoleResult.opsState : null;
   if (!readiness || readiness.status !== 'READY') throw new Error('readiness not ready');
 
   const allowedNextActions = consoleResult && Array.isArray(consoleResult.allowedNextActions)
@@ -107,6 +108,13 @@ async function executeOpsNextAction(params, deps) {
   if (allowedNextActions.length && !allowedNextActions.includes(action)) {
     throw new Error('invalid nextAction');
   }
+
+  const executionContext = {
+    failure_class: opsState && opsState.failure_class ? opsState.failure_class : null,
+    reasonCode: opsState && opsState.reasonCode ? opsState.reasonCode : null,
+    stage: opsState && opsState.stage ? opsState.stage : null,
+    note: opsState && typeof opsState.note === 'string' ? opsState.note : null
+  };
 
   const execution = {
     action,
@@ -181,7 +189,8 @@ async function executeOpsNextAction(params, deps) {
     audit: {
       execution,
       lineUserId,
-      decisionLogId
+      decisionLogId,
+      executionContext
     }
   });
 
