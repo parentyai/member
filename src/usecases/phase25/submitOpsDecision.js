@@ -27,7 +27,10 @@ function buildAudit(consoleResult) {
     allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
       ? consoleResult.allowedNextActions
       : [],
-    consoleServerTime: consoleResult && consoleResult.serverTime ? consoleResult.serverTime : null
+    consoleServerTime: consoleResult && consoleResult.serverTime ? consoleResult.serverTime : null,
+    phaseResult: consoleResult && consoleResult.phaseResult ? consoleResult.phaseResult : null,
+    closeDecision: consoleResult && consoleResult.closeDecision ? consoleResult.closeDecision : null,
+    closeReason: consoleResult && consoleResult.closeReason ? consoleResult.closeReason : null
   };
 }
 
@@ -52,10 +55,17 @@ async function submitOpsDecision(input, deps) {
   const allowedNextActions = consoleResult && Array.isArray(consoleResult.allowedNextActions)
     ? consoleResult.allowedNextActions
     : [];
+  const closeDecision = consoleResult ? consoleResult.closeDecision : null;
   const audit = buildAudit(consoleResult);
 
   if (consistency && consistency.status === 'FAIL') {
     throw new Error('invalid consistency');
+  }
+  if (closeDecision === 'CLOSE') {
+    throw new Error('closeDecision closed');
+  }
+  if (closeDecision === 'NO_CLOSE' && nextAction !== 'NO_ACTION' && nextAction !== 'STOP_AND_ESCALATE') {
+    throw new Error('closeDecision: NO_CLOSE');
   }
   if (allowedNextActions.length && !allowedNextActions.includes(nextAction)) {
     throw new Error('invalid nextAction');

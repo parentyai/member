@@ -43,10 +43,29 @@ Phase24で固定した decisionLogs / opsState / completeness / readiness を運
 
 ## T05実装状況
 - 入力: ops decision submit (server-calculated console)
-- 出力: decisionLog.audit { readinessStatus, blocking, recommendedNextAction, allowedNextActions, consoleServerTime }
+- 出力: decisionLog.audit { readinessStatus, blocking, recommendedNextAction, allowedNextActions, consoleServerTime, phaseResult, closeDecision, closeReason }
 - 証跡: tests/phase25/phase25_t05_submit_audit_snapshot.test.js
 
 ## T06実装状況
 - 入力: opsState + latest decisionLog
 - 出力: opsDecisionConsistency { status, issues }
 - 証跡: tests/phase25/phase25_t06_decision_consistency_guard.test.js
+
+## T07実装状況
+- 入力: readiness + consistency
+- 出力: closeDecision / closeReason / phaseResult
+- 証跡: tests/phase25/phase25_t08_close_decision_console.test.js
+
+## Ops Console Contract
+| readiness.status | recommendedNextAction | allowedNextActions |
+| --- | --- | --- |
+| READY | opsState.nextAction or NO_ACTION | NO_ACTION / RERUN_MAIN / FIX_AND_RERUN / STOP_AND_ESCALATE |
+| NOT_READY | STOP_AND_ESCALATE | STOP_AND_ESCALATE only |
+
+## Phase25 CLOSE 判定表
+| phaseResult | requiredEvidence | closeDecision |
+| --- | --- | --- |
+| READY | readiness=READY and consistency=OK | CLOSE |
+| NOT_READY | readiness=NOT_READY | NO_CLOSE |
+| CONSISTENCY_FAIL | consistency=FAIL | NO_CLOSE |
+| UNKNOWN | readiness/consistency unknown | NO_CLOSE |
