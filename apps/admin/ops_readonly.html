@@ -154,6 +154,10 @@
       <div class="note">
         templateKey:
         <input type="text" id="segment-template-key" />
+        templateVersion:
+        <input type="number" id="segment-template-version" min="1" />
+        savedSegment:
+        <select id="saved-segment-select"></select>
         readiness:
         <select id="segment-readiness">
           <option value="">ALL</option>
@@ -244,6 +248,8 @@
       let selectedOpsConsoleLineUserId = null;
       let segmentSendPlanCache = null;
       let retryQueueCache = [];
+      let savedSegmentsCache = [];
+      let selectedSegmentCache = null;
 
       function clearChildren(node) {
         while (node.firstChild) {
@@ -537,6 +543,11 @@
         return res.json();
       }
 
+      async function fetchSavedSegments() {
+        const res = await fetch('/api/phase77/segments?status=active');
+        return res.json();
+      }
+
       async function retryQueueSend(payload) {
         const res = await fetch('/api/phase73/retry-queue/retry', {
           method: 'POST',
@@ -633,6 +644,39 @@
       function renderOpsAssistDetail(assist) {
         const suggestion = assist ? assist.llmSuggestion : null;
         setText(document.getElementById('ops-console-detail-llm-suggestion'), formatJson(suggestion));
+      }
+
+      function renderSavedSegments(items) {
+        const select = document.getElementById('saved-segment-select');
+        clearChildren(select);
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'manual';
+        select.appendChild(defaultOption);
+        if (!items.length) return;
+        items.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.segmentKey;
+          option.textContent = item.label ? `${item.label} (${item.segmentKey})` : item.segmentKey;
+          select.appendChild(option);
+        });
+      }
+
+      function applySegmentFilter(filter) {
+        const readinessEl = document.getElementById('segment-readiness');
+        const needsAttentionEl = document.getElementById('segment-needs-attention');
+        const limitEl = document.getElementById('segment-limit');
+        if (!filter || typeof filter !== 'object') {
+          readinessEl.value = '';
+          needsAttentionEl.checked = false;
+          limitEl.value = 50;
+          return;
+        }
+        readinessEl.value = filter.readinessStatus || '';
+        needsAttentionEl.checked = Boolean(filter.needsAttention);
+        if (filter.limit) {
+          limitEl.value = Number(filter.limit);
+        }
       }
 
       function buildSegmentQueryFromInputs() {
@@ -795,14 +839,21 @@
         setText(note, '');
         segmentSendPlanCache = null;
         const templateKey = document.getElementById('segment-template-key').value.trim();
+        const templateVersionValue = document.getElementById('segment-template-version').value;
+        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
         if (!templateKey) {
           setText(note, 'templateKey required');
           return;
         }
         const segmentQuery = buildSegmentQueryFromInputs();
+        const segmentKey = selectedSegmentCache ? selectedSegmentCache.segmentKey : null;
+        const filterSnapshot = selectedSegmentCache ? selectedSegmentCache.filter : null;
         const payload = {
           templateKey,
+          templateVersion,
           segmentQuery,
+          segmentKey,
+          filterSnapshot,
           requestedBy: 'ops_readonly'
         };
         const result = await fetchSegmentPlan(payload);
@@ -811,7 +862,10 @@
           segmentSendPlanCache = {
             templateKey,
             planHash: result.planHash,
-            segmentQuery
+            segmentQuery,
+            templateVersion: result.templateVersion || templateVersion,
+            segmentKey,
+            filterSnapshot
           };
         }
       }
@@ -836,7 +890,10 @@
           templateKey,
           segmentQuery: segmentSendPlanCache.segmentQuery || {},
           requestedBy: 'ops_readonly',
-          planHash: segmentSendPlanCache.planHash
+          planHash: segmentSendPlanCache.planHash,
+          templateVersion: segmentSendPlanCache.templateVersion || null,
+          segmentKey: segmentSendPlanCache.segmentKey || null,
+          filterSnapshot: segmentSendPlanCache.filterSnapshot || null
         };
         const result = await fetchSegmentExecute(payload);
         renderSegmentExecuteResult(result);
@@ -862,6 +919,23 @@
         } catch (err) {
           setText(errorEl, 'error');
           renderRetryQueue([]);
+        }
+      }
+
+      async function loadSavedSegments() {
+        const select = document.getElementById('saved-segment-select');
+        try {
+          const data = await fetchSavedSegments();
+          if (!data || !data.ok) {
+            renderSavedSegments([]);
+            return;
+          }
+          savedSegmentsCache = Array.isArray(data.items) ? data.items : [];
+          renderSavedSegments(savedSegmentsCache);
+          select.value = '';
+          selectedSegmentCache = null;
+        } catch (_err) {
+          renderSavedSegments([]);
         }
       }
 
@@ -922,6 +996,16 @@
       document.getElementById('retry-queue-refresh').addEventListener('click', () => {
         loadRetryQueue().catch(() => {});
       });
+      document.getElementById('saved-segment-select').addEventListener('change', (event) => {
+        const key = event.currentTarget.value;
+        if (!key) {
+          selectedSegmentCache = null;
+          return;
+        }
+        const segment = savedSegmentsCache.find((item) => item.segmentKey === key);
+        selectedSegmentCache = segment || null;
+        applySegmentFilter(segment ? segment.filter : null);
+      });
 
       hydrateUsersFilters();
       Promise.all([
@@ -930,7 +1014,8 @@
         loadStaleMemberNumber(),
         loadImplementationTargets(),
         loadOpsConsoleList(),
-        loadRetryQueue()
+        loadRetryQueue(),
+        loadSavedSegments()
       ]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';

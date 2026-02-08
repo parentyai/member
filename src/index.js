@@ -815,6 +815,51 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase77/segments')) {
+    const { handleSegments } = require('./routes/phase77Segments');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase77/segments') {
+        await handleSegments(req, res, '', pathname);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase77/segments') {
+        const body = await collectBody();
+        await handleSegments(req, res, body, pathname);
+        return;
+      }
+      if (req.method === 'GET' && pathname.startsWith('/api/phase77/segments/')) {
+        await handleSegments(req, res, '', pathname);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase73/retry-queue')) {
     const { handleListRetryQueue, handleRetrySend } = require('./routes/phase73RetryQueue');
     let bytes = 0;
