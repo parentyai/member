@@ -17,8 +17,9 @@ async function handleOpsConsoleList(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const status = url.searchParams.get('status');
   const limit = url.searchParams.get('limit');
+  const cursor = url.searchParams.get('cursor');
   try {
-    const result = await listOpsConsole({ status, limit });
+    const result = await listOpsConsole({ status, limit, cursor });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
