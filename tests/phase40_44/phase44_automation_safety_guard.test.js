@@ -30,7 +30,8 @@ test('phase44: automation guard triggers escalation', async () => {
     decisionLogId: 'd1',
     action: 'NO_ACTION',
     confirmed: true,
-    confirmedBy: 'ops'
+    confirmedBy: 'ops',
+    recentDryRun: true
   }, deps);
 
   assert.strictEqual(result.ok, false);

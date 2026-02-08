@@ -7,8 +7,10 @@ const { emitObs } = require('../../ops/obs');
 const DEFAULT_CONFIG = {
   enabled: false,
   allowedActions: [],
-  requireConfirmation: true
+  requireConfirmation: true,
+  mode: 'OFF'
 };
+const MODES = new Set(['OFF', 'DRY_RUN_ONLY', 'EXECUTE']);
 
 function toMillis(value) {
   if (!value) return null;
@@ -26,8 +28,11 @@ function resolveConfig(config) {
   const allowed = Array.isArray(config.allowedActions)
     ? config.allowedActions
     : (Array.isArray(config.allowNextActions) ? config.allowNextActions : []);
+  const rawMode = typeof config.mode === 'string' ? config.mode.toUpperCase() : null;
+  const mode = MODES.has(rawMode) ? rawMode : (config.enabled ? 'EXECUTE' : 'OFF');
   return {
-    enabled: Boolean(config.enabled),
+    enabled: mode !== 'OFF',
+    mode,
     allowedActions: allowed,
     requireConfirmation: config.requireConfirmation !== false
   };
@@ -77,7 +82,7 @@ async function dryRunAutomationDecision(params, deps) {
     maxOpsStateAgeMs: payload.maxOpsStateAgeMs
   });
 
-  if (!config.enabled) {
+  if (config.mode === 'OFF') {
     const response = { ok: false, dryRun: true, skipped: true, reason: 'automation_disabled', config, guard };
     try {
       emitObs({

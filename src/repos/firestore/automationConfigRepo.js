@@ -3,6 +3,7 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'automation_config';
+const MODES = new Set(['OFF', 'DRY_RUN_ONLY', 'EXECUTE']);
 
 function resolveTimestamp() {
   return serverTimestamp();
@@ -49,8 +50,11 @@ module.exports = {
   },
   normalizePhase48Config(record) {
     const config = record || {};
+    const rawMode = typeof config.mode === 'string' ? config.mode.toUpperCase() : null;
+    const mode = MODES.has(rawMode) ? rawMode : (config.enabled ? 'EXECUTE' : 'OFF');
     return {
-      enabled: Boolean(config.enabled),
+      enabled: mode !== 'OFF',
+      mode,
       allowScenarios: Array.isArray(config.allowScenarios) ? config.allowScenarios : [],
       allowSteps: Array.isArray(config.allowSteps) ? config.allowSteps : [],
       allowNextActions: Array.isArray(config.allowNextActions)

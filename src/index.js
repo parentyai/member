@@ -652,6 +652,63 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase61/templates')) {
+    const { handleTemplates } = require('./routes/phase61Templates');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'GET') {
+        await handleTemplates(req, res, '', pathname);
+        return;
+      }
+      if (req.method === 'POST' || req.method === 'PATCH') {
+        const body = await collectBody();
+        await handleTemplates(req, res, body, pathname);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase62/ops/report')) {
+    const { handleOpsDailyReport } = require('./routes/phase62OpsDailyReport');
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase62/ops/report/daily') {
+        await handleOpsDailyReport(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase6/member/')) {
     const { handlePhase6MemberSummary } = require('./routes/phase6MemberSummary');
     (async () => {

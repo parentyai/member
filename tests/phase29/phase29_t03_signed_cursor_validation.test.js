@@ -4,11 +4,7 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const { listOpsConsole } = require('../../src/usecases/phase26/listOpsConsole');
-
-function encodeUnsignedCursor(payload) {
-  const json = JSON.stringify(payload);
-  return Buffer.from(json, 'utf8').toString('base64url');
-}
+const { encodeCursor } = require('../../src/infra/cursorSigner');
 
 test('phase29 t03: signed cursor verifies signature and enforce mode rejects unsigned cursor', async () => {
   const baseDeps = {
@@ -28,11 +24,11 @@ test('phase29 t03: signed cursor verifies signature and enforce mode rejects uns
   const page1 = await listOpsConsole({ status: 'ALL', limit: 1 }, baseDeps);
   const token = page1.nextPageToken;
   const parts = String(token).split('.');
-  assert.strictEqual(parts.length, 2);
-  const payloadB64 = parts[0];
-  const sigB64 = parts[1];
+  assert.strictEqual(parts.length, 3);
+  const payloadB64 = parts[1];
+  const sigB64 = parts[2];
   const flipped = sigB64.slice(0, -1) + (sigB64.slice(-1) === 'a' ? 'b' : 'a');
-  const badToken = `${payloadB64}.${flipped}`;
+  const badToken = `v1.${payloadB64}.${flipped}`;
 
   await assert.rejects(
     () => listOpsConsole({ status: 'ALL', limit: 1, cursor: badToken }, baseDeps),
@@ -40,7 +36,9 @@ test('phase29 t03: signed cursor verifies signature and enforce mode rejects uns
   );
 
   const enforceDeps = { ...baseDeps, cursorEnforce: true };
-  const unsigned = encodeUnsignedCursor({ s: 'READY', t: '2026-02-08T03:20:00.000Z', id: 'U1' });
+  const unsigned = encodeCursor({
+    lastSortKey: { readinessRank: 0, cursorCandidate: '2026-02-08T03:20:00.000Z', lineUserId: 'U1' }
+  }, { allowUnsigned: true });
   await assert.rejects(
     () => listOpsConsole({ status: 'ALL', limit: 1, cursor: unsigned }, enforceDeps),
     /invalid cursor/
@@ -53,4 +51,3 @@ test('phase29 t03: signed cursor verifies signature and enforce mode rejects uns
   );
   assert.strictEqual(enforcePage2.ok, true);
 });
-

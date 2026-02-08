@@ -27,7 +27,8 @@ test('phase47: execute requires readiness OK', async () => {
     lineUserId: 'U1',
     decisionLogId: 'd1',
     action: 'NO_ACTION',
-    confirmed: true
+    confirmed: true,
+    recentDryRun: true
   }, deps);
 
   assert.strictEqual(result.ok, false);

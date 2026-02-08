@@ -16,19 +16,20 @@ test('phase28 t03: invalid cursor is rejected', async () => {
   };
 
   await assert.rejects(
-    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: 'not-base64' }, deps),
+    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: 'not-a-cursor' }, deps),
     /invalid cursor/
   );
 
-  const badJson = Buffer.from('{"s":"READY"', 'utf8').toString('base64url');
+  const badJson = Buffer.from('{"v":1', 'utf8').toString('base64url');
   await assert.rejects(
-    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: badJson }, deps),
+    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: `v1.${badJson}` }, deps),
     /invalid cursor/
   );
 
-  const missingId = Buffer.from(JSON.stringify({ s: 'READY', t: null }), 'utf8').toString('base64url');
+  const missingId = Buffer.from(JSON.stringify({ v: 1, lastSortKey: { readinessRank: 0 }, issuedAt: 1 }), 'utf8')
+    .toString('base64url');
   await assert.rejects(
-    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: missingId }, deps),
+    () => listOpsConsole({ status: 'ALL', limit: 2, cursor: `v1.${missingId}` }, deps),
     /invalid cursor/
   );
 });
