@@ -1,5 +1,7 @@
 'use strict';
 
+const { PROMPT_VERSION } = require('../phase102/buildOpsAssistInput');
+
 const SCHEMA_VERSION = 'phase45.v1';
 
 function normalizeReadiness(value) {
@@ -27,18 +29,28 @@ function normalizeAllowedNextActions(value) {
 
 function buildOpsAssistPrompt(params) {
   const payload = params || {};
+  const input = payload.opsAssistInput || null;
   const view = payload.opsConsoleView || {};
-  const readiness = normalizeReadiness(view.readiness);
-  const opsState = normalizeOpsState(view.opsState);
-  const latestDecisionLog = view.latestDecisionLog || null;
-  const userStateSummary = view.userStateSummary || null;
-  const memberSummary = view.memberSummary || null;
-  const allowedNextActions = normalizeAllowedNextActions(view.allowedNextActions);
+  const readiness = input ? normalizeReadiness(input.readiness) : normalizeReadiness(view.readiness);
+  const opsState = input ? normalizeOpsState(input.opsState) : normalizeOpsState(view.opsState);
+  const latestDecisionLog = input ? (input.latestDecisionLog || null) : (view.latestDecisionLog || null);
+  const userStateSummary = input ? (input.userStateSummary || null) : (view.userStateSummary || null);
+  const memberSummary = input ? (input.memberSummary || null) : (view.memberSummary || null);
+  const allowedNextActions = input
+    ? normalizeAllowedNextActions(input.constraints && input.constraints.allowedNextActions)
+    : normalizeAllowedNextActions(view.allowedNextActions);
 
-  const constraints = {
-    allowedNextActions,
-    readiness: readiness && readiness.status ? readiness.status : null
-  };
+  const constraints = input && input.constraints
+    ? {
+      allowedNextActions,
+      readiness: typeof input.constraints.readiness === 'string'
+        ? input.constraints.readiness
+        : (readiness && readiness.status ? readiness.status : null)
+    }
+    : {
+      allowedNextActions,
+      readiness: readiness && readiness.status ? readiness.status : null
+    };
 
   const system = [
     'You are an ops assistant.',
@@ -51,6 +63,7 @@ function buildOpsAssistPrompt(params) {
   ].join('\n');
 
   const user = JSON.stringify({
+    promptVersion: input && input.promptVersion ? input.promptVersion : PROMPT_VERSION,
     readiness,
     opsState,
     latestDecisionLog,

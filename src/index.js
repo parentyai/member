@@ -509,6 +509,43 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase105/ops-assist')) {
+    const { handleOpsAssistAdopt } = require('./routes/phase105OpsAssistAdopt');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase105/ops-assist/adopt') {
+        const body = await collectBody();
+        await handleOpsAssistAdopt(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase32/ops-decision')) {
     const { handleSuggestOpsDecision } = require('./routes/phase32OpsDecisionSuggest');
     (async () => {

@@ -122,6 +122,12 @@
       <pre id="ops-console-detail-member-summary">-</pre>
       <div>llmSuggestion:</div>
       <pre id="ops-console-detail-llm-suggestion">-</pre>
+      <div>llmSuggestion summary:</div>
+      <div>suggestedNextAction: <span id="ops-console-detail-suggested-action">-</span></div>
+      <div>safety:</div>
+      <pre id="ops-console-detail-safety">-</pre>
+      <div>evidence:</div>
+      <pre id="ops-console-detail-evidence">-</pre>
 
       <h3>Ops Decision Submit</h3>
       <div class="note">allowedNextActions のみ選択可。</div>
@@ -144,6 +150,10 @@
       <div class="note">
         note: <input type="text" id="ops-decision-note" />
         <button class="btn" id="ops-decision-submit">submit</button>
+      </div>
+      <div class="note">
+        <button class="btn" id="ops-decision-use-suggestion">Use Suggestion</button>
+        <span id="ops-decision-use-suggestion-note"></span>
       </div>
       <pre id="ops-decision-result">-</pre>
     </div>
@@ -249,6 +259,8 @@
       let opsConsoleDetailCache = null;
       let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
+      let lastOpsSuggestion = null;
+      let lastSuggestionUsed = false;
       let segmentSendPlanCache = null;
       let segmentSendDryRunCache = null;
       let retryQueueCache = [];
@@ -273,12 +285,28 @@
 
       function formatSuggestionShort(suggestion) {
         if (!suggestion) return '-';
+        if (suggestion.suggestion && suggestion.suggestion.recommendedNextAction) {
+          const reason = suggestion.suggestion.reason ? `: ${suggestion.suggestion.reason}` : '';
+          return `${suggestion.suggestion.recommendedNextAction}${reason}`;
+        }
         if (suggestion.suggestion && suggestion.suggestion.nextAction) {
           const reason = suggestion.suggestion.reason ? `: ${suggestion.suggestion.reason}` : '';
           return `${suggestion.suggestion.nextAction}${reason}`;
         }
         if (typeof suggestion.suggestionText === 'string') return suggestion.suggestionText;
         return '-';
+      }
+
+      function extractSuggestedAction(suggestion) {
+        if (!suggestion) return null;
+        if (suggestion.suggestion && suggestion.suggestion.recommendedNextAction) {
+          return suggestion.suggestion.recommendedNextAction;
+        }
+        if (suggestion.suggestion && suggestion.suggestion.nextAction) {
+          return suggestion.suggestion.nextAction;
+        }
+        if (typeof suggestion.recommendedNextAction === 'string') return suggestion.recommendedNextAction;
+        return null;
       }
 
       function buildRangeQuery(prefix) {
@@ -521,6 +549,15 @@
         return res.json();
       }
 
+      async function submitOpsAssistAdopt(payload) {
+        const res = await fetch('/api/phase105/ops-assist/adopt', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
       async function fetchSegmentPlan(payload) {
         const res = await fetch('/api/phase67/send/plan', {
           method: 'POST',
@@ -657,6 +694,12 @@
       function renderOpsAssistDetail(assist) {
         const suggestion = assist ? assist.llmSuggestion : null;
         setText(document.getElementById('ops-console-detail-llm-suggestion'), formatJson(suggestion));
+        setText(document.getElementById('ops-console-detail-suggested-action'), extractSuggestedAction(suggestion));
+        setText(document.getElementById('ops-console-detail-safety'), formatJson(suggestion ? suggestion.safety : null));
+        setText(document.getElementById('ops-console-detail-evidence'), formatJson(suggestion ? suggestion.evidence : null));
+        lastOpsSuggestion = suggestion;
+        lastSuggestionUsed = false;
+        setText(document.getElementById('ops-decision-use-suggestion-note'), '');
       }
 
       function renderSavedSegments(items) {
@@ -1030,12 +1073,29 @@
           const result = await submitOpsDecisionRequest(payload);
           setText(resultEl, formatJson(result));
           if (result && result.ok) {
+            if (lastSuggestionUsed) {
+              const suggestedAction = extractSuggestedAction(lastOpsSuggestion);
+              if (suggestedAction && suggestedAction === nextAction) {
+                try {
+                  await submitOpsAssistAdopt({
+                    lineUserId,
+                    decisionLogId: result.decisionLogId || null,
+                    adoptedAction: nextAction,
+                    suggestion: lastOpsSuggestion ? lastOpsSuggestion.suggestion || null : null,
+                    safety: lastOpsSuggestion ? lastOpsSuggestion.safety || null : null
+                  });
+                } catch (_err) {
+                  // best-effort only
+                }
+              }
+            }
             await loadOpsConsoleDetail(lineUserId);
             await loadOpsConsoleList();
           }
         } catch (err) {
           setText(resultEl, 'error');
         }
+        lastSuggestionUsed = false;
       }
 
       document.getElementById('users-apply').addEventListener('click', () => {
@@ -1050,6 +1110,21 @@
       });
       document.getElementById('ops-decision-submit').addEventListener('click', () => {
         handleSubmitOpsDecision().catch(() => {});
+      });
+      document.getElementById('ops-decision-use-suggestion').addEventListener('click', () => {
+        const noteEl = document.getElementById('ops-decision-use-suggestion-note');
+        const action = extractSuggestedAction(lastOpsSuggestion);
+        if (!action) {
+          setText(noteEl, 'no suggestion');
+          lastSuggestionUsed = false;
+          return;
+        }
+        const select = document.getElementById('ops-decision-action');
+        if (select) {
+          select.value = action;
+        }
+        lastSuggestionUsed = true;
+        setText(noteEl, `selected: ${action}`);
       });
       document.getElementById('segment-plan').addEventListener('click', () => {
         handleSegmentPlan().catch(() => {});

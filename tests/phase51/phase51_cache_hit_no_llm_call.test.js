@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { getOpsAssistSuggestion } = require('../../src/usecases/phase40/getOpsAssistSuggestion');
 const { buildOpsAssistPrompt } = require('../../src/usecases/phase45/buildOpsAssistPrompt');
+const { buildOpsAssistInput } = require('../../src/usecases/phase102/buildOpsAssistInput');
 const { computeInputHash } = require('../../src/usecases/phase51/shouldRefreshOpsAssist');
 
 test('phase51: cache hit returns cached suggestion without regeneration', async () => {
@@ -16,7 +17,8 @@ test('phase51: cache hit returns cached suggestion without regeneration', async 
     memberSummary: { lineUserId: 'U1' },
     allowedNextActions: ['NO_ACTION']
   };
-  const promptPayload = buildOpsAssistPrompt({ opsConsoleView });
+  const opsAssistInput = buildOpsAssistInput({ opsConsoleView });
+  const promptPayload = buildOpsAssistPrompt({ opsAssistInput });
   const inputHash = computeInputHash(promptPayload);
   const cachedSuggestion = {
     suggestionText: 'NO_ACTION: cached',
