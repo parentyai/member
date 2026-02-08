@@ -78,6 +78,29 @@
       </table>
     </div>
 
+    <div class="section" id="ops-dashboard-section">
+      <h2>Ops Dashboard（Phase38）</h2>
+      <div class="note">ユーザー×通知×notice×decision を一覧で参照。</div>
+      <div class="note">
+        limit: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" />
+        <button class="btn" id="ops-dashboard-refresh">更新</button>
+      </div>
+      <div class="note" id="ops-dashboard-note"></div>
+      <div class="note" id="ops-dashboard-error"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>lineUserId</th>
+            <th>memberNumber</th>
+            <th>lastDelivery</th>
+            <th>lastNoticeSent</th>
+            <th>latestDecisionLog</th>
+          </tr>
+        </thead>
+        <tbody id="ops-dashboard-rows"></tbody>
+      </table>
+    </div>
+
     <div class="section" id="ops-console-list-section">
       <h2>Ops Console（Phase26 list）</h2>
       <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
@@ -131,6 +154,9 @@
       <pre id="ops-console-detail-safety">-</pre>
       <div>evidence:</div>
       <pre id="ops-console-detail-evidence">-</pre>
+      <div>phase39Suggestion:</div>
+      <pre id="ops-console-detail-phase39-suggestion">-</pre>
+      <div>phase39AuditId: <span id="ops-console-detail-phase39-audit-id">-</span></div>
 
       <h3>Ops Decision Submit</h3>
       <div class="note">allowedNextActions のみ選択可。</div>
@@ -466,6 +492,57 @@
         `).join('');
       }
 
+      function renderOpsDashboard(items) {
+        const rows = document.getElementById('ops-dashboard-rows');
+        clearChildren(rows);
+        if (!items || !items.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 5;
+          td.textContent = 'no data';
+          tr.appendChild(td);
+          rows.appendChild(tr);
+          return;
+        }
+        items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.lineUserId,
+            item.memberNumber || '-',
+            item.lastDelivery ? JSON.stringify(item.lastDelivery) : '-',
+            item.lastNoticeSent ? JSON.stringify(item.lastNoticeSent) : '-',
+            item.latestDecisionLog ? JSON.stringify(item.latestDecisionLog) : '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          rows.appendChild(tr);
+        });
+      }
+
+      async function loadOpsDashboard() {
+        const note = document.getElementById('ops-dashboard-note');
+        const errorEl = document.getElementById('ops-dashboard-error');
+        setText(errorEl, '');
+        const limitValue = document.getElementById('ops-dashboard-limit').value;
+        const limit = limitValue ? Number(limitValue) : 20;
+        try {
+          const data = await fetchOpsDashboard(limit);
+          if (!data || !data.ok) {
+            setText(errorEl, 'error');
+            renderOpsDashboard([]);
+            return;
+          }
+          setText(note, `serverTime: ${data.serverTime || '-'}`);
+          renderOpsDashboard(Array.isArray(data.items) ? data.items : []);
+        } catch (err) {
+          setText(errorEl, 'error');
+          renderOpsDashboard([]);
+        }
+      }
+
       async function loadStaleMemberNumber() {
         const res = await fetch('/api/phase5/ops/member-number-stale');
         const data = await res.json();
@@ -538,8 +615,21 @@
         return res.json();
       }
 
+      async function fetchOpsDashboard(limit) {
+        const params = new URLSearchParams();
+        if (limit) params.set('limit', String(limit));
+        const qs = params.toString();
+        const res = await fetch(`/api/phase38/ops/dashboard${qs ? `?${qs}` : ''}`);
+        return res.json();
+      }
+
       async function fetchOpsAssistDetail(lineUserId) {
         const res = await fetch(`/api/phase42/ops-console/view?lineUserId=${encodeURIComponent(lineUserId)}&includeAssist=1`);
+        return res.json();
+      }
+
+      async function fetchPhase39Suggestion(lineUserId) {
+        const res = await fetch(`/api/phase39/ops-assist/suggestion?lineUserId=${encodeURIComponent(lineUserId)}`);
         return res.json();
       }
 
@@ -879,6 +969,7 @@
           opsConsoleDetailCache = detail;
           renderOpsConsoleDetail(detail);
           await loadOpsAssistDetail(lineUserId);
+          await loadPhase39Suggestion(lineUserId);
         } catch (err) {
           setText(errorEl, 'error');
         }
@@ -912,6 +1003,29 @@
           return;
         }
         cell.textContent = '-';
+      }
+
+      async function loadPhase39Suggestion(lineUserId) {
+        if (!lineUserId) return;
+        try {
+          const detail = await fetchPhase39Suggestion(lineUserId);
+          if (!detail || !detail.ok) {
+            setText(document.getElementById('ops-console-detail-phase39-suggestion'), '-');
+            setText(document.getElementById('ops-console-detail-phase39-audit-id'), '-');
+            return;
+          }
+          setText(
+            document.getElementById('ops-console-detail-phase39-suggestion'),
+            formatJson(detail.suggestion)
+          );
+          setText(
+            document.getElementById('ops-console-detail-phase39-audit-id'),
+            detail.auditId || '-'
+          );
+        } catch (err) {
+          setText(document.getElementById('ops-console-detail-phase39-suggestion'), '-');
+          setText(document.getElementById('ops-console-detail-phase39-audit-id'), '-');
+        }
       }
 
       async function handleSegmentPlan() {
@@ -1116,6 +1230,9 @@
       document.getElementById('notifications-apply').addEventListener('click', () => {
         loadNotifications().catch(() => {});
       });
+      document.getElementById('ops-dashboard-refresh').addEventListener('click', () => {
+        loadOpsDashboard().catch(() => {});
+      });
       document.getElementById('ops-console-refresh').addEventListener('click', () => {
         loadOpsConsoleList().catch(() => {});
       });
@@ -1164,6 +1281,7 @@
       Promise.all([
         loadUsers(),
         loadNotifications(),
+        loadOpsDashboard(),
         loadStaleMemberNumber(),
         loadImplementationTargets(),
         loadOpsConsoleList(),
@@ -1172,6 +1290,7 @@
       ]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
+        document.getElementById('ops-dashboard-rows').innerHTML = '<tr><td colspan="5">error</td></tr>';
         document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
         document.getElementById('implementation-targets-rows').innerHTML = '<tr><td colspan="4">error</td></tr>';
       });
