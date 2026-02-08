@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { getOpsConsoleView } = require('../../src/usecases/phase42/getOpsConsoleView');
 
-test('phase42: ops console view returns read-only payload', async () => {
+test('phase46: ops console view includes assist only when requested', async () => {
   const deps = {
     getOpsConsole: async () => ({
       opsState: { nextAction: 'NO_ACTION' },
@@ -13,22 +13,21 @@ test('phase42: ops console view returns read-only payload', async () => {
       readiness: { status: 'READY', blocking: [] }
     }),
     getOpsAssistContext: async () => ({
-      decisionTimeline: [{ id: 't1', action: 'DECIDE' }]
+      decisionTimeline: []
     }),
     getOpsAssistSuggestion: async () => ({
-      suggestionText: '',
+      suggestionText: 'NO_ACTION: default',
       confidence: 'LOW',
       basedOn: ['constraints'],
       riskFlags: [],
-      disclaimer: 'This is advisory only'
+      disclaimer: 'This is advisory only',
+      suggestion: { nextAction: 'NO_ACTION', reason: 'default' }
     })
   };
 
-  const result = await getOpsConsoleView({ lineUserId: 'U1', includeAssist: true }, deps);
-  assert.ok(result.user);
-  assert.ok(result.opsState);
-  assert.ok(Array.isArray(result.decisionTimeline));
-  assert.ok(result.llmSuggestion);
-  assert.ok(Array.isArray(result.allowedNextActions));
-  assert.ok(result.readiness);
+  const withAssist = await getOpsConsoleView({ lineUserId: 'U1', includeAssist: true }, deps);
+  assert.ok(withAssist.llmSuggestion);
+
+  const withoutAssist = await getOpsConsoleView({ lineUserId: 'U1', includeAssist: false }, deps);
+  assert.strictEqual(withoutAssist.llmSuggestion, null);
 });

@@ -14,12 +14,18 @@ async function getOpsConsoleView(params, deps) {
 
   const lineUserId = payload.lineUserId;
   const notificationId = payload.notificationId || null;
+  const includeAssist = payload.includeAssist === true;
 
   const consoleResult = await consoleFn({ lineUserId }, deps);
-  const context = await contextFn({ lineUserId, notificationId }, deps);
-  const llmSuggestion = await suggestionFn({ lineUserId, notificationId, context }, deps);
+  const context = payload.context
+    ? payload.context
+    : await contextFn({ lineUserId, notificationId }, deps);
+  const llmSuggestion = includeAssist
+    ? await suggestionFn({ lineUserId, notificationId, context }, deps)
+    : null;
 
   return {
+    ok: true,
     user: {
       lineUserId
     },
@@ -29,7 +35,11 @@ async function getOpsConsoleView(params, deps) {
     allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
       ? consoleResult.allowedNextActions
       : [],
-    readiness: consoleResult ? consoleResult.readiness : null
+    readiness: consoleResult ? consoleResult.readiness : null,
+    recommendedNextAction: consoleResult ? consoleResult.recommendedNextAction : null,
+    latestDecisionLog: consoleResult ? consoleResult.latestDecisionLog : null,
+    userStateSummary: consoleResult ? consoleResult.userStateSummary : null,
+    memberSummary: consoleResult ? consoleResult.memberSummary : null
   };
 }
 

@@ -96,6 +96,7 @@
             <th>allowedNextActions</th>
             <th>opsState.nextAction</th>
             <th>latestDecisionLog</th>
+            <th>LLM suggestion</th>
             <th>詳細</th>
           </tr>
         </thead>
@@ -119,6 +120,8 @@
       <pre id="ops-console-detail-user-summary">-</pre>
       <div>memberSummary:</div>
       <pre id="ops-console-detail-member-summary">-</pre>
+      <div>llmSuggestion:</div>
+      <pre id="ops-console-detail-llm-suggestion">-</pre>
 
       <h3>Ops Decision Submit</h3>
       <div class="note">allowedNextActions のみ選択可。</div>
@@ -186,6 +189,7 @@
     <script>
       let opsConsoleListCache = [];
       let opsConsoleDetailCache = null;
+      let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
 
       function clearChildren(node) {
@@ -202,6 +206,16 @@
       function formatJson(value) {
         if (value === undefined || value === null) return '-';
         return JSON.stringify(value, null, 2);
+      }
+
+      function formatSuggestionShort(suggestion) {
+        if (!suggestion) return '-';
+        if (suggestion.suggestion && suggestion.suggestion.nextAction) {
+          const reason = suggestion.suggestion.reason ? `: ${suggestion.suggestion.reason}` : '';
+          return `${suggestion.suggestion.nextAction}${reason}`;
+        }
+        if (typeof suggestion.suggestionText === 'string') return suggestion.suggestionText;
+        return '-';
       }
 
       function buildRangeQuery(prefix) {
@@ -430,6 +444,11 @@
         return res.json();
       }
 
+      async function fetchOpsAssistDetail(lineUserId) {
+        const res = await fetch(`/api/phase42/ops-console/view?lineUserId=${encodeURIComponent(lineUserId)}&includeAssist=1`);
+        return res.json();
+      }
+
       async function submitOpsDecisionRequest(payload) {
         const res = await fetch('/api/phase25/ops/decision', {
           method: 'POST',
@@ -445,7 +464,7 @@
         if (!items.length) {
           const tr = document.createElement('tr');
           const td = document.createElement('td');
-          td.colSpan = 7;
+          td.colSpan = 8;
           td.textContent = 'no data';
           tr.appendChild(td);
           rows.appendChild(tr);
@@ -466,6 +485,10 @@
             td.textContent = value;
             tr.appendChild(td);
           });
+          const suggestionTd = document.createElement('td');
+          suggestionTd.textContent = '-';
+          tr.appendChild(suggestionTd);
+          loadOpsAssistSummaryForRow(item.lineUserId, suggestionTd).catch(() => {});
           const actionTd = document.createElement('td');
           const btn = document.createElement('button');
           btn.className = 'btn';
@@ -519,6 +542,11 @@
         updateDecisionActionOptions(detail);
       }
 
+      function renderOpsAssistDetail(assist) {
+        const suggestion = assist ? assist.llmSuggestion : null;
+        setText(document.getElementById('ops-console-detail-llm-suggestion'), formatJson(suggestion));
+      }
+
       async function loadOpsConsoleList() {
         const note = document.getElementById('ops-console-list-note');
         const errorEl = document.getElementById('ops-console-list-error');
@@ -555,9 +583,40 @@
           }
           opsConsoleDetailCache = detail;
           renderOpsConsoleDetail(detail);
+          await loadOpsAssistDetail(lineUserId);
         } catch (err) {
           setText(errorEl, 'error');
         }
+      }
+
+      async function loadOpsAssistDetail(lineUserId) {
+        if (!lineUserId) return;
+        try {
+          const detail = await fetchOpsAssistDetail(lineUserId);
+          if (!detail || !detail.ok) {
+            renderOpsAssistDetail(null);
+            return;
+          }
+          opsConsoleAssistCache[lineUserId] = detail;
+          renderOpsAssistDetail(detail);
+        } catch (err) {
+          renderOpsAssistDetail(null);
+        }
+      }
+
+      async function loadOpsAssistSummaryForRow(lineUserId, cell) {
+        if (!lineUserId || !cell) return;
+        if (opsConsoleAssistCache[lineUserId]) {
+          cell.textContent = formatSuggestionShort(opsConsoleAssistCache[lineUserId].llmSuggestion);
+          return;
+        }
+        const detail = await fetchOpsAssistDetail(lineUserId);
+        if (detail && detail.ok) {
+          opsConsoleAssistCache[lineUserId] = detail;
+          cell.textContent = formatSuggestionShort(detail.llmSuggestion);
+          return;
+        }
+        cell.textContent = '-';
       }
 
       async function handleSubmitOpsDecision() {
