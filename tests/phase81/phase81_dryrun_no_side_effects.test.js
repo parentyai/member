@@ -15,14 +15,22 @@ const notificationTemplatesRepo = require('../../src/repos/firestore/notificatio
 const sendRetryQueueRepo = require('../../src/repos/firestore/sendRetryQueueRepo');
 const { dryRunSegmentSend } = require('../../src/usecases/phase81/dryRunSegmentSend');
 
+const ORIGINAL_SECRET = process.env.OPS_CONFIRM_TOKEN_SECRET;
+
 beforeEach(() => {
   setDbForTest(createDbStub());
   setServerTimestampForTest('2026-02-08T00:00:00Z');
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test-confirm-secret';
 });
 
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (ORIGINAL_SECRET === undefined) {
+    delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+  } else {
+    process.env.OPS_CONFIRM_TOKEN_SECRET = ORIGINAL_SECRET;
+  }
 });
 
 test('phase81: dry-run has no side effects', async () => {
