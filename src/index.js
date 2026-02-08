@@ -852,6 +852,13 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && pathname.startsWith('/api/phase90/automation-runs/')) {
+    const runId = pathname.replace('/api/phase90/automation-runs/', '').replace(/\/+$/, '');
+    const { handleRunStatus } = require('./routes/phase90RunStatus');
+    handleRunStatus(req, res, runId);
+    return;
+  }
+
   if (pathname.startsWith('/api/phase77/segments')) {
     const { handleSegments } = require('./routes/phase77Segments');
     let bytes = 0;
