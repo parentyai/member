@@ -1,16 +1,15 @@
 # RUNBOOK_OPS_ASSIST
 
 ## Purpose
-Ops Assist / Automation を「迷わず回せる一本道」に固定する。
+Ops Assist の提案を「読む→採用→submit→監査」まで一貫して運用する。
 
 ## Steps
-1. Ops Console list を確認（READY優先）。
-2. detail を確認（readiness / opsState / executionStatus / suggestedTemplateKey）。
-3. automation dry-run を実行（影響の確認）。
-4. automation execute は config enabled + confirmation を満たす時のみ実行。
-5. decision log / timeline / postCheck を確認。
-6. 必要なら通知テンプレを選定し送信（自動送信はOFF）。
+1. Ops Console detail を開き、suggestion/evidence/safety を確認する
+2. Safety が BLOCK の場合は採用せず、手動で判断する
+3. 問題なければ「Use Suggestion」で nextAction をセットする
+4. submit を実行し、decisionLogId を確認する
+5. 採用監査（LLM_SUGGESTION_ADOPTED）が残っていることを確認する
 
 ## Notes
-- LLMは助言のみ。判断・実行は人間。
-- 推定は UNKNOWN/WARN を返す。
+- LLM は disabled by default（rule-based fallback）
+- 自動実行は禁止（提案は人間が採用する）
