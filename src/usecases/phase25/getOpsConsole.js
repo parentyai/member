@@ -5,6 +5,7 @@ const { getUserStateSummary } = require('../phase5/getUserStateSummary');
 const { getMemberSummary } = require('../phase6/getMemberSummary');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
 const { getOpsDecisionConsistency } = require('./opsDecisionConsistency');
+const { evaluateCloseDecision } = require('./closeDecision');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -66,6 +67,7 @@ async function getOpsConsole(params, deps) {
     allowedNextActions = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
     recommendedNextAction = opsState && opsState.nextAction ? opsState.nextAction : 'NO_ACTION';
   }
+  const closeDecision = evaluateCloseDecision({ readiness: effectiveReadiness, consistency });
 
   return {
     ok: true,
@@ -76,6 +78,9 @@ async function getOpsConsole(params, deps) {
     readiness: effectiveReadiness,
     recommendedNextAction,
     allowedNextActions,
+    closeDecision: closeDecision.closeDecision,
+    closeReason: closeDecision.closeReason,
+    phaseResult: closeDecision.phaseResult,
     opsState,
     latestDecisionLog,
     consistency

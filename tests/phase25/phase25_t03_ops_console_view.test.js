@@ -35,6 +35,9 @@ test('phase25 t03: ops console returns required keys', async () => {
   assert.ok(result.userStateSummary);
   assert.ok(result.memberSummary);
   assert.ok(result.readiness);
+  assert.ok(typeof result.closeDecision === 'string');
+  assert.ok(typeof result.closeReason === 'string');
+  assert.ok(typeof result.phaseResult === 'string');
   assert.strictEqual(result.opsState, null);
   assert.strictEqual(result.latestDecisionLog, null);
 });
