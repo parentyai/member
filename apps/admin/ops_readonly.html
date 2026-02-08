@@ -78,6 +78,73 @@
       </table>
     </div>
 
+    <div class="section" id="ops-console-list-section">
+      <h2>Ops Console（Phase26 list）</h2>
+      <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
+      <div class="note">
+        limit: <input type="number" id="ops-console-limit" min="1" max="200" value="20" />
+        <button class="btn" id="ops-console-refresh">更新</button>
+      </div>
+      <div class="note" id="ops-console-list-note"></div>
+      <div class="note" id="ops-console-list-error"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>lineUserId</th>
+            <th>readiness</th>
+            <th>recommendedNextAction</th>
+            <th>allowedNextActions</th>
+            <th>opsState.nextAction</th>
+            <th>latestDecisionLog</th>
+            <th>詳細</th>
+          </tr>
+        </thead>
+        <tbody id="ops-console-list-rows"></tbody>
+      </table>
+    </div>
+
+    <div class="section" id="ops-console-detail-section">
+      <h2>Ops Console 詳細</h2>
+      <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
+      <div class="note" id="ops-console-detail-error"></div>
+      <div>recommendedNextAction: <span id="ops-console-detail-recommended">-</span></div>
+      <div>allowedNextActions: <span id="ops-console-detail-allowed">-</span></div>
+      <div>readiness:</div>
+      <pre id="ops-console-detail-readiness">-</pre>
+      <div>opsState:</div>
+      <pre id="ops-console-detail-ops-state">-</pre>
+      <div>latestDecisionLog:</div>
+      <pre id="ops-console-detail-latest-decision">-</pre>
+      <div>userStateSummary:</div>
+      <pre id="ops-console-detail-user-summary">-</pre>
+      <div>memberSummary:</div>
+      <pre id="ops-console-detail-member-summary">-</pre>
+
+      <h3>Ops Decision Submit</h3>
+      <div class="note">allowedNextActions のみ選択可。</div>
+      <div class="note">
+        nextAction:
+        <select id="ops-decision-action"></select>
+        failure_class:
+        <select id="ops-decision-failure-class">
+          <option value="PASS">PASS</option>
+          <option value="ENV">ENV</option>
+          <option value="IMPL">IMPL</option>
+          <option value="CONFIG">CONFIG</option>
+          <option value="UNKNOWN" selected>UNKNOWN</option>
+        </select>
+      </div>
+      <div class="note">
+        reasonCode: <input type="text" id="ops-decision-reason-code" />
+        stage: <input type="text" id="ops-decision-stage" />
+      </div>
+      <div class="note">
+        note: <input type="text" id="ops-decision-note" />
+        <button class="btn" id="ops-decision-submit">submit</button>
+      </div>
+      <pre id="ops-decision-result">-</pre>
+    </div>
+
     <div class="section">
       <h2>memberNumber 未入力（14日超）</h2>
       <div class="note" id="member-stale-count"></div>
@@ -117,6 +184,26 @@
     </div>
 
     <script>
+      let opsConsoleListCache = [];
+      let opsConsoleDetailCache = null;
+      let selectedOpsConsoleLineUserId = null;
+
+      function clearChildren(node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function setText(node, value) {
+        if (!node) return;
+        node.textContent = value === undefined || value === null ? '-' : String(value);
+      }
+
+      function formatJson(value) {
+        if (value === undefined || value === null) return '-';
+        return JSON.stringify(value, null, 2);
+      }
+
       function buildRangeQuery(prefix) {
         const from = document.getElementById(`${prefix}-from`).value;
         const to = document.getElementById(`${prefix}-to`).value;
@@ -330,6 +417,184 @@
         `).join('');
       }
 
+      async function fetchOpsConsoleList(limit) {
+        const params = new URLSearchParams();
+        if (limit) params.set('limit', String(limit));
+        const qs = params.toString();
+        const res = await fetch(`/api/phase26/ops-console/list${qs ? `?${qs}` : ''}`);
+        return res.json();
+      }
+
+      async function fetchOpsConsoleDetail(lineUserId) {
+        const res = await fetch(`/api/phase25/ops/console?lineUserId=${encodeURIComponent(lineUserId)}`);
+        return res.json();
+      }
+
+      async function submitOpsDecisionRequest(payload) {
+        const res = await fetch('/api/phase25/ops/decision', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
+      function renderOpsConsoleList(items) {
+        const rows = document.getElementById('ops-console-list-rows');
+        clearChildren(rows);
+        if (!items.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 7;
+          td.textContent = 'no data';
+          tr.appendChild(td);
+          rows.appendChild(tr);
+          return;
+        }
+        items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.lineUserId,
+            item.readiness && item.readiness.status ? item.readiness.status : '-',
+            item.recommendedNextAction || '-',
+            Array.isArray(item.allowedNextActions) ? item.allowedNextActions.join(', ') : '-',
+            item.opsState && item.opsState.nextAction ? item.opsState.nextAction : '-',
+            item.latestDecisionLog ? JSON.stringify(item.latestDecisionLog) : '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          const actionTd = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = '詳細';
+          btn.dataset.lineUserId = item.lineUserId;
+          btn.addEventListener('click', async (event) => {
+            const targetId = event.currentTarget.dataset.lineUserId;
+            if (!targetId) return;
+            await loadOpsConsoleDetail(targetId);
+          });
+          actionTd.appendChild(btn);
+          tr.appendChild(actionTd);
+          rows.appendChild(tr);
+        });
+      }
+
+      function updateDecisionActionOptions(detail) {
+        const select = document.getElementById('ops-decision-action');
+        clearChildren(select);
+        const readinessStatus = detail && detail.readiness ? detail.readiness.status : null;
+        let allowed = Array.isArray(detail && detail.allowedNextActions) ? detail.allowedNextActions.slice() : [];
+        if (readinessStatus === 'NOT_READY') {
+          allowed = ['STOP_AND_ESCALATE'];
+        }
+        if (!allowed.length) {
+          allowed = ['STOP_AND_ESCALATE'];
+        }
+        allowed.forEach((action) => {
+          const option = document.createElement('option');
+          option.value = action;
+          option.textContent = action;
+          select.appendChild(option);
+        });
+        if (detail && detail.recommendedNextAction && allowed.includes(detail.recommendedNextAction)) {
+          select.value = detail.recommendedNextAction;
+        }
+      }
+
+      function renderOpsConsoleDetail(detail) {
+        setText(document.getElementById('ops-console-detail-line-user-id'), detail.lineUserId || '-');
+        setText(document.getElementById('ops-console-detail-recommended'), detail.recommendedNextAction || '-');
+        setText(
+          document.getElementById('ops-console-detail-allowed'),
+          Array.isArray(detail.allowedNextActions) ? detail.allowedNextActions.join(', ') : '-'
+        );
+        setText(document.getElementById('ops-console-detail-readiness'), formatJson(detail.readiness));
+        setText(document.getElementById('ops-console-detail-ops-state'), formatJson(detail.opsState));
+        setText(document.getElementById('ops-console-detail-latest-decision'), formatJson(detail.latestDecisionLog));
+        setText(document.getElementById('ops-console-detail-user-summary'), formatJson(detail.userStateSummary));
+        setText(document.getElementById('ops-console-detail-member-summary'), formatJson(detail.memberSummary));
+        updateDecisionActionOptions(detail);
+      }
+
+      async function loadOpsConsoleList() {
+        const note = document.getElementById('ops-console-list-note');
+        const errorEl = document.getElementById('ops-console-list-error');
+        setText(errorEl, '');
+        const limitValue = document.getElementById('ops-console-limit').value;
+        const limit = limitValue ? Number(limitValue) : 20;
+        try {
+          const data = await fetchOpsConsoleList(limit);
+          if (!data || !data.ok) {
+            setText(errorEl, 'error');
+            renderOpsConsoleList([]);
+            return;
+          }
+          opsConsoleListCache = Array.isArray(data.items) ? data.items : [];
+          const pageInfoText = data.pageInfo ? JSON.stringify(data.pageInfo) : '-';
+          note.textContent = `serverTime: ${data.serverTime || '-'} / pageInfo: ${pageInfoText} / nextPageToken: ${data.nextPageToken || '-'}`;
+          renderOpsConsoleList(opsConsoleListCache);
+        } catch (err) {
+          setText(errorEl, 'error');
+          renderOpsConsoleList([]);
+        }
+      }
+
+      async function loadOpsConsoleDetail(lineUserId) {
+        const errorEl = document.getElementById('ops-console-detail-error');
+        setText(errorEl, '');
+        selectedOpsConsoleLineUserId = lineUserId;
+        setText(document.getElementById('ops-console-detail-line-user-id'), lineUserId || '-');
+        try {
+          const detail = await fetchOpsConsoleDetail(lineUserId);
+          if (!detail || !detail.ok) {
+            setText(errorEl, 'error');
+            return;
+          }
+          opsConsoleDetailCache = detail;
+          renderOpsConsoleDetail(detail);
+        } catch (err) {
+          setText(errorEl, 'error');
+        }
+      }
+
+      async function handleSubmitOpsDecision() {
+        const resultEl = document.getElementById('ops-decision-result');
+        setText(resultEl, '');
+        const lineUserId = selectedOpsConsoleLineUserId;
+        if (!lineUserId) {
+          setText(resultEl, 'lineUserId not selected');
+          return;
+        }
+        const nextAction = document.getElementById('ops-decision-action').value;
+        const failureClass = document.getElementById('ops-decision-failure-class').value;
+        const reasonCode = document.getElementById('ops-decision-reason-code').value;
+        const stage = document.getElementById('ops-decision-stage').value;
+        const note = document.getElementById('ops-decision-note').value;
+        const payload = {
+          lineUserId,
+          decision: {
+            nextAction,
+            failure_class: failureClass,
+            reasonCode: reasonCode || null,
+            stage: stage || null,
+            note: note || ''
+          }
+        };
+        try {
+          const result = await submitOpsDecisionRequest(payload);
+          setText(resultEl, formatJson(result));
+          if (result && result.ok) {
+            await loadOpsConsoleDetail(lineUserId);
+            await loadOpsConsoleList();
+          }
+        } catch (err) {
+          setText(resultEl, 'error');
+        }
+      }
+
       document.getElementById('users-apply').addEventListener('click', () => {
         syncUsersQueryToUrl();
         loadUsers().catch(() => {});
@@ -337,9 +602,21 @@
       document.getElementById('notifications-apply').addEventListener('click', () => {
         loadNotifications().catch(() => {});
       });
+      document.getElementById('ops-console-refresh').addEventListener('click', () => {
+        loadOpsConsoleList().catch(() => {});
+      });
+      document.getElementById('ops-decision-submit').addEventListener('click', () => {
+        handleSubmitOpsDecision().catch(() => {});
+      });
 
       hydrateUsersFilters();
-      Promise.all([loadUsers(), loadNotifications(), loadStaleMemberNumber(), loadImplementationTargets()]).catch(() => {
+      Promise.all([
+        loadUsers(),
+        loadNotifications(),
+        loadStaleMemberNumber(),
+        loadImplementationTargets(),
+        loadOpsConsoleList()
+      ]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
         document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
