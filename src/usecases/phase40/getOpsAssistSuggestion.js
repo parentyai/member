@@ -7,8 +7,11 @@ const { guardOpsAssistSuggestion } = require('../phase103/guardOpsAssistSuggesti
 const { appendLlmSuggestionAudit } = require('../phase104/appendLlmSuggestionAudit');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const opsAssistCacheRepo = require('../../repos/firestore/opsAssistCacheRepo');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { computeInputHash, shouldRefreshOpsAssist } = require('../phase51/shouldRefreshOpsAssist');
 const { emitObs } = require('../../ops/obs');
+
+const NOTICE_ACTIONS = new Set(['NO_ACTION', 'SEND_NOTICE', 'SEND_REMINDER']);
 
 function resolveDefaultNextAction(allowedNextActions, readinessStatus) {
   const allowed = Array.isArray(allowedNextActions) ? allowedNextActions : [];
@@ -61,6 +64,47 @@ function buildSuggestion(context, opsAssistInput) {
   };
 }
 
+function resolveNotificationId(payload, opsConsoleView) {
+  if (payload && payload.notificationId) return payload.notificationId;
+  const audit = opsConsoleView && opsConsoleView.latestDecisionLog && opsConsoleView.latestDecisionLog.audit;
+  if (audit && typeof audit.notificationId === 'string') return audit.notificationId;
+  return null;
+}
+
+function normalizeConfidence(value) {
+  if (!value) return 'LOW';
+  if (value === 'HIGH') return 'HIGH';
+  if (value === 'MEDIUM' || value === 'MED') return 'MED';
+  return 'LOW';
+}
+
+function applySuggestionSchema(suggestion, notificationId) {
+  const suggestionObj = suggestion && suggestion.suggestion ? suggestion.suggestion : {};
+  const actionCandidate = suggestionObj.action || null;
+  const action = NOTICE_ACTIONS.has(actionCandidate) ? actionCandidate : 'NO_ACTION';
+  const reason = typeof suggestionObj.reason === 'string' ? suggestionObj.reason : (suggestion && suggestion.suggestionText ? suggestion.suggestionText : '');
+  const confidence = normalizeConfidence(suggestionObj.confidence || suggestion && suggestion.confidence);
+  const safety = suggestion && suggestion.safety ? suggestion.safety : { status: 'OK', reasons: [] };
+  const schema = {
+    action,
+    reason,
+    confidence,
+    evidence: {
+      notificationId: notificationId || null,
+      stats: null
+    },
+    safety: {
+      ok: safety.status !== 'BLOCK',
+      notes: Array.isArray(safety.reasons) ? safety.reasons.slice() : []
+    }
+  };
+  const mergedSuggestion = Object.assign({}, suggestion || {}, {
+    suggestionSchema: schema,
+    suggestion: Object.assign({}, suggestionObj, schema)
+  });
+  return mergedSuggestion;
+}
+
 async function getOpsAssistSuggestion(params, deps) {
   const payload = params || {};
   const lineUserId = payload.lineUserId;
@@ -73,6 +117,7 @@ async function getOpsAssistSuggestion(params, deps) {
   const cacheRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'opsAssistCacheRepo')
     ? deps.opsAssistCacheRepo
     : (deps ? null : opsAssistCacheRepo);
+  const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
   const buildFn = deps && deps.buildSuggestion ? deps.buildSuggestion : buildSuggestion;
   const guardFn = deps && deps.guardOpsAssistSuggestion ? deps.guardOpsAssistSuggestion : guardOpsAssistSuggestion;
   const auditFn = deps && deps.appendLlmSuggestionAudit ? deps.appendLlmSuggestionAudit : appendLlmSuggestionAudit;
@@ -80,6 +125,26 @@ async function getOpsAssistSuggestion(params, deps) {
     || (deps && deps.llmEnabled === true)
     || process.env.OPS_ASSIST_LLM_ENABLED === 'true';
   const nowMs = deps && typeof deps.nowMs === 'number' ? deps.nowMs : Date.now();
+
+  let killSwitch = false;
+  try {
+    killSwitch = await killSwitchFn();
+  } catch (err) {
+    killSwitch = false;
+  }
+  if (killSwitch) {
+    return {
+      ok: false,
+      reason: 'kill_switch_on',
+      suggestion: {
+        action: 'NO_ACTION',
+        reason: 'kill switch enabled',
+        confidence: 'LOW',
+        evidence: { notificationId: resolveNotificationId(payload, payload.opsConsoleView), stats: null },
+        safety: { ok: false, notes: ['kill_switch_on'] }
+      }
+    };
+  }
 
   const context = payload.context
     ? payload.context
@@ -95,6 +160,7 @@ async function getOpsAssistSuggestion(params, deps) {
   const inputHash = computeInputHash(promptPayload);
   const opsAssistInputHash = computeOpsAssistInputHash(opsAssistInput);
   const force = payload.force === true || payload.force === 1 || payload.force === '1';
+  const notificationId = resolveNotificationId(payload, opsConsoleView);
 
   let cache = null;
   if (cacheRepo && typeof cacheRepo.getLatestOpsAssistCache === 'function') {
@@ -172,6 +238,8 @@ async function getOpsAssistSuggestion(params, deps) {
     }
   }
 
+  suggestion = applySuggestionSchema(suggestion, notificationId);
+
   if (timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
     await timelineRepo.appendTimelineEntry({
       lineUserId,
@@ -190,21 +258,24 @@ async function getOpsAssistSuggestion(params, deps) {
     suggestion.safety = { status: 'OK', reasons: [] };
   }
 
+  let suggestionAuditId = null;
   if (auditFn) {
     try {
-      await auditFn({
+      const auditResult = await auditFn({
         lineUserId,
         inputHash: opsAssistInputHash,
-        suggestion: suggestion.suggestion || null,
+        notificationId,
+        suggestion: suggestion.suggestionSchema || suggestion.suggestion || null,
         safety: suggestion.safety || null,
         evidenceSnapshot: suggestion.evidence ? suggestion.evidence.snapshot : null
       }, deps);
+      suggestionAuditId = auditResult && auditResult.id ? auditResult.id : null;
     } catch (err) {
       // best-effort audit only
     }
   }
 
-  const response = Object.assign({}, suggestion, { promptPayload });
+  const response = Object.assign({}, suggestion, { promptPayload, suggestionAuditId });
 
   try {
     emitObs({
