@@ -148,6 +148,57 @@
       <pre id="ops-decision-result">-</pre>
     </div>
 
+    <div class="section" id="segment-send-section">
+      <h2>Segment Send（Plan / Execute）</h2>
+      <div class="note">Plan/Execute は人間操作。送信自体は Phase68 のガードに従う。</div>
+      <div class="note">
+        templateKey:
+        <input type="text" id="segment-template-key" />
+        readiness:
+        <select id="segment-readiness">
+          <option value="">ALL</option>
+          <option value="READY">READY</option>
+          <option value="NOT_READY">NOT_READY</option>
+        </select>
+        needsAttention:
+        <input type="checkbox" id="segment-needs-attention" />
+        limit:
+        <input type="number" id="segment-limit" min="1" max="200" value="50" />
+        <button class="btn" id="segment-plan">Plan</button>
+        <button class="btn" id="segment-execute">Execute</button>
+      </div>
+      <div class="note" id="segment-plan-note"></div>
+      <pre id="segment-plan-result">-</pre>
+      <div class="note" id="segment-execute-note"></div>
+      <pre id="segment-execute-result">-</pre>
+    </div>
+
+    <div class="section" id="retry-queue-section">
+      <h2>Send Retry Queue（READ ONLY + Manual Retry）</h2>
+      <div class="note">PENDING の再送キュー一覧。手動で retry する。</div>
+      <div class="note">
+        limit:
+        <input type="number" id="retry-queue-limit" min="1" max="200" value="50" />
+        <button class="btn" id="retry-queue-refresh">更新</button>
+      </div>
+      <div class="note" id="retry-queue-note"></div>
+      <div class="note" id="retry-queue-error"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>queueId</th>
+            <th>lineUserId</th>
+            <th>templateKey</th>
+            <th>status</th>
+            <th>lastError</th>
+            <th>updatedAt</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="retry-queue-rows"></tbody>
+      </table>
+    </div>
+
     <div class="section">
       <h2>memberNumber 未入力（14日超）</h2>
       <div class="note" id="member-stale-count"></div>
@@ -191,6 +242,8 @@
       let opsConsoleDetailCache = null;
       let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
+      let segmentSendPlanCache = null;
+      let retryQueueCache = [];
 
       function clearChildren(node) {
         while (node.firstChild) {
@@ -458,6 +511,41 @@
         return res.json();
       }
 
+      async function fetchSegmentPlan(payload) {
+        const res = await fetch('/api/phase67/send/plan', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
+      async function fetchSegmentExecute(payload) {
+        const res = await fetch('/api/phase68/send/execute', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
+      async function fetchRetryQueue(limit) {
+        const params = new URLSearchParams();
+        if (limit) params.set('limit', String(limit));
+        const qs = params.toString();
+        const res = await fetch(`/api/phase73/retry-queue${qs ? `?${qs}` : ''}`);
+        return res.json();
+      }
+
+      async function retryQueueSend(payload) {
+        const res = await fetch('/api/phase73/retry-queue/retry', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
       function renderOpsConsoleList(items) {
         const rows = document.getElementById('ops-console-list-rows');
         clearChildren(rows);
@@ -547,6 +635,89 @@
         setText(document.getElementById('ops-console-detail-llm-suggestion'), formatJson(suggestion));
       }
 
+      function buildSegmentQueryFromInputs() {
+        const readiness = document.getElementById('segment-readiness').value;
+        const needsAttention = document.getElementById('segment-needs-attention').checked;
+        const limitValue = document.getElementById('segment-limit').value;
+        const limit = limitValue ? Number(limitValue) : null;
+        const query = {};
+        if (readiness) query.readinessStatus = readiness;
+        if (needsAttention) query.needsAttention = 1;
+        if (limit) query.limit = limit;
+        return query;
+      }
+
+      function renderSegmentPlanResult(result) {
+        const note = document.getElementById('segment-plan-note');
+        const resultEl = document.getElementById('segment-plan-result');
+        if (!result || !result.ok) {
+          setText(note, 'plan error');
+          setText(resultEl, formatJson(result || {}));
+          return;
+        }
+        const sample = Array.isArray(result.lineUserIds) ? result.lineUserIds.slice(0, 5).join(', ') : '-';
+        setText(note, `count: ${result.count} / planHash: ${result.planHash || '-'} / sample: ${sample}`);
+        setText(resultEl, formatJson(result));
+      }
+
+      function renderSegmentExecuteResult(result) {
+        const note = document.getElementById('segment-execute-note');
+        const resultEl = document.getElementById('segment-execute-result');
+        if (!result) {
+          setText(note, 'execute error');
+          setText(resultEl, '-');
+          return;
+        }
+        const status = result.ok ? 'ok' : 'error';
+        const failureCount = Array.isArray(result.failures) ? result.failures.length : 0;
+        setText(note, `result: ${status} / executedCount: ${result.executedCount || 0} / failures: ${failureCount}`);
+        setText(resultEl, formatJson(result));
+      }
+
+      function renderRetryQueue(items) {
+        const rows = document.getElementById('retry-queue-rows');
+        clearChildren(rows);
+        if (!items.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 7;
+          td.textContent = 'no data';
+          tr.appendChild(td);
+          rows.appendChild(tr);
+          return;
+        }
+        items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.id || '-',
+            item.lineUserId || '-',
+            item.templateKey || '-',
+            item.status || '-',
+            item.lastError || '-',
+            item.updatedAt || item.createdAt || '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          const actionTd = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = 'retry';
+          btn.dataset.queueId = item.id;
+          btn.addEventListener('click', async (event) => {
+            const queueId = event.currentTarget.dataset.queueId;
+            if (!queueId) return;
+            await retryQueueSend({ queueId, decidedBy: 'ops_readonly' });
+            await loadRetryQueue();
+          });
+          actionTd.appendChild(btn);
+          tr.appendChild(actionTd);
+          rows.appendChild(tr);
+        });
+      }
+
       async function loadOpsConsoleList() {
         const note = document.getElementById('ops-console-list-note');
         const errorEl = document.getElementById('ops-console-list-error');
@@ -619,6 +790,81 @@
         cell.textContent = '-';
       }
 
+      async function handleSegmentPlan() {
+        const note = document.getElementById('segment-plan-note');
+        setText(note, '');
+        segmentSendPlanCache = null;
+        const templateKey = document.getElementById('segment-template-key').value.trim();
+        if (!templateKey) {
+          setText(note, 'templateKey required');
+          return;
+        }
+        const segmentQuery = buildSegmentQueryFromInputs();
+        const payload = {
+          templateKey,
+          segmentQuery,
+          requestedBy: 'ops_readonly'
+        };
+        const result = await fetchSegmentPlan(payload);
+        renderSegmentPlanResult(result);
+        if (result && result.ok) {
+          segmentSendPlanCache = {
+            templateKey,
+            planHash: result.planHash,
+            segmentQuery
+          };
+        }
+      }
+
+      async function handleSegmentExecute() {
+        const note = document.getElementById('segment-execute-note');
+        setText(note, '');
+        const templateKey = document.getElementById('segment-template-key').value.trim();
+        if (!templateKey) {
+          setText(note, 'templateKey required');
+          return;
+        }
+        if (!segmentSendPlanCache || !segmentSendPlanCache.planHash) {
+          setText(note, 'plan required');
+          return;
+        }
+        if (segmentSendPlanCache.templateKey && segmentSendPlanCache.templateKey !== templateKey) {
+          setText(note, 'plan/template mismatch');
+          return;
+        }
+        const payload = {
+          templateKey,
+          segmentQuery: segmentSendPlanCache.segmentQuery || {},
+          requestedBy: 'ops_readonly',
+          planHash: segmentSendPlanCache.planHash
+        };
+        const result = await fetchSegmentExecute(payload);
+        renderSegmentExecuteResult(result);
+        await loadRetryQueue();
+      }
+
+      async function loadRetryQueue() {
+        const note = document.getElementById('retry-queue-note');
+        const errorEl = document.getElementById('retry-queue-error');
+        setText(errorEl, '');
+        const limitValue = document.getElementById('retry-queue-limit').value;
+        const limit = limitValue ? Number(limitValue) : 50;
+        try {
+          const data = await fetchRetryQueue(limit);
+          if (!data || !data.ok) {
+            setText(errorEl, 'error');
+            renderRetryQueue([]);
+            return;
+          }
+          retryQueueCache = Array.isArray(data.items) ? data.items : [];
+          setText(note, `serverTime: ${data.serverTime || '-'}`);
+          renderRetryQueue(retryQueueCache);
+        } catch (err) {
+          setText(errorEl, 'error');
+          renderRetryQueue([]);
+        }
+      }
+
       async function handleSubmitOpsDecision() {
         const resultEl = document.getElementById('ops-decision-result');
         setText(resultEl, '');
@@ -667,6 +913,15 @@
       document.getElementById('ops-decision-submit').addEventListener('click', () => {
         handleSubmitOpsDecision().catch(() => {});
       });
+      document.getElementById('segment-plan').addEventListener('click', () => {
+        handleSegmentPlan().catch(() => {});
+      });
+      document.getElementById('segment-execute').addEventListener('click', () => {
+        handleSegmentExecute().catch(() => {});
+      });
+      document.getElementById('retry-queue-refresh').addEventListener('click', () => {
+        loadRetryQueue().catch(() => {});
+      });
 
       hydrateUsersFilters();
       Promise.all([
@@ -674,7 +929,8 @@
         loadNotifications(),
         loadStaleMemberNumber(),
         loadImplementationTargets(),
-        loadOpsConsoleList()
+        loadOpsConsoleList(),
+        loadRetryQueue()
       ]).catch(() => {
         document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
         document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';

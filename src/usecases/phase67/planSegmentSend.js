@@ -3,7 +3,7 @@
 const notificationTemplatesRepo = require('../../repos/firestore/notificationTemplatesRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
-const { normalizeLineUserIds, computePlanHash } = require('./segmentSendHash');
+const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('./segmentSendHash');
 
 async function planSegmentSend(params, deps) {
   const payload = params || {};
@@ -18,8 +18,10 @@ async function planSegmentSend(params, deps) {
   const segmentFn = deps && deps.buildSendSegment ? deps.buildSendSegment : buildSendSegment;
   const segment = await segmentFn(payload.segmentQuery || {}, deps);
   const lineUserIds = normalizeLineUserIds(segment.items);
-  const planHash = computePlanHash(templateKey, lineUserIds);
-  const serverTime = new Date().toISOString();
+  const now = deps && deps.now instanceof Date ? deps.now : new Date();
+  const serverTime = now.toISOString();
+  const serverTimeBucket = resolveDateBucket(now);
+  const planHash = computePlanHash(templateKey, lineUserIds, serverTimeBucket);
 
   await appendAuditLog({
     actor: requestedBy,
@@ -31,7 +33,8 @@ async function planSegmentSend(params, deps) {
       templateKey,
       count: lineUserIds.length,
       planHash,
-      requestedBy
+      requestedBy,
+      serverTimeBucket
     },
     snapshot: {
       templateKey,
@@ -39,6 +42,7 @@ async function planSegmentSend(params, deps) {
       count: lineUserIds.length,
       lineUserIds,
       planHash,
+      serverTimeBucket,
       segmentQuery: payload.segmentQuery || {},
       serverTime
     }
