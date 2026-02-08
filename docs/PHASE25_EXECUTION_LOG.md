@@ -37,3 +37,12 @@ Evidence:
 npm test: pass 214 fail 0
 Decision: phaseResult=READY closeDecision=CLOSE
 Rollback: revert this PR
+UTC: 2026-02-08T01:57:13Z
+main SHA: fc171d7ab8f3adc7322c6f343bcdc4742ca65197
+Action: "Phase25 CLOSE (CI evidence updated)"
+PR URL: https://github.com/parentyai/member/pull/266
+Evidence:
+- CI: https://github.com/parentyai/member/actions/runs/21790456767
+npm test: pass 214 fail 0
+Decision: phaseResult=READY closeDecision=CLOSE
+Rollback: revert this PR
