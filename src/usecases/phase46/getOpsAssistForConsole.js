@@ -4,6 +4,7 @@ const { getOpsConsoleView } = require('../phase42/getOpsConsoleView');
 const { getOpsAssistContext } = require('../phase38/getOpsAssistContext');
 const { getOpsAssistSuggestion } = require('../phase40/getOpsAssistSuggestion');
 const opsAssistCacheRepo = require('../../repos/firestore/opsAssistCacheRepo');
+const { computeInputHash } = require('../phase51/shouldRefreshOpsAssist');
 
 function toMillis(value) {
   if (!value) return null;
@@ -78,6 +79,8 @@ async function getOpsAssistForConsole(params, deps) {
     llmSuggestion = await suggestionFn({ lineUserId, notificationId, context, opsConsoleView: view }, deps);
     if (cacheRepo && typeof cacheRepo.appendOpsAssistCache === 'function') {
       try {
+        const inputHash = computeInputHash(llmSuggestion && llmSuggestion.promptPayload ? llmSuggestion.promptPayload : null);
+        const expiresAt = new Date(nowMs + ttlSec * 1000).toISOString();
         await cacheRepo.appendOpsAssistCache({
           lineUserId,
           suggestion: llmSuggestion && llmSuggestion.suggestion ? llmSuggestion.suggestion.nextAction : null,
@@ -85,7 +88,9 @@ async function getOpsAssistForConsole(params, deps) {
           model: llmSuggestion && llmSuggestion.model ? llmSuggestion.model : null,
           snapshot: llmSuggestion || null,
           sourceDecisionLogId: view && view.latestDecisionLog ? view.latestDecisionLog.id : null,
-          ttlSec
+          ttlSec,
+          inputHash,
+          expiresAt
         });
       } catch (err) {
         // best-effort cache only
