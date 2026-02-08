@@ -59,7 +59,10 @@ function resolveCursorSigning(deps) {
     ? deps.allowUnsignedCursor
     : process.env.OPS_CURSOR_HMAC_ALLOW_UNSIGNED;
   const envName = process.env.ENV_NAME || 'local';
-  const allowUnsignedDefault = envName === 'local' || process.env.NODE_ENV === 'test';
+  const allowUnsignedDefault = envName === 'local'
+    || process.env.NODE_ENV === 'test'
+    || process.env.CI === 'true'
+    || process.env.GITHUB_ACTIONS === 'true';
   const allowUnsigned = allowUnsignedCandidate === undefined
     ? allowUnsignedDefault
     : parseBoolean(allowUnsignedCandidate);
