@@ -57,9 +57,23 @@ async function getDecisionById(decisionLogId) {
   return Object.assign({ id: snap.id }, snap.data());
 }
 
+async function listDecisionsByNotificationId(notificationId, limit, direction) {
+  if (!notificationId) throw new Error('notificationId required');
+  const db = getDb();
+  const dir = direction === 'asc' ? 'asc' : 'desc';
+  let query = db.collection(COLLECTION)
+    .where('audit.notificationId', '==', notificationId)
+    .orderBy('decidedAt', dir);
+  const cap = typeof limit === 'number' ? limit : 50;
+  if (cap) query = query.limit(cap);
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+}
+
 module.exports = {
   appendDecision,
   getLatestDecision,
   listDecisions,
-  getDecisionById
+  getDecisionById,
+  listDecisionsByNotificationId
 };

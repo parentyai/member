@@ -4,6 +4,7 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
@@ -59,6 +60,21 @@ async function sendNotification(params) {
       sentAt,
       delivered: true
     });
+    try {
+      await decisionTimelineRepo.appendTimelineEntry({
+        lineUserId: user.id,
+        source: 'notification',
+        action: 'NOTIFY',
+        refId: notificationId,
+        notificationId,
+        snapshot: {
+          delivered: true,
+          sentAt: sentAt || null
+        }
+      });
+    } catch (err) {
+      // best-effort only
+    }
     try {
       await recordSent({
         notificationId,
