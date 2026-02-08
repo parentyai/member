@@ -28,3 +28,12 @@ PR URL: https://github.com/parentyai/member/pull/261
 npm test: pass 202 fail 0
 Consistency issues: missing_ops_state, missing_latest_decision_log, ops_state_source_mismatch, missing_audit_snapshot, not_ready_but_non_escalate
 Rollback: revert this PR
+UTC: 2026-02-08T01:56:23Z
+main SHA: fc171d7ab8f3adc7322c6f343bcdc4742ca65197
+Action: "Phase25 CLOSE (ops decision end-to-end fixed)"
+PR URL: https://github.com/parentyai/member/pull/266
+Evidence:
+- CI: https://github.com/parentyai/member/actions/runs/21790447550
+npm test: pass 214 fail 0
+Decision: phaseResult=READY closeDecision=CLOSE
+Rollback: revert this PR
