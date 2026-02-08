@@ -4,6 +4,8 @@ const usersRepo = require('../../repos/firestore/usersRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 
 const STATUS = new Set(['READY', 'NOT_READY', 'ALL']);
+const READY_ACTIONS = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
+const NOT_READY_ACTIONS = ['STOP_AND_ESCALATE'];
 
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return 'ALL';
@@ -33,6 +35,32 @@ function normalizeReadinessStatus(readiness) {
   return 'NOT_READY';
 }
 
+function normalizeReadiness(readiness) {
+  const status = normalizeReadinessStatus(readiness);
+  const blocking = readiness && Array.isArray(readiness.blocking) ? readiness.blocking : [];
+  return { status: status === 'READY' ? 'READY' : 'NOT_READY', blocking };
+}
+
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+}
+
+function normalizeRecommendedNextAction(value, readinessStatus) {
+  if (typeof value === 'string' && value.trim().length > 0) return value;
+  return readinessStatus === 'READY' ? 'NO_ACTION' : 'STOP_AND_ESCALATE';
+}
+
+function normalizeAllowedNextActions(value, readinessStatus) {
+  const sanitized = normalizeStringArray(value);
+  if (sanitized.length) return sanitized;
+  return readinessStatus === 'READY' ? READY_ACTIONS.slice() : NOT_READY_ACTIONS.slice();
+}
+
+function readinessRank(status) {
+  return status === 'READY' ? 0 : 1;
+}
+
 function resolveTimestamp(value) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString();
@@ -55,6 +83,13 @@ function extractCursorCandidate(item) {
   return resolveTimestamp(latestDecisionLog && latestDecisionLog.createdAt);
 }
 
+function compareIsoDesc(left, right) {
+  if (left === right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+  return left > right ? -1 : 1;
+}
+
 async function listOpsConsole(params, deps) {
   const payload = params || {};
   const status = parseStatus(payload.status);
@@ -70,29 +105,46 @@ async function listOpsConsole(params, deps) {
     const lineUserId = extractLineUserId(user);
     if (!lineUserId) continue;
     const consoleResult = await getOpsConsoleFn({ lineUserId }, deps);
-    const readiness = consoleResult ? consoleResult.readiness : null;
-    const readinessStatus = normalizeReadinessStatus(readiness);
+    const readiness = normalizeReadiness(consoleResult ? consoleResult.readiness : null);
+    const readinessStatus = readiness.status;
     if (status !== 'ALL' && readinessStatus !== status) continue;
     items.push({
       lineUserId,
       readiness,
-      recommendedNextAction: consoleResult ? consoleResult.recommendedNextAction : null,
-      allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
-        ? consoleResult.allowedNextActions
-        : [],
-      opsState: consoleResult ? consoleResult.opsState : null,
-      latestDecisionLog: consoleResult ? consoleResult.latestDecisionLog : null
+      recommendedNextAction: normalizeRecommendedNextAction(
+        consoleResult ? consoleResult.recommendedNextAction : null,
+        readinessStatus
+      ),
+      allowedNextActions: normalizeAllowedNextActions(
+        consoleResult ? consoleResult.allowedNextActions : null,
+        readinessStatus
+      ),
+      opsState: consoleResult && consoleResult.opsState ? consoleResult.opsState : null,
+      latestDecisionLog: consoleResult && consoleResult.latestDecisionLog ? consoleResult.latestDecisionLog : null
     });
   }
 
-  const lastItem = items.length ? items[items.length - 1] : null;
+  const sorted = items.map((item) => ({
+    item,
+    rank: readinessRank(item.readiness.status),
+    cursorCandidate: extractCursorCandidate(item)
+  }));
+  sorted.sort((left, right) => {
+    if (left.rank !== right.rank) return left.rank - right.rank;
+    const cursorCmp = compareIsoDesc(left.cursorCandidate, right.cursorCandidate);
+    if (cursorCmp !== 0) return cursorCmp;
+    return left.item.lineUserId.localeCompare(right.item.lineUserId);
+  });
+  const finalItems = sorted.map((entry) => entry.item);
+
+  const lastItem = finalItems.length ? finalItems[finalItems.length - 1] : null;
   // Placeholder: compute cursor candidate for future pagination expansion.
   const nextCursorCandidate = extractCursorCandidate(lastItem);
   void nextCursorCandidate;
 
   return {
     ok: true,
-    items,
+    items: finalItems,
     serverTime: new Date().toISOString(),
     nextPageToken: null,
     pageInfo: {
