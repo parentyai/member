@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 
@@ -7,6 +9,7 @@ const STATUS = new Set(['READY', 'NOT_READY', 'ALL']);
 const READY_ACTIONS = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
 const NOT_READY_ACTIONS = ['STOP_AND_ESCALATE'];
 const CURSOR_STATUSES = new Set(['READY', 'NOT_READY']);
+const DEFAULT_CURSOR_SIGNING = Object.freeze({ secret: null, enforce: false });
 
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return 'ALL';
@@ -36,12 +39,66 @@ function normalizeReadinessStatus(readiness) {
   return 'NOT_READY';
 }
 
-function parseCursor(value) {
+function parseBoolean(value) {
+  if (value === true || value === false) return value;
+  if (value === undefined || value === null) return false;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+}
+
+function resolveCursorSigning(deps) {
+  const candidate = deps && typeof deps.cursorSecret === 'string'
+    ? deps.cursorSecret
+    : process.env.OPS_CONSOLE_CURSOR_SECRET;
+  const secret = typeof candidate === 'string' && candidate.trim().length > 0 ? candidate : null;
+  const enforceCandidate = deps && Object.prototype.hasOwnProperty.call(deps, 'cursorEnforce')
+    ? deps.cursorEnforce
+    : process.env.OPS_CONSOLE_CURSOR_ENFORCE;
+  const enforce = parseBoolean(enforceCandidate);
+  return { secret, enforce };
+}
+
+function computeCursorSignature(payloadB64, secret) {
+  return crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
+}
+
+function verifyCursorSignature(payloadB64, signatureB64, secret) {
+  const expected = computeCursorSignature(payloadB64, secret);
+  const left = Buffer.from(expected, 'utf8');
+  const right = Buffer.from(signatureB64, 'utf8');
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+function splitCursorToken(value) {
+  const token = String(value).trim();
+  const dotIndex = token.indexOf('.');
+  if (dotIndex === -1) return { payload: token, signature: null };
+  const payload = token.slice(0, dotIndex);
+  const signature = token.slice(dotIndex + 1);
+  if (!payload || !signature) throw new Error('invalid cursor');
+  return { payload, signature };
+}
+
+function parseCursor(value, signing) {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value !== 'string') throw new Error('invalid cursor');
+  const cfg = signing || DEFAULT_CURSOR_SIGNING;
+
+  const { payload: payloadB64, signature } = splitCursorToken(value);
+
+  if (cfg.secret) {
+    if (signature) {
+      if (!verifyCursorSignature(payloadB64, signature, cfg.secret)) throw new Error('invalid cursor');
+    } else if (cfg.enforce) {
+      throw new Error('invalid cursor');
+    }
+  }
+
   let payload;
   try {
-    const decoded = Buffer.from(value, 'base64url').toString('utf8');
+    const decoded = Buffer.from(payloadB64, 'base64url').toString('utf8');
     payload = JSON.parse(decoded);
   } catch (err) {
     throw new Error('invalid cursor');
@@ -64,14 +121,18 @@ function parseCursor(value) {
   };
 }
 
-function encodeCursor(payload) {
+function encodeCursor(payload, signing) {
   if (!payload) return null;
+  const cfg = signing || DEFAULT_CURSOR_SIGNING;
   const json = JSON.stringify({
     s: payload.status,
     t: payload.cursorCandidate || null,
     id: payload.lineUserId
   });
-  return Buffer.from(json, 'utf8').toString('base64url');
+  const payloadB64 = Buffer.from(json, 'utf8').toString('base64url');
+  if (!cfg.secret) return payloadB64;
+  const signatureB64 = computeCursorSignature(payloadB64, cfg.secret);
+  return `${payloadB64}.${signatureB64}`;
 }
 
 function normalizeReadiness(readiness) {
@@ -150,7 +211,8 @@ async function listOpsConsole(params, deps) {
   const payload = params || {};
   const status = parseStatus(payload.status);
   const limit = parseLimit(payload.limit);
-  const cursor = parseCursor(payload.cursor);
+  const cursorSigning = resolveCursorSigning(deps);
+  const cursor = parseCursor(payload.cursor, cursorSigning);
 
   const listUsersFn = deps && deps.listUsers ? deps.listUsers : usersRepo.listUsers;
   const getOpsConsoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
@@ -209,7 +271,7 @@ async function listOpsConsole(params, deps) {
         status: lastItem.readiness.status,
         cursorCandidate: nextCursorCandidate,
         lineUserId: lastItem.lineUserId
-      })
+      }, cursorSigning)
     : null;
 
   return {
