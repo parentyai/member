@@ -2,11 +2,16 @@
 
 const automationConfigRepo = require('../../repos/firestore/automationConfigRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
+const automationRunsRepo = require('../../repos/firestore/automationRunsRepo');
 const crypto = require('crypto');
 const notificationTemplatesRepo = require('../../repos/firestore/notificationTemplatesRepo');
+const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 const sendRetryQueueRepo = require('../../repos/firestore/sendRetryQueueRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const templatesVRepo = require('../../repos/firestore/templatesVRepo');
+const { createCircuitBreaker } = require('../../domain/circuitBreaker');
+const { createRateLimiter } = require('../../domain/rateLimiter');
+const { createRetryPolicy } = require('../../domain/retryPolicy');
 const { testSendNotification } = require('../notifications/testSendNotification');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
@@ -91,6 +96,29 @@ function parseTemplateVersion(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) throw new Error('invalid templateVersion');
   return Math.floor(num);
+}
+
+function parsePositiveInt(value, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return fallback;
+  return Math.floor(num);
+}
+
+function computeConfirmTokenId(token) {
+  if (!token || typeof token !== 'string') return null;
+  return crypto.createHash('sha256').update(token).digest('hex').slice(0, 12);
+}
+
+function resolveMainSha(payload) {
+  if (payload && typeof payload.mainSha === 'string' && payload.mainSha.length > 0) return payload.mainSha;
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
+  return null;
+}
+
+function buildRunCounters(run, total) {
+  const counters = Object.assign({ total, attempted: 0, success: 0, failed: 0, skipped: 0 }, run && run.counters);
+  counters.total = total;
+  return counters;
 }
 
 async function executeSegmentSend(params, deps) {
@@ -181,25 +209,148 @@ async function executeSegmentSend(params, deps) {
     return { ok: false, reason: 'template_inactive' };
   }
 
-  const failures = [];
-  let executedCount = 0;
-  let queueEnqueuedCount = 0;
+  const runRepo = deps && deps.automationRunsRepo ? deps.automationRunsRepo : automationRunsRepo;
+  const opsRepo = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
+  const batchSize = parsePositiveInt(payload.batchSize, 50);
   const text = resolveTemplateText(template);
   const segmentKey = resolveSegmentKey(latestPlan, payload);
   const filterSnapshot = resolveFilterSnapshot(latestPlan, payload);
-  const runId = crypto.randomUUID();
+  const confirmTokenId = computeConfirmTokenId(confirmToken);
+  const mainSha = resolveMainSha(payload);
 
-  for (const lineUserId of lineUserIds) {
-    try {
-      await sendFn({
-        lineUserId,
-        text,
-        notificationId: templateKey,
-        killSwitch
-      }, deps);
-      executedCount += 1;
-    } catch (err) {
-      const errorMessage = err && err.message ? err.message : 'send_failed';
+  let runId = payload.runId || null;
+  let runRecord = null;
+  if (runId) {
+    runRecord = await runRepo.getRun(runId);
+    if (!runRecord) throw new Error('run not found');
+  }
+
+  const counters = buildRunCounters(runRecord, count);
+  const cursor = runRecord && runRecord.cursor ? runRecord.cursor : { index: 0, lastUserId: null };
+  let currentIndex = typeof cursor.index === 'number' && cursor.index >= 0 ? cursor.index : 0;
+  let lastUserId = cursor.lastUserId || null;
+
+  const limits = runRecord && runRecord.limits
+    ? runRecord.limits
+    : {
+      batchSize,
+      rps: parsePositiveInt(payload.rps, 10),
+      maxRetries: parsePositiveInt(payload.maxRetries, 3)
+    };
+  const effectiveBatchSize = parsePositiveInt(limits.batchSize, batchSize);
+
+  const rateLimiter = deps && deps.rateLimiter
+    ? deps.rateLimiter
+    : createRateLimiter({
+      rps: limits.rps,
+      nowFn: deps && deps.nowFn,
+      sleepFn: deps && deps.sleepFn
+    });
+  const retryPolicy = deps && deps.retryPolicy
+    ? deps.retryPolicy
+    : createRetryPolicy({
+      maxRetries: limits.maxRetries,
+      baseMs: parsePositiveInt(payload.retryBaseMs, 200),
+      factor: parsePositiveInt(payload.retryFactor, 2),
+      jitter: typeof payload.retryJitter === 'number' ? payload.retryJitter : 0.1,
+      randomFn: deps && deps.randomFn
+    });
+  const breaker = deps && deps.circuitBreaker
+    ? deps.circuitBreaker
+    : createCircuitBreaker({
+      windowSize: parsePositiveInt(payload.breakerWindowSize, 10),
+      max429: parsePositiveInt(payload.breakerMax429, 7),
+      max5xx: parsePositiveInt(payload.breakerMax5xx, 7)
+    });
+
+  if (!runRecord) {
+    const created = await runRepo.createRun({
+      kind: 'SEGMENT_SEND',
+      status: 'RUNNING',
+      segmentKey,
+      templateKey,
+      templateVersion: expectedTemplateVersion,
+      planHash: expectedHash,
+      confirmTokenId,
+      limits,
+      counters,
+      cursor: { index: currentIndex, lastUserId },
+      lastError: null,
+      evidence: { mainSha, ciRunUrl: null, prUrl: null }
+    });
+    runId = created.id;
+    runRecord = Object.assign({ id: runId }, { counters, cursor });
+    await auditRepo.appendAuditLog({
+      actor: requestedBy,
+      action: 'automation_run',
+      kind: 'RUN_START',
+      runId,
+      planHash: expectedHash,
+      templateKey,
+      templateVersion: expectedTemplateVersion,
+      segmentKey,
+      payloadSummary: {
+        runId,
+        counters,
+        mainSha
+      }
+    });
+  } else {
+    await runRepo.patchRun(runId, {
+      status: 'RUNNING',
+      counters,
+      cursor,
+      limits
+    });
+  }
+
+  const failures = [];
+  let queueEnqueuedCount = 0;
+  let aborted = false;
+  let abortReason = null;
+  let abortDetail = null;
+
+  async function sendWithRetry(lineUserId) {
+    let attempt = 0;
+    let lastError = null;
+    while (true) {
+      await rateLimiter();
+      try {
+        await sendFn({
+          lineUserId,
+          text,
+          notificationId: templateKey,
+          killSwitch
+        }, deps);
+        return { ok: true, attempts: attempt + 1, error: null };
+      } catch (err) {
+        lastError = err;
+        if (!retryPolicy.shouldRetry(err, attempt)) {
+          return { ok: false, attempts: attempt + 1, error: err };
+        }
+        const delayMs = retryPolicy.getDelayMs(attempt);
+        if (delayMs > 0) {
+          if (deps && typeof deps.sleepFn === 'function') {
+            await deps.sleepFn(delayMs);
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+          }
+        }
+        attempt += 1;
+      }
+    }
+  }
+
+  for (let index = currentIndex; index < lineUserIds.length; index += 1) {
+    const lineUserId = lineUserIds[index];
+    const result = await sendWithRetry(lineUserId);
+    counters.attempted += 1;
+    lastUserId = lineUserId;
+    if (result.ok) {
+      counters.success += 1;
+    } else {
+      const errorMessage = result.error && result.error.message ? result.error.message : 'send_failed';
+      counters.failed += 1;
       failures.push({ lineUserId, error: errorMessage });
       try {
         await retryQueueRepo.enqueueFailure({
@@ -220,6 +371,24 @@ async function executeSegmentSend(params, deps) {
         // best-effort: queue failures should not block execution
       }
     }
+
+    const breakerState = breaker.record(result.error || null);
+    if (breakerState.aborted) {
+      aborted = true;
+      abortReason = breakerState.reason;
+      abortDetail = breakerState;
+      currentIndex = index + 1;
+      break;
+    }
+
+    if ((index + 1) % effectiveBatchSize === 0) {
+      currentIndex = index + 1;
+      await runRepo.patchRun(runId, {
+        status: 'RUNNING',
+        counters,
+        cursor: { index: currentIndex, lastUserId }
+      });
+    }
   }
 
   const serverTime = new Date().toISOString();
@@ -227,6 +396,66 @@ async function executeSegmentSend(params, deps) {
     count,
     sampleLineUserIds: lineUserIds.slice(0, 5)
   };
+
+  if (aborted) {
+    await runRepo.patchRun(runId, {
+      status: 'ABORTED',
+      counters,
+      cursor: { index: currentIndex, lastUserId },
+      lastError: { code: abortReason, message: 'circuit breaker tripped' }
+    });
+    await auditRepo.appendAuditLog({
+      actor: requestedBy,
+      action: 'automation_run',
+      kind: 'RUN_ABORT',
+      runId,
+      planHash: expectedHash,
+      templateKey,
+      templateVersion: expectedTemplateVersion,
+      segmentKey,
+      payloadSummary: {
+        runId,
+        counters,
+        mainSha,
+        reason: abortReason
+      }
+    });
+    if (lastUserId) {
+      try {
+        await opsRepo.upsertOpsState(lastUserId, {
+          nextAction: 'STOP_AND_ESCALATE',
+          failure_class: 'ENV',
+          reasonCode: 'AUTOMATION_ABORTED',
+          stage: 'EXECUTE',
+          note: abortReason
+        });
+      } catch (_err) {
+        // best-effort: ops state update should not block
+      }
+    }
+  } else {
+    await runRepo.patchRun(runId, {
+      status: counters.failed > 0 ? 'DONE_WITH_ERRORS' : 'DONE',
+      counters,
+      cursor: { index: lineUserIds.length, lastUserId }
+    });
+    await auditRepo.appendAuditLog({
+      actor: requestedBy,
+      action: 'automation_run',
+      kind: 'RUN_DONE',
+      runId,
+      planHash: expectedHash,
+      templateKey,
+      templateVersion: expectedTemplateVersion,
+      segmentKey,
+      payloadSummary: {
+        runId,
+        counters,
+        mainSha
+      }
+    });
+  }
+
   await auditRepo.appendAuditLog({
     actor: requestedBy,
     action: 'segment_send.execute',
@@ -238,7 +467,7 @@ async function executeSegmentSend(params, deps) {
       templateKey,
       templateVersion: expectedTemplateVersion,
       segmentKey,
-      executedCount,
+      executedCount: counters.success,
       failures: failures.length,
       queueEnqueuedCount,
       runId
@@ -251,22 +480,32 @@ async function executeSegmentSend(params, deps) {
       planHash,
       confirmToken: confirmToken || null,
       planSnapshot,
-      executedCount,
+      executedCount: counters.success,
       failures,
       queueEnqueuedCount,
       runId,
-      serverTime
+      serverTime,
+      runSummary: {
+        status: aborted ? 'ABORTED' : (counters.failed > 0 ? 'DONE_WITH_ERRORS' : 'DONE'),
+        counters,
+        abortDetail: abortDetail || null
+      }
     }
   });
 
   return {
-    ok: failures.length === 0,
+    ok: !aborted && failures.length === 0,
     serverTime,
     runId,
     templateKey,
     templateVersion: expectedTemplateVersion,
-    executedCount,
-    failures
+    executedCount: counters.success,
+    failures,
+    runSummary: {
+      status: aborted ? 'ABORTED' : (counters.failed > 0 ? 'DONE_WITH_ERRORS' : 'DONE'),
+      counters,
+      abortDetail: abortDetail || null
+    }
   };
 }
 
