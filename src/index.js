@@ -8,8 +8,11 @@ const { handleLineWebhook } = require('./routes/webhookLine');
 
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
-const SERVICE_MODE = process.env.SERVICE_MODE || 'member';
 const MAX_BODY_BYTES = 1024 * 1024;
+
+function getServiceMode() {
+  return process.env.SERVICE_MODE || 'member';
+}
 
 function getPathname(reqUrl) {
   if (!reqUrl) return '';
@@ -117,8 +120,10 @@ function handleTrackClickRoute(req, res) {
   });
 }
 
-const server = http.createServer((req, res) => {
+function createServer() {
+  return http.createServer((req, res) => {
   const pathname = getPathname(req.url);
+  const SERVICE_MODE = getServiceMode();
 
   if (req.method === 'GET' && (pathname === '/healthz' || pathname === '/healthz/')) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -129,6 +134,16 @@ const server = http.createServer((req, res) => {
   if (SERVICE_MODE === 'track') {
     if (req.method === 'POST' && pathname === '/track/click') {
       handleTrackClickRoute(req, res);
+      return;
+    }
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('not found');
+    return;
+  }
+
+  if (SERVICE_MODE === 'webhook') {
+    if (req.method === 'POST' && (pathname === '/webhook/line' || pathname === '/webhook/line/')) {
+      handleWebhook(req, res);
       return;
     }
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
@@ -1412,10 +1427,15 @@ const server = http.createServer((req, res) => {
 
   res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
   res.end('not found');
-});
+  });
+}
 
-server.listen(PORT, () => {
-  console.log(`[boot] listening on :${PORT} env=${ENV_NAME} mode=${SERVICE_MODE}`);
-});
+const server = createServer();
 
-module.exports = { server };
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`[boot] listening on :${PORT} env=${ENV_NAME} mode=${getServiceMode()}`);
+  });
+}
+
+module.exports = { server, createServer };

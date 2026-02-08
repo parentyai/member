@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { ensureUserFromWebhook } = require('../usecases/users/ensureUser');
 const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMessage');
+const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -35,6 +36,8 @@ async function handleLineWebhook(options) {
   const body = options && options.body;
   const logger = (options && options.logger) || (() => {});
   const requestId = (options && options.requestId) || 'unknown';
+  const isWebhookEdge = process.env.SERVICE_MODE === 'webhook';
+  const allowWelcome = Boolean(options && options.allowWelcome === true);
 
   if (!secret) {
     logger(`[webhook] requestId=${requestId} reject=missing-secret`);
@@ -57,12 +60,16 @@ async function handleLineWebhook(options) {
     return { status: 400, body: 'invalid json' };
   }
 
+  await logLineWebhookEventsBestEffort({ payload, requestId });
+
   const userIds = extractUserIds(payload);
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   for (const userId of userIds) {
     await ensureUserFromWebhook(userId);
-    await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+    if (!isWebhookEdge || allowWelcome) {
+      await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+    }
   }
 
   logger(`[webhook] requestId=${requestId} accept`);
