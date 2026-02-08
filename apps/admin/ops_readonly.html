@@ -169,10 +169,13 @@
         limit:
         <input type="number" id="segment-limit" min="1" max="200" value="50" />
         <button class="btn" id="segment-plan">Plan</button>
+        <button class="btn" id="segment-dryrun">Dry-run</button>
         <button class="btn" id="segment-execute">Execute</button>
       </div>
       <div class="note" id="segment-plan-note"></div>
       <pre id="segment-plan-result">-</pre>
+      <div class="note" id="segment-dryrun-note"></div>
+      <pre id="segment-dryrun-result">-</pre>
       <div class="note" id="segment-execute-note"></div>
       <pre id="segment-execute-result">-</pre>
     </div>
@@ -247,6 +250,7 @@
       let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
       let segmentSendPlanCache = null;
+      let segmentSendDryRunCache = null;
       let retryQueueCache = [];
       let savedSegmentsCache = [];
       let selectedSegmentCache = null;
@@ -535,6 +539,15 @@
         return res.json();
       }
 
+      async function fetchSegmentDryRun(payload) {
+        const res = await fetch('/api/phase81/segment-send/dry-run', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return res.json();
+      }
+
       async function fetchRetryQueue(limit) {
         const params = new URLSearchParams();
         if (limit) params.set('limit', String(limit));
@@ -704,6 +717,19 @@
         setText(resultEl, formatJson(result));
       }
 
+      function renderSegmentDryRunResult(result) {
+        const note = document.getElementById('segment-dryrun-note');
+        const resultEl = document.getElementById('segment-dryrun-result');
+        if (!result || !result.ok) {
+          setText(note, 'dry-run error');
+          setText(resultEl, formatJson(result || {}));
+          return;
+        }
+        const sample = Array.isArray(result.targetsSample) ? result.targetsSample.join(', ') : '-';
+        setText(note, `targetCount: ${result.targetCount} / confirmToken: ${result.confirmToken || '-'} / sample: ${sample}`);
+        setText(resultEl, formatJson(result));
+      }
+
       function renderSegmentExecuteResult(result) {
         const note = document.getElementById('segment-execute-note');
         const resultEl = document.getElementById('segment-execute-result');
@@ -838,6 +864,7 @@
         const note = document.getElementById('segment-plan-note');
         setText(note, '');
         segmentSendPlanCache = null;
+        segmentSendDryRunCache = null;
         const templateKey = document.getElementById('segment-template-key').value.trim();
         const templateVersionValue = document.getElementById('segment-template-version').value;
         const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
@@ -870,6 +897,38 @@
         }
       }
 
+      async function handleSegmentDryRun() {
+        const note = document.getElementById('segment-dryrun-note');
+        setText(note, '');
+        segmentSendDryRunCache = null;
+        const templateKey = document.getElementById('segment-template-key').value.trim();
+        const templateVersionValue = document.getElementById('segment-template-version').value;
+        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
+        if (!templateKey) {
+          setText(note, 'templateKey required');
+          return;
+        }
+        const segmentQuery = buildSegmentQueryFromInputs();
+        const segmentKey = selectedSegmentCache ? selectedSegmentCache.segmentKey : null;
+        const filterSnapshot = selectedSegmentCache ? selectedSegmentCache.filter : null;
+        const payload = {
+          templateKey,
+          templateVersion,
+          segmentQuery,
+          segmentKey,
+          filterSnapshot,
+          requestedBy: 'ops_readonly'
+        };
+        const result = await fetchSegmentDryRun(payload);
+        renderSegmentDryRunResult(result);
+        if (result && result.ok) {
+          segmentSendDryRunCache = {
+            confirmToken: result.confirmToken,
+            planHash: result.planHash
+          };
+        }
+      }
+
       async function handleSegmentExecute() {
         const note = document.getElementById('segment-execute-note');
         setText(note, '');
@@ -880,6 +939,10 @@
         }
         if (!segmentSendPlanCache || !segmentSendPlanCache.planHash) {
           setText(note, 'plan required');
+          return;
+        }
+        if (!segmentSendDryRunCache || !segmentSendDryRunCache.confirmToken) {
+          setText(note, 'confirmToken required (run dry-run)');
           return;
         }
         if (segmentSendPlanCache.templateKey && segmentSendPlanCache.templateKey !== templateKey) {
@@ -893,7 +956,8 @@
           planHash: segmentSendPlanCache.planHash,
           templateVersion: segmentSendPlanCache.templateVersion || null,
           segmentKey: segmentSendPlanCache.segmentKey || null,
-          filterSnapshot: segmentSendPlanCache.filterSnapshot || null
+          filterSnapshot: segmentSendPlanCache.filterSnapshot || null,
+          confirmToken: segmentSendDryRunCache.confirmToken
         };
         const result = await fetchSegmentExecute(payload);
         renderSegmentExecuteResult(result);
@@ -989,6 +1053,9 @@
       });
       document.getElementById('segment-plan').addEventListener('click', () => {
         handleSegmentPlan().catch(() => {});
+      });
+      document.getElementById('segment-dryrun').addEventListener('click', () => {
+        handleSegmentDryRun().catch(() => {});
       });
       document.getElementById('segment-execute').addEventListener('click', () => {
         handleSegmentExecute().catch(() => {});

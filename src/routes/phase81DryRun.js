@@ -1,6 +1,6 @@
 'use strict';
 
-const { executeSegmentSend } = require('../usecases/phase68/executeSegmentSend');
+const { dryRunSegmentSend } = require('../usecases/phase81/dryRunSegmentSend');
 
 function parseJson(body, res) {
   try {
@@ -23,13 +23,12 @@ function handleError(res, err) {
   res.end(JSON.stringify({ ok: false, error: 'error' }));
 }
 
-async function handleExecuteSend(req, res, body, deps) {
+async function handleDryRun(req, res, body, deps) {
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
-    const result = await executeSegmentSend(payload, deps);
-    const status = result && result.status === 409 ? 409 : 200;
-    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+    const result = await dryRunSegmentSend(payload, deps);
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
     handleError(res, err);
@@ -37,5 +36,5 @@ async function handleExecuteSend(req, res, body, deps) {
 }
 
 module.exports = {
-  handleExecuteSend
+  handleDryRun
 };

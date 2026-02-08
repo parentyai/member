@@ -52,7 +52,8 @@ async function planSegmentSend(params, deps) {
   const planHash = computePlanHash(templateKey, lineUserIds, serverTimeBucket);
   const segmentKey = payload.segmentKey || null;
 
-  await appendAuditLog({
+  const appendAudit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  await appendAudit({
     actor: requestedBy,
     action: 'segment_send.plan',
     entityType: 'segment_send',

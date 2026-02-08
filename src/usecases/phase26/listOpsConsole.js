@@ -3,6 +3,7 @@
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 const { encodeCursor, decodeCursor } = require('../../infra/cursorSigner');
+const { signCursor, verifyCursor } = require('../../domain/cursorSigning');
 
 const STATUS = new Set(['READY', 'NOT_READY', 'ALL']);
 const READY_ACTIONS = ['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE'];
@@ -67,6 +68,19 @@ function resolveCursorSigning(deps) {
     ? allowUnsignedDefault
     : parseBoolean(allowUnsignedCandidate);
   return { secret, enforce, allowUnsigned };
+}
+
+function resolveSignedCursorSecret(deps) {
+  const candidate = deps && typeof deps.cursorSigningSecret === 'string'
+    ? deps.cursorSigningSecret
+    : process.env.OPS_CURSOR_SIGNING_SECRET;
+  const secret = typeof candidate === 'string' && candidate.trim().length > 0 ? candidate : null;
+  const envName = process.env.ENV_NAME || 'local';
+  const allowUnsigned = envName === 'local'
+    || process.env.NODE_ENV === 'test'
+    || process.env.CI === 'true'
+    || process.env.GITHUB_ACTIONS === 'true';
+  return { secret, allowUnsigned };
 }
 
 function normalizeReadiness(readiness) {
@@ -155,8 +169,18 @@ async function listOpsConsole(params, deps) {
   const status = parseStatus(payload.status);
   const limit = parseLimit(payload.limit);
   const cursorSigning = resolveCursorSigning(deps);
-  const cursorPayload = decodeCursor(payload.cursor, cursorSigning);
-  const cursor = cursorPayload ? cursorPayload.lastSortKey : null;
+  let cursorPayload = null;
+  let cursor = null;
+  if (payload.cursor !== undefined && payload.cursor !== null && payload.cursor !== '') {
+    const cursorValue = String(payload.cursor);
+    if (cursorValue.startsWith('v1.')) {
+      cursorPayload = decodeCursor(cursorValue, cursorSigning);
+      cursor = cursorPayload ? cursorPayload.lastSortKey : null;
+    } else {
+      const signedConfig = resolveSignedCursorSecret(deps);
+      verifyCursor(cursorValue, signedConfig.secret, signedConfig.allowUnsigned);
+    }
+  }
   const cursorInfo = {
     mode: cursorSigning.secret ? 'SIGNED' : 'UNSIGNED',
     enforce: Boolean(cursorSigning.enforce)
@@ -215,6 +239,10 @@ async function listOpsConsole(params, deps) {
   const lastItem = finalItems.length ? finalItems[finalItems.length - 1] : null;
   // Placeholder: compute cursor candidate for future pagination expansion.
   const nextCursorCandidate = extractCursorCandidate(lastItem);
+  const signedConfig = resolveSignedCursorSecret(deps);
+  const signedCursor = nextCursorCandidate
+    ? signCursor(nextCursorCandidate, signedConfig.secret, signedConfig.allowUnsigned)
+    : null;
   const nextCursor = hasNext && lastItem
     ? encodeCursor({
         lastSortKey: {
@@ -234,6 +262,12 @@ async function listOpsConsole(params, deps) {
       hasNext,
       nextCursor,
       cursorInfo
+    },
+    cursorInfo: {
+      rawCursorCandidate: nextCursorCandidate || null,
+      signedCursor: signedCursor || null,
+      algo: 'HMAC-SHA256',
+      hasNext: false
     }
   };
 }
