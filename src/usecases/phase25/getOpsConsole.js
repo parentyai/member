@@ -37,6 +37,45 @@ function resolveTimestamp(value) {
   return null;
 }
 
+function normalizeExecutionResult(value) {
+  if (value === 'SUCCESS' || value === 'OK') return 'OK';
+  if (value === 'FAIL') return 'FAIL';
+  return 'UNKNOWN';
+}
+
+function buildExecutionStatus(executionLog) {
+  if (!executionLog) {
+    return {
+      lastExecutedAt: null,
+      lastExecutionResult: 'UNKNOWN',
+      lastFailureClass: null,
+      lastReasonCode: null,
+      lastStage: null,
+      lastNote: null
+    };
+  }
+  const audit = executionLog.audit && typeof executionLog.audit === 'object'
+    ? executionLog.audit
+    : {};
+  const execution = audit.execution && typeof audit.execution === 'object'
+    ? audit.execution
+    : {};
+  const context = audit.executionContext && typeof audit.executionContext === 'object'
+    ? audit.executionContext
+    : {};
+  const executedAt = resolveTimestamp(execution.executedAt)
+    || resolveTimestamp(executionLog.decidedAt)
+    || resolveTimestamp(executionLog.createdAt);
+  return {
+    lastExecutedAt: executedAt,
+    lastExecutionResult: normalizeExecutionResult(execution.result),
+    lastFailureClass: typeof context.failure_class === 'string' ? context.failure_class : null,
+    lastReasonCode: typeof context.reasonCode === 'string' ? context.reasonCode : null,
+    lastStage: typeof context.stage === 'string' ? context.stage : null,
+    lastNote: typeof context.note === 'string' ? context.note : null
+  };
+}
+
 async function getOpsConsole(params, deps) {
   const payload = params || {};
   const lineUserId = requireString(payload.lineUserId, 'lineUserId');
@@ -80,6 +119,9 @@ async function getOpsConsole(params, deps) {
       ? decisionDrifts.getLatestDecisionDrift(lineUserId)
       : Promise.resolve(null)
   ]);
+  const latestExecutionLog = latestDecisionLog
+    ? await decisionLogs.getLatestDecision('ops_execution', latestDecisionLog.id)
+    : null;
   const opsState = userStateSummary ? userStateSummary.opsState : null;
   const opsNextAction = opsState ? opsState.nextAction : null;
   let allowedNextActions = ['STOP_AND_ESCALATE'];
@@ -98,6 +140,7 @@ async function getOpsConsole(params, deps) {
       types: Array.isArray(latestDecisionDrift.driftTypes) ? latestDecisionDrift.driftTypes : []
     };
   }
+  const executionStatus = buildExecutionStatus(latestExecutionLog);
 
   return {
     ok: true,
@@ -114,7 +157,8 @@ async function getOpsConsole(params, deps) {
     opsState,
     latestDecisionLog,
     consistency,
-    decisionDrift
+    decisionDrift,
+    executionStatus
   };
 }
 
