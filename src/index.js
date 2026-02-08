@@ -583,6 +583,117 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase36/notice')) {
+    const { handleNoticeSend } = require('./routes/phase36NoticeSend');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase36/notice/send') {
+        const body = await collectBody();
+        await handleNoticeSend(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase37/deliveries')) {
+    const { handleMarkRead, handleMarkClick } = require('./routes/phase37DeliveryReactions');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/phase37/deliveries/mark-read') {
+        const body = await collectBody();
+        await handleMarkRead(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase37/deliveries/mark-click') {
+        const body = await collectBody();
+        await handleMarkClick(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase38/ops/dashboard')) {
+    const { handleOpsDashboard } = require('./routes/phase38OpsDashboard');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase38/ops/dashboard') {
+        await handleOpsDashboard(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/phase39/ops-assist')) {
+    const { handleOpsAssistSuggestion } = require('./routes/phase39OpsAssistSuggestion');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase39/ops-assist/suggestion') {
+        await handleOpsAssistSuggestion(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase32/ops-decision')) {
     const { handleSuggestOpsDecision } = require('./routes/phase32OpsDecisionSuggest');
     (async () => {
