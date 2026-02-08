@@ -7,6 +7,7 @@ Ops運用導線（console → submit → 監査 → 再表示）を一本道でS
 - T01: Ops Console 一覧エンドポイント（要対応ユーザーの入口）
 - T02: submitOpsDecision の postCheck 追加（submit後の整合検証）
 - T03: Phase26 PLAN/EXECUTION_LOG をSSOTとして追加
+- T04: ops console list の pagination placeholder（pageInfo 追加）
 
 ## Phase26でやらないこと
 - Phase23基盤（Runbook/CI/判定ロジック）の変更
