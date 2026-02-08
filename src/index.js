@@ -440,6 +440,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/phase26/ops-console')) {
+    const { handleOpsConsoleList } = require('./routes/phase26OpsConsoleList');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phase26/ops-console/list') {
+        await handleOpsConsoleList(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase6/member/')) {
     const { handlePhase6MemberSummary } = require('./routes/phase6MemberSummary');
     (async () => {

@@ -1,6 +1,7 @@
 'use strict';
 
 const { getOpsConsole } = require('./getOpsConsole');
+const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const {
   recordOpsNextAction,
   NEXT_ACTIONS,
@@ -16,6 +17,59 @@ function requireString(value, label) {
 function requireEnum(value, label, allowed) {
   if (!allowed.has(value)) throw new Error(`invalid ${label}`);
   return value;
+}
+
+function formatValue(value) {
+  if (value === undefined) return 'undefined';
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return JSON.stringify(value);
+  return String(value);
+}
+
+function arraysEqual(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  if (left.length !== right.length) return false;
+  for (let idx = 0; idx < left.length; idx += 1) {
+    if (left[idx] !== right[idx]) return false;
+  }
+  return true;
+}
+
+function buildPostCheck(params) {
+  const payload = params || {};
+  const opsState = payload.opsState || null;
+  const decisionLogId = payload.decisionLogId || null;
+  const decisionLog = payload.decisionLog || null;
+  const readinessStatus = payload.readinessStatus || null;
+  const allowedNextActions = Array.isArray(payload.allowedNextActions) ? payload.allowedNextActions : [];
+
+  const checks = [];
+
+  const opsStateSourceId = opsState ? opsState.sourceDecisionLogId : null;
+  const sourceOk = Boolean(opsStateSourceId && decisionLogId && opsStateSourceId === decisionLogId);
+  checks.push({
+    name: 'ops_state_source_decision_log',
+    ok: sourceOk,
+    detail: `opsState.sourceDecisionLogId=${formatValue(opsStateSourceId)} decisionLogId=${formatValue(decisionLogId)}`
+  });
+
+  const auditReadiness = decisionLog && decisionLog.audit ? decisionLog.audit.readinessStatus : null;
+  const readinessOk = Boolean(auditReadiness && readinessStatus && auditReadiness === readinessStatus);
+  checks.push({
+    name: 'decision_log_readiness_status',
+    ok: readinessOk,
+    detail: `expected=${formatValue(readinessStatus)} actual=${formatValue(auditReadiness)}`
+  });
+
+  const auditAllowed = decisionLog && decisionLog.audit ? decisionLog.audit.allowedNextActions : null;
+  const allowedOk = arraysEqual(auditAllowed, allowedNextActions);
+  checks.push({
+    name: 'decision_log_allowed_next_actions',
+    ok: allowedOk,
+    detail: `expected=${formatValue(allowedNextActions)} actual=${formatValue(auditAllowed)}`
+  });
+
+  return { ok: checks.every((check) => check.ok), checks };
 }
 
 function buildAudit(consoleResult) {
@@ -48,6 +102,9 @@ async function submitOpsDecision(input, deps) {
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
+  const decisionLogs = deps && deps.decisionLogsRepo
+    ? deps.decisionLogsRepo
+    : (deps && deps.recordOpsNextAction ? null : decisionLogsRepo);
 
   const consoleResult = await consoleFn({ lineUserId });
   const readiness = consoleResult ? consoleResult.readiness : null;
@@ -90,6 +147,7 @@ async function submitOpsDecision(input, deps) {
         sourceDecisionLogId: null,
         updatedAt: null
       },
+      postCheck: { ok: true, checks: [] },
       dryRun: true
     };
   }
@@ -105,12 +163,25 @@ async function submitOpsDecision(input, deps) {
     audit
   });
 
+  let decisionLog = null;
+  if (decisionLogs && typeof decisionLogs.getDecisionById === 'function') {
+    decisionLog = await decisionLogs.getDecisionById(result.decisionLogId);
+  }
+  const postCheck = buildPostCheck({
+    opsState: result.opsState,
+    decisionLogId: result.decisionLogId,
+    decisionLog,
+    readinessStatus: readiness ? readiness.status : null,
+    allowedNextActions: audit.allowedNextActions
+  });
+
   return {
     ok: true,
     readiness,
     audit,
     decisionLogId: result.decisionLogId,
     opsState: result.opsState,
+    postCheck,
     dryRun: false
   };
 }
