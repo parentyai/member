@@ -33,6 +33,28 @@ function normalizeReadinessStatus(readiness) {
   return 'NOT_READY';
 }
 
+function resolveTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
+
+function extractCursorCandidate(item) {
+  if (!item) return null;
+  const opsState = item.opsState || null;
+  const latestDecisionLog = item.latestDecisionLog || null;
+  const opsUpdatedAt = resolveTimestamp(opsState && opsState.updatedAt);
+  if (opsUpdatedAt) return opsUpdatedAt;
+  const decidedAt = resolveTimestamp(latestDecisionLog && latestDecisionLog.decidedAt);
+  if (decidedAt) return decidedAt;
+  return resolveTimestamp(latestDecisionLog && latestDecisionLog.createdAt);
+}
+
 async function listOpsConsole(params, deps) {
   const payload = params || {};
   const status = parseStatus(payload.status);
@@ -63,11 +85,20 @@ async function listOpsConsole(params, deps) {
     });
   }
 
+  const lastItem = items.length ? items[items.length - 1] : null;
+  // Placeholder: compute cursor candidate for future pagination expansion.
+  const nextCursorCandidate = extractCursorCandidate(lastItem);
+  void nextCursorCandidate;
+
   return {
     ok: true,
     items,
     serverTime: new Date().toISOString(),
-    nextPageToken: null
+    nextPageToken: null,
+    pageInfo: {
+      hasNext: false,
+      nextCursor: null
+    }
   };
 }
 
