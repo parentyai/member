@@ -8,6 +8,7 @@ const {
   NEXT_ACTIONS,
   FAILURE_CLASSES
 } = require('../phase24/recordOpsNextAction');
+const { emitObs } = require('../../ops/obs');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -256,6 +257,20 @@ async function submitOpsDecision(input, deps) {
         decidedBy
       });
     }
+    try {
+      emitObs({
+        action: 'ops_decision_submit',
+        result: 'error',
+        lineUserId,
+        meta: {
+          nextAction,
+          failure_class: failureClass,
+          reason: err && err.message ? err.message : 'error'
+        }
+      });
+    } catch (emitErr) {
+      // best-effort only
+    }
     throw err;
   }
 
@@ -283,6 +298,20 @@ async function submitOpsDecision(input, deps) {
       note,
       decidedBy
     });
+    try {
+      emitObs({
+        action: 'ops_decision_submit',
+        result: 'error',
+        lineUserId,
+        meta: {
+          nextAction,
+          failure_class: failureClass,
+          reason: err && err.message ? err.message : 'record_failed'
+        }
+      });
+    } catch (emitErr) {
+      // best-effort only
+    }
     throw err;
   }
 
@@ -318,7 +347,7 @@ async function submitOpsDecision(input, deps) {
     snapshot: postCheck
   });
 
-  return {
+  const response = {
     ok: true,
     readiness,
     audit,
@@ -327,6 +356,23 @@ async function submitOpsDecision(input, deps) {
     postCheck,
     dryRun: false
   };
+
+  try {
+    emitObs({
+      action: 'ops_decision_submit',
+      result: 'ok',
+      lineUserId,
+      meta: {
+        nextAction,
+        failure_class: failureClass,
+        decisionLogId: result.decisionLogId
+      }
+    });
+  } catch (emitErr) {
+    // best-effort only
+  }
+
+  return response;
 }
 
 module.exports = {

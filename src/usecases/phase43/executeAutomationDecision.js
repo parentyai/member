@@ -5,6 +5,7 @@ const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 const { submitOpsDecision } = require('../phase25/submitOpsDecision');
 const { executeOpsNextAction } = require('../phase33/executeOpsNextAction');
+const { emitObs } = require('../../ops/obs');
 
 const DEFAULT_CONFIG = {
   enabled: false,
@@ -84,13 +85,46 @@ async function executeAutomationDecision(params, deps) {
   const storedConfig = await configRepo.getLatestAutomationConfig();
   const config = resolveConfig(storedConfig);
   if (!config.enabled) {
-    return { ok: false, skipped: true, reason: 'automation_disabled', config };
+    const response = { ok: false, skipped: true, reason: 'automation_disabled', config };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
   if (config.requireConfirmation && !payload.confirmed) {
-    return { ok: false, skipped: true, reason: 'confirmation_required', config };
+    const response = { ok: false, skipped: true, reason: 'confirmation_required', config };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
   if (config.allowedActions.length && !config.allowedActions.includes(payload.action)) {
-    return { ok: false, skipped: true, reason: 'action_not_allowed', config };
+    const response = { ok: false, skipped: true, reason: 'action_not_allowed', config };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
 
   const consoleResult = await consoleFn({ lineUserId: payload.lineUserId }, deps);
@@ -131,21 +165,43 @@ async function executeAutomationDecision(params, deps) {
         notificationId: payload.notificationId || null
       }, deps);
     } catch (err) {
-      return {
+      const response = {
         ok: false,
         automated: false,
         reason: 'automation_guard_failed',
         guard,
         escalationError: err && err.message ? err.message : 'escalation_failed'
       };
+      try {
+        emitObs({
+          action: 'automation_execute',
+          result: 'fail',
+          lineUserId: payload.lineUserId,
+          meta: { reason: response.reason, action: payload.action }
+        });
+      } catch (emitErr) {
+        // best-effort only
+      }
+      return response;
     }
-    return {
+    const response = {
       ok: false,
       automated: false,
       reason: 'automation_guard_failed',
       guard,
       escalation
     };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'fail',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (emitErr) {
+      // best-effort only
+    }
+    return response;
   }
 
   const execution = await executeFn({
@@ -156,11 +212,25 @@ async function executeAutomationDecision(params, deps) {
     maxConsoleAgeMs: payload.maxConsoleAgeMs
   }, deps);
 
-  return {
+  const response = {
     ok: true,
     automated: true,
     execution
   };
+  try {
+    emitObs({
+      action: 'automation_execute',
+      result: 'ok',
+      lineUserId: payload.lineUserId,
+      meta: {
+        action: payload.action,
+        executionResult: execution && execution.result ? execution.result : null
+      }
+    });
+  } catch (emitErr) {
+    // best-effort only
+  }
+  return response;
 }
 
 module.exports = {

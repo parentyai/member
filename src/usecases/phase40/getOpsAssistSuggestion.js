@@ -3,6 +3,9 @@
 const { getOpsAssistContext } = require('../phase38/getOpsAssistContext');
 const { buildOpsAssistPrompt } = require('../phase45/buildOpsAssistPrompt');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
+const opsAssistCacheRepo = require('../../repos/firestore/opsAssistCacheRepo');
+const { computeInputHash, shouldRefreshOpsAssist } = require('../phase51/shouldRefreshOpsAssist');
+const { emitObs } = require('../../ops/obs');
 
 function resolveAllowedNextActions(context, promptPayload) {
   if (promptPayload && promptPayload.constraints) {
@@ -78,6 +81,11 @@ async function getOpsAssistSuggestion(params, deps) {
   const timelineRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'decisionTimelineRepo')
     ? deps.decisionTimelineRepo
     : (deps ? null : decisionTimelineRepo);
+  const cacheRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'opsAssistCacheRepo')
+    ? deps.opsAssistCacheRepo
+    : (deps ? null : opsAssistCacheRepo);
+  const buildFn = deps && deps.buildSuggestion ? deps.buildSuggestion : buildSuggestion;
+  const nowMs = deps && typeof deps.nowMs === 'number' ? deps.nowMs : Date.now();
 
   const context = payload.context
     ? payload.context
@@ -87,8 +95,46 @@ async function getOpsAssistSuggestion(params, deps) {
     ? payload.opsConsoleView
     : (context && context.opsConsoleSnapshot ? context.opsConsoleSnapshot : {});
   const promptPayload = buildOpsAssistPrompt({ opsConsoleView });
+  const inputHash = computeInputHash(promptPayload);
+  const force = payload.force === true || payload.force === 1 || payload.force === '1';
 
-  const suggestion = buildSuggestion(context, promptPayload);
+  let cache = null;
+  if (cacheRepo && typeof cacheRepo.getLatestOpsAssistCache === 'function') {
+    cache = await cacheRepo.getLatestOpsAssistCache(lineUserId);
+  }
+  const refreshDecision = shouldRefreshOpsAssist({ cache, inputHash, force, nowMs });
+
+  let suggestion = null;
+  let cacheHit = false;
+  if (!refreshDecision.refresh && cache && cache.snapshot) {
+    suggestion = cache.snapshot;
+    cacheHit = true;
+  }
+  if (!suggestion) {
+    suggestion = buildFn(context, promptPayload);
+    cacheHit = false;
+    if (cacheRepo && typeof cacheRepo.appendOpsAssistCache === 'function') {
+      const ttlSec = typeof payload.ttlSec === 'number' ? payload.ttlSec : 300;
+      const expiresAt = new Date(nowMs + ttlSec * 1000).toISOString();
+      try {
+        await cacheRepo.appendOpsAssistCache({
+          lineUserId,
+          suggestion: suggestion && suggestion.suggestion ? suggestion.suggestion.nextAction : null,
+          reason: suggestion && suggestion.suggestion ? suggestion.suggestion.reason : null,
+          model: suggestion && suggestion.model ? suggestion.model : null,
+          snapshot: suggestion || null,
+          sourceDecisionLogId: opsConsoleView && opsConsoleView.latestDecisionLog
+            ? opsConsoleView.latestDecisionLog.id
+            : null,
+          ttlSec,
+          inputHash,
+          expiresAt
+        });
+      } catch (err) {
+        // best-effort cache only
+      }
+    }
+  }
 
   if (timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
     await timelineRepo.appendTimelineEntry({
@@ -101,7 +147,25 @@ async function getOpsAssistSuggestion(params, deps) {
     });
   }
 
-  return Object.assign({}, suggestion, { promptPayload });
+  const response = Object.assign({}, suggestion, { promptPayload });
+
+  try {
+    emitObs({
+      action: 'ops_assist_suggest',
+      result: cacheHit ? 'cache_hit' : 'ok',
+      lineUserId,
+      meta: {
+        model: response.model || null,
+        cacheHit,
+        refreshReason: refreshDecision.reason,
+        inputHash
+      }
+    });
+  } catch (err) {
+    // best-effort only
+  }
+
+  return response;
 }
 
 module.exports = {

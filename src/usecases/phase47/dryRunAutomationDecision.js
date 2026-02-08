@@ -2,6 +2,7 @@
 
 const automationConfigRepo = require('../../repos/firestore/automationConfigRepo');
 const { getOpsConsole } = require('../phase25/getOpsConsole');
+const { emitObs } = require('../../ops/obs');
 
 const DEFAULT_CONFIG = {
   enabled: false,
@@ -77,16 +78,49 @@ async function dryRunAutomationDecision(params, deps) {
   });
 
   if (!config.enabled) {
-    return { ok: false, dryRun: true, skipped: true, reason: 'automation_disabled', config, guard };
+    const response = { ok: false, dryRun: true, skipped: true, reason: 'automation_disabled', config, guard };
+    try {
+      emitObs({
+        action: 'automation_dry_run',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
   if (config.requireConfirmation && !payload.confirmed) {
-    return { ok: false, dryRun: true, skipped: true, reason: 'confirmation_required', config, guard };
+    const response = { ok: false, dryRun: true, skipped: true, reason: 'confirmation_required', config, guard };
+    try {
+      emitObs({
+        action: 'automation_dry_run',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
   if (config.allowedActions.length && !config.allowedActions.includes(payload.action)) {
-    return { ok: false, dryRun: true, skipped: true, reason: 'action_not_allowed', config, guard };
+    const response = { ok: false, dryRun: true, skipped: true, reason: 'action_not_allowed', config, guard };
+    try {
+      emitObs({
+        action: 'automation_dry_run',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (err) {
+      // best-effort only
+    }
+    return response;
   }
 
-  return {
+  const response = {
     ok: guard.ok,
     dryRun: true,
     skipped: !guard.ok,
@@ -94,6 +128,17 @@ async function dryRunAutomationDecision(params, deps) {
     config,
     guard
   };
+  try {
+    emitObs({
+      action: 'automation_dry_run',
+      result: response.ok ? 'ok' : 'fail',
+      lineUserId: payload.lineUserId,
+      meta: { reason: response.reason, action: payload.action }
+    });
+  } catch (err) {
+    // best-effort only
+  }
+  return response;
 }
 
 module.exports = {

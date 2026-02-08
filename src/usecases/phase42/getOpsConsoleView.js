@@ -39,7 +39,8 @@ async function getOpsConsoleView(params, deps) {
     recommendedNextAction: consoleResult ? consoleResult.recommendedNextAction : null,
     latestDecisionLog: consoleResult ? consoleResult.latestDecisionLog : null,
     userStateSummary: consoleResult ? consoleResult.userStateSummary : null,
-    memberSummary: consoleResult ? consoleResult.memberSummary : null
+    memberSummary: consoleResult ? consoleResult.memberSummary : null,
+    suggestedTemplateKey: consoleResult ? consoleResult.suggestedTemplateKey : null
   };
 }
 

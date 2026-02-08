@@ -7,6 +7,8 @@ const { getMemberSummary } = require('../phase6/getMemberSummary');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
 const { getOpsDecisionConsistency } = require('./opsDecisionConsistency');
 const { evaluateCloseDecision } = require('./closeDecision');
+const { emitObs } = require('../../ops/obs');
+const { suggestNotificationTemplate } = require('../phase53/suggestNotificationTemplate');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -131,6 +133,8 @@ async function getOpsConsole(params, deps) {
     recommendedNextAction = allowedNextActions.includes(opsNextAction) ? opsNextAction : 'NO_ACTION';
   }
   const closeDecision = evaluateCloseDecision({ readiness: effectiveReadiness, consistency });
+  const suggestedTemplate = await suggestNotificationTemplate({ nextAction: recommendedNextAction });
+  const suggestedTemplateKey = suggestedTemplate ? suggestedTemplate.templateKey : null;
   let decisionDrift = { status: 'NONE', lastDetectedAt: null, types: [] };
   if (latestDecisionDrift) {
     const severity = latestDecisionDrift.severity === 'CRITICAL' ? 'CRITICAL' : 'WARN';
@@ -142,7 +146,7 @@ async function getOpsConsole(params, deps) {
   }
   const executionStatus = buildExecutionStatus(latestExecutionLog);
 
-  return {
+  const result = {
     ok: true,
     serverTime: new Date().toISOString(),
     lineUserId,
@@ -158,8 +162,28 @@ async function getOpsConsole(params, deps) {
     latestDecisionLog,
     consistency,
     decisionDrift,
-    executionStatus
+    executionStatus,
+    suggestedTemplateKey
   };
+
+  try {
+    emitObs({
+      action: 'ops_console_get',
+      result: 'ok',
+      lineUserId,
+      meta: {
+        readiness: effectiveReadiness ? effectiveReadiness.status : null,
+        recommendedNextAction,
+        closeDecision: closeDecision.closeDecision,
+        decisionDrift: decisionDrift.status,
+        suggestedTemplateKey
+      }
+    });
+  } catch (err) {
+    // best-effort only
+  }
+
+  return result;
 }
 
 module.exports = {
