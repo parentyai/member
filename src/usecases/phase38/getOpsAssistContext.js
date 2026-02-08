@@ -42,6 +42,16 @@ async function getOpsAssistContext(params, deps) {
     : 'NOT_READY';
 
   return {
+    opsConsoleSnapshot: {
+      readiness: consoleResult ? consoleResult.readiness : null,
+      opsState: consoleResult ? consoleResult.opsState : null,
+      latestDecisionLog: consoleResult ? consoleResult.latestDecisionLog : null,
+      userStateSummary,
+      memberSummary,
+      allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
+        ? consoleResult.allowedNextActions
+        : []
+    },
     userStateSummary,
     memberSummary,
     notificationSummary,

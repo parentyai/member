@@ -30,7 +30,7 @@ test('phase40-44: full flow returns view + automation executes', async () => {
   const suggestion = await getOpsAssistSuggestion({ lineUserId: 'U1' }, contextDeps);
   assert.ok(suggestion.disclaimer);
 
-  const view = await getOpsConsoleView({ lineUserId: 'U1' }, {
+  const view = await getOpsConsoleView({ lineUserId: 'U1', includeAssist: true }, {
     getOpsConsole: async () => ({
       opsState: { nextAction: 'NO_ACTION', updatedAt: '2026-02-08T00:00:00Z' },
       allowedNextActions: ['NO_ACTION'],

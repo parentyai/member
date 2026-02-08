@@ -1,10 +1,42 @@
 'use strict';
 
 const { getOpsAssistContext } = require('../phase38/getOpsAssistContext');
+const { buildOpsAssistPrompt } = require('../phase45/buildOpsAssistPrompt');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 
-function buildSuggestion(context) {
-  const readiness = context && context.constraints ? context.constraints.readiness : null;
+function resolveAllowedNextActions(context, promptPayload) {
+  if (promptPayload && promptPayload.constraints) {
+    const allowed = promptPayload.constraints.allowedNextActions;
+    if (Array.isArray(allowed)) return allowed;
+  }
+  if (context && context.constraints && Array.isArray(context.constraints.allowedNextActions)) {
+    return context.constraints.allowedNextActions;
+  }
+  return [];
+}
+
+function resolveReadinessStatus(context, promptPayload) {
+  if (promptPayload && promptPayload.constraints && typeof promptPayload.constraints.readiness === 'string') {
+    return promptPayload.constraints.readiness;
+  }
+  if (context && context.constraints && typeof context.constraints.readiness === 'string') {
+    return context.constraints.readiness;
+  }
+  return null;
+}
+
+function resolveDefaultNextAction(allowedNextActions, readinessStatus) {
+  const allowed = Array.isArray(allowedNextActions) ? allowedNextActions : [];
+  if (readinessStatus !== 'READY') {
+    if (allowed.includes('STOP_AND_ESCALATE')) return 'STOP_AND_ESCALATE';
+    return allowed[0] || 'NO_ACTION';
+  }
+  if (allowed.includes('NO_ACTION')) return 'NO_ACTION';
+  return allowed[0] || 'NO_ACTION';
+}
+
+function buildSuggestion(context, promptPayload) {
+  const readiness = resolveReadinessStatus(context, promptPayload);
   const timeline = Array.isArray(context && context.decisionTimeline) ? context.decisionTimeline : [];
   const basedOn = [];
   if (context && context.opsState) basedOn.push('opsState');
@@ -15,7 +47,12 @@ function buildSuggestion(context) {
   if (readiness !== 'READY') riskFlags.push('readiness_not_ready');
   if (!timeline.length) riskFlags.push('no_timeline');
 
-  const suggestionText = '';
+  const allowedNextActions = resolveAllowedNextActions(context, promptPayload);
+  const nextAction = resolveDefaultNextAction(allowedNextActions, readiness);
+  const reason = readiness !== 'READY'
+    ? 'readiness not ready; defaulting to STOP_AND_ESCALATE'
+    : 'default safe action within allowedNextActions';
+  const suggestionText = `${nextAction}: ${reason}`;
   const confidence = readiness === 'READY' ? 'MEDIUM' : 'LOW';
 
   return {
@@ -23,7 +60,12 @@ function buildSuggestion(context) {
     confidence,
     basedOn,
     riskFlags,
-    disclaimer: 'This is advisory only'
+    disclaimer: 'This is advisory only',
+    suggestion: {
+      nextAction,
+      reason
+    },
+    model: 'ops-assist-rules'
   };
 }
 
@@ -41,7 +83,12 @@ async function getOpsAssistSuggestion(params, deps) {
     ? payload.context
     : await contextFn({ lineUserId, notificationId: payload.notificationId }, deps);
 
-  const suggestion = buildSuggestion(context);
+  const opsConsoleView = payload.opsConsoleView
+    ? payload.opsConsoleView
+    : (context && context.opsConsoleSnapshot ? context.opsConsoleSnapshot : {});
+  const promptPayload = buildOpsAssistPrompt({ opsConsoleView });
+
+  const suggestion = buildSuggestion(context, promptPayload);
 
   if (timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
     await timelineRepo.appendTimelineEntry({
@@ -50,11 +97,11 @@ async function getOpsAssistSuggestion(params, deps) {
       action: 'SUGGEST',
       refId: null,
       notificationId: payload.notificationId || null,
-      snapshot: suggestion
+      snapshot: Object.assign({}, suggestion, { promptPayload })
     });
   }
 
-  return suggestion;
+  return Object.assign({}, suggestion, { promptPayload });
 }
 
 module.exports = {
