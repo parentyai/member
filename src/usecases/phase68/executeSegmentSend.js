@@ -10,6 +10,7 @@ const templatesVRepo = require('../../repos/firestore/templatesVRepo');
 const { testSendNotification } = require('../notifications/testSendNotification');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
+const { verifyConfirmToken } = require('../../domain/confirmToken');
 
 function resolvePlanHash(plan) {
   if (!plan) return null;
@@ -123,6 +124,7 @@ async function executeSegmentSend(params, deps) {
   const lineUserIds = normalizeLineUserIds(segment.items);
   const payloadPlanHash = typeof payload.planHash === 'string' ? payload.planHash : null;
   const payloadTemplateVersion = parseTemplateVersion(payload.templateVersion);
+  const confirmToken = payload.confirmToken || null;
   const count = lineUserIds.length;
 
   const latestPlan = await auditRepo.getLatestAuditLog({
@@ -151,6 +153,21 @@ async function executeSegmentSend(params, deps) {
       expectedPlanHash: expectedHash,
       expectedCount
     };
+  }
+
+  if (confirmToken) {
+    const confirmOk = verifyConfirmToken(confirmToken, {
+      planHash: expectedHash,
+      templateKey,
+      templateVersion: expectedTemplateVersion,
+      segmentKey: resolveSegmentKey(latestPlan, payload)
+    }, {
+      secret: deps && deps.confirmTokenSecret,
+      now: new Date()
+    });
+    if (!confirmOk) {
+      return { ok: false, reason: 'confirm_token_mismatch', status: 409 };
+    }
   }
 
   let template = null;
@@ -232,6 +249,7 @@ async function executeSegmentSend(params, deps) {
       segmentKey,
       filterSnapshot,
       planHash,
+      confirmToken: confirmToken || null,
       planSnapshot,
       executedCount,
       failures,
