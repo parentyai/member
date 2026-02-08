@@ -22,7 +22,7 @@ test('phase25 t04: console recommendedNextAction flows into submit', async () =>
   const consoleResult = await getOpsConsole({ lineUserId: 'U1' }, deps);
   assert.strictEqual(consoleResult.recommendedNextAction, 'STOP_AND_ESCALATE');
   assert.ok(Array.isArray(consoleResult.allowedNextActions));
-  assert.ok(consoleResult.allowedNextActions.includes(consoleResult.recommendedNextAction));
+  assert.deepStrictEqual(consoleResult.allowedNextActions, ['STOP_AND_ESCALATE']);
 
   const submitDeps = {
     getOpsConsole: async () => consoleResult,
