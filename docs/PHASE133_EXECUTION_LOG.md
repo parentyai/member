@@ -11,5 +11,7 @@ Verification (tests):
 Audit smoke (local, via API /api/admin/trace):
 - traceId=REQ_SMOKE_1 => audits=2 / decisions=1 / timeline=1
 - traceId=REQ_SMOKE_2 => audits=1 / decisions=1 / timeline=1
+Trace Search JSON keys (excerpt):
+- response: `ok`, `traceId`, `audits[]`, `decisions[]`, `timeline[]`
 CLOSE: NO (pending merge + main CI evidence)
 ROLLBACK: revert PR #323 / revert this docs PR
