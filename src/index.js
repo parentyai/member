@@ -132,6 +132,15 @@ function createServer() {
   }
 
   if (SERVICE_MODE === 'track') {
+    if (req.method === 'GET' && pathname.startsWith('/t/')) {
+      const token = pathname.slice(3);
+      const { handleTrackClickGet } = require('./routes/trackClickGet');
+      handleTrackClickGet(req, res, token).catch(() => {
+        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('error');
+      });
+      return;
+    }
     if (req.method === 'POST' && pathname === '/track/click') {
       handleTrackClickRoute(req, res);
       return;

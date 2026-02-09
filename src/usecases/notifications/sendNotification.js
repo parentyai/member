@@ -8,10 +8,36 @@ const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo
 const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
+const { createTrackToken } = require('../../domain/trackToken');
 
-function buildTextMessage(notification) {
+function resolveTrackBaseUrl() {
+  const value = process.env.TRACK_BASE_URL;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.length ? trimmed : null;
+}
+
+function hasTrackTokenSecret() {
+  const value = process.env.TRACK_TOKEN_SECRET;
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function buildTrackUrl(baseUrl, token) {
+  if (!baseUrl || !token) return null;
+  return `${baseUrl}/t/${encodeURIComponent(token)}`;
+}
+
+function buildTextMessage(notification, originalUrl, trackUrl) {
   const text = notification.body || notification.title || '';
-  return { type: 'text', text };
+  if (!trackUrl) return { type: 'text', text };
+
+  let withLink = text;
+  if (originalUrl && withLink.includes(originalUrl)) {
+    withLink = withLink.split(originalUrl).join(trackUrl);
+  } else {
+    withLink = `${text}\n\n${trackUrl}`;
+  }
+  return { type: 'text', text: withLink };
 }
 
 async function sendNotification(params) {
@@ -49,17 +75,43 @@ async function sendNotification(params) {
   }
 
   const pushFn = payload.pushFn || pushMessage;
-  const message = buildTextMessage(notification);
   const sentAt = payload.sentAt;
+  const trackBaseUrl = resolveTrackBaseUrl();
+  const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
   for (const user of users) {
+    let trackedDeliveryId = null;
+    let trackUrl = null;
+    if (trackEnabled) {
+      const reservedId = deliveriesRepo.reserveDeliveryId();
+      try {
+        const token = createTrackToken({ deliveryId: reservedId, linkRegistryId: notification.linkRegistryId });
+        const url = buildTrackUrl(trackBaseUrl, token);
+        if (url) {
+          trackedDeliveryId = reservedId;
+          trackUrl = url;
+        }
+      } catch (_err) {
+        trackUrl = null;
+      }
+    }
+    const message = buildTextMessage(notification, linkEntry.url, trackUrl);
     await pushFn(user.id, message);
-    await deliveriesRepo.createDelivery({
-      notificationId,
-      lineUserId: user.id,
-      sentAt,
-      delivered: true
-    });
+    if (trackedDeliveryId) {
+      await deliveriesRepo.createDeliveryWithId(trackedDeliveryId, {
+        notificationId,
+        lineUserId: user.id,
+        sentAt,
+        delivered: true
+      });
+    } else {
+      await deliveriesRepo.createDelivery({
+        notificationId,
+        lineUserId: user.id,
+        sentAt,
+        delivered: true
+      });
+    }
     try {
       await decisionTimelineRepo.appendTimelineEntry({
         lineUserId: user.id,
