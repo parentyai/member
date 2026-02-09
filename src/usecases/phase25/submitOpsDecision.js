@@ -83,7 +83,7 @@ function buildPostCheck(params) {
   return { ok: checks.every((check) => check.ok), checks };
 }
 
-function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, requestId, notificationMitigationDecision) {
+function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, requestId, notificationMitigationDecision, safetySnapshot) {
   const readiness = consoleResult && consoleResult.readiness ? consoleResult.readiness : null;
   return {
     readinessStatus: readiness && readiness.status ? readiness.status : null,
@@ -101,7 +101,8 @@ function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, r
     traceId: traceId || null,
     requestId: requestId || null,
     mitigationSuggestion: consoleResult && consoleResult.mitigationSuggestion ? consoleResult.mitigationSuggestion : null,
-    notificationMitigationDecision: notificationMitigationDecision || null
+    notificationMitigationDecision: notificationMitigationDecision || null,
+    safetySnapshot: safetySnapshot || null
   };
 }
 
@@ -120,6 +121,17 @@ function parseNotificationMitigationDecision(value) {
     actionType,
     targetNotificationId
   };
+}
+
+function parseSafetySnapshot(value) {
+  if (value === undefined || value === null) return null;
+  if (!value || typeof value !== 'object') throw new Error('invalid safetySnapshot');
+  const out = {};
+  if (typeof value.consoleServerTime === 'string') out.consoleServerTime = value.consoleServerTime;
+  if (typeof value.maxConsoleAgeMs === 'number' && Number.isFinite(value.maxConsoleAgeMs)) out.maxConsoleAgeMs = value.maxConsoleAgeMs;
+  if (typeof value.reason === 'string') out.reason = value.reason;
+  if (typeof value.note === 'string') out.note = value.note;
+  return Object.keys(out).length ? out : null;
 }
 
 function toMillis(value) {
@@ -194,6 +206,7 @@ async function submitOpsDecision(input, deps) {
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : null;
   const traceId = resolveTraceId(payload.traceId, requestId);
   const notificationMitigationDecision = parseNotificationMitigationDecision(payload.notificationMitigationDecision);
+  const safetySnapshot = parseSafetySnapshot(payload.safetySnapshot);
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
@@ -227,7 +240,7 @@ async function submitOpsDecision(input, deps) {
     ? consoleResult.allowedNextActions
     : [];
   const closeDecision = consoleResult ? consoleResult.closeDecision : null;
-  const audit = buildAudit(consoleResult, notificationId, nextAction, traceId, requestId, notificationMitigationDecision);
+  const audit = buildAudit(consoleResult, notificationId, nextAction, traceId, requestId, notificationMitigationDecision, safetySnapshot);
   const safetyGuard = evaluateSafetyGuard({
     consoleResult,
     consoleServerTime: payload.consoleServerTime,
@@ -243,7 +256,9 @@ async function submitOpsDecision(input, deps) {
       reasonCode,
       stage,
       note,
-      decidedBy
+      decidedBy,
+      notificationMitigationDecision,
+      safetySnapshot
     });
     throw new Error('ops safety guard failed');
   }
@@ -296,7 +311,9 @@ async function submitOpsDecision(input, deps) {
         reasonCode,
         stage,
         note,
-        decidedBy
+        decidedBy,
+        notificationMitigationDecision,
+        safetySnapshot
       });
     }
     try {
@@ -342,7 +359,9 @@ async function submitOpsDecision(input, deps) {
       reasonCode,
       stage,
       note,
-      decidedBy
+      decidedBy,
+      notificationMitigationDecision,
+      safetySnapshot
     });
     try {
       emitObs({
@@ -386,7 +405,8 @@ async function submitOpsDecision(input, deps) {
         readinessStatus: audit.readinessStatus || null,
         decidedNextAction: nextAction,
         decisionLogId: result.decisionLogId,
-        notificationMitigationDecision
+        notificationMitigationDecision,
+        safetySnapshot
       }
     });
   } catch (_err) {
@@ -405,6 +425,7 @@ async function submitOpsDecision(input, deps) {
         payloadSummary: {
           lineUserId,
           notificationMitigationDecision,
+          safetySnapshot,
           decisionLogId: result.decisionLogId
         }
       });
@@ -422,7 +443,8 @@ async function submitOpsDecision(input, deps) {
     stage,
     note,
     decidedBy,
-    notificationMitigationDecision
+    notificationMitigationDecision,
+    safetySnapshot
   });
 
   await appendTimelineBestEffort(timelineRepo, {

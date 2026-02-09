@@ -103,7 +103,8 @@ function summarizeDecisionLog(log) {
     id: log.id || null,
     nextAction: typeof log.nextAction === 'string' ? log.nextAction : null,
     decidedBy: typeof log.decidedBy === 'string' ? log.decidedBy : null,
-    decidedAt: resolveTimestamp(log.decidedAt) || resolveTimestamp(log.createdAt) || null
+    decidedAt: resolveTimestamp(log.decidedAt) || resolveTimestamp(log.createdAt) || null,
+    traceId: typeof log.traceId === 'string' ? log.traceId : null
   };
 }
 
@@ -116,6 +117,20 @@ function buildDangerFlags(readiness, userStateSummary) {
     : [];
   const staleMemberNumber = missing.includes('stale_member_number');
   return { notReady, staleMemberNumber };
+}
+
+function computeRiskLevel(params) {
+  const payload = params || {};
+  const dangerFlags = payload.dangerFlags || {};
+  const notificationHealthSummary = payload.notificationHealthSummary || null;
+  const mitigationSuggestion = payload.mitigationSuggestion || null;
+
+  if (dangerFlags.notReady) return 'HIGH';
+  if (notificationHealthSummary && notificationHealthSummary.countsByHealth && notificationHealthSummary.countsByHealth.DANGER) return 'HIGH';
+  if (mitigationSuggestion) return 'MEDIUM';
+  if (dangerFlags.staleMemberNumber) return 'MEDIUM';
+  if (notificationHealthSummary && notificationHealthSummary.unhealthyCount) return 'MEDIUM';
+  return 'LOW';
 }
 
 async function getOpsConsole(params, deps) {
@@ -216,6 +231,7 @@ async function getOpsConsole(params, deps) {
   }
 
   const mitigationSuggestion = suggestNotificationMitigation({ notificationHealthSummary, topUnhealthyNotifications });
+  const riskLevel = computeRiskLevel({ dangerFlags, notificationHealthSummary, mitigationSuggestion });
 
   const executionState = executionStatus && executionStatus.lastExecutedAt ? 'EXECUTED' : 'NOT_EXECUTED';
   let executionMessage = executionState === 'EXECUTED' ? '実行されました' : 'この判断は実行されていません';
@@ -256,7 +272,9 @@ async function getOpsConsole(params, deps) {
     suggestedTemplateKey,
     notificationHealthSummary,
     topUnhealthyNotifications,
-    mitigationSuggestion
+    unhealthyNotifications: topUnhealthyNotifications,
+    mitigationSuggestion,
+    riskLevel
   };
 
   if (auditView) {
@@ -271,12 +289,34 @@ async function getOpsConsole(params, deps) {
         payloadSummary: {
           lineUserId,
           readinessStatus: effectiveReadiness ? effectiveReadiness.status : null,
-          mitigationSuggestion
+          mitigationSuggestion,
+          riskLevel
         }
       });
       result.viewAuditId = audit && audit.id ? audit.id : null;
     } catch (_err) {
       result.viewAuditId = null;
+    }
+
+    if (mitigationSuggestion) {
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'notification_mitigation.suggest',
+          entityType: 'user',
+          entityId: lineUserId,
+          traceId,
+          requestId,
+          payloadSummary: {
+            lineUserId,
+            riskLevel,
+            suggestion: mitigationSuggestion,
+            topUnhealthyNotifications: topUnhealthyNotifications.slice(0, 3)
+          }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
     }
   }
 
