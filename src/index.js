@@ -220,6 +220,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {
+    const { handleAdminTraceSearch } = require('./routes/admin/traceSearch');
+    handleAdminTraceSearch(req, res);
+    return;
+  }
+
   if (pathname.startsWith('/api/phase4/admin/')) {
     const { handleUsersSummary, handleNotificationsSummary } = require('./routes/admin/opsOverview');
     (async () => {

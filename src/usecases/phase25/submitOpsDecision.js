@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 const { getOpsConsole } = require('./getOpsConsole');
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
@@ -27,6 +29,12 @@ function formatValue(value) {
   if (value === null) return 'null';
   if (Array.isArray(value)) return JSON.stringify(value);
   return String(value);
+}
+
+function resolveTraceId(traceId, requestId) {
+  if (typeof traceId === 'string' && traceId.trim().length > 0) return traceId.trim();
+  if (typeof requestId === 'string' && requestId.trim().length > 0 && requestId !== 'unknown') return requestId.trim();
+  return crypto.randomUUID();
 }
 
 function arraysEqual(left, right) {
@@ -163,9 +171,9 @@ async function submitOpsDecision(input, deps) {
   const suggestionSnapshot = payload.suggestionSnapshot && typeof payload.suggestionSnapshot === 'object'
     ? payload.suggestionSnapshot
     : null;
-  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
   const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : null;
+  const traceId = resolveTraceId(payload.traceId, requestId);
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
@@ -185,6 +193,9 @@ async function submitOpsDecision(input, deps) {
       action: 'DECIDE',
       refId,
       notificationId,
+      traceId,
+      requestId,
+      actor: actor || decidedBy || 'unknown',
       snapshot
     });
   };

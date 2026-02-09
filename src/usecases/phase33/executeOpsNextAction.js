@@ -1,14 +1,18 @@
 'use strict';
 
+const crypto = require('crypto');
+
 const { getOpsConsole } = require('../phase25/getOpsConsole');
 const { runPhase2Automation } = require('../phase2/runAutomation');
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 const decisionDriftsRepo = require('../../repos/firestore/decisionDriftsRepo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { detectDecisionDrift } = require('../phase34/detectDecisionDrift');
 const { createNotification } = require('../notifications/createNotification');
 const { sendNotification } = require('../notifications/sendNotification');
+const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const NEXT_ACTIONS = new Set(['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE']);
 
@@ -28,6 +32,36 @@ function optionalString(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
+}
+
+function resolveTraceId(payloadTraceId, existingDecision) {
+  const fromPayload = optionalString(payloadTraceId);
+  if (fromPayload) return fromPayload;
+  const audit = existingDecision && existingDecision.audit && typeof existingDecision.audit === 'object'
+    ? existingDecision.audit
+    : null;
+  const fromAudit = optionalString(audit && audit.traceId);
+  if (fromAudit) return fromAudit;
+  const fromDecision = optionalString(existingDecision && existingDecision.traceId);
+  if (fromDecision) return fromDecision;
+  return crypto.randomUUID();
+}
+
+function resolveRequestId(payloadRequestId, existingDecision) {
+  const fromPayload = optionalString(payloadRequestId);
+  if (fromPayload) return fromPayload;
+  const audit = existingDecision && existingDecision.audit && typeof existingDecision.audit === 'object'
+    ? existingDecision.audit
+    : null;
+  const fromAudit = optionalString(audit && audit.requestId);
+  if (fromAudit) return fromAudit;
+  const fromDecision = optionalString(existingDecision && existingDecision.requestId);
+  if (fromDecision) return fromDecision;
+  return null;
+}
+
+function isSendSideEffectAction(action) {
+  return action === 'STOP_AND_ESCALATE';
 }
 
 function resolveToday(now) {
@@ -133,13 +167,13 @@ async function executeOpsNextAction(params, deps) {
   const lineUserId = requireString(payload.lineUserId, 'lineUserId');
   const decisionLogId = requireString(payload.decisionLogId, 'decisionLogId');
   const action = requireEnum(payload.action, 'action', NEXT_ACTIONS);
-  const traceId = optionalString(payload.traceId);
-  const requestId = optionalString(payload.requestId);
+  const actor = optionalString(payload.actor);
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
   const opsStates = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
   const decisionDrifts = deps && deps.decisionDriftsRepo ? deps.decisionDriftsRepo : decisionDriftsRepo;
+  const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
   const timelineRepo = deps && Object.prototype.hasOwnProperty.call(deps, 'decisionTimelineRepo')
     ? deps.decisionTimelineRepo
     : (deps ? null : decisionTimelineRepo);
@@ -156,12 +190,16 @@ async function executeOpsNextAction(params, deps) {
       action: 'EXECUTE',
       refId: decisionLogId,
       notificationId,
+      traceId: snapshot && snapshot.traceId ? snapshot.traceId : null,
+      requestId: snapshot && snapshot.requestId ? snapshot.requestId : null,
+      actor: snapshot && snapshot.actor ? snapshot.actor : null,
       snapshot
     });
   };
 
   let existingDecision = null;
   let notificationId = null;
+  let killSwitch = false;
   try {
     const latestDecisionPromise = decisionLogs && typeof decisionLogs.getLatestDecision === 'function'
       ? decisionLogs.getLatestDecision('user', lineUserId)
@@ -176,6 +214,15 @@ async function executeOpsNextAction(params, deps) {
     existingDecision = await decisionLogs.getDecisionById(decisionLogId);
     if (!existingDecision) throw new Error('decisionLogId not found');
     notificationId = existingDecision.audit ? existingDecision.audit.notificationId : null;
+
+    const traceId = resolveTraceId(payload.traceId, existingDecision);
+    const requestId = resolveRequestId(payload.requestId, existingDecision);
+
+    try {
+      killSwitch = await killSwitchFn();
+    } catch (err) {
+      killSwitch = false;
+    }
 
     const readiness = consoleResult ? consoleResult.readiness : null;
     const opsState = consoleResult && consoleResult.opsState ? consoleResult.opsState : null;
@@ -199,7 +246,10 @@ async function executeOpsNextAction(params, deps) {
       await appendExecuteTimeline(notificationId, {
         ok: false,
         error: 'ops_safety_guard_failed',
-        guard: executionGuard
+        guard: executionGuard,
+        traceId,
+        requestId,
+        actor: actor || 'unknown'
       });
       throw new Error('ops safety guard failed');
     }
@@ -220,7 +270,11 @@ async function executeOpsNextAction(params, deps) {
 
     let error = null;
     try {
-      if (action === 'NO_ACTION') {
+      if (isSendSideEffectAction(action) && killSwitch) {
+        execution.result = 'FAIL';
+        execution.sideEffects.push('blocked_by_kill_switch');
+        error = 'kill_switch_on';
+      } else if (action === 'NO_ACTION') {
         execution.sideEffects.push('no_action');
       } else if (action === 'RERUN_MAIN') {
         const runner = deps && deps.runPhase2Automation ? deps.runPhase2Automation : runPhase2Automation;
@@ -297,8 +351,33 @@ async function executeOpsNextAction(params, deps) {
       ok: execution.result === 'SUCCESS',
       error,
       guard: executionGuard,
-      execution
+      execution,
+      traceId,
+      requestId,
+      actor: actor || 'unknown',
+      executionLogId: executionLog.id
     });
+
+    try {
+      await appendAuditLog({
+        actor: actor || 'unknown',
+        action: 'ops_decision.execute',
+        entityType: 'user',
+        entityId: lineUserId,
+        traceId,
+        requestId,
+        payloadSummary: {
+          lineUserId,
+          decisionLogId,
+          action,
+          executionLogId: executionLog.id,
+          ok: execution.result === 'SUCCESS',
+          blockedByKillSwitch: Boolean(isSendSideEffectAction(action) && killSwitch)
+        }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
 
     let decisionDrift = null;
     const llmSuggestion = payload.llmSuggestion || null;
@@ -336,13 +415,20 @@ async function executeOpsNextAction(params, deps) {
       execution,
       executionLogId: executionLog.id,
       error,
-      decisionDrift
+      decisionDrift,
+      traceId,
+      requestId,
+      blocked: Boolean(isSendSideEffectAction(action) && killSwitch && execution.result !== 'SUCCESS'),
+      killSwitch: Boolean(killSwitch)
     };
   } catch (err) {
     await appendExecuteTimeline(notificationId, {
       ok: false,
       error: err && err.message ? err.message : 'execution_failed',
-      guard: executionGuard
+      guard: executionGuard,
+      traceId: existingDecision ? resolveTraceId(payload.traceId, existingDecision) : optionalString(payload.traceId),
+      requestId: existingDecision ? resolveRequestId(payload.requestId, existingDecision) : optionalString(payload.requestId),
+      actor: actor || 'unknown'
     });
     throw err;
   }

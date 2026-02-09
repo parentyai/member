@@ -23,7 +23,19 @@
     <div class="note">表示のみ。判断と操作は人間が行います。</div>
     <div class="note">
       <a href="/admin/read-model">通知集計</a> |
+      <a href="#trace-search">Trace Search</a> |
       <a href="#implementation-targets">Implementation Targets</a>
+    </div>
+
+    <div class="section" id="trace-search">
+      <h2>Trace Search（監査）</h2>
+      <div class="note">traceId を入力して audit_logs / decision_logs / decision_timeline を参照。</div>
+      <div class="note">
+        traceId: <input type="text" id="trace-search-trace-id" style="min-width: 260px" />
+        limit: <input type="number" id="trace-search-limit" min="1" max="200" value="50" />
+        <button class="btn" id="trace-search-run">検索</button>
+      </div>
+      <pre id="trace-search-result">-</pre>
     </div>
 
     <div class="section">
@@ -619,6 +631,8 @@
         `).join('');
       }
 
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'ops_readonly' };
+
       async function fetchOpsConsoleList(limit) {
         const params = new URLSearchParams();
         if (limit) params.set('limit', String(limit));
@@ -628,7 +642,9 @@
       }
 
       async function fetchOpsConsoleDetail(lineUserId) {
-        const res = await fetch(`/api/phase25/ops/console?lineUserId=${encodeURIComponent(lineUserId)}`);
+        const res = await fetch(`/api/phase25/ops/console?lineUserId=${encodeURIComponent(lineUserId)}`, {
+          headers: OPS_ACTOR_HEADERS
+        });
         return res.json();
       }
 
@@ -653,9 +669,17 @@
       async function submitOpsDecisionRequest(payload) {
         const res = await fetch('/api/phase25/ops/decision', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
+        return res.json();
+      }
+
+      async function fetchTraceBundle(traceId, limit) {
+        const params = new URLSearchParams();
+        params.set('traceId', traceId);
+        if (limit) params.set('limit', String(limit));
+        const res = await fetch(`/api/admin/trace?${params.toString()}`, { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
@@ -1266,12 +1290,33 @@
         lastSuggestionUsed = false;
       }
 
+      async function handleTraceSearch() {
+        const traceId = document.getElementById('trace-search-trace-id').value;
+        const limitValue = document.getElementById('trace-search-limit').value;
+        const limit = limitValue ? Number(limitValue) : 50;
+        const resultEl = document.getElementById('trace-search-result');
+        setText(resultEl, '');
+        if (!traceId || !String(traceId).trim()) {
+          setText(resultEl, 'traceId required');
+          return;
+        }
+        try {
+          const data = await fetchTraceBundle(String(traceId).trim(), limit);
+          setText(resultEl, formatJson(data));
+        } catch (_err) {
+          setText(resultEl, 'error');
+        }
+      }
+
       document.getElementById('users-apply').addEventListener('click', () => {
         syncUsersQueryToUrl();
         loadUsers().catch(() => {});
       });
       document.getElementById('notifications-apply').addEventListener('click', () => {
         loadNotifications().catch(() => {});
+      });
+      document.getElementById('trace-search-run').addEventListener('click', () => {
+        handleTraceSearch().catch(() => {});
       });
       document.getElementById('ops-dashboard-refresh').addEventListener('click', () => {
         loadOpsDashboard().catch(() => {});
