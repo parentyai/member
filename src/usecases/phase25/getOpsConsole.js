@@ -12,6 +12,8 @@ const { evaluateCloseDecision } = require('./closeDecision');
 const { emitObs } = require('../../ops/obs');
 const { suggestNotificationTemplate } = require('../phase53/suggestNotificationTemplate');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { getNotificationHealthSummary } = require('../phase140/getNotificationHealthSummary');
+const { suggestNotificationMitigation } = require('../phase141/suggestNotificationMitigation');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -195,6 +197,26 @@ async function getOpsConsole(params, deps) {
   const opsStateNextAction = opsState && typeof opsState.nextAction === 'string' ? opsState.nextAction : null;
   const dangerFlags = buildDangerFlags(effectiveReadiness, userStateSummary);
 
+  let notificationHealthSummary = null;
+  let topUnhealthyNotifications = [];
+  try {
+    const health = await getNotificationHealthSummary({ limit: payload.notificationHealthLimit }, deps);
+    if (health && health.ok) {
+      notificationHealthSummary = {
+        evaluatedAt: health.evaluatedAt,
+        window: health.window,
+        totalNotifications: health.totalNotifications,
+        countsByHealth: health.countsByHealth,
+        unhealthyCount: health.unhealthyCount
+      };
+      topUnhealthyNotifications = Array.isArray(health.topUnhealthyNotifications) ? health.topUnhealthyNotifications : [];
+    }
+  } catch (_err) {
+    // best-effort only
+  }
+
+  const mitigationSuggestion = suggestNotificationMitigation({ notificationHealthSummary, topUnhealthyNotifications });
+
   const executionState = executionStatus && executionStatus.lastExecutedAt ? 'EXECUTED' : 'NOT_EXECUTED';
   let executionMessage = executionState === 'EXECUTED' ? '実行されました' : 'この判断は実行されていません';
   if (executionState !== 'EXECUTED' && latestDecisionLog && latestDecisionLog.nextAction === 'NO_ACTION') {
@@ -231,7 +253,10 @@ async function getOpsConsole(params, deps) {
     executionMessage,
     lastReactionAt,
     dangerFlags,
-    suggestedTemplateKey
+    suggestedTemplateKey,
+    notificationHealthSummary,
+    topUnhealthyNotifications,
+    mitigationSuggestion
   };
 
   if (auditView) {
@@ -245,7 +270,8 @@ async function getOpsConsole(params, deps) {
         requestId,
         payloadSummary: {
           lineUserId,
-          readinessStatus: effectiveReadiness ? effectiveReadiness.status : null
+          readinessStatus: effectiveReadiness ? effectiveReadiness.status : null,
+          mitigationSuggestion
         }
       });
       result.viewAuditId = audit && audit.id ? audit.id : null;
