@@ -75,5 +75,16 @@ module.exports = {
   getLatestDecision,
   listDecisions,
   getDecisionById,
-  listDecisionsByNotificationId
+  listDecisionsByNotificationId,
+  async listDecisionsByTraceId(traceId, limit) {
+    if (!traceId) throw new Error('traceId required');
+    const db = getDb();
+    let query = db.collection(COLLECTION)
+      .where('traceId', '==', traceId)
+      .orderBy('decidedAt', 'desc');
+    const cap = typeof limit === 'number' ? limit : 50;
+    if (cap) query = query.limit(cap);
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  }
 };

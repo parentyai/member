@@ -18,6 +18,17 @@ async function appendAuditLog(data) {
 
 module.exports = {
   appendAuditLog,
+  async listAuditLogsByTraceId(traceId, limit) {
+    if (!traceId) throw new Error('traceId required');
+    const db = getDb();
+    let query = db.collection(COLLECTION)
+      .where('traceId', '==', traceId)
+      .orderBy('createdAt', 'desc');
+    const cap = typeof limit === 'number' ? limit : 50;
+    if (cap) query = query.limit(cap);
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  },
   async listAuditLogs(filters) {
     const payload = filters || {};
     const db = getDb();
