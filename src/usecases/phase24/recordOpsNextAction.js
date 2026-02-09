@@ -17,6 +17,12 @@ function requireEnum(value, label, allowed) {
   return value;
 }
 
+function optionalString(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
 function mapDecision(nextAction) {
   if (nextAction === 'NO_ACTION') return 'OK';
   if (nextAction === 'STOP_AND_ESCALATE') return 'ESCALATE';
@@ -35,6 +41,8 @@ async function recordOpsNextAction(input, deps) {
   const suggestionSnapshot = payload.suggestionSnapshot && typeof payload.suggestionSnapshot === 'object'
     ? payload.suggestionSnapshot
     : null;
+  const traceId = optionalString(payload.traceId);
+  const requestId = optionalString(payload.requestId);
 
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
   const opsStates = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
@@ -46,6 +54,8 @@ async function recordOpsNextAction(input, deps) {
     nextAction,
     decidedBy,
     reason,
+    traceId,
+    requestId,
     audit,
     source,
     suggestionSnapshot

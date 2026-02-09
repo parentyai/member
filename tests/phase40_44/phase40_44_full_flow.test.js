@@ -17,7 +17,7 @@ const decisionTimelineRepo = {
   listTimelineEntries: async () => timeline.slice().reverse()
 };
 
-test('phase40-44: full flow returns view + automation executes', async () => {
+test('phase40-44: full flow returns view + automation skips NO_ACTION execution', async () => {
   const contextDeps = {
     decisionTimelineRepo,
     getOpsAssistContext: async () => ({
@@ -63,7 +63,9 @@ test('phase40-44: full flow returns view + automation executes', async () => {
     executeOpsNextAction: async () => ({ ok: true, executionLogId: 'exec1' })
   });
 
-  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.skipped, true);
+  assert.strictEqual(result.reason, 'no_action_not_executable');
   assert.ok(timeline.some((entry) => entry.source === 'llm_assist'));
   assert.ok(timeline.some((entry) => entry.action === 'AUTOMATION'));
 });

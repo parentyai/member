@@ -260,6 +260,21 @@ async function executeAutomationDecision(params, deps) {
     return response;
   }
 
+  if (payload.action === 'NO_ACTION') {
+    const response = { ok: false, skipped: true, reason: 'no_action_not_executable', config, guard };
+    try {
+      emitObs({
+        action: 'automation_execute',
+        result: 'skip',
+        lineUserId: payload.lineUserId,
+        meta: { reason: response.reason, action: payload.action }
+      });
+    } catch (emitErr) {
+      // best-effort only
+    }
+    return response;
+  }
+
   const execution = await executeFn({
     lineUserId: payload.lineUserId,
     decisionLogId: payload.decisionLogId,

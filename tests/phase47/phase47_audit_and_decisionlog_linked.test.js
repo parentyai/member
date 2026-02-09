@@ -39,7 +39,9 @@ test('phase47: automation timeline links decision log', async () => {
     maxOpsStateAgeMs: 60 * 60 * 1000
   }, deps);
 
-  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.skipped, true);
+  assert.strictEqual(result.reason, 'no_action_not_executable');
   assert.strictEqual(timeline.length, 1);
   assert.strictEqual(timeline[0].refId, 'd1');
   assert.strictEqual(timeline[0].action, 'AUTOMATION');

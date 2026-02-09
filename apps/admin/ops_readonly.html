@@ -12,6 +12,10 @@
       .note { font-size: 12px; color: #666; margin-bottom: 8px; }
       .section { margin-bottom: 24px; }
       .btn { font-size: 12px; padding: 4px 8px; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 12px; }
+      .badge-danger { background: #ffe3e3; color: #a40000; }
+      .badge-warn { background: #fff4d6; color: #7a4a00; }
+      .badge-ok { background: #e6ffed; color: #0f5f2e; }
     </style>
   </head>
   <body>
@@ -132,6 +136,17 @@
       <h2>Ops Console 詳細</h2>
       <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
       <div class="note" id="ops-console-detail-error"></div>
+      <div class="note">traceId: <span id="ops-console-detail-trace-id">-</span> / viewAuditId: <span id="ops-console-detail-view-audit-id">-</span></div>
+      <div>
+        readiness.status:
+        <span id="ops-console-detail-readiness-status">-</span>
+        <span id="ops-console-detail-danger-badge" class="badge">-</span>
+      </div>
+      <div>blockingReasons: <span id="ops-console-detail-blocking-reasons">-</span></div>
+      <div>lastReactionAt（LINE定義）: <span id="ops-console-detail-last-reaction-at">-</span></div>
+      <div>execution: <span id="ops-console-detail-execution-message">-</span></div>
+      <div>latestDecisionSummary:</div>
+      <pre id="ops-console-detail-latest-decision-summary">-</pre>
       <div>recommendedNextAction: <span id="ops-console-detail-recommended">-</span></div>
       <div>allowedNextActions: <span id="ops-console-detail-allowed">-</span></div>
       <div>readiness:</div>
@@ -289,6 +304,7 @@
       let opsConsoleDetailCache = null;
       let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
+      let selectedOpsConsoleTraceId = null;
       let lastOpsSuggestion = null;
       let lastSuggestionUsed = false;
       let segmentSendPlanCache = null;
@@ -772,6 +788,31 @@
 
       function renderOpsConsoleDetail(detail) {
         setText(document.getElementById('ops-console-detail-line-user-id'), detail.lineUserId || '-');
+        selectedOpsConsoleTraceId = detail.traceId || null;
+        setText(document.getElementById('ops-console-detail-trace-id'), detail.traceId || '-');
+        setText(document.getElementById('ops-console-detail-view-audit-id'), detail.viewAuditId || '-');
+        setText(document.getElementById('ops-console-detail-readiness-status'), detail.readinessStatus || '-');
+        setText(
+          document.getElementById('ops-console-detail-blocking-reasons'),
+          Array.isArray(detail.blockingReasons) && detail.blockingReasons.length ? detail.blockingReasons.join(', ') : '-'
+        );
+        setText(document.getElementById('ops-console-detail-last-reaction-at'), detail.lastReactionAt || '-');
+        setText(document.getElementById('ops-console-detail-execution-message'), detail.executionMessage || '-');
+        setText(document.getElementById('ops-console-detail-latest-decision-summary'), formatJson(detail.latestDecisionSummary));
+        const badge = document.getElementById('ops-console-detail-danger-badge');
+        if (badge) {
+          badge.className = 'badge';
+          if (detail && detail.dangerFlags && detail.dangerFlags.notReady) {
+            badge.classList.add('badge-danger');
+            badge.textContent = 'DANGER: NOT_READY';
+          } else if (detail && detail.dangerFlags && detail.dangerFlags.staleMemberNumber) {
+            badge.classList.add('badge-warn');
+            badge.textContent = 'WARN: stale';
+          } else {
+            badge.classList.add('badge-ok');
+            badge.textContent = 'OK';
+          }
+        }
         setText(document.getElementById('ops-console-detail-recommended'), detail.recommendedNextAction || '-');
         setText(
           document.getElementById('ops-console-detail-allowed'),
@@ -1187,6 +1228,7 @@
         const note = document.getElementById('ops-decision-note').value;
         const payload = {
           lineUserId,
+          traceId: selectedOpsConsoleTraceId,
           decision: {
             nextAction,
             failure_class: failureClass,

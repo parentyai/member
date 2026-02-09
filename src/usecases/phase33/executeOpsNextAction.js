@@ -24,6 +24,12 @@ function requireEnum(value, label, allowed) {
   return value;
 }
 
+function optionalString(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
 function resolveToday(now) {
   return now.toISOString().slice(0, 10);
 }
@@ -127,6 +133,8 @@ async function executeOpsNextAction(params, deps) {
   const lineUserId = requireString(payload.lineUserId, 'lineUserId');
   const decisionLogId = requireString(payload.decisionLogId, 'decisionLogId');
   const action = requireEnum(payload.action, 'action', NEXT_ACTIONS);
+  const traceId = optionalString(payload.traceId);
+  const requestId = optionalString(payload.requestId);
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const decisionLogs = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
@@ -267,19 +275,23 @@ async function executeOpsNextAction(params, deps) {
     }
 
     const executionLog = await decisionLogs.appendDecision({
-    subjectType: 'ops_execution',
-    subjectId: decisionLogId,
-    decision: 'EXECUTE',
-    nextAction: action,
-    decidedBy: 'system',
-    reason: error ? `error:${error}` : 'execution',
-    audit: {
-      execution,
-      lineUserId,
-      decisionLogId,
-      executionContext
-    }
-  });
+      subjectType: 'ops_execution',
+      subjectId: decisionLogId,
+      decision: 'EXECUTE',
+      nextAction: action,
+      decidedBy: 'system',
+      reason: error ? `error:${error}` : 'execution',
+      traceId,
+      requestId,
+      audit: {
+        execution,
+        lineUserId,
+        decisionLogId,
+        executionContext,
+        traceId,
+        requestId
+      }
+    });
 
     await appendExecuteTimeline(notificationId, {
       ok: execution.result === 'SUCCESS',

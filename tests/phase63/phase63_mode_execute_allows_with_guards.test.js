@@ -31,6 +31,7 @@ test('phase63: execute mode allows when guard + recent dry run ok', async () => 
     executeOpsNextAction: async () => ({ ok: true, action: 'NO_ACTION' })
   });
 
-  assert.strictEqual(result.ok, true);
-  assert.ok(result.execution);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.skipped, true);
+  assert.strictEqual(result.reason, 'no_action_not_executable');
 });
