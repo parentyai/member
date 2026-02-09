@@ -16,6 +16,20 @@ async function createDelivery(data) {
   return { id: docRef.id };
 }
 
+function reserveDeliveryId() {
+  const db = getDb();
+  return db.collection(COLLECTION).doc().id;
+}
+
+async function createDeliveryWithId(deliveryId, data) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(deliveryId);
+  const payload = Object.assign({}, data || {}, { sentAt: resolveTimestamp(data && data.sentAt) });
+  await docRef.set(payload, { merge: true });
+  return { id: docRef.id };
+}
+
 async function getDelivery(deliveryId) {
   if (!deliveryId) throw new Error('deliveryId required');
   const db = getDb();
@@ -60,6 +74,8 @@ async function listDeliveriesByNotificationId(notificationId) {
 
 module.exports = {
   createDelivery,
+  reserveDeliveryId,
+  createDeliveryWithId,
   getDelivery,
   markRead,
   markClick,
