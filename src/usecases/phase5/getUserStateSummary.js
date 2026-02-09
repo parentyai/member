@@ -4,7 +4,8 @@ const {
   listAllUsers,
   listAllEvents,
   listAllChecklists,
-  listAllUserChecklists
+  listAllUserChecklists,
+  listAllNotificationDeliveries
 } = require('../../repos/firestore/phase2ReadRepo');
 const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
 const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
@@ -89,15 +90,40 @@ function findLatestAction(events, lineUserId) {
   return latest ? formatTimestamp(latest) : null;
 }
 
+function findLastReactionAt(deliveries, lineUserId) {
+  let latestClick = null;
+  let latestClickMs = null;
+  let latestRead = null;
+  let latestReadMs = null;
+  for (const delivery of deliveries) {
+    const data = delivery.data || {};
+    if (data.lineUserId !== lineUserId) continue;
+    const clickMs = toMillis(data.clickAt);
+    if (clickMs && (!latestClickMs || clickMs > latestClickMs)) {
+      latestClickMs = clickMs;
+      latestClick = data.clickAt;
+    }
+    const readMs = toMillis(data.readAt);
+    if (readMs && (!latestReadMs || readMs > latestReadMs)) {
+      latestReadMs = readMs;
+      latestRead = data.readAt;
+    }
+  }
+  if (latestClick) return formatTimestamp(latestClick);
+  if (latestRead) return formatTimestamp(latestRead);
+  return null;
+}
+
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
 
-  const [users, events, checklists, userChecklists] = await Promise.all([
+  const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
     listAllUsers(),
     listAllEvents(),
     listAllChecklists(),
-    listAllUserChecklists()
+    listAllUserChecklists(),
+    listAllNotificationDeliveries()
   ]);
 
   const user = users.find((entry) => entry.id === payload.lineUserId);
@@ -110,6 +136,7 @@ async function getUserStateSummary(params) {
   const checklistTotal = countChecklistTotal(checklists, data.scenarioKey, data.stepKey);
   const checklistCompleted = countChecklistCompletedByUser(user, userChecklists);
   const lastActionAt = findLatestAction(events, user.id);
+  const lastReactionAt = findLastReactionAt(deliveries, user.id);
 
   const checklistEval = evaluateChecklistCompleteness(
     { totalItems: checklistTotal },
@@ -143,7 +170,8 @@ async function getUserStateSummary(params) {
     userSummaryCompleteness,
     overallDecisionReadiness,
     registrationCompleteness,
-    lastActionAt
+    lastActionAt,
+    lastReactionAt
   };
 }
 

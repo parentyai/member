@@ -26,9 +26,16 @@ async function listAllUserChecklists() {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listAllNotificationDeliveries() {
+  const db = getDb();
+  const snap = await db.collection('notification_deliveries').get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 module.exports = {
   listAllEvents,
   listAllUsers,
   listAllChecklists,
-  listAllUserChecklists
+  listAllUserChecklists,
+  listAllNotificationDeliveries
 };
