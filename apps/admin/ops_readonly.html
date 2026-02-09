@@ -148,11 +148,20 @@
       <h2>Ops Console 詳細</h2>
       <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
       <div class="note" id="ops-console-detail-error"></div>
-      <div class="note">traceId: <span id="ops-console-detail-trace-id">-</span> / viewAuditId: <span id="ops-console-detail-view-audit-id">-</span></div>
+      <div class="note">
+        traceId:
+        <a href="#trace-search" id="ops-console-detail-trace-id">-</a>
+        / viewAuditId: <span id="ops-console-detail-view-audit-id">-</span>
+      </div>
       <div>
         readiness.status:
         <span id="ops-console-detail-readiness-status">-</span>
         <span id="ops-console-detail-danger-badge" class="badge">-</span>
+      </div>
+      <div>
+        riskLevel:
+        <span id="ops-console-detail-risk-level">-</span>
+        <span id="ops-console-detail-risk-badge" class="badge">-</span>
       </div>
       <div>blockingReasons: <span id="ops-console-detail-blocking-reasons">-</span></div>
       <div>lastReactionAt（LINE定義）: <span id="ops-console-detail-last-reaction-at">-</span></div>
@@ -336,6 +345,7 @@
       let opsConsoleAssistCache = {};
       let selectedOpsConsoleLineUserId = null;
       let selectedOpsConsoleTraceId = null;
+      let selectedOpsConsoleServerTime = null;
       let lastOpsSuggestion = null;
       let lastSuggestionUsed = false;
       let lastMitigationSuggestion = null;
@@ -834,6 +844,7 @@
       function renderOpsConsoleDetail(detail) {
         setText(document.getElementById('ops-console-detail-line-user-id'), detail.lineUserId || '-');
         selectedOpsConsoleTraceId = detail.traceId || null;
+        selectedOpsConsoleServerTime = detail.serverTime || null;
         setText(document.getElementById('ops-console-detail-trace-id'), detail.traceId || '-');
         setText(document.getElementById('ops-console-detail-view-audit-id'), detail.viewAuditId || '-');
         setText(document.getElementById('ops-console-detail-readiness-status'), detail.readinessStatus || '-');
@@ -856,6 +867,21 @@
           } else {
             badge.classList.add('badge-ok');
             badge.textContent = 'OK';
+          }
+        }
+        setText(document.getElementById('ops-console-detail-risk-level'), detail.riskLevel || '-');
+        const riskBadge = document.getElementById('ops-console-detail-risk-badge');
+        if (riskBadge) {
+          riskBadge.className = 'badge';
+          if (detail && detail.riskLevel === 'HIGH') {
+            riskBadge.classList.add('badge-danger');
+            riskBadge.textContent = 'HIGH';
+          } else if (detail && detail.riskLevel === 'MEDIUM') {
+            riskBadge.classList.add('badge-warn');
+            riskBadge.textContent = 'MEDIUM';
+          } else {
+            riskBadge.classList.add('badge-ok');
+            riskBadge.textContent = 'LOW';
           }
         }
         setText(document.getElementById('ops-console-detail-recommended'), detail.recommendedNextAction || '-');
@@ -1300,6 +1326,11 @@
         const payload = {
           lineUserId,
           traceId: selectedOpsConsoleTraceId,
+          safetySnapshot: {
+            consoleServerTime: selectedOpsConsoleServerTime,
+            maxConsoleAgeMs: 5 * 60 * 1000,
+            reason: 'ops_readonly_submit'
+          },
           decision: {
             nextAction,
             failure_class: failureClass,
@@ -1364,6 +1395,11 @@
         loadNotifications().catch(() => {});
       });
       document.getElementById('trace-search-run').addEventListener('click', () => {
+        handleTraceSearch().catch(() => {});
+      });
+      document.getElementById('ops-console-detail-trace-id').addEventListener('click', () => {
+        const traceIdEl = document.getElementById('trace-search-trace-id');
+        if (traceIdEl && selectedOpsConsoleTraceId) traceIdEl.value = selectedOpsConsoleTraceId;
         handleTraceSearch().catch(() => {});
       });
       document.getElementById('ops-dashboard-refresh').addEventListener('click', () => {
