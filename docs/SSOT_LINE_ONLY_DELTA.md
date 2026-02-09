@@ -46,3 +46,22 @@ Append-only delta notes to operate this product as **LINE-only** (no mini-app / 
   - Example: welcome push is suppressed by default when `SERVICE_MODE=webhook`.
 - The private `member` service may keep user onboarding side effects (welcome push), guarded by its own environment/secrets.
 
+## Reaction Definitions (LINE-only)
+Ops が「この反応は信用してよいか？」で迷わないための運用定義。
+
+### click
+- 唯一「ユーザーの明示的行動」として信用する
+- SSOT: `notification_deliveries.clickAt`
+
+### read
+- LINE-only では補助的シグナル
+- あっても判断の主軸にしない
+- SSOT: `notification_deliveries.readAt`（存在する場合のみ）
+
+### open
+- 内部イベント（`events`）としてのみ扱う
+- Ops判断の直接材料には使わない（LINE-only での信頼度が低い）
+
+## Ops Display Rule (LINE-only)
+- 「最終反応（LINE定義）」は click を優先する
+  - `lastReactionAt = clickAt ?? readAt ?? null`

@@ -58,6 +58,7 @@
     <div class="section">
       <h2>通知状態一覧</h2>
       <div class="note">期間フィルタ（UTC）</div>
+      <div class="note">最終反応はLINE-only定義（click優先、readは補助、openは内部イベント扱い）</div>
       <div class="note">
         from: <input type="date" id="notifications-from" />
         to: <input type="date" id="notifications-to" />
@@ -70,7 +71,7 @@
             <th>sentAt</th>
             <th>open</th>
             <th>click</th>
-            <th>lastReactionAt</th>
+            <th>最終反応（LINE定義）</th>
             <th>詳細</th>
           </tr>
         </thead>

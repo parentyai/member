@@ -4,7 +4,8 @@ const {
   listAllUsers,
   listAllEvents,
   listAllChecklists,
-  listAllUserChecklists
+  listAllUserChecklists,
+  listAllNotificationDeliveries
 } = require('../../repos/firestore/phase2ReadRepo');
 
 function toMillis(value) {
@@ -72,17 +73,44 @@ function buildLatestActionByUser(events) {
   return latest;
 }
 
+function buildLatestReactionByUser(deliveries) {
+  const latestClick = new Map();
+  const latestRead = new Map();
+  for (const delivery of deliveries) {
+    const data = delivery.data || {};
+    const lineUserId = data.lineUserId;
+    if (!lineUserId) continue;
+    const clickMs = toMillis(data.clickAt);
+    if (clickMs) {
+      const current = latestClick.get(lineUserId);
+      if (!current || clickMs > current.ms) {
+        latestClick.set(lineUserId, { ms: clickMs, value: data.clickAt });
+      }
+    }
+    const readMs = toMillis(data.readAt);
+    if (readMs) {
+      const current = latestRead.get(lineUserId);
+      if (!current || readMs > current.ms) {
+        latestRead.set(lineUserId, { ms: readMs, value: data.readAt });
+      }
+    }
+  }
+  return { latestClick, latestRead };
+}
+
 async function getUserOperationalSummary() {
-  const [users, events, checklists, userChecklists] = await Promise.all([
+  const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
     listAllUsers(),
     listAllEvents(),
     listAllChecklists(),
-    listAllUserChecklists()
+    listAllUserChecklists(),
+    listAllNotificationDeliveries()
   ]);
 
   const totals = buildChecklistTotals(checklists);
   const completedByUser = buildCompletedByUser(userChecklists);
   const latestActionByUser = buildLatestActionByUser(events);
+  const latestReactionByUser = buildLatestReactionByUser(deliveries);
 
   return users.map((user) => {
     const data = user.data || {};
@@ -94,6 +122,11 @@ async function getUserOperationalSummary() {
     const hasChecklistDone = data.checklistDone && typeof data.checklistDone === 'object';
     const completed = hasChecklistDone ? Object.keys(data.checklistDone).length : (completedByUser.get(user.id) || 0);
     const latest = latestActionByUser.get(user.id);
+    const latestClick = latestReactionByUser.latestClick.get(user.id);
+    const latestRead = latestReactionByUser.latestRead.get(user.id);
+    const lastReactionAt = latestClick
+      ? formatTimestamp(latestClick.value)
+      : (latestRead ? formatTimestamp(latestRead.value) : null);
     return {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
@@ -103,7 +136,8 @@ async function getUserOperationalSummary() {
       hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
       checklistCompleted: completed,
       checklistTotal: total,
-      lastActionAt: latest ? formatTimestamp(latest.value) : null
+      lastActionAt: latest ? formatTimestamp(latest.value) : null,
+      lastReactionAt
     };
   });
 }
