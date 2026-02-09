@@ -4,6 +4,8 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const { evaluateNotificationSummaryCompleteness } = require('../phase24/notificationSummaryCompleteness');
 const { getNotificationDecisionTrace } = require('../phase37/getNotificationDecisionTrace');
+const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
+const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
 
 async function getNotificationReadModel(params) {
   const opts = params || {};
@@ -25,6 +27,13 @@ async function getNotificationReadModel(params) {
       if (delivery.readAt) readCount += 1;
       if (delivery.clickAt) clickCount += 1;
     }
+    const reaction = await getNotificationReactionSummary({ notificationId: notification.id }, { deliveriesRepo: { listDeliveriesByNotificationId: async () => deliveries } });
+    const reactionSummary = {
+      sent: reaction.sent,
+      clicked: reaction.clicked,
+      ctr: reaction.ctr
+    };
+    const notificationHealth = evaluateNotificationHealth({ sent: reaction.sent, ctr: reaction.ctr });
     const item = {
       notificationId: notification.id,
       title: notification.title || null,
@@ -34,7 +43,9 @@ async function getNotificationReadModel(params) {
       linkRegistryId: notification.linkRegistryId || null,
       deliveredCount,
       readCount,
-      clickCount
+      clickCount,
+      reactionSummary,
+      notificationHealth
     };
     item.decisionTrace = await getNotificationDecisionTrace(notification.id);
     item.completeness = evaluateNotificationSummaryCompleteness(item);
