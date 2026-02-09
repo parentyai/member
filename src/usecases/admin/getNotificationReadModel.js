@@ -7,6 +7,41 @@ const { getNotificationDecisionTrace } = require('../phase37/getNotificationDeci
 const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
 
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.getTime();
+  }
+  return null;
+}
+
+function formatTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
+
+function computeLastSentAt(deliveries) {
+  let latest = null;
+  let latestMs = null;
+  for (const delivery of deliveries) {
+    const ms = toMillis(delivery && delivery.sentAt);
+    if (ms && (!latestMs || ms > latestMs)) {
+      latestMs = ms;
+      latest = delivery.sentAt;
+    }
+  }
+  return latest ? formatTimestamp(latest) : null;
+}
+
 async function getNotificationReadModel(params) {
   const opts = params || {};
   const notifications = await notificationsRepo.listNotifications({
@@ -19,6 +54,7 @@ async function getNotificationReadModel(params) {
   const items = [];
   for (const notification of notifications) {
     const deliveries = await deliveriesRepo.listDeliveriesByNotificationId(notification.id);
+    const lastSentAt = computeLastSentAt(deliveries);
     let deliveredCount = 0;
     let readCount = 0;
     let clickCount = 0;
@@ -45,7 +81,8 @@ async function getNotificationReadModel(params) {
       readCount,
       clickCount,
       reactionSummary,
-      notificationHealth
+      notificationHealth,
+      lastSentAt
     };
     item.decisionTrace = await getNotificationDecisionTrace(notification.id);
     item.completeness = evaluateNotificationSummaryCompleteness(item);

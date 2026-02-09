@@ -51,5 +51,7 @@ test('phase129: ops console view appends audit_logs with traceId', async () => {
   assert.strictEqual(audit.action, 'ops_console.view');
   assert.strictEqual(audit.traceId, 'TRACE1');
   assert.strictEqual(audit.requestId, 'REQ1');
-  assert.deepStrictEqual(audit.payloadSummary, { lineUserId: 'U1', readinessStatus: result.readinessStatus });
+  assert.strictEqual(audit.payloadSummary.lineUserId, 'U1');
+  assert.strictEqual(audit.payloadSummary.readinessStatus, result.readinessStatus);
+  assert.ok(Object.prototype.hasOwnProperty.call(audit.payloadSummary, 'mitigationSuggestion'));
 });

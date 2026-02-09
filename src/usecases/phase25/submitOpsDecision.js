@@ -83,7 +83,7 @@ function buildPostCheck(params) {
   return { ok: checks.every((check) => check.ok), checks };
 }
 
-function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, requestId) {
+function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, requestId, notificationMitigationDecision) {
   const readiness = consoleResult && consoleResult.readiness ? consoleResult.readiness : null;
   return {
     readinessStatus: readiness && readiness.status ? readiness.status : null,
@@ -99,7 +99,26 @@ function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, r
     closeReason: consoleResult && consoleResult.closeReason ? consoleResult.closeReason : null,
     notificationId: notificationId || null,
     traceId: traceId || null,
-    requestId: requestId || null
+    requestId: requestId || null,
+    mitigationSuggestion: consoleResult && consoleResult.mitigationSuggestion ? consoleResult.mitigationSuggestion : null,
+    notificationMitigationDecision: notificationMitigationDecision || null
+  };
+}
+
+function parseNotificationMitigationDecision(value) {
+  if (value === undefined || value === null) return null;
+  if (!value || typeof value !== 'object') throw new Error('invalid notificationMitigationDecision');
+  const decision = typeof value.decision === 'string' ? value.decision : '';
+  const allowed = new Set(['ADOPT', 'REJECT', 'SKIP']);
+  if (!allowed.has(decision)) throw new Error('invalid notificationMitigationDecision');
+  const note = typeof value.note === 'string' ? value.note : '';
+  const actionType = typeof value.actionType === 'string' ? value.actionType : null;
+  const targetNotificationId = typeof value.targetNotificationId === 'string' ? value.targetNotificationId : null;
+  return {
+    decision,
+    note: note || '',
+    actionType,
+    targetNotificationId
   };
 }
 
@@ -174,6 +193,7 @@ async function submitOpsDecision(input, deps) {
   const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : null;
   const traceId = resolveTraceId(payload.traceId, requestId);
+  const notificationMitigationDecision = parseNotificationMitigationDecision(payload.notificationMitigationDecision);
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
@@ -207,7 +227,7 @@ async function submitOpsDecision(input, deps) {
     ? consoleResult.allowedNextActions
     : [];
   const closeDecision = consoleResult ? consoleResult.closeDecision : null;
-  const audit = buildAudit(consoleResult, notificationId, nextAction, traceId, requestId);
+  const audit = buildAudit(consoleResult, notificationId, nextAction, traceId, requestId, notificationMitigationDecision);
   const safetyGuard = evaluateSafetyGuard({
     consoleResult,
     consoleServerTime: payload.consoleServerTime,
@@ -365,11 +385,32 @@ async function submitOpsDecision(input, deps) {
         lineUserId,
         readinessStatus: audit.readinessStatus || null,
         decidedNextAction: nextAction,
-        decisionLogId: result.decisionLogId
+        decisionLogId: result.decisionLogId,
+        notificationMitigationDecision
       }
     });
   } catch (_err) {
     // best-effort only
+  }
+
+  if (notificationMitigationDecision) {
+    try {
+      await appendAuditLog({
+        actor: actor || decidedBy || 'unknown',
+        action: 'notification_mitigation.decision',
+        entityType: 'user',
+        entityId: lineUserId,
+        traceId,
+        requestId,
+        payloadSummary: {
+          lineUserId,
+          notificationMitigationDecision,
+          decisionLogId: result.decisionLogId
+        }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
   }
 
   await appendDecideTimeline(result.decisionLogId, {
@@ -380,7 +421,8 @@ async function submitOpsDecision(input, deps) {
     reasonCode,
     stage,
     note,
-    decidedBy
+    decidedBy,
+    notificationMitigationDecision
   });
 
   await appendTimelineBestEffort(timelineRepo, {

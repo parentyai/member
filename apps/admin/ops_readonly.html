@@ -186,6 +186,15 @@
       <pre id="ops-console-detail-phase39-suggestion">-</pre>
       <div>phase39AuditId: <span id="ops-console-detail-phase39-audit-id">-</span></div>
 
+      <h3>Notification Health（add-only）</h3>
+      <div class="note">通知の sent/click/read をSSOT（notification_deliveries）から再計算した read-model に基づく（表示のみ）。</div>
+      <div>notificationHealthSummary:</div>
+      <pre id="ops-console-detail-notification-health-summary">-</pre>
+      <div>topUnhealthyNotifications:</div>
+      <pre id="ops-console-detail-top-unhealthy">-</pre>
+      <div>mitigationSuggestion（advisory）:</div>
+      <pre id="ops-console-detail-mitigation-suggestion">-</pre>
+
       <h3>Ops Decision Submit</h3>
       <div class="note">allowedNextActions のみ選択可。</div>
       <div class="note">
@@ -211,6 +220,16 @@
       <div class="note">
         <button class="btn" id="ops-decision-use-suggestion">Use Suggestion</button>
         <span id="ops-decision-use-suggestion-note"></span>
+      </div>
+      <div class="note">
+        notification mitigation decision（advisory）:
+        <select id="ops-mitigation-decision">
+          <option value="">(no record)</option>
+          <option value="SKIP">SKIP</option>
+          <option value="ADOPT">ADOPT</option>
+          <option value="REJECT">REJECT</option>
+        </select>
+        note: <input type="text" id="ops-mitigation-note" />
       </div>
       <pre id="ops-decision-result">-</pre>
     </div>
@@ -319,6 +338,8 @@
       let selectedOpsConsoleTraceId = null;
       let lastOpsSuggestion = null;
       let lastSuggestionUsed = false;
+      let lastMitigationSuggestion = null;
+      let lastTopUnhealthyNotifications = [];
       let segmentSendPlanCache = null;
       let segmentSendDryRunCache = null;
       let retryQueueCache = [];
@@ -847,6 +868,20 @@
         setText(document.getElementById('ops-console-detail-latest-decision'), formatJson(detail.latestDecisionLog));
         setText(document.getElementById('ops-console-detail-user-summary'), formatJson(detail.userStateSummary));
         setText(document.getElementById('ops-console-detail-member-summary'), formatJson(detail.memberSummary));
+        setText(
+          document.getElementById('ops-console-detail-notification-health-summary'),
+          formatJson(detail.notificationHealthSummary || null)
+        );
+        setText(
+          document.getElementById('ops-console-detail-top-unhealthy'),
+          formatJson(detail.topUnhealthyNotifications || [])
+        );
+        setText(
+          document.getElementById('ops-console-detail-mitigation-suggestion'),
+          formatJson(detail.mitigationSuggestion || null)
+        );
+        lastMitigationSuggestion = detail.mitigationSuggestion || null;
+        lastTopUnhealthyNotifications = Array.isArray(detail.topUnhealthyNotifications) ? detail.topUnhealthyNotifications : [];
         updateDecisionActionOptions(detail);
       }
 
@@ -1250,6 +1285,18 @@
         const reasonCode = document.getElementById('ops-decision-reason-code').value;
         const stage = document.getElementById('ops-decision-stage').value;
         const note = document.getElementById('ops-decision-note').value;
+        const mitigationDecisionValue = document.getElementById('ops-mitigation-decision').value;
+        const mitigationNote = document.getElementById('ops-mitigation-note').value;
+        let notificationMitigationDecision = null;
+        if (mitigationDecisionValue) {
+          const targetId = lastTopUnhealthyNotifications.length ? lastTopUnhealthyNotifications[0].notificationId : null;
+          notificationMitigationDecision = {
+            decision: mitigationDecisionValue,
+            note: mitigationNote || '',
+            actionType: lastMitigationSuggestion ? lastMitigationSuggestion.actionType || null : null,
+            targetNotificationId: targetId || null
+          };
+        }
         const payload = {
           lineUserId,
           traceId: selectedOpsConsoleTraceId,
@@ -1259,7 +1306,8 @@
             reasonCode: reasonCode || null,
             stage: stage || null,
             note: note || ''
-          }
+          },
+          notificationMitigationDecision
         };
         try {
           const result = await submitOpsDecisionRequest(payload);
