@@ -1,6 +1,7 @@
 'use strict';
 
 const { getUserOperationalSummary } = require('../admin/getUserOperationalSummary');
+const { sortUsersSummaryStable } = require('./sortUsersSummaryStable');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -76,12 +77,13 @@ async function getUsersSummaryFiltered(params) {
       }
     });
   });
-  return enriched
+  const filtered = enriched
     .filter((item) => inRange(item.lastActionAt, payload.fromMs, payload.toMs))
     .filter((item) => filterByNeedsAttention(item, payload.needsAttention))
     .filter((item) => filterByStale(item, payload.stale))
     .filter((item) => filterByUnreviewed(item, payload.unreviewed))
     .filter((item) => filterByReviewAge(item, payload.reviewAgeDays, nowMs));
+  return sortUsersSummaryStable(filtered);
 }
 
 module.exports = {
