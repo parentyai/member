@@ -9,6 +9,7 @@ const {
   FAILURE_CLASSES
 } = require('../phase24/recordOpsNextAction');
 const { emitObs } = require('../../ops/obs');
+const { appendAuditLog } = require('../audit/appendAuditLog');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
@@ -74,7 +75,7 @@ function buildPostCheck(params) {
   return { ok: checks.every((check) => check.ok), checks };
 }
 
-function buildAudit(consoleResult, notificationId) {
+function buildAudit(consoleResult, notificationId, decidedNextAction, traceId, requestId) {
   const readiness = consoleResult && consoleResult.readiness ? consoleResult.readiness : null;
   return {
     readinessStatus: readiness && readiness.status ? readiness.status : null,
@@ -83,11 +84,14 @@ function buildAudit(consoleResult, notificationId) {
     allowedNextActions: consoleResult && Array.isArray(consoleResult.allowedNextActions)
       ? consoleResult.allowedNextActions
       : [],
+    decidedNextAction: decidedNextAction || null,
     consoleServerTime: consoleResult && consoleResult.serverTime ? consoleResult.serverTime : null,
     phaseResult: consoleResult && consoleResult.phaseResult ? consoleResult.phaseResult : null,
     closeDecision: consoleResult && consoleResult.closeDecision ? consoleResult.closeDecision : null,
     closeReason: consoleResult && consoleResult.closeReason ? consoleResult.closeReason : null,
-    notificationId: notificationId || null
+    notificationId: notificationId || null,
+    traceId: traceId || null,
+    requestId: requestId || null
   };
 }
 
@@ -159,6 +163,9 @@ async function submitOpsDecision(input, deps) {
   const suggestionSnapshot = payload.suggestionSnapshot && typeof payload.suggestionSnapshot === 'object'
     ? payload.suggestionSnapshot
     : null;
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
+  const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : null;
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const recordFn = deps && deps.recordOpsNextAction ? deps.recordOpsNextAction : recordOpsNextAction;
@@ -189,7 +196,7 @@ async function submitOpsDecision(input, deps) {
     ? consoleResult.allowedNextActions
     : [];
   const closeDecision = consoleResult ? consoleResult.closeDecision : null;
-  const audit = buildAudit(consoleResult, notificationId);
+  const audit = buildAudit(consoleResult, notificationId, nextAction, traceId, requestId);
   const safetyGuard = evaluateSafetyGuard({
     consoleResult,
     consoleServerTime: payload.consoleServerTime,
@@ -288,6 +295,8 @@ async function submitOpsDecision(input, deps) {
       stage,
       note,
       decidedBy,
+      traceId,
+      requestId,
       audit,
       source,
       suggestionSnapshot
@@ -333,6 +342,25 @@ async function submitOpsDecision(input, deps) {
     allowedNextActions: audit.allowedNextActions
   });
 
+  try {
+    await appendAuditLog({
+      actor: actor || decidedBy || 'unknown',
+      action: 'ops_decision.submit',
+      entityType: 'user',
+      entityId: lineUserId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        lineUserId,
+        readinessStatus: audit.readinessStatus || null,
+        decidedNextAction: nextAction,
+        decisionLogId: result.decisionLogId
+      }
+    });
+  } catch (_err) {
+    // best-effort only
+  }
+
   await appendDecideTimeline(result.decisionLogId, {
     ok: true,
     guard: safetyGuard,
@@ -357,6 +385,8 @@ async function submitOpsDecision(input, deps) {
     ok: true,
     readiness,
     audit,
+    traceId,
+    requestId,
     decisionLogId: result.decisionLogId,
     opsState: result.opsState,
     postCheck,

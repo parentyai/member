@@ -159,5 +159,7 @@ test('phase49: full ops flow stays consistent', async () => {
     executeOpsNextAction: async () => ({ ok: true, action: 'NO_ACTION' }),
     decisionTimelineRepo: { appendTimelineEntry: async () => ({ id: 't2' }) }
   });
-  assert.strictEqual(execOk.ok, true);
+  assert.strictEqual(execOk.ok, false);
+  assert.strictEqual(execOk.skipped, true);
+  assert.strictEqual(execOk.reason, 'no_action_not_executable');
 });

@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
 const decisionDriftsRepo = require('../../repos/firestore/decisionDriftsRepo');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
@@ -9,11 +11,18 @@ const { getOpsDecisionConsistency } = require('./opsDecisionConsistency');
 const { evaluateCloseDecision } = require('./closeDecision');
 const { emitObs } = require('../../ops/obs');
 const { suggestNotificationTemplate } = require('../phase53/suggestNotificationTemplate');
+const { appendAuditLog } = require('../audit/appendAuditLog');
 
 function requireString(value, label) {
   if (typeof value !== 'string') throw new Error(`${label} required`);
   if (value.trim().length === 0) throw new Error(`${label} required`);
   return value.trim();
+}
+
+function optionalString(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }
 
 function buildReadiness(summary, evaluator) {
@@ -78,9 +87,42 @@ function buildExecutionStatus(executionLog) {
   };
 }
 
+function resolveTraceId(payload) {
+  const fromPayload = optionalString(payload && payload.traceId);
+  if (fromPayload) return fromPayload;
+  const fromRequest = optionalString(payload && payload.requestId);
+  if (fromRequest && fromRequest !== 'unknown') return fromRequest;
+  return crypto.randomUUID();
+}
+
+function summarizeDecisionLog(log) {
+  if (!log || typeof log !== 'object') return null;
+  return {
+    id: log.id || null,
+    nextAction: typeof log.nextAction === 'string' ? log.nextAction : null,
+    decidedBy: typeof log.decidedBy === 'string' ? log.decidedBy : null,
+    decidedAt: resolveTimestamp(log.decidedAt) || resolveTimestamp(log.createdAt) || null
+  };
+}
+
+function buildDangerFlags(readiness, userStateSummary) {
+  const notReady = Boolean(readiness && readiness.status === 'NOT_READY');
+  const missing = userStateSummary
+    && userStateSummary.userSummaryCompleteness
+    && Array.isArray(userStateSummary.userSummaryCompleteness.missing)
+    ? userStateSummary.userSummaryCompleteness.missing
+    : [];
+  const staleMemberNumber = missing.includes('stale_member_number');
+  return { notReady, staleMemberNumber };
+}
+
 async function getOpsConsole(params, deps) {
   const payload = params || {};
   const lineUserId = requireString(payload.lineUserId, 'lineUserId');
+  const auditView = payload.auditView === true;
+  const requestId = optionalString(payload.requestId);
+  const actor = optionalString(payload.actor) || 'unknown';
+  const traceId = auditView ? resolveTraceId(payload) : (optionalString(payload.traceId) || null);
 
   const userSummaryFn = deps && deps.getUserStateSummary ? deps.getUserStateSummary : getUserStateSummary;
   const memberSummaryFn = deps && deps.getMemberSummary ? deps.getMemberSummary : getMemberSummary;
@@ -145,26 +187,72 @@ async function getOpsConsole(params, deps) {
     };
   }
   const executionStatus = buildExecutionStatus(latestExecutionLog);
+  const latestDecisionSummary = summarizeDecisionLog(latestDecisionLog);
+  const blockingReasons = effectiveReadiness && Array.isArray(effectiveReadiness.blocking)
+    ? effectiveReadiness.blocking
+    : [];
+  const lastReactionAt = userStateSummary && userStateSummary.lastReactionAt ? userStateSummary.lastReactionAt : null;
+  const opsStateNextAction = opsState && typeof opsState.nextAction === 'string' ? opsState.nextAction : null;
+  const dangerFlags = buildDangerFlags(effectiveReadiness, userStateSummary);
+
+  const executionState = executionStatus && executionStatus.lastExecutedAt ? 'EXECUTED' : 'NOT_EXECUTED';
+  let executionMessage = executionState === 'EXECUTED' ? '実行されました' : 'この判断は実行されていません';
+  if (executionState !== 'EXECUTED' && latestDecisionLog && latestDecisionLog.nextAction === 'NO_ACTION') {
+    executionMessage = 'この判断は実行されていません（NO_ACTION）';
+  }
+  if (executionState === 'EXECUTED' && executionStatus.lastExecutionResult === 'FAIL') {
+    executionMessage = '実行失敗';
+  }
 
   const result = {
     ok: true,
     serverTime: new Date().toISOString(),
     lineUserId,
+    traceId,
+    requestId,
     userStateSummary,
     memberSummary,
     readiness: effectiveReadiness,
+    readinessStatus: effectiveReadiness ? effectiveReadiness.status : null,
+    blockingReasons,
     recommendedNextAction,
     allowedNextActions,
     closeDecision: closeDecision.closeDecision,
     closeReason: closeDecision.closeReason,
     phaseResult: closeDecision.phaseResult,
     opsState,
+    opsStateNextAction,
     latestDecisionLog,
+    latestDecisionSummary,
     consistency,
     decisionDrift,
     executionStatus,
+    executionState,
+    executionMessage,
+    lastReactionAt,
+    dangerFlags,
     suggestedTemplateKey
   };
+
+  if (auditView) {
+    try {
+      const audit = await appendAuditLog({
+        actor,
+        action: 'ops_console.view',
+        entityType: 'user',
+        entityId: lineUserId,
+        traceId,
+        requestId,
+        payloadSummary: {
+          lineUserId,
+          readinessStatus: effectiveReadiness ? effectiveReadiness.status : null
+        }
+      });
+      result.viewAuditId = audit && audit.id ? audit.id : null;
+    } catch (_err) {
+      result.viewAuditId = null;
+    }
+  }
 
   try {
     emitObs({
