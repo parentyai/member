@@ -293,6 +293,19 @@
         </select>
         needsAttention:
         <input type="checkbox" id="segment-needs-attention" />
+        hasMemberNumber:
+        <select id="segment-has-member-number">
+          <option value="any">any</option>
+          <option value="true">yes</option>
+          <option value="false">no</option>
+        </select>
+        ridacStatus:
+        <select id="segment-ridac-status">
+          <option value="any">any</option>
+          <option value="DECLARED">declared</option>
+          <option value="UNLINKED">unlinked</option>
+          <option value="NONE">none</option>
+        </select>
         limit:
         <input type="number" id="segment-limit" min="1" max="200" value="50" />
         <button class="btn" id="segment-plan">Plan</button>
@@ -1159,15 +1172,23 @@
       function applySegmentFilter(filter) {
         const readinessEl = document.getElementById('segment-readiness');
         const needsAttentionEl = document.getElementById('segment-needs-attention');
+        const hasMemberNumberEl = document.getElementById('segment-has-member-number');
+        const ridacStatusEl = document.getElementById('segment-ridac-status');
         const limitEl = document.getElementById('segment-limit');
         if (!filter || typeof filter !== 'object') {
           readinessEl.value = '';
           needsAttentionEl.checked = false;
+          hasMemberNumberEl.value = 'any';
+          ridacStatusEl.value = 'any';
           limitEl.value = 50;
           return;
         }
         readinessEl.value = filter.readinessStatus || '';
         needsAttentionEl.checked = Boolean(filter.needsAttention);
+        hasMemberNumberEl.value = filter.hasMemberNumber !== undefined && filter.hasMemberNumber !== null
+          ? String(filter.hasMemberNumber)
+          : 'any';
+        ridacStatusEl.value = filter.ridacStatus ? String(filter.ridacStatus) : 'any';
         if (filter.limit) {
           limitEl.value = Number(filter.limit);
         }
@@ -1176,11 +1197,15 @@
       function buildSegmentQueryFromInputs() {
         const readiness = document.getElementById('segment-readiness').value;
         const needsAttention = document.getElementById('segment-needs-attention').checked;
+        const hasMemberNumber = document.getElementById('segment-has-member-number').value;
+        const ridacStatus = document.getElementById('segment-ridac-status').value;
         const limitValue = document.getElementById('segment-limit').value;
         const limit = limitValue ? Number(limitValue) : null;
         const query = {};
         if (readiness) query.readinessStatus = readiness;
         if (needsAttention) query.needsAttention = 1;
+        if (hasMemberNumber && hasMemberNumber !== 'any') query.hasMemberNumber = hasMemberNumber;
+        if (ridacStatus && ridacStatus !== 'any') query.ridacStatus = ridacStatus;
         if (limit) query.limit = limit;
         return query;
       }

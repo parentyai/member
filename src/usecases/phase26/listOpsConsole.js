@@ -11,6 +11,26 @@ const NOT_READY_ACTIONS = ['STOP_AND_ESCALATE'];
 const CURSOR_STATUSES = new Set(['READY', 'NOT_READY']);
 const DEFAULT_CURSOR_SIGNING = Object.freeze({ secret: null, enforce: false, allowUnsigned: true });
 
+function deriveMemberFlags(memberSummary) {
+  const ms = memberSummary && typeof memberSummary === 'object' ? memberSummary : null;
+  const member = ms && ms.member && typeof ms.member === 'object' ? ms.member : null;
+  const ridac = member && member.ridac && typeof member.ridac === 'object' ? member.ridac : null;
+  const hasMemberNumber = Boolean(member && member.hasMemberNumber === true);
+  const memberNumberStale = Boolean(member && member.memberNumberStale === true);
+  const ridacLast4 = ridac && typeof ridac.ridacMembershipIdLast4 === 'string' ? ridac.ridacMembershipIdLast4 : null;
+  const hasRidac = Boolean(ridac && ridac.hasRidacMembership === true && ridacLast4);
+  const ridacUnlinkedAt = ridac && ridac.ridacMembershipUnlinkedAt ? String(ridac.ridacMembershipUnlinkedAt) : null;
+  let ridacStatus = 'NONE';
+  if (hasRidac) ridacStatus = 'DECLARED';
+  else if (ridacUnlinkedAt) ridacStatus = 'UNLINKED';
+  return {
+    hasMemberNumber,
+    memberNumberStale,
+    ridacStatus,
+    ridacMembershipIdLast4: ridacLast4
+  };
+}
+
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return 'ALL';
   const status = String(value).trim().toUpperCase();
@@ -200,6 +220,7 @@ async function listOpsConsole(params, deps) {
     const readiness = normalizeReadiness(consoleResult ? consoleResult.readiness : null);
     const readinessStatus = readiness.status;
     if (status !== 'ALL' && readinessStatus !== status) continue;
+    const memberFlags = deriveMemberFlags(consoleResult ? consoleResult.memberSummary : null);
     items.push({
       lineUserId,
       readiness,
@@ -211,6 +232,7 @@ async function listOpsConsole(params, deps) {
         consoleResult ? consoleResult.allowedNextActions : null,
         readinessStatus
       ),
+      memberFlags,
       opsState: consoleResult && consoleResult.opsState ? consoleResult.opsState : null,
       latestDecisionLog: consoleResult && consoleResult.latestDecisionLog ? consoleResult.latestDecisionLog : null,
       executionStatus: normalizeExecutionStatus(consoleResult ? consoleResult.executionStatus : null)
