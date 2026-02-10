@@ -56,3 +56,23 @@ Expected:
 - If endpoints are implemented (P0-101+), run minimal checks:
   - Webhook returns 200 with valid signature.
   - Admin test send creates a delivery record.
+
+## Ridac Membership (Ops Unlink)
+When duplicate rejection blocks a user (B policy), Ops can unlink the membership id.
+
+Steps:
+1) Proxy the member service:
+   - `gcloud run services proxy member --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --port 18080`
+2) Open:
+   - `http://127.0.0.1:18080/admin/login`
+   - Login with `ADMIN_OS_TOKEN`.
+3) Open:
+   - `http://127.0.0.1:18080/admin/master`
+4) In "Ridacクラブ会員ID（例外解除）", input `ridacMembershipId` (format `NN-NNNN`) and click `unlink`.
+
+Expected:
+- The unlink result returns `{ ok: true, lineUserId, ridacMembershipIdLast4 }`.
+- The previously blocked user can re-declare a different id.
+
+Audit (trace):
+- Use Trace Search (`/api/admin/trace?traceId=...`) and confirm `ridac_membership.unlink_ok` exists with `ridacMembershipIdLast4` (no plaintext id).

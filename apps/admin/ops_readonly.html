@@ -211,6 +211,7 @@
       <pre id="ops-console-detail-user-summary">-</pre>
       <div>memberSummary:</div>
       <pre id="ops-console-detail-member-summary">-</pre>
+      <div>ridac（derived）: <span id="ops-console-detail-ridac-status">-</span></div>
       <div>llmSuggestion:</div>
       <pre id="ops-console-detail-llm-suggestion">-</pre>
       <div>suggestion(schema):</div>
@@ -1091,6 +1092,7 @@
         setText(document.getElementById('ops-console-detail-latest-decision'), formatJson(detail.latestDecisionLog));
         setText(document.getElementById('ops-console-detail-user-summary'), formatJson(detail.userStateSummary));
         setText(document.getElementById('ops-console-detail-member-summary'), formatJson(detail.memberSummary));
+        setText(document.getElementById('ops-console-detail-ridac-status'), formatRidacStatus(detail.memberSummary));
         setText(
           document.getElementById('ops-console-detail-notification-health-summary'),
           formatJson(detail.notificationHealthSummary || null)
@@ -1106,6 +1108,17 @@
         lastMitigationSuggestion = detail.mitigationSuggestion || null;
         lastTopUnhealthyNotifications = Array.isArray(detail.topUnhealthyNotifications) ? detail.topUnhealthyNotifications : [];
         updateDecisionActionOptions(detail);
+      }
+
+      function formatRidacStatus(memberSummary) {
+        const ms = memberSummary && memberSummary.member ? memberSummary : null;
+        const ridac = ms && ms.member && ms.member.ridac ? ms.member.ridac : null;
+        const has = Boolean(ridac && ridac.hasRidacMembership);
+        const last4 = ridac && typeof ridac.ridacMembershipIdLast4 === 'string' ? ridac.ridacMembershipIdLast4 : null;
+        const unlinkedAt = ridac && ridac.ridacMembershipUnlinkedAt ? String(ridac.ridacMembershipUnlinkedAt) : null;
+        if (has && last4) return `登録済み (last4=${last4})`;
+        if (!has && unlinkedAt) return '解除済み';
+        return '未登録';
       }
 
       function renderOpsAssistDetail(assist) {
