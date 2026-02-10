@@ -2,6 +2,7 @@
 
 const { setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { resolveRequestId, resolveTraceId } = require('./osContext');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -38,6 +39,8 @@ async function handleSetKillSwitch(req, res, body) {
     action: 'kill_switch.set',
     entityType: 'system_flags',
     entityId: 'phase0',
+    traceId: resolveTraceId(req),
+    requestId: resolveRequestId(req),
     payloadSummary: { isOn }
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

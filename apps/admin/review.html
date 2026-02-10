@@ -59,7 +59,7 @@
 
         const res = await fetch('/api/phase5/admin/ops/review', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: { 'content-type': 'application/json; charset=utf-8', 'x-actor': 'admin_review' },
           body: JSON.stringify(payload)
         });
 

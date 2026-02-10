@@ -415,6 +415,30 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/admin/composer' || pathname === '/admin/composer/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'composer.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/monitor' || pathname === '/admin/monitor/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'monitor.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/errors' || pathname === '/admin/errors/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'errors.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/master' || pathname === '/admin/master/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'master.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
   if (req.method === 'GET' && pathname === '/admin/implementation-targets') {
     const { handleImplementationTargets } = require('./routes/admin/implementationTargets');
     handleImplementationTargets(req, res);
@@ -424,6 +448,89 @@ function createServer() {
   if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {
     const { handleAdminTraceSearch } = require('./routes/admin/traceSearch');
     handleAdminTraceSearch(req, res);
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin/os/')) {
+    const { handleStatus, handlePlan, handleSet } = require('./routes/admin/osKillSwitch');
+    const { handleErrorsSummary } = require('./routes/admin/osErrors');
+    const {
+      handleDraft,
+      handlePreview,
+      handleApprove,
+      handleSendPlan,
+      handleSendExecute
+    } = require('./routes/admin/osNotifications');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/admin/os/kill-switch/status') {
+        await handleStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/kill-switch/plan') {
+        const body = await collectBody();
+        await handlePlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/kill-switch/set') {
+        const body = await collectBody();
+        await handleSet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {
+        await handleErrorsSummary(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/draft') {
+        const body = await collectBody();
+        await handleDraft(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/preview') {
+        const body = await collectBody();
+        await handlePreview(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/approve') {
+        const body = await collectBody();
+        await handleApprove(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/plan') {
+        const body = await collectBody();
+        await handleSendPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/execute') {
+        const body = await collectBody();
+        await handleSendExecute(req, res, body);
+        return;
+      }
+
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
     return;
   }
 

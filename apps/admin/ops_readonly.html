@@ -22,9 +22,37 @@
     <h1>運用判断支援（READ ONLY）</h1>
     <div class="note">表示のみ。判断と操作は人間が行います。</div>
     <div class="note">
+      運用ナビ:
+      <a href="/admin/composer">Composer</a> →
+      <a href="/admin/monitor">Monitor</a> →
+      <a href="/admin/errors">Errors</a> →
+      <a href="#trace-search">Trace</a>
+    </div>
+    <div class="note">
       <a href="/admin/read-model">通知集計</a> |
+      <a href="/admin/composer">Composer</a> |
+      <a href="/admin/monitor">Monitor</a> |
+      <a href="/admin/errors">Errors</a> |
+      <a href="/admin/master">Master</a> |
       <a href="#trace-search">Trace Search</a> |
       <a href="#implementation-targets">Implementation Targets</a>
+    </div>
+
+    <div class="section" id="operations">
+      <h2>Operations（安全操作）</h2>
+      <div class="note">危険操作（kill switch）は confirm token 必須。</div>
+      <div class="note">
+        killSwitch: <span id="kill-switch-state">-</span>
+        / planHash: <span id="kill-switch-plan-hash">-</span>
+        / confirmToken: <span id="kill-switch-confirm-token">-</span>
+      </div>
+      <div class="note">
+        <button class="btn" id="kill-switch-refresh">refresh</button>
+        <button class="btn" id="kill-switch-plan-on">plan ON</button>
+        <button class="btn" id="kill-switch-plan-off">plan OFF</button>
+        <button class="btn" id="kill-switch-set">set</button>
+      </div>
+      <pre id="kill-switch-result">-</pre>
     </div>
 
     <div class="section" id="trace-search">
@@ -719,12 +747,24 @@
       }
 
       const OPS_ACTOR_HEADERS = { 'x-actor': 'ops_readonly' };
+      const OPS_TRACE_HEADER_NAME = 'x-trace-id';
+      let killSwitchPlanCache = null;
+
+      function newTraceId(prefix) {
+        const p = prefix || 'trace';
+        try {
+          if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+            return `${p}-${globalThis.crypto.randomUUID()}`;
+          }
+        } catch (_err) {}
+        return `${p}-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
 
       async function fetchOpsConsoleList(limit) {
         const params = new URLSearchParams();
         if (limit) params.set('limit', String(limit));
         const qs = params.toString();
-        const res = await fetch(`/api/phase26/ops-console/list${qs ? `?${qs}` : ''}`);
+        const res = await fetch(`/api/phase26/ops-console/list${qs ? `?${qs}` : ''}`, { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
@@ -739,17 +779,23 @@
         const params = new URLSearchParams();
         if (limit) params.set('limit', String(limit));
         const qs = params.toString();
-        const res = await fetch(`/api/phase38/ops/dashboard${qs ? `?${qs}` : ''}`);
+        const res = await fetch(`/api/phase38/ops/dashboard${qs ? `?${qs}` : ''}`, { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
       async function fetchOpsAssistDetail(lineUserId) {
-        const res = await fetch(`/api/phase42/ops-console/view?lineUserId=${encodeURIComponent(lineUserId)}&includeAssist=1`);
+        const res = await fetch(
+          `/api/phase42/ops-console/view?lineUserId=${encodeURIComponent(lineUserId)}&includeAssist=1`,
+          { headers: OPS_ACTOR_HEADERS }
+        );
         return res.json();
       }
 
       async function fetchPhase39Suggestion(lineUserId) {
-        const res = await fetch(`/api/phase39/ops-assist/suggestion?lineUserId=${encodeURIComponent(lineUserId)}`);
+        const res = await fetch(
+          `/api/phase39/ops-assist/suggestion?lineUserId=${encodeURIComponent(lineUserId)}`,
+          { headers: OPS_ACTOR_HEADERS }
+        );
         return res.json();
       }
 
@@ -773,7 +819,7 @@
       async function submitOpsAssistAdopt(payload) {
         const res = await fetch('/api/phase105/ops-assist/adopt', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
         return res.json();
@@ -782,7 +828,7 @@
       async function fetchSegmentPlan(payload) {
         const res = await fetch('/api/phase67/send/plan', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
         return res.json();
@@ -791,7 +837,7 @@
       async function fetchSegmentExecute(payload) {
         const res = await fetch('/api/phase68/send/execute', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
         return res.json();
@@ -800,7 +846,7 @@
       async function fetchSegmentDryRun(payload) {
         const res = await fetch('/api/phase81/segment-send/dry-run', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
         return res.json();
@@ -810,22 +856,111 @@
         const params = new URLSearchParams();
         if (limit) params.set('limit', String(limit));
         const qs = params.toString();
-        const res = await fetch(`/api/phase73/retry-queue${qs ? `?${qs}` : ''}`);
+        const res = await fetch(`/api/phase73/retry-queue${qs ? `?${qs}` : ''}`, { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
       async function fetchSavedSegments() {
-        const res = await fetch('/api/phase77/segments?status=active');
+        const res = await fetch('/api/phase77/segments?status=active', { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
       async function retryQueueSend(payload) {
         const res = await fetch('/api/phase73/retry-queue/retry', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload)
         });
         return res.json();
+      }
+
+      async function fetchKillSwitchStatus() {
+        const res = await fetch('/api/admin/os/kill-switch/status', { headers: OPS_ACTOR_HEADERS });
+        return res.json();
+      }
+
+      async function planKillSwitch(isOn) {
+        const traceId = newTraceId('kill-switch');
+        const res = await fetch('/api/admin/os/kill-switch/plan', {
+          method: 'POST',
+          headers: Object.assign(
+            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+            OPS_ACTOR_HEADERS
+          ),
+          body: JSON.stringify({ isOn: Boolean(isOn) })
+        });
+        return res.json();
+      }
+
+      async function setKillSwitchPlanned(plan) {
+        const payload = plan || {};
+        const traceId = payload.traceId || newTraceId('kill-switch');
+        const res = await fetch('/api/admin/os/kill-switch/set', {
+          method: 'POST',
+          headers: Object.assign(
+            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+            OPS_ACTOR_HEADERS
+          ),
+          body: JSON.stringify({
+            isOn: payload.isOn,
+            planHash: payload.planHash,
+            confirmToken: payload.confirmToken
+          })
+        });
+        return res.json();
+      }
+
+      function renderKillSwitchSummary(summary) {
+        const stateEl = document.getElementById('kill-switch-state');
+        const planHashEl = document.getElementById('kill-switch-plan-hash');
+        const tokenEl = document.getElementById('kill-switch-confirm-token');
+        const resultEl = document.getElementById('kill-switch-result');
+        if (!summary) {
+          setText(stateEl, '-');
+          setText(planHashEl, '-');
+          setText(tokenEl, '-');
+          setText(resultEl, 'error');
+          return;
+        }
+        if (summary.ok && typeof summary.killSwitch === 'boolean') {
+          setText(stateEl, summary.killSwitch ? 'ON' : 'OFF');
+        }
+        if (summary.ok && summary.planHash) setText(planHashEl, summary.planHash);
+        if (summary.ok && summary.confirmToken) setText(tokenEl, 'set');
+        setText(resultEl, formatJson(summary));
+      }
+
+      async function loadKillSwitchStatus() {
+        const data = await fetchKillSwitchStatus();
+        renderKillSwitchSummary(data);
+        return data;
+      }
+
+      async function handleKillSwitchPlan(isOn) {
+        const data = await planKillSwitch(isOn);
+        if (data && data.ok) {
+          killSwitchPlanCache = {
+            traceId: data.traceId || null,
+            isOn: Boolean(data.isOn),
+            planHash: data.planHash || null,
+            confirmToken: data.confirmToken || null
+          };
+        } else {
+          killSwitchPlanCache = null;
+        }
+        renderKillSwitchSummary(data);
+        return data;
+      }
+
+      async function handleKillSwitchSet() {
+        if (!killSwitchPlanCache || !killSwitchPlanCache.planHash || !killSwitchPlanCache.confirmToken) {
+          renderKillSwitchSummary({ ok: false, error: 'plan required' });
+          return { ok: false, error: 'plan required' };
+        }
+        const data = await setKillSwitchPlanned(killSwitchPlanCache);
+        renderKillSwitchSummary(data);
+        await loadKillSwitchStatus();
+        return data;
       }
 
       function renderOpsConsoleList(items) {
@@ -1511,6 +1646,19 @@
         applySegmentFilter(segment ? segment.filter : null);
       });
 
+      document.getElementById('kill-switch-refresh').addEventListener('click', () => {
+        loadKillSwitchStatus().catch(() => {});
+      });
+      document.getElementById('kill-switch-plan-on').addEventListener('click', () => {
+        handleKillSwitchPlan(true).catch(() => {});
+      });
+      document.getElementById('kill-switch-plan-off').addEventListener('click', () => {
+        handleKillSwitchPlan(false).catch(() => {});
+      });
+      document.getElementById('kill-switch-set').addEventListener('click', () => {
+        handleKillSwitchSet().catch(() => {});
+      });
+
       hydrateUsersFilters();
       Promise.all([
         loadUsers(),
@@ -1519,6 +1667,7 @@
         loadStaleMemberNumber(),
         loadImplementationTargets(),
         loadOpsConsoleList(),
+        loadKillSwitchStatus(),
         loadRetryQueue(),
         loadSavedSegments()
       ]).catch(() => {

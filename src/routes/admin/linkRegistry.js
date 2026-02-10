@@ -6,6 +6,7 @@ const { updateLink } = require('../../usecases/linkRegistry/updateLink');
 const { deleteLink } = require('../../usecases/linkRegistry/deleteLink');
 const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { resolveRequestId, resolveTraceId } = require('./osContext');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -27,11 +28,16 @@ async function handleCreate(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await createLink(payload);
+  const actor = resolveActor(req);
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   await appendAuditLog({
-    actor: resolveActor(req),
+    actor,
     action: 'link_registry.create',
     entityType: 'link_registry',
     entityId: result.id,
+    traceId,
+    requestId,
     payloadSummary: { title: payload.title || null }
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -54,11 +60,16 @@ async function handleUpdate(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await updateLink(id, payload);
+  const actor = resolveActor(req);
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   await appendAuditLog({
-    actor: resolveActor(req),
+    actor,
     action: 'link_registry.update',
     entityType: 'link_registry',
     entityId: result.id,
+    traceId,
+    requestId,
     payloadSummary: { fields: Object.keys(payload || {}) }
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -67,11 +78,16 @@ async function handleUpdate(req, res, body, id) {
 
 async function handleDelete(req, res, id) {
   const result = await deleteLink(id);
+  const actor = resolveActor(req);
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   await appendAuditLog({
-    actor: resolveActor(req),
+    actor,
     action: 'link_registry.delete',
     entityType: 'link_registry',
     entityId: result.id,
+    traceId,
+    requestId,
     payloadSummary: {}
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -82,11 +98,16 @@ async function handleHealth(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const result = await checkLinkHealth(id, payload);
+  const actor = resolveActor(req);
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   await appendAuditLog({
-    actor: resolveActor(req),
+    actor,
     action: 'link_registry.health',
     entityType: 'link_registry',
     entityId: result.id,
+    traceId,
+    requestId,
     payloadSummary: { state: payload.state || null, statusCode: payload.statusCode || null }
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

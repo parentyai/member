@@ -1,6 +1,7 @@
 'use strict';
 
 const https = require('https');
+const systemFlagsRepo = require('../repos/firestore/systemFlagsRepo');
 
 const LINE_API_HOST = 'api.line.me';
 
@@ -46,6 +47,10 @@ function requestJson(path, method, token, payload) {
 
 async function pushMessage(lineUserId, message) {
   if (!lineUserId) throw new Error('lineUserId required');
+  const killSwitch = await systemFlagsRepo.getKillSwitch();
+  if (killSwitch) {
+    throw new Error('kill switch is ON');
+  }
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
   const payload = {
     to: lineUserId,

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Notification Composer（運用OS）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      .nav a { margin-right: 12px; }
+      .note { font-size: 12px; color: #666; margin: 8px 0; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      label { display: block; font-size: 12px; color: #333; margin-top: 8px; }
+      input, select, textarea { width: 100%; padding: 6px 8px; font-size: 14px; }
+      textarea { min-height: 110px; }
+      button { padding: 6px 10px; font-size: 14px; }
+      pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .danger { color: #b00020; font-weight: 600; }
+      .ok { color: #0a7a0a; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/admin/ops">ops</a>
+      <a href="/admin/monitor">monitor</a>
+      <a href="/admin/errors">errors</a>
+      <a href="/admin/master">master</a>
+    </div>
+
+    <h1>Notification Composer（運用OS / ServicePhase1）</h1>
+    <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
+
+    <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
+    <div class="grid">
+      <div>
+        <h2>Draft</h2>
+        <label>title</label>
+        <input id="title" />
+        <label>body</label>
+        <textarea id="body"></textarea>
+        <label>ctaText</label>
+        <input id="ctaText" />
+        <label>linkRegistryId</label>
+        <input id="linkRegistryId" placeholder="link_registry doc id" />
+
+        <div class="row">
+          <div style="flex:1">
+            <label>scenarioKey</label>
+            <select id="scenarioKey">
+              <option value="A">A</option>
+              <option value="C">C</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>stepKey</label>
+            <select id="stepKey">
+              <option value="3mo">3mo</option>
+              <option value="1mo">1mo</option>
+              <option value="week">week</option>
+              <option value="after1w">after1w</option>
+            </select>
+          </div>
+        </div>
+
+        <h3>Target</h3>
+        <div class="row">
+          <div style="flex:1">
+            <label>region (optional)</label>
+            <input id="targetRegion" />
+          </div>
+          <div style="flex:1">
+            <label>limit (required for safety)</label>
+            <input id="targetLimit" type="number" min="1" max="500" value="50" />
+          </div>
+        </div>
+        <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
+
+        <div class="row" style="margin-top: 10px;">
+          <button id="create-draft" type="button">Create Draft</button>
+          <button id="preview" type="button">Preview</button>
+          <button id="approve" type="button">Approve (active)</button>
+        </div>
+        <div class="note">notificationId: <span id="notificationId">-</span></div>
+        <pre id="draft-result">-</pre>
+      </div>
+
+      <div>
+        <h2>Plan / Execute（Danger）</h2>
+        <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
+        <div class="row">
+          <button id="plan" type="button">Plan Send</button>
+          <button id="execute" type="button">Execute Send</button>
+        </div>
+        <div class="note">
+          planHash: <span id="planHash">-</span>
+          / confirmToken: <span id="confirmToken">-</span>
+        </div>
+        <pre id="plan-result">-</pre>
+        <pre id="execute-result">-</pre>
+      </div>
+    </div>
+
+    <script>
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_composer' };
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function jsonOrText(res) {
+        return res.text().then((text) => {
+          try { return JSON.parse(text); } catch (_err) { return { ok: false, error: text || 'error' }; }
+        });
+      }
+
+      function buildTarget() {
+        const region = document.getElementById('targetRegion').value.trim();
+        const limitValue = document.getElementById('targetLimit').value;
+        const limit = limitValue ? Number(limitValue) : null;
+        const membersOnly = document.getElementById('membersOnly').checked;
+        const target = {};
+        if (region) target.region = region;
+        if (membersOnly) target.membersOnly = true;
+        if (limit) target.limit = limit;
+        return target;
+      }
+
+      function buildDraftPayload() {
+        return {
+          title: document.getElementById('title').value.trim(),
+          body: document.getElementById('body').value,
+          ctaText: document.getElementById('ctaText').value.trim(),
+          linkRegistryId: document.getElementById('linkRegistryId').value.trim(),
+          scenarioKey: document.getElementById('scenarioKey').value,
+          stepKey: document.getElementById('stepKey').value,
+          target: buildTarget()
+        };
+      }
+
+      let currentNotificationId = null;
+      let currentPlanHash = null;
+      let currentConfirmToken = null;
+
+      async function postJson(url, payload) {
+        const traceId = getTraceId() || newTraceId();
+        setTraceId(traceId);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
+          body: JSON.stringify(payload || {})
+        });
+        return jsonOrText(res);
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
+
+      document.getElementById('create-draft').addEventListener('click', async () => {
+        const resultEl = document.getElementById('draft-result');
+        resultEl.textContent = '';
+        const payload = buildDraftPayload();
+        const result = await postJson('/api/admin/os/notifications/draft', payload);
+        resultEl.textContent = JSON.stringify(result, null, 2);
+        if (result && result.ok && result.notificationId) {
+          currentNotificationId = result.notificationId;
+          document.getElementById('notificationId').textContent = currentNotificationId;
+          currentPlanHash = null;
+          currentConfirmToken = null;
+          document.getElementById('planHash').textContent = '-';
+          document.getElementById('confirmToken').textContent = '-';
+        }
+      });
+
+      document.getElementById('preview').addEventListener('click', async () => {
+        const resultEl = document.getElementById('draft-result');
+        const payload = Object.assign({}, buildDraftPayload(), { notificationId: currentNotificationId });
+        const result = await postJson('/api/admin/os/notifications/preview', payload);
+        resultEl.textContent = JSON.stringify(result, null, 2);
+      });
+
+      document.getElementById('approve').addEventListener('click', async () => {
+        const resultEl = document.getElementById('draft-result');
+        if (!currentNotificationId) {
+          resultEl.textContent = 'notificationId required (create draft first)';
+          return;
+        }
+        const result = await postJson('/api/admin/os/notifications/approve', { notificationId: currentNotificationId });
+        resultEl.textContent = JSON.stringify(result, null, 2);
+      });
+
+      document.getElementById('plan').addEventListener('click', async () => {
+        const resultEl = document.getElementById('plan-result');
+        resultEl.textContent = '';
+        if (!currentNotificationId) {
+          resultEl.textContent = 'notificationId required';
+          return;
+        }
+        const result = await postJson('/api/admin/os/notifications/send/plan', {
+          notificationId: currentNotificationId
+        });
+        resultEl.textContent = JSON.stringify(result, null, 2);
+        if (result && result.ok) {
+          currentPlanHash = result.planHash || null;
+          currentConfirmToken = result.confirmToken || null;
+          document.getElementById('planHash').textContent = currentPlanHash || '-';
+          document.getElementById('confirmToken').textContent = currentConfirmToken ? 'set' : '-';
+        }
+      });
+
+      document.getElementById('execute').addEventListener('click', async () => {
+        const resultEl = document.getElementById('execute-result');
+        resultEl.textContent = '';
+        if (!currentNotificationId || !currentPlanHash || !currentConfirmToken) {
+          resultEl.textContent = 'planHash/confirmToken required (run plan)';
+          return;
+        }
+        const result = await postJson('/api/admin/os/notifications/send/execute', {
+          notificationId: currentNotificationId,
+          planHash: currentPlanHash,
+          confirmToken: currentConfirmToken
+        });
+        resultEl.textContent = JSON.stringify(result, null, 2);
+      });
+    </script>
+  </body>
+</html>
+
