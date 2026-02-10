@@ -61,6 +61,30 @@
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_monitor' };
 
+      function clearChildren(el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      }
+
+      function appendMessageRow(tbody, colSpan, message) {
+        clearChildren(tbody);
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = colSpan;
+        td.textContent = message;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      function appendRow(tbody, values) {
+        const tr = document.createElement('tr');
+        for (const value of values) {
+          const td = document.createElement('td');
+          td.appendChild(value instanceof Node ? value : document.createTextNode(String(value)));
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
       function formatCtr(value) {
         if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
         return `${Math.round(value * 1000) / 10}%`;
@@ -69,7 +93,10 @@
       function badge(value) {
         const health = value || '-';
         const cls = health === 'DANGER' ? 'badge-danger' : health === 'WARN' ? 'badge-warn' : 'badge-ok';
-        return `<span class="badge ${cls}">${health}</span>`;
+        const span = document.createElement('span');
+        span.className = `badge ${cls}`;
+        span.textContent = health;
+        return span;
       }
 
       async function loadReadModel() {
@@ -86,39 +113,39 @@
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="9">error</td></tr>';
+          appendMessageRow(rows, 9, 'error');
           return;
         }
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="9">no data</td></tr>';
+          appendMessageRow(rows, 9, 'no data');
           return;
         }
-        rows.innerHTML = data.items.map((item) => `
-          <tr>
-            <td>${item.notificationId}</td>
-            <td>${item.title || '-'}</td>
-            <td>${item.scenarioKey || '-'}</td>
-            <td>${item.stepKey || '-'}</td>
-            <td>${item.deliveredCount}</td>
-            <td>${item.readCount}</td>
-            <td>${item.clickCount}</td>
-            <td>${formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null)}</td>
-            <td>${badge(item.notificationHealth || null)}</td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        for (const item of data.items) {
+          appendRow(rows, [
+            item.notificationId || '-',
+            item.title || '-',
+            item.scenarioKey || '-',
+            item.stepKey || '-',
+            item.deliveredCount,
+            item.readCount,
+            item.clickCount,
+            formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
+            badge(item.notificationHealth || null)
+          ]);
+        }
         document.getElementById('note').textContent = `items: ${data.items.length}`;
       }
 
       document.getElementById('reload').addEventListener('click', () => {
         loadReadModel().catch(() => {
-          document.getElementById('rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
+          appendMessageRow(document.getElementById('rows'), 9, 'error');
         });
       });
 
       loadReadModel().catch(() => {
-        document.getElementById('rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
+        appendMessageRow(document.getElementById('rows'), 9, 'error');
       });
     </script>
   </body>
 </html>
-

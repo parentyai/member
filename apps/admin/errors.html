@@ -53,37 +53,61 @@
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_errors' };
 
+      function clearChildren(el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      }
+
+      function appendMessageRow(tbody, colSpan, message) {
+        clearChildren(tbody);
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = colSpan;
+        td.textContent = message;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      function appendRow(tbody, values) {
+        const tr = document.createElement('tr');
+        for (const value of values) {
+          const td = document.createElement('td');
+          td.textContent = value === null || value === undefined ? '-' : String(value);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
       function renderRows(rowsEl, items, cols) {
-        rowsEl.innerHTML = '';
         if (!items.length) {
-          rowsEl.innerHTML = `<tr><td colspan="${cols}">no data</td></tr>`;
+          appendMessageRow(rowsEl, cols, 'no data');
           return;
         }
-        rowsEl.innerHTML = items.map((item) => `
-          <tr>
-            <td>${item.id || '-'}</td>
-            <td>${item.title || '-'}</td>
-            <td>${item.url || '-'}</td>
-            <td>${(item.lastHealth && (item.lastHealth.checkedAt || item.lastHealth.checked_at)) || '-'}</td>
-          </tr>
-        `).join('');
+        clearChildren(rowsEl);
+        for (const item of items) {
+          appendRow(rowsEl, [
+            item.id || '-',
+            item.title || '-',
+            item.url || '-',
+            (item.lastHealth && (item.lastHealth.checkedAt || item.lastHealth.checked_at)) || '-'
+          ]);
+        }
       }
 
       function renderRetry(rowsEl, items) {
-        rowsEl.innerHTML = '';
         if (!items.length) {
-          rowsEl.innerHTML = '<tr><td colspan="5">no data</td></tr>';
+          appendMessageRow(rowsEl, 5, 'no data');
           return;
         }
-        rowsEl.innerHTML = items.map((item) => `
-          <tr>
-            <td>${item.id || '-'}</td>
-            <td>${item.lineUserId || '-'}</td>
-            <td>${item.templateKey || '-'}</td>
-            <td>${item.lastError || '-'}</td>
-            <td>${item.updatedAt || item.createdAt || '-'}</td>
-          </tr>
-        `).join('');
+        clearChildren(rowsEl);
+        for (const item of items) {
+          appendRow(rowsEl, [
+            item.id || '-',
+            item.lineUserId || '-',
+            item.templateKey || '-',
+            item.lastError || '-',
+            item.updatedAt || item.createdAt || '-'
+          ]);
+        }
       }
 
       async function loadAll() {
@@ -111,4 +135,3 @@
     </script>
   </body>
 </html>
-

@@ -106,6 +106,34 @@
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
 
+      function clearChildren(el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      }
+
+      function appendMessageRow(tbody, colSpan, message) {
+        clearChildren(tbody);
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = colSpan;
+        td.textContent = message;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      function appendRow(tbody, values) {
+        const tr = document.createElement('tr');
+        for (const value of values) {
+          const td = document.createElement('td');
+          if (value instanceof Node) {
+            td.appendChild(value);
+          } else {
+            td.textContent = value === null || value === undefined ? '-' : String(value);
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
       function jsonOrText(res) {
         return res.text().then((text) => {
           try { return JSON.parse(text); } catch (_err) { return { ok: false, error: text || 'error' }; }
@@ -120,38 +148,58 @@
         const data = await res.json();
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          appendMessageRow(rows, 4, 'error');
           return;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
-          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          appendMessageRow(rows, 4, 'no data');
           return;
         }
-        rows.innerHTML = items.map((item) => `
-          <tr>
-            <td>${item.key || '-'}</td>
-            <td>${item.status || '-'}</td>
-            <td>${item.title || '-'}</td>
-            <td>
-              <button data-action="activate" data-key="${item.key}">activate</button>
-              <button data-action="deactivate" data-key="${item.key}">deactivate</button>
-            </td>
-          </tr>
-        `).join('');
-        rows.querySelectorAll('button[data-key]').forEach((btn) => {
-          btn.addEventListener('click', async (ev) => {
-            const key = ev.currentTarget.dataset.key;
-            const action = ev.currentTarget.dataset.action;
-            if (!key || !action) return;
-            const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/${action}`, {
+        clearChildren(rows);
+        for (const item of items) {
+          const actions = document.createElement('span');
+
+          const activateBtn = document.createElement('button');
+          activateBtn.type = 'button';
+          activateBtn.textContent = 'activate';
+          activateBtn.addEventListener('click', async () => {
+            const key = item && item.key ? String(item.key) : '';
+            if (!key) return;
+            const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/activate`, {
               method: 'POST',
               headers: ACTOR_HEADERS
             });
             document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
             await loadTemplates();
           });
-        });
+          actions.appendChild(activateBtn);
+
+          const space = document.createTextNode(' ');
+          actions.appendChild(space);
+
+          const deactivateBtn = document.createElement('button');
+          deactivateBtn.type = 'button';
+          deactivateBtn.textContent = 'deactivate';
+          deactivateBtn.addEventListener('click', async () => {
+            const key = item && item.key ? String(item.key) : '';
+            if (!key) return;
+            const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/deactivate`, {
+              method: 'POST',
+              headers: ACTOR_HEADERS
+            });
+            document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
+            await loadTemplates();
+          });
+          actions.appendChild(deactivateBtn);
+
+          appendRow(rows, [
+            item.key || '-',
+            item.status || '-',
+            item.title || '-',
+            actions
+          ]);
+        }
       }
 
       async function createTemplate() {
@@ -177,22 +225,23 @@
         const data = await res.json();
         const rows = document.getElementById('link-rows');
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          appendMessageRow(rows, 4, 'error');
           return;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
-          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          appendMessageRow(rows, 4, 'no data');
           return;
         }
-        rows.innerHTML = items.map((item) => `
-          <tr>
-            <td>${item.id || '-'}</td>
-            <td>${item.title || '-'}</td>
-            <td>${item.url || '-'}</td>
-            <td>${item.lastHealth && item.lastHealth.state ? item.lastHealth.state : '-'}</td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        for (const item of items) {
+          appendRow(rows, [
+            item.id || '-',
+            item.title || '-',
+            item.url || '-',
+            item.lastHealth && item.lastHealth.state ? item.lastHealth.state : '-'
+          ]);
+        }
       }
 
       async function createLink() {
