@@ -22,7 +22,10 @@ const { approveNotification } = require('../../src/usecases/adminOs/approveNotif
 const { planNotificationSend } = require('../../src/usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../src/usecases/adminOs/executeNotificationSend');
 
+const ORIGINAL_SECRET = process.env.OPS_CONFIRM_TOKEN_SECRET;
+
 beforeEach(() => {
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test-confirm-secret';
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
 });
@@ -30,6 +33,11 @@ beforeEach(() => {
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (ORIGINAL_SECRET === undefined) {
+    delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+  } else {
+    process.env.OPS_CONFIRM_TOKEN_SECRET = ORIGINAL_SECRET;
+  }
 });
 
 test('phase161: composer flow draft -> approve -> plan -> execute (no real send)', async () => {
