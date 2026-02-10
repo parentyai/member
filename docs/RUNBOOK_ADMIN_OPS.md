@@ -37,7 +37,8 @@
    - kill switch on（意図した停止）
    - guard拒否（confirm token mismatch / plan mismatch）
    - link WARN
-   - send failure → retry queue
+   - composer send failure → `notifications.send.execute`（ok=false）audit を確認
+   - segment send failure → retry queue
 5) Mitigation（人間判断）
    - 再送/停止/テンプレ差し替え/リンク差し替え
 6) Rollback
@@ -49,4 +50,3 @@
 - audits: view / plan / execute / kill switch set
 - decisions: submit / execute（該当する場合）
 - timeline: DECIDE / EXECUTE（該当する場合）
-
