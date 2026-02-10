@@ -42,6 +42,30 @@ async function setMemberCardAsset(lineUserId, assetObj) {
   return updateUser(lineUserId, { memberCardAsset: assetObj || null });
 }
 
+async function setRidacMembership(lineUserId, params) {
+  const payload = params || {};
+  const hash = typeof payload.ridacMembershipIdHash === 'string' ? payload.ridacMembershipIdHash : null;
+  const last4 = typeof payload.ridacMembershipIdLast4 === 'string' ? payload.ridacMembershipIdLast4 : null;
+  const declaredBy = payload.declaredBy === 'ops' ? 'ops' : 'user';
+  return updateUser(lineUserId, {
+    ridacMembershipIdHash: hash,
+    ridacMembershipIdLast4: last4,
+    ridacMembershipDeclaredAt: serverTimestamp(),
+    ridacMembershipDeclaredBy: declaredBy
+  });
+}
+
+async function clearRidacMembership(lineUserId, params) {
+  const payload = params || {};
+  const unlinkedBy = payload.unlinkedBy === 'ops' ? 'ops' : 'user';
+  return updateUser(lineUserId, {
+    ridacMembershipIdHash: null,
+    ridacMembershipIdLast4: null,
+    ridacMembershipUnlinkedAt: serverTimestamp(),
+    ridacMembershipUnlinkedBy: unlinkedBy
+  });
+}
+
 async function setOpsReview(lineUserId, reviewedBy) {
   if (!lineUserId) throw new Error('lineUserId required');
   const actor = reviewedBy && String(reviewedBy).trim().length > 0 ? reviewedBy : 'unknown';
@@ -90,6 +114,8 @@ module.exports = {
   updateUser,
   setMemberNumber,
   setMemberCardAsset,
+  setRidacMembership,
+  clearRidacMembership,
   setOpsReview,
   listUsers,
   listUsersByMemberNumber
