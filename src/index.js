@@ -541,6 +541,11 @@ function createServer() {
 
   if (pathname.startsWith('/api/admin/os/')) {
     const { handleStatus, handlePlan, handleSet } = require('./routes/admin/osKillSwitch');
+    const {
+      handleStatus: handleConfigStatus,
+      handlePlan: handleConfigPlan,
+      handleSet: handleConfigSet
+    } = require('./routes/admin/osConfig');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
     const {
       handleDraft,
@@ -581,6 +586,20 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/kill-switch/set') {
         const body = await collectBody();
         await handleSet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/config/status') {
+        await handleConfigStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/config/plan') {
+        const body = await collectBody();
+        await handleConfigPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/config/set') {
+        const body = await collectBody();
+        await handleConfigSet(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {
