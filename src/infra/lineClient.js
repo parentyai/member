@@ -59,6 +59,17 @@ async function pushMessage(lineUserId, message) {
   return requestJson('/v2/bot/message/push', 'POST', token, payload);
 }
 
+async function replyMessage(replyToken, message) {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const payload = {
+    replyToken,
+    messages: [message]
+  };
+  // Replies are interactive (user-initiated). We intentionally do not gate them behind Kill Switch.
+  return requestJson('/v2/bot/message/reply', 'POST', token, payload);
+}
+
 module.exports = {
-  pushMessage
+  pushMessage,
+  replyMessage
 };

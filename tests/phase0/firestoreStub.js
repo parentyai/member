@@ -93,6 +93,26 @@ function createDbStub() {
   return {
     __isStub: true,
     _state: state,
+    async runTransaction(updateFn) {
+      // Minimal transaction shim for unit tests.
+      // This is single-threaded and provides atomicity only within a test process.
+      const tx = {
+        async get(docRef) {
+          if (!docRef || typeof docRef.get !== 'function') throw new Error('tx.get requires docRef');
+          return docRef.get();
+        },
+        set(docRef, data, options) {
+          if (!docRef || typeof docRef.set !== 'function') throw new Error('tx.set requires docRef');
+          return docRef.set(data, options);
+        },
+        delete(docRef) {
+          if (!docRef || typeof docRef.delete !== 'function') throw new Error('tx.delete requires docRef');
+          return docRef.delete();
+        }
+      };
+      if (typeof updateFn !== 'function') throw new Error('runTransaction requires function');
+      return updateFn(tx);
+    },
     collection(name) {
       const collection = ensureCollection(name);
       return {

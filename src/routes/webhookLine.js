@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { ensureUserFromWebhook } = require('../usecases/users/ensureUser');
 const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMessage');
 const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
+const { declareRidacMembershipIdFromLine } = require('../usecases/users/declareRidacMembershipIdFromLine');
+const { replyMessage } = require('../infra/lineClient');
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -28,6 +30,23 @@ function extractUserIds(payload) {
     }
   }
   return Array.from(ids);
+}
+
+function extractLineUserId(event) {
+  const userId = event && event.source && event.source.userId;
+  return typeof userId === 'string' && userId.length > 0 ? userId : null;
+}
+
+function extractReplyToken(event) {
+  const t = event && event.replyToken;
+  return typeof t === 'string' && t.length > 0 ? t : null;
+}
+
+function extractMessageText(event) {
+  const msg = event && event.message && typeof event.message === 'object' ? event.message : null;
+  if (!msg || msg.type !== 'text') return null;
+  const text = msg.text;
+  return typeof text === 'string' ? text : null;
 }
 
 async function handleLineWebhook(options) {
@@ -65,10 +84,43 @@ async function handleLineWebhook(options) {
   const userIds = extractUserIds(payload);
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
-  for (const userId of userIds) {
-    await ensureUserFromWebhook(userId);
-    if (!isWebhookEdge || allowWelcome) {
-      await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+  const replyFn = (options && options.replyFn) || replyMessage;
+
+  // Ensure users and run interactive commands (best-effort).
+  const events = Array.isArray(payload && payload.events) ? payload.events : [];
+  const ensured = new Set();
+  for (const event of events) {
+    const userId = extractLineUserId(event);
+    if (!userId) continue;
+    if (!ensured.has(userId)) {
+      await ensureUserFromWebhook(userId);
+      ensured.add(userId);
+      if (!isWebhookEdge || allowWelcome) {
+        await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+      }
+    }
+
+    // Membership declare command: "会員ID NN-NNNN"
+    if (event && event.type === 'message') {
+      const text = extractMessageText(event);
+      const replyToken = extractReplyToken(event);
+      if (text && replyToken) {
+        try {
+          const result = await declareRidacMembershipIdFromLine({ lineUserId: userId, text, requestId });
+          if (result.status === 'linked') {
+            await replyFn(replyToken, { type: 'text', text: '会員IDの登録が完了しました。' });
+          } else if (result.status === 'duplicate') {
+            await replyFn(replyToken, { type: 'text', text: 'その会員IDはすでに登録があります。番号を再確認してください。' });
+          } else if (result.status === 'invalid_format') {
+            await replyFn(replyToken, { type: 'text', text: '会員IDの形式が正しくありません。（例: 会員ID 00-0000）' });
+          } else if (result.status === 'server_misconfigured') {
+            await replyFn(replyToken, { type: 'text', text: '現在この操作は利用できません。時間をおいて再度お試しください。' });
+          }
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'error';
+          logger(`[webhook] requestId=${requestId} ridac_membership=error message=${msg}`);
+        }
+      }
     }
   }
 
