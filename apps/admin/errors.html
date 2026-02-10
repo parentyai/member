@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Error Console（運用OS）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      .nav a { margin-right: 12px; }
+      .note { font-size: 12px; color: #666; margin: 8px 0; }
+      pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
+      th { background: #f7f7f7; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/admin/ops">ops</a>
+      <a href="/admin/composer">composer</a>
+      <a href="/admin/monitor">monitor</a>
+      <a href="/admin/master">master</a>
+    </div>
+
+    <h1>Error Console（運用OS / READ ONLY）</h1>
+    <div class="note">link WARN / retry queue / guard拒否（audit）を一覧化（表示のみ）。</div>
+
+    <div class="note">
+      <button id="reload">reload</button>
+      <span id="note"></span>
+    </div>
+
+    <h2>Summary</h2>
+    <pre id="summary">-</pre>
+
+    <h2>WARN Links (link_registry.lastHealth.state == WARN)</h2>
+    <table>
+      <thead>
+        <tr><th>id</th><th>title</th><th>url</th><th>checkedAt</th></tr>
+      </thead>
+      <tbody id="warn-links"></tbody>
+    </table>
+
+    <h2>Retry Queue (pending)</h2>
+    <div class="note">再送操作は `/admin/ops` の Retry Queue から実施。</div>
+    <table>
+      <thead>
+        <tr><th>id</th><th>lineUserId</th><th>templateKey</th><th>lastError</th><th>updatedAt</th></tr>
+      </thead>
+      <tbody id="retry-rows"></tbody>
+    </table>
+
+    <script>
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_errors' };
+
+      function renderRows(rowsEl, items, cols) {
+        rowsEl.innerHTML = '';
+        if (!items.length) {
+          rowsEl.innerHTML = `<tr><td colspan="${cols}">no data</td></tr>`;
+          return;
+        }
+        rowsEl.innerHTML = items.map((item) => `
+          <tr>
+            <td>${item.id || '-'}</td>
+            <td>${item.title || '-'}</td>
+            <td>${item.url || '-'}</td>
+            <td>${(item.lastHealth && (item.lastHealth.checkedAt || item.lastHealth.checked_at)) || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      function renderRetry(rowsEl, items) {
+        rowsEl.innerHTML = '';
+        if (!items.length) {
+          rowsEl.innerHTML = '<tr><td colspan="5">no data</td></tr>';
+          return;
+        }
+        rowsEl.innerHTML = items.map((item) => `
+          <tr>
+            <td>${item.id || '-'}</td>
+            <td>${item.lineUserId || '-'}</td>
+            <td>${item.templateKey || '-'}</td>
+            <td>${item.lastError || '-'}</td>
+            <td>${item.updatedAt || item.createdAt || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      async function loadAll() {
+        const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: OPS_ACTOR_HEADERS });
+        const summary = await summaryRes.json();
+        document.getElementById('summary').textContent = JSON.stringify(summary, null, 2);
+        document.getElementById('note').textContent = summary && summary.ok ? `serverTime: ${summary.serverTime || '-'}` : 'error';
+
+        const warnLinksEl = document.getElementById('warn-links');
+        renderRows(warnLinksEl, Array.isArray(summary.warnLinks) ? summary.warnLinks : [], 4);
+
+        const retryRowsEl = document.getElementById('retry-rows');
+        renderRetry(retryRowsEl, Array.isArray(summary.retryQueuePending) ? summary.retryQueuePending : []);
+      }
+
+      document.getElementById('reload').addEventListener('click', () => {
+        loadAll().catch(() => {
+          document.getElementById('summary').textContent = 'error';
+        });
+      });
+
+      loadAll().catch(() => {
+        document.getElementById('summary').textContent = 'error';
+      });
+    </script>
+  </body>
+</html>
+

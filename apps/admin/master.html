@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Master Data（運用OS）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      .nav a { margin-right: 12px; }
+      .note { font-size: 12px; color: #666; margin: 8px 0; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+      label { display: block; font-size: 12px; color: #333; margin-top: 8px; }
+      input, textarea, select { width: 100%; padding: 6px 8px; font-size: 14px; }
+      textarea { min-height: 80px; }
+      button { padding: 6px 10px; font-size: 14px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; padding: 6px; text-align: left; font-size: 13px; }
+      th { background: #f7f7f7; }
+      pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/admin/ops">ops</a>
+      <a href="/admin/composer">composer</a>
+      <a href="/admin/monitor">monitor</a>
+      <a href="/admin/errors">errors</a>
+    </div>
+
+    <h1>Master Data（運用OS）</h1>
+    <div class="note">templates / link_registry を UI から管理（add-only）。</div>
+
+    <div class="grid">
+      <div>
+        <h2>Templates</h2>
+        <div class="note">API: `/api/phase61/templates`</div>
+        <div class="note">
+          status:
+          <select id="tpl-status">
+            <option value="">(all)</option>
+            <option value="draft">draft</option>
+            <option value="active">active</option>
+            <option value="inactive">inactive</option>
+          </select>
+          <button id="tpl-reload" type="button">reload</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>key</th><th>status</th><th>title</th><th>actions</th></tr>
+          </thead>
+          <tbody id="tpl-rows"></tbody>
+        </table>
+
+        <h3>Create Template</h3>
+        <label>key</label>
+        <input id="tpl-key" placeholder="ops_escalate" />
+        <label>title</label>
+        <input id="tpl-title" />
+        <label>text/body</label>
+        <textarea id="tpl-text"></textarea>
+        <button id="tpl-create" type="button">create</button>
+        <pre id="tpl-result">-</pre>
+      </div>
+
+      <div>
+        <h2>Link Registry</h2>
+        <div class="note">API: `/admin/link-registry`</div>
+        <div class="note">
+          state:
+          <select id="link-state">
+            <option value="">(all)</option>
+            <option value="OK">OK</option>
+            <option value="WARN">WARN</option>
+          </select>
+          <button id="link-reload" type="button">reload</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>id</th><th>title</th><th>url</th><th>state</th></tr>
+          </thead>
+          <tbody id="link-rows"></tbody>
+        </table>
+
+        <h3>Create Link</h3>
+        <label>title</label>
+        <input id="link-title" />
+        <label>url</label>
+        <input id="link-url" placeholder="https://..." />
+        <button id="link-create" type="button">create</button>
+        <pre id="link-result">-</pre>
+      </div>
+    </div>
+
+    <script>
+      const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
+
+      function jsonOrText(res) {
+        return res.text().then((text) => {
+          try { return JSON.parse(text); } catch (_err) { return { ok: false, error: text || 'error' }; }
+        });
+      }
+
+      async function loadTemplates() {
+        const status = document.getElementById('tpl-status').value;
+        const params = new URLSearchParams();
+        if (status) params.set('status', status);
+        const res = await fetch(`/api/phase61/templates${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const data = await res.json();
+        const rows = document.getElementById('tpl-rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          return;
+        }
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (!items.length) {
+          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = items.map((item) => `
+          <tr>
+            <td>${item.key || '-'}</td>
+            <td>${item.status || '-'}</td>
+            <td>${item.title || '-'}</td>
+            <td>
+              <button data-action="activate" data-key="${item.key}">activate</button>
+              <button data-action="deactivate" data-key="${item.key}">deactivate</button>
+            </td>
+          </tr>
+        `).join('');
+        rows.querySelectorAll('button[data-key]').forEach((btn) => {
+          btn.addEventListener('click', async (ev) => {
+            const key = ev.currentTarget.dataset.key;
+            const action = ev.currentTarget.dataset.action;
+            if (!key || !action) return;
+            const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/${action}`, {
+              method: 'POST',
+              headers: ACTOR_HEADERS
+            });
+            document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
+            await loadTemplates();
+          });
+        });
+      }
+
+      async function createTemplate() {
+        const payload = {
+          key: document.getElementById('tpl-key').value.trim(),
+          title: document.getElementById('tpl-title').value.trim(),
+          text: document.getElementById('tpl-text').value
+        };
+        const res = await fetch('/api/phase61/templates', {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('tpl-result').textContent = JSON.stringify(await res.json(), null, 2);
+        await loadTemplates();
+      }
+
+      async function loadLinks() {
+        const state = document.getElementById('link-state').value;
+        const params = new URLSearchParams();
+        if (state) params.set('state', state);
+        const res = await fetch(`/admin/link-registry${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const data = await res.json();
+        const rows = document.getElementById('link-rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          return;
+        }
+        const items = Array.isArray(data.items) ? data.items : [];
+        if (!items.length) {
+          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = items.map((item) => `
+          <tr>
+            <td>${item.id || '-'}</td>
+            <td>${item.title || '-'}</td>
+            <td>${item.url || '-'}</td>
+            <td>${item.lastHealth && item.lastHealth.state ? item.lastHealth.state : '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      async function createLink() {
+        const payload = {
+          title: document.getElementById('link-title').value.trim(),
+          url: document.getElementById('link-url').value.trim()
+        };
+        const res = await fetch('/admin/link-registry', {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('link-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+        await loadLinks();
+      }
+
+      document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
+      document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
+      document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
+      document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
+
+      loadTemplates().catch(() => {});
+      loadLinks().catch(() => {});
+    </script>
+  </body>
+</html>
+

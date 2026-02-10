@@ -40,6 +40,14 @@ function buildTextMessage(notification, originalUrl, trackUrl) {
   return { type: 'text', text: withLink };
 }
 
+function normalizeLineUserIds(ids) {
+  if (!Array.isArray(ids)) return [];
+  const normalized = ids
+    .map((id) => (typeof id === 'string' ? id.trim() : ''))
+    .filter((id) => id.length > 0);
+  return Array.from(new Set(normalized)).sort();
+}
+
 async function sendNotification(params) {
   const payload = params || {};
   const notificationId = payload.notificationId;
@@ -70,7 +78,12 @@ async function sendNotification(params) {
     limit: target.limit
   });
 
-  if (!users.length) {
+  const overrideLineUserIds = normalizeLineUserIds(payload.lineUserIds);
+  const effectiveUsers = overrideLineUserIds.length
+    ? overrideLineUserIds.map((id) => ({ id }))
+    : users;
+
+  if (!effectiveUsers.length) {
     throw new Error('no recipients');
   }
 
@@ -79,7 +92,7 @@ async function sendNotification(params) {
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
-  for (const user of users) {
+  for (const user of effectiveUsers) {
     let trackedDeliveryId = null;
     let trackUrl = null;
     if (trackEnabled) {
@@ -143,7 +156,7 @@ async function sendNotification(params) {
     sentAt: sentAt || null
   });
 
-  return { notificationId, deliveredCount: users.length };
+  return { notificationId, deliveredCount: effectiveUsers.length };
 }
 
 module.exports = {
