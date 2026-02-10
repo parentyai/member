@@ -91,6 +91,18 @@
       </div>
     </div>
 
+    <hr />
+
+    <h2>Ridacクラブ会員ID（例外解除）</h2>
+    <div class="note">
+      重複拒否（B）の運用で詰まった場合のみ使用。入力した会員ID全文は保存しない（HMAC hash + last4のみ）。
+      誰に紐付いているかは「解除結果」でのみ返る（運用者向け）。
+    </div>
+    <label>ridacMembershipId（例: 00-0000）</label>
+    <input id="ridac-unlink-id" placeholder="00-0000" />
+    <button id="ridac-unlink" type="button">unlink</button>
+    <pre id="ridac-unlink-result">-</pre>
+
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
 
@@ -197,14 +209,27 @@
         await loadLinks();
       }
 
+      async function unlinkRidacMembership() {
+        const ridacMembershipId = document.getElementById('ridac-unlink-id').value.trim();
+        if (!ridacMembershipId) return;
+        const ok = window.confirm(`Ridac会員IDを解除しますか？\n\n${ridacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/ridac-membership/unlink', {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          body: JSON.stringify({ ridacMembershipId })
+        });
+        document.getElementById('ridac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+      }
+
       document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
       document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
       document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
+      document.getElementById('ridac-unlink').addEventListener('click', () => unlinkRidacMembership().catch(() => {}));
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
     </script>
   </body>
 </html>
-
