@@ -9,7 +9,11 @@
     "test": "node --test tests/**/*.test.js",
     "test:trace-smoke": "node tools/run_trace_smoke.js",
     "test:ops-smoke": "node tools/run_ops_smoke.js",
+    "audit:gate": "bash tools/audit/run_audit.sh",
     "start": "node src/index.js",
+    "start:member": "SERVICE_MODE=member node src/index.js",
+    "start:track": "SERVICE_MODE=track node src/index.js",
+    "start:webhook": "SERVICE_MODE=webhook node src/index.js",
     "preflight": "node -e \"const fs=require('fs'); const pkg=require('./package.json'); if(!pkg.scripts||!pkg.scripts.start) throw new Error('missing scripts.start'); if(!fs.existsSync('src/index.js')) throw new Error('missing src/index.js'); console.log('preflight ok');\"",
     "verify:day": "node scripts/phase21_verify_day_window.js",
     "verify:phase21": "node scripts/phase21_verify_day_window.js --track-base-url \"$TRACK_BASE_URL\" --linkRegistryId \"$LINK_REGISTRY_ID\""

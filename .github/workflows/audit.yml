@@ -1,0 +1,43 @@
+name: Audit Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * *" # daily 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run audit
+        run: |
+          chmod +x tools/audit/run_audit.sh
+          tools/audit/run_audit.sh
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-artifacts
+          path: artifacts/audit
+
+      - name: Upload Semgrep SARIF
+        if: always() && hashFiles('artifacts/audit/semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: artifacts/audit/semgrep.sarif
+

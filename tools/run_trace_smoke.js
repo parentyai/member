@@ -87,6 +87,16 @@ async function runTraceSmoke(options) {
   let cleanupDb = null;
 
   try {
+    // Admin auth: we use X-Admin-Token + cookie (not Authorization) to avoid clashing with Cloud Run IAM.
+    let adminToken = envString('ADMIN_OS_TOKEN', '');
+    if (startServer && !adminToken) {
+      adminToken = crypto.randomBytes(24).toString('hex');
+      process.env.ADMIN_OS_TOKEN = adminToken;
+    }
+    if (!adminToken) {
+      throw new Error('ADMIN_OS_TOKEN required (admin auth is enabled)');
+    }
+
     if (mode === 'stub') {
       const { createDbStub } = require('../tests/phase0/firestoreStub');
       const {
@@ -129,7 +139,7 @@ async function runTraceSmoke(options) {
       port,
       method: 'GET',
       path: `/api/phase25/ops/console?lineUserId=${encodeURIComponent(lineUserId)}`,
-      headers: { 'x-actor': actor, 'x-request-id': requestIdView }
+      headers: { 'x-admin-token': adminToken, 'x-actor': actor, 'x-request-id': requestIdView }
     });
     assert.strictEqual(consoleRes.status, 200);
     const consoleJson = safeJsonParse(consoleRes.body);
@@ -143,6 +153,7 @@ async function runTraceSmoke(options) {
       method: 'POST',
       path: '/api/phase25/ops/decision',
       headers: {
+        'x-admin-token': adminToken,
         'content-type': 'application/json; charset=utf-8',
         'x-actor': actor,
         'x-request-id': requestIdSubmit
@@ -169,6 +180,7 @@ async function runTraceSmoke(options) {
       method: 'POST',
       path: '/api/phase33/ops-decision/execute',
       headers: {
+        'x-admin-token': adminToken,
         'content-type': 'application/json; charset=utf-8',
         'x-actor': actor,
         'x-request-id': requestIdExecute
@@ -187,7 +199,7 @@ async function runTraceSmoke(options) {
       port,
       method: 'GET',
       path: `/api/admin/trace?traceId=${encodeURIComponent(traceId)}&limit=50`,
-      headers: { 'x-actor': actor, 'x-request-id': requestIdTrace }
+      headers: { 'x-admin-token': adminToken, 'x-actor': actor, 'x-request-id': requestIdTrace }
     });
     assert.strictEqual(traceRes.status, 200);
     const traceJson = safeJsonParse(traceRes.body);
@@ -282,4 +294,3 @@ module.exports = {
 if (require.main === module) {
   main().then((code) => process.exit(code));
 }
-

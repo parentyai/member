@@ -182,16 +182,22 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
 Expected:
 - `gcloud projects get-iam-policy` shows roles bound to deploy and runtime identities.
 
-## 5) Secret Manager (required for LINE credentials)
+## 5) Secret Manager (required)
 
 ```sh
 gcloud secrets create LINE_CHANNEL_SECRET --project "$PROJECT_ID"
 
 gcloud secrets create LINE_CHANNEL_ACCESS_TOKEN --project "$PROJECT_ID"
+
+# Admin/Ops app-layer auth (cookie login + X-Admin-Token for scripts)
+gcloud secrets create ADMIN_OS_TOKEN --project "$PROJECT_ID"
+
+# Track click token HMAC (must match between member + member-track)
+gcloud secrets create TRACK_TOKEN_SECRET --project "$PROJECT_ID"
 ```
 
 Expected:
-- `gcloud secrets list` shows both secrets.
+- `gcloud secrets list` shows required secrets.
 
 ## 6) Storage Bucket (memberCardAsset)
 
@@ -288,7 +294,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --no-allow-unauthenticated \
   --service-account "$RUNTIME_SA_EMAIL" \
   --set-env-vars "ENV_NAME=$ENV_NAME,PUBLIC_BASE_URL=$PUBLIC_BASE_URL,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,STORAGE_BUCKET=$STORAGE_BUCKET" \
-  --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest"
+  --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,TRACK_TOKEN_SECRET=TRACK_TOKEN_SECRET:latest,ADMIN_OS_TOKEN=ADMIN_OS_TOKEN:latest"
 ```
 ```
 
@@ -325,6 +331,8 @@ gcloud run deploy "$SERVICE_NAME" \
 - Secrets exist:
   - `LINE_CHANNEL_SECRET`
   - `LINE_CHANNEL_ACCESS_TOKEN`
+  - `ADMIN_OS_TOKEN`
+  - `TRACK_TOKEN_SECRET`
 - Storage bucket exists:
   - `gs://member-uploads-member-485303` (location `US-EAST1`)
 - Artifact Registry repo exists:

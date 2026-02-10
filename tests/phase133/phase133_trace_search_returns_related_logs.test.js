@@ -16,13 +16,14 @@ const auditLogsRepo = require('../../src/repos/firestore/auditLogsRepo');
 const decisionLogsRepo = require('../../src/repos/firestore/decisionLogsRepo');
 const decisionTimelineRepo = require('../../src/repos/firestore/decisionTimelineRepo');
 
-function httpRequest({ port, method, path }) {
+function httpRequest({ port, method, path, headers }) {
   return new Promise((resolve, reject) => {
     const req = http.request({
       hostname: '127.0.0.1',
       port,
       method,
-      path
+      path,
+      headers
     }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
@@ -38,6 +39,8 @@ function httpRequest({ port, method, path }) {
 test('phase133: GET /api/admin/trace returns audits/decisions/timeline for traceId', async (t) => {
   const prevMode = process.env.SERVICE_MODE;
   if (prevMode !== undefined) delete process.env.SERVICE_MODE;
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
 
   const db = createDbStub();
   setDbForTest(db);
@@ -54,6 +57,8 @@ test('phase133: GET /api/admin/trace returns audits/decisions/timeline for trace
     clearServerTimestampForTest();
     if (prevMode === undefined) delete process.env.SERVICE_MODE;
     else process.env.SERVICE_MODE = prevMode;
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
   });
 
   await auditLogsRepo.appendAuditLog({
@@ -93,7 +98,10 @@ test('phase133: GET /api/admin/trace returns audits/decisions/timeline for trace
   const res = await httpRequest({
     port,
     method: 'GET',
-    path: '/api/admin/trace?traceId=TRACE1&limit=50'
+    path: '/api/admin/trace?traceId=TRACE1&limit=50',
+    headers: {
+      'x-admin-token': 'test_admin_token'
+    }
   });
 
   assert.strictEqual(res.status, 200);
@@ -110,4 +118,3 @@ test('phase133: GET /api/admin/trace returns audits/decisions/timeline for trace
   assert.strictEqual(body.decisions[0].traceId, 'TRACE1');
   assert.strictEqual(body.timeline[0].traceId, 'TRACE1');
 });
-

@@ -2,6 +2,13 @@
 
 const { recordClickAndRedirect } = require('../usecases/track/recordClickAndRedirect');
 
+function isTrackPostClickEnabled() {
+  const raw = process.env.TRACK_POST_CLICK_ENABLED;
+  if (raw === undefined || raw === null || String(raw).trim() === '') return true; // compat default
+  const v = String(raw).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
 function resolveRequestId(req) {
   const headerId = req && req.headers && req.headers['x-request-id'];
   if (typeof headerId === 'string' && headerId.length > 0) return headerId;
@@ -29,6 +36,13 @@ function parseJson(body, res) {
 }
 
 async function handleTrackClick(req, res, body) {
+  if (!isTrackPostClickEnabled()) {
+    res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('forbidden');
+    logObs('click_post_compat', 'reject', { requestId: resolveRequestId(req) });
+    return;
+  }
+
   const payload = parseJson(body, res);
   if (!payload) return;
   const requestId = resolveRequestId(req);
