@@ -9,6 +9,7 @@ const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 const { createTrackToken } = require('../../domain/trackToken');
+const { computeNotificationDeliveryId } = require('../../domain/deliveryId');
 
 function resolveTrackBaseUrl() {
   const value = process.env.TRACK_BASE_URL;
@@ -92,16 +93,23 @@ async function sendNotification(params) {
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
+  let deliveredCount = 0;
+  let skippedCount = 0;
+
   for (const user of effectiveUsers) {
-    let trackedDeliveryId = null;
+    const deliveryId = computeNotificationDeliveryId({ notificationId, lineUserId: user.id });
+    const existing = await deliveriesRepo.getDelivery(deliveryId);
+    if (existing && existing.delivered) {
+      skippedCount += 1;
+      continue;
+    }
+
     let trackUrl = null;
     if (trackEnabled) {
-      const reservedId = deliveriesRepo.reserveDeliveryId();
       try {
-        const token = createTrackToken({ deliveryId: reservedId, linkRegistryId: notification.linkRegistryId });
+        const token = createTrackToken({ deliveryId, linkRegistryId: notification.linkRegistryId });
         const url = buildTrackUrl(trackBaseUrl, token);
         if (url) {
-          trackedDeliveryId = reservedId;
           trackUrl = url;
         }
       } catch (_err) {
@@ -110,21 +118,13 @@ async function sendNotification(params) {
     }
     const message = buildTextMessage(notification, linkEntry.url, trackUrl);
     await pushFn(user.id, message);
-    if (trackedDeliveryId) {
-      await deliveriesRepo.createDeliveryWithId(trackedDeliveryId, {
-        notificationId,
-        lineUserId: user.id,
-        sentAt,
-        delivered: true
-      });
-    } else {
-      await deliveriesRepo.createDelivery({
-        notificationId,
-        lineUserId: user.id,
-        sentAt,
-        delivered: true
-      });
-    }
+    deliveredCount += 1;
+    await deliveriesRepo.createDeliveryWithId(deliveryId, {
+      notificationId,
+      lineUserId: user.id,
+      sentAt,
+      delivered: true
+    });
     try {
       await decisionTimelineRepo.appendTimelineEntry({
         lineUserId: user.id,
@@ -156,7 +156,7 @@ async function sendNotification(params) {
     sentAt: sentAt || null
   });
 
-  return { notificationId, deliveredCount: effectiveUsers.length };
+  return { notificationId, deliveredCount, skippedCount };
 }
 
 module.exports = {
