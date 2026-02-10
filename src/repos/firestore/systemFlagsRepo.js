@@ -47,6 +47,12 @@ async function getServicePhase() {
 }
 
 async function setServicePhase(servicePhase) {
+  if (servicePhase === null) {
+    const db = getDb();
+    const docRef = db.collection(COLLECTION).doc(DOC_ID);
+    await docRef.set({ servicePhase: null }, { merge: true });
+    return { id: DOC_ID, servicePhase: null };
+  }
   const normalized = normalizeServicePhase(servicePhase);
   if (normalized === null) throw new Error('invalid servicePhase');
   const db = getDb();
@@ -65,6 +71,12 @@ async function getNotificationPreset() {
 }
 
 async function setNotificationPreset(notificationPreset) {
+  if (notificationPreset === null) {
+    const db = getDb();
+    const docRef = db.collection(COLLECTION).doc(DOC_ID);
+    await docRef.set({ notificationPreset: null }, { merge: true });
+    return { id: DOC_ID, notificationPreset: null };
+  }
   const normalized = normalizeNotificationPreset(notificationPreset);
   if (normalized === null) throw new Error('invalid notificationPreset');
   const db = getDb();

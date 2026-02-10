@@ -66,12 +66,21 @@ function verifyConfirmToken(token, data, options) {
   const opts = options || {};
   const secret = resolveSecret(opts.secret || process.env.OPS_CONFIRM_TOKEN_SECRET);
   if (!secret) return false;
-  let decoded;
+  const tokenTrimmed = token.trim();
+  // Reject non-canonical tokens. Node's base64url decoder is permissive and may
+  // ignore trailing garbage (e.g. when length%4===1), which would otherwise let
+  // tampered tokens verify. Enforce canonical base64url representation.
+  if (!/^[A-Za-z0-9_-]+$/.test(tokenTrimmed)) return false;
+  if (tokenTrimmed.length % 4 === 1) return false;
+  let decodedBytes;
   try {
-    decoded = decodeBase64Url(token.trim());
+    decodedBytes = Buffer.from(tokenTrimmed, 'base64url');
   } catch (_err) {
     return false;
   }
+  if (decodedBytes.toString('base64url') !== tokenTrimmed) return false;
+
+  const decoded = decodedBytes.toString('utf8');
   const lastDot = decoded.lastIndexOf('.');
   if (lastDot <= 0) return false;
   const payload = decoded.slice(0, lastDot);

@@ -103,8 +103,47 @@
     <button id="ridac-unlink" type="button">unlink</button>
     <pre id="ridac-unlink-result">-</pre>
 
+    <hr />
+
+    <h2>System Config（SSOT）</h2>
+    <div class="note">servicePhase / notificationPreset を安全に変更（plan → confirmToken → set）。</div>
+    <div class="note">
+      <button id="config-reload" type="button">reload status</button>
+    </div>
+    <pre id="config-status">-</pre>
+
+    <div class="grid">
+      <div>
+        <label>servicePhase（null = clear）</label>
+        <select id="config-service-phase">
+          <option value="">(null)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div>
+        <label>notificationPreset（null = clear）</label>
+        <select id="config-notification-preset">
+          <option value="">(null)</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+    </div>
+    <div class="note">
+      <button id="config-plan" type="button">plan</button>
+      <button id="config-set" type="button">set</button>
+    </div>
+    <pre id="config-plan-result">-</pre>
+    <pre id="config-set-result">-</pre>
+
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
+      let configPlanHash = null;
+      let configConfirmToken = null;
 
       function clearChildren(el) {
         while (el.firstChild) el.removeChild(el.firstChild);
@@ -271,14 +310,76 @@
         document.getElementById('ridac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
       }
 
+      function parseNullableInt(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return null;
+        const num = Number(trimmed);
+        if (!Number.isInteger(num)) return null;
+        return num;
+      }
+
+      function parseNullableString(value) {
+        const trimmed = String(value || '').trim();
+        return trimmed ? trimmed : null;
+      }
+
+      async function loadSystemConfigStatus() {
+        const res = await fetch('/api/admin/os/config/status', { headers: ACTOR_HEADERS });
+        const data = await jsonOrText(res);
+        document.getElementById('config-status').textContent = JSON.stringify(data, null, 2);
+        if (data && data.ok) {
+          const sp = data.servicePhase === null || data.servicePhase === undefined ? '' : String(data.servicePhase);
+          document.getElementById('config-service-phase').value = sp;
+          const preset = data.notificationPreset ? String(data.notificationPreset) : '';
+          document.getElementById('config-notification-preset').value = preset;
+        }
+      }
+
+      async function planSystemConfig() {
+        const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
+        const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        const res = await fetch('/api/admin/os/config/plan', {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          body: JSON.stringify({ servicePhase, notificationPreset })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
+        configPlanHash = data && data.ok ? data.planHash || null : null;
+        configConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function setSystemConfig() {
+        const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
+        const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        if (!configPlanHash || !configConfirmToken) {
+          document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/config/set', {
+          method: 'POST',
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          body: JSON.stringify({ servicePhase, notificationPreset, planHash: configPlanHash, confirmToken: configConfirmToken })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('config-set-result').textContent = JSON.stringify(data, null, 2);
+        await loadSystemConfigStatus();
+      }
+
       document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
       document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
       document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
       document.getElementById('ridac-unlink').addEventListener('click', () => unlinkRidacMembership().catch(() => {}));
+      document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
+      document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
+      document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
+      loadSystemConfigStatus().catch(() => {});
     </script>
   </body>
 </html>

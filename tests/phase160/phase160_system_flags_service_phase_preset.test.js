@@ -29,9 +29,14 @@ test('phase160: servicePhase/preset setters validate and persist', async () => {
   assert.strictEqual(await systemFlagsRepo.getServicePhase(), 2);
   assert.strictEqual(await systemFlagsRepo.getNotificationPreset(), 'B');
 
+  // Explicit null clears.
+  await systemFlagsRepo.setServicePhase(null);
+  await systemFlagsRepo.setNotificationPreset(null);
+  assert.strictEqual(await systemFlagsRepo.getServicePhase(), null);
+  assert.strictEqual(await systemFlagsRepo.getNotificationPreset(), null);
+
   await assert.rejects(() => systemFlagsRepo.setServicePhase(0));
   await assert.rejects(() => systemFlagsRepo.setServicePhase(99));
   await assert.rejects(() => systemFlagsRepo.setServicePhase('x'));
   await assert.rejects(() => systemFlagsRepo.setNotificationPreset('Z'));
 });
-
