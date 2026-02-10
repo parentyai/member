@@ -147,6 +147,8 @@
     <div class="section" id="ops-console-detail-section">
       <h2>Ops Console 詳細</h2>
       <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
+      <div class="note">servicePhase（サービス提供phase SSOT）: <span id="ops-console-detail-service-phase">-</span></div>
+      <div class="note">notificationPreset（SSOT）: <span id="ops-console-detail-notification-preset">-</span></div>
       <div class="note" id="ops-console-detail-error"></div>
       <div class="note">
         traceId:
@@ -844,6 +846,11 @@
 
       function renderOpsConsoleDetail(detail) {
         setText(document.getElementById('ops-console-detail-line-user-id'), detail.lineUserId || '-');
+        const servicePhaseValue = detail.servicePhase === null || detail.servicePhase === undefined
+          ? null
+          : String(detail.servicePhase);
+        setText(document.getElementById('ops-console-detail-service-phase'), servicePhaseValue || '-');
+        setText(document.getElementById('ops-console-detail-notification-preset'), detail.notificationPreset || '-');
         selectedOpsConsoleTraceId = detail.traceId || null;
         selectedOpsConsoleServerTime = detail.serverTime || null;
         setText(document.getElementById('ops-console-detail-trace-id'), detail.traceId || '-');
