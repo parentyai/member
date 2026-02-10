@@ -5,6 +5,8 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const COLLECTION = 'notification_deliveries';
 
 function resolveTimestamp(at) {
+  // Allow explicit null when callers want to indicate "not set yet".
+  if (at === null) return null;
   return at || serverTimestamp();
 }
 
@@ -28,6 +30,28 @@ async function createDeliveryWithId(deliveryId, data) {
   const payload = Object.assign({}, data || {}, { sentAt: resolveTimestamp(data && data.sentAt) });
   await docRef.set(payload, { merge: true });
   return { id: docRef.id };
+}
+
+async function reserveDeliveryWithId(deliveryId, data) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(deliveryId);
+  const reservedAt = resolveTimestamp(data && data.reservedAt);
+  // Reserve (create) the delivery doc before sending to prevent duplicates
+  // across process crashes. If it already exists, return the existing doc.
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    if (snap.exists) {
+      return { id: deliveryId, existing: Object.assign({ id: deliveryId }, snap.data()) };
+    }
+    tx.set(docRef, Object.assign({}, data || {}, {
+      delivered: false,
+      state: 'reserved',
+      reservedAt,
+      sentAt: null
+    }), { merge: false });
+    return { id: deliveryId, reserved: true };
+  });
 }
 
 async function getDelivery(deliveryId) {
@@ -76,6 +100,7 @@ module.exports = {
   createDelivery,
   reserveDeliveryId,
   createDeliveryWithId,
+  reserveDeliveryWithId,
   getDelivery,
   markRead,
   markClick,
