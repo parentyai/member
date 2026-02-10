@@ -9,7 +9,7 @@ const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 const { createTrackToken } = require('../../domain/trackToken');
-const { computeNotificationDeliveryId } = require('../../domain/deliveryId');
+const { computeNotificationDeliveryId, computeLineRetryKey } = require('../../domain/deliveryId');
 
 function resolveTrackBaseUrl() {
   const value = process.env.TRACK_BASE_URL;
@@ -98,8 +98,18 @@ async function sendNotification(params) {
 
   for (const user of effectiveUsers) {
     const deliveryId = computeNotificationDeliveryId({ notificationId, lineUserId: user.id });
-    const existing = await deliveriesRepo.getDelivery(deliveryId);
-    if (existing && existing.delivered) {
+    const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
+      notificationId,
+      lineUserId: user.id
+    });
+    const existing = reserved && reserved.existing ? reserved.existing : null;
+    if (existing && existing.delivered === true) {
+      skippedCount += 1;
+      continue;
+    }
+    // If the delivery exists but isn't marked failed, treat it as in-flight/unknown and skip.
+    // This prevents duplicates if the process crashed after pushing but before marking delivered.
+    if (existing && existing.delivered !== true && !existing.lastError) {
       skippedCount += 1;
       continue;
     }
@@ -117,14 +127,35 @@ async function sendNotification(params) {
       }
     }
     const message = buildTextMessage(notification, linkEntry.url, trackUrl);
-    await pushFn(user.id, message);
-    deliveredCount += 1;
-    await deliveriesRepo.createDeliveryWithId(deliveryId, {
-      notificationId,
-      lineUserId: user.id,
-      sentAt,
-      delivered: true
-    });
+    try {
+      await pushFn(user.id, message, { retryKey: computeLineRetryKey({ deliveryId }) });
+      deliveredCount += 1;
+      await deliveriesRepo.createDeliveryWithId(deliveryId, {
+        notificationId,
+        lineUserId: user.id,
+        sentAt,
+        delivered: true,
+        state: 'delivered',
+        deliveredAt: sentAt || undefined,
+        lastError: null,
+        lastErrorAt: null
+      });
+    } catch (err) {
+      try {
+        await deliveriesRepo.createDeliveryWithId(deliveryId, {
+          notificationId,
+          lineUserId: user.id,
+          sentAt: null,
+          delivered: false,
+          state: 'failed',
+          lastError: err && err.message ? String(err.message) : 'send failed',
+          lastErrorAt: sentAt || undefined
+        });
+      } catch (_ignored) {
+        // best-effort only
+      }
+      throw err;
+    }
     try {
       await decisionTimelineRepo.appendTimelineEntry({
         lineUserId: user.id,
