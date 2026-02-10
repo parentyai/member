@@ -44,14 +44,14 @@ function parseCookies(headerValue) {
 function resolveAdminTokenFromRequest(req) {
   const headerToken = req && req.headers && req.headers['x-admin-token'];
   if (typeof headerToken === 'string' && headerToken.trim().length > 0) {
-    return headerToken.trim();
+    return { token: headerToken.trim(), source: 'header' };
   }
   const cookieHeader = req && req.headers && req.headers.cookie;
   const cookies = parseCookies(typeof cookieHeader === 'string' ? cookieHeader : '');
   if (typeof cookies.admin_token === 'string' && cookies.admin_token.trim().length > 0) {
-    return cookies.admin_token.trim();
+    return { token: cookies.admin_token.trim(), source: 'cookie' };
   }
-  return null;
+  return { token: null, source: null };
 }
 
 function isProtectedOpsPath(pathname) {
@@ -76,6 +76,51 @@ function isProtectedOpsPath(pathname) {
   return false;
 }
 
+function resolveRequestProto(req) {
+  const xfProto = req && req.headers && req.headers['x-forwarded-proto'];
+  if (typeof xfProto === 'string' && xfProto.trim().length > 0) return xfProto.split(',')[0].trim();
+  if (req && req.socket && req.socket.encrypted) return 'https';
+  return 'http';
+}
+
+function isSameOrigin(req) {
+  const origin = req && req.headers && req.headers.origin;
+  const host = req && req.headers && req.headers.host;
+  if (typeof origin !== 'string' || origin.trim().length === 0) return false;
+  if (typeof host !== 'string' || host.trim().length === 0) return false;
+  let url;
+  try {
+    url = new URL(origin);
+  } catch (_err) {
+    return false;
+  }
+  const reqProto = resolveRequestProto(req);
+  if (url.protocol !== `${reqProto}:`) return false;
+  return url.host === host;
+}
+
+function isStateChangingMethod(method) {
+  return method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
+}
+
+function isCsrfExemptPath(pathname) {
+  return pathname === '/admin/login' || pathname === '/admin/login/';
+}
+
+function buildAdminCookieValue(token, req, opts) {
+  const payload = opts && typeof opts === 'object' ? opts : {};
+  const parts = [
+    `admin_token=${token}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax'
+  ];
+  const maxAgeSeconds = typeof payload.maxAgeSeconds === 'number' ? payload.maxAgeSeconds : null;
+  if (maxAgeSeconds !== null) parts.push(`Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`);
+  if (resolveRequestProto(req) === 'https') parts.push('Secure');
+  return parts.join('; ');
+}
+
 function requireAdminToken(req, res, pathname) {
   const expected = resolveAdminOsToken();
   if (!expected) {
@@ -85,8 +130,20 @@ function requireAdminToken(req, res, pathname) {
     return false;
   }
 
-  const candidate = resolveAdminTokenFromRequest(req);
-  if (candidate && timingSafeEqualString(candidate, expected)) return true;
+  const resolved = resolveAdminTokenFromRequest(req);
+  const candidate = resolved && resolved.token ? resolved.token : null;
+  const source = resolved && resolved.source ? resolved.source : null;
+  if (candidate && timingSafeEqualString(candidate, expected)) {
+    // CSRF guard: only enforce for cookie-authenticated state-changing requests.
+    if (source === 'cookie' && isStateChangingMethod(req.method) && !isCsrfExemptPath(pathname)) {
+      if (!isSameOrigin(req)) {
+        res.writeHead(403, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: 'forbidden' }));
+        return false;
+      }
+    }
+    return true;
+  }
 
   // Browser-friendly behavior for /admin/*.
   if (typeof pathname === 'string' && pathname.startsWith('/admin/')) {
@@ -384,10 +441,11 @@ function createServer() {
         return;
       }
 
-      // Cookie-based session avoids clashing with Cloud Run IAM's Authorization: Bearer header.
+  // Cookie-based session avoids clashing with Cloud Run IAM's Authorization: Bearer header.
       res.writeHead(302, {
         location: '/admin/ops',
-        'set-cookie': `admin_token=${token}; Path=/; HttpOnly; SameSite=Lax`
+        // Short-lived session cookie. Secure is set automatically when behind HTTPS.
+        'set-cookie': buildAdminCookieValue(token, req, { maxAgeSeconds: 60 * 60 * 8 })
       });
       res.end();
     });
@@ -397,7 +455,7 @@ function createServer() {
   if (req.method === 'GET' && (pathname === '/admin/logout' || pathname === '/admin/logout/')) {
     res.writeHead(302, {
       location: '/admin/login',
-      'set-cookie': 'admin_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax'
+      'set-cookie': buildAdminCookieValue('', req, { maxAgeSeconds: 0 })
     });
     res.end();
     return;
