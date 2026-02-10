@@ -7,6 +7,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT_DIR="${ROOT_DIR}/artifacts/audit"
+OUT_DIR_REL="artifacts/audit"
 
 mkdir -p "$OUT_DIR"
 
@@ -77,13 +78,13 @@ DOCKER_SEMGREP_IMAGE="${DOCKER_SEMGREP_IMAGE:-returntocorp/semgrep:1.151.0}"
 DOCKER_OSV_IMAGE="${DOCKER_OSV_IMAGE:-ghcr.io/google/osv-scanner:v2.3.2}"
 
 if have_cmd docker; then
-  run_step "gitleaks" bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_GITLEAKS_IMAGE\" detect --no-git --redact --report-format json --report-path \"$OUT_DIR/gitleaks.json\""
+  run_step "gitleaks" bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_GITLEAKS_IMAGE\" detect --no-git --redact --report-format json --report-path \"/repo/${OUT_DIR_REL}/gitleaks.json\""
 
   # Semgrep downloads rules for auto config. In CI that's OK; locally you can skip by setting SKIP_SEMGREP=1.
   if [[ "${SKIP_SEMGREP:-}" != "1" ]]; then
     log "== semgrep (sarif) =="
     set +e
-    bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_SEMGREP_IMAGE\" semgrep --config=auto --sarif --output \"$OUT_DIR/semgrep.sarif\" --metrics=off"
+    bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_SEMGREP_IMAGE\" semgrep --config=auto --sarif --output \"/repo/${OUT_DIR_REL}/semgrep.sarif\" --metrics=off"
     code=$?
     set -e
     if [ "$code" -ne 0 ]; then
@@ -94,7 +95,7 @@ if have_cmd docker; then
     log "semgrep skipped (SKIP_SEMGREP=1)"
   fi
 
-  run_step "osv-scanner (lockfile)" bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_OSV_IMAGE\" scan --lockfile package-lock.json --format json --output \"$OUT_DIR/osv.json\""
+  run_step "osv-scanner (lockfile)" bash -lc "cd \"$ROOT_DIR\" && docker run --rm -v \"$ROOT_DIR:/repo\" -w /repo \"$DOCKER_OSV_IMAGE\" scan --lockfile package-lock.json --format json --output \"/repo/${OUT_DIR_REL}/osv.json\""
 else
   if in_ci; then
     fail "docker is required in CI for gitleaks/semgrep/osv-scanner"
