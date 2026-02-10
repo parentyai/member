@@ -8,3 +8,6 @@ SSOT / Runbook / Traceability 入口の index（append-only）。
 - `docs/RUNBOOK_OPS.md`（Ops判断/停止/復旧の runbook）
 - `docs/TRACE_SMOKE_EVIDENCE.md`（trace smoke 実行証跡の追記ログ）
 - `docs/LAUNCH_CHECKLIST.md`（本番ローンチ前チェックリスト）
+- `docs/SSOT_SERVICE_PHASES.md`（ServicePhase 1〜4 定義 / scope / guardrails）
+- `docs/SSOT_NOTIFICATION_PRESETS.md`（NotificationPreset A/B/C 定義 / guardrails）
+- `docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md`（ServicePhase × Preset 許可範囲マトリクス）

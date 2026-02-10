@@ -1,6 +1,7 @@
 'use strict';
 
 const { getOpsConsole } = require('../usecases/phase25/getOpsConsole');
+const systemFlagsRepo = require('../repos/firestore/systemFlagsRepo');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -44,6 +45,17 @@ async function handleGetOpsConsole(req, res) {
       requestId: resolveRequestId(req),
       traceId: traceId && traceId.trim().length > 0 ? traceId.trim() : null
     });
+    try {
+      const [servicePhase, notificationPreset] = await Promise.all([
+        systemFlagsRepo.getServicePhase(),
+        systemFlagsRepo.getNotificationPreset()
+      ]);
+      result.servicePhase = servicePhase;
+      result.notificationPreset = notificationPreset;
+    } catch (_err) {
+      result.servicePhase = null;
+      result.notificationPreset = null;
+    }
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
