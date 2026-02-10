@@ -26,6 +26,17 @@ function hasMemberNumber(user) {
   return Boolean(user && typeof user.memberNumber === 'string' && user.memberNumber.trim().length > 0);
 }
 
+function resolveTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return null;
+}
+
 function maskMemberNumber(memberNumber) {
   const value = String(memberNumber).trim();
   if (value.length < 4) return '****';
@@ -48,6 +59,11 @@ async function getMemberSummary(params) {
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const hasNumber = hasMemberNumber(user);
   const stale = isMemberNumberStale(user, nowMs);
+  const ridacLast4 = typeof user.ridacMembershipIdLast4 === 'string' ? user.ridacMembershipIdLast4 : null;
+  const ridacDeclaredAt = resolveTimestamp(user.ridacMembershipDeclaredAt);
+  const ridacDeclaredBy = user.ridacMembershipDeclaredBy === 'ops' ? 'ops' : (user.ridacMembershipDeclaredBy === 'user' ? 'user' : null);
+  const ridacUnlinkedAt = resolveTimestamp(user.ridacMembershipUnlinkedAt);
+  const ridacUnlinkedBy = user.ridacMembershipUnlinkedBy === 'ops' ? 'ops' : (user.ridacMembershipUnlinkedBy === 'user' ? 'user' : null);
 
   const summary = {
     ok: true,
@@ -55,7 +71,15 @@ async function getMemberSummary(params) {
     member: {
       hasMemberNumber: hasNumber,
       memberNumberMasked: hasNumber ? maskMemberNumber(user.memberNumber) : null,
-      memberNumberStale: stale
+      memberNumberStale: stale,
+      ridac: {
+        hasRidacMembership: Boolean(ridacLast4),
+        ridacMembershipIdLast4: ridacLast4,
+        ridacMembershipDeclaredAt: ridacDeclaredAt,
+        ridacMembershipDeclaredBy: ridacDeclaredBy,
+        ridacMembershipUnlinkedAt: ridacUnlinkedAt,
+        ridacMembershipUnlinkedBy: ridacUnlinkedBy
+      }
     },
     ops: {
       needsAttention: false,
