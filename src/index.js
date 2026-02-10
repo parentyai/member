@@ -451,6 +451,36 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'POST' && (pathname === '/api/admin/ridac-membership/unlink' || pathname === '/api/admin/ridac-membership/unlink/')) {
+    const { handleRidacMembershipUnlink } = require('./routes/admin/ridacMembershipUnlink');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const body = await collectBody();
+      await handleRidacMembershipUnlink(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/admin/os/')) {
     const { handleStatus, handlePlan, handleSet } = require('./routes/admin/osKillSwitch');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
