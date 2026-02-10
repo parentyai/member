@@ -3,6 +3,7 @@
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { pushMessage } = require('../../infra/lineClient');
+const { computeLineRetryKey } = require('../../domain/deliveryId');
 const { validateKillSwitch } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 
@@ -24,6 +25,9 @@ async function testSendNotification(params) {
   const text = payload.text || 'test message';
   const pushFn = payload.pushFn || pushMessage;
   const notificationId = payload.notificationId || 'test';
+  const deliveryId = typeof payload.deliveryId === 'string' && payload.deliveryId.trim().length > 0
+    ? payload.deliveryId.trim()
+    : null;
 
   if (!lineUserId) {
     throw new Error('lineUserId required');
@@ -31,7 +35,42 @@ async function testSendNotification(params) {
 
   validateKillSwitch(payload.killSwitch);
 
-  await pushFn(lineUserId, buildTextMessage(text));
+  if (deliveryId) {
+    const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
+      notificationId,
+      lineUserId
+    });
+    const existing = reserved && reserved.existing ? reserved.existing : null;
+    if (existing && existing.delivered === true) return { id: deliveryId, skipped: true };
+    // If the delivery exists but isn't marked failed, treat it as in-flight/unknown and skip.
+    // This prevents duplicates if the process crashed after pushing but before marking delivered.
+    if (existing && existing.delivered !== true && !existing.lastError) return { id: deliveryId, skipped: true };
+  }
+
+  try {
+    if (deliveryId) {
+      await pushFn(lineUserId, buildTextMessage(text), { retryKey: computeLineRetryKey({ deliveryId }) });
+    } else {
+      await pushFn(lineUserId, buildTextMessage(text));
+    }
+  } catch (err) {
+    if (deliveryId) {
+      try {
+        await deliveriesRepo.createDeliveryWithId(deliveryId, {
+          notificationId,
+          lineUserId,
+          sentAt: null,
+          delivered: false,
+          state: 'failed',
+          lastError: err && err.message ? String(err.message) : 'send failed',
+          lastErrorAt: payload.sentAt || undefined
+        });
+      } catch (_ignored) {
+        // best-effort only
+      }
+    }
+    throw err;
+  }
 
   const delivery = {
     notificationId,
@@ -39,7 +78,14 @@ async function testSendNotification(params) {
     sentAt: payload.sentAt,
     delivered: true
   };
-  const result = await deliveriesRepo.createDelivery(delivery);
+  const result = deliveryId
+    ? await deliveriesRepo.createDeliveryWithId(deliveryId, Object.assign({}, delivery, {
+      state: 'delivered',
+      deliveredAt: payload.sentAt || undefined,
+      lastError: null,
+      lastErrorAt: null
+    }))
+    : await deliveriesRepo.createDelivery(delivery);
 
   // Best-effort: do not let stats recording break sending.
   try {
