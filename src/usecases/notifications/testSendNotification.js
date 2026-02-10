@@ -3,6 +3,7 @@
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { pushMessage } = require('../../infra/lineClient');
+const { computeLineRetryKey } = require('../../domain/deliveryId');
 const { validateKillSwitch } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 
@@ -35,13 +36,41 @@ async function testSendNotification(params) {
   validateKillSwitch(payload.killSwitch);
 
   if (deliveryId) {
-    const existing = await deliveriesRepo.getDelivery(deliveryId);
-    if (existing && existing.delivered) {
-      return { id: deliveryId, skipped: true };
-    }
+    const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
+      notificationId,
+      lineUserId
+    });
+    const existing = reserved && reserved.existing ? reserved.existing : null;
+    if (existing && existing.delivered === true) return { id: deliveryId, skipped: true };
+    // If the delivery exists but isn't marked failed, treat it as in-flight/unknown and skip.
+    // This prevents duplicates if the process crashed after pushing but before marking delivered.
+    if (existing && existing.delivered !== true && !existing.lastError) return { id: deliveryId, skipped: true };
   }
 
-  await pushFn(lineUserId, buildTextMessage(text));
+  try {
+    if (deliveryId) {
+      await pushFn(lineUserId, buildTextMessage(text), { retryKey: computeLineRetryKey({ deliveryId }) });
+    } else {
+      await pushFn(lineUserId, buildTextMessage(text));
+    }
+  } catch (err) {
+    if (deliveryId) {
+      try {
+        await deliveriesRepo.createDeliveryWithId(deliveryId, {
+          notificationId,
+          lineUserId,
+          sentAt: null,
+          delivered: false,
+          state: 'failed',
+          lastError: err && err.message ? String(err.message) : 'send failed',
+          lastErrorAt: payload.sentAt || undefined
+        });
+      } catch (_ignored) {
+        // best-effort only
+      }
+    }
+    throw err;
+  }
 
   const delivery = {
     notificationId,
@@ -50,7 +79,12 @@ async function testSendNotification(params) {
     delivered: true
   };
   const result = deliveryId
-    ? await deliveriesRepo.createDeliveryWithId(deliveryId, delivery)
+    ? await deliveriesRepo.createDeliveryWithId(deliveryId, Object.assign({}, delivery, {
+      state: 'delivered',
+      deliveredAt: payload.sentAt || undefined,
+      lastError: null,
+      lastErrorAt: null
+    }))
     : await deliveriesRepo.createDelivery(delivery);
 
   // Best-effort: do not let stats recording break sending.

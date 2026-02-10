@@ -93,7 +93,10 @@ test('phase161: execute failure writes notifications.send.execute audit with ok=
   assert.strictEqual(after.status, 'active', 'notification should not be marked sent on failure');
 
   const deliveries = await deliveriesRepo.listDeliveriesByNotificationId(created.id);
-  assert.strictEqual(deliveries.length, 0, 'no delivery record should be written if push fails');
+  assert.strictEqual(deliveries.length, 1, 'delivery should be reserved and marked failed if push fails (prevents duplicates)');
+  assert.strictEqual(deliveries[0].delivered, false);
+  assert.strictEqual(deliveries[0].state, 'failed');
+  assert.ok(String(deliveries[0].lastError || '').includes('push_failed'));
 
   const audits = await auditLogsRepo.listAuditLogsByTraceId('TRACE_FAIL_1', 50);
   const execAudits = audits.filter((a) => a.action === 'notifications.send.execute');
@@ -101,4 +104,3 @@ test('phase161: execute failure writes notifications.send.execute audit with ok=
   assert.ok(execAudits.some((a) => a.payloadSummary && a.payloadSummary.ok === false), 'expected ok=false in audit');
   assert.ok(execAudits.some((a) => a.payloadSummary && a.payloadSummary.reason === 'send_failed'), 'expected reason=send_failed in audit');
 });
-
