@@ -14,6 +14,92 @@ function getServiceMode() {
   return process.env.SERVICE_MODE || 'member';
 }
 
+function timingSafeEqualString(a, b) {
+  const left = Buffer.from(String(a), 'utf8');
+  const right = Buffer.from(String(b), 'utf8');
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+function resolveAdminOsToken() {
+  const v = process.env.ADMIN_OS_TOKEN;
+  return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
+}
+
+function parseCookies(headerValue) {
+  const out = {};
+  if (typeof headerValue !== 'string' || headerValue.trim().length === 0) return out;
+  const parts = headerValue.split(';');
+  for (const part of parts) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (!key) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+function resolveAdminTokenFromRequest(req) {
+  const headerToken = req && req.headers && req.headers['x-admin-token'];
+  if (typeof headerToken === 'string' && headerToken.trim().length > 0) {
+    return headerToken.trim();
+  }
+  const cookieHeader = req && req.headers && req.headers.cookie;
+  const cookies = parseCookies(typeof cookieHeader === 'string' ? cookieHeader : '');
+  if (typeof cookies.admin_token === 'string' && cookies.admin_token.trim().length > 0) {
+    return cookies.admin_token.trim();
+  }
+  return null;
+}
+
+function isProtectedOpsPath(pathname) {
+  if (!pathname || typeof pathname !== 'string') return false;
+
+  // Always protect admin UI + admin APIs.
+  if (pathname.startsWith('/admin/')) return true;
+  if (pathname.startsWith('/api/admin/')) return true;
+
+  // Protect ops/admin APIs that are reachable from admin UI.
+  if (pathname.startsWith('/api/phase')) {
+    // Segment-based match: /api/phaseXX/(ops|admin|ops-console)/...
+    const parts = pathname.split('/').filter(Boolean);
+    if (parts.includes('admin')) return true;
+    if (parts.includes('ops')) return true;
+    // Covers ops-console, ops-assist, ops-decision, etc.
+    if (parts.some((p) => typeof p === 'string' && p.startsWith('ops-'))) return true;
+    // Phase5 state summary is ops-only data used by admin UI.
+    if (pathname.startsWith('/api/phase5/state/')) return true;
+  }
+
+  return false;
+}
+
+function requireAdminToken(req, res, pathname) {
+  const expected = resolveAdminOsToken();
+  if (!expected) {
+    // Fail closed on misconfiguration to remain safe even if Cloud Run IAM/network is mis-set.
+    res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('admin auth not configured');
+    return false;
+  }
+
+  const candidate = resolveAdminTokenFromRequest(req);
+  if (candidate && timingSafeEqualString(candidate, expected)) return true;
+
+  // Browser-friendly behavior for /admin/*.
+  if (typeof pathname === 'string' && pathname.startsWith('/admin/')) {
+    res.writeHead(302, { location: '/admin/login' });
+    res.end();
+    return false;
+  }
+
+  res.writeHead(401, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+  return false;
+}
+
 function getPathname(reqUrl) {
   if (!reqUrl) return '';
   const idx = reqUrl.indexOf('?');
@@ -160,6 +246,14 @@ function createServer() {
     return;
   }
 
+  // Member service: protect admin/ops surfaces at the app layer to remain safe even if IAM/network is misconfigured.
+  if (isProtectedOpsPath(pathname)) {
+    // Allow reaching the login/logout endpoints without prior auth.
+    if (pathname !== '/admin/login' && pathname !== '/admin/login/' && pathname !== '/admin/logout' && pathname !== '/admin/logout/') {
+      if (!requireAdminToken(req, res, pathname)) return;
+    }
+  }
+
   if (pathname === '/api/phase1/events') {
     let bytes = 0;
     const chunks = [];
@@ -199,6 +293,107 @@ function createServer() {
 
   if (req.method === 'POST' && (pathname === '/webhook/line' || pathname === '/webhook/line/')) {
     handleWebhook(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/login' || pathname === '/admin/login/')) {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Login</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      label { display: block; margin: 8px 0; }
+      input { padding: 6px 8px; font-size: 14px; min-width: 280px; }
+      button { padding: 6px 10px; font-size: 14px; }
+      .note { font-size: 12px; color: #666; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Admin Login</h1>
+    <div class="note">Enter the admin token to access /admin/* and ops/admin APIs.</div>
+    <form method="post" action="/admin/login">
+      <label>
+        token
+        <input type="password" name="token" required />
+      </label>
+      <button type="submit">Login</button>
+    </form>
+  </body>
+</html>`);
+    return;
+  }
+
+  if (req.method === 'POST' && (pathname === '/admin/login' || pathname === '/admin/login/')) {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    req.on('data', (chunk) => {
+      if (tooLarge) return;
+      bytes += chunk.length;
+      if (bytes > MAX_BODY_BYTES) {
+        tooLarge = true;
+        res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('payload too large');
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (tooLarge) return;
+      const body = Buffer.concat(chunks).toString('utf8');
+      const expected = resolveAdminOsToken();
+      if (!expected) {
+        res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('admin auth not configured');
+        return;
+      }
+
+      let token = null;
+      const contentType = req.headers['content-type'] || '';
+      if (typeof contentType === 'string' && contentType.includes('application/json')) {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (parsed && typeof parsed.token === 'string') token = parsed.token.trim();
+        } catch (_err) {
+          token = null;
+        }
+      } else {
+        try {
+          const params = new URLSearchParams(body);
+          const raw = params.get('token');
+          if (typeof raw === 'string') token = raw.trim();
+        } catch (_err) {
+          token = null;
+        }
+      }
+
+      if (!token || !timingSafeEqualString(token, expected)) {
+        res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('unauthorized');
+        return;
+      }
+
+      // Cookie-based session avoids clashing with Cloud Run IAM's Authorization: Bearer header.
+      res.writeHead(302, {
+        location: '/admin/ops',
+        'set-cookie': `admin_token=${token}; Path=/; HttpOnly; SameSite=Lax`
+      });
+      res.end();
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/logout' || pathname === '/admin/logout/')) {
+    res.writeHead(302, {
+      location: '/admin/login',
+      'set-cookie': 'admin_token=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax'
+    });
+    res.end();
     return;
   }
 

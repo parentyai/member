@@ -79,5 +79,5 @@ jobs:
             --image "$IMAGE" \
             --allow-unauthenticated \
             --service-account "$RUNTIME_SA_EMAIL" \
-            --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=track"
-
+            --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=track" \
+            --set-secrets "TRACK_TOKEN_SECRET=TRACK_TOKEN_SECRET:latest"

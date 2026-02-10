@@ -474,6 +474,16 @@
         history.replaceState(null, '', nextUrl);
       }
 
+      function renderTableMessage(rows, colSpan, message) {
+        clearChildren(rows);
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = colSpan;
+        td.textContent = message;
+        tr.appendChild(td);
+        rows.appendChild(tr);
+      }
+
       async function loadUsers() {
         const res = await fetch(`/api/phase5/ops/users-summary${buildUsersQuery()}`);
         const data = await res.json();
@@ -481,30 +491,39 @@
         const note = document.getElementById('user-summary-note');
         renderReview(data.review);
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="9">error</td></tr>';
+          renderTableMessage(rows, 9, 'error');
           return;
         }
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="9">no data</td></tr>';
+          renderTableMessage(rows, 9, 'no data');
           return;
         }
-        rows.innerHTML = data.items.map((item) => `
-          <tr>
-            <td>${item.lineUserId}</td>
-            <td>${item.hasMemberNumber ? 'あり' : 'なし'}</td>
-            <td>${item.checklistCompleted}/${item.checklistTotal}</td>
-            <td>${item.stale ? 'Yes' : 'No'}</td>
-            <td>${item.needsAttention ? 'Yes' : 'No'}</td>
-            <td>${item.opsReviewLastReviewedAt || '-'}</td>
-            <td>${item.opsReviewLastReviewedBy || '-'}</td>
-            <td>${item.lastActionAt || '-'}</td>
-            <td><button class="btn" data-review="${item.lineUserId}">Reviewed</button></td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        data.items.forEach((item) => {
+          const tr = document.createElement('tr');
 
-        rows.querySelectorAll('button[data-review]').forEach((btn) => {
-          btn.addEventListener('click', async (event) => {
-            const lineUserId = event.currentTarget.getAttribute('data-review');
+          const cells = [
+            item.lineUserId,
+            item.hasMemberNumber ? 'あり' : 'なし',
+            `${item.checklistCompleted}/${item.checklistTotal}`,
+            item.stale ? 'Yes' : 'No',
+            item.needsAttention ? 'Yes' : 'No',
+            item.opsReviewLastReviewedAt || '-',
+            item.opsReviewLastReviewedBy || '-',
+            item.lastActionAt || '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+
+          const actionTd = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = 'Reviewed';
+          btn.addEventListener('click', async () => {
+            const lineUserId = item.lineUserId;
             if (!lineUserId) return;
             await fetch('/api/phase5/admin/users/review', {
               method: 'POST',
@@ -513,6 +532,10 @@
             });
             await loadUsers();
           });
+          actionTd.appendChild(btn);
+          tr.appendChild(actionTd);
+
+          rows.appendChild(tr);
         });
 
         const params = new URLSearchParams(location.search);
@@ -536,23 +559,37 @@
         const data = await res.json();
         const rows = document.getElementById('notifications-rows');
         if (!data.ok) {
-          rows.innerHTML = '<tr><td colspan="6">error</td></tr>';
+          renderTableMessage(rows, 6, 'error');
           return;
         }
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="6">no data</td></tr>';
+          renderTableMessage(rows, 6, 'no data');
           return;
         }
-        rows.innerHTML = data.items.map((item) => `
-          <tr>
-            <td>${item.notificationId}</td>
-            <td>${item.sentAt || '-'}</td>
-            <td>${item.openCount}</td>
-            <td>${item.clickCount}</td>
-            <td>${item.lastReactionAt || '-'}</td>
-            <td><button class="btn" disabled>詳細を見る</button></td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        data.items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.notificationId,
+            item.sentAt || '-',
+            String(item.openCount),
+            String(item.clickCount),
+            item.lastReactionAt || '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          const actionTd = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.disabled = true;
+          btn.textContent = '詳細を見る';
+          actionTd.appendChild(btn);
+          tr.appendChild(actionTd);
+          rows.appendChild(tr);
+        });
       }
 
       function renderOpsDashboard(items) {
@@ -613,21 +650,29 @@
         const rows = document.getElementById('member-stale-rows');
         if (!data.ok) {
           countEl.textContent = 'error';
-          rows.innerHTML = '<tr><td colspan="3">error</td></tr>';
+          renderTableMessage(rows, 3, 'error');
           return;
         }
         countEl.textContent = `count: ${data.count}`;
         if (!data.items.length) {
-          rows.innerHTML = '<tr><td colspan="3">none</td></tr>';
+          renderTableMessage(rows, 3, 'none');
           return;
         }
-        rows.innerHTML = data.items.map((item) => `
-          <tr>
-            <td>${item.lineUserId}</td>
-            <td>${item.createdAt || '-'}</td>
-            <td>${item.daysSinceCreated}</td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        data.items.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.lineUserId,
+            item.createdAt || '-',
+            String(item.daysSinceCreated)
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          rows.appendChild(tr);
+        });
       }
 
       function renderReview(review) {
@@ -648,21 +693,29 @@
         const rows = document.getElementById('implementation-targets-rows');
         const data = await res.json();
         if (!Array.isArray(data)) {
-          rows.innerHTML = '<tr><td colspan="4">error</td></tr>';
+          renderTableMessage(rows, 4, 'error');
           return;
         }
         if (!data.length) {
-          rows.innerHTML = '<tr><td colspan="4">no data</td></tr>';
+          renderTableMessage(rows, 4, 'no data');
           return;
         }
-        rows.innerHTML = data.map((item) => `
-          <tr>
-            <td>${item.id}</td>
-            <td>${item.name || '-'}</td>
-            <td>${item.tag || '-'}</td>
-            <td>${item.status || '-'}</td>
-          </tr>
-        `).join('');
+        clearChildren(rows);
+        data.forEach((item) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            item.id,
+            item.name || '-',
+            item.tag || '-',
+            item.status || '-'
+          ];
+          cells.forEach((value) => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+          rows.appendChild(tr);
+        });
       }
 
       const OPS_ACTOR_HEADERS = { 'x-actor': 'ops_readonly' };
@@ -1469,11 +1522,11 @@
         loadRetryQueue(),
         loadSavedSegments()
       ]).catch(() => {
-        document.getElementById('users-rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
-        document.getElementById('notifications-rows').innerHTML = '<tr><td colspan="6">error</td></tr>';
-        document.getElementById('ops-dashboard-rows').innerHTML = '<tr><td colspan="5">error</td></tr>';
-        document.getElementById('member-stale-rows').innerHTML = '<tr><td colspan="3">error</td></tr>';
-        document.getElementById('implementation-targets-rows').innerHTML = '<tr><td colspan="4">error</td></tr>';
+        renderTableMessage(document.getElementById('users-rows'), 9, 'error');
+        renderTableMessage(document.getElementById('notifications-rows'), 6, 'error');
+        renderTableMessage(document.getElementById('ops-dashboard-rows'), 5, 'error');
+        renderTableMessage(document.getElementById('member-stale-rows'), 3, 'error');
+        renderTableMessage(document.getElementById('implementation-targets-rows'), 4, 'error');
       });
     </script>
   </body>

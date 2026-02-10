@@ -12,5 +12,5 @@ test('ops readonly ui includes implementation targets section', () => {
   assert.ok(html.includes('Implementation Targets'));
   assert.ok(html.includes('implementation-targets-rows'));
   assert.ok(html.includes('/admin/implementation-targets'));
-  assert.ok(html.includes('${item.id}'));
+  assert.ok(html.includes('loadImplementationTargets'));
 });
