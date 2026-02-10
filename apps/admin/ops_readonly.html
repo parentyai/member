@@ -165,6 +165,7 @@
       </div>
       <div>blockingReasons: <span id="ops-console-detail-blocking-reasons">-</span></div>
       <div>lastReactionAt（LINE定義）: <span id="ops-console-detail-last-reaction-at">-</span></div>
+      <div>stopReason: <span id="ops-console-detail-stop-reason">-</span></div>
       <div>execution: <span id="ops-console-detail-execution-message">-</span></div>
       <div>latestDecisionSummary:</div>
       <pre id="ops-console-detail-latest-decision-summary">-</pre>
@@ -853,6 +854,7 @@
           Array.isArray(detail.blockingReasons) && detail.blockingReasons.length ? detail.blockingReasons.join(', ') : '-'
         );
         setText(document.getElementById('ops-console-detail-last-reaction-at'), detail.lastReactionAt || '-');
+        setText(document.getElementById('ops-console-detail-stop-reason'), detail.stopReason || '-');
         setText(document.getElementById('ops-console-detail-execution-message'), detail.executionMessage || '-');
         setText(document.getElementById('ops-console-detail-latest-decision-summary'), formatJson(detail.latestDecisionSummary));
         const badge = document.getElementById('ops-console-detail-danger-badge');

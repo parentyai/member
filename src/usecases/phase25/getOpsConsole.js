@@ -205,6 +205,9 @@ async function getOpsConsole(params, deps) {
   }
   const executionStatus = buildExecutionStatus(latestExecutionLog);
   const latestDecisionSummary = summarizeDecisionLog(latestDecisionLog);
+  const stopReason = latestDecisionLog && latestDecisionLog.nextAction === 'STOP_AND_ESCALATE'
+    ? (typeof latestDecisionLog.reason === 'string' ? latestDecisionLog.reason : null)
+    : null;
   const blockingReasons = effectiveReadiness && Array.isArray(effectiveReadiness.blocking)
     ? effectiveReadiness.blocking
     : [];
@@ -262,6 +265,7 @@ async function getOpsConsole(params, deps) {
     opsStateNextAction,
     latestDecisionLog,
     latestDecisionSummary,
+    stopReason,
     consistency,
     decisionDrift,
     executionStatus,
