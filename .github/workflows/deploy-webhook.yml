@@ -1,0 +1,83 @@
+name: Deploy webhook service (Cloud Run)
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  RUNTIME_SA_EMAIL: ${{ vars.RUNTIME_SA_EMAIL }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  ENV_NAME: ${{ vars.ENV_NAME }}
+  FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+
+jobs:
+  deploy-webhook:
+    name: deploy-webhook
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Build image (Cloud Build)
+        run: |
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"
+          BUILD_ID=$(gcloud builds submit \
+            --project "$GCP_PROJECT_ID" \
+            --gcs-source-staging-dir "gs://${GCP_PROJECT_ID}_cloudbuild/source" \
+            --pack "image=${IMAGE}" \
+            --async \
+            --format="value(id)" \
+            .)
+          echo "Build ID: $BUILD_ID"
+          STATUS=""
+          for i in $(seq 1 60); do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --project "$GCP_PROJECT_ID" --format="value(status)")
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "SUCCESS" ]; then
+              break
+            fi
+            if [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "CANCELLED" ] || [ "$STATUS" = "TIMEOUT" ]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "Build did not succeed."
+            exit 1
+          fi
+
+      - name: Deploy image to Cloud Run (webhook)
+        run: |
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"
+          gcloud run deploy "$WEBHOOK_SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --image "$IMAGE" \
+            --allow-unauthenticated \
+            --service-account "$RUNTIME_SA_EMAIL" \
+            --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook" \
+            --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest"
