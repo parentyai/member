@@ -296,6 +296,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/admin' || pathname === '/admin/')) {
+    res.writeHead(302, { location: '/admin/ops' });
+    res.end();
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/admin/login' || pathname === '/admin/login/')) {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(`<!doctype html>
