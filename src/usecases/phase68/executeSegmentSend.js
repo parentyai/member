@@ -13,6 +13,7 @@ const { createCircuitBreaker } = require('../../domain/circuitBreaker');
 const { createRateLimiter } = require('../../domain/rateLimiter');
 const { createRetryPolicy } = require('../../domain/retryPolicy');
 const { testSendNotification } = require('../notifications/testSendNotification');
+const { computeSegmentRunDeliveryId } = require('../../domain/deliveryId');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
@@ -316,11 +317,13 @@ async function executeSegmentSend(params, deps) {
     while (true) {
       await rateLimiter();
       try {
+        const deliveryId = runId ? computeSegmentRunDeliveryId({ runId, lineUserId }) : null;
         await sendFn({
           lineUserId,
           text,
           notificationId: templateKey,
-          killSwitch
+          killSwitch,
+          deliveryId
         }, deps);
         return { ok: true, attempts: attempt + 1, error: null };
       } catch (err) {
@@ -353,6 +356,7 @@ async function executeSegmentSend(params, deps) {
       counters.failed += 1;
       failures.push({ lineUserId, error: errorMessage });
       try {
+        const deliveryId = runId ? computeSegmentRunDeliveryId({ runId, lineUserId }) : null;
         await retryQueueRepo.enqueueFailure({
           lineUserId,
           templateKey,
@@ -361,7 +365,8 @@ async function executeSegmentSend(params, deps) {
             templateKey,
             templateVersion: expectedTemplateVersion,
             text,
-            notificationId: templateKey
+            notificationId: templateKey,
+            deliveryId
           },
           reason: errorMessage,
           status: 'PENDING'

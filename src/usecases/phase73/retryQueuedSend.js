@@ -40,6 +40,7 @@ async function retryQueuedSend(params, deps) {
       lineUserId: snapshot.lineUserId,
       text: snapshot.text || '',
       notificationId: snapshot.notificationId || item.templateKey || 'retry',
+      deliveryId: snapshot.deliveryId || null,
       killSwitch
     }, deps);
     await repo.markDone(queueId);

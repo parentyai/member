@@ -24,12 +24,22 @@ async function testSendNotification(params) {
   const text = payload.text || 'test message';
   const pushFn = payload.pushFn || pushMessage;
   const notificationId = payload.notificationId || 'test';
+  const deliveryId = typeof payload.deliveryId === 'string' && payload.deliveryId.trim().length > 0
+    ? payload.deliveryId.trim()
+    : null;
 
   if (!lineUserId) {
     throw new Error('lineUserId required');
   }
 
   validateKillSwitch(payload.killSwitch);
+
+  if (deliveryId) {
+    const existing = await deliveriesRepo.getDelivery(deliveryId);
+    if (existing && existing.delivered) {
+      return { id: deliveryId, skipped: true };
+    }
+  }
 
   await pushFn(lineUserId, buildTextMessage(text));
 
@@ -39,7 +49,9 @@ async function testSendNotification(params) {
     sentAt: payload.sentAt,
     delivered: true
   };
-  const result = await deliveriesRepo.createDelivery(delivery);
+  const result = deliveryId
+    ? await deliveriesRepo.createDeliveryWithId(deliveryId, delivery)
+    : await deliveriesRepo.createDelivery(delivery);
 
   // Best-effort: do not let stats recording break sending.
   try {
