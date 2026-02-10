@@ -49,3 +49,7 @@ ServicePhase は運用設定として保持する（add-only）。
   - 課金境界・監査・安全停止を最優先
   - 送信系は Kill Switch を必ず参照
 
+## Admin UI / Operations OS
+ServicePhase の運用要件（管理UI成熟度 / 運用OS v1〜v4）は以下で固定する。
+
+- `docs/SSOT_ADMIN_UI_OS.md`

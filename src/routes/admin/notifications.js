@@ -6,6 +6,7 @@ const { listNotifications } = require('../../usecases/notifications/listNotifica
 const { sendNotification } = require('../../usecases/notifications/sendNotification');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { resolveTraceId } = require('./osContext');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -65,15 +66,18 @@ async function handleCreate(req, res, body) {
   if (!payload) return;
   try {
     const result = await createNotification(payload);
+    const traceId = resolveTraceId(req);
     await appendAuditLog({
       actor: resolveActor(req),
       action: 'notifications.create',
       entityType: 'notification',
       entityId: result.id,
+      traceId,
+      requestId: resolveRequestId(req),
       payloadSummary: { title: payload.title || null }
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, id: result.id }));
+    res.end(JSON.stringify({ ok: true, id: result.id, traceId }));
   } catch (err) {
     handleError(res, err);
   }
@@ -103,6 +107,7 @@ async function handleTestSend(req, res, body, notificationId) {
   const payload = parseJson(body, res);
   if (!payload) return;
   const requestId = resolveRequestId(req);
+  const traceId = resolveTraceId(req);
 
   if (!payload.lineUserId) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
@@ -125,6 +130,8 @@ async function handleTestSend(req, res, body, notificationId) {
       action: 'notifications.test_send',
       entityType: 'notification',
       entityId: notificationId || payload.notificationId || 'test',
+      traceId,
+      requestId,
       payloadSummary: {
         textLength: typeof payload.text === 'string' ? payload.text.length : 0
       }
@@ -136,7 +143,7 @@ async function handleTestSend(req, res, body, notificationId) {
       deliveryId: result.id
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, id: result.id }));
+    res.end(JSON.stringify({ ok: true, id: result.id, traceId }));
   } catch (err) {
     if (isKillSwitchError(err)) {
       logObs('test-send', 'reject', {
@@ -161,6 +168,7 @@ async function handleSend(req, res, body, notificationId) {
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
+    const traceId = resolveTraceId(req);
     const killSwitch = await getKillSwitch();
     const result = await sendNotification({
       notificationId,
@@ -172,10 +180,12 @@ async function handleSend(req, res, body, notificationId) {
       action: 'notifications.send',
       entityType: 'notification',
       entityId: notificationId,
+      traceId,
+      requestId: resolveRequestId(req),
       payloadSummary: { deliveredCount: result.deliveredCount }
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount }));
+    res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount, traceId }));
   } catch (err) {
     if (isKillSwitchError(err)) {
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });

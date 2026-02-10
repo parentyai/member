@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delivery Monitor（運用OS）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      .nav a { margin-right: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
+      th { background: #f7f7f7; }
+      .note { font-size: 12px; color: #666; margin: 8px 0; }
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+      .badge-ok { background: #e8f5e9; color: #1b5e20; }
+      .badge-warn { background: #fff8e1; color: #8d6e63; }
+      .badge-danger { background: #ffebee; color: #b71c1c; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/admin/ops">ops</a>
+      <a href="/admin/composer">composer</a>
+      <a href="/admin/errors">errors</a>
+      <a href="/admin/master">master</a>
+    </div>
+
+    <h1>Delivery Monitor（運用OS / READ ONLY）</h1>
+    <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
+
+    <div class="note">
+      limit:
+      <input type="number" id="limit" min="1" max="200" value="50" />
+      status:
+      <input type="text" id="status" placeholder="(optional)" style="max-width: 120px;" />
+      scenario:
+      <input type="text" id="scenarioKey" placeholder="(optional)" style="max-width: 80px;" />
+      step:
+      <input type="text" id="stepKey" placeholder="(optional)" style="max-width: 80px;" />
+      <button id="reload">reload</button>
+      <span id="note"></span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>notificationId</th>
+          <th>title</th>
+          <th>scenario</th>
+          <th>step</th>
+          <th>sent</th>
+          <th>read</th>
+          <th>click</th>
+          <th>CTR</th>
+          <th>health</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+
+    <script>
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_monitor' };
+
+      function formatCtr(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+        return `${Math.round(value * 1000) / 10}%`;
+      }
+
+      function badge(value) {
+        const health = value || '-';
+        const cls = health === 'DANGER' ? 'badge-danger' : health === 'WARN' ? 'badge-warn' : 'badge-ok';
+        return `<span class="badge ${cls}">${health}</span>`;
+      }
+
+      async function loadReadModel() {
+        const limit = document.getElementById('limit').value;
+        const status = document.getElementById('status').value.trim();
+        const scenarioKey = document.getElementById('scenarioKey').value.trim();
+        const stepKey = document.getElementById('stepKey').value.trim();
+        const params = new URLSearchParams();
+        if (limit) params.set('limit', String(limit));
+        if (status) params.set('status', status);
+        if (scenarioKey) params.set('scenarioKey', scenarioKey);
+        if (stepKey) params.set('stepKey', stepKey);
+        const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: OPS_ACTOR_HEADERS });
+        const data = await res.json();
+        const rows = document.getElementById('rows');
+        if (!data.ok) {
+          rows.innerHTML = '<tr><td colspan="9">error</td></tr>';
+          return;
+        }
+        if (!data.items.length) {
+          rows.innerHTML = '<tr><td colspan="9">no data</td></tr>';
+          return;
+        }
+        rows.innerHTML = data.items.map((item) => `
+          <tr>
+            <td>${item.notificationId}</td>
+            <td>${item.title || '-'}</td>
+            <td>${item.scenarioKey || '-'}</td>
+            <td>${item.stepKey || '-'}</td>
+            <td>${item.deliveredCount}</td>
+            <td>${item.readCount}</td>
+            <td>${item.clickCount}</td>
+            <td>${formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null)}</td>
+            <td>${badge(item.notificationHealth || null)}</td>
+          </tr>
+        `).join('');
+        document.getElementById('note').textContent = `items: ${data.items.length}`;
+      }
+
+      document.getElementById('reload').addEventListener('click', () => {
+        loadReadModel().catch(() => {
+          document.getElementById('rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
+        });
+      });
+
+      loadReadModel().catch(() => {
+        document.getElementById('rows').innerHTML = '<tr><td colspan="9">error</td></tr>';
+      });
+    </script>
+  </body>
+</html>
+

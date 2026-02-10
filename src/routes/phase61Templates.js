@@ -1,6 +1,8 @@
 'use strict';
 
 const templatesRepo = require('../repos/firestore/notificationTemplatesRepo');
+const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const { resolveActor, resolveRequestId, resolveTraceId } = require('./admin/osContext');
 
 function parseJson(body, res) {
   try {
@@ -33,11 +35,27 @@ function parsePath(pathname) {
 
 async function handleTemplates(req, res, body, pathname) {
   const { key, action, parts } = parsePath(pathname);
+  const actor = resolveActor(req);
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   try {
     if (req.method === 'GET' && parts.length === 3) {
       const url = new URL(req.url, 'http://localhost');
       const status = url.searchParams.get('status');
       const items = await templatesRepo.listTemplates({ status });
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'templates.list',
+          entityType: 'template',
+          entityId: status || 'all',
+          traceId,
+          requestId,
+          payloadSummary: { status: status || null, count: Array.isArray(items) ? items.length : 0 }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, items }));
       return;
@@ -46,6 +64,19 @@ async function handleTemplates(req, res, body, pathname) {
       const payload = parseJson(body, res);
       if (!payload) return;
       const created = await templatesRepo.createTemplate(payload);
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'templates.create',
+          entityType: 'template',
+          entityId: payload.key || created.id,
+          traceId,
+          requestId,
+          payloadSummary: { key: payload.key || null }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, created }));
       return;
@@ -54,18 +85,57 @@ async function handleTemplates(req, res, body, pathname) {
       const payload = parseJson(body, res);
       if (!payload) return;
       const updated = await templatesRepo.updateTemplate(key, payload);
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'templates.update',
+          entityType: 'template',
+          entityId: key,
+          traceId,
+          requestId,
+          payloadSummary: { fields: Object.keys(payload || {}) }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, updated }));
       return;
     }
     if (req.method === 'POST' && key && action === 'activate') {
       const updated = await templatesRepo.setStatus(key, 'active');
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'templates.activate',
+          entityType: 'template',
+          entityId: key,
+          traceId,
+          requestId,
+          payloadSummary: { status: 'active' }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, updated }));
       return;
     }
     if (req.method === 'POST' && key && action === 'deactivate') {
       const updated = await templatesRepo.setStatus(key, 'inactive');
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'templates.deactivate',
+          entityType: 'template',
+          entityId: key,
+          traceId,
+          requestId,
+          payloadSummary: { status: 'inactive' }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, updated }));
       return;

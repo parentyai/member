@@ -32,12 +32,13 @@
       <tbody id="rows"></tbody>
     </table>
     <script>
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_read_model' };
       function formatCtr(value) {
         if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
         return `${Math.round(value * 1000) / 10}%`;
       }
       async function loadReadModel() {
-        const res = await fetch('/admin/read-model/notifications');
+        const res = await fetch('/admin/read-model/notifications', { headers: OPS_ACTOR_HEADERS });
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
