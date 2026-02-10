@@ -55,6 +55,10 @@ jobs:
       - name: Trace smoke (Phase136)
         run: npm run test:trace-smoke
 
+      - name: Ops smoke (Phase155)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: npm run test:ops-smoke
+
   deploy:
     name: deploy
     runs-on: ubuntu-latest
