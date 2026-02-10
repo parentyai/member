@@ -15,7 +15,11 @@ const {
 const { ensureUserFromWebhook } = require('../../src/usecases/users/ensureUser');
 const { declareRidacMembershipIdFromLine } = require('../../src/usecases/users/declareRidacMembershipIdFromLine');
 
+let prevRidacSecret;
+
 beforeEach(() => {
+  prevRidacSecret = process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
+  process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET = 'test-ridac-membership-hmac-secret';
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
 });
@@ -23,6 +27,8 @@ beforeEach(() => {
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (typeof prevRidacSecret === 'string') process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET = prevRidacSecret;
+  else delete process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
 });
 
 test('security: ridac membership id is not stored in plaintext', async () => {

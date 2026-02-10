@@ -16,7 +16,11 @@ const { ensureUserFromWebhook } = require('../../src/usecases/users/ensureUser')
 const { declareRidacMembershipIdFromLine } = require('../../src/usecases/users/declareRidacMembershipIdFromLine');
 const ridacLinksRepo = require('../../src/repos/firestore/ridacMembershipLinksRepo');
 
+let prevRidacSecret;
+
 beforeEach(() => {
+  prevRidacSecret = process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
+  process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET = 'test-ridac-membership-hmac-secret';
   setDbForTest(createDbStub());
   setServerTimestampForTest('SERVER_TIMESTAMP');
 });
@@ -24,6 +28,8 @@ beforeEach(() => {
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (typeof prevRidacSecret === 'string') process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET = prevRidacSecret;
+  else delete process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
 });
 
 test('ridac membership: happy path links and persists hash+last4', async () => {
@@ -86,4 +92,3 @@ test('ridac membership: same user can replace their ridac id (releases previous 
   const prevLink = await ridacLinksRepo.getLinkByHash(prevHash);
   assert.strictEqual(prevLink, null);
 });
-
