@@ -30,8 +30,22 @@ function computeNotificationDeliveryId(params) {
   return `ntf_${shortenHex(sha256Hex(`notification:${notificationId}:${lineUserId}`), 32)}`;
 }
 
+function computeLineRetryKey(params) {
+  const payload = params || {};
+  const deliveryId = requireString(payload.deliveryId, 'deliveryId');
+  // LINE Messaging API expects a UUID-formatted retry key.
+  // Derive a deterministic UUID from deliveryId (sha256) to keep retries idempotent.
+  const hex = sha256Hex(`line_retry:${deliveryId}`);
+  const bytes = Buffer.from(hex.slice(0, 32), 'hex'); // 16 bytes
+  // Set UUID version (4) + variant bits.
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const b = bytes.toString('hex');
+  return `${b.slice(0, 8)}-${b.slice(8, 12)}-${b.slice(12, 16)}-${b.slice(16, 20)}-${b.slice(20, 32)}`;
+}
+
 module.exports = {
   computeSegmentRunDeliveryId,
-  computeNotificationDeliveryId
+  computeNotificationDeliveryId,
+  computeLineRetryKey
 };
-
