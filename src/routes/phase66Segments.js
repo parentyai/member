@@ -18,10 +18,14 @@ async function handleSendTargets(req, res, deps) {
     const url = new URL(req.url, 'http://localhost');
     const readinessStatus = url.searchParams.get('readinessStatus');
     const needsAttention = url.searchParams.get('needsAttention');
+    const hasMemberNumber = url.searchParams.get('hasMemberNumber');
+    const ridacStatus = url.searchParams.get('ridacStatus');
     const limit = url.searchParams.get('limit');
     const result = await buildSendSegment({
       readinessStatus,
       needsAttention,
+      hasMemberNumber,
+      ridacStatus,
       limit: limit !== null ? Number(limit) : undefined
     }, deps);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

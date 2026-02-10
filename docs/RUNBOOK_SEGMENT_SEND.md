@@ -14,3 +14,9 @@
 ## Notes
 - execute は mode=EXECUTE かつ killSwitch OFF でのみ許可。
 - plan の templateKey + count + hash が一致しない場合は reject。
+- `segmentQuery` の許容キー（add-only）:
+  - `readinessStatus`: `READY|NOT_READY`（未指定はALL）
+  - `needsAttention`: `1` の場合、READYでもblockingありを含める
+  - `hasMemberNumber`: `true|false`（未指定/`any` は無視）
+  - `ridacStatus`: `DECLARED|UNLINKED|NONE`（未指定/`any` は無視）
+  - `limit`: number（未指定は50）
