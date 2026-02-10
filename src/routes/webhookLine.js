@@ -5,6 +5,7 @@ const { ensureUserFromWebhook } = require('../usecases/users/ensureUser');
 const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMessage');
 const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
 const { declareRidacMembershipIdFromLine } = require('../usecases/users/declareRidacMembershipIdFromLine');
+const { getRidacMembershipStatusForLine } = require('../usecases/users/getRidacMembershipStatusForLine');
 const { replyMessage } = require('../infra/lineClient');
 
 function timingSafeEqual(a, b) {
@@ -47,6 +48,12 @@ function extractMessageText(event) {
   if (!msg || msg.type !== 'text') return null;
   const text = msg.text;
   return typeof text === 'string' ? text : null;
+}
+
+function isRidacStatusCommand(text) {
+  const raw = typeof text === 'string' ? text : '';
+  if (!raw) return false;
+  return /^\s*会員\s*[IiＩｉ][DdＤｄ]\s*確認\s*$/.test(raw);
 }
 
 async function handleLineWebhook(options) {
@@ -106,6 +113,18 @@ async function handleLineWebhook(options) {
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
+          if (isRidacStatusCommand(text)) {
+            const status = await getRidacMembershipStatusForLine({ lineUserId: userId, requestId });
+            if (status.status === 'DECLARED' && status.last4) {
+              await replyFn(replyToken, { type: 'text', text: `会員IDは登録済みです（末尾: ${status.last4}）` });
+            } else if (status.status === 'UNLINKED') {
+              await replyFn(replyToken, { type: 'text', text: '会員IDは解除済みです。再登録する場合は「会員ID 00-0000」の形式で送ってください。' });
+            } else {
+              await replyFn(replyToken, { type: 'text', text: '会員IDは未登録です。登録する場合は「会員ID 00-0000」の形式で送ってください。' });
+            }
+            continue;
+          }
+
           const result = await declareRidacMembershipIdFromLine({ lineUserId: userId, text, requestId });
           if (result.status === 'linked') {
             await replyFn(replyToken, { type: 'text', text: '会員IDの登録が完了しました。' });
