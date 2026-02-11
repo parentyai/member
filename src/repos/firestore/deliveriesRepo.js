@@ -29,6 +29,83 @@ function resolveDeliveredAt(record) {
   return toDate(record.deliveredAt) || toDate(record.sentAt) || null;
 }
 
+function toIso(value) {
+  const parsed = toDate(value);
+  return parsed ? parsed.toISOString() : null;
+}
+
+function isIndexError(err) {
+  if (!err) return false;
+  if (err.code === 9 || err.code === '9') return true; // Firestore FAILED_PRECONDITION
+  if (typeof err.message !== 'string') return false;
+  const lower = err.message.toLowerCase();
+  return lower.includes('failed precondition') || lower.includes('index');
+}
+
+function buildDeliveredBaseQuery(db, lineUserId, notificationCategory) {
+  let query = db.collection(COLLECTION)
+    .where('lineUserId', '==', lineUserId)
+    .where('delivered', '==', true);
+  if (notificationCategory) {
+    query = query.where('notificationCategory', '==', notificationCategory);
+  }
+  return query;
+}
+
+async function queryCount(query) {
+  if (query && typeof query.count === 'function') {
+    try {
+      const aggregate = await query.count().get();
+      if (aggregate && typeof aggregate.data === 'function') {
+        const value = aggregate.data();
+        if (value && Number.isFinite(value.count)) return value.count;
+      }
+    } catch (_err) {
+      // Fall back to docs.length when aggregate query is unavailable.
+    }
+  }
+  const snap = await query.get();
+  return Array.isArray(snap.docs) ? snap.docs.length : 0;
+}
+
+async function countDeliveredSinceFallback({ db, lineUserId, sinceDate, notificationCategory }) {
+  const snap = await buildDeliveredBaseQuery(db, lineUserId, notificationCategory).get();
+  let count = 0;
+  for (const doc of snap.docs) {
+    const record = doc.data() || {};
+    const at = resolveDeliveredAt(record);
+    if (at && at.getTime() >= sinceDate.getTime()) count += 1;
+  }
+  return count;
+}
+
+async function countDeliveredSinceOptimized({ db, lineUserId, sinceDate, notificationCategory }) {
+  const sinceIso = toIso(sinceDate);
+  if (!sinceIso) throw new Error('sinceAt required');
+
+  const base = buildDeliveredBaseQuery(db, lineUserId, notificationCategory);
+  const deliveredAtQuery = base.where('deliveredAt', '>=', sinceIso);
+  const deliveredAtCount = await queryCount(deliveredAtQuery);
+
+  // Legacy compatibility: old rows may not have deliveredAt but still have sentAt.
+  const legacySnap = await base.where('sentAt', '>=', sinceIso).get();
+  let legacyCount = 0;
+  for (const doc of legacySnap.docs) {
+    const record = doc.data() || {};
+    if (toDate(record.deliveredAt)) continue;
+    const at = resolveDeliveredAt(record);
+    if (!at || at.getTime() < sinceDate.getTime()) continue;
+    if (notificationCategory) {
+      const recCategory = typeof record.notificationCategory === 'string'
+        ? record.notificationCategory.trim().toUpperCase()
+        : '';
+      if (recCategory !== notificationCategory) continue;
+    }
+    legacyCount += 1;
+  }
+  return deliveredAtCount + legacyCount;
+}
+
 async function createDelivery(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
@@ -140,17 +217,22 @@ async function countDeliveredByUserSince(lineUserId, sinceAt) {
   const sinceDate = toDate(sinceAt);
   if (!sinceDate) throw new Error('sinceAt required');
   const db = getDb();
-  const snap = await db.collection(COLLECTION)
-    .where('lineUserId', '==', lineUserId)
-    .where('delivered', '==', true)
-    .get();
-  let count = 0;
-  for (const doc of snap.docs) {
-    const record = doc.data() || {};
-    const at = resolveDeliveredAt(record);
-    if (at && at.getTime() >= sinceDate.getTime()) count += 1;
+  try {
+    return await countDeliveredSinceOptimized({
+      db,
+      lineUserId,
+      sinceDate,
+      notificationCategory: null
+    });
+  } catch (err) {
+    if (!isIndexError(err)) throw err;
+    return countDeliveredSinceFallback({
+      db,
+      lineUserId,
+      sinceDate,
+      notificationCategory: null
+    });
   }
-  return count;
 }
 
 async function countDeliveredByUserCategorySince(lineUserId, notificationCategory, sinceAt) {
@@ -160,21 +242,22 @@ async function countDeliveredByUserCategorySince(lineUserId, notificationCategor
   const sinceDate = toDate(sinceAt);
   if (!sinceDate) throw new Error('sinceAt required');
   const db = getDb();
-  const snap = await db.collection(COLLECTION)
-    .where('lineUserId', '==', lineUserId)
-    .where('delivered', '==', true)
-    .get();
-  let count = 0;
-  for (const doc of snap.docs) {
-    const record = doc.data() || {};
-    const recCategory = typeof record.notificationCategory === 'string'
-      ? record.notificationCategory.trim().toUpperCase()
-      : '';
-    if (recCategory !== category) continue;
-    const at = resolveDeliveredAt(record);
-    if (at && at.getTime() >= sinceDate.getTime()) count += 1;
+  try {
+    return await countDeliveredSinceOptimized({
+      db,
+      lineUserId,
+      sinceDate,
+      notificationCategory: category
+    });
+  } catch (err) {
+    if (!isIndexError(err)) throw err;
+    return countDeliveredSinceFallback({
+      db,
+      lineUserId,
+      sinceDate,
+      notificationCategory: category
+    });
   }
-  return count;
 }
 
 module.exports = {

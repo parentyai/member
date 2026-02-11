@@ -7,6 +7,15 @@ const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebh
 const { declareRidacMembershipIdFromLine } = require('../usecases/users/declareRidacMembershipIdFromLine');
 const { getRidacMembershipStatusForLine } = require('../usecases/users/getRidacMembershipStatusForLine');
 const { replyMessage } = require('../infra/lineClient');
+const {
+  statusDeclared,
+  statusUnlinked,
+  statusNotDeclared,
+  declareLinked,
+  declareDuplicate,
+  declareInvalidFormat,
+  declareServerMisconfigured
+} = require('../domain/ridacLineMessages');
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -118,17 +127,17 @@ async function handleLineWebhook(options) {
             if (status.status === 'DECLARED' && status.last4) {
               await replyFn(replyToken, {
                 type: 'text',
-                text: `会員IDは登録済みです（末尾: ${status.last4}）。変更する場合は「会員ID 00-0000」を送信してください。`
+                text: statusDeclared(status.last4)
               });
             } else if (status.status === 'UNLINKED') {
               await replyFn(replyToken, {
                 type: 'text',
-                text: '会員IDは解除済みです。再登録する場合は「会員ID 00-0000」を送信してください。'
+                text: statusUnlinked()
               });
             } else {
               await replyFn(replyToken, {
                 type: 'text',
-                text: '会員IDは未登録です。登録する場合は「会員ID 00-0000」を送信してください。'
+                text: statusNotDeclared()
               });
             }
             continue;
@@ -138,17 +147,17 @@ async function handleLineWebhook(options) {
           if (result.status === 'linked') {
             await replyFn(replyToken, {
               type: 'text',
-              text: '会員IDの登録が完了しました。「会員ID 確認」で登録状態を確認できます。'
+              text: declareLinked()
             });
           } else if (result.status === 'duplicate') {
             await replyFn(replyToken, {
               type: 'text',
-              text: 'その会員IDはすでに登録があります。番号を再確認し、必要なら運用担当へご連絡ください。'
+              text: declareDuplicate()
             });
           } else if (result.status === 'invalid_format') {
-            await replyFn(replyToken, { type: 'text', text: '会員IDの形式が正しくありません。例: 会員ID 00-0000' });
+            await replyFn(replyToken, { type: 'text', text: declareInvalidFormat() });
           } else if (result.status === 'server_misconfigured') {
-            await replyFn(replyToken, { type: 'text', text: '現在この操作は利用できません。時間をおいて再度お試しください。' });
+            await replyFn(replyToken, { type: 'text', text: declareServerMisconfigured() });
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';
