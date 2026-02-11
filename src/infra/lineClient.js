@@ -65,12 +65,16 @@ async function pushMessage(lineUserId, message, options) {
 }
 
 async function replyMessage(replyToken, message, options) {
+  if (!replyToken) throw new Error('replyToken required');
+  const killSwitch = await systemFlagsRepo.getKillSwitch();
+  if (killSwitch) {
+    throw new Error('kill switch is ON');
+  }
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
   const payload = {
     replyToken,
     messages: [message]
   };
-  // Replies are interactive (user-initiated). We intentionally do not gate them behind Kill Switch.
   return requestJson('/v2/bot/message/reply', 'POST', token, payload, options);
 }
 

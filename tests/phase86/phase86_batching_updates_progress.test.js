@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { executeSegmentSend } = require('../../src/usecases/phase68/executeSegmentSend');
 const { computePlanHash } = require('../../src/usecases/phase67/segmentSendHash');
+const { createConfirmToken } = require('../../src/domain/confirmToken');
 
 function buildDeps(lineUserIds, plan) {
   const patchCalls = [];
@@ -59,8 +60,19 @@ test('phase86: batching updates progress cursor', async () => {
     createdAt: '2026-02-08T00:00:00Z'
   };
 
+  const now = new Date('2026-02-08T00:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const confirmToken = createConfirmToken({
+    planHash,
+    templateKey,
+    templateVersion: null,
+    segmentKey: 'seg1'
+  }, { now, secret: confirmTokenSecret });
+
   const { patchCalls, deps } = buildDeps(lineUserIds, plan);
-  await executeSegmentSend({ templateKey, segmentQuery: {}, planHash, batchSize: 2 }, deps);
+  deps.now = now;
+  deps.confirmTokenSecret = confirmTokenSecret;
+  await executeSegmentSend({ templateKey, segmentQuery: {}, planHash, confirmToken, batchSize: 2 }, deps);
 
   const cursorPatch = patchCalls.find((call) => call.cursor && call.cursor.index === 2);
   assert.ok(cursorPatch, 'expected cursor patch at index 2');

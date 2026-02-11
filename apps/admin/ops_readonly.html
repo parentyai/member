@@ -322,7 +322,7 @@
 
     <div class="section" id="retry-queue-section">
       <h2>Send Retry Queue（READ ONLY + Manual Retry）</h2>
-      <div class="note">PENDING の再送キュー一覧。手動で retry する。</div>
+      <div class="note">PENDING の再送キュー一覧。危険操作（retry）は plan → confirmToken → retry を固定する。</div>
       <div class="note">
         limit:
         <input type="number" id="retry-queue-limit" min="1" max="200" value="50" />
@@ -344,6 +344,7 @@
         </thead>
         <tbody id="retry-queue-rows"></tbody>
       </table>
+      <pre id="retry-queue-result">-</pre>
     </div>
 
     <div class="section">
@@ -398,6 +399,7 @@
       let segmentSendPlanCache = null;
       let segmentSendDryRunCache = null;
       let retryQueueCache = [];
+      let retryQueuePlanCache = {};
       let savedSegmentsCache = [];
       let selectedSegmentCache = null;
 
@@ -874,15 +876,34 @@
         return res.json();
       }
 
+      async function planRetryQueue(payload) {
+        const traceId = newTraceId('retry-queue');
+        const res = await fetch('/api/phase73/retry-queue/plan', {
+          method: 'POST',
+          headers: Object.assign(
+            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+            OPS_ACTOR_HEADERS
+          ),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data && data.ok && !data.traceId) data.traceId = traceId;
+        return data;
+      }
+
       async function fetchSavedSegments() {
         const res = await fetch('/api/phase77/segments?status=active', { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
       async function retryQueueSend(payload) {
+        const traceId = payload && payload.traceId ? payload.traceId : newTraceId('retry-queue');
         const res = await fetch('/api/phase73/retry-queue/retry', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
+          headers: Object.assign(
+            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+            OPS_ACTOR_HEADERS
+          ),
           body: JSON.stringify(payload)
         });
         return res.json();
@@ -1278,17 +1299,70 @@
             tr.appendChild(td);
           });
           const actionTd = document.createElement('td');
-          const btn = document.createElement('button');
-          btn.className = 'btn';
-          btn.textContent = 'retry';
-          btn.dataset.queueId = item.id;
-          btn.addEventListener('click', async (event) => {
-            const queueId = event.currentTarget.dataset.queueId;
-            if (!queueId) return;
-            await retryQueueSend({ queueId, decidedBy: 'ops_readonly' });
+          const queueId = item.id || null;
+          const planned = queueId && retryQueuePlanCache[queueId] ? retryQueuePlanCache[queueId] : null;
+
+          const planBtn = document.createElement('button');
+          planBtn.className = 'btn';
+          planBtn.textContent = 'plan';
+          planBtn.dataset.queueId = item.id;
+          planBtn.addEventListener('click', async (event) => {
+            const errorEl = document.getElementById('retry-queue-error');
+            const resultEl = document.getElementById('retry-queue-result');
+            setText(errorEl, '');
+            setText(resultEl, '');
+            const qid = event.currentTarget.dataset.queueId;
+            if (!qid) return;
+            const res = await planRetryQueue({ queueId: qid, decidedBy: 'ops_readonly' });
+            setText(resultEl, formatJson(res));
+            if (res && res.ok) {
+              retryQueuePlanCache[qid] = {
+                planHash: res.planHash || null,
+                confirmToken: res.confirmToken || null,
+                traceId: res.traceId || null
+              };
+            } else {
+              delete retryQueuePlanCache[qid];
+            }
             await loadRetryQueue();
           });
-          actionTd.appendChild(btn);
+
+          const retryBtn = document.createElement('button');
+          retryBtn.className = 'btn';
+          retryBtn.textContent = 'retry';
+          retryBtn.dataset.queueId = item.id;
+          retryBtn.disabled = !planned || !planned.planHash || !planned.confirmToken;
+          retryBtn.addEventListener('click', async (event) => {
+            const errorEl = document.getElementById('retry-queue-error');
+            const resultEl = document.getElementById('retry-queue-result');
+            setText(errorEl, '');
+            setText(resultEl, '');
+            const qid = event.currentTarget.dataset.queueId;
+            if (!qid) return;
+            const plan = retryQueuePlanCache[qid];
+            if (!plan || !plan.planHash || !plan.confirmToken) {
+              setText(errorEl, 'plan required');
+              return;
+            }
+            const res = await retryQueueSend({
+              queueId: qid,
+              planHash: plan.planHash,
+              confirmToken: plan.confirmToken,
+              traceId: plan.traceId || null,
+              decidedBy: 'ops_readonly'
+            });
+            setText(resultEl, formatJson(res));
+            delete retryQueuePlanCache[qid];
+            await loadRetryQueue();
+          });
+
+          const planState = document.createElement('span');
+          planState.textContent = planned && planned.planHash && planned.confirmToken ? ' token:set' : ' token:-';
+
+          actionTd.appendChild(planBtn);
+          actionTd.appendChild(document.createTextNode(' '));
+          actionTd.appendChild(retryBtn);
+          actionTd.appendChild(planState);
           tr.appendChild(actionTd);
           rows.appendChild(tr);
         });
@@ -1508,6 +1582,13 @@
             return;
           }
           retryQueueCache = Array.isArray(data.items) ? data.items : [];
+          // Drop plans for items that no longer exist/pending in the current view.
+          try {
+            const ids = new Set(retryQueueCache.map((it) => it && it.id).filter(Boolean));
+            Object.keys(retryQueuePlanCache).forEach((id) => {
+              if (!ids.has(id)) delete retryQueuePlanCache[id];
+            });
+          } catch (_err) {}
           setText(note, `serverTime: ${data.serverTime || '-'}`);
           renderRetryQueue(retryQueueCache);
         } catch (err) {

@@ -127,6 +127,7 @@ async function executeSegmentSend(params, deps) {
   const templateKey = payload.templateKey;
   if (!templateKey) throw new Error('templateKey required');
 
+  const now = deps && deps.now instanceof Date ? deps.now : new Date();
   const requestedBy = payload.requestedBy || 'unknown';
   const configRepo = deps && deps.automationConfigRepo ? deps.automationConfigRepo : automationConfigRepo;
   const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
@@ -151,9 +152,13 @@ async function executeSegmentSend(params, deps) {
   const segmentQuery = payload.segmentQuery || payload.filterSnapshot || {};
   const segment = await segmentFn(segmentQuery, deps);
   const lineUserIds = normalizeLineUserIds(segment.items);
-  const payloadPlanHash = typeof payload.planHash === 'string' ? payload.planHash : null;
+  const payloadPlanHash = typeof payload.planHash === 'string' && payload.planHash.trim().length > 0
+    ? payload.planHash.trim()
+    : null;
   const payloadTemplateVersion = parseTemplateVersion(payload.templateVersion);
-  const confirmToken = payload.confirmToken || null;
+  const confirmToken = typeof payload.confirmToken === 'string' && payload.confirmToken.trim().length > 0
+    ? payload.confirmToken.trim()
+    : null;
   const count = lineUserIds.length;
 
   const latestPlan = await auditRepo.getLatestAuditLog({
@@ -164,10 +169,13 @@ async function executeSegmentSend(params, deps) {
   const expectedCount = resolvePlanCount(latestPlan);
   const expectedBucket = resolvePlanBucket(latestPlan);
   const expectedTemplateVersion = resolveTemplateVersion(latestPlan);
-  const planHash = computePlanHash(templateKey, lineUserIds, expectedBucket || resolveDateBucket(new Date()));
+  const planHash = computePlanHash(templateKey, lineUserIds, expectedBucket || resolveDateBucket(now));
 
   if (!expectedHash || expectedCount === null || !expectedBucket) {
     return { ok: false, reason: 'plan_missing' };
+  }
+  if (!payloadPlanHash) {
+    return { ok: false, reason: 'plan_hash_required', status: 400 };
   }
   if (payloadPlanHash && payloadPlanHash !== expectedHash) {
     return { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash: expectedHash };
@@ -184,19 +192,20 @@ async function executeSegmentSend(params, deps) {
     };
   }
 
-  if (confirmToken) {
-    const confirmOk = verifyConfirmToken(confirmToken, {
-      planHash: expectedHash,
-      templateKey,
-      templateVersion: expectedTemplateVersion,
-      segmentKey: resolveSegmentKey(latestPlan, payload)
-    }, {
-      secret: deps && deps.confirmTokenSecret,
-      now: new Date()
-    });
-    if (!confirmOk) {
-      return { ok: false, reason: 'confirm_token_mismatch', status: 409 };
-    }
+  if (!confirmToken) {
+    return { ok: false, reason: 'confirm_token_required', status: 400 };
+  }
+  const confirmOk = verifyConfirmToken(confirmToken, {
+    planHash: expectedHash,
+    templateKey,
+    templateVersion: expectedTemplateVersion,
+    segmentKey: resolveSegmentKey(latestPlan, payload)
+  }, {
+    secret: deps && deps.confirmTokenSecret,
+    now
+  });
+  if (!confirmOk) {
+    return { ok: false, reason: 'confirm_token_mismatch', status: 409 };
   }
 
   let template = null;

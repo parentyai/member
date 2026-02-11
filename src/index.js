@@ -63,6 +63,14 @@ function isProtectedOpsPath(pathname) {
 
   // Protect ops/admin APIs that are reachable from admin UI.
   if (pathname.startsWith('/api/phase')) {
+    // Ops-only phase endpoints that intentionally omit "ops" in their path.
+    // These must still be protected at the app layer to stay safe even if IAM/network is misconfigured.
+    if (pathname.startsWith('/api/phase67/')) return true; // segment send plan
+    if (pathname.startsWith('/api/phase68/')) return true; // segment send execute
+    if (pathname.startsWith('/api/phase73/retry-queue')) return true; // retry queue view/plan/execute
+    if (pathname.startsWith('/api/phase77/segments')) return true; // ops segments CRUD
+    if (pathname.startsWith('/api/phase81/segment-send')) return true; // segment send dry-run
+
     // Segment-based match: /api/phaseXX/(ops|admin|ops-console)/...
     const parts = pathname.split('/').filter(Boolean);
     if (parts.includes('admin')) return true;
@@ -554,6 +562,7 @@ function createServer() {
       handleSendPlan,
       handleSendExecute
     } = require('./routes/admin/osNotifications');
+    const { handleView } = require('./routes/admin/osView');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -604,6 +613,11 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {
         await handleErrorsSummary(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/view') {
+        const body = await collectBody();
+        await handleView(req, res, body);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/draft') {
@@ -1535,7 +1549,7 @@ function createServer() {
   }
 
   if (pathname.startsWith('/api/phase73/retry-queue')) {
-    const { handleListRetryQueue, handleRetrySend } = require('./routes/phase73RetryQueue');
+    const { handleListRetryQueue, handlePlanRetryQueue, handleRetrySend } = require('./routes/phase73RetryQueue');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -1559,6 +1573,11 @@ function createServer() {
     (async () => {
       if (req.method === 'GET' && pathname === '/api/phase73/retry-queue') {
         await handleListRetryQueue(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase73/retry-queue/plan') {
+        const body = await collectBody();
+        await handlePlanRetryQueue(req, res, body);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/phase73/retry-queue/retry') {

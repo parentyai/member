@@ -15,6 +15,7 @@ const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
 const sendRetryQueueRepo = require('../../src/repos/firestore/sendRetryQueueRepo');
 
 const { testSendNotification } = require('../../src/usecases/notifications/testSendNotification');
+const { planRetryQueuedSend } = require('../../src/usecases/phase73/planRetryQueuedSend');
 const { retryQueuedSend } = require('../../src/usecases/phase73/retryQueuedSend');
 
 beforeEach(() => {
@@ -80,7 +81,18 @@ test('phase72: retryQueuedSend passes through deliveryId to sendFn', async () =>
   });
 
   let seenDeliveryId = null;
-  const res = await retryQueuedSend({ queueId: enq.id }, {
+  const now = new Date('2026-02-08T10:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const plan = await planRetryQueuedSend({ queueId: enq.id, decidedBy: 'ops' }, { now, confirmTokenSecret });
+  assert.strictEqual(plan.ok, true);
+
+  const res = await retryQueuedSend({
+    queueId: enq.id,
+    planHash: plan.planHash,
+    confirmToken: plan.confirmToken
+  }, {
+    now,
+    confirmTokenSecret,
     getKillSwitch: async () => false,
     sendFn: async (payload) => {
       seenDeliveryId = payload.deliveryId || null;
@@ -91,4 +103,3 @@ test('phase72: retryQueuedSend passes through deliveryId to sendFn', async () =>
   assert.strictEqual(res.ok, true);
   assert.strictEqual(seenDeliveryId, 'd_retry_1');
 });
-
