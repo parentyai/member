@@ -147,12 +147,33 @@
           <option value="C">C</option>
         </select>
       </div>
+      <div>
+        <label>notificationCaps.perUserWeeklyCap（null = clear）</label>
+        <input id="config-notification-cap-weekly" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.perUserDailyCap（null = clear）</label>
+        <input id="config-notification-cap-daily" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.perCategoryWeeklyCap（null = clear）</label>
+        <input id="config-notification-cap-category-weekly" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.quietHours.startHourUtc（null = clear）</label>
+        <input id="config-notification-quiet-start" placeholder="0-23" />
+      </div>
+      <div>
+        <label>notificationCaps.quietHours.endHourUtc（null = clear）</label>
+        <input id="config-notification-quiet-end" placeholder="0-23" />
+      </div>
     </div>
     <div class="note">
       <button id="config-plan" type="button">plan</button>
       <button id="config-set" type="button">set</button>
     </div>
     <pre id="config-plan-result">-</pre>
+    <pre id="config-impact-preview">-</pre>
     <pre id="config-set-result">-</pre>
 
     <hr />
@@ -193,6 +214,7 @@
       <button id="delivery-recovery-execute" type="button">execute(seal)</button>
     </div>
     <pre id="delivery-recovery-status-result">-</pre>
+    <pre id="delivery-recovery-recommendation">-</pre>
     <pre id="delivery-recovery-plan-result">-</pre>
     <pre id="delivery-recovery-execute-result">-</pre>
 
@@ -436,6 +458,57 @@
         return trimmed ? trimmed : null;
       }
 
+      function parseNullablePositiveInt(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return { ok: true, value: null };
+        const num = Number(trimmed);
+        if (!Number.isInteger(num) || num < 1) return { ok: false, error: 'cap must be a positive integer or empty' };
+        return { ok: true, value: num };
+      }
+
+      function parseNullableHour(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return { ok: true, value: null };
+        const num = Number(trimmed);
+        if (!Number.isInteger(num) || num < 0 || num > 23) {
+          return { ok: false, error: 'quietHours must be 0-23 or empty' };
+        }
+        return { ok: true, value: num };
+      }
+
+      function readNotificationCapsFromForm() {
+        const weekly = parseNullablePositiveInt(document.getElementById('config-notification-cap-weekly').value);
+        if (!weekly.ok) return weekly;
+        const daily = parseNullablePositiveInt(document.getElementById('config-notification-cap-daily').value);
+        if (!daily.ok) return daily;
+        const categoryWeekly = parseNullablePositiveInt(document.getElementById('config-notification-cap-category-weekly').value);
+        if (!categoryWeekly.ok) return categoryWeekly;
+        const quietStart = parseNullableHour(document.getElementById('config-notification-quiet-start').value);
+        if (!quietStart.ok) return quietStart;
+        const quietEnd = parseNullableHour(document.getElementById('config-notification-quiet-end').value);
+        if (!quietEnd.ok) return quietEnd;
+
+        let quietHours = null;
+        if (quietStart.value !== null || quietEnd.value !== null) {
+          if (quietStart.value === null || quietEnd.value === null) {
+            return { ok: false, error: 'quietHours start/end must both be set or both empty' };
+          }
+          quietHours = {
+            startHourUtc: quietStart.value,
+            endHourUtc: quietEnd.value
+          };
+        }
+        return {
+          ok: true,
+          value: {
+            perUserWeeklyCap: weekly.value,
+            perUserDailyCap: daily.value,
+            perCategoryWeeklyCap: categoryWeekly.value,
+            quietHours
+          }
+        };
+      }
+
       async function loadSystemConfigStatus() {
         const res = await fetch('/api/admin/os/config/status', { headers: buildHeaders() });
         const data = await jsonOrText(res);
@@ -445,19 +518,46 @@
           document.getElementById('config-service-phase').value = sp;
           const preset = data.notificationPreset ? String(data.notificationPreset) : '';
           document.getElementById('config-notification-preset').value = preset;
+          const weeklyCap = data.notificationCaps && data.notificationCaps.perUserWeeklyCap !== null && data.notificationCaps.perUserWeeklyCap !== undefined
+            ? String(data.notificationCaps.perUserWeeklyCap)
+            : '';
+          document.getElementById('config-notification-cap-weekly').value = weeklyCap;
+          const dailyCap = data.notificationCaps && data.notificationCaps.perUserDailyCap !== null && data.notificationCaps.perUserDailyCap !== undefined
+            ? String(data.notificationCaps.perUserDailyCap)
+            : '';
+          document.getElementById('config-notification-cap-daily').value = dailyCap;
+          const categoryWeeklyCap = data.notificationCaps && data.notificationCaps.perCategoryWeeklyCap !== null && data.notificationCaps.perCategoryWeeklyCap !== undefined
+            ? String(data.notificationCaps.perCategoryWeeklyCap)
+            : '';
+          document.getElementById('config-notification-cap-category-weekly').value = categoryWeeklyCap;
+          const quietStart = data.notificationCaps && data.notificationCaps.quietHours && data.notificationCaps.quietHours.startHourUtc !== undefined
+            ? String(data.notificationCaps.quietHours.startHourUtc)
+            : '';
+          const quietEnd = data.notificationCaps && data.notificationCaps.quietHours && data.notificationCaps.quietHours.endHourUtc !== undefined
+            ? String(data.notificationCaps.quietHours.endHourUtc)
+            : '';
+          document.getElementById('config-notification-quiet-start').value = quietStart;
+          document.getElementById('config-notification-quiet-end').value = quietEnd;
         }
       }
 
       async function planSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        const capParsed = readNotificationCapsFromForm();
+        if (!capParsed.ok) {
+          document.getElementById('config-plan-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
+          return;
+        }
+        const notificationCaps = capParsed.value;
         const res = await fetch('/api/admin/os/config/plan', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
-          body: JSON.stringify({ servicePhase, notificationPreset })
+          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('config-impact-preview').textContent = JSON.stringify(data && data.impactPreview ? data.impactPreview : { ok: false, error: 'impact preview unavailable' }, null, 2);
         configPlanHash = data && data.ok ? data.planHash || null : null;
         configConfirmToken = data && data.ok ? data.confirmToken || null : null;
       }
@@ -465,16 +565,22 @@
       async function setSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        const capParsed = readNotificationCapsFromForm();
+        if (!capParsed.ok) {
+          document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
+          return;
+        }
+        const notificationCaps = capParsed.value;
         if (!configPlanHash || !configConfirmToken) {
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
           return;
         }
-        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}`); // eslint-disable-line no-alert
+        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}`); // eslint-disable-line no-alert
         if (!ok) return;
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
-          body: JSON.stringify({ servicePhase, notificationPreset, planHash: configPlanHash, confirmToken: configConfirmToken })
+          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps, planHash: configPlanHash, confirmToken: configConfirmToken })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-set-result').textContent = JSON.stringify(data, null, 2);
@@ -558,6 +664,8 @@
         const res = await fetch(`/api/admin/os/delivery-recovery/status?${params.toString()}`, { headers: buildHeaders() });
         const data = await jsonOrText(res);
         document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify(data, null, 2);
+        const rec = data && data.delivery && data.delivery.recovery ? data.delivery.recovery : null;
+        document.getElementById('delivery-recovery-recommendation').textContent = JSON.stringify(rec || { note: 'no recommendation' }, null, 2);
       }
 
       async function planDeliveryRecovery() {

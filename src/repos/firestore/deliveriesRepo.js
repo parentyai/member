@@ -10,6 +10,25 @@ function resolveTimestamp(at) {
   return at || serverTimestamp();
 }
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  if (typeof value.toDate === 'function') {
+    const parsed = value.toDate();
+    return parsed instanceof Date && !Number.isNaN(parsed.getTime()) ? parsed : null;
+  }
+  return null;
+}
+
+function resolveDeliveredAt(record) {
+  if (!record || typeof record !== 'object') return null;
+  return toDate(record.deliveredAt) || toDate(record.sentAt) || null;
+}
+
 async function createDelivery(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
@@ -116,6 +135,48 @@ async function listDeliveriesByNotificationId(notificationId) {
   return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
+async function countDeliveredByUserSince(lineUserId, sinceAt) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const sinceDate = toDate(sinceAt);
+  if (!sinceDate) throw new Error('sinceAt required');
+  const db = getDb();
+  const snap = await db.collection(COLLECTION)
+    .where('lineUserId', '==', lineUserId)
+    .where('delivered', '==', true)
+    .get();
+  let count = 0;
+  for (const doc of snap.docs) {
+    const record = doc.data() || {};
+    const at = resolveDeliveredAt(record);
+    if (at && at.getTime() >= sinceDate.getTime()) count += 1;
+  }
+  return count;
+}
+
+async function countDeliveredByUserCategorySince(lineUserId, notificationCategory, sinceAt) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const category = typeof notificationCategory === 'string' ? notificationCategory.trim().toUpperCase() : '';
+  if (!category) throw new Error('notificationCategory required');
+  const sinceDate = toDate(sinceAt);
+  if (!sinceDate) throw new Error('sinceAt required');
+  const db = getDb();
+  const snap = await db.collection(COLLECTION)
+    .where('lineUserId', '==', lineUserId)
+    .where('delivered', '==', true)
+    .get();
+  let count = 0;
+  for (const doc of snap.docs) {
+    const record = doc.data() || {};
+    const recCategory = typeof record.notificationCategory === 'string'
+      ? record.notificationCategory.trim().toUpperCase()
+      : '';
+    if (recCategory !== category) continue;
+    const at = resolveDeliveredAt(record);
+    if (at && at.getTime() >= sinceDate.getTime()) count += 1;
+  }
+  return count;
+}
+
 module.exports = {
   createDelivery,
   reserveDeliveryId,
@@ -126,5 +187,7 @@ module.exports = {
   markRead,
   markClick,
   listDeliveriesByUser,
-  listDeliveriesByNotificationId
+  listDeliveriesByNotificationId,
+  countDeliveredByUserSince,
+  countDeliveredByUserCategorySince
 };

@@ -7,6 +7,8 @@ SSOT / Runbook / Traceability 入口の index（append-only）。
 - `docs/RUNBOOK_TRACE_AUDIT.md`（traceId 監査 runbook）
 - `docs/RUNBOOK_OPS.md`（Ops判断/停止/復旧の runbook）
 - `docs/RUNBOOK_ADMIN_OPS.md`（管理UI運用OSの日次/事故対応 runbook）
+- `docs/RUNBOOK_DEPLOY_ENVIRONMENTS.md`（stg/prod 分離デプロイ runbook）
+- `docs/RUNBOOK_STG_NOTIFICATION_E2E_CHECKLIST.md`（stg 通知実測チェックリスト）
 - `docs/TRACE_SMOKE_EVIDENCE.md`（trace smoke 実行証跡の追記ログ）
 - `docs/LAUNCH_CHECKLIST.md`（本番ローンチ前チェックリスト）
 - `docs/SSOT_SERVICE_PHASES.md`（ServicePhase 1〜4 定義 / scope / guardrails）

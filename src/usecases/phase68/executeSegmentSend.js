@@ -18,6 +18,8 @@ const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
 const { evaluateNotificationPolicy, resolveNotificationCategoryFromTemplate } = require('../../domain/notificationPolicy');
+const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
+const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 
 function resolvePlanHash(plan) {
   if (!plan) return null;
@@ -251,18 +253,24 @@ async function executeSegmentSend(params, deps) {
   const notificationCategory = resolveNotificationCategoryFromTemplate(template);
   let servicePhase = null;
   let notificationPreset = null;
+  let notificationCaps = normalizeNotificationCaps(null);
   try {
     const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
     const getNotificationPreset = deps && deps.getNotificationPreset
       ? deps.getNotificationPreset
       : systemFlagsRepo.getNotificationPreset;
-    [servicePhase, notificationPreset] = await Promise.all([
+    const getNotificationCaps = deps && deps.getNotificationCaps
+      ? deps.getNotificationCaps
+      : systemFlagsRepo.getNotificationCaps;
+    [servicePhase, notificationPreset, notificationCaps] = await Promise.all([
       getServicePhase(),
-      getNotificationPreset()
+      getNotificationPreset(),
+      getNotificationCaps()
     ]);
   } catch (_err) {
     servicePhase = null;
     notificationPreset = null;
+    notificationCaps = normalizeNotificationCaps(null);
   }
   const policyResult = evaluateNotificationPolicy({
     servicePhase,
@@ -386,6 +394,9 @@ async function executeSegmentSend(params, deps) {
 
   const failures = [];
   let queueEnqueuedCount = 0;
+  let capBlockedCount = 0;
+  const capBlockedLineUserIds = [];
+  const capBlockedSummary = {};
   let aborted = false;
   let abortReason = null;
   let abortDetail = null;
@@ -402,7 +413,8 @@ async function executeSegmentSend(params, deps) {
           text,
           notificationId: templateKey,
           killSwitch,
-          deliveryId
+          deliveryId,
+          notificationCategory: notificationCategory || null
         }, deps);
         return { ok: true, attempts: attempt + 1, error: null };
       } catch (err) {
@@ -425,6 +437,29 @@ async function executeSegmentSend(params, deps) {
 
   for (let index = currentIndex; index < lineUserIds.length; index += 1) {
     const lineUserId = lineUserIds[index];
+    const capResult = await checkNotificationCap({
+      lineUserId,
+      now,
+      notificationCaps,
+      notificationCategory: notificationCategory || null
+    }, {
+      countDeliveredByUserSince: deps && deps.countDeliveredByUserSince
+        ? deps.countDeliveredByUserSince
+        : undefined,
+      countDeliveredByUserCategorySince: deps && deps.countDeliveredByUserCategorySince
+        ? deps.countDeliveredByUserCategorySince
+        : undefined
+    });
+    if (!capResult.allowed) {
+      counters.attempted += 1;
+      counters.skipped += 1;
+      capBlockedCount += 1;
+      if (capBlockedLineUserIds.length < 50) capBlockedLineUserIds.push(lineUserId);
+      const key = `${capResult.capType || 'UNKNOWN'}:${capResult.reason || 'unknown'}`;
+      capBlockedSummary[key] = (capBlockedSummary[key] || 0) + 1;
+      continue;
+    }
+
     const result = await sendWithRetry(lineUserId);
     counters.attempted += 1;
     lastUserId = lineUserId;
@@ -559,6 +594,8 @@ async function executeSegmentSend(params, deps) {
       templateVersion: expectedTemplateVersion,
       segmentKey,
       executedCount: counters.success,
+      capBlockedCount,
+      capBlockedSummary,
       failures: failures.length,
       queueEnqueuedCount,
       runId,
@@ -575,6 +612,9 @@ async function executeSegmentSend(params, deps) {
       confirmTokenId,
       planSnapshot,
       executedCount: counters.success,
+      capBlockedCount,
+      capBlockedLineUserIds,
+      capBlockedSummary,
       failures,
       queueEnqueuedCount,
       runId,
@@ -588,7 +628,10 @@ async function executeSegmentSend(params, deps) {
   });
 
   return {
-    ok: !aborted && failures.length === 0,
+    ok: !aborted && failures.length === 0 && !(capBlockedCount > 0 && counters.success === 0),
+    reason: !aborted && failures.length === 0 && capBlockedCount > 0 && counters.success === 0
+      ? 'notification_cap_blocked'
+      : undefined,
     serverTime,
     traceId: traceId || undefined,
     requestId: requestId || undefined,
@@ -596,6 +639,9 @@ async function executeSegmentSend(params, deps) {
     templateKey,
     templateVersion: expectedTemplateVersion,
     executedCount: counters.success,
+    capBlockedCount,
+    capBlockedLineUserIds,
+    capBlockedSummary,
     failures,
     runSummary: {
       status: aborted ? 'ABORTED' : (counters.failed > 0 ? 'DONE_WITH_ERRORS' : 'DONE'),

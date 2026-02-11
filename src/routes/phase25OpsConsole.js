@@ -46,15 +46,18 @@ async function handleGetOpsConsole(req, res) {
       traceId: traceId && traceId.trim().length > 0 ? traceId.trim() : null
     });
     try {
-      const [servicePhase, notificationPreset] = await Promise.all([
+      const [servicePhase, notificationPreset, notificationCaps] = await Promise.all([
         systemFlagsRepo.getServicePhase(),
-        systemFlagsRepo.getNotificationPreset()
+        systemFlagsRepo.getNotificationPreset(),
+        systemFlagsRepo.getNotificationCaps()
       ]);
       result.servicePhase = servicePhase;
       result.notificationPreset = notificationPreset;
+      result.notificationCaps = notificationCaps;
     } catch (_err) {
       result.servicePhase = null;
       result.notificationPreset = null;
+      result.notificationCaps = { perUserWeeklyCap: null };
     }
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));

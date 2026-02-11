@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb } = require('../../infra/firestore');
+const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 
 const COLLECTION = 'system_flags';
 const DOC_ID = 'phase0';
@@ -85,11 +86,30 @@ async function setNotificationPreset(notificationPreset) {
   return { id: DOC_ID, notificationPreset: normalized };
 }
 
+async function getNotificationCaps() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return normalizeNotificationCaps(null);
+  const data = snap.data() || {};
+  return normalizeNotificationCaps(data.notificationCaps);
+}
+
+async function setNotificationCaps(notificationCaps) {
+  const normalized = normalizeNotificationCaps(notificationCaps);
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ notificationCaps: normalized }, { merge: true });
+  return { id: DOC_ID, notificationCaps: normalized };
+}
+
 module.exports = {
   getKillSwitch,
   setKillSwitch,
   getServicePhase,
   setServicePhase,
   getNotificationPreset,
-  setNotificationPreset
+  setNotificationPreset,
+  getNotificationCaps,
+  setNotificationCaps
 };

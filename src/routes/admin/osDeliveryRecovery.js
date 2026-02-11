@@ -39,14 +39,40 @@ function confirmTokenData(planHash, deliveryId) {
 
 function deliverySummary(delivery) {
   if (!delivery) return null;
+  const state = delivery.state || null;
+  const delivered = delivery.delivered === true;
+  const sealed = delivery.sealed === true;
+  let recommendedAction = 'INSPECT';
+  const allowedActions = [];
+  if (delivered) {
+    recommendedAction = 'NO_ACTION';
+  } else if (sealed) {
+    recommendedAction = 'NO_ACTION';
+  } else if (state === 'failed') {
+    recommendedAction = 'RETRY_OR_SEAL';
+    allowedActions.push('RETRY');
+    allowedActions.push('SEAL');
+  } else if (state === 'reserved') {
+    recommendedAction = 'SEAL';
+    allowedActions.push('SEAL');
+  } else {
+    recommendedAction = 'SEAL';
+    allowedActions.push('SEAL');
+  }
   return {
     deliveryId: delivery.id || null,
-    state: delivery.state || null,
-    delivered: delivery.delivered === true,
-    sealed: delivery.sealed === true,
+    state,
+    delivered,
+    sealed,
     reservedAt: delivery.reservedAt || null,
     sentAt: delivery.sentAt || null,
-    lastError: delivery.lastError || null
+    lastError: delivery.lastError || null,
+    recovery: {
+      retryPossible: state === 'failed' && !delivered && !sealed,
+      canSeal: !delivered,
+      recommendedAction,
+      allowedActions
+    }
   };
 }
 

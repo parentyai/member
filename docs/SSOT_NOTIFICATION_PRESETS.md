@@ -11,6 +11,10 @@ ServicePhase が「何ができるか（機能解禁）」の上位であり、P
 ## SSOT Keys (Config)
 - Firestore: `system_flags/phase0`
   - `notificationPreset`: string | null（"A" | "B" | "C"）
+  - `notificationCaps.perUserWeeklyCap`: number | null（user単位/7日）
+  - `notificationCaps.perUserDailyCap`: number | null（user単位/24時間）
+  - `notificationCaps.perCategoryWeeklyCap`: number | null（user+category単位/7日）
+  - `notificationCaps.quietHours`: `{ startHourUtc, endHourUtc } | null`（UTC静穏時間）
 
 未設定（null）の場合は **現状挙動を維持**し、Preset による出し分けを行わない。
 
@@ -49,4 +53,3 @@ Preset/ServicePhase のマトリクスで扱うカテゴリ（既存の通知種
 - intensity: MEDIUM〜HIGH（ただしグローバル上限を超えない）
 - notes:
   - 強めに見せるが、実行主体は人間 Ops
-

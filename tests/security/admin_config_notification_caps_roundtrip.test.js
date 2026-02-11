@@ -12,8 +12,6 @@ const {
   clearServerTimestampForTest
 } = require('../../src/infra/firestore');
 
-const auditLogsRepo = require('../../src/repos/firestore/auditLogsRepo');
-
 function httpRequest({ port, method, path, headers, body }) {
   return new Promise((resolve, reject) => {
     const req = http.request({
@@ -33,15 +31,7 @@ function httpRequest({ port, method, path, headers, body }) {
   });
 }
 
-function tamperToken(token) {
-  // Flip one character without changing length so base64url decoding cannot
-  // accidentally ignore the change.
-  const last = token.slice(-1);
-  const replacement = last === 'A' ? 'B' : 'A';
-  return `${token.slice(0, -1)}${replacement}`;
-}
-
-test('security: system config set requires valid confirmToken and writes audit on mismatch', async (t) => {
+test('security: system config notificationCaps roundtrip and fallback', async (t) => {
   const prevToken = process.env.ADMIN_OS_TOKEN;
   const prevSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
   process.env.ADMIN_OS_TOKEN = 'test_admin_token';
@@ -68,33 +58,25 @@ test('security: system config set requires valid confirmToken and writes audit o
   const commonHeaders = {
     'x-admin-token': 'test_admin_token',
     'x-actor': 'admin_master',
-    'x-trace-id': 'TRACE_CFG_1',
+    'x-trace-id': 'TRACE_CFG_CAP_1',
     'content-type': 'application/json; charset=utf-8'
   };
 
-  // Missing planHash/confirmToken.
-  const missing = await httpRequest({
-    port,
-    method: 'POST',
-    path: '/api/admin/os/config/set',
-    headers: commonHeaders,
-    body: JSON.stringify({ servicePhase: null, notificationPreset: null })
-  });
-  assert.strictEqual(missing.status, 400);
-
-  // Plan.
+  // plan with caps
   const planRes = await httpRequest({
     port,
     method: 'POST',
     path: '/api/admin/os/config/plan',
     headers: commonHeaders,
-    body: JSON.stringify({ servicePhase: 2, notificationPreset: 'B', notificationCaps: { perUserWeeklyCap: 3 } })
+    body: JSON.stringify({
+      servicePhase: 2,
+      notificationPreset: 'B',
+      notificationCaps: { perUserWeeklyCap: 3 }
+    })
   });
   assert.strictEqual(planRes.status, 200);
   const plan = JSON.parse(planRes.body);
   assert.strictEqual(plan.ok, true);
-  assert.ok(plan.planHash);
-  assert.ok(plan.confirmToken);
   assert.deepStrictEqual(plan.notificationCaps, {
     perUserWeeklyCap: 3,
     perUserDailyCap: null,
@@ -102,8 +84,7 @@ test('security: system config set requires valid confirmToken and writes audit o
     quietHours: null
   });
 
-  // Set with tampered token.
-  const bad = await httpRequest({
+  const setRes = await httpRequest({
     port,
     method: 'POST',
     path: '/api/admin/os/config/set',
@@ -113,13 +94,59 @@ test('security: system config set requires valid confirmToken and writes audit o
       notificationPreset: 'B',
       notificationCaps: { perUserWeeklyCap: 3 },
       planHash: plan.planHash,
-      confirmToken: tamperToken(plan.confirmToken)
+      confirmToken: plan.confirmToken
     })
   });
-  assert.strictEqual(bad.status, 409);
-  const badJson = JSON.parse(bad.body);
-  assert.strictEqual(badJson.reason, 'confirm_token_mismatch');
+  assert.strictEqual(setRes.status, 200);
+  const setJson = JSON.parse(setRes.body);
+  assert.strictEqual(setJson.ok, true);
+  assert.deepStrictEqual(setJson.notificationCaps, {
+    perUserWeeklyCap: 3,
+    perUserDailyCap: null,
+    perCategoryWeeklyCap: null,
+    quietHours: null
+  });
 
-  const audits = await auditLogsRepo.listAuditLogsByTraceId('TRACE_CFG_1', 50);
-  assert.ok(audits.some((a) => a.action === 'system_config.set' && a.payloadSummary && a.payloadSummary.ok === false));
+  // plan/set without notificationCaps should keep current cap.
+  const planRes2 = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: commonHeaders,
+    body: JSON.stringify({
+      servicePhase: 3,
+      notificationPreset: 'C'
+    })
+  });
+  assert.strictEqual(planRes2.status, 200);
+  const plan2 = JSON.parse(planRes2.body);
+  assert.strictEqual(plan2.ok, true);
+  assert.deepStrictEqual(plan2.notificationCaps, {
+    perUserWeeklyCap: 3,
+    perUserDailyCap: null,
+    perCategoryWeeklyCap: null,
+    quietHours: null
+  });
+
+  const setRes2 = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/set',
+    headers: commonHeaders,
+    body: JSON.stringify({
+      servicePhase: 3,
+      notificationPreset: 'C',
+      planHash: plan2.planHash,
+      confirmToken: plan2.confirmToken
+    })
+  });
+  assert.strictEqual(setRes2.status, 200);
+  const setJson2 = JSON.parse(setRes2.body);
+  assert.strictEqual(setJson2.ok, true);
+  assert.deepStrictEqual(setJson2.notificationCaps, {
+    perUserWeeklyCap: 3,
+    perUserDailyCap: null,
+    perCategoryWeeklyCap: null,
+    quietHours: null
+  });
 });

@@ -100,7 +100,8 @@ async function sendNotification(params) {
     const deliveryId = computeNotificationDeliveryId({ notificationId, lineUserId: user.id });
     const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
-      lineUserId: user.id
+      lineUserId: user.id,
+      notificationCategory: notification.notificationCategory || null
     });
     const existing = reserved && reserved.existing ? reserved.existing : null;
     if (existing && existing.sealed === true) {
@@ -137,6 +138,7 @@ async function sendNotification(params) {
       await deliveriesRepo.createDeliveryWithId(deliveryId, {
         notificationId,
         lineUserId: user.id,
+        notificationCategory: notification.notificationCategory || null,
         sentAt,
         delivered: true,
         state: 'delivered',
@@ -149,6 +151,7 @@ async function sendNotification(params) {
         await deliveriesRepo.createDeliveryWithId(deliveryId, {
           notificationId,
           lineUserId: user.id,
+          notificationCategory: notification.notificationCategory || null,
           sentAt: null,
           delivered: false,
           state: 'failed',

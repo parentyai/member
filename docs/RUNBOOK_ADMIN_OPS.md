@@ -42,6 +42,34 @@
 3) set（confirmToken 必須）
 4) trace search で `automation_config.plan` / `automation_config.set` を確認
 
+## Notification Caps（送信上限制御）
+`/admin/master` の System Config で `notificationCaps` を設定する。
+
+- `perUserWeeklyCap`
+  - `null`: 無効
+  - `N`（正の整数）: ユーザー単位の過去7日 delivered 件数が `N` 以上でブロック
+- `perUserDailyCap`
+  - `null`: 無効
+  - `N`（正の整数）: ユーザー単位の過去24時間 delivered 件数が `N` 以上でブロック
+- `perCategoryWeeklyCap`
+  - `null`: 無効
+  - `N`（正の整数）: ユーザー+通知カテゴリ単位の過去7日 delivered 件数が `N` 以上でブロック
+- `quietHours`（UTC）
+  - `null`: 無効
+  - `{startHourUtc,endHourUtc}`: 静穏時間中は送信ブロック（例: 22→7）
+
+操作手順:
+1) status で現行値を確認
+2) desired cap を入力して plan
+3) set（confirmToken 必須）
+4) trace search で `system_config.plan` / `system_config.set` を確認
+
+ブロック時の観測:
+- Composer: `notifications.send.execute` / `reason=notification_cap_blocked`
+- Segment: `segment_send.execute` / `capBlockedCount>0`
+- Retry Queue: `retry_queue.execute` / `reason=notification_cap_blocked`
+- 詳細理由は `capType` / `capReason`（`PER_USER_DAILY` / `PER_USER_WEEKLY` / `PER_CATEGORY_WEEKLY` / `QUIET_HOURS`）で判定
+
 ## Incident Response (事故時)
 1) kill switch ON（Operations）
 2) traceId を取得（Ops/Composer/Monitor/Error Console）

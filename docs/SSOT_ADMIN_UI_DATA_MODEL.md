@@ -11,6 +11,10 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
 - `notification_templates` / `templates_v`（template management）
 - `link_registry`（リンクの登録/health 管理）
 - `system_flags/phase0`（kill switch / servicePhase / notificationPreset など）
+  - `notificationCaps.perUserWeeklyCap`（number | null）
+  - `notificationCaps.perUserDailyCap`（number | null）
+  - `notificationCaps.perCategoryWeeklyCap`（number | null）
+  - `notificationCaps.quietHours`（object | null, UTC）
 - `send_retry_queue`（失敗送信の再実行キュー）
 
 ## Draft / Active Rules (SSOT)

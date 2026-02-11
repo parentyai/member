@@ -10,6 +10,8 @@ const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHa
 const { sendNotification } = require('../notifications/sendNotification');
 const { buildTemplateKey } = require('./planNotificationSend');
 const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy');
+const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
+const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 
 function resolvePlanHash(auditLog) {
   if (!auditLog || typeof auditLog !== 'object') return null;
@@ -117,18 +119,24 @@ async function executeNotificationSend(params, deps) {
 
   let servicePhase = null;
   let notificationPreset = null;
+  let notificationCaps = normalizeNotificationCaps(null);
   try {
     const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
     const getNotificationPreset = deps && deps.getNotificationPreset
       ? deps.getNotificationPreset
       : systemFlagsRepo.getNotificationPreset;
-    [servicePhase, notificationPreset] = await Promise.all([
+    const getNotificationCaps = deps && deps.getNotificationCaps
+      ? deps.getNotificationCaps
+      : systemFlagsRepo.getNotificationCaps;
+    [servicePhase, notificationPreset, notificationCaps] = await Promise.all([
       getServicePhase(),
-      getNotificationPreset()
+      getNotificationPreset(),
+      getNotificationCaps()
     ]);
   } catch (_err) {
     servicePhase = null;
     notificationPreset = null;
+    notificationCaps = normalizeNotificationCaps(null);
   }
   const policyResult = evaluateNotificationPolicy({
     servicePhase,
@@ -162,6 +170,51 @@ async function executeNotificationSend(params, deps) {
     return { ok: false, blocked: true, killSwitch: true, reason: 'kill_switch_on', traceId };
   }
 
+  const capEligibleLineUserIds = [];
+  const capBlockedLineUserIds = [];
+  const capBlockedSummary = {};
+  const perUserWeeklyCap = notificationCaps.perUserWeeklyCap;
+  for (const lineUserId of lineUserIds) {
+    const capResult = await checkNotificationCap({
+      lineUserId,
+      now,
+      notificationCaps,
+      notificationCategory: notification.notificationCategory || null
+    }, {
+      countDeliveredByUserSince: deps && deps.countDeliveredByUserSince
+        ? deps.countDeliveredByUserSince
+        : undefined,
+      countDeliveredByUserCategorySince: deps && deps.countDeliveredByUserCategorySince
+        ? deps.countDeliveredByUserCategorySince
+        : undefined
+    });
+    if (!capResult.allowed) {
+      if (capBlockedLineUserIds.length < 50) capBlockedLineUserIds.push(lineUserId);
+      const key = `${capResult.capType || 'UNKNOWN'}:${capResult.reason || 'unknown'}`;
+      capBlockedSummary[key] = (capBlockedSummary[key] || 0) + 1;
+      continue;
+    }
+    capEligibleLineUserIds.push(lineUserId);
+  }
+  const capBlockedCount = lineUserIds.length - capEligibleLineUserIds.length;
+  if (!capEligibleLineUserIds.length) {
+    await appendExecuteAudit({
+      reason: 'notification_cap_blocked',
+      capBlockedCount,
+      perUserWeeklyCap,
+      capBlockedSummary
+    });
+    return {
+      ok: false,
+      reason: 'notification_cap_blocked',
+      capBlockedCount,
+      capBlockedLineUserIds,
+      capBlockedSummary,
+      perUserWeeklyCap,
+      traceId
+    };
+  }
+
   const pushFn = deps && deps.pushFn ? deps.pushFn : undefined;
   let result = null;
   try {
@@ -169,7 +222,7 @@ async function executeNotificationSend(params, deps) {
       notificationId,
       sentAt: now.toISOString(),
       killSwitch,
-      lineUserIds,
+      lineUserIds: capEligibleLineUserIds,
       pushFn
     });
   } catch (err) {
@@ -189,11 +242,13 @@ async function executeNotificationSend(params, deps) {
       ok: true,
       deliveredCount: result.deliveredCount,
       skippedCount: result.skippedCount || 0,
+      capBlockedCount,
+      capBlockedSummary,
       notificationCategory: notification.notificationCategory || null
     }
   });
 
-  return Object.assign({ ok: true, traceId, requestId }, result);
+  return Object.assign({ ok: true, traceId, requestId, capBlockedCount, capBlockedSummary }, result);
 }
 
 module.exports = {

@@ -177,6 +177,7 @@
       <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
       <div class="note">servicePhase（サービス提供phase SSOT）: <span id="ops-console-detail-service-phase">-</span></div>
       <div class="note">notificationPreset（SSOT）: <span id="ops-console-detail-notification-preset">-</span></div>
+      <div class="note">notificationCaps.perUserWeeklyCap（SSOT）: <span id="ops-console-detail-notification-cap-weekly">-</span></div>
       <div class="note" id="ops-console-detail-error"></div>
       <div class="note">
         traceId:
@@ -1093,6 +1094,10 @@
           : String(detail.servicePhase);
         setText(document.getElementById('ops-console-detail-service-phase'), servicePhaseValue || '-');
         setText(document.getElementById('ops-console-detail-notification-preset'), detail.notificationPreset || '-');
+        const capWeekly = detail.notificationCaps && detail.notificationCaps.perUserWeeklyCap !== null && detail.notificationCaps.perUserWeeklyCap !== undefined
+          ? String(detail.notificationCaps.perUserWeeklyCap)
+          : null;
+        setText(document.getElementById('ops-console-detail-notification-cap-weekly'), capWeekly || '-');
         selectedOpsConsoleTraceId = detail.traceId || null;
         selectedOpsConsoleServerTime = detail.serverTime || null;
         setText(document.getElementById('ops-console-detail-trace-id'), detail.traceId || '-');

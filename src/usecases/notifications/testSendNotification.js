@@ -25,6 +25,9 @@ async function testSendNotification(params) {
   const text = payload.text || 'test message';
   const pushFn = payload.pushFn || pushMessage;
   const notificationId = payload.notificationId || 'test';
+  const notificationCategory = typeof payload.notificationCategory === 'string' && payload.notificationCategory.trim().length > 0
+    ? payload.notificationCategory.trim().toUpperCase()
+    : null;
   const deliveryId = typeof payload.deliveryId === 'string' && payload.deliveryId.trim().length > 0
     ? payload.deliveryId.trim()
     : null;
@@ -38,7 +41,8 @@ async function testSendNotification(params) {
   if (deliveryId) {
     const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
-      lineUserId
+      lineUserId,
+      notificationCategory
     });
     const existing = reserved && reserved.existing ? reserved.existing : null;
     if (existing && existing.sealed === true) return { id: deliveryId, skipped: true };
@@ -60,6 +64,7 @@ async function testSendNotification(params) {
         await deliveriesRepo.createDeliveryWithId(deliveryId, {
           notificationId,
           lineUserId,
+          notificationCategory,
           sentAt: null,
           delivered: false,
           state: 'failed',
@@ -76,6 +81,7 @@ async function testSendNotification(params) {
   const delivery = {
     notificationId,
     lineUserId,
+    notificationCategory,
     sentAt: payload.sentAt,
     delivered: true
   };

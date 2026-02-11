@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Deploy target environment"
+        required: true
+        default: stg
+        type: choice
+        options:
+          - stg
+          - prod
 
 permissions:
   contents: read
@@ -23,7 +33,20 @@ jobs:
   deploy-track:
     name: deploy-track
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment == 'prod' && 'prod' || 'stg' }}
+    concurrency:
+      group: deploy-track-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment == 'prod' && 'prod' || 'stg' }}
+      cancel-in-progress: false
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+      GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+      RUNTIME_SA_EMAIL: ${{ vars.RUNTIME_SA_EMAIL }}
+      DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+      ENV_NAME: ${{ vars.ENV_NAME }}
+      FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
