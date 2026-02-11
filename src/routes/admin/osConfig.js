@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
+const { NOTIFICATION_CATEGORIES } = require('../../domain/notificationCategory');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { checkNotificationCap } = require('../../usecases/notifications/checkNotificationCap');
@@ -76,6 +77,7 @@ async function buildImpactPreview(notificationCaps) {
 
   const now = new Date();
   const sampleLimit = 100;
+  const categories = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [null];
   let users;
   try {
     users = await usersRepo.listUsers({ limit: sampleLimit });
@@ -88,33 +90,51 @@ async function buildImpactPreview(notificationCaps) {
     };
   }
 
-  const previewCaps = Object.assign({}, caps, { perCategoryWeeklyCap: null });
   const blockedByCapType = {};
+  const blockedByCategory = {};
+  const blockedByReason = {};
+  const blockedUsers = new Set();
+  let sampledEvaluations = 0;
   let estimatedBlockedUsers = 0;
   for (const user of users) {
     const lineUserId = user && typeof user.id === 'string' ? user.id : null;
     if (!lineUserId) continue;
-    const result = await checkNotificationCap({
-      lineUserId,
-      now,
-      notificationCaps: previewCaps,
-      notificationCategory: null
-    });
-    if (!result.allowed) {
-      estimatedBlockedUsers += 1;
-      const key = result.capType || 'UNKNOWN';
-      blockedByCapType[key] = (blockedByCapType[key] || 0) + 1;
+    for (const category of categories) {
+      const result = await checkNotificationCap({
+        lineUserId,
+        now,
+        notificationCaps: caps,
+        notificationCategory: category
+      });
+      sampledEvaluations += 1;
+      if (!result.allowed) {
+        blockedUsers.add(lineUserId);
+        const typeKey = result.capType || 'UNKNOWN';
+        const reasonKey = result.reason || 'unknown';
+        blockedByCapType[typeKey] = (blockedByCapType[typeKey] || 0) + 1;
+        blockedByReason[reasonKey] = (blockedByReason[reasonKey] || 0) + 1;
+        if (category) {
+          blockedByCategory[category] = (blockedByCategory[category] || 0) + 1;
+        } else {
+          blockedByCategory.UNCATEGORIZED = (blockedByCategory.UNCATEGORIZED || 0) + 1;
+        }
+      }
     }
   }
+  estimatedBlockedUsers = blockedUsers.size;
 
   const notes = [];
-  if (caps.perCategoryWeeklyCap !== null) notes.push('perCategoryWeeklyCap requires notificationCategory at send time');
+  if (caps.perCategoryWeeklyCap !== null) notes.push('perCategoryWeeklyCap preview simulates all categories');
   if (caps.quietHours) notes.push('quietHours evaluated in UTC');
 
   return {
     sampledUsers: users.length,
+    sampledEvaluations,
     estimatedBlockedUsers,
+    simulatedCategories: categories.filter((v) => typeof v === 'string'),
     blockedByCapType,
+    blockedByCategory,
+    blockedByReason,
     notes
   };
 }
@@ -186,7 +206,10 @@ async function handlePlan(req, res, body) {
       planHash,
       impactPreview: {
         sampledUsers: impactPreview.sampledUsers,
-        estimatedBlockedUsers: impactPreview.estimatedBlockedUsers
+        sampledEvaluations: impactPreview.sampledEvaluations,
+        estimatedBlockedUsers: impactPreview.estimatedBlockedUsers,
+        blockedByCapType: impactPreview.blockedByCapType,
+        blockedByCategory: impactPreview.blockedByCategory
       }
     }
   });

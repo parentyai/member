@@ -37,6 +37,23 @@ Secrets（例）:
 - `RIDAC_MEMBERSHIP_ID_HMAC_SECRET`
 - `OPS_CONFIRM_TOKEN_SECRET`
 
+## OIDC / WIF Guardrail（workflow_dispatch 対応）
+`workflow_dispatch(target_environment=prod)` で OIDC が `unauthorized_client` になる場合は、
+Workload Identity Provider の `attributeCondition` が `push(main)` のみ許可している可能性が高い。
+
+推奨条件（例）:
+- `assertion.repository=='parentyai/member' && (assertion.ref=='refs/heads/main' || assertion.event_name=='workflow_dispatch')`
+
+確認:
+- `gcloud iam workload-identity-pools providers describe github-provider --location=global --workload-identity-pool=github-pool --project=<PROJECT_NUMBER_OR_ID> --format='value(attributeCondition)'`
+
+更新（必要時のみ）:
+- `gcloud iam workload-identity-pools providers update-oidc github-provider --location=global --workload-identity-pool=github-pool --project=<PROJECT_NUMBER_OR_ID> --attribute-condition=\"assertion.repository=='parentyai/member' && (assertion.ref=='refs/heads/main' || assertion.event_name=='workflow_dispatch')\"`
+
+注意:
+- provider 条件はセキュリティ境界。repository 条件は維持すること。
+- 変更後は `push(main)` と `workflow_dispatch(prod)` の両方を検証すること。
+
 ## Deploy Paths
 ### stg
 - Trigger: `push` to `main`
@@ -57,10 +74,14 @@ Secrets（例）:
 ## Verification
 1) Actions run:
    - event と input を確認（`workflow_dispatch`, `target_environment=prod`）
+   - OIDC step が成功していること（`Auth (OIDC)`）
 2) Cloud Run:
    - `gcloud run services describe ... --format='value(spec.template.spec.containers[0].image)'`
 3) Runtime SA:
    - `gcloud run services describe ... --format='value(spec.template.spec.serviceAccountName)'`
+4) 環境分離:
+   - `push(main)` 実行で `environment=stg` のみ更新されること
+   - `prod` は `workflow_dispatch` + 承認なしに進まないこと
 
 ## Rollback
 - 直近 deploy commit を revert

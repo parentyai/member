@@ -312,6 +312,48 @@
         });
       }
 
+      function sortedEntries(obj) {
+        return Object.entries(obj || {}).sort((a, b) => {
+          if (a[0] === b[0]) return 0;
+          return a[0] > b[0] ? 1 : -1;
+        });
+      }
+
+      function formatImpactPreview(preview) {
+        if (!preview || typeof preview !== 'object') return 'impact preview unavailable';
+        const sampledUsers = Number.isFinite(preview.sampledUsers) ? preview.sampledUsers : 0;
+        const sampledEvaluations = Number.isFinite(preview.sampledEvaluations) ? preview.sampledEvaluations : sampledUsers;
+        const estimatedBlockedUsers = Number.isFinite(preview.estimatedBlockedUsers) ? preview.estimatedBlockedUsers : 0;
+        const blockedByCapType = sortedEntries(preview.blockedByCapType);
+        const blockedByCategory = sortedEntries(preview.blockedByCategory);
+        const blockedByReason = sortedEntries(preview.blockedByReason);
+        const categories = Array.isArray(preview.simulatedCategories) ? preview.simulatedCategories : [];
+        const notes = Array.isArray(preview.notes) ? preview.notes : [];
+        const lines = [
+          `sampledUsers: ${sampledUsers}`,
+          `sampledEvaluations: ${sampledEvaluations}`,
+          `estimatedBlockedUsers: ${estimatedBlockedUsers}`,
+          `simulatedCategories: ${categories.length ? categories.join(', ') : '(none)'}`
+        ];
+        if (blockedByCapType.length) {
+          lines.push('blockedByCapType:');
+          for (const [k, v] of blockedByCapType) lines.push(`- ${k}: ${v}`);
+        }
+        if (blockedByCategory.length) {
+          lines.push('blockedByCategory:');
+          for (const [k, v] of blockedByCategory) lines.push(`- ${k}: ${v}`);
+        }
+        if (blockedByReason.length) {
+          lines.push('blockedByReason:');
+          for (const [k, v] of blockedByReason) lines.push(`- ${k}: ${v}`);
+        }
+        if (notes.length) {
+          lines.push('notes:');
+          for (const note of notes) lines.push(`- ${String(note)}`);
+        }
+        return lines.join('\n');
+      }
+
       async function loadTemplates() {
         const status = document.getElementById('tpl-status').value;
         const params = new URLSearchParams();
@@ -557,7 +599,8 @@
         });
         const data = await jsonOrText(res);
         document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('config-impact-preview').textContent = JSON.stringify(data && data.impactPreview ? data.impactPreview : { ok: false, error: 'impact preview unavailable' }, null, 2);
+        const impactPreview = data && data.impactPreview ? data.impactPreview : { ok: false, error: 'impact preview unavailable' };
+        document.getElementById('config-impact-preview').textContent = `${formatImpactPreview(impactPreview)}\n\nraw:\n${JSON.stringify(impactPreview, null, 2)}`;
         configPlanHash = data && data.ok ? data.planHash || null : null;
         configConfirmToken = data && data.ok ? data.confirmToken || null : null;
       }

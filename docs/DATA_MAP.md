@@ -78,3 +78,18 @@ Notes:
 - The codebase does not implement automatic TTL deletion for Firestore collections.
 - Retention is therefore effectively indefinite unless GCP-level retention policies are configured separately.
 
+### Operational Responsibility Split
+- Application responsibility:
+  - avoid storing plaintext secrets and full Ridac membership ids
+  - append audit logs with traceId/requestId for sensitive operations
+  - provide manual recovery and administrative controls via `/api/admin/*`
+- Infrastructure responsibility:
+  - define and enforce retention/backup/deletion policies in GCP (Firestore/Logging/Secret Manager)
+  - maintain IAM least-privilege and service account boundaries between environments
+  - maintain WIF/OIDC trust policy for CI deploy identities
+
+### Minimum Deletion Runbook Inputs (for legal/ops review)
+- Which collection(s) or log sink(s) are in scope
+- Reason for deletion (request/incident/policy)
+- Approval record (who approved, when)
+- Execution evidence (traceId, command/run URL, resulting counts)

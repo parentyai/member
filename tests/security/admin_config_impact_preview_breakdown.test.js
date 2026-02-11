@@ -1,0 +1,101 @@
+'use strict';
+
+const assert = require('assert');
+const http = require('http');
+const { test } = require('node:test');
+
+const { createDbStub } = require('../phase0/firestoreStub');
+const usersRepo = require('../../src/repos/firestore/usersRepo');
+const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
+const {
+  setDbForTest,
+  clearDbForTest,
+  setServerTimestampForTest,
+  clearServerTimestampForTest
+} = require('../../src/infra/firestore');
+
+function httpRequest({ port, method, path, headers, body }) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port,
+      method,
+      path,
+      headers
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+test('security: system config impactPreview includes cap breakdown fields', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test_confirm_secret';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  await usersRepo.createUser('U1', {
+    createdAt: '2026-02-10T00:00:00.000Z',
+    scenarioKey: 'A',
+    stepKey: 'THREE_MONTHS',
+    memberNumber: null
+  });
+  await deliveriesRepo.createDeliveryWithId('d1', {
+    lineUserId: 'U1',
+    delivered: true,
+    sentAt: '2026-02-10T01:00:00.000Z',
+    deliveredAt: '2026-02-10T01:00:00.000Z',
+    notificationCategory: 'DEADLINE_REQUIRED'
+  });
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = prevSecret;
+  });
+
+  const res = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: {
+      'x-admin-token': 'test_admin_token',
+      'x-actor': 'admin_master',
+      'x-trace-id': 'TRACE_CFG_IMPACT_1',
+      'content-type': 'application/json; charset=utf-8'
+    },
+    body: JSON.stringify({
+      servicePhase: 2,
+      notificationPreset: 'B',
+      notificationCaps: {
+        perCategoryWeeklyCap: 1
+      }
+    })
+  });
+
+  assert.strictEqual(res.status, 200);
+  const json = JSON.parse(res.body);
+  assert.strictEqual(json.ok, true);
+  assert.ok(json.impactPreview);
+  assert.ok(typeof json.impactPreview.sampledEvaluations === 'number');
+  assert.ok(json.impactPreview.blockedByCapType);
+  assert.ok(json.impactPreview.blockedByCategory);
+  assert.ok(json.impactPreview.blockedByReason);
+});

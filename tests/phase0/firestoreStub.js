@@ -10,6 +10,38 @@ function getValueByPath(obj, path) {
   return current;
 }
 
+function toComparable(value) {
+  if (value && typeof value.toDate === 'function') {
+    const parsed = value.toDate();
+    return parsed instanceof Date && !Number.isNaN(parsed.getTime()) ? parsed.getTime() : value;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? value : value.getTime();
+  }
+  return value;
+}
+
+function compareByOp(leftRaw, op, rightRaw) {
+  const left = toComparable(leftRaw);
+  const right = toComparable(rightRaw);
+  switch (op) {
+    case '==':
+      return left === right;
+    case '!=':
+      return left !== right;
+    case '>=':
+      return left !== undefined && left !== null && right !== undefined && right !== null && left >= right;
+    case '<=':
+      return left !== undefined && left !== null && right !== undefined && right !== null && left <= right;
+    case '>':
+      return left !== undefined && left !== null && right !== undefined && right !== null && left > right;
+    case '<':
+      return left !== undefined && left !== null && right !== undefined && right !== null && left < right;
+    default:
+      return true;
+  }
+}
+
 function createDbStub() {
   const state = { collections: {}, autoId: 0 };
 
@@ -47,6 +79,34 @@ function createDbStub() {
   }
 
   function createQuery(collection, filters, orderBy, limitCount) {
+    async function runGet() {
+      let docs = Object.entries(collection.docs).map(([id, doc]) => ({
+        id,
+        data: () => Object.assign({}, doc.data)
+      }));
+      if (filters.length) {
+        docs = docs.filter((doc) => {
+          const data = doc.data();
+          return filters.every((f) => compareByOp(getValueByPath(data, f.field), f.op, f.value));
+        });
+      }
+      if (orderBy) {
+        const dir = orderBy.direction === 'asc' ? 1 : -1;
+        docs.sort((a, b) => {
+          const av = getValueByPath(a.data(), orderBy.field);
+          const bv = getValueByPath(b.data(), orderBy.field);
+          if (av === bv) return 0;
+          if (av === undefined) return 1;
+          if (bv === undefined) return -1;
+          return av > bv ? dir : -dir;
+        });
+      }
+      if (typeof limitCount === 'number') {
+        docs = docs.slice(0, limitCount);
+      }
+      return { docs };
+    }
+
     return {
       where(field, op, value) {
         return createQuery(collection, filters.concat({ field, op, value }), orderBy, limitCount);
@@ -58,34 +118,17 @@ function createDbStub() {
         return createQuery(collection, filters, orderBy, n);
       },
       async get() {
-        let docs = Object.entries(collection.docs).map(([id, doc]) => ({
-          id,
-          data: () => Object.assign({}, doc.data)
-        }));
-        if (filters.length) {
-          docs = docs.filter((doc) => {
-            const data = doc.data();
-            return filters.every((f) => {
-              if (f.op !== '==') return true;
-              return getValueByPath(data, f.field) === f.value;
-            });
-          });
-        }
-        if (orderBy) {
-          const dir = orderBy.direction === 'asc' ? 1 : -1;
-          docs.sort((a, b) => {
-            const av = getValueByPath(a.data(), orderBy.field);
-            const bv = getValueByPath(b.data(), orderBy.field);
-            if (av === bv) return 0;
-            if (av === undefined) return 1;
-            if (bv === undefined) return -1;
-            return av > bv ? dir : -dir;
-          });
-        }
-        if (typeof limitCount === 'number') {
-          docs = docs.slice(0, limitCount);
-        }
-        return { docs };
+        return runGet();
+      },
+      count() {
+        return {
+          async get() {
+            const snap = await runGet();
+            return {
+              data: () => ({ count: snap.docs.length })
+            };
+          }
+        };
       }
     };
   }
