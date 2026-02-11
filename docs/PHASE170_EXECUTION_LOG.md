@@ -106,3 +106,18 @@ local HEAD: `e0350964c55a86b3a454fad0660e92b207fd4f5a`
 - `trace-fix-segment_dry-1770825681`
 - `trace-fix-composer_plan-1770825681`
 - response payloads saved under `/tmp/member-e2e/fix_*.json` during verification
+
+## workflow_dispatch OIDC Re-Verification (2026-02-11T23:56:51Z)
+- Run:
+  - `Deploy to Cloud Run` (workflow_dispatch, target_environment=stg)
+  - https://github.com/parentyai/member/actions/runs/21927805235
+- Result:
+  - `dry-run`: success
+  - `deploy`: success
+  - `Auth (OIDC)`: success（`unauthorized_client` の再発なし）
+- stg latest ready revisions after run:
+  - `member`: `member-00364-6jz` / `member:967f73bf914bb8369704f2e77be592e89fd337f2` / traffic `100`
+  - `member-webhook`: `member-webhook-00023-866` / `member-webhook:967f73bf914bb8369704f2e77be592e89fd337f2` / traffic `100`
+  - `member-track`: `member-track-00186-rt4` / `member-track:967f73bf914bb8369704f2e77be592e89fd337f2` / traffic `100`
+- 判定:
+  - Phase C-1 の `workflow_dispatch` 経路（OIDC）は stg で実測成功。
