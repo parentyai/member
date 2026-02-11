@@ -31,7 +31,9 @@ test('phase67: plan appends audit log', async () => {
   const result = await planSegmentSend({
     templateKey: 'ops_alert',
     segmentQuery: { readinessStatus: 'READY' },
-    requestedBy: 'ops'
+    requestedBy: 'ops',
+    traceId: 'trace-test-1',
+    requestId: 'req-test-1'
   }, {
     buildSendSegment: async () => ({
       ok: true,
@@ -48,4 +50,6 @@ test('phase67: plan appends audit log', async () => {
   const logs = await auditLogsRepo.listAuditLogs({ action: 'segment_send.plan', templateKey: 'ops_alert' });
   assert.strictEqual(logs.length, 1);
   assert.strictEqual(logs[0].payloadSummary.templateKey, 'ops_alert');
+  assert.strictEqual(logs[0].traceId, 'trace-test-1');
+  assert.strictEqual(logs[0].requestId, 'req-test-1');
 });

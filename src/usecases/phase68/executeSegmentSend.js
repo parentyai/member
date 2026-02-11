@@ -129,6 +129,8 @@ async function executeSegmentSend(params, deps) {
 
   const now = deps && deps.now instanceof Date ? deps.now : new Date();
   const requestedBy = payload.requestedBy || 'unknown';
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const configRepo = deps && deps.automationConfigRepo ? deps.automationConfigRepo : automationConfigRepo;
   const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
   const templatesV = deps && deps.templatesVRepo ? deps.templatesVRepo : templatesVRepo;
@@ -138,14 +140,33 @@ async function executeSegmentSend(params, deps) {
   const sendFn = deps && deps.sendFn ? deps.sendFn : testSendNotification;
   const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
 
+  async function appendRejectAudit(reason, extra) {
+    try {
+      await auditRepo.appendAuditLog({
+        actor: requestedBy,
+        action: 'segment_send.execute',
+        entityType: 'segment_send',
+        entityId: templateKey,
+        templateKey,
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        payloadSummary: Object.assign({ ok: false, reason, templateKey }, extra || {})
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+  }
+
   const storedConfig = await configRepo.getLatestAutomationConfig();
   const normalizedConfig = configRepo.normalizePhase48Config(storedConfig);
   if (normalizedConfig.mode !== 'EXECUTE') {
+    await appendRejectAudit('automation_mode_not_execute', { mode: normalizedConfig.mode || null });
     return { ok: false, reason: 'automation_mode_not_execute', mode: normalizedConfig.mode };
   }
 
   const killSwitch = await killSwitchFn();
   if (killSwitch) {
+    await appendRejectAudit('kill_switch_on', {});
     return { ok: false, reason: 'kill_switch_on' };
   }
 
@@ -172,18 +193,23 @@ async function executeSegmentSend(params, deps) {
   const planHash = computePlanHash(templateKey, lineUserIds, expectedBucket || resolveDateBucket(now));
 
   if (!expectedHash || expectedCount === null || !expectedBucket) {
+    await appendRejectAudit('plan_missing', {});
     return { ok: false, reason: 'plan_missing' };
   }
   if (!payloadPlanHash) {
+    await appendRejectAudit('plan_hash_required', {});
     return { ok: false, reason: 'plan_hash_required', status: 400 };
   }
   if (payloadPlanHash && payloadPlanHash !== expectedHash) {
+    await appendRejectAudit('plan_hash_mismatch', { expectedPlanHash: expectedHash });
     return { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash: expectedHash };
   }
   if (expectedTemplateVersion !== payloadTemplateVersion) {
+    await appendRejectAudit('template_version_mismatch', { expectedTemplateVersion });
     return { ok: false, reason: 'template_version_mismatch', expectedTemplateVersion };
   }
   if (expectedHash !== planHash || expectedCount !== count) {
+    await appendRejectAudit('plan_mismatch', { expectedPlanHash: expectedHash, expectedCount });
     return {
       ok: false,
       reason: 'plan_mismatch',
@@ -193,6 +219,7 @@ async function executeSegmentSend(params, deps) {
   }
 
   if (!confirmToken) {
+    await appendRejectAudit('confirm_token_required', {});
     return { ok: false, reason: 'confirm_token_required', status: 400 };
   }
   const confirmOk = verifyConfirmToken(confirmToken, {
@@ -205,6 +232,7 @@ async function executeSegmentSend(params, deps) {
     now
   });
   if (!confirmOk) {
+    await appendRejectAudit('confirm_token_mismatch', {});
     return { ok: false, reason: 'confirm_token_mismatch', status: 409 };
   }
 
@@ -216,6 +244,7 @@ async function executeSegmentSend(params, deps) {
   }
   if (!template) throw new Error('template not found');
   if (template.status && template.status === 'inactive') {
+    await appendRejectAudit('template_inactive', {});
     return { ok: false, reason: 'template_inactive' };
   }
 
@@ -299,6 +328,8 @@ async function executeSegmentSend(params, deps) {
       templateKey,
       templateVersion: expectedTemplateVersion,
       segmentKey,
+      traceId: traceId || undefined,
+      requestId: requestId || undefined,
       payloadSummary: {
         runId,
         counters,
@@ -427,6 +458,8 @@ async function executeSegmentSend(params, deps) {
       templateKey,
       templateVersion: expectedTemplateVersion,
       segmentKey,
+      traceId: traceId || undefined,
+      requestId: requestId || undefined,
       payloadSummary: {
         runId,
         counters,
@@ -462,6 +495,8 @@ async function executeSegmentSend(params, deps) {
       templateKey,
       templateVersion: expectedTemplateVersion,
       segmentKey,
+      traceId: traceId || undefined,
+      requestId: requestId || undefined,
       payloadSummary: {
         runId,
         counters,
@@ -475,6 +510,8 @@ async function executeSegmentSend(params, deps) {
     action: 'segment_send.execute',
     entityType: 'segment_send',
     entityId: templateKey,
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     templateKey,
     planHash,
     payloadSummary: {
@@ -484,7 +521,8 @@ async function executeSegmentSend(params, deps) {
       executedCount: counters.success,
       failures: failures.length,
       queueEnqueuedCount,
-      runId
+      runId,
+      confirmTokenId
     },
     snapshot: {
       templateKey,
@@ -492,7 +530,7 @@ async function executeSegmentSend(params, deps) {
       segmentKey,
       filterSnapshot,
       planHash,
-      confirmToken: confirmToken || null,
+      confirmTokenId,
       planSnapshot,
       executedCount: counters.success,
       failures,
@@ -510,6 +548,8 @@ async function executeSegmentSend(params, deps) {
   return {
     ok: !aborted && failures.length === 0,
     serverTime,
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     runId,
     templateKey,
     templateVersion: expectedTemplateVersion,

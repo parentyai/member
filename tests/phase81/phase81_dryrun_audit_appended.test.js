@@ -39,7 +39,9 @@ test('phase81: dry-run appends audit log', async () => {
   await dryRunSegmentSend({
     templateKey: 'ops_alert',
     segmentQuery: {},
-    requestedBy: 'ops'
+    requestedBy: 'ops',
+    traceId: 'trace-test-2',
+    requestId: 'req-test-2'
   }, {
     buildSendSegment: async () => ({ ok: true, items: [{ lineUserId: 'U1' }] })
   });
@@ -47,4 +49,6 @@ test('phase81: dry-run appends audit log', async () => {
   const logs = await auditLogsRepo.listAuditLogs({ action: 'segment_send.dry_run', templateKey: 'ops_alert' });
   assert.strictEqual(logs.length, 1);
   assert.strictEqual(logs[0].payloadSummary.templateKey, 'ops_alert');
+  assert.strictEqual(logs[0].traceId, 'trace-test-2');
+  assert.strictEqual(logs[0].requestId, 'req-test-2');
 });

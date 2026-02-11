@@ -1,16 +1,7 @@
 'use strict';
 
 const { executeSegmentSend } = require('../usecases/phase68/executeSegmentSend');
-
-function parseJson(body, res) {
-  try {
-    return JSON.parse(body || '{}');
-  } catch (err) {
-    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid json' }));
-    return null;
-  }
-}
+const { resolveActor, resolveRequestId, resolveTraceId, parseJson } = require('./admin/osContext');
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -24,13 +15,17 @@ function handleError(res, err) {
 }
 
 async function handleExecuteSend(req, res, body, deps) {
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const actor = resolveActor(req);
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
-    const result = await executeSegmentSend(payload, deps);
+    const requestedBy = payload.requestedBy || actor;
+    const result = await executeSegmentSend(Object.assign({}, payload, { requestedBy, traceId, requestId }), deps);
     const status = result && typeof result.status === 'number' ? result.status : 200;
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    res.end(JSON.stringify(Object.assign({}, result, { traceId, requestId })));
   } catch (err) {
     handleError(res, err);
   }
