@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'link_registry';
 
@@ -36,13 +37,21 @@ async function getLink(id) {
 async function listLinks(params) {
   const db = getDb();
   const opts = params || {};
-  let query = db.collection(COLLECTION);
-  if (opts.state) query = query.where('lastHealth.state', '==', opts.state);
-  query = query.orderBy('createdAt', 'desc');
+  let baseQuery = db.collection(COLLECTION);
+  if (opts.state) baseQuery = baseQuery.where('lastHealth.state', '==', opts.state);
+  let query = baseQuery.orderBy('createdAt', 'desc');
   const limit = typeof opts.limit === 'number' ? opts.limit : 50;
   if (limit) query = query.limit(limit);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'createdAt');
+    return limit ? rows.slice(0, limit) : rows;
+  }
 }
 
 async function setHealth(id, health) {

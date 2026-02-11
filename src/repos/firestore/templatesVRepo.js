@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
+const { isMissingIndexError, sortByNumberDesc } = require('./queryFallback');
 
 const COLLECTION = 'templates_v';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -42,14 +43,19 @@ function normalizeContent(content) {
 
 async function getLatestTemplateVersion(templateKey) {
   const db = getDb();
-  const snap = await db.collection(COLLECTION)
-    .where('templateKey', '==', templateKey)
-    .orderBy('version', 'desc')
-    .limit(1)
-    .get();
-  if (!snap.docs.length) return null;
-  const doc = snap.docs[0];
-  return Object.assign({ id: doc.id }, doc.data());
+  const baseQuery = db.collection(COLLECTION).where('templateKey', '==', templateKey);
+  try {
+    const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
+    if (!snap.docs.length) return null;
+    const doc = snap.docs[0];
+    return Object.assign({ id: doc.id }, doc.data());
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByNumberDesc(rows, 'version');
+    return rows.length ? rows[0] : null;
+  }
 }
 
 async function createTemplateVersion(data) {
@@ -77,15 +83,21 @@ async function getActiveTemplate(params) {
   const payload = params || {};
   const templateKey = normalizeKey(payload.templateKey);
   const db = getDb();
-  const snap = await db.collection(COLLECTION)
+  const baseQuery = db.collection(COLLECTION)
     .where('templateKey', '==', templateKey)
-    .where('status', '==', 'active')
-    .orderBy('version', 'desc')
-    .limit(1)
-    .get();
-  if (!snap.docs.length) return null;
-  const doc = snap.docs[0];
-  return Object.assign({ id: doc.id }, doc.data());
+    .where('status', '==', 'active');
+  try {
+    const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
+    if (!snap.docs.length) return null;
+    const doc = snap.docs[0];
+    return Object.assign({ id: doc.id }, doc.data());
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByNumberDesc(rows, 'version');
+    return rows.length ? rows[0] : null;
+  }
 }
 
 async function getTemplateByVersion(params) {
