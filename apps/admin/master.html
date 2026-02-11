@@ -30,6 +30,13 @@
     <h1>Master Data（運用OS）</h1>
     <div class="note">templates / link_registry を UI から管理（add-only）。</div>
 
+    <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
     <div class="grid">
       <div>
         <h2>Templates</h2>
@@ -142,15 +149,55 @@
 
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
       let configPlanHash = null;
       let configConfirmToken = null;
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       // Best-effort view audit (do not block UI).
       (async () => {
         try {
+          const traceId = ensureTraceId();
           await fetch('/api/admin/os/view', {
             method: 'POST',
-            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', [TRACE_HEADER_NAME]: traceId }, ACTOR_HEADERS),
             body: JSON.stringify({ screen: 'master' })
           });
         } catch (_err) {}
@@ -194,7 +241,7 @@
         const status = document.getElementById('tpl-status').value;
         const params = new URLSearchParams();
         if (status) params.set('status', status);
-        const res = await fetch(`/api/phase61/templates${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const res = await fetch(`/api/phase61/templates${params.toString() ? `?${params.toString()}` : ''}`, { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
@@ -218,7 +265,7 @@
             if (!key) return;
             const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/activate`, {
               method: 'POST',
-              headers: ACTOR_HEADERS
+              headers: buildHeaders()
             });
             document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
             await loadTemplates();
@@ -236,7 +283,7 @@
             if (!key) return;
             const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/deactivate`, {
               method: 'POST',
-              headers: ACTOR_HEADERS
+              headers: buildHeaders()
             });
             document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
             await loadTemplates();
@@ -260,7 +307,7 @@
         };
         const res = await fetch('/api/phase61/templates', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
         document.getElementById('tpl-result').textContent = JSON.stringify(await res.json(), null, 2);
@@ -271,7 +318,7 @@
         const state = document.getElementById('link-state').value;
         const params = new URLSearchParams();
         if (state) params.set('state', state);
-        const res = await fetch(`/admin/link-registry${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const res = await fetch(`/admin/link-registry${params.toString() ? `?${params.toString()}` : ''}`, { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('link-rows');
         if (!data.ok) {
@@ -301,7 +348,7 @@
         };
         const res = await fetch('/admin/link-registry', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
         document.getElementById('link-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
@@ -315,7 +362,7 @@
         if (!ok) return;
         const res = await fetch('/api/admin/ridac-membership/unlink', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify({ ridacMembershipId })
         });
         document.getElementById('ridac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
@@ -335,7 +382,7 @@
       }
 
       async function loadSystemConfigStatus() {
-        const res = await fetch('/api/admin/os/config/status', { headers: ACTOR_HEADERS });
+        const res = await fetch('/api/admin/os/config/status', { headers: buildHeaders() });
         const data = await jsonOrText(res);
         document.getElementById('config-status').textContent = JSON.stringify(data, null, 2);
         if (data && data.ok) {
@@ -351,7 +398,7 @@
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
         const res = await fetch('/api/admin/os/config/plan', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify({ servicePhase, notificationPreset })
         });
         const data = await jsonOrText(res);
@@ -371,7 +418,7 @@
         if (!ok) return;
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify({ servicePhase, notificationPreset, planHash: configPlanHash, confirmToken: configConfirmToken })
         });
         const data = await jsonOrText(res);

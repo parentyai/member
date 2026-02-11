@@ -1,6 +1,8 @@
 'use strict';
 
 const { recordOpsReview } = require('../usecases/phase5/setOpsReview');
+const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const { requireActor, resolveRequestId, resolveTraceId } = require('./admin/osContext');
 
 function parseJson(body, res) {
   try {
@@ -24,15 +26,35 @@ function handleError(res, err) {
 }
 
 async function handleOpsReview(req, res, body) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
-    await recordOpsReview({
+    const review = await recordOpsReview({
       reviewedBy: payload.reviewedBy,
       reviewedAt: payload.reviewedAt
     });
+    try {
+      await appendAuditLog({
+        actor,
+        action: 'ops_review.submit',
+        entityType: 'ops_state',
+        entityId: 'global',
+        traceId,
+        requestId,
+        payloadSummary: {
+          reviewedBy: review.reviewedBy || null,
+          hasReviewedAt: Boolean(payload.reviewedAt)
+        }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, traceId, requestId }));
   } catch (err) {
     handleError(res, err);
   }
