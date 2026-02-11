@@ -9,6 +9,7 @@ const { verifyConfirmToken } = require('../../domain/confirmToken');
 const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { sendNotification } = require('../notifications/sendNotification');
 const { buildTemplateKey } = require('./planNotificationSend');
+const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy');
 
 function resolvePlanHash(auditLog) {
   if (!auditLog || typeof auditLog !== 'object') return null;
@@ -114,6 +115,46 @@ async function executeNotificationSend(params, deps) {
     return { ok: false, reason: 'confirm_token_mismatch', traceId };
   }
 
+  let servicePhase = null;
+  let notificationPreset = null;
+  try {
+    const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
+    const getNotificationPreset = deps && deps.getNotificationPreset
+      ? deps.getNotificationPreset
+      : systemFlagsRepo.getNotificationPreset;
+    [servicePhase, notificationPreset] = await Promise.all([
+      getServicePhase(),
+      getNotificationPreset()
+    ]);
+  } catch (_err) {
+    servicePhase = null;
+    notificationPreset = null;
+  }
+  const policyResult = evaluateNotificationPolicy({
+    servicePhase,
+    notificationPreset,
+    notificationCategory: notification.notificationCategory
+  });
+  if (!policyResult.allowed) {
+    await appendExecuteAudit({
+      reason: 'notification_policy_blocked',
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory,
+      allowedCategories: policyResult.allowedCategories
+    });
+    return {
+      ok: false,
+      reason: 'notification_policy_blocked',
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory,
+      traceId
+    };
+  }
+
   const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
   const killSwitch = await killSwitchFn();
   if (killSwitch) {
@@ -144,7 +185,12 @@ async function executeNotificationSend(params, deps) {
     traceId,
     requestId,
     templateKey,
-    payloadSummary: { ok: true, deliveredCount: result.deliveredCount }
+    payloadSummary: {
+      ok: true,
+      deliveredCount: result.deliveredCount,
+      skippedCount: result.skippedCount || 0,
+      notificationCategory: notification.notificationCategory || null
+    }
   });
 
   return Object.assign({ ok: true, traceId, requestId }, result);

@@ -6,6 +6,7 @@
 ServicePhase1（運用OS v1）で UI から扱う編集対象。
 
 - `notifications`（draft → approve → send）
+  - `notificationCategory`（SSOTカテゴリ: DEADLINE_REQUIRED / IMMEDIATE_ACTION / SEQUENCE_GUIDANCE / TARGETED_ONLY / COMPLETION_CONFIRMATION）
 - `notification_deliveries`（SSOT: 反応/配信の source of truth。UIは参照のみ）
 - `notification_templates` / `templates_v`（template management）
 - `link_registry`（リンクの登録/health 管理）
@@ -32,4 +33,3 @@ ServicePhase は機能解禁の上位概念であり、Preset は “出し方/�
 - `docs/SSOT_SERVICE_PHASES.md`
 - `docs/SSOT_NOTIFICATION_PRESETS.md`
 - `docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md`
-

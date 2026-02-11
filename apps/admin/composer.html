@@ -67,6 +67,14 @@
             </select>
           </div>
         </div>
+        <label>notificationCategory</label>
+        <select id="notificationCategory">
+          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+        </select>
 
         <h3>Target</h3>
         <div class="row">
@@ -153,6 +161,7 @@
           linkRegistryId: document.getElementById('linkRegistryId').value.trim(),
           scenarioKey: document.getElementById('scenarioKey').value,
           stepKey: document.getElementById('stepKey').value,
+          notificationCategory: document.getElementById('notificationCategory').value,
           target: buildTarget()
         };
       }

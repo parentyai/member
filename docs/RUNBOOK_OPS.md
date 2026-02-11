@@ -73,6 +73,11 @@ STOP の方針:
 注意:
 - `trace_search.view` は Trace API を呼んだ時点で best-effort で追加される（レスポンスに含まれない場合がある）
 
+## Recovery Rule（delivery stuck）
+- 送信処理で `reserved/in-flight` が残り再実行で skip される場合、既定は再送ではなく `seal` で回復する。
+- 実施場所: `/admin/master` → Delivery Recovery（plan → execute）。
+- `delivery_recovery.plan` / `delivery_recovery.execute` が traceId で追えることを確認する。
+
 ## Expected Output
 - traceId を1つ指定すると、関連する `audit_logs / decision_logs / decision_timeline` が取得できる
 - Ops Console の表示だけで、危険度・反応・提案・判断が把握できる
@@ -80,4 +85,3 @@ STOP の方針:
 ## Rollback
 - 直近の変更を戻す場合は revert（実装PR / docs PR）
 - 緊急停止は Kill Switch（運用手順に従う）
-

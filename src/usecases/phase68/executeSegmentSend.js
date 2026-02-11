@@ -17,6 +17,7 @@ const { computeSegmentRunDeliveryId } = require('../../domain/deliveryId');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
+const { evaluateNotificationPolicy, resolveNotificationCategoryFromTemplate } = require('../../domain/notificationPolicy');
 
 function resolvePlanHash(plan) {
   if (!plan) return null;
@@ -247,6 +248,44 @@ async function executeSegmentSend(params, deps) {
     await appendRejectAudit('template_inactive', {});
     return { ok: false, reason: 'template_inactive' };
   }
+  const notificationCategory = resolveNotificationCategoryFromTemplate(template);
+  let servicePhase = null;
+  let notificationPreset = null;
+  try {
+    const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
+    const getNotificationPreset = deps && deps.getNotificationPreset
+      ? deps.getNotificationPreset
+      : systemFlagsRepo.getNotificationPreset;
+    [servicePhase, notificationPreset] = await Promise.all([
+      getServicePhase(),
+      getNotificationPreset()
+    ]);
+  } catch (_err) {
+    servicePhase = null;
+    notificationPreset = null;
+  }
+  const policyResult = evaluateNotificationPolicy({
+    servicePhase,
+    notificationPreset,
+    notificationCategory
+  });
+  if (!policyResult.allowed) {
+    await appendRejectAudit('notification_policy_blocked', {
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory,
+      allowedCategories: policyResult.allowedCategories
+    });
+    return {
+      ok: false,
+      reason: 'notification_policy_blocked',
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory
+    };
+  }
 
   const runRepo = deps && deps.automationRunsRepo ? deps.automationRunsRepo : automationRunsRepo;
   const opsRepo = deps && deps.opsStatesRepo ? deps.opsStatesRepo : opsStatesRepo;
@@ -406,6 +445,7 @@ async function executeSegmentSend(params, deps) {
             templateVersion: expectedTemplateVersion,
             text,
             notificationId: templateKey,
+            notificationCategory: notificationCategory || null,
             deliveryId
           },
           reason: errorMessage,
@@ -522,12 +562,14 @@ async function executeSegmentSend(params, deps) {
       failures: failures.length,
       queueEnqueuedCount,
       runId,
-      confirmTokenId
+      confirmTokenId,
+      notificationCategory: notificationCategory || null
     },
     snapshot: {
       templateKey,
       templateVersion: expectedTemplateVersion,
       segmentKey,
+      notificationCategory: notificationCategory || null,
       filterSnapshot,
       planHash,
       confirmTokenId,

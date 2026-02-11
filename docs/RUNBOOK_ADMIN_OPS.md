@@ -29,6 +29,19 @@
    - execute（confirm token 必須）
 2) Monitor で反応/CTR を確認
 
+## Automation Config（Segment Execute Guard）
+`/admin/master` の Automation Config で `mode` を運用する。
+
+- `OFF`: execute しない
+- `DRY_RUN_ONLY`: dry-run のみ許可
+- `EXECUTE`: execute 許可（他のガードは継続）
+
+操作手順:
+1) status を確認
+2) desired mode で plan
+3) set（confirmToken 必須）
+4) trace search で `automation_config.plan` / `automation_config.set` を確認
+
 ## Incident Response (事故時)
 1) kill switch ON（Operations）
 2) traceId を取得（Ops/Composer/Monitor/Error Console）
@@ -43,6 +56,25 @@
    - 再送/停止/テンプレ差し替え/リンク差し替え
 6) Rollback
    - 実装PR を revert（必要なら）
+
+## Delivery Recovery（reserved/in-flight 詰まり対応）
+対象: `notification_deliveries/{deliveryId}` が `reserved` のまま残り、再実行が skip され続けるケース。
+
+原則:
+- 二重送信ゼロを優先するため、既定回復は `seal` のみ（再送しない）。
+- `deliveryId` が `delivered=true` の場合は recovery 対象外。
+
+手順:
+1) `/admin/master` の「Delivery Recovery（seal）」で `deliveryId` を入力
+2) `status` で現状確認（`delivered/sealed/state/lastError`）
+3) `plan` 実行（planHash/confirmToken 取得）
+4) `execute(seal)` 実行（confirmToken 必須）
+5) `status` 再確認で `sealed=true` を確認
+6) trace search で `delivery_recovery.plan` / `delivery_recovery.execute` を確認
+
+期待結果:
+- `sealed=true` の delivery は以後の送信で skip される
+- 監査ログに traceId 付きで回復操作が残る
 
 ## Evidence (監査証跡)
 最低限、以下が traceId から取得できること。

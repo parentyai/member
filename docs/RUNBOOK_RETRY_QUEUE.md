@@ -15,6 +15,7 @@
 ## Notes
 - kill switch ON のとき retry は拒否される。
 - planHash/confirmToken mismatch は 409 を返すため、再度 plan する。
+- ServicePhase/NotificationPreset が設定済みの場合、`notificationCategory` が許可範囲外だと retry は `notification_policy_blocked` で拒否される。
 
 ## Rollback
 - enqueue された retry queue は append-only（削除しない）。

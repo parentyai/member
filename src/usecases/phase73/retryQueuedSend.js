@@ -1,11 +1,13 @@
 'use strict';
 
 const sendRetryQueueRepo = require('../../repos/firestore/sendRetryQueueRepo');
+const notificationTemplatesRepo = require('../../repos/firestore/notificationTemplatesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { testSendNotification } = require('../notifications/testSendNotification');
 const { computeRetryPlanHash, confirmTokenData } = require('./planRetryQueuedSend');
+const { evaluateNotificationPolicy, resolveNotificationCategoryFromTemplate } = require('../../domain/notificationPolicy');
 
 function resolvePayloadSnapshot(item) {
   if (!item || typeof item !== 'object') return null;
@@ -27,6 +29,7 @@ async function retryQueuedSend(params, deps) {
   const repo = deps && deps.sendRetryQueueRepo ? deps.sendRetryQueueRepo : sendRetryQueueRepo;
   const sendFn = deps && deps.sendFn ? deps.sendFn : testSendNotification;
   const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
+  const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
 
   const item = await repo.getQueueItem(queueId);
   if (!item) return { ok: false, reason: 'queue_not_found', status: 404 };
@@ -55,6 +58,65 @@ async function retryQueuedSend(params, deps) {
       // best-effort only
     }
     return { ok: false, reason: 'kill_switch_on' };
+  }
+
+  let notificationCategory = null;
+  if (typeof snapshot.notificationCategory === 'string' && snapshot.notificationCategory.trim().length > 0) {
+    notificationCategory = snapshot.notificationCategory.trim();
+  } else if (typeof item.templateKey === 'string' && item.templateKey.trim().length > 0) {
+    try {
+      const template = await templateRepo.getTemplateByKey(item.templateKey.trim());
+      notificationCategory = resolveNotificationCategoryFromTemplate(template);
+    } catch (_err) {
+      notificationCategory = null;
+    }
+  }
+  let servicePhase = null;
+  let notificationPreset = null;
+  try {
+    const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
+    const getNotificationPreset = deps && deps.getNotificationPreset
+      ? deps.getNotificationPreset
+      : systemFlagsRepo.getNotificationPreset;
+    [servicePhase, notificationPreset] = await Promise.all([
+      getServicePhase(),
+      getNotificationPreset()
+    ]);
+  } catch (_err) {
+    servicePhase = null;
+    notificationPreset = null;
+  }
+  const policyResult = evaluateNotificationPolicy({
+    servicePhase,
+    notificationPreset,
+    notificationCategory
+  });
+  if (!policyResult.allowed) {
+    await appendAuditLog({
+      actor,
+      action: 'retry_queue.execute',
+      entityType: 'send_retry_queue',
+      entityId: queueId,
+      traceId: traceId || undefined,
+      requestId: requestId || undefined,
+      payloadSummary: {
+        ok: false,
+        reason: 'notification_policy_blocked',
+        policyReason: policyResult.reason,
+        servicePhase: policyResult.servicePhase,
+        notificationPreset: policyResult.notificationPreset,
+        notificationCategory: policyResult.notificationCategory,
+        queueId
+      }
+    });
+    return {
+      ok: false,
+      reason: 'notification_policy_blocked',
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory
+    };
   }
 
   const expectedPlanHash = computeRetryPlanHash(queueId, item);
@@ -122,7 +184,8 @@ async function retryQueuedSend(params, deps) {
         templateKey: item.templateKey || null,
         lineUserId: snapshot.lineUserId || null,
         notificationId: snapshot.notificationId || null,
-        deliveryId: snapshot.deliveryId || null
+        deliveryId: snapshot.deliveryId || null,
+        notificationCategory: notificationCategory || null
       }
     });
     return { ok: true, queueId };
@@ -144,7 +207,8 @@ async function retryQueuedSend(params, deps) {
         templateKey: item.templateKey || null,
         lineUserId: snapshot.lineUserId || null,
         notificationId: snapshot.notificationId || null,
-        deliveryId: snapshot.deliveryId || null
+        deliveryId: snapshot.deliveryId || null,
+        notificationCategory: notificationCategory || null
       }
     });
     return { ok: false, reason: 'send_failed', error: message };

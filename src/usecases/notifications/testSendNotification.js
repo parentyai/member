@@ -41,6 +41,7 @@ async function testSendNotification(params) {
       lineUserId
     });
     const existing = reserved && reserved.existing ? reserved.existing : null;
+    if (existing && existing.sealed === true) return { id: deliveryId, skipped: true };
     if (existing && existing.delivered === true) return { id: deliveryId, skipped: true };
     // If the delivery exists but isn't marked failed, treat it as in-flight/unknown and skip.
     // This prevents duplicates if the process crashed after pushing but before marking delivered.

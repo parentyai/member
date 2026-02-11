@@ -53,7 +53,7 @@
         </div>
         <table>
           <thead>
-            <tr><th>key</th><th>status</th><th>title</th><th>actions</th></tr>
+            <tr><th>key</th><th>status</th><th>category</th><th>title</th><th>actions</th></tr>
           </thead>
           <tbody id="tpl-rows"></tbody>
         </table>
@@ -63,6 +63,14 @@
         <input id="tpl-key" placeholder="ops_escalate" />
         <label>title</label>
         <input id="tpl-title" />
+        <label>notificationCategory</label>
+        <select id="tpl-category">
+          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+        </select>
         <label>text/body</label>
         <textarea id="tpl-text"></textarea>
         <button id="tpl-create" type="button">create</button>
@@ -147,11 +155,56 @@
     <pre id="config-plan-result">-</pre>
     <pre id="config-set-result">-</pre>
 
+    <hr />
+
+    <h2>Automation Config（Segment Execute Guard）</h2>
+    <div class="note">automation mode を安全に変更（plan → confirmToken → set）。</div>
+    <div class="note">
+      <button id="automation-config-reload" type="button">reload status</button>
+    </div>
+    <pre id="automation-config-status">-</pre>
+    <label>mode</label>
+    <select id="automation-config-mode">
+      <option value="OFF">OFF</option>
+      <option value="DRY_RUN_ONLY">DRY_RUN_ONLY</option>
+      <option value="EXECUTE">EXECUTE</option>
+    </select>
+    <div class="note">
+      <button id="automation-config-plan" type="button">plan</button>
+      <button id="automation-config-set" type="button">set</button>
+    </div>
+    <pre id="automation-config-plan-result">-</pre>
+    <pre id="automation-config-set-result">-</pre>
+
+    <hr />
+
+    <h2>Delivery Recovery（seal）</h2>
+    <div class="note">
+      送信前に reserve 済みで詰まった delivery を「sealed」にして回復操作を完了扱いにする。
+      sealed は送信対象から skip される（再送しない）。
+    </div>
+    <label>deliveryId</label>
+    <input id="delivery-recovery-id" placeholder="delivery id" />
+    <label>sealedReason（任意）</label>
+    <input id="delivery-recovery-reason" placeholder="manual_recovery" />
+    <div class="note">
+      <button id="delivery-recovery-status" type="button">status</button>
+      <button id="delivery-recovery-plan" type="button">plan</button>
+      <button id="delivery-recovery-execute" type="button">execute(seal)</button>
+    </div>
+    <pre id="delivery-recovery-status-result">-</pre>
+    <pre id="delivery-recovery-plan-result">-</pre>
+    <pre id="delivery-recovery-execute-result">-</pre>
+
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
       const TRACE_HEADER_NAME = 'x-trace-id';
       let configPlanHash = null;
       let configConfirmToken = null;
+      let automationPlanHash = null;
+      let automationConfirmToken = null;
+      let deliveryRecoveryPlanHash = null;
+      let deliveryRecoveryConfirmToken = null;
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -245,12 +298,12 @@
         const data = await res.json();
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
-          appendMessageRow(rows, 4, 'error');
+          appendMessageRow(rows, 5, 'error');
           return;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
-          appendMessageRow(rows, 4, 'no data');
+          appendMessageRow(rows, 5, 'no data');
           return;
         }
         clearChildren(rows);
@@ -293,6 +346,7 @@
           appendRow(rows, [
             item.key || '-',
             item.status || '-',
+            item.notificationCategory || '-',
             item.title || '-',
             actions
           ]);
@@ -303,6 +357,7 @@
         const payload = {
           key: document.getElementById('tpl-key').value.trim(),
           title: document.getElementById('tpl-title').value.trim(),
+          notificationCategory: document.getElementById('tpl-category').value,
           text: document.getElementById('tpl-text').value
         };
         const res = await fetch('/api/phase61/templates', {
@@ -426,6 +481,127 @@
         await loadSystemConfigStatus();
       }
 
+      function parseMode(value) {
+        const mode = String(value || '').trim().toUpperCase();
+        if (mode === 'OFF' || mode === 'DRY_RUN_ONLY' || mode === 'EXECUTE') return mode;
+        return null;
+      }
+
+      async function loadAutomationConfigStatus() {
+        const res = await fetch('/api/admin/os/automation-config/status', { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-status').textContent = JSON.stringify(data, null, 2);
+        if (data && data.ok && data.config && data.config.mode) {
+          document.getElementById('automation-config-mode').value = String(data.config.mode);
+        }
+      }
+
+      async function planAutomationConfig() {
+        const mode = parseMode(document.getElementById('automation-config-mode').value);
+        if (!mode) {
+          document.getElementById('automation-config-plan-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
+          return;
+        }
+        const res = await fetch('/api/admin/os/automation-config/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ mode })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-plan-result').textContent = JSON.stringify(data, null, 2);
+        automationPlanHash = data && data.ok ? data.planHash || null : null;
+        automationConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function setAutomationConfig() {
+        const mode = parseMode(document.getElementById('automation-config-mode').value);
+        if (!mode) {
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
+          return;
+        }
+        if (!automationPlanHash || !automationConfirmToken) {
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`Automation Config を set しますか？\n\nmode=${mode}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/automation-config/set', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ mode, planHash: automationPlanHash, confirmToken: automationConfirmToken })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-set-result').textContent = JSON.stringify(data, null, 2);
+        await loadAutomationConfigStatus();
+      }
+
+      function getDeliveryRecoveryPayload() {
+        const deliveryId = document.getElementById('delivery-recovery-id').value.trim();
+        const sealedReason = document.getElementById('delivery-recovery-reason').value.trim();
+        if (!deliveryId) return { ok: false, error: 'deliveryId required' };
+        return {
+          ok: true,
+          payload: {
+            deliveryId,
+            sealedReason: sealedReason || null
+          }
+        };
+      }
+
+      async function loadDeliveryRecoveryStatus() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const params = new URLSearchParams({ deliveryId: parsed.payload.deliveryId });
+        const res = await fetch(`/api/admin/os/delivery-recovery/status?${params.toString()}`, { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function planDeliveryRecovery() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const res = await fetch('/api/admin/os/delivery-recovery/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(parsed.payload)
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify(data, null, 2);
+        deliveryRecoveryPlanHash = data && data.ok ? data.planHash || null : null;
+        deliveryRecoveryConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function executeDeliveryRecovery() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        if (!deliveryRecoveryPlanHash || !deliveryRecoveryConfirmToken) {
+          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`delivery recovery を実行しますか？\n\ndeliveryId=${parsed.payload.deliveryId}\nsealedReason=${parsed.payload.sealedReason || '(null)'}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/delivery-recovery/execute', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(Object.assign({}, parsed.payload, {
+            planHash: deliveryRecoveryPlanHash,
+            confirmToken: deliveryRecoveryConfirmToken
+          }))
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify(data, null, 2);
+        await loadDeliveryRecoveryStatus();
+      }
+
       document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
       document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
@@ -434,10 +610,17 @@
       document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
       document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
       document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
+      document.getElementById('automation-config-reload').addEventListener('click', () => loadAutomationConfigStatus().catch(() => {}));
+      document.getElementById('automation-config-plan').addEventListener('click', () => planAutomationConfig().catch(() => {}));
+      document.getElementById('automation-config-set').addEventListener('click', () => setAutomationConfig().catch(() => {}));
+      document.getElementById('delivery-recovery-status').addEventListener('click', () => loadDeliveryRecoveryStatus().catch(() => {}));
+      document.getElementById('delivery-recovery-plan').addEventListener('click', () => planDeliveryRecovery().catch(() => {}));
+      document.getElementById('delivery-recovery-execute').addEventListener('click', () => executeDeliveryRecovery().catch(() => {}));
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
       loadSystemConfigStatus().catch(() => {});
+      loadAutomationConfigStatus().catch(() => {});
     </script>
   </body>
 </html>

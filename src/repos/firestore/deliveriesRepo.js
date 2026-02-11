@@ -32,6 +32,26 @@ async function createDeliveryWithId(deliveryId, data) {
   return { id: docRef.id };
 }
 
+async function sealDeliveryWithId(deliveryId, data) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const payload = data && typeof data === 'object' ? data : {};
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(deliveryId);
+  const snap = await docRef.get();
+  if (!snap.exists) return { ok: false, reason: 'not_found', id: deliveryId };
+  const record = snap.data() || {};
+  if (record.delivered === true) return { ok: false, reason: 'already_delivered', id: deliveryId };
+  if (record.sealed === true) return { ok: true, id: deliveryId, alreadySealed: true };
+  await docRef.set({
+    sealed: true,
+    sealedAt: resolveTimestamp(payload.sealedAt),
+    sealedBy: payload.sealedBy || null,
+    sealedReason: payload.sealedReason || null,
+    state: 'sealed'
+  }, { merge: true });
+  return { ok: true, id: deliveryId, sealed: true };
+}
+
 async function reserveDeliveryWithId(deliveryId, data) {
   if (!deliveryId) throw new Error('deliveryId required');
   const db = getDb();
@@ -100,6 +120,7 @@ module.exports = {
   createDelivery,
   reserveDeliveryId,
   createDeliveryWithId,
+  sealDeliveryWithId,
   reserveDeliveryWithId,
   getDelivery,
   markRead,
