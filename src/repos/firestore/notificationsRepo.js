@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'notifications';
 
@@ -28,15 +29,24 @@ async function getNotification(id) {
 async function listNotifications(params) {
   const db = getDb();
   const opts = params || {};
-  let query = db.collection(COLLECTION);
-  if (opts.status) query = query.where('status', '==', opts.status);
-  if (opts.scenarioKey) query = query.where('scenarioKey', '==', opts.scenarioKey);
-  if (opts.stepKey) query = query.where('stepKey', '==', opts.stepKey);
-  query = query.orderBy('createdAt', 'desc');
+  let baseQuery = db.collection(COLLECTION);
+  if (opts.status) baseQuery = baseQuery.where('status', '==', opts.status);
+  if (opts.scenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', opts.scenarioKey);
+  if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
+  let query = baseQuery.orderBy('createdAt', 'desc');
   const limit = typeof opts.limit === 'number' ? opts.limit : 50;
   if (limit) query = query.limit(limit);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    // Fallback for environments without composite indexes.
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'createdAt');
+    return limit ? rows.slice(0, limit) : rows;
+  }
 }
 
 async function updateNotificationStatus(id, statusPatch) {

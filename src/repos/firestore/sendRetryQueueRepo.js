@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'send_retry_queue';
 const STATUS_VALUES = new Set(['PENDING', 'DONE', 'GAVE_UP']);
@@ -42,11 +43,21 @@ async function getQueueItem(id) {
 
 async function listPending(limit) {
   const db = getDb();
-  let query = db.collection(COLLECTION).where('status', '==', 'PENDING').orderBy('createdAt', 'desc');
+  const baseQuery = db.collection(COLLECTION).where('status', '==', 'PENDING');
+  let query = baseQuery.orderBy('createdAt', 'desc');
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    // Fallback for environments without composite indexes.
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'createdAt');
+    return cap ? rows.slice(0, cap) : rows;
+  }
 }
 
 async function markDone(id) {

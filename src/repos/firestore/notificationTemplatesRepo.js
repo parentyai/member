@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'notification_templates';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -48,13 +49,22 @@ async function listTemplates(options) {
   const db = getDb();
   const opts = typeof options === 'number' ? { limit: options } : (options || {});
   const status = opts.status ? normalizeStatus(opts.status, null) : null;
-  let query = db.collection(COLLECTION);
-  if (status) query = query.where('status', '==', status);
-  query = query.orderBy('createdAt', 'desc');
+  let baseQuery = db.collection(COLLECTION);
+  if (status) baseQuery = baseQuery.where('status', '==', status);
+  let query = baseQuery.orderBy('createdAt', 'desc');
   const cap = typeof opts.limit === 'number' ? opts.limit : 50;
   if (cap) query = query.limit(cap);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    // Fallback for environments without composite indexes.
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'createdAt');
+    return cap ? rows.slice(0, cap) : rows;
+  }
 }
 
 async function getTemplateByKey(key) {

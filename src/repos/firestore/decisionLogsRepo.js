@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'decision_logs';
 
@@ -23,29 +24,43 @@ async function getLatestDecision(subjectType, subjectId) {
   if (!subjectType) throw new Error('subjectType required');
   if (!subjectId) throw new Error('subjectId required');
   const db = getDb();
-  let query = db.collection(COLLECTION)
+  const baseQuery = db.collection(COLLECTION)
     .where('subjectType', '==', subjectType)
-    .where('subjectId', '==', subjectId)
-    .orderBy('decidedAt', 'desc')
-    .limit(1);
-  const snap = await query.get();
-  if (!snap.docs.length) return null;
-  const doc = snap.docs[0];
-  return Object.assign({ id: doc.id }, doc.data());
+    .where('subjectId', '==', subjectId);
+  try {
+    const snap = await baseQuery.orderBy('decidedAt', 'desc').limit(1).get();
+    if (!snap.docs.length) return null;
+    const doc = snap.docs[0];
+    return Object.assign({ id: doc.id }, doc.data());
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'decidedAt');
+    return rows.length ? rows[0] : null;
+  }
 }
 
 async function listDecisions(subjectType, subjectId, limit) {
   if (!subjectType) throw new Error('subjectType required');
   if (!subjectId) throw new Error('subjectId required');
   const db = getDb();
-  let query = db.collection(COLLECTION)
+  const baseQuery = db.collection(COLLECTION)
     .where('subjectType', '==', subjectType)
-    .where('subjectId', '==', subjectId)
-    .orderBy('decidedAt', 'desc');
+    .where('subjectId', '==', subjectId);
+  let query = baseQuery.orderBy('decidedAt', 'desc');
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'decidedAt');
+    return cap ? rows.slice(0, cap) : rows;
+  }
 }
 
 async function getDecisionById(decisionLogId) {
@@ -61,13 +76,21 @@ async function listDecisionsByNotificationId(notificationId, limit, direction) {
   if (!notificationId) throw new Error('notificationId required');
   const db = getDb();
   const dir = direction === 'asc' ? 'asc' : 'desc';
-  let query = db.collection(COLLECTION)
-    .where('audit.notificationId', '==', notificationId)
-    .orderBy('decidedAt', dir);
+  const baseQuery = db.collection(COLLECTION).where('audit.notificationId', '==', notificationId);
+  let query = baseQuery.orderBy('decidedAt', dir);
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  try {
+    const snap = await query.get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'decidedAt');
+    if (dir === 'asc') rows.reverse();
+    return cap ? rows.slice(0, cap) : rows;
+  }
 }
 
 module.exports = {

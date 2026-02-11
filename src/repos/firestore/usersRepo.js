@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'users';
 
@@ -82,15 +83,25 @@ function hasMemberNumber(user) {
 async function listUsers(params) {
   const db = getDb();
   const opts = params || {};
-  let query = db.collection(COLLECTION);
-  if (opts.scenarioKey) query = query.where('scenarioKey', '==', opts.scenarioKey);
-  if (opts.stepKey) query = query.where('stepKey', '==', opts.stepKey);
-  if (opts.region) query = query.where('region', '==', opts.region);
-  query = query.orderBy('createdAt', 'desc');
+  let baseQuery = db.collection(COLLECTION);
+  if (opts.scenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', opts.scenarioKey);
+  if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
+  if (opts.region) baseQuery = baseQuery.where('region', '==', opts.region);
+  let query = baseQuery.orderBy('createdAt', 'desc');
   const limit = typeof opts.limit === 'number' ? opts.limit : 500;
   if (limit) query = query.limit(limit);
-  const snap = await query.get();
-  let users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  let users = [];
+  try {
+    const snap = await query.get();
+    users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    // Fallback for environments without composite indexes.
+    const snap = await baseQuery.get();
+    users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(users, 'createdAt');
+    if (limit) users = users.slice(0, limit);
+  }
   if (opts.membersOnly) {
     users = users.filter(hasMemberNumber);
   }
