@@ -81,3 +81,28 @@ local HEAD: `e0350964c55a86b3a454fad0660e92b207fd4f5a`
 備考:
 - requestログでHTTPステータスは確認済み（`gcloud logging read ... run.googleapis.com/requests`）。
 - アプリ側が例外を `{"ok":false,"error":"error"}` に丸めるため、根本原因の特定には server-side での構造化エラーログ追加が必要。
+
+## Follow-up Fix Verification (2026-02-11T16:01Z)
+- branch fix commit: `06c3a5e6ae2e8350edd40542c4f0aabc58f7f669`
+- PR: https://github.com/parentyai/member/pull/356
+- manual deploy note:
+  - GitHub `workflow_dispatch` run `21912379573` failed at OIDC auth with:
+    - `unauthorized_client: The given credential is rejected by the attribute condition.`
+  - stg verification was executed by manual `gcloud builds submit` + `gcloud run deploy member` using image:
+    - `member:06c3a5e6ae2e8350edd40542c4f0aabc58f7f669`
+    - latest ready revision after deploy: `member-00359-28k`
+
+### Re-test Results (same endpoints that previously failed)
+- `GET /api/phase61/templates?status=active&limit=5`: `200` (fixed)
+- `GET /api/phase73/retry-queue?limit=10`: `200` (fixed)
+- `GET /api/phase66/segments/send-targets?limit=5`: `200` (fixed)
+- `GET /api/phase25/ops/console?lineUserId=U_TEST_RIDAC_A_20260210092935`: `200` (fixed)
+- `POST /api/phase67/send/plan`: `200` (fixed)
+- `POST /api/phase81/segment-send/dry-run`: `200` (fixed)
+- `POST /api/admin/os/notifications/send/plan`: `200` (fixed)
+
+### Trace/Evidence IDs
+- `trace-fix-segment_plan-1770825681`
+- `trace-fix-segment_dry-1770825681`
+- `trace-fix-composer_plan-1770825681`
+- response payloads saved under `/tmp/member-e2e/fix_*.json` during verification
