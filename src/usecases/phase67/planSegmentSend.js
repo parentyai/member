@@ -19,6 +19,8 @@ async function planSegmentSend(params, deps) {
   if (!templateKey) throw new Error('templateKey required');
 
   const requestedBy = payload.requestedBy || 'unknown';
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
   const templatesV = deps && deps.templatesVRepo ? deps.templatesVRepo : templatesVRepo;
   const templateVersion = parseTemplateVersion(payload.templateVersion);
@@ -58,6 +60,8 @@ async function planSegmentSend(params, deps) {
     action: 'segment_send.plan',
     entityType: 'segment_send',
     entityId: templateKey,
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     templateKey,
     payloadSummary: {
       templateKey,
@@ -86,6 +90,8 @@ async function planSegmentSend(params, deps) {
   return {
     ok: true,
     serverTime,
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     templateKey,
     templateVersion: resolvedTemplateVersion,
     count: lineUserIds.length,

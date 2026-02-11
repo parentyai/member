@@ -394,14 +394,15 @@
       let selectedOpsConsoleServerTime = null;
       let lastOpsSuggestion = null;
       let lastSuggestionUsed = false;
-      let lastMitigationSuggestion = null;
-      let lastTopUnhealthyNotifications = [];
-      let segmentSendPlanCache = null;
-      let segmentSendDryRunCache = null;
-      let retryQueueCache = [];
-      let retryQueuePlanCache = {};
-      let savedSegmentsCache = [];
-      let selectedSegmentCache = null;
+	      let lastMitigationSuggestion = null;
+	      let lastTopUnhealthyNotifications = [];
+	      let segmentSendPlanCache = null;
+	      let segmentSendDryRunCache = null;
+	      let segmentSendTraceIdCache = null;
+	      let retryQueueCache = [];
+	      let retryQueuePlanCache = {};
+	      let savedSegmentsCache = [];
+	      let selectedSegmentCache = null;
 
       function clearChildren(node) {
         while (node.firstChild) {
@@ -841,32 +842,50 @@
         return res.json();
       }
 
-      async function fetchSegmentPlan(payload) {
-        const res = await fetch('/api/phase67/send/plan', {
-          method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
-          body: JSON.stringify(payload)
-        });
-        return res.json();
-      }
+	      async function fetchSegmentPlan(payload) {
+	        const traceId = segmentSendTraceIdCache || newTraceId('segment-send');
+	        const res = await fetch('/api/phase67/send/plan', {
+	          method: 'POST',
+	          headers: Object.assign(
+	            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+	            OPS_ACTOR_HEADERS
+	          ),
+	          body: JSON.stringify(payload)
+	        });
+	        const data = await res.json();
+	        if (data && data.ok && !data.traceId) data.traceId = traceId;
+	        return data;
+	      }
 
-      async function fetchSegmentExecute(payload) {
-        const res = await fetch('/api/phase68/send/execute', {
-          method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
-          body: JSON.stringify(payload)
-        });
-        return res.json();
-      }
+	      async function fetchSegmentExecute(payload) {
+	        const traceId = segmentSendTraceIdCache || newTraceId('segment-send');
+	        const res = await fetch('/api/phase68/send/execute', {
+	          method: 'POST',
+	          headers: Object.assign(
+	            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+	            OPS_ACTOR_HEADERS
+	          ),
+	          body: JSON.stringify(payload)
+	        });
+	        const data = await res.json();
+	        if (data && data.ok && !data.traceId) data.traceId = traceId;
+	        return data;
+	      }
 
-      async function fetchSegmentDryRun(payload) {
-        const res = await fetch('/api/phase81/segment-send/dry-run', {
-          method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
-          body: JSON.stringify(payload)
-        });
-        return res.json();
-      }
+	      async function fetchSegmentDryRun(payload) {
+	        const traceId = segmentSendTraceIdCache || newTraceId('segment-send');
+	        const res = await fetch('/api/phase81/segment-send/dry-run', {
+	          method: 'POST',
+	          headers: Object.assign(
+	            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+	            OPS_ACTOR_HEADERS
+	          ),
+	          body: JSON.stringify(payload)
+	        });
+	        const data = await res.json();
+	        if (data && data.ok && !data.traceId) data.traceId = traceId;
+	        return data;
+	      }
 
       async function fetchRetryQueue(limit) {
         const params = new URLSearchParams();
@@ -1231,45 +1250,48 @@
         return query;
       }
 
-      function renderSegmentPlanResult(result) {
-        const note = document.getElementById('segment-plan-note');
-        const resultEl = document.getElementById('segment-plan-result');
-        if (!result || !result.ok) {
-          setText(note, 'plan error');
+	      function renderSegmentPlanResult(result) {
+	        const note = document.getElementById('segment-plan-note');
+	        const resultEl = document.getElementById('segment-plan-result');
+	        if (!result || !result.ok) {
+	          setText(note, 'plan error');
           setText(resultEl, formatJson(result || {}));
           return;
-        }
-        const sample = Array.isArray(result.lineUserIds) ? result.lineUserIds.slice(0, 5).join(', ') : '-';
-        setText(note, `count: ${result.count} / planHash: ${result.planHash || '-'} / sample: ${sample}`);
-        setText(resultEl, formatJson(result));
-      }
+	        }
+	        const sample = Array.isArray(result.lineUserIds) ? result.lineUserIds.slice(0, 5).join(', ') : '-';
+	        const traceId = result.traceId || '-';
+	        setText(note, `traceId: ${traceId} / count: ${result.count} / planHash: ${result.planHash || '-'} / sample: ${sample}`);
+	        setText(resultEl, formatJson(result));
+	      }
 
-      function renderSegmentDryRunResult(result) {
-        const note = document.getElementById('segment-dryrun-note');
-        const resultEl = document.getElementById('segment-dryrun-result');
-        if (!result || !result.ok) {
-          setText(note, 'dry-run error');
+	      function renderSegmentDryRunResult(result) {
+	        const note = document.getElementById('segment-dryrun-note');
+	        const resultEl = document.getElementById('segment-dryrun-result');
+	        if (!result || !result.ok) {
+	          setText(note, 'dry-run error');
           setText(resultEl, formatJson(result || {}));
           return;
-        }
-        const sample = Array.isArray(result.targetsSample) ? result.targetsSample.join(', ') : '-';
-        setText(note, `targetCount: ${result.targetCount} / confirmToken: ${result.confirmToken || '-'} / sample: ${sample}`);
-        setText(resultEl, formatJson(result));
-      }
+	        }
+	        const sample = Array.isArray(result.targetsSample) ? result.targetsSample.join(', ') : '-';
+	        const traceId = result.traceId || '-';
+	        setText(note, `traceId: ${traceId} / targetCount: ${result.targetCount} / confirmToken: ${result.confirmToken || '-'} / sample: ${sample}`);
+	        setText(resultEl, formatJson(result));
+	      }
 
-      function renderSegmentExecuteResult(result) {
-        const note = document.getElementById('segment-execute-note');
-        const resultEl = document.getElementById('segment-execute-result');
-        if (!result) {
-          setText(note, 'execute error');
+	      function renderSegmentExecuteResult(result) {
+	        const note = document.getElementById('segment-execute-note');
+	        const resultEl = document.getElementById('segment-execute-result');
+	        if (!result) {
+	          setText(note, 'execute error');
           setText(resultEl, '-');
           return;
-        }
-        const status = result.ok ? 'ok' : 'error';
-        const failureCount = Array.isArray(result.failures) ? result.failures.length : 0;
-        setText(note, `result: ${status} / executedCount: ${result.executedCount || 0} / failures: ${failureCount}`);
-        setText(resultEl, formatJson(result));
-      }
+	        }
+	        const status = result.ok ? 'ok' : 'error';
+	        const failureCount = Array.isArray(result.failures) ? result.failures.length : 0;
+	        const traceId = result.traceId || '-';
+	        setText(note, `traceId: ${traceId} / result: ${status} / executedCount: ${result.executedCount || 0} / failures: ${failureCount}`);
+	        setText(resultEl, formatJson(result));
+	      }
 
       function renderRetryQueue(items) {
         const rows = document.getElementById('retry-queue-rows');
@@ -1464,14 +1486,53 @@
         }
       }
 
-      async function handleSegmentPlan() {
-        const note = document.getElementById('segment-plan-note');
-        setText(note, '');
-        segmentSendPlanCache = null;
-        segmentSendDryRunCache = null;
-        const templateKey = document.getElementById('segment-template-key').value.trim();
-        const templateVersionValue = document.getElementById('segment-template-version').value;
-        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
+	      async function handleSegmentPlan() {
+	        const note = document.getElementById('segment-plan-note');
+	        setText(note, '');
+	        segmentSendPlanCache = null;
+	        segmentSendDryRunCache = null;
+	        segmentSendTraceIdCache = newTraceId('segment-send');
+	        const templateKey = document.getElementById('segment-template-key').value.trim();
+	        const templateVersionValue = document.getElementById('segment-template-version').value;
+	        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
+	        if (!templateKey) {
+	          setText(note, 'templateKey required');
+          return;
+        }
+        const segmentQuery = buildSegmentQueryFromInputs();
+        const segmentKey = selectedSegmentCache ? selectedSegmentCache.segmentKey : null;
+        const filterSnapshot = selectedSegmentCache ? selectedSegmentCache.filter : null;
+        const payload = {
+          templateKey,
+          templateVersion,
+          segmentQuery,
+          segmentKey,
+          filterSnapshot,
+          requestedBy: 'ops_readonly'
+        };
+	        const result = await fetchSegmentPlan(payload);
+	        renderSegmentPlanResult(result);
+	        if (result && result.ok) {
+	          segmentSendPlanCache = {
+	            templateKey,
+	            traceId: result.traceId || segmentSendTraceIdCache,
+	            planHash: result.planHash,
+	            segmentQuery,
+	            templateVersion: result.templateVersion || templateVersion,
+	            segmentKey,
+	            filterSnapshot
+	          };
+	        }
+	      }
+
+	      async function handleSegmentDryRun() {
+	        const note = document.getElementById('segment-dryrun-note');
+	        setText(note, '');
+	        segmentSendDryRunCache = null;
+	        if (!segmentSendTraceIdCache) segmentSendTraceIdCache = newTraceId('segment-send');
+	        const templateKey = document.getElementById('segment-template-key').value.trim();
+	        const templateVersionValue = document.getElementById('segment-template-version').value;
+	        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
         if (!templateKey) {
           setText(note, 'templateKey required');
           return;
@@ -1487,59 +1548,25 @@
           filterSnapshot,
           requestedBy: 'ops_readonly'
         };
-        const result = await fetchSegmentPlan(payload);
-        renderSegmentPlanResult(result);
-        if (result && result.ok) {
-          segmentSendPlanCache = {
-            templateKey,
-            planHash: result.planHash,
-            segmentQuery,
-            templateVersion: result.templateVersion || templateVersion,
-            segmentKey,
-            filterSnapshot
-          };
-        }
-      }
+	        const result = await fetchSegmentDryRun(payload);
+	        renderSegmentDryRunResult(result);
+	        if (result && result.ok) {
+	          segmentSendDryRunCache = {
+	            traceId: result.traceId || segmentSendTraceIdCache,
+	            confirmToken: result.confirmToken,
+	            planHash: result.planHash
+	          };
+	        }
+	      }
 
-      async function handleSegmentDryRun() {
-        const note = document.getElementById('segment-dryrun-note');
-        setText(note, '');
-        segmentSendDryRunCache = null;
-        const templateKey = document.getElementById('segment-template-key').value.trim();
-        const templateVersionValue = document.getElementById('segment-template-version').value;
-        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
-        if (!templateKey) {
-          setText(note, 'templateKey required');
-          return;
-        }
-        const segmentQuery = buildSegmentQueryFromInputs();
-        const segmentKey = selectedSegmentCache ? selectedSegmentCache.segmentKey : null;
-        const filterSnapshot = selectedSegmentCache ? selectedSegmentCache.filter : null;
-        const payload = {
-          templateKey,
-          templateVersion,
-          segmentQuery,
-          segmentKey,
-          filterSnapshot,
-          requestedBy: 'ops_readonly'
-        };
-        const result = await fetchSegmentDryRun(payload);
-        renderSegmentDryRunResult(result);
-        if (result && result.ok) {
-          segmentSendDryRunCache = {
-            confirmToken: result.confirmToken,
-            planHash: result.planHash
-          };
-        }
-      }
-
-      async function handleSegmentExecute() {
-        const note = document.getElementById('segment-execute-note');
-        setText(note, '');
-        const templateKey = document.getElementById('segment-template-key').value.trim();
-        if (!templateKey) {
-          setText(note, 'templateKey required');
-          return;
+	      async function handleSegmentExecute() {
+	        const note = document.getElementById('segment-execute-note');
+	        setText(note, '');
+	        if (!segmentSendTraceIdCache) segmentSendTraceIdCache = newTraceId('segment-send');
+	        const templateKey = document.getElementById('segment-template-key').value.trim();
+	        if (!templateKey) {
+	          setText(note, 'templateKey required');
+	          return;
         }
         if (!segmentSendPlanCache || !segmentSendPlanCache.planHash) {
           setText(note, 'plan required');
@@ -1563,10 +1590,12 @@
           filterSnapshot: segmentSendPlanCache.filterSnapshot || null,
           confirmToken: segmentSendDryRunCache.confirmToken
         };
-        const result = await fetchSegmentExecute(payload);
-        renderSegmentExecuteResult(result);
-        await loadRetryQueue();
-      }
+	        const result = await fetchSegmentExecute(payload);
+	        renderSegmentExecuteResult(result);
+	        // Lock traceId to the returned value (server may normalize/fallback).
+	        if (result && result.traceId) segmentSendTraceIdCache = result.traceId;
+	        await loadRetryQueue();
+	      }
 
       async function loadRetryQueue() {
         const note = document.getElementById('retry-queue-note');

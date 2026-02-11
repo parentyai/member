@@ -41,6 +41,19 @@ async function retryQueuedSend(params, deps) {
 
   const killSwitch = await killSwitchFn();
   if (killSwitch) {
+    try {
+      await appendAuditLog({
+        actor,
+        action: 'retry_queue.execute',
+        entityType: 'send_retry_queue',
+        entityId: queueId,
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        payloadSummary: { ok: false, reason: 'kill_switch_on', queueId }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
     return { ok: false, reason: 'kill_switch_on' };
   }
 

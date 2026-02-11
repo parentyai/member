@@ -52,6 +52,8 @@ test('phase68: execute appends audit and sends', async () => {
     templateKey: 'ops_alert',
     segmentQuery: {},
     requestedBy: 'ops',
+    traceId: 'trace-test-3',
+    requestId: 'req-test-3',
     planHash: plan.planHash,
     confirmToken
   }, {
@@ -72,4 +74,6 @@ test('phase68: execute appends audit and sends', async () => {
   const logs = await auditLogsRepo.listAuditLogs({ action: 'segment_send.execute', templateKey: 'ops_alert' });
   assert.strictEqual(logs.length, 1);
   assert.strictEqual(logs[0].payloadSummary.executedCount, 2);
+  assert.strictEqual(logs[0].traceId, 'trace-test-3');
+  assert.strictEqual(logs[0].requestId, 'req-test-3');
 });

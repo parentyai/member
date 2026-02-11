@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { planSegmentSend } = require('../phase67/planSegmentSend');
 const { createConfirmToken } = require('../../domain/confirmToken');
@@ -7,6 +8,8 @@ const { createConfirmToken } = require('../../domain/confirmToken');
 async function dryRunSegmentSend(params, deps) {
   const payload = params || {};
   const requestedBy = payload.requestedBy || 'unknown';
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const now = deps && deps.now instanceof Date ? deps.now : new Date();
 
   const plan = await planSegmentSend(payload, Object.assign({}, deps, {
@@ -25,12 +28,15 @@ async function dryRunSegmentSend(params, deps) {
     secret: deps && deps.confirmTokenSecret,
     now
   });
+  const confirmTokenId = crypto.createHash('sha256').update(confirmToken).digest('hex').slice(0, 12);
 
   await appendAuditLog({
     actor: requestedBy,
     action: 'segment_send.dry_run',
     entityType: 'segment_send',
     entityId: plan.templateKey,
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     templateKey: plan.templateKey,
     payloadSummary: {
       templateKey: plan.templateKey,
@@ -38,7 +44,7 @@ async function dryRunSegmentSend(params, deps) {
       segmentKey: payload.segmentKey || null,
       targetCount,
       planHash: plan.planHash,
-      confirmToken
+      confirmTokenId
     },
     snapshot: {
       templateKey: plan.templateKey,
@@ -49,6 +55,7 @@ async function dryRunSegmentSend(params, deps) {
       planSnapshot,
       targetsSample,
       dryRun: true,
+      confirmTokenId,
       serverTime: now.toISOString()
     }
   });
@@ -56,6 +63,8 @@ async function dryRunSegmentSend(params, deps) {
   return {
     ok: true,
     serverTime: now.toISOString(),
+    traceId: traceId || undefined,
+    requestId: requestId || undefined,
     dryRun: true,
     segmentKey: payload.segmentKey || null,
     templateKey: plan.templateKey,
@@ -65,7 +74,8 @@ async function dryRunSegmentSend(params, deps) {
     blocking: [],
     planHash: plan.planHash,
     planSnapshot,
-    confirmToken
+    confirmToken,
+    confirmTokenId
   };
 }
 
