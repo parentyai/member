@@ -72,7 +72,10 @@ async function handleTemplates(req, res, body, pathname) {
           entityId: payload.key || created.id,
           traceId,
           requestId,
-          payloadSummary: { key: payload.key || null }
+          payloadSummary: {
+            key: payload.key || null,
+            notificationCategory: payload.notificationCategory || null
+          }
         });
       } catch (_err) {
         // best-effort only

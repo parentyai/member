@@ -51,6 +51,22 @@ test('createNotification: stores draft notification', async () => {
   assert.strictEqual(stored.stepKey, '3mo');
 });
 
+test('createNotification: stores normalized notificationCategory', async () => {
+  const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
+  const result = await createNotification({
+    title: 'Title',
+    body: 'Body',
+    ctaText: 'Go',
+    linkRegistryId: link.id,
+    scenarioKey: 'A',
+    stepKey: '3mo',
+    notificationCategory: 'sequence_guidance',
+    target: { all: true }
+  });
+  const stored = await notificationsRepo.getNotification(result.id);
+  assert.strictEqual(stored.notificationCategory, 'SEQUENCE_GUIDANCE');
+});
+
 test('sendNotification: creates deliveries for matching users', async () => {
   const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
   const created = await createNotification({

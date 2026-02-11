@@ -75,13 +75,15 @@ async function planNotificationSend(params, deps) {
       count: lineUserIds.length,
       planHash,
       bucket,
-      limit
+      limit,
+      notificationCategory: notification.notificationCategory || null
     },
     snapshot: {
       notificationId,
       status: notification.status || null,
       scenarioKey: notification.scenarioKey || null,
       stepKey: notification.stepKey || null,
+      notificationCategory: notification.notificationCategory || null,
       target: notification.target || null,
       count: lineUserIds.length,
       lineUserIdsSample: lineUserIds.slice(0, 10),
@@ -114,4 +116,3 @@ module.exports = {
   getLatestNotificationPlan,
   buildTemplateKey
 };
-

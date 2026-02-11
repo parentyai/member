@@ -115,11 +115,14 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
 
   assert.ok(r1 && r1.message && typeof r1.message.text === 'string');
   assert.ok(r1.message.text.includes('末尾: 3456'));
+  assert.ok(r1.message.text.includes('会員ID 00-0000'));
   assert.ok(!r1.message.text.includes('HASH1'));
 
   assert.ok(r2 && r2.message && typeof r2.message.text === 'string');
   assert.ok(r2.message.text.includes('解除済み'));
+  assert.ok(r2.message.text.includes('会員ID 00-0000'));
 
   assert.ok(r3 && r3.message && typeof r3.message.text === 'string');
   assert.ok(r3.message.text.includes('未登録'));
+  assert.ok(r3.message.text.includes('会員ID 00-0000'));
 });

@@ -26,6 +26,13 @@
     <div class="note">link WARN / retry queue / guard拒否（audit）を一覧化（表示のみ）。</div>
 
     <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
+    <div class="note">
       <button id="reload">reload</button>
       <span id="note"></span>
     </div>
@@ -52,6 +59,45 @@
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_errors' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       function clearChildren(el) {
         while (el.firstChild) el.removeChild(el.firstChild);
@@ -111,7 +157,7 @@
       }
 
       async function loadAll() {
-        const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: OPS_ACTOR_HEADERS });
+        const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: buildHeaders() });
         const summary = await summaryRes.json();
         document.getElementById('summary').textContent = JSON.stringify(summary, null, 2);
         document.getElementById('note').textContent = summary && summary.ok ? `serverTime: ${summary.serverTime || '-'}` : 'error';

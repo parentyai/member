@@ -5,6 +5,7 @@ const templatesVRepo = require('../../repos/firestore/templatesVRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildSendSegment } = require('../phase66/buildSendSegment');
 const { normalizeLineUserIds, computePlanHash, resolveDateBucket } = require('./segmentSendHash');
+const { resolveNotificationCategoryFromTemplate } = require('../../domain/notificationPolicy');
 
 function parseTemplateVersion(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -53,6 +54,7 @@ async function planSegmentSend(params, deps) {
   const serverTimeBucket = resolveDateBucket(now);
   const planHash = computePlanHash(templateKey, lineUserIds, serverTimeBucket);
   const segmentKey = payload.segmentKey || null;
+  const notificationCategory = resolveNotificationCategoryFromTemplate(resolvedTemplate);
 
   const appendAudit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   await appendAudit({
@@ -70,12 +72,14 @@ async function planSegmentSend(params, deps) {
       requestedBy,
       serverTimeBucket,
       templateVersion: resolvedTemplateVersion,
-      segmentKey
+      segmentKey,
+      notificationCategory: notificationCategory || null
     },
     snapshot: {
       templateKey,
       templateStatus: resolvedTemplate.status || null,
       templateVersion: resolvedTemplateVersion,
+      notificationCategory: notificationCategory || null,
       count: lineUserIds.length,
       lineUserIds,
       planHash,
@@ -94,6 +98,7 @@ async function planSegmentSend(params, deps) {
     requestId: requestId || undefined,
     templateKey,
     templateVersion: resolvedTemplateVersion,
+    notificationCategory: notificationCategory || null,
     count: lineUserIds.length,
     lineUserIds,
     planHash

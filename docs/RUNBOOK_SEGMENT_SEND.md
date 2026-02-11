@@ -14,6 +14,13 @@
 
 ## Notes
 - execute は mode=EXECUTE かつ killSwitch OFF でのみ許可。
+- mode は `/admin/master` の Automation Config（plan → set）で変更する。
+- ServicePhase/NotificationPreset が設定済みの場合、`notificationCategory` が許可範囲外だと execute は `notification_policy_blocked` で拒否される。
+- `notificationCaps` が設定済みの場合、対象ユーザーは以下で skip される（all blocked の場合は `notification_cap_blocked`）。
+  - `perUserDailyCap`: 過去24時間
+  - `perUserWeeklyCap`: 過去7日
+  - `perCategoryWeeklyCap`: 過去7日（同一カテゴリ）
+  - `quietHours`: UTC静穏時間
 - plan の templateKey + count + hash が一致しない場合は reject。
 - confirmToken mismatch (409) の場合は再度 dry-run を行う。
 - `segmentQuery` の許容キー（add-only）:

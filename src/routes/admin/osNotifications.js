@@ -44,7 +44,7 @@ async function handleDraft(req, res, body) {
       entityId: created.id,
       traceId,
       requestId,
-      payloadSummary: { title: payload.title || null }
+      payloadSummary: { title: payload.title || null, notificationCategory: payload.notificationCategory || null }
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
@@ -154,4 +154,3 @@ module.exports = {
   handleSendPlan,
   handleSendExecute
 };
-

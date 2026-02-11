@@ -17,6 +17,13 @@
     <h1>運用レビュー記録</h1>
     <div class="note">手動入力のみ。閲覧や集計では更新しません。</div>
 
+    <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
     <form id="review-form">
       <label>
         reviewedBy (必須)
@@ -34,6 +41,46 @@
     <script>
       const form = document.getElementById('review-form');
       const result = document.getElementById('result');
+      const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_review' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -59,7 +106,7 @@
 
         const res = await fetch('/api/phase5/admin/ops/review', {
           method: 'POST',
-          headers: { 'content-type': 'application/json; charset=utf-8', 'x-actor': 'admin_review' },
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
 

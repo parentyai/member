@@ -29,6 +29,13 @@
     <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
 
     <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
+    <div class="note">
       limit:
       <input type="number" id="limit" min="1" max="200" value="50" />
       status:
@@ -60,13 +67,53 @@
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_monitor' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       // Best-effort view audit (do not block UI).
       (async () => {
         try {
+          const traceId = ensureTraceId();
           await fetch('/api/admin/os/view', {
             method: 'POST',
-            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', [TRACE_HEADER_NAME]: traceId }, OPS_ACTOR_HEADERS),
             body: JSON.stringify({ screen: 'monitor' })
           });
         } catch (_err) {}
@@ -120,7 +167,7 @@
         if (status) params.set('status', status);
         if (scenarioKey) params.set('scenarioKey', scenarioKey);
         if (stepKey) params.set('stepKey', stepKey);
-        const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: OPS_ACTOR_HEADERS });
+        const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {

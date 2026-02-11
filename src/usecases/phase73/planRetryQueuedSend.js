@@ -25,6 +25,7 @@ function computeRetryPlanHash(queueId, item) {
     lineUserId: normalizeString(item && item.lineUserId),
     notificationId: normalizeString((snapshot && snapshot.notificationId) || ''),
     deliveryId: normalizeString((snapshot && snapshot.deliveryId) || ''),
+    notificationCategory: normalizeString((snapshot && snapshot.notificationCategory) || ''),
     updatedAt: item && item.updatedAt ? String(item.updatedAt) : '',
     createdAt: item && item.createdAt ? String(item.createdAt) : ''
   };
@@ -111,4 +112,3 @@ module.exports = {
   computeRetryPlanHash,
   confirmTokenData
 };
-

@@ -15,6 +15,12 @@
   <body>
     <h1>通知集計（READ ONLY）</h1>
     <div class="note">表示のみ。書き込みや判断は行いません。</div>
+    <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
     <table>
       <thead>
         <tr>
@@ -33,6 +39,45 @@
     </table>
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_read_model' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       function clearChildren(el) {
         while (el.firstChild) el.removeChild(el.firstChild);
@@ -63,7 +108,7 @@
         return `${Math.round(value * 1000) / 10}%`;
       }
       async function loadReadModel() {
-        const res = await fetch('/admin/read-model/notifications', { headers: OPS_ACTOR_HEADERS });
+        const res = await fetch('/admin/read-model/notifications', { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {

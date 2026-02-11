@@ -41,7 +41,7 @@ afterEach(() => {
 
 test('ops review: saves lastReviewed fields', async () => {
   const res = createRes();
-  await handleOpsReview({}, res, JSON.stringify({ reviewedBy: 'operator-1' }));
+  await handleOpsReview({ headers: { 'x-actor': 'admin_review', 'x-trace-id': 'trace-test' } }, res, JSON.stringify({ reviewedBy: 'operator-1' }));
   assert.strictEqual(res.statusCode, 200);
 
   const state = await getOpsState();

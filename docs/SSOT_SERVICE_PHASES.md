@@ -12,6 +12,10 @@ ServicePhase は運用設定として保持する（add-only）。
 
 - Firestore: `system_flags/phase0`
   - `servicePhase`: number | null（1〜4）
+  - `notificationCaps.perUserWeeklyCap`: number | null（user単位/7日）
+  - `notificationCaps.perUserDailyCap`: number | null（user単位/24時間）
+  - `notificationCaps.perCategoryWeeklyCap`: number | null（user+category単位/7日）
+  - `notificationCaps.quietHours`: `{ startHourUtc, endHourUtc } | null`（UTC静穏時間）
 
 未設定（null）の場合は **現状挙動を維持**し、解禁判定に利用しない。
 

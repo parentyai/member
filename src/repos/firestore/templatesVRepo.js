@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 
 const COLLECTION = 'templates_v';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -32,7 +33,11 @@ function normalizeVersion(version) {
 
 function normalizeContent(content) {
   if (!content || typeof content !== 'object') throw new Error('content required');
-  return content;
+  const normalized = Object.assign({}, content);
+  if (Object.prototype.hasOwnProperty.call(content, 'notificationCategory')) {
+    normalized.notificationCategory = normalizeNotificationCategory(content.notificationCategory);
+  }
+  return normalized;
 }
 
 async function getLatestTemplateVersion(templateKey) {

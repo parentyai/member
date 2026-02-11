@@ -88,13 +88,19 @@ test('security: system config set requires valid confirmToken and writes audit o
     method: 'POST',
     path: '/api/admin/os/config/plan',
     headers: commonHeaders,
-    body: JSON.stringify({ servicePhase: 2, notificationPreset: 'B' })
+    body: JSON.stringify({ servicePhase: 2, notificationPreset: 'B', notificationCaps: { perUserWeeklyCap: 3 } })
   });
   assert.strictEqual(planRes.status, 200);
   const plan = JSON.parse(planRes.body);
   assert.strictEqual(plan.ok, true);
   assert.ok(plan.planHash);
   assert.ok(plan.confirmToken);
+  assert.deepStrictEqual(plan.notificationCaps, {
+    perUserWeeklyCap: 3,
+    perUserDailyCap: null,
+    perCategoryWeeklyCap: null,
+    quietHours: null
+  });
 
   // Set with tampered token.
   const bad = await httpRequest({
@@ -105,6 +111,7 @@ test('security: system config set requires valid confirmToken and writes audit o
     body: JSON.stringify({
       servicePhase: 2,
       notificationPreset: 'B',
+      notificationCaps: { perUserWeeklyCap: 3 },
       planHash: plan.planHash,
       confirmToken: tamperToken(plan.confirmToken)
     })

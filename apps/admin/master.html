@@ -30,6 +30,13 @@
     <h1>Master Data（運用OS）</h1>
     <div class="note">templates / link_registry を UI から管理（add-only）。</div>
 
+    <div class="note">
+      traceId:
+      <input type="text" id="traceId" style="max-width: 420px;" />
+      <button id="regen-trace" type="button">regen</button>
+      <span id="trace-note"></span>
+    </div>
+
     <div class="grid">
       <div>
         <h2>Templates</h2>
@@ -46,7 +53,7 @@
         </div>
         <table>
           <thead>
-            <tr><th>key</th><th>status</th><th>title</th><th>actions</th></tr>
+            <tr><th>key</th><th>status</th><th>category</th><th>title</th><th>actions</th></tr>
           </thead>
           <tbody id="tpl-rows"></tbody>
         </table>
@@ -56,6 +63,14 @@
         <input id="tpl-key" placeholder="ops_escalate" />
         <label>title</label>
         <input id="tpl-title" />
+        <label>notificationCategory</label>
+        <select id="tpl-category">
+          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+        </select>
         <label>text/body</label>
         <textarea id="tpl-text"></textarea>
         <button id="tpl-create" type="button">create</button>
@@ -132,25 +147,132 @@
           <option value="C">C</option>
         </select>
       </div>
+      <div>
+        <label>notificationCaps.perUserWeeklyCap（null = clear）</label>
+        <input id="config-notification-cap-weekly" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.perUserDailyCap（null = clear）</label>
+        <input id="config-notification-cap-daily" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.perCategoryWeeklyCap（null = clear）</label>
+        <input id="config-notification-cap-category-weekly" placeholder="(null or integer)" />
+      </div>
+      <div>
+        <label>notificationCaps.quietHours.startHourUtc（null = clear）</label>
+        <input id="config-notification-quiet-start" placeholder="0-23" />
+      </div>
+      <div>
+        <label>notificationCaps.quietHours.endHourUtc（null = clear）</label>
+        <input id="config-notification-quiet-end" placeholder="0-23" />
+      </div>
     </div>
     <div class="note">
       <button id="config-plan" type="button">plan</button>
       <button id="config-set" type="button">set</button>
     </div>
     <pre id="config-plan-result">-</pre>
+    <pre id="config-impact-preview">-</pre>
     <pre id="config-set-result">-</pre>
+
+    <hr />
+
+    <h2>Automation Config（Segment Execute Guard）</h2>
+    <div class="note">automation mode を安全に変更（plan → confirmToken → set）。</div>
+    <div class="note">
+      <button id="automation-config-reload" type="button">reload status</button>
+    </div>
+    <pre id="automation-config-status">-</pre>
+    <label>mode</label>
+    <select id="automation-config-mode">
+      <option value="OFF">OFF</option>
+      <option value="DRY_RUN_ONLY">DRY_RUN_ONLY</option>
+      <option value="EXECUTE">EXECUTE</option>
+    </select>
+    <div class="note">
+      <button id="automation-config-plan" type="button">plan</button>
+      <button id="automation-config-set" type="button">set</button>
+    </div>
+    <pre id="automation-config-plan-result">-</pre>
+    <pre id="automation-config-set-result">-</pre>
+
+    <hr />
+
+    <h2>Delivery Recovery（seal）</h2>
+    <div class="note">
+      送信前に reserve 済みで詰まった delivery を「sealed」にして回復操作を完了扱いにする。
+      sealed は送信対象から skip される（再送しない）。
+    </div>
+    <label>deliveryId</label>
+    <input id="delivery-recovery-id" placeholder="delivery id" />
+    <label>sealedReason（任意）</label>
+    <input id="delivery-recovery-reason" placeholder="manual_recovery" />
+    <div class="note">
+      <button id="delivery-recovery-status" type="button">status</button>
+      <button id="delivery-recovery-plan" type="button">plan</button>
+      <button id="delivery-recovery-execute" type="button">execute(seal)</button>
+    </div>
+    <pre id="delivery-recovery-status-result">-</pre>
+    <pre id="delivery-recovery-recommendation">-</pre>
+    <pre id="delivery-recovery-plan-result">-</pre>
+    <pre id="delivery-recovery-execute-result">-</pre>
 
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
       let configPlanHash = null;
       let configConfirmToken = null;
+      let automationPlanHash = null;
+      let automationConfirmToken = null;
+      let deliveryRecoveryPlanHash = null;
+      let deliveryRecoveryConfirmToken = null;
+
+      function newTraceId() {
+        if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+          return globalThis.crypto.randomUUID();
+        }
+        return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+      }
+
+      function getTraceId() {
+        const el = document.getElementById('traceId');
+        const value = el.value.trim();
+        return value.length ? value : null;
+      }
+
+      function setTraceId(value) {
+        const el = document.getElementById('traceId');
+        el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
+      }
+
+      document.getElementById('regen-trace').addEventListener('click', () => {
+        setTraceId(newTraceId());
+        document.getElementById('trace-note').textContent = '';
+      });
+
+      setTraceId(newTraceId());
 
       // Best-effort view audit (do not block UI).
       (async () => {
         try {
+          const traceId = ensureTraceId();
           await fetch('/api/admin/os/view', {
             method: 'POST',
-            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', [TRACE_HEADER_NAME]: traceId }, ACTOR_HEADERS),
             body: JSON.stringify({ screen: 'master' })
           });
         } catch (_err) {}
@@ -194,16 +316,16 @@
         const status = document.getElementById('tpl-status').value;
         const params = new URLSearchParams();
         if (status) params.set('status', status);
-        const res = await fetch(`/api/phase61/templates${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const res = await fetch(`/api/phase61/templates${params.toString() ? `?${params.toString()}` : ''}`, { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
-          appendMessageRow(rows, 4, 'error');
+          appendMessageRow(rows, 5, 'error');
           return;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
-          appendMessageRow(rows, 4, 'no data');
+          appendMessageRow(rows, 5, 'no data');
           return;
         }
         clearChildren(rows);
@@ -218,7 +340,7 @@
             if (!key) return;
             const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/activate`, {
               method: 'POST',
-              headers: ACTOR_HEADERS
+              headers: buildHeaders()
             });
             document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
             await loadTemplates();
@@ -236,7 +358,7 @@
             if (!key) return;
             const res2 = await fetch(`/api/phase61/templates/${encodeURIComponent(key)}/deactivate`, {
               method: 'POST',
-              headers: ACTOR_HEADERS
+              headers: buildHeaders()
             });
             document.getElementById('tpl-result').textContent = JSON.stringify(await res2.json(), null, 2);
             await loadTemplates();
@@ -246,6 +368,7 @@
           appendRow(rows, [
             item.key || '-',
             item.status || '-',
+            item.notificationCategory || '-',
             item.title || '-',
             actions
           ]);
@@ -256,11 +379,12 @@
         const payload = {
           key: document.getElementById('tpl-key').value.trim(),
           title: document.getElementById('tpl-title').value.trim(),
+          notificationCategory: document.getElementById('tpl-category').value,
           text: document.getElementById('tpl-text').value
         };
         const res = await fetch('/api/phase61/templates', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
         document.getElementById('tpl-result').textContent = JSON.stringify(await res.json(), null, 2);
@@ -271,7 +395,7 @@
         const state = document.getElementById('link-state').value;
         const params = new URLSearchParams();
         if (state) params.set('state', state);
-        const res = await fetch(`/admin/link-registry${params.toString() ? `?${params.toString()}` : ''}`, { headers: ACTOR_HEADERS });
+        const res = await fetch(`/admin/link-registry${params.toString() ? `?${params.toString()}` : ''}`, { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('link-rows');
         if (!data.ok) {
@@ -301,7 +425,7 @@
         };
         const res = await fetch('/admin/link-registry', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
         document.getElementById('link-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
@@ -315,7 +439,7 @@
         if (!ok) return;
         const res = await fetch('/api/admin/ridac-membership/unlink', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify({ ridacMembershipId })
         });
         document.getElementById('ridac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
@@ -334,8 +458,59 @@
         return trimmed ? trimmed : null;
       }
 
+      function parseNullablePositiveInt(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return { ok: true, value: null };
+        const num = Number(trimmed);
+        if (!Number.isInteger(num) || num < 1) return { ok: false, error: 'cap must be a positive integer or empty' };
+        return { ok: true, value: num };
+      }
+
+      function parseNullableHour(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return { ok: true, value: null };
+        const num = Number(trimmed);
+        if (!Number.isInteger(num) || num < 0 || num > 23) {
+          return { ok: false, error: 'quietHours must be 0-23 or empty' };
+        }
+        return { ok: true, value: num };
+      }
+
+      function readNotificationCapsFromForm() {
+        const weekly = parseNullablePositiveInt(document.getElementById('config-notification-cap-weekly').value);
+        if (!weekly.ok) return weekly;
+        const daily = parseNullablePositiveInt(document.getElementById('config-notification-cap-daily').value);
+        if (!daily.ok) return daily;
+        const categoryWeekly = parseNullablePositiveInt(document.getElementById('config-notification-cap-category-weekly').value);
+        if (!categoryWeekly.ok) return categoryWeekly;
+        const quietStart = parseNullableHour(document.getElementById('config-notification-quiet-start').value);
+        if (!quietStart.ok) return quietStart;
+        const quietEnd = parseNullableHour(document.getElementById('config-notification-quiet-end').value);
+        if (!quietEnd.ok) return quietEnd;
+
+        let quietHours = null;
+        if (quietStart.value !== null || quietEnd.value !== null) {
+          if (quietStart.value === null || quietEnd.value === null) {
+            return { ok: false, error: 'quietHours start/end must both be set or both empty' };
+          }
+          quietHours = {
+            startHourUtc: quietStart.value,
+            endHourUtc: quietEnd.value
+          };
+        }
+        return {
+          ok: true,
+          value: {
+            perUserWeeklyCap: weekly.value,
+            perUserDailyCap: daily.value,
+            perCategoryWeeklyCap: categoryWeekly.value,
+            quietHours
+          }
+        };
+      }
+
       async function loadSystemConfigStatus() {
-        const res = await fetch('/api/admin/os/config/status', { headers: ACTOR_HEADERS });
+        const res = await fetch('/api/admin/os/config/status', { headers: buildHeaders() });
         const data = await jsonOrText(res);
         document.getElementById('config-status').textContent = JSON.stringify(data, null, 2);
         if (data && data.ok) {
@@ -343,19 +518,46 @@
           document.getElementById('config-service-phase').value = sp;
           const preset = data.notificationPreset ? String(data.notificationPreset) : '';
           document.getElementById('config-notification-preset').value = preset;
+          const weeklyCap = data.notificationCaps && data.notificationCaps.perUserWeeklyCap !== null && data.notificationCaps.perUserWeeklyCap !== undefined
+            ? String(data.notificationCaps.perUserWeeklyCap)
+            : '';
+          document.getElementById('config-notification-cap-weekly').value = weeklyCap;
+          const dailyCap = data.notificationCaps && data.notificationCaps.perUserDailyCap !== null && data.notificationCaps.perUserDailyCap !== undefined
+            ? String(data.notificationCaps.perUserDailyCap)
+            : '';
+          document.getElementById('config-notification-cap-daily').value = dailyCap;
+          const categoryWeeklyCap = data.notificationCaps && data.notificationCaps.perCategoryWeeklyCap !== null && data.notificationCaps.perCategoryWeeklyCap !== undefined
+            ? String(data.notificationCaps.perCategoryWeeklyCap)
+            : '';
+          document.getElementById('config-notification-cap-category-weekly').value = categoryWeeklyCap;
+          const quietStart = data.notificationCaps && data.notificationCaps.quietHours && data.notificationCaps.quietHours.startHourUtc !== undefined
+            ? String(data.notificationCaps.quietHours.startHourUtc)
+            : '';
+          const quietEnd = data.notificationCaps && data.notificationCaps.quietHours && data.notificationCaps.quietHours.endHourUtc !== undefined
+            ? String(data.notificationCaps.quietHours.endHourUtc)
+            : '';
+          document.getElementById('config-notification-quiet-start').value = quietStart;
+          document.getElementById('config-notification-quiet-end').value = quietEnd;
         }
       }
 
       async function planSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        const capParsed = readNotificationCapsFromForm();
+        if (!capParsed.ok) {
+          document.getElementById('config-plan-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
+          return;
+        }
+        const notificationCaps = capParsed.value;
         const res = await fetch('/api/admin/os/config/plan', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
-          body: JSON.stringify({ servicePhase, notificationPreset })
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('config-impact-preview').textContent = JSON.stringify(data && data.impactPreview ? data.impactPreview : { ok: false, error: 'impact preview unavailable' }, null, 2);
         configPlanHash = data && data.ok ? data.planHash || null : null;
         configConfirmToken = data && data.ok ? data.confirmToken || null : null;
       }
@@ -363,20 +565,149 @@
       async function setSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
+        const capParsed = readNotificationCapsFromForm();
+        if (!capParsed.ok) {
+          document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
+          return;
+        }
+        const notificationCaps = capParsed.value;
         if (!configPlanHash || !configConfirmToken) {
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
           return;
         }
-        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}`); // eslint-disable-line no-alert
+        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}`); // eslint-disable-line no-alert
         if (!ok) return;
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
-          body: JSON.stringify({ servicePhase, notificationPreset, planHash: configPlanHash, confirmToken: configConfirmToken })
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps, planHash: configPlanHash, confirmToken: configConfirmToken })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-set-result').textContent = JSON.stringify(data, null, 2);
         await loadSystemConfigStatus();
+      }
+
+      function parseMode(value) {
+        const mode = String(value || '').trim().toUpperCase();
+        if (mode === 'OFF' || mode === 'DRY_RUN_ONLY' || mode === 'EXECUTE') return mode;
+        return null;
+      }
+
+      async function loadAutomationConfigStatus() {
+        const res = await fetch('/api/admin/os/automation-config/status', { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-status').textContent = JSON.stringify(data, null, 2);
+        if (data && data.ok && data.config && data.config.mode) {
+          document.getElementById('automation-config-mode').value = String(data.config.mode);
+        }
+      }
+
+      async function planAutomationConfig() {
+        const mode = parseMode(document.getElementById('automation-config-mode').value);
+        if (!mode) {
+          document.getElementById('automation-config-plan-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
+          return;
+        }
+        const res = await fetch('/api/admin/os/automation-config/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ mode })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-plan-result').textContent = JSON.stringify(data, null, 2);
+        automationPlanHash = data && data.ok ? data.planHash || null : null;
+        automationConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function setAutomationConfig() {
+        const mode = parseMode(document.getElementById('automation-config-mode').value);
+        if (!mode) {
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
+          return;
+        }
+        if (!automationPlanHash || !automationConfirmToken) {
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`Automation Config を set しますか？\n\nmode=${mode}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/automation-config/set', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ mode, planHash: automationPlanHash, confirmToken: automationConfirmToken })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('automation-config-set-result').textContent = JSON.stringify(data, null, 2);
+        await loadAutomationConfigStatus();
+      }
+
+      function getDeliveryRecoveryPayload() {
+        const deliveryId = document.getElementById('delivery-recovery-id').value.trim();
+        const sealedReason = document.getElementById('delivery-recovery-reason').value.trim();
+        if (!deliveryId) return { ok: false, error: 'deliveryId required' };
+        return {
+          ok: true,
+          payload: {
+            deliveryId,
+            sealedReason: sealedReason || null
+          }
+        };
+      }
+
+      async function loadDeliveryRecoveryStatus() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const params = new URLSearchParams({ deliveryId: parsed.payload.deliveryId });
+        const res = await fetch(`/api/admin/os/delivery-recovery/status?${params.toString()}`, { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify(data, null, 2);
+        const rec = data && data.delivery && data.delivery.recovery ? data.delivery.recovery : null;
+        document.getElementById('delivery-recovery-recommendation').textContent = JSON.stringify(rec || { note: 'no recommendation' }, null, 2);
+      }
+
+      async function planDeliveryRecovery() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const res = await fetch('/api/admin/os/delivery-recovery/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(parsed.payload)
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify(data, null, 2);
+        deliveryRecoveryPlanHash = data && data.ok ? data.planHash || null : null;
+        deliveryRecoveryConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function executeDeliveryRecovery() {
+        const parsed = getDeliveryRecoveryPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        if (!deliveryRecoveryPlanHash || !deliveryRecoveryConfirmToken) {
+          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`delivery recovery を実行しますか？\n\ndeliveryId=${parsed.payload.deliveryId}\nsealedReason=${parsed.payload.sealedReason || '(null)'}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/delivery-recovery/execute', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(Object.assign({}, parsed.payload, {
+            planHash: deliveryRecoveryPlanHash,
+            confirmToken: deliveryRecoveryConfirmToken
+          }))
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify(data, null, 2);
+        await loadDeliveryRecoveryStatus();
       }
 
       document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
@@ -387,10 +718,17 @@
       document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
       document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
       document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
+      document.getElementById('automation-config-reload').addEventListener('click', () => loadAutomationConfigStatus().catch(() => {}));
+      document.getElementById('automation-config-plan').addEventListener('click', () => planAutomationConfig().catch(() => {}));
+      document.getElementById('automation-config-set').addEventListener('click', () => setAutomationConfig().catch(() => {}));
+      document.getElementById('delivery-recovery-status').addEventListener('click', () => loadDeliveryRecoveryStatus().catch(() => {}));
+      document.getElementById('delivery-recovery-plan').addEventListener('click', () => planDeliveryRecovery().catch(() => {}));
+      document.getElementById('delivery-recovery-execute').addEventListener('click', () => executeDeliveryRecovery().catch(() => {}));
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
       loadSystemConfigStatus().catch(() => {});
+      loadAutomationConfigStatus().catch(() => {});
     </script>
   </body>
 </html>

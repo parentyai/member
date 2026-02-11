@@ -33,3 +33,9 @@ npm run audit:gate
 ```
 
 In CI (GitHub Actions), the audit gate additionally runs Docker-based scans (gitleaks / semgrep / osv-scanner).
+
+## Deploy Environments
+
+- `push(main)` deploys to `stg` (Cloud Run).
+- `prod` deploy requires manual `workflow_dispatch` with `target_environment=prod`.
+- Detailed setup/verification: `docs/RUNBOOK_DEPLOY_ENVIRONMENTS.md`.

@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 
 const COLLECTION = 'notification_templates';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -28,11 +29,17 @@ async function createTemplate(data) {
   const payload = data || {};
   const key = normalizeKey(payload.key);
   const status = normalizeStatus(payload.status, 'draft');
+  const notificationCategory = normalizeNotificationCategory(payload.notificationCategory);
   const db = getDb();
   const existing = await getTemplateByKey(key);
   if (existing) throw new Error('template exists');
   const docRef = db.collection(COLLECTION).doc();
-  const record = Object.assign({}, payload, { key, status, createdAt: resolveTimestamp() });
+  const record = Object.assign({}, payload, {
+    key,
+    status,
+    notificationCategory,
+    createdAt: resolveTimestamp()
+  });
   await docRef.set(record, { merge: false });
   return { id: docRef.id };
 }
@@ -77,6 +84,9 @@ module.exports = {
     const fields = ['title', 'body', 'ctaText', 'linkRegistryId', 'text'];
     for (const field of fields) {
       if (payload[field] !== undefined) updates[field] = payload[field];
+    }
+    if (payload.notificationCategory !== undefined) {
+      updates.notificationCategory = normalizeNotificationCategory(payload.notificationCategory);
     }
     updates.updatedAt = resolveTimestamp();
     const db = getDb();

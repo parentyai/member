@@ -3,6 +3,7 @@
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { PHASE0_SCENARIOS, STEP_ORDER } = require('../../domain/constants');
+const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const {
   validateSingleCta,
   validateLinkRequired,
@@ -46,6 +47,7 @@ async function createNotification(data) {
   validateSingleCta(payload);
   validateLinkRequired(payload);
   validateWarnLinkBlock(linkEntry);
+  const notificationCategory = normalizeNotificationCategory(payload.notificationCategory);
 
   const record = {
     title: payload.title,
@@ -55,6 +57,7 @@ async function createNotification(data) {
     scenarioKey: payload.scenarioKey,
     stepKey: payload.stepKey,
     target: payload.target || null,
+    notificationCategory,
     status: payload.status || 'draft',
     scheduledAt: payload.scheduledAt || null,
     sentAt: payload.sentAt || null,
