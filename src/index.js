@@ -564,6 +564,11 @@ function createServer() {
       handlePlan: handleDeliveryRecoveryPlan,
       handleExecute: handleDeliveryRecoveryExecute
     } = require('./routes/admin/osDeliveryRecovery');
+    const {
+      handleStatus: handleDeliveryBackfillStatus,
+      handlePlan: handleDeliveryBackfillPlan,
+      handleExecute: handleDeliveryBackfillExecute
+    } = require('./routes/admin/osDeliveryBackfill');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
     const {
       handleDraft,
@@ -647,6 +652,20 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/delivery-recovery/execute') {
         const body = await collectBody();
         await handleDeliveryRecoveryExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/delivery-backfill/status') {
+        await handleDeliveryBackfillStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/delivery-backfill/plan') {
+        const body = await collectBody();
+        await handleDeliveryBackfillPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/delivery-backfill/execute') {
+        const body = await collectBody();
+        await handleDeliveryBackfillExecute(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {

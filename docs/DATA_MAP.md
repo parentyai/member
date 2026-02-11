@@ -49,8 +49,21 @@ Fields:
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 
-### `events/{id}` / `notification_deliveries/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
-Purpose: product events, notification sends/reactions, and checklist progress.
+### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
+Purpose: product events, notification metadata, and checklist progress.
+
+### `notification_deliveries/{id}`
+Purpose: delivery idempotency / reaction tracking / cap evaluation source-of-truth.
+
+Typical fields:
+- `notificationId`, `lineUserId`
+- `state` (`reserved`/`failed`/`delivered`/`sealed`)
+- `delivered` (boolean)
+- `sentAt` (timestamp|string|null)
+- `deliveredAt` (timestamp|string|null, cap evaluation primary time)
+- `readAt`, `clickAt`, `lastError`, `lastErrorAt`
+- `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
+- `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 
 ## Secrets (Secret Manager)
 Purpose: store secrets used by the system and CI deploy workflows.

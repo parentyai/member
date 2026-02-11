@@ -104,6 +104,27 @@
 - `sealed=true` の delivery は以後の送信で skip される
 - 監査ログに traceId 付きで回復操作が残る
 
+## Delivery deliveredAt Backfill（運用データ補完）
+対象: `notification_deliveries` のうち `delivered=true` だが `deliveredAt` が欠損している旧データ。
+
+原則:
+- `sentAt` から `deliveredAt` を補完できる行のみ更新する。
+- `sentAt` も欠損している行はスキップ（手動調査対象）。
+- 危険操作なので `plan -> confirmToken -> execute` 必須。
+
+手順:
+1) `/admin/master` の「Delivery deliveredAt Backfill」で `limit` を指定（既定: 200）
+2) `status` で `missingDeliveredAtCount / fixableCount / unfixableCount` を確認
+3) `plan` 実行（planHash/confirmToken 取得）
+4) `execute(backfill)` 実行（confirmToken 必須）
+5) `status` 再確認で `missingDeliveredAtCount` が減っていることを確認
+6) trace search で `delivery_backfill.plan` / `delivery_backfill.execute` を確認
+
+期待結果:
+- `deliveredAt` 欠損行のうち `sentAt` がある行が補完される
+- `deliveredAtBackfilledAt / deliveredAtBackfilledBy` が追記される
+- 監査ログに traceId 付きで実行結果が残る
+
 ## Evidence (監査証跡)
 最低限、以下が traceId から取得できること。
 

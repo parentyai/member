@@ -218,6 +218,24 @@
     <pre id="delivery-recovery-plan-result">-</pre>
     <pre id="delivery-recovery-execute-result">-</pre>
 
+    <hr />
+
+    <h2>Delivery deliveredAt Backfill</h2>
+    <div class="note">
+      旧delivery（`delivered=true` だが `deliveredAt` 欠損）のみを対象に、`sentAt` から `deliveredAt` を補完する。
+      危険操作のため plan → confirmToken → execute でのみ反映。
+    </div>
+    <label>limit（1-1000）</label>
+    <input id="delivery-backfill-limit" placeholder="200" />
+    <div class="note">
+      <button id="delivery-backfill-status" type="button">status</button>
+      <button id="delivery-backfill-plan" type="button">plan</button>
+      <button id="delivery-backfill-execute" type="button">execute(backfill)</button>
+    </div>
+    <pre id="delivery-backfill-status-result">-</pre>
+    <pre id="delivery-backfill-plan-result">-</pre>
+    <pre id="delivery-backfill-execute-result">-</pre>
+
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
       const TRACE_HEADER_NAME = 'x-trace-id';
@@ -227,6 +245,8 @@
       let automationConfirmToken = null;
       let deliveryRecoveryPlanHash = null;
       let deliveryRecoveryConfirmToken = null;
+      let deliveryBackfillPlanHash = null;
+      let deliveryBackfillConfirmToken = null;
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -551,6 +571,16 @@
         };
       }
 
+      function parseBackfillLimit(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) return { ok: true, value: 200 };
+        const num = Number(trimmed);
+        if (!Number.isInteger(num) || num < 1 || num > 1000) {
+          return { ok: false, error: 'limit must be integer 1-1000' };
+        }
+        return { ok: true, value: num };
+      }
+
       async function loadSystemConfigStatus() {
         const res = await fetch('/api/admin/os/config/status', { headers: buildHeaders() });
         const data = await jsonOrText(res);
@@ -753,6 +783,66 @@
         await loadDeliveryRecoveryStatus();
       }
 
+      function getDeliveryBackfillPayload() {
+        const parsed = parseBackfillLimit(document.getElementById('delivery-backfill-limit').value);
+        if (!parsed.ok) return parsed;
+        return { ok: true, payload: { limit: parsed.value } };
+      }
+
+      async function loadDeliveryBackfillStatus() {
+        const parsed = getDeliveryBackfillPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-backfill-status-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const params = new URLSearchParams({ limit: String(parsed.payload.limit) });
+        const res = await fetch(`/api/admin/os/delivery-backfill/status?${params.toString()}`, { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-backfill-status-result').textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function planDeliveryBackfill() {
+        const parsed = getDeliveryBackfillPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-backfill-plan-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        const res = await fetch('/api/admin/os/delivery-backfill/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(parsed.payload)
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-backfill-plan-result').textContent = JSON.stringify(data, null, 2);
+        deliveryBackfillPlanHash = data && data.ok ? data.planHash || null : null;
+        deliveryBackfillConfirmToken = data && data.ok ? data.confirmToken || null : null;
+      }
+
+      async function executeDeliveryBackfill() {
+        const parsed = getDeliveryBackfillPayload();
+        if (!parsed.ok) {
+          document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
+          return;
+        }
+        if (!deliveryBackfillPlanHash || !deliveryBackfillConfirmToken) {
+          document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
+          return;
+        }
+        const ok = window.confirm(`delivery deliveredAt backfill を実行しますか？\n\nlimit=${parsed.payload.limit}`); // eslint-disable-line no-alert
+        if (!ok) return;
+        const res = await fetch('/api/admin/os/delivery-backfill/execute', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(Object.assign({}, parsed.payload, {
+            planHash: deliveryBackfillPlanHash,
+            confirmToken: deliveryBackfillConfirmToken
+          }))
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify(data, null, 2);
+        await loadDeliveryBackfillStatus();
+      }
+
       document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
       document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
@@ -767,11 +857,15 @@
       document.getElementById('delivery-recovery-status').addEventListener('click', () => loadDeliveryRecoveryStatus().catch(() => {}));
       document.getElementById('delivery-recovery-plan').addEventListener('click', () => planDeliveryRecovery().catch(() => {}));
       document.getElementById('delivery-recovery-execute').addEventListener('click', () => executeDeliveryRecovery().catch(() => {}));
+      document.getElementById('delivery-backfill-status').addEventListener('click', () => loadDeliveryBackfillStatus().catch(() => {}));
+      document.getElementById('delivery-backfill-plan').addEventListener('click', () => planDeliveryBackfill().catch(() => {}));
+      document.getElementById('delivery-backfill-execute').addEventListener('click', () => executeDeliveryBackfill().catch(() => {}));
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
       loadSystemConfigStatus().catch(() => {});
       loadAutomationConfigStatus().catch(() => {});
+      loadDeliveryBackfillStatus().catch(() => {});
     </script>
   </body>
 </html>

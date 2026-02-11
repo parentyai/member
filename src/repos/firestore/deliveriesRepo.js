@@ -3,6 +3,9 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'notification_deliveries';
+const DEFAULT_BACKFILL_LIMIT = 200;
+const MAX_BACKFILL_LIMIT = 1000;
+const BACKFILL_SAMPLE_LIMIT = 20;
 
 function resolveTimestamp(at) {
   // Allow explicit null when callers want to indicate "not set yet".
@@ -32,6 +35,15 @@ function resolveDeliveredAt(record) {
 function toIso(value) {
   const parsed = toDate(value);
   return parsed ? parsed.toISOString() : null;
+}
+
+function normalizeBackfillLimit(limit) {
+  if (limit === undefined || limit === null || limit === '') return DEFAULT_BACKFILL_LIMIT;
+  const num = typeof limit === 'number' ? limit : Number(limit);
+  if (!Number.isInteger(num) || num < 1 || num > MAX_BACKFILL_LIMIT) {
+    throw new Error(`limit must be integer 1-${MAX_BACKFILL_LIMIT}`);
+  }
+  return num;
 }
 
 function isIndexError(err) {
@@ -260,6 +272,89 @@ async function countDeliveredByUserCategorySince(lineUserId, notificationCategor
   }
 }
 
+async function getDeliveredAtBackfillSummary(limit) {
+  const max = normalizeBackfillLimit(limit);
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('delivered', '==', true).get();
+  const docs = Array.isArray(snap.docs) ? snap.docs.slice().sort((a, b) => String(a.id).localeCompare(String(b.id))) : [];
+
+  let deliveredCount = 0;
+  let missingDeliveredAtCount = 0;
+  let fixableCount = 0;
+  let unfixableCount = 0;
+  const candidates = [];
+  const sampleFixable = [];
+  const sampleUnfixable = [];
+
+  for (const doc of docs) {
+    const record = doc.data() || {};
+    deliveredCount += 1;
+    if (toDate(record.deliveredAt)) continue;
+    missingDeliveredAtCount += 1;
+    const sentAtIso = toIso(record.sentAt);
+    if (sentAtIso) {
+      fixableCount += 1;
+      const candidate = { deliveryId: doc.id, sentAtIso };
+      if (candidates.length < max) candidates.push(candidate);
+      if (sampleFixable.length < BACKFILL_SAMPLE_LIMIT) sampleFixable.push(candidate);
+      continue;
+    }
+    unfixableCount += 1;
+    if (sampleUnfixable.length < BACKFILL_SAMPLE_LIMIT) {
+      sampleUnfixable.push({
+        deliveryId: doc.id,
+        state: typeof record.state === 'string' ? record.state : null
+      });
+    }
+  }
+
+  return {
+    limit: max,
+    deliveredCount,
+    missingDeliveredAtCount,
+    fixableCount,
+    unfixableCount,
+    candidates,
+    sampleFixable,
+    sampleUnfixable
+  };
+}
+
+async function applyDeliveredAtBackfill(candidates, options) {
+  const list = Array.isArray(candidates) ? candidates : [];
+  const actor = options && typeof options.actor === 'string' && options.actor.trim().length > 0
+    ? options.actor.trim()
+    : null;
+  const atIso = toIso(options && options.backfilledAt) || new Date().toISOString();
+  const db = getDb();
+  const updatedIds = [];
+  const skippedIds = [];
+
+  for (const entry of list) {
+    const deliveryId = entry && typeof entry.deliveryId === 'string' ? entry.deliveryId.trim() : '';
+    const sentAtIso = toIso(entry && entry.sentAtIso);
+    if (!deliveryId || !sentAtIso) {
+      if (deliveryId) skippedIds.push(deliveryId);
+      continue;
+    }
+    await db.collection(COLLECTION).doc(deliveryId).set({
+      deliveredAt: sentAtIso,
+      deliveredAtBackfilledAt: atIso,
+      deliveredAtBackfilledBy: actor
+    }, { merge: true });
+    updatedIds.push(deliveryId);
+  }
+
+  return {
+    ok: true,
+    updatedCount: updatedIds.length,
+    updatedIds,
+    skippedCount: skippedIds.length,
+    skippedIds,
+    backfilledAt: atIso
+  };
+}
+
 module.exports = {
   createDelivery,
   reserveDeliveryId,
@@ -272,5 +367,7 @@ module.exports = {
   listDeliveriesByUser,
   listDeliveriesByNotificationId,
   countDeliveredByUserSince,
-  countDeliveredByUserCategorySince
+  countDeliveredByUserCategorySince,
+  getDeliveredAtBackfillSummary,
+  applyDeliveredAtBackfill
 };
