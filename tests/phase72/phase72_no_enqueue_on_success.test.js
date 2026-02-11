@@ -13,6 +13,7 @@ const {
 
 const notificationTemplatesRepo = require('../../src/repos/firestore/notificationTemplatesRepo');
 const sendRetryQueueRepo = require('../../src/repos/firestore/sendRetryQueueRepo');
+const { createConfirmToken } = require('../../src/domain/confirmToken');
 const { planSegmentSend } = require('../../src/usecases/phase67/planSegmentSend');
 const { executeSegmentSend } = require('../../src/usecases/phase68/executeSegmentSend');
 
@@ -28,7 +29,7 @@ afterEach(() => {
 
 test('phase72: no enqueue when send succeeds', async () => {
   await notificationTemplatesRepo.createTemplate({ key: 'ops_alert', title: 'Alert', body: 'Body', status: 'active' });
-  await planSegmentSend({
+  const plan = await planSegmentSend({
     templateKey: 'ops_alert',
     segmentQuery: {},
     requestedBy: 'ops'
@@ -37,16 +38,29 @@ test('phase72: no enqueue when send succeeds', async () => {
     now: new Date('2026-02-08T10:00:00Z')
   });
 
+  const now = new Date('2026-02-08T10:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const confirmToken = createConfirmToken({
+    planHash: plan.planHash,
+    templateKey: plan.templateKey,
+    templateVersion: plan.templateVersion,
+    segmentKey: null
+  }, { now, secret: confirmTokenSecret });
+
   const result = await executeSegmentSend({
     templateKey: 'ops_alert',
     segmentQuery: {},
-    requestedBy: 'ops'
+    requestedBy: 'ops',
+    planHash: plan.planHash,
+    confirmToken
   }, {
     buildSendSegment: async () => ({ ok: true, items: [{ lineUserId: 'U1' }] }),
     automationConfigRepo: {
       getLatestAutomationConfig: async () => ({ mode: 'EXECUTE', enabled: true }),
       normalizePhase48Config: (record) => ({ mode: record.mode, enabled: true })
     },
+    now,
+    confirmTokenSecret,
     getKillSwitch: async () => false,
     sendFn: async () => ({ ok: true })
   });

@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { executeSegmentSend } = require('../../src/usecases/phase68/executeSegmentSend');
 const { computePlanHash } = require('../../src/usecases/phase67/segmentSendHash');
+const { createConfirmToken } = require('../../src/domain/confirmToken');
 
 function buildDeps(lineUserIds, plan) {
   return {
@@ -51,7 +52,19 @@ test('phase88: partial failure yields DONE_WITH_ERRORS', async () => {
     createdAt: '2026-02-08T00:00:00Z'
   };
 
-  const result = await executeSegmentSend({ templateKey, segmentQuery: {}, planHash }, buildDeps(lineUserIds, plan));
+  const now = new Date('2026-02-08T00:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const confirmToken = createConfirmToken({
+    planHash,
+    templateKey,
+    templateVersion: null,
+    segmentKey: 'seg1'
+  }, { now, secret: confirmTokenSecret });
+
+  const deps = buildDeps(lineUserIds, plan);
+  deps.now = now;
+  deps.confirmTokenSecret = confirmTokenSecret;
+  const result = await executeSegmentSend({ templateKey, segmentQuery: {}, planHash, confirmToken }, deps);
   assert.strictEqual(result.runSummary.status, 'DONE_WITH_ERRORS');
   assert.strictEqual(result.failures.length, 1);
 });

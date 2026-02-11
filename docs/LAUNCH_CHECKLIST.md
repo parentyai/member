@@ -12,6 +12,7 @@
 - `STORAGE_BUCKET`
 - `LINE_CHANNEL_SECRET`（secret）
 - `LINE_CHANNEL_ACCESS_TOKEN`（secret）
+- `OPS_CONFIRM_TOKEN_SECRET`（secret: confirmToken 用 / kill switch・composer・segment send・retry queue）
 
 ### Track / Click
 - `TRACK_TOKEN_SECRET`（HMAC secret）
@@ -40,4 +41,3 @@
 ## Rollback
 - revert 対象PR番号を確認（実装PR / docs PR）
 - 緊急停止: Kill Switch を ON（運用手順に従う）
-

@@ -12,6 +12,7 @@ const {
 } = require('../../src/infra/firestore');
 
 const sendRetryQueueRepo = require('../../src/repos/firestore/sendRetryQueueRepo');
+const { planRetryQueuedSend } = require('../../src/usecases/phase73/planRetryQueuedSend');
 const { retryQueuedSend } = require('../../src/usecases/phase73/retryQueuedSend');
 
 beforeEach(() => {
@@ -32,7 +33,18 @@ test('phase73: retry success marks done', async () => {
     reason: 'send_failed'
   });
 
-  const result = await retryQueuedSend({ queueId: queued.id }, {
+  const now = new Date('2026-02-08T10:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const plan = await planRetryQueuedSend({ queueId: queued.id, decidedBy: 'ops' }, { now, confirmTokenSecret });
+  assert.strictEqual(plan.ok, true);
+
+  const result = await retryQueuedSend({
+    queueId: queued.id,
+    planHash: plan.planHash,
+    confirmToken: plan.confirmToken
+  }, {
+    now,
+    confirmTokenSecret,
     sendFn: async () => ({ ok: true }),
     getKillSwitch: async () => false
   });

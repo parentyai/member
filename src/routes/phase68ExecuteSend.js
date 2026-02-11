@@ -28,7 +28,7 @@ async function handleExecuteSend(req, res, body, deps) {
   if (!payload) return;
   try {
     const result = await executeSegmentSend(payload, deps);
-    const status = result && result.status === 409 ? 409 : 200;
+    const status = result && typeof result.status === 'number' ? result.status : 200;
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {

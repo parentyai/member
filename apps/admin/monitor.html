@@ -61,6 +61,17 @@
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_monitor' };
 
+      // Best-effort view audit (do not block UI).
+      (async () => {
+        try {
+          await fetch('/api/admin/os/view', {
+            method: 'POST',
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, OPS_ACTOR_HEADERS),
+            body: JSON.stringify({ screen: 'monitor' })
+          });
+        } catch (_err) {}
+      })();
+
       function clearChildren(el) {
         while (el.firstChild) el.removeChild(el.firstChild);
       }

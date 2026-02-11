@@ -145,6 +145,17 @@
       let configPlanHash = null;
       let configConfirmToken = null;
 
+      // Best-effort view audit (do not block UI).
+      (async () => {
+        try {
+          await fetch('/api/admin/os/view', {
+            method: 'POST',
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, ACTOR_HEADERS),
+            body: JSON.stringify({ screen: 'master' })
+          });
+        } catch (_err) {}
+      })();
+
       function clearChildren(el) {
         while (el.firstChild) el.removeChild(el.firstChild);
       }

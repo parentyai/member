@@ -179,6 +179,18 @@
 
       setTraceId(newTraceId());
 
+      // Best-effort view audit (do not block UI).
+      (async () => {
+        try {
+          const traceId = getTraceId() || newTraceId();
+          await fetch('/api/admin/os/view', {
+            method: 'POST',
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
+            body: JSON.stringify({ screen: 'composer' })
+          });
+        } catch (_err) {}
+      })();
+
       document.getElementById('create-draft').addEventListener('click', async () => {
         const resultEl = document.getElementById('draft-result');
         resultEl.textContent = '';
@@ -248,4 +260,3 @@
     </script>
   </body>
 </html>
-

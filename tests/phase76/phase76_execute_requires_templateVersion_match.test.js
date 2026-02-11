@@ -32,7 +32,7 @@ test('phase76: execute rejects when templateVersion mismatched', async () => {
     status: 'active'
   });
 
-  await planSegmentSend({
+  const plan = await planSegmentSend({
     templateKey: 'ops_alert',
     segmentQuery: {},
     requestedBy: 'ops'
@@ -44,6 +44,7 @@ test('phase76: execute rejects when templateVersion mismatched', async () => {
     templateKey: 'ops_alert',
     segmentQuery: {},
     requestedBy: 'ops',
+    planHash: plan.planHash,
     templateVersion: 2
   }, {
     buildSendSegment: async () => ({ ok: true, items: [{ lineUserId: 'U1' }] }),

@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { executeSegmentSend } = require('../../src/usecases/phase68/executeSegmentSend');
 const { computePlanHash } = require('../../src/usecases/phase67/segmentSendHash');
+const { createConfirmToken } = require('../../src/domain/confirmToken');
 
 function buildDeps(lineUserIds, plan, opsSpy) {
   return {
@@ -53,13 +54,26 @@ test('phase89: breaker aborts on 429 storm', async () => {
   let upserted = null;
   const opsSpy = { upsertOpsState: async (lineUserId, payload) => { upserted = { lineUserId, payload }; } };
 
+  const now = new Date('2026-02-08T00:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const confirmToken = createConfirmToken({
+    planHash,
+    templateKey,
+    templateVersion: null,
+    segmentKey: 'seg1'
+  }, { now, secret: confirmTokenSecret });
+
+  const deps = buildDeps(lineUserIds, plan, opsSpy);
+  deps.now = now;
+  deps.confirmTokenSecret = confirmTokenSecret;
   const result = await executeSegmentSend({
     templateKey,
     segmentQuery: {},
     planHash,
+    confirmToken,
     breakerWindowSize: 3,
     breakerMax429: 2
-  }, buildDeps(lineUserIds, plan, opsSpy));
+  }, deps);
 
   assert.strictEqual(result.runSummary.status, 'ABORTED');
   assert.ok(upserted);

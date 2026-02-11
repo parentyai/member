@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { executeSegmentSend } = require('../../src/usecases/phase68/executeSegmentSend');
 const { computePlanHash } = require('../../src/usecases/phase67/segmentSendHash');
+const { createConfirmToken } = require('../../src/domain/confirmToken');
 
 function buildPlan(templateKey, lineUserIds, bucket) {
   return {
@@ -48,20 +49,36 @@ test('phase91: audit logs appended on start/done/abort', async () => {
   const plan = buildPlan(templateKey, lineUserIds, bucket);
   const planHash = plan.payloadSummary.planHash;
 
-  const auditEntries = [];
-  await executeSegmentSend({ templateKey, segmentQuery: {}, planHash }, buildDeps(lineUserIds, plan, auditEntries, async () => {}));
+  const now = new Date('2026-02-08T00:00:00.000Z');
+  const confirmTokenSecret = 'test-confirm-secret';
+  const confirmToken = createConfirmToken({
+    planHash,
+    templateKey,
+    templateVersion: null,
+    segmentKey: 'seg1'
+  }, { now, secret: confirmTokenSecret });
 
+  const auditEntries = [];
+  const deps1 = buildDeps(lineUserIds, plan, auditEntries, async () => {});
+  deps1.now = now;
+  deps1.confirmTokenSecret = confirmTokenSecret;
+  await executeSegmentSend({ templateKey, segmentQuery: {}, planHash, confirmToken }, deps1);
+
+  const deps2 = buildDeps(lineUserIds, plan, auditEntries, async () => {
+    const err = new Error('LINE API error: 429');
+    err.status = 429;
+    throw err;
+  });
+  deps2.now = now;
+  deps2.confirmTokenSecret = confirmTokenSecret;
   await executeSegmentSend({
     templateKey,
     segmentQuery: {},
     planHash,
+    confirmToken,
     breakerWindowSize: 2,
     breakerMax429: 1
-  }, buildDeps(lineUserIds, plan, auditEntries, async () => {
-    const err = new Error('LINE API error: 429');
-    err.status = 429;
-    throw err;
-  }));
+  }, deps2);
 
   const kinds = auditEntries.filter((entry) => entry.action === 'automation_run').map((entry) => entry.kind);
   assert.ok(kinds.includes('RUN_START'));
