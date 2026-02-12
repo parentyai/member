@@ -57,7 +57,7 @@ Expected:
   - Webhook returns 200 with valid signature.
   - Admin test send creates a delivery record.
 
-## Ridac Membership (Ops Unlink)
+## Redac Membership (Ops Unlink)
 When duplicate rejection blocks a user (B policy), Ops can unlink the membership id.
 
 Steps:
@@ -68,7 +68,7 @@ Steps:
    - Login with `ADMIN_OS_TOKEN`.
 3) Open:
    - `http://127.0.0.1:18080/admin/master`
-4) In "Ridacクラブ会員ID（例外解除）", input `ridacMembershipId` (format `NN-NNNN`) and click `unlink`.
+4) In "Redacクラブ会員ID（例外解除）", input `ridacMembershipId` (format `NN-NNNN`) and click `unlink`.
 
 Expected:
 - The unlink result returns `{ ok: true, lineUserId, ridacMembershipIdLast4 }`.
@@ -77,7 +77,7 @@ Expected:
 Audit (trace):
 - Use Trace Search (`/api/admin/trace?traceId=...`) and confirm `ridac_membership.unlink_ok` exists with `ridacMembershipIdLast4` (no plaintext id).
 
-## Ridac Membership (LINE User Commands)
+## Redac Membership (LINE User Commands)
 User-side commands (LINE):
 - `会員ID 00-0000`: self-declare membership id
 - `会員ID 確認`: check current declaration status

@@ -108,7 +108,7 @@
 
     <hr />
 
-    <h2>Ridacクラブ会員ID（例外解除）</h2>
+    <h2>Redacクラブ会員ID（例外解除）</h2>
     <div class="note">
       重複拒否（B）の運用で詰まった場合のみ使用。入力した会員ID全文は保存しない（HMAC hash + last4のみ）。
       誰に紐付いているかは「解除結果」でのみ返る（運用者向け）。
@@ -567,7 +567,7 @@
       async function unlinkRidacMembership() {
         const ridacMembershipId = document.getElementById('ridac-unlink-id').value.trim();
         if (!ridacMembershipId) return;
-        const ok = window.confirm(`Ridac会員IDを解除しますか？\n\n${ridacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
+        const ok = window.confirm(`Redac会員IDを解除しますか？\n\n${ridacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
         if (!ok) return;
         const res = await fetch('/api/admin/ridac-membership/unlink', {
           method: 'POST',
