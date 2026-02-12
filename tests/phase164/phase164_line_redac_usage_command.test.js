@@ -79,7 +79,7 @@ test('phase164: LINE command prefix without payload replies usage guidance', asy
   const u2 = await usersRepo.getUser('U2');
   assert.ok(u1);
   assert.ok(u2);
-  assert.strictEqual(u1.ridacMembershipIdHash || null, null);
-  assert.strictEqual(u2.ridacMembershipIdHash || null, null);
+  assert.strictEqual(u1.redacMembershipIdHash || null, null);
+  assert.strictEqual(u2.redacMembershipIdHash || null, null);
 });
 

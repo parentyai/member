@@ -212,7 +212,7 @@
       <pre id="ops-console-detail-user-summary">-</pre>
       <div>memberSummary:</div>
       <pre id="ops-console-detail-member-summary">-</pre>
-      <div>Redac（derived）: <span id="ops-console-detail-ridac-status">-</span></div>
+      <div>Redac（derived）: <span id="ops-console-detail-redac-status">-</span></div>
       <div>llmSuggestion:</div>
       <pre id="ops-console-detail-llm-suggestion">-</pre>
       <div>suggestion(schema):</div>
@@ -300,8 +300,8 @@
           <option value="true">yes</option>
           <option value="false">no</option>
         </select>
-        ridacStatus:
-        <select id="segment-ridac-status">
+        redacStatus:
+        <select id="segment-redac-status">
           <option value="any">any</option>
           <option value="DECLARED">declared</option>
           <option value="UNLINKED">unlinked</option>
@@ -1150,7 +1150,7 @@
         setText(document.getElementById('ops-console-detail-latest-decision'), formatJson(detail.latestDecisionLog));
         setText(document.getElementById('ops-console-detail-user-summary'), formatJson(detail.userStateSummary));
         setText(document.getElementById('ops-console-detail-member-summary'), formatJson(detail.memberSummary));
-        setText(document.getElementById('ops-console-detail-ridac-status'), formatRidacStatus(detail.memberSummary));
+        setText(document.getElementById('ops-console-detail-redac-status'), formatRedacStatus(detail.memberSummary));
         setText(
           document.getElementById('ops-console-detail-notification-health-summary'),
           formatJson(detail.notificationHealthSummary || null)
@@ -1168,12 +1168,12 @@
         updateDecisionActionOptions(detail);
       }
 
-      function formatRidacStatus(memberSummary) {
+      function formatRedacStatus(memberSummary) {
         const ms = memberSummary && memberSummary.member ? memberSummary : null;
-        const ridac = ms && ms.member && ms.member.ridac ? ms.member.ridac : null;
-        const has = Boolean(ridac && ridac.hasRidacMembership);
-        const last4 = ridac && typeof ridac.ridacMembershipIdLast4 === 'string' ? ridac.ridacMembershipIdLast4 : null;
-        const unlinkedAt = ridac && ridac.ridacMembershipUnlinkedAt ? String(ridac.ridacMembershipUnlinkedAt) : null;
+        const redac = ms && ms.member && ms.member.redac ? ms.member.redac : null;
+        const has = Boolean(redac && redac.hasRedacMembership);
+        const last4 = redac && typeof redac.redacMembershipIdLast4 === 'string' ? redac.redacMembershipIdLast4 : null;
+        const unlinkedAt = redac && redac.redacMembershipUnlinkedAt ? String(redac.redacMembershipUnlinkedAt) : null;
         if (has && last4) return `登録済み (last4=${last4})`;
         if (!has && unlinkedAt) return '解除済み';
         return '未登録';
@@ -1218,13 +1218,13 @@
         const readinessEl = document.getElementById('segment-readiness');
         const needsAttentionEl = document.getElementById('segment-needs-attention');
         const hasMemberNumberEl = document.getElementById('segment-has-member-number');
-        const ridacStatusEl = document.getElementById('segment-ridac-status');
+        const redacStatusEl = document.getElementById('segment-redac-status');
         const limitEl = document.getElementById('segment-limit');
         if (!filter || typeof filter !== 'object') {
           readinessEl.value = '';
           needsAttentionEl.checked = false;
           hasMemberNumberEl.value = 'any';
-          ridacStatusEl.value = 'any';
+          redacStatusEl.value = 'any';
           limitEl.value = 50;
           return;
         }
@@ -1233,7 +1233,7 @@
         hasMemberNumberEl.value = filter.hasMemberNumber !== undefined && filter.hasMemberNumber !== null
           ? String(filter.hasMemberNumber)
           : 'any';
-        ridacStatusEl.value = filter.ridacStatus ? String(filter.ridacStatus) : 'any';
+        redacStatusEl.value = filter.redacStatus ? String(filter.redacStatus) : 'any';
         if (filter.limit) {
           limitEl.value = Number(filter.limit);
         }
@@ -1243,14 +1243,14 @@
         const readiness = document.getElementById('segment-readiness').value;
         const needsAttention = document.getElementById('segment-needs-attention').checked;
         const hasMemberNumber = document.getElementById('segment-has-member-number').value;
-        const ridacStatus = document.getElementById('segment-ridac-status').value;
+        const redacStatus = document.getElementById('segment-redac-status').value;
         const limitValue = document.getElementById('segment-limit').value;
         const limit = limitValue ? Number(limitValue) : null;
         const query = {};
         if (readiness) query.readinessStatus = readiness;
         if (needsAttention) query.needsAttention = 1;
         if (hasMemberNumber && hasMemberNumber !== 'any') query.hasMemberNumber = hasMemberNumber;
-        if (ridacStatus && ridacStatus !== 'any') query.ridacStatus = ridacStatus;
+        if (redacStatus && redacStatus !== 'any') query.redacStatus = redacStatus;
         if (limit) query.limit = limit;
         return query;
       }

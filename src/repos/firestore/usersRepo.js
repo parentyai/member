@@ -43,27 +43,27 @@ async function setMemberCardAsset(lineUserId, assetObj) {
   return updateUser(lineUserId, { memberCardAsset: assetObj || null });
 }
 
-async function setRidacMembership(lineUserId, params) {
+async function setRedacMembership(lineUserId, params) {
   const payload = params || {};
-  const hash = typeof payload.ridacMembershipIdHash === 'string' ? payload.ridacMembershipIdHash : null;
-  const last4 = typeof payload.ridacMembershipIdLast4 === 'string' ? payload.ridacMembershipIdLast4 : null;
+  const hash = typeof payload.redacMembershipIdHash === 'string' ? payload.redacMembershipIdHash : null;
+  const last4 = typeof payload.redacMembershipIdLast4 === 'string' ? payload.redacMembershipIdLast4 : null;
   const declaredBy = payload.declaredBy === 'ops' ? 'ops' : 'user';
   return updateUser(lineUserId, {
-    ridacMembershipIdHash: hash,
-    ridacMembershipIdLast4: last4,
-    ridacMembershipDeclaredAt: serverTimestamp(),
-    ridacMembershipDeclaredBy: declaredBy
+    redacMembershipIdHash: hash,
+    redacMembershipIdLast4: last4,
+    redacMembershipDeclaredAt: serverTimestamp(),
+    redacMembershipDeclaredBy: declaredBy
   });
 }
 
-async function clearRidacMembership(lineUserId, params) {
+async function clearRedacMembership(lineUserId, params) {
   const payload = params || {};
   const unlinkedBy = payload.unlinkedBy === 'ops' ? 'ops' : 'user';
   return updateUser(lineUserId, {
-    ridacMembershipIdHash: null,
-    ridacMembershipIdLast4: null,
-    ridacMembershipUnlinkedAt: serverTimestamp(),
-    ridacMembershipUnlinkedBy: unlinkedBy
+    redacMembershipIdHash: null,
+    redacMembershipIdLast4: null,
+    redacMembershipUnlinkedAt: serverTimestamp(),
+    redacMembershipUnlinkedBy: unlinkedBy
   });
 }
 
@@ -125,8 +125,8 @@ module.exports = {
   updateUser,
   setMemberNumber,
   setMemberCardAsset,
-  setRidacMembership,
-  clearRidacMembership,
+  setRedacMembership,
+  clearRedacMembership,
   setOpsReview,
   listUsers,
   listUsersByMemberNumber

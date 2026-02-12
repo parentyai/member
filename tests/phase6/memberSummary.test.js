@@ -74,13 +74,13 @@ test('phase6 member summary: returns minimal summary', async () => {
     hasMemberNumber: true,
     memberNumberMasked: '****1234',
     memberNumberStale: false,
-    ridac: {
-      hasRidacMembership: false,
-      ridacMembershipIdLast4: null,
-      ridacMembershipDeclaredAt: null,
-      ridacMembershipDeclaredBy: null,
-      ridacMembershipUnlinkedAt: null,
-      ridacMembershipUnlinkedBy: null
+    redac: {
+      hasRedacMembership: false,
+      redacMembershipIdLast4: null,
+      redacMembershipDeclaredAt: null,
+      redacMembershipDeclaredBy: null,
+      redacMembershipUnlinkedAt: null,
+      redacMembershipUnlinkedBy: null
     }
   });
   assert.deepStrictEqual(payload.ops, {
@@ -122,11 +122,11 @@ test('phase6 member summary: returns minimal summary', async () => {
   assert.ok(typeof payload.meta.generatedAt === 'string');
 });
 
-test('phase6 member summary: includes ridac status (last4 only)', async () => {
+test('phase6 member summary: includes redac status (last4 only)', async () => {
   await usersRepo.createUser('U1', { memberNumber: null, createdAt: '2000-01-01T00:00:00Z' });
-  await usersRepo.setRidacMembership('U1', {
-    ridacMembershipIdHash: 'HASH1',
-    ridacMembershipIdLast4: '7654',
+  await usersRepo.setRedacMembership('U1', {
+    redacMembershipIdHash: 'HASH1',
+    redacMembershipIdLast4: '7654',
     declaredBy: 'user'
   });
 
@@ -137,8 +137,8 @@ test('phase6 member summary: includes ridac status (last4 only)', async () => {
   assert.strictEqual(res.statusCode, 200);
   const payload = JSON.parse(res.body);
   assert.strictEqual(payload.ok, true);
-  assert.strictEqual(payload.member.ridac.hasRidacMembership, true);
-  assert.strictEqual(payload.member.ridac.ridacMembershipIdLast4, '7654');
-  assert.strictEqual(payload.member.ridac.ridacMembershipDeclaredBy, 'user');
-  assert.ok(typeof payload.member.ridac.ridacMembershipDeclaredAt === 'string');
+  assert.strictEqual(payload.member.redac.hasRedacMembership, true);
+  assert.strictEqual(payload.member.redac.redacMembershipIdLast4, '7654');
+  assert.strictEqual(payload.member.redac.redacMembershipDeclaredBy, 'user');
+  assert.ok(typeof payload.member.redac.redacMembershipDeclaredAt === 'string');
 });

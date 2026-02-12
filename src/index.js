@@ -517,8 +517,8 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'POST' && (pathname === '/api/admin/ridac-membership/unlink' || pathname === '/api/admin/ridac-membership/unlink/')) {
-    const { handleRidacMembershipUnlink } = require('./routes/admin/ridacMembershipUnlink');
+  if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
+    const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -539,7 +539,7 @@ function createServer() {
     });
     (async () => {
       const body = await collectBody();
-      await handleRidacMembershipUnlink(req, res, body);
+      await handleRedacMembershipUnlink(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

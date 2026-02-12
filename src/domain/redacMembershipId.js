@@ -6,7 +6,7 @@ const crypto = require('crypto');
 // - Accepts full-width digits and common hyphen variants.
 // - Removes whitespace.
 // - Returns null when invalid.
-function normalizeRidacMembershipId(input) {
+function normalizeRedacMembershipId(input) {
   const raw = typeof input === 'string' ? input : '';
   let s = raw.trim();
   if (!s) return null;
@@ -25,25 +25,25 @@ function normalizeRidacMembershipId(input) {
   return `${m[1]}-${m[2]}`;
 }
 
-function extractLast4(normalizedRidacMembershipId) {
-  const s = typeof normalizedRidacMembershipId === 'string' ? normalizedRidacMembershipId : '';
+function extractLast4(normalizedRedacMembershipId) {
+  const s = typeof normalizedRedacMembershipId === 'string' ? normalizedRedacMembershipId : '';
   const digits = s.replace(/\D/g, '');
   if (digits.length < 4) return null;
   return digits.slice(-4);
 }
 
-function computeRidacMembershipIdHash(normalizedRidacMembershipId, secret) {
-  const id = typeof normalizedRidacMembershipId === 'string' ? normalizedRidacMembershipId : '';
+function computeRedacMembershipIdHash(normalizedRedacMembershipId, secret) {
+  const id = typeof normalizedRedacMembershipId === 'string' ? normalizedRedacMembershipId : '';
   const sec = typeof secret === 'string' ? secret.trim() : '';
-  if (!id) throw new Error('normalized ridacMembershipId required');
-  if (!sec) throw new Error('RIDAC_MEMBERSHIP_ID_HMAC_SECRET required');
+  if (!id) throw new Error('normalized redacMembershipId required');
+  if (!sec) throw new Error('REDAC_MEMBERSHIP_ID_HMAC_SECRET required');
   // hex is safe as a Firestore document id.
   return crypto.createHmac('sha256', sec).update(id, 'utf8').digest('hex');
 }
 
 module.exports = {
-  normalizeRidacMembershipId,
+  normalizeRedacMembershipId,
   extractLast4,
-  computeRidacMembershipIdHash
+  computeRedacMembershipIdHash
 };
 

@@ -5,18 +5,18 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { SCENARIO_KEYS, STEP_KEYS } = require('../../domain/constants');
 const {
-  normalizeRidacMembershipId,
+  normalizeRedacMembershipId,
   extractLast4,
-  computeRidacMembershipIdHash
-} = require('../../domain/ridacMembershipId');
+  computeRedacMembershipIdHash
+} = require('../../domain/redacMembershipId');
 
-const LINKS_COLLECTION = 'ridac_membership_links';
+const LINKS_COLLECTION = 'redac_membership_links';
 
 function resolveHmacSecret() {
-  const v = process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
+  const v = process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET;
   if (typeof v === 'string' && v.trim().length > 0) return v.trim();
   const envName = process.env.ENV_NAME || 'local';
-  if (envName === 'local' || process.env.NODE_ENV === 'test') return 'local-ridac-membership-hmac-secret';
+  if (envName === 'local' || process.env.NODE_ENV === 'test') return 'local-redac-membership-hmac-secret';
   return null;
 }
 
@@ -51,7 +51,7 @@ async function ensureUserExistsInTx(tx, lineUserId) {
   return { userRef, user: Object.assign({ id: lineUserId }, data) };
 }
 
-async function declareRidacMembershipIdFromLine(params) {
+async function declareRedacMembershipIdFromLine(params) {
   const payload = params || {};
   const lineUserId = payload.lineUserId;
   if (!lineUserId) throw new Error('lineUserId required');
@@ -67,7 +67,7 @@ async function declareRidacMembershipIdFromLine(params) {
     try {
       await appendAuditLog({
         actor: 'line',
-        action: 'ridac_membership.declare_usage',
+        action: 'redac_membership.declare_usage',
         entityType: 'user',
         entityId: lineUserId,
         traceId: requestId,
@@ -78,12 +78,12 @@ async function declareRidacMembershipIdFromLine(params) {
     return { ok: false, status: 'usage' };
   }
 
-  const normalized = normalizeRidacMembershipId(parsed.value);
+  const normalized = normalizeRedacMembershipId(parsed.value);
   if (!normalized) {
     try {
       await appendAuditLog({
         actor: 'line',
-        action: 'ridac_membership.declare_invalid',
+        action: 'redac_membership.declare_invalid',
         entityType: 'user',
         entityId: lineUserId,
         traceId: requestId,
@@ -100,7 +100,7 @@ async function declareRidacMembershipIdFromLine(params) {
     try {
       await appendAuditLog({
         actor: 'system',
-        action: 'ridac_membership.declare_invalid',
+        action: 'redac_membership.declare_invalid',
         entityType: 'user',
         entityId: lineUserId,
         traceId: requestId,
@@ -111,7 +111,7 @@ async function declareRidacMembershipIdFromLine(params) {
     return { ok: false, status: 'server_misconfigured' };
   }
 
-  const hash = computeRidacMembershipIdHash(normalized, secret);
+  const hash = computeRedacMembershipIdHash(normalized, secret);
 
   const db = getDb();
   const userRef = db.collection('users').doc(lineUserId);
@@ -120,7 +120,7 @@ async function declareRidacMembershipIdFromLine(params) {
   const txResult = await db.runTransaction(async (tx) => {
     const ensured = await ensureUserExistsInTx(tx, lineUserId);
     const user = ensured.user || {};
-    const prevHash = typeof user.ridacMembershipIdHash === 'string' ? user.ridacMembershipIdHash : null;
+    const prevHash = typeof user.redacMembershipIdHash === 'string' ? user.redacMembershipIdHash : null;
 
     // If switching to a different membership id, release the previous link (only if it belongs to the same user).
     if (prevHash && prevHash !== hash) {
@@ -144,18 +144,18 @@ async function declareRidacMembershipIdFromLine(params) {
 
     // Create/overwrite the link doc for this membership id.
     tx.set(linkRef, {
-      ridacMembershipIdHash: hash,
-      ridacMembershipIdLast4: last4,
+      redacMembershipIdHash: hash,
+      redacMembershipIdLast4: last4,
       lineUserId,
       linkedAt: serverTimestamp(),
       linkedBy: 'user'
     }, { merge: false });
 
     tx.set(userRef, {
-      ridacMembershipIdHash: hash,
-      ridacMembershipIdLast4: last4,
-      ridacMembershipDeclaredAt: serverTimestamp(),
-      ridacMembershipDeclaredBy: 'user'
+      redacMembershipIdHash: hash,
+      redacMembershipIdLast4: last4,
+      redacMembershipDeclaredAt: serverTimestamp(),
+      redacMembershipDeclaredBy: 'user'
     }, { merge: true });
 
     return { status: 'linked' };
@@ -167,7 +167,7 @@ async function declareRidacMembershipIdFromLine(params) {
   try {
     await appendAuditLog({
       actor: 'line',
-      action: ok ? 'ridac_membership.declare_ok' : 'ridac_membership.declare_duplicate',
+      action: ok ? 'redac_membership.declare_ok' : 'redac_membership.declare_duplicate',
       entityType: 'user',
       entityId: lineUserId,
       traceId: requestId,
@@ -175,7 +175,7 @@ async function declareRidacMembershipIdFromLine(params) {
       payloadSummary: {
         ok,
         status,
-        ridacMembershipIdLast4: last4
+        redacMembershipIdLast4: last4
       }
     });
   } catch (_err) {
@@ -185,8 +185,8 @@ async function declareRidacMembershipIdFromLine(params) {
   try {
     await eventsRepo.createEvent({
       lineUserId,
-      type: ok ? 'ridac_membership.declare_ok' : 'ridac_membership.declare_duplicate',
-      ref: { requestId, ridacMembershipIdLast4: last4 }
+      type: ok ? 'redac_membership.declare_ok' : 'redac_membership.declare_duplicate',
+      ref: { requestId, redacMembershipIdLast4: last4 }
     });
   } catch (_err) {
     // best-effort only
@@ -208,7 +208,7 @@ async function declareRidacMembershipIdFromLine(params) {
 }
 
 module.exports = {
-  declareRidacMembershipIdFromLine,
+  declareRedacMembershipIdFromLine,
   parseCommand,
   resolveHmacSecret,
   LINKS_COLLECTION

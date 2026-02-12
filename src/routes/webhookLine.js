@@ -4,8 +4,8 @@ const crypto = require('crypto');
 const { ensureUserFromWebhook } = require('../usecases/users/ensureUser');
 const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMessage');
 const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
-const { declareRidacMembershipIdFromLine } = require('../usecases/users/declareRidacMembershipIdFromLine');
-const { getRidacMembershipStatusForLine } = require('../usecases/users/getRidacMembershipStatusForLine');
+const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareRedacMembershipIdFromLine');
+const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
 const { replyMessage } = require('../infra/lineClient');
 const {
   statusDeclared,
@@ -16,7 +16,7 @@ const {
   declareInvalidFormat,
   declareUsage,
   declareServerMisconfigured
-} = require('../domain/ridacLineMessages');
+} = require('../domain/redacLineMessages');
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -60,7 +60,7 @@ function extractMessageText(event) {
   return typeof text === 'string' ? text : null;
 }
 
-function isRidacStatusCommand(text) {
+function isRedacStatusCommand(text) {
   const raw = typeof text === 'string' ? text : '';
   if (!raw) return false;
   return /^\s*会員\s*[IiＩｉ][DdＤｄ]\s*確認\s*$/.test(raw);
@@ -123,8 +123,8 @@ async function handleLineWebhook(options) {
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
-          if (isRidacStatusCommand(text)) {
-            const status = await getRidacMembershipStatusForLine({ lineUserId: userId, requestId });
+          if (isRedacStatusCommand(text)) {
+            const status = await getRedacMembershipStatusForLine({ lineUserId: userId, requestId });
             if (status.status === 'DECLARED' && status.last4) {
               await replyFn(replyToken, {
                 type: 'text',
@@ -144,7 +144,7 @@ async function handleLineWebhook(options) {
             continue;
           }
 
-          const result = await declareRidacMembershipIdFromLine({ lineUserId: userId, text, requestId });
+          const result = await declareRedacMembershipIdFromLine({ lineUserId: userId, text, requestId });
           if (result.status === 'linked') {
             await replyFn(replyToken, {
               type: 'text',
@@ -164,7 +164,7 @@ async function handleLineWebhook(options) {
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';
-          logger(`[webhook] requestId=${requestId} ridac_membership=error message=${msg}`);
+          logger(`[webhook] requestId=${requestId} redac_membership=error message=${msg}`);
         }
       }
     }

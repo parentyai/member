@@ -21,13 +21,13 @@ test('phase26: ops console list includes memberFlags (add-only)', async () => {
             member: {
               hasMemberNumber: true,
               memberNumberStale: false,
-              ridac: {
-                hasRidacMembership: true,
-                ridacMembershipIdLast4: '3456',
-                ridacMembershipDeclaredAt: '2026-02-10T00:00:00.000Z',
-                ridacMembershipDeclaredBy: 'user',
-                ridacMembershipUnlinkedAt: null,
-                ridacMembershipUnlinkedBy: null
+              redac: {
+                hasRedacMembership: true,
+                redacMembershipIdLast4: '3456',
+                redacMembershipDeclaredAt: '2026-02-10T00:00:00.000Z',
+                redacMembershipDeclaredBy: 'user',
+                redacMembershipUnlinkedAt: null,
+                redacMembershipUnlinkedBy: null
               }
             }
           }
@@ -41,13 +41,13 @@ test('phase26: ops console list includes memberFlags (add-only)', async () => {
           member: {
             hasMemberNumber: false,
             memberNumberStale: true,
-            ridac: {
-              hasRidacMembership: false,
-              ridacMembershipIdLast4: null,
-              ridacMembershipDeclaredAt: null,
-              ridacMembershipDeclaredBy: null,
-              ridacMembershipUnlinkedAt: '2026-02-10T01:02:03.000Z',
-              ridacMembershipUnlinkedBy: 'ops'
+            redac: {
+              hasRedacMembership: false,
+              redacMembershipIdLast4: null,
+              redacMembershipDeclaredAt: null,
+              redacMembershipDeclaredBy: null,
+              redacMembershipUnlinkedAt: '2026-02-10T01:02:03.000Z',
+              redacMembershipUnlinkedBy: 'ops'
             }
           }
         }
@@ -67,14 +67,14 @@ test('phase26: ops console list includes memberFlags (add-only)', async () => {
   assert.deepStrictEqual(u1.memberFlags, {
     hasMemberNumber: true,
     memberNumberStale: false,
-    ridacStatus: 'DECLARED',
-    ridacMembershipIdLast4: '3456'
+    redacStatus: 'DECLARED',
+    redacMembershipIdLast4: '3456'
   });
   assert.deepStrictEqual(u2.memberFlags, {
     hasMemberNumber: false,
     memberNumberStale: true,
-    ridacStatus: 'UNLINKED',
-    ridacMembershipIdLast4: null
+    redacStatus: 'UNLINKED',
+    redacMembershipIdLast4: null
   });
 });
 

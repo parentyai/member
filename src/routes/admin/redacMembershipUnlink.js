@@ -4,12 +4,12 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const {
-  normalizeRidacMembershipId,
+  normalizeRedacMembershipId,
   extractLast4,
-  computeRidacMembershipIdHash
-} = require('../../domain/ridacMembershipId');
+  computeRedacMembershipIdHash
+} = require('../../domain/redacMembershipId');
 
-const LINKS_COLLECTION = 'ridac_membership_links';
+const LINKS_COLLECTION = 'redac_membership_links';
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -36,25 +36,25 @@ function parseJson(body, res) {
 }
 
 function resolveHmacSecret() {
-  const v = process.env.RIDAC_MEMBERSHIP_ID_HMAC_SECRET;
+  const v = process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET;
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
-async function handleRidacMembershipUnlink(req, res, body) {
+async function handleRedacMembershipUnlink(req, res, body) {
   const actor = resolveActor(req);
   const requestId = resolveRequestId(req);
 
   const payload = parseJson(body, res);
   if (!payload) return;
 
-  const rawId = typeof payload.ridacMembershipId === 'string' ? payload.ridacMembershipId : '';
-  const normalized = normalizeRidacMembershipId(rawId);
+  const rawId = typeof payload.redacMembershipId === 'string' ? payload.redacMembershipId : '';
+  const normalized = normalizeRedacMembershipId(rawId);
   if (!normalized) {
     try {
       await appendAuditLog({
         actor,
-        action: 'ridac_membership.unlink_invalid',
-        entityType: 'ridac_membership',
+        action: 'redac_membership.unlink_invalid',
+        entityType: 'redac_membership',
         entityId: 'unknown',
         traceId: requestId,
         requestId,
@@ -62,7 +62,7 @@ async function handleRidacMembershipUnlink(req, res, body) {
       });
     } catch (_err) {}
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid ridacMembershipId format' }));
+    res.end(JSON.stringify({ ok: false, error: 'invalid redacMembershipId format' }));
     return;
   }
 
@@ -72,8 +72,8 @@ async function handleRidacMembershipUnlink(req, res, body) {
     try {
       await appendAuditLog({
         actor: 'system',
-        action: 'ridac_membership.unlink_invalid',
-        entityType: 'ridac_membership',
+        action: 'redac_membership.unlink_invalid',
+        entityType: 'redac_membership',
         entityId: 'unknown',
         traceId: requestId,
         requestId,
@@ -87,7 +87,7 @@ async function handleRidacMembershipUnlink(req, res, body) {
 
   let hash;
   try {
-    hash = computeRidacMembershipIdHash(normalized, secret);
+    hash = computeRedacMembershipIdHash(normalized, secret);
   } catch (err) {
     res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'server misconfigured' }));
@@ -108,10 +108,10 @@ async function handleRidacMembershipUnlink(req, res, body) {
     if (lineUserId) {
       const userRef = db.collection('users').doc(lineUserId);
       tx.set(userRef, {
-        ridacMembershipIdHash: null,
-        ridacMembershipIdLast4: null,
-        ridacMembershipUnlinkedAt: serverTimestamp(),
-        ridacMembershipUnlinkedBy: 'ops'
+        redacMembershipIdHash: null,
+        redacMembershipIdLast4: null,
+        redacMembershipUnlinkedAt: serverTimestamp(),
+        redacMembershipUnlinkedBy: 'ops'
       }, { merge: true });
     }
 
@@ -122,12 +122,12 @@ async function handleRidacMembershipUnlink(req, res, body) {
     try {
       await appendAuditLog({
         actor,
-        action: 'ridac_membership.unlink_not_found',
-        entityType: 'ridac_membership',
+        action: 'redac_membership.unlink_not_found',
+        entityType: 'redac_membership',
         entityId: hash,
         traceId: requestId,
         requestId,
-        payloadSummary: { ok: false, status: 'not_found', ridacMembershipIdLast4: last4 }
+        payloadSummary: { ok: false, status: 'not_found', redacMembershipIdLast4: last4 }
       });
     } catch (_err) {}
     res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
@@ -140,12 +140,12 @@ async function handleRidacMembershipUnlink(req, res, body) {
   try {
     await appendAuditLog({
       actor,
-      action: 'ridac_membership.unlink_ok',
-      entityType: 'ridac_membership',
+      action: 'redac_membership.unlink_ok',
+      entityType: 'redac_membership',
       entityId: hash,
       traceId: requestId,
       requestId,
-      payloadSummary: { ok: true, ridacMembershipIdLast4: last4, lineUserId }
+      payloadSummary: { ok: true, redacMembershipIdLast4: last4, lineUserId }
     });
   } catch (_err) {}
 
@@ -153,17 +153,17 @@ async function handleRidacMembershipUnlink(req, res, body) {
     try {
       await eventsRepo.createEvent({
         lineUserId,
-        type: 'ridac_membership.unlink_ok',
-        ref: { requestId, ridacMembershipIdLast4: last4 }
+        type: 'redac_membership.unlink_ok',
+        ref: { requestId, redacMembershipIdLast4: last4 }
       });
     } catch (_err) {}
   }
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, lineUserId, ridacMembershipIdLast4: last4 }));
+  res.end(JSON.stringify({ ok: true, lineUserId, redacMembershipIdLast4: last4 }));
 }
 
 module.exports = {
-  handleRidacMembershipUnlink
+  handleRedacMembershipUnlink
 };
 
