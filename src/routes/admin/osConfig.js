@@ -77,8 +77,12 @@ async function buildImpactPreview(notificationCaps) {
   if (allNull) {
     return {
       sampledUsers: 0,
+      sampledEvaluations: 0,
       estimatedBlockedUsers: 0,
+      simulatedCategories: [],
       blockedByCapType: {},
+      blockedByCategory: {},
+      blockedByReason: {},
       notes: ['caps_disabled']
     };
   }
@@ -92,8 +96,12 @@ async function buildImpactPreview(notificationCaps) {
   } catch (_err) {
     return {
       sampledUsers: 0,
+      sampledEvaluations: 0,
       estimatedBlockedUsers: null,
+      simulatedCategories: [],
       blockedByCapType: {},
+      blockedByCategory: {},
+      blockedByReason: {},
       notes: ['preview_unavailable']
     };
   }
