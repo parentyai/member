@@ -16,6 +16,7 @@ npm run ops:stg-e2e -- \
   --admin-token "$ADMIN_OS_TOKEN" \
   --actor ops_stg_e2e \
   --fetch-route-errors \
+  --fail-on-route-errors \
   --project-id member-485303 \
   --segment-template-key <ACTIVE_TEMPLATE_KEY> \
   --composer-notification-id <ACTIVE_NOTIFICATION_ID> \
@@ -37,6 +38,7 @@ npm run ops:stg-e2e -- \
 - `segment-template-version`: 固定バージョン指定が必要な場合のみ
 - `segment-query-json`: Segment フィルタを明示したい場合のみ
 - `fetch-route-errors + project-id`: FAIL時に Cloud Logging の `[route_error]` を traceId で回収
+- `fail-on-route-errors`: route_error が1件でも出たシナリオを FAIL 扱いにする（`fetch-route-errors` を暗黙有効化）
 
 ## Checklist (fixed order)
 1. Segment Send: `plan -> dry-run -> execute`

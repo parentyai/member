@@ -52,6 +52,7 @@ function parseArgs(argv, env) {
     tracePrefix: sourceEnv.E2E_TRACE_PREFIX || DEFAULT_TRACE_PREFIX,
     projectId: sourceEnv.E2E_GCP_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '',
     fetchRouteErrors: sourceEnv.E2E_FETCH_ROUTE_ERRORS === '1',
+    failOnRouteErrors: sourceEnv.E2E_FAIL_ON_ROUTE_ERRORS === '1',
     routeErrorLimit: sourceEnv.E2E_ROUTE_ERROR_LIMIT
       ? parsePositiveInt(sourceEnv.E2E_ROUTE_ERROR_LIMIT, 'E2E_ROUTE_ERROR_LIMIT', 1, 200)
       : DEFAULT_ROUTE_ERROR_LIMIT,
@@ -78,6 +79,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--fetch-route-errors') {
       opts.fetchRouteErrors = true;
+      continue;
+    }
+    if (arg === '--fail-on-route-errors') {
+      opts.failOnRouteErrors = true;
       continue;
     }
     if (arg === '--no-auto-set-automation-mode') {
@@ -160,6 +165,7 @@ function parseArgs(argv, env) {
   if (!opts.adminToken || typeof opts.adminToken !== 'string' || opts.adminToken.trim().length === 0) {
     throw new Error('admin token required (ADMIN_OS_TOKEN or --admin-token)');
   }
+  if (opts.failOnRouteErrors) opts.fetchRouteErrors = true;
   if (opts.fetchRouteErrors && (!opts.projectId || typeof opts.projectId !== 'string' || opts.projectId.trim().length === 0)) {
     throw new Error('project id required when --fetch-route-errors is enabled');
   }
@@ -259,6 +265,36 @@ function fetchRouteErrors(ctx, traceId, execFn) {
       error: extractExecErrorMessage(err)
     };
   }
+}
+
+function applyRouteErrorStrictGate(status, reason, routeErrors, strictMode) {
+  const nextStatus = typeof status === 'string' ? status : 'PASS';
+  const nextReason = typeof reason === 'string' && reason.length > 0 ? reason : null;
+  if (strictMode !== true) {
+    return { status: nextStatus, reason: nextReason };
+  }
+  if (!routeErrors) {
+    return {
+      status: 'FAIL',
+      reason: nextReason || 'route_error_fetch_not_attempted'
+    };
+  }
+  if (routeErrors.ok !== true) {
+    const detail = typeof routeErrors.reason === 'string' && routeErrors.reason.length > 0
+      ? routeErrors.reason
+      : 'unknown';
+    return {
+      status: 'FAIL',
+      reason: nextReason || `route_error_fetch_failed:${detail}`
+    };
+  }
+  if (Number(routeErrors.count || 0) > 0) {
+    return {
+      status: 'FAIL',
+      reason: nextReason || `route_error_detected:${routeErrors.count}`
+    };
+  }
+  return { status: nextStatus, reason: nextReason };
 }
 
 async function apiRequest(ctx, method, endpoint, traceId, body) {
@@ -701,14 +737,22 @@ async function runScenario(ctx, scenarioName, runner) {
   try {
     const result = await runner(traceId);
     const traceBundle = await fetchTraceBundle(ctx, traceId);
-    const routeErrors = result.status === 'FAIL' ? fetchRouteErrors(ctx, traceId) : null;
+    const shouldFetchRouteErrors = ctx.fetchRouteErrors === true
+      && (result.status === 'FAIL' || ctx.failOnRouteErrors === true);
+    const routeErrors = shouldFetchRouteErrors ? fetchRouteErrors(ctx, traceId) : null;
+    const strictGate = applyRouteErrorStrictGate(
+      result.status || 'PASS',
+      result.reason || null,
+      routeErrors,
+      ctx.failOnRouteErrors === true
+    );
     return {
       name: scenarioName,
       traceId,
       startedAt,
       endedAt: new Date().toISOString(),
-      status: result.status || 'PASS',
-      reason: result.reason || null,
+      status: strictGate.status,
+      reason: strictGate.reason,
       steps: result.steps || null,
       queueId: result.queueId || null,
       traceBundle,
@@ -739,6 +783,7 @@ async function runAll(opts) {
     tracePrefix: opts.tracePrefix,
     projectId: opts.projectId || '',
     fetchRouteErrors: opts.fetchRouteErrors === true,
+    failOnRouteErrors: opts.failOnRouteErrors === true,
     routeErrorLimit: opts.routeErrorLimit || DEFAULT_ROUTE_ERROR_LIMIT
   };
 
@@ -778,7 +823,13 @@ async function runAll(opts) {
       fail: scenarios.filter((item) => item.status === 'FAIL').length,
       skip: scenarios.filter((item) => item.status === 'SKIP').length,
       strict: opts.allowSkip !== true,
-      routeErrorFetchEnabled: opts.fetchRouteErrors === true
+      routeErrorFetchEnabled: opts.fetchRouteErrors === true,
+      strictRouteErrors: opts.failOnRouteErrors === true,
+      routeErrorFailures: scenarios.filter((item) => (
+        item.status === 'FAIL'
+        && typeof item.reason === 'string'
+        && item.reason.startsWith('route_error_')
+      )).length
     }
   };
   return report;
@@ -803,6 +854,9 @@ function printSummary(report) {
     }
   }
   console.log(`pass=${report.summary.pass} fail=${report.summary.fail} skip=${report.summary.skip}`);
+  if (report.summary.strictRouteErrors === true) {
+    console.log(`route_error_failures=${report.summary.routeErrorFailures || 0}`);
+  }
 }
 
 async function main(argv) {
@@ -836,7 +890,8 @@ module.exports = {
   normalizeNotificationCaps,
   resolveOutFile,
   buildRouteErrorLoggingFilter,
-  fetchRouteErrors
+  fetchRouteErrors,
+  applyRouteErrorStrictGate
 };
 
 if (require.main === module) {
