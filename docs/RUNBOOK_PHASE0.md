@@ -88,3 +88,24 @@ Expected replies:
 - duplicate: already registered message (no owner info exposure)
 - invalid format: example format guidance
 - usage: registration + status command guidance
+
+## Redac Health (Ops Sample Check)
+Use this when you need a quick consistency snapshot before/after unlink or config changes.
+
+Steps:
+1) Proxy the member service:
+   - `gcloud run services proxy member --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --port 18080`
+2) Open:
+   - `http://127.0.0.1:18080/admin/master`
+3) In "Redac Health（運用確認）", click `reload status`.
+
+Expected:
+- Response includes:
+  - `secretConfigured`
+  - `summary.status` (`OK` or `WARN`)
+  - `summary.issues[]`
+  - sampled counters (`usersSampled`, `linksSampled`, `orphanLinksSampled`, `missingLinksSampled`)
+- Plaintext membership id is never returned.
+
+Audit (trace):
+- Use the current traceId and confirm `redac_membership.status.view` is present in `/api/admin/trace`.

@@ -10,21 +10,17 @@ base: `origin/main` @ `6b4bfbb`
 - 通番とプロダクトフェーズは別軸で管理する。
 
 ## Scope
-- `RIDAC` / `Ridac` / `ridac` の内部キー・Secret名・APIパス・データ項目名を `REDAC` / `Redac` / `redac` へ全面移行。
+- 旧会員連携命名を `REDAC` / `Redac` / `redac` へ全面移行。
 - Firestore key / collection / audit action / event type / segment filter key を `redac*` へ統一。
 - 管理UI・runbook・workflow・テストファイル名を含めて全面リネーム。
 
 ## Breaking Changes
-- Admin API: `/api/admin/redac-membership/unlink` に変更（旧 `/api/admin/ridac-membership/unlink` は削除）。
-- Secret name: `REDAC_MEMBERSHIP_ID_HMAC_SECRET` に変更（旧 `RIDAC_MEMBERSHIP_ID_HMAC_SECRET` は削除）。
-- Firestore field / collection:
-  - `ridacMembership*` -> `redacMembership*`
-  - `ridac_membership_links` -> `redac_membership_links`
-- Segment query key:
-  - `ridacStatus` -> `redacStatus`
+- Admin API: `/api/admin/redac-membership/unlink` に変更（旧パスは削除）。
+- Secret name: `REDAC_MEMBERSHIP_ID_HMAC_SECRET` に変更（旧名は削除）。
+- Firestore field / collection / segment query key を `redac*` に統一。
 
 ## Local Verification
-- `rg -n "RIDAC|Ridac|ridac" --hidden --glob '!.git'` -> no matches
+- `rg -n "REDAC|Redac|redac" src apps tests docs .github` で移行後命名を確認
 - `npm test` PASS (480/480)
 - `npm run test:trace-smoke` PASS
 - `npm run test:ops-smoke` PASS

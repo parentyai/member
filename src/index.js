@@ -569,6 +569,7 @@ function createServer() {
       handlePlan: handleDeliveryBackfillPlan,
       handleExecute: handleDeliveryBackfillExecute
     } = require('./routes/admin/osDeliveryBackfill');
+    const { handleStatus: handleRedacStatus } = require('./routes/admin/osRedacStatus');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
     const {
       handleDraft,
@@ -666,6 +667,10 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/delivery-backfill/execute') {
         const body = await collectBody();
         await handleDeliveryBackfillExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/redac/status') {
+        await handleRedacStatus(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {

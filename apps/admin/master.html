@@ -120,6 +120,17 @@
 
     <hr />
 
+    <h2>Redac Health（運用確認）</h2>
+    <div class="note">
+      Redac運用の整合性を確認する。secret設定有無、ユーザーとlinkの不整合（sample内）を表示。
+    </div>
+    <div class="note">
+      <button id="redac-health-reload" type="button">reload status</button>
+    </div>
+    <pre id="redac-health-result">-</pre>
+
+    <hr />
+
     <h2>System Config（SSOT）</h2>
     <div class="note">servicePhase / notificationPreset を安全に変更（plan → confirmToken → set）。</div>
     <div class="note">
@@ -577,6 +588,13 @@
         document.getElementById('redac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
       }
 
+      async function loadRedacStatus() {
+        const res = await fetch('/api/admin/os/redac/status?limit=500', {
+          headers: buildHeaders()
+        });
+        document.getElementById('redac-health-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+      }
+
       function parseNullableInt(value) {
         const trimmed = String(value || '').trim();
         if (!trimmed) return null;
@@ -940,6 +958,7 @@
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
       document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
       document.getElementById('redac-unlink').addEventListener('click', () => unlinkRedacMembership().catch(() => {}));
+      document.getElementById('redac-health-reload').addEventListener('click', () => loadRedacStatus().catch(() => {}));
       document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
       document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
       document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
@@ -955,6 +974,7 @@
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
+      loadRedacStatus().catch(() => {});
       loadSystemConfigStatus().catch(() => {});
       loadAutomationConfigStatus().catch(() => {});
       loadDeliveryBackfillStatus().catch(() => {});
