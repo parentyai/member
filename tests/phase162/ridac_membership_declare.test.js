@@ -77,6 +77,18 @@ test('ridac membership: non-command message is noop', async () => {
   assert.deepStrictEqual(out, { ok: true, status: 'noop' });
 });
 
+test('ridac membership: usage guidance when command prefix has no payload', async () => {
+  await ensureUserFromWebhook('U1');
+  const out = await declareRidacMembershipIdFromLine({ lineUserId: 'U1', text: '会員ID', requestId: 'req1' });
+  assert.deepStrictEqual(out, { ok: false, status: 'usage' });
+});
+
+test('ridac membership: usage guidance when help keyword is used', async () => {
+  await ensureUserFromWebhook('U1');
+  const out = await declareRidacMembershipIdFromLine({ lineUserId: 'U1', text: '会員ID ヘルプ', requestId: 'req1' });
+  assert.deepStrictEqual(out, { ok: false, status: 'usage' });
+});
+
 test('ridac membership: same user can replace their ridac id (releases previous id)', async () => {
   await ensureUserFromWebhook('U1');
   const r1 = await declareRidacMembershipIdFromLine({ lineUserId: 'U1', text: '会員ID 00-0001', requestId: 'req1' });

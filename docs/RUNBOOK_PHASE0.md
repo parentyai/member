@@ -76,3 +76,15 @@ Expected:
 
 Audit (trace):
 - Use Trace Search (`/api/admin/trace?traceId=...`) and confirm `ridac_membership.unlink_ok` exists with `ridacMembershipIdLast4` (no plaintext id).
+
+## Ridac Membership (LINE User Commands)
+User-side commands (LINE):
+- `会員ID 00-0000`: self-declare membership id
+- `会員ID 確認`: check current declaration status
+- `会員ID` / `会員ID ヘルプ`: receive usage guidance
+
+Expected replies:
+- linked: completion message + next action (`会員ID 確認`)
+- duplicate: already registered message (no owner info exposure)
+- invalid format: example format guidance
+- usage: registration + status command guidance

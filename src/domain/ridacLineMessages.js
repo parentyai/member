@@ -24,6 +24,10 @@ function declareInvalidFormat() {
   return '会員IDの形式が正しくありません。例: 会員ID 00-0000';
 }
 
+function declareUsage() {
+  return '会員IDの使い方: 「会員ID 00-0000」で登録し、「会員ID 確認」で状態を確認できます。';
+}
+
 function declareServerMisconfigured() {
   return '現在この操作は利用できません。時間をおいて再度お試しください。';
 }
@@ -35,5 +39,6 @@ module.exports = {
   declareLinked,
   declareDuplicate,
   declareInvalidFormat,
+  declareUsage,
   declareServerMisconfigured
 };

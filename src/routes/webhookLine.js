@@ -14,6 +14,7 @@ const {
   declareLinked,
   declareDuplicate,
   declareInvalidFormat,
+  declareUsage,
   declareServerMisconfigured
 } = require('../domain/ridacLineMessages');
 
@@ -156,6 +157,8 @@ async function handleLineWebhook(options) {
             });
           } else if (result.status === 'invalid_format') {
             await replyFn(replyToken, { type: 'text', text: declareInvalidFormat() });
+          } else if (result.status === 'usage') {
+            await replyFn(replyToken, { type: 'text', text: declareUsage() });
           } else if (result.status === 'server_misconfigured') {
             await replyFn(replyToken, { type: 'text', text: declareServerMisconfigured() });
           }
