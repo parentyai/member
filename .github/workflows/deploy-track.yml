@@ -64,29 +64,6 @@ jobs:
             exit 1
           fi
 
-      - name: Validate required deploy variables
-        run: |
-          REQUIRED_VARS=(
-            GCP_PROJECT_ID
-            GCP_REGION
-            SERVICE_NAME
-            GCP_WIF_PROVIDER
-            RUNTIME_SA_EMAIL
-            DEPLOY_SA_EMAIL
-            ENV_NAME
-            FIRESTORE_PROJECT_ID
-          )
-          MISSING=0
-          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
-            if [ -z "${!VAR_NAME}" ]; then
-              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
-              MISSING=1
-            fi
-          done
-          if [ "$MISSING" -ne 0 ]; then
-            exit 1
-          fi
-
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
         with:
