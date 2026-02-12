@@ -24,9 +24,13 @@ function parseCommand(text) {
   const raw = typeof text === 'string' ? text : '';
   if (!raw) return { kind: 'noop' };
   // Accept: "会員ID 00-0000" (spaces allowed).
-  const m = raw.match(/^\s*会員\s*[IiＩｉ][DdＤｄ]\s+(.+?)\s*$/);
+  // Return usage guidance when user typed only the membership prefix.
+  const m = raw.match(/^\s*会員\s*[IiＩｉ][DdＤｄ](?:\s+(.+?))?\s*$/);
   if (!m) return { kind: 'noop' };
-  return { kind: 'cmd', value: m[1] };
+  const value = typeof m[1] === 'string' ? m[1].trim() : '';
+  if (!value) return { kind: 'usage' };
+  if (/^(help|ヘルプ)$/i.test(value)) return { kind: 'usage' };
+  return { kind: 'cmd', value };
 }
 
 async function ensureUserExistsInTx(tx, lineUserId) {
@@ -58,6 +62,20 @@ async function declareRidacMembershipIdFromLine(params) {
   const parsed = parseCommand(payload.text);
   if (parsed.kind === 'noop') {
     return { ok: true, status: 'noop' };
+  }
+  if (parsed.kind === 'usage') {
+    try {
+      await appendAuditLog({
+        actor: 'line',
+        action: 'ridac_membership.declare_usage',
+        entityType: 'user',
+        entityId: lineUserId,
+        traceId: requestId,
+        requestId,
+        payloadSummary: { ok: false, reason: 'usage' }
+      });
+    } catch (_err) {}
+    return { ok: false, status: 'usage' };
   }
 
   const normalized = normalizeRidacMembershipId(parsed.value);

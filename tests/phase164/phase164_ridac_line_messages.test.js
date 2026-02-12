@@ -12,6 +12,7 @@ test('phase164: ridac line message templates include next action guidance', () =
   const linked = messages.declareLinked();
   const duplicate = messages.declareDuplicate();
   const invalid = messages.declareInvalidFormat();
+  const usage = messages.declareUsage();
   const misconfigured = messages.declareServerMisconfigured();
 
   assert.ok(declared.includes('末尾: 1234'));
@@ -21,5 +22,7 @@ test('phase164: ridac line message templates include next action guidance', () =
   assert.ok(linked.includes('会員ID 確認'));
   assert.ok(duplicate.includes('再確認'));
   assert.ok(invalid.includes('例: 会員ID 00-0000'));
+  assert.ok(usage.includes('会員ID 00-0000'));
+  assert.ok(usage.includes('会員ID 確認'));
   assert.ok(misconfigured.includes('時間をおいて再度お試しください'));
 });
