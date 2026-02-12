@@ -54,6 +54,16 @@ Workload Identity Provider の `attributeCondition` が `push(main)` のみ許�
 - provider 条件はセキュリティ境界。repository 条件は維持すること。
 - 変更後は `push(main)` と `workflow_dispatch(prod)` の両方を検証すること。
 
+直近検証（2026-02-11, stg）:
+- 実行コマンド:
+  - `gh workflow run deploy.yml --ref main -f target_environment=stg`
+- 実行結果:
+  - https://github.com/parentyai/member/actions/runs/21927805235
+  - `Auth (OIDC)` 成功、`deploy` まで成功
+- 参考:
+  - WIF provider condition（確認値）
+  - `assertion.repository=='parentyai/member' && (assertion.ref=='refs/heads/main' || assertion.event_name=='workflow_dispatch')`
+
 ## Deploy Paths
 ### stg
 - Trigger: `push` to `main`
