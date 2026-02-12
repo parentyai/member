@@ -67,3 +67,41 @@ test('phase160: checkNotificationCap skips delivery counters during active quiet
   assert.strictEqual(result.dailyWindowStart, null);
   assert.strictEqual(result.weeklyWindowStart, null);
 });
+
+test('phase160: checkNotificationCap uses snapshot counter when available', async () => {
+  let snapshotCalls = 0;
+  let userCounterCalls = 0;
+  const result = await checkNotificationCap({
+    lineUserId: 'U4',
+    notificationCategory: 'DEADLINE_REQUIRED',
+    notificationCaps: {
+      perUserWeeklyCap: 5,
+      perUserDailyCap: 3,
+      perCategoryWeeklyCap: 2
+    },
+    deliveryCountLegacyFallback: false
+  }, {
+    getDeliveredCountsSnapshot: async (_lineUserId, options) => {
+      snapshotCalls += 1;
+      assert.strictEqual(options.includeLegacyFallback, false);
+      assert.deepStrictEqual(options.categories, ['DEADLINE_REQUIRED']);
+      return {
+        weeklyCount: 1,
+        dailyCount: 1,
+        categoryWeeklyCounts: { DEADLINE_REQUIRED: 1 }
+      };
+    },
+    countDeliveredByUserSince: async () => {
+      userCounterCalls += 1;
+      return 999;
+    },
+    countDeliveredByUserCategorySince: async () => {
+      userCounterCalls += 1;
+      return 999;
+    }
+  });
+
+  assert.strictEqual(result.allowed, true);
+  assert.strictEqual(snapshotCalls, 1);
+  assert.strictEqual(userCounterCalls, 0);
+});

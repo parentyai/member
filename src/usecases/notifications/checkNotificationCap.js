@@ -50,6 +50,9 @@ async function checkNotificationCap(params, deps) {
   const weeklyWindowStart = resolveWeeklyWindowStart(now);
   const dailyWindowStart = resolveDailyWindowStart(now);
 
+  const getDeliveredCountsSnapshot = deps && deps.getDeliveredCountsSnapshot
+    ? deps.getDeliveredCountsSnapshot
+    : deliveriesRepo.getDeliveredCountsSnapshot;
   const countDeliveredByUserSince = deps && deps.countDeliveredByUserSince
     ? deps.countDeliveredByUserSince
     : deliveriesRepo.countDeliveredByUserSince;
@@ -62,19 +65,54 @@ async function checkNotificationCap(params, deps) {
   let deliveredCountWeekly = 0;
   let deliveredCountDaily = 0;
   let deliveredCountCategoryWeekly = 0;
-  if (notificationCaps.perUserWeeklyCap !== null) {
-    deliveredCountWeekly = await countDeliveredByUserSince(lineUserId, weeklyWindowStart, countOptions);
-  }
-  if (notificationCaps.perUserDailyCap !== null) {
-    deliveredCountDaily = await countDeliveredByUserSince(lineUserId, dailyWindowStart, countOptions);
-  }
-  if (notificationCaps.perCategoryWeeklyCap !== null && payload.notificationCategory) {
-    deliveredCountCategoryWeekly = await countDeliveredByUserCategorySince(
-      lineUserId,
-      String(payload.notificationCategory),
-      weeklyWindowStart,
-      countOptions
-    );
+  const hasCountOverrides = Boolean(
+    deps
+      && (typeof deps.countDeliveredByUserSince === 'function'
+      || typeof deps.countDeliveredByUserCategorySince === 'function')
+  );
+  const hasSnapshotOverride = Boolean(deps && typeof deps.getDeliveredCountsSnapshot === 'function');
+  const normalizedCategory = payload.notificationCategory
+    ? String(payload.notificationCategory).trim().toUpperCase()
+    : '';
+
+  if ((hasSnapshotOverride || !hasCountOverrides) && typeof getDeliveredCountsSnapshot === 'function') {
+    const snapshot = await getDeliveredCountsSnapshot(lineUserId, {
+      weeklySinceAt: weeklyWindowStart,
+      dailySinceAt: notificationCaps.perUserDailyCap !== null ? dailyWindowStart : null,
+      categories: notificationCaps.perCategoryWeeklyCap !== null && normalizedCategory
+        ? [normalizedCategory]
+        : [],
+      includeLegacyFallback
+    });
+    if (notificationCaps.perUserWeeklyCap !== null) {
+      deliveredCountWeekly = Number.isFinite(snapshot.weeklyCount) ? snapshot.weeklyCount : 0;
+    }
+    if (notificationCaps.perUserDailyCap !== null) {
+      deliveredCountDaily = Number.isFinite(snapshot.dailyCount) ? snapshot.dailyCount : 0;
+    }
+    if (notificationCaps.perCategoryWeeklyCap !== null && normalizedCategory) {
+      const byCategory = snapshot.categoryWeeklyCounts && typeof snapshot.categoryWeeklyCounts === 'object'
+        ? snapshot.categoryWeeklyCounts
+        : {};
+      deliveredCountCategoryWeekly = Number.isFinite(byCategory[normalizedCategory])
+        ? byCategory[normalizedCategory]
+        : 0;
+    }
+  } else {
+    if (notificationCaps.perUserWeeklyCap !== null) {
+      deliveredCountWeekly = await countDeliveredByUserSince(lineUserId, weeklyWindowStart, countOptions);
+    }
+    if (notificationCaps.perUserDailyCap !== null) {
+      deliveredCountDaily = await countDeliveredByUserSince(lineUserId, dailyWindowStart, countOptions);
+    }
+    if (notificationCaps.perCategoryWeeklyCap !== null && normalizedCategory) {
+      deliveredCountCategoryWeekly = await countDeliveredByUserCategorySince(
+        lineUserId,
+        normalizedCategory,
+        weeklyWindowStart,
+        countOptions
+      );
+    }
   }
 
   return Object.assign(

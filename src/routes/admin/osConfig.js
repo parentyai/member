@@ -205,27 +205,25 @@ async function buildImpactPreview(notificationCaps, options) {
     const deliveredCountByCategoryWeekly = {};
     let deliveredCountWeekly = 0;
     let deliveredCountDaily = 0;
-    const countTasks = [];
-    if (caps.perUserWeeklyCap !== null) {
-      countTasks.push(deliveriesRepo.countDeliveredByUserSince(lineUserId, weeklyWindowStart, countOptions)
-        .then((value) => { deliveredCountWeekly = Number.isFinite(value) ? value : 0; }));
-    }
-    if (caps.perUserDailyCap !== null) {
-      countTasks.push(deliveriesRepo.countDeliveredByUserSince(lineUserId, dailyWindowStart, countOptions)
-        .then((value) => { deliveredCountDaily = Number.isFinite(value) ? value : 0; }));
-    }
-    for (const category of categoryTargets) {
-      countTasks.push(deliveriesRepo.countDeliveredByUserCategorySince(
-        lineUserId,
-        category,
-        weeklyWindowStart,
-        countOptions
-      ).then((value) => {
-        deliveredCountByCategoryWeekly[category] = Number.isFinite(value) ? value : 0;
-      }));
-    }
     try {
-      await Promise.all(countTasks);
+      const snapshot = await deliveriesRepo.getDeliveredCountsSnapshot(lineUserId, {
+        weeklySinceAt: weeklyWindowStart,
+        dailySinceAt: caps.perUserDailyCap !== null ? dailyWindowStart : null,
+        categories: categoryTargets,
+        includeLegacyFallback: countOptions.includeLegacyFallback
+      });
+      if (caps.perUserWeeklyCap !== null) {
+        deliveredCountWeekly = Number.isFinite(snapshot.weeklyCount) ? snapshot.weeklyCount : 0;
+      }
+      if (caps.perUserDailyCap !== null) {
+        deliveredCountDaily = Number.isFinite(snapshot.dailyCount) ? snapshot.dailyCount : 0;
+      }
+      const byCategory = snapshot.categoryWeeklyCounts && typeof snapshot.categoryWeeklyCounts === 'object'
+        ? snapshot.categoryWeeklyCounts
+        : {};
+      for (const category of categoryTargets) {
+        deliveredCountByCategoryWeekly[category] = Number.isFinite(byCategory[category]) ? byCategory[category] : 0;
+      }
     } catch (_err) {
       skippedUsersForCountErrors += 1;
       continue;
