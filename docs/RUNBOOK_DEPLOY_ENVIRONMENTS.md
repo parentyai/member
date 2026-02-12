@@ -51,6 +51,23 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
   - 例: `roles/secretmanager.admin`（または同等権限）
   - 権限がない場合は workflow で warning を出して継続する（Cloud Run deploy が最終判定）
 
+## Workflow Preflight Guards
+各 deploy workflow では build/deploy 前に以下を fail-fast で検証する。
+
+1) required variables が空でないこと
+- `deploy.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `PUBLIC_BASE_URL`, `FIRESTORE_PROJECT_ID`, `STORAGE_BUCKET`
+- `deploy-webhook.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `FIRESTORE_PROJECT_ID`
+- `deploy-track.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `FIRESTORE_PROJECT_ID`
+
+2) required secrets が Secret Manager に存在すること
+- `deploy.yml`: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `ADMIN_OS_TOKEN`, `TRACK_TOKEN_SECRET`, `REDAC_MEMBERSHIP_ID_HMAC_SECRET`, `OPS_CONFIRM_TOKEN_SECRET`
+- `deploy-webhook.yml`: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `REDAC_MEMBERSHIP_ID_HMAC_SECRET`
+- `deploy-track.yml`: `TRACK_TOKEN_SECRET`
+
+意図:
+- 不足設定を Cloud Build 実行前に検知する
+- 失敗時に `Missing workflow variable` / `Missing Secret Manager secret` で原因を明示する
+
 ## OIDC / WIF Guardrail（workflow_dispatch 対応）
 `workflow_dispatch(target_environment=prod)` で OIDC が `unauthorized_client` になる場合は、
 Workload Identity Provider の `attributeCondition` が `push(main)` のみ許可している可能性が高い。
