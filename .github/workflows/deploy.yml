@@ -106,6 +106,31 @@ jobs:
             exit 1
           fi
 
+      - name: Validate required deploy variables
+        run: |
+          REQUIRED_VARS=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            SERVICE_NAME
+            GCP_WIF_PROVIDER
+            RUNTIME_SA_EMAIL
+            DEPLOY_SA_EMAIL
+            ENV_NAME
+            PUBLIC_BASE_URL
+            FIRESTORE_PROJECT_ID
+            STORAGE_BUCKET
+          )
+          MISSING=0
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
         with:
@@ -117,6 +142,31 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Validate required secrets exist
+        run: |
+          REQUIRED_SECRETS=(
+            LINE_CHANNEL_SECRET
+            LINE_CHANNEL_ACCESS_TOKEN
+            ADMIN_OS_TOKEN
+            TRACK_TOKEN_SECRET
+            REDAC_MEMBERSHIP_ID_HMAC_SECRET
+            OPS_CONFIRM_TOKEN_SECRET
+          )
+          MISSING=0
+          for SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do
+            if gcloud secrets describe "$SECRET_NAME" \
+              --project "$GCP_PROJECT_ID" \
+              --format='value(name)' >/dev/null 2>&1; then
+              echo "Secret found: ${SECRET_NAME}"
+            else
+              echo "::error title=Missing Secret Manager secret::${SECRET_NAME} is missing or inaccessible in ${GCP_PROJECT_ID}"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Ensure runtime SA can access required secrets
         run: |
