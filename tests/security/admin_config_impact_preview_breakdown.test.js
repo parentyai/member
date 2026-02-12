@@ -101,6 +101,11 @@ test('security: system config impactPreview includes cap breakdown fields', asyn
   assert.ok(typeof json.impactPreview.blockedEvaluations === 'number');
   assert.ok(typeof json.impactPreview.blockedEvaluationRatePercent === 'number');
   assert.ok(typeof json.impactPreview.estimatedBlockedUserRatePercent === 'number');
+  assert.ok(Array.isArray(json.impactPreview.capTypeBreakdown));
+  assert.ok(Array.isArray(json.impactPreview.reasonBreakdown));
+  assert.ok(Array.isArray(json.impactPreview.categoryBreakdown));
+  assert.ok(typeof json.impactPreview.riskLevel === 'string');
+  assert.ok(typeof json.impactPreview.recommendedAction === 'string');
 });
 
 test('security: system config plan succeeds when notificationCaps are all null', async (t) => {
@@ -160,6 +165,11 @@ test('security: system config plan succeeds when notificationCaps are all null',
   assert.deepStrictEqual(json.impactPreview.blockedByCapType, {});
   assert.deepStrictEqual(json.impactPreview.blockedByCategory, {});
   assert.deepStrictEqual(json.impactPreview.blockedByReason, {});
+  assert.deepStrictEqual(json.impactPreview.capTypeBreakdown, []);
+  assert.deepStrictEqual(json.impactPreview.reasonBreakdown, []);
+  assert.deepStrictEqual(json.impactPreview.categoryBreakdown, []);
+  assert.strictEqual(json.impactPreview.riskLevel, 'NONE');
+  assert.strictEqual(json.impactPreview.recommendedAction, 'SAFE_TO_SET');
 });
 
 test('security: system config impactPreview respects deliveryCountLegacyFallback mode', async (t) => {
@@ -311,4 +321,10 @@ test('security: system config impactPreview skips delivery counters during activ
   assert.strictEqual(json.impactPreview.blockedByCapType.QUIET_HOURS, 1);
   assert.strictEqual(json.impactPreview.blockedByReason.quiet_hours_active, 1);
   assert.strictEqual(json.impactPreview.blockedByCategory.UNCATEGORIZED, 1);
+  assert.strictEqual(json.impactPreview.riskLevel, 'HIGH');
+  assert.strictEqual(json.impactPreview.recommendedAction, 'ADJUST_CAPS_BEFORE_SET');
+  assert.ok(Array.isArray(json.impactPreview.capTypeBreakdown));
+  assert.ok(json.impactPreview.capTypeBreakdown.length >= 1);
+  assert.strictEqual(json.impactPreview.capTypeBreakdown[0].key, 'QUIET_HOURS');
+  assert.strictEqual(json.impactPreview.capTypeBreakdown[0].count, 1);
 });
