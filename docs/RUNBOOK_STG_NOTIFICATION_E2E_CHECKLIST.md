@@ -7,6 +7,34 @@ stg 実測を毎回同じ順番で実施し、traceId で証跡化するため�
 - `member-485303 / us-east1` へのアクセス権
 - Admin token が取得できること（Secret Manager 管理）
 
+## Recommended Command (automated)
+固定順チェックは以下コマンドで一括実行する。
+
+```bash
+npm run ops:stg-e2e -- \
+  --base-url http://127.0.0.1:18080 \
+  --admin-token "$ADMIN_OS_TOKEN" \
+  --actor ops_stg_e2e \
+  --segment-template-key <ACTIVE_TEMPLATE_KEY> \
+  --composer-notification-id <ACTIVE_NOTIFICATION_ID> \
+  --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
+```
+
+- 出力(JSON): `artifacts/stg-notification-e2e/stg-notification-e2e-*.json`
+- `--allow-skip` を付けない場合、`SKIP` を失敗扱いにする（precondition漏れを検知）
+- 既定で automation mode が `EXECUTE` でない場合は一時的に切替えて終了時に復元する
+- Kill Switch と system config（quietHours）はシナリオ内で一時変更し、終了時に復元する
+
+### Required Inputs
+- `ADMIN_OS_TOKEN`: 管理APIトークン
+- `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー
+- `composer-notification-id`: Composer cap block 検証対象の active notificationId
+
+### Optional Inputs
+- `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
+- `segment-template-version`: 固定バージョン指定が必要な場合のみ
+- `segment-query-json`: Segment フィルタを明示したい場合のみ
+
 ## Checklist (fixed order)
 1. Segment Send: `plan -> dry-run -> execute`
 2. Retry Queue: `plan -> retry`

@@ -9,6 +9,7 @@
     "test": "node --test tests/**/*.test.js",
     "test:trace-smoke": "node tools/run_trace_smoke.js",
     "test:ops-smoke": "node tools/run_ops_smoke.js",
+    "ops:stg-e2e": "node tools/run_stg_notification_e2e_checklist.js",
     "audit:gate": "bash tools/audit/run_audit.sh",
     "start": "node src/index.js",
     "start:member": "SERVICE_MODE=member node src/index.js",
