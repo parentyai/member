@@ -57,12 +57,20 @@
 - `quietHours`（UTC）
   - `null`: 無効
   - `{startHourUtc,endHourUtc}`: 静穏時間中は送信ブロック（例: 22→7）
+- `deliveryCountLegacyFallback`
+  - `true`（既定）: deliveredAt 欠損の旧deliveryを `sentAt` で補完集計する（互換優先）
+  - `false`: cap判定は `deliveredAt` のみで集計する（性能優先）
 
 操作手順:
 1) status で現行値を確認
 2) desired cap を入力して plan
 3) set（confirmToken 必須）
 4) trace search で `system_config.plan` / `system_config.set` を確認
+
+運用推奨:
+1) 先に `Delivery deliveredAt Backfill` を実行し、`fixableCount=0` まで補完
+2) その後 `deliveryCountLegacyFallback=false` に切り替える
+3) 問題があれば `true` に戻す（即時ロールバック）
 
 ブロック時の観測:
 - Composer: `notifications.send.execute` / `reason=notification_cap_blocked`

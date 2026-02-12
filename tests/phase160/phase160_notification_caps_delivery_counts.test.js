@@ -53,8 +53,17 @@ test('phase160: delivery count uses deliveredAt and falls back to legacy sentAt'
   const byUser = await deliveriesRepo.countDeliveredByUserSince('U1', since);
   const byCategory = await deliveriesRepo.countDeliveredByUserCategorySince('U1', 'DEADLINE_REQUIRED', since);
   const byOtherCategory = await deliveriesRepo.countDeliveredByUserCategorySince('U1', 'IMMEDIATE_ACTION', since);
+  const byUserDeliveredAtOnly = await deliveriesRepo.countDeliveredByUserSince('U1', since, { includeLegacyFallback: false });
+  const byCategoryDeliveredAtOnly = await deliveriesRepo.countDeliveredByUserCategorySince(
+    'U1',
+    'DEADLINE_REQUIRED',
+    since,
+    { includeLegacyFallback: false }
+  );
 
   assert.strictEqual(byUser, 2);
   assert.strictEqual(byCategory, 2);
   assert.strictEqual(byOtherCategory, 0);
+  assert.strictEqual(byUserDeliveredAtOnly, 1);
+  assert.strictEqual(byCategoryDeliveredAtOnly, 1);
 });

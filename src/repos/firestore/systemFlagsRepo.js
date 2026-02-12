@@ -22,6 +22,12 @@ function normalizeNotificationPreset(value) {
   return null;
 }
 
+function normalizeDeliveryCountLegacyFallback(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 async function getKillSwitch() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -103,6 +109,25 @@ async function setNotificationCaps(notificationCaps) {
   return { id: DOC_ID, notificationCaps: normalized };
 }
 
+async function getDeliveryCountLegacyFallback() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return true;
+  const data = snap.data() || {};
+  const normalized = normalizeDeliveryCountLegacyFallback(data.deliveryCountLegacyFallback);
+  return normalized === null ? true : normalized;
+}
+
+async function setDeliveryCountLegacyFallback(deliveryCountLegacyFallback) {
+  const normalized = normalizeDeliveryCountLegacyFallback(deliveryCountLegacyFallback);
+  if (normalized === null) throw new Error('invalid deliveryCountLegacyFallback');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ deliveryCountLegacyFallback: normalized }, { merge: true });
+  return { id: DOC_ID, deliveryCountLegacyFallback: normalized };
+}
+
 module.exports = {
   getKillSwitch,
   setKillSwitch,
@@ -111,5 +136,7 @@ module.exports = {
   getNotificationPreset,
   setNotificationPreset,
   getNotificationCaps,
-  setNotificationCaps
+  setNotificationCaps,
+  getDeliveryCountLegacyFallback,
+  setDeliveryCountLegacyFallback
 };

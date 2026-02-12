@@ -101,6 +101,7 @@ test('security: system config set requires valid confirmToken and writes audit o
     perCategoryWeeklyCap: null,
     quietHours: null
   });
+  assert.strictEqual(plan.deliveryCountLegacyFallback, true);
 
   // Set with tampered token.
   const bad = await httpRequest({

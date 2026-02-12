@@ -20,8 +20,10 @@ test('phase160: servicePhase/preset getters return null when unset', async () =>
   const servicePhase = await systemFlagsRepo.getServicePhase();
   const preset = await systemFlagsRepo.getNotificationPreset();
   const notificationCaps = await systemFlagsRepo.getNotificationCaps();
+  const deliveryCountLegacyFallback = await systemFlagsRepo.getDeliveryCountLegacyFallback();
   assert.strictEqual(servicePhase, null);
   assert.strictEqual(preset, null);
+  assert.strictEqual(deliveryCountLegacyFallback, true);
   assert.deepStrictEqual(notificationCaps, {
     perUserWeeklyCap: null,
     perUserDailyCap: null,
@@ -34,8 +36,10 @@ test('phase160: servicePhase/preset setters validate and persist', async () => {
   await systemFlagsRepo.setServicePhase(2);
   await systemFlagsRepo.setNotificationPreset('b');
   await systemFlagsRepo.setNotificationCaps({ perUserWeeklyCap: 3 });
+  await systemFlagsRepo.setDeliveryCountLegacyFallback(false);
   assert.strictEqual(await systemFlagsRepo.getServicePhase(), 2);
   assert.strictEqual(await systemFlagsRepo.getNotificationPreset(), 'B');
+  assert.strictEqual(await systemFlagsRepo.getDeliveryCountLegacyFallback(), false);
   assert.deepStrictEqual(await systemFlagsRepo.getNotificationCaps(), {
     perUserWeeklyCap: 3,
     perUserDailyCap: null,
@@ -47,8 +51,10 @@ test('phase160: servicePhase/preset setters validate and persist', async () => {
   await systemFlagsRepo.setServicePhase(null);
   await systemFlagsRepo.setNotificationPreset(null);
   await systemFlagsRepo.setNotificationCaps({ perUserWeeklyCap: null });
+  await systemFlagsRepo.setDeliveryCountLegacyFallback(true);
   assert.strictEqual(await systemFlagsRepo.getServicePhase(), null);
   assert.strictEqual(await systemFlagsRepo.getNotificationPreset(), null);
+  assert.strictEqual(await systemFlagsRepo.getDeliveryCountLegacyFallback(), true);
   assert.deepStrictEqual(await systemFlagsRepo.getNotificationCaps(), {
     perUserWeeklyCap: null,
     perUserDailyCap: null,
@@ -62,4 +68,5 @@ test('phase160: servicePhase/preset setters validate and persist', async () => {
   await assert.rejects(() => systemFlagsRepo.setNotificationPreset('Z'));
   await assert.rejects(() => systemFlagsRepo.setNotificationCaps({ perUserWeeklyCap: 0 }));
   await assert.rejects(() => systemFlagsRepo.setNotificationCaps({ perUserWeeklyCap: 1000 }));
+  await assert.rejects(() => systemFlagsRepo.setDeliveryCountLegacyFallback('false'));
 });
