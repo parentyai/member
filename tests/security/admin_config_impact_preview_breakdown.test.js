@@ -99,3 +99,59 @@ test('security: system config impactPreview includes cap breakdown fields', asyn
   assert.ok(json.impactPreview.blockedByCategory);
   assert.ok(json.impactPreview.blockedByReason);
 });
+
+test('security: system config plan succeeds when notificationCaps are all null', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test_confirm_secret';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = prevSecret;
+  });
+
+  const res = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: {
+      'x-admin-token': 'test_admin_token',
+      'x-actor': 'admin_master',
+      'x-trace-id': 'TRACE_CFG_IMPACT_NULL_CAPS',
+      'content-type': 'application/json; charset=utf-8'
+    },
+    body: JSON.stringify({
+      servicePhase: null,
+      notificationPreset: null,
+      notificationCaps: {
+        perUserWeeklyCap: null,
+        perUserDailyCap: null,
+        perCategoryWeeklyCap: null,
+        quietHours: null
+      }
+    })
+  });
+
+  assert.strictEqual(res.status, 200);
+  const json = JSON.parse(res.body);
+  assert.strictEqual(json.ok, true);
+  assert.strictEqual(json.impactPreview.sampledUsers, 0);
+  assert.strictEqual(json.impactPreview.sampledEvaluations, 0);
+  assert.deepStrictEqual(json.impactPreview.blockedByCapType, {});
+  assert.deepStrictEqual(json.impactPreview.blockedByCategory, {});
+  assert.deepStrictEqual(json.impactPreview.blockedByReason, {});
+});
