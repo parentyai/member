@@ -89,11 +89,15 @@ Workload Identity Provider の `attributeCondition` が `push(main)` のみ許�
 
 ### prod
 - Trigger: `workflow_dispatch` with `target_environment=prod`
+- Additional guard: `confirm_production=DEPLOY_PROD` を明示入力
 - Job environment: `prod`
 - 期待:
   - `dry-run` success
   - 承認後に `deploy*` 実行
   - stg 環境へ影響しない
+
+実行例:
+- `gh workflow run deploy.yml --ref main -f target_environment=prod -f confirm_production=DEPLOY_PROD`
 
 ## Verification
 1) Actions run:
