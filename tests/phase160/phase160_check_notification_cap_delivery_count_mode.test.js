@@ -39,3 +39,31 @@ test('phase160: checkNotificationCap defaults includeLegacyFallback=true', async
   assert.strictEqual(calls.length, 1);
   assert.deepStrictEqual(calls[0], { includeLegacyFallback: true });
 });
+
+test('phase160: checkNotificationCap skips delivery counters during active quietHours', async () => {
+  let called = false;
+  const result = await checkNotificationCap({
+    lineUserId: 'U3',
+    notificationCaps: {
+      perUserWeeklyCap: 5,
+      quietHours: { startHourUtc: 22, endHourUtc: 7 }
+    },
+    now: new Date('2026-02-11T23:00:00.000Z')
+  }, {
+    countDeliveredByUserSince: async () => {
+      called = true;
+      throw new Error('should not be called');
+    },
+    countDeliveredByUserCategorySince: async () => {
+      called = true;
+      throw new Error('should not be called');
+    }
+  });
+
+  assert.strictEqual(result.allowed, false);
+  assert.strictEqual(result.capType, 'QUIET_HOURS');
+  assert.strictEqual(result.reason, 'quiet_hours_active');
+  assert.strictEqual(called, false);
+  assert.strictEqual(result.dailyWindowStart, null);
+  assert.strictEqual(result.weeklyWindowStart, null);
+});

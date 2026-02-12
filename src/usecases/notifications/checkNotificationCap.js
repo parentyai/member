@@ -5,6 +5,7 @@ const {
   normalizeNotificationCaps,
   resolveWeeklyWindowStart,
   resolveDailyWindowStart,
+  isQuietHoursActive,
   evaluateNotificationCapsByCount
 } = require('../../domain/notificationCaps');
 
@@ -31,6 +32,21 @@ async function checkNotificationCap(params, deps) {
       { dailyWindowStart: null, weeklyWindowStart: null }
     );
   }
+
+  if (isQuietHoursActive(now, notificationCaps.quietHours)) {
+    return Object.assign(
+      evaluateNotificationCapsByCount({
+        notificationCaps,
+        now,
+        deliveredCountDaily: 0,
+        deliveredCountWeekly: 0,
+        deliveredCountCategoryWeekly: 0,
+        notificationCategory: payload.notificationCategory || null
+      }),
+      { dailyWindowStart: null, weeklyWindowStart: null }
+    );
+  }
+
   const weeklyWindowStart = resolveWeeklyWindowStart(now);
   const dailyWindowStart = resolveDailyWindowStart(now);
 
