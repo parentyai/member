@@ -28,6 +28,13 @@ function normalizeNotificationPreset(value) {
   return upper;
 }
 
+function normalizeDeliveryCountLegacyFallback(value, fallback) {
+  if (value === undefined) return fallback !== false;
+  if (value === null) return true;
+  if (typeof value !== 'boolean') throw new Error('invalid deliveryCountLegacyFallback');
+  return value;
+}
+
 function normalizeCaps(payload, fallback) {
   if (Object.prototype.hasOwnProperty.call(payload || {}, 'notificationCaps')) {
     return normalizeNotificationCaps(payload.notificationCaps);
@@ -35,7 +42,7 @@ function normalizeCaps(payload, fallback) {
   return normalizeNotificationCaps(fallback);
 }
 
-function computePlanHash(servicePhase, notificationPreset, notificationCaps) {
+function computePlanHash(servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback) {
   const caps = normalizeNotificationCaps(notificationCaps);
   const quiet = caps.quietHours
     ? `${caps.quietHours.startHourUtc}-${caps.quietHours.endHourUtc}`
@@ -46,7 +53,8 @@ function computePlanHash(servicePhase, notificationPreset, notificationCaps) {
     `perUserWeeklyCap=${caps.perUserWeeklyCap === null ? 'null' : String(caps.perUserWeeklyCap)}`,
     `perUserDailyCap=${caps.perUserDailyCap === null ? 'null' : String(caps.perUserDailyCap)}`,
     `perCategoryWeeklyCap=${caps.perCategoryWeeklyCap === null ? 'null' : String(caps.perCategoryWeeklyCap)}`,
-    `quietHours=${quiet}`
+    `quietHours=${quiet}`,
+    `deliveryCountLegacyFallback=${deliveryCountLegacyFallback === false ? 'false' : 'true'}`
   ].join(';');
   return `cfg_${crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 24)}`;
 }
@@ -146,10 +154,11 @@ async function handleStatus(req, res) {
   const requestId = resolveRequestId(req);
   const serverTime = new Date().toISOString();
 
-  const [servicePhase, notificationPreset, notificationCaps] = await Promise.all([
+  const [servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback] = await Promise.all([
     systemFlagsRepo.getServicePhase(),
     systemFlagsRepo.getNotificationPreset(),
-    systemFlagsRepo.getNotificationCaps()
+    systemFlagsRepo.getNotificationCaps(),
+    systemFlagsRepo.getDeliveryCountLegacyFallback()
   ]);
 
   await appendAuditLog({
@@ -159,11 +168,20 @@ async function handleStatus(req, res) {
     entityId: 'phase0',
     traceId,
     requestId,
-    payloadSummary: { servicePhase, notificationPreset, notificationCaps }
+    payloadSummary: { servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback }
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, serverTime, traceId, requestId, servicePhase, notificationPreset, notificationCaps }));
+  res.end(JSON.stringify({
+    ok: true,
+    serverTime,
+    traceId,
+    requestId,
+    servicePhase,
+    notificationPreset,
+    notificationCaps,
+    deliveryCountLegacyFallback
+  }));
 }
 
 async function handlePlan(req, res, body) {
@@ -177,18 +195,26 @@ async function handlePlan(req, res, body) {
   let servicePhase;
   let notificationPreset;
   let notificationCaps;
+  let deliveryCountLegacyFallback;
   try {
     servicePhase = normalizeServicePhase(payload.servicePhase);
     notificationPreset = normalizeNotificationPreset(payload.notificationPreset);
-    const currentCaps = await systemFlagsRepo.getNotificationCaps();
+    const [currentCaps, currentDeliveryCountLegacyFallback] = await Promise.all([
+      systemFlagsRepo.getNotificationCaps(),
+      systemFlagsRepo.getDeliveryCountLegacyFallback()
+    ]);
     notificationCaps = normalizeCaps(payload, currentCaps);
+    deliveryCountLegacyFallback = normalizeDeliveryCountLegacyFallback(
+      payload.deliveryCountLegacyFallback,
+      currentDeliveryCountLegacyFallback
+    );
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'invalid', traceId }));
     return;
   }
 
-  const planHash = computePlanHash(servicePhase, notificationPreset, notificationCaps);
+  const planHash = computePlanHash(servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback);
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
   const impactPreview = await buildImpactPreview(notificationCaps);
 
@@ -203,6 +229,7 @@ async function handlePlan(req, res, body) {
       servicePhase,
       notificationPreset,
       notificationCaps,
+      deliveryCountLegacyFallback,
       planHash,
       impactPreview: {
         sampledUsers: impactPreview.sampledUsers,
@@ -223,6 +250,7 @@ async function handlePlan(req, res, body) {
     servicePhase,
     notificationPreset,
     notificationCaps,
+    deliveryCountLegacyFallback,
     planHash,
     confirmToken,
     impactPreview
@@ -248,18 +276,31 @@ async function handleSet(req, res, body) {
   let servicePhase;
   let notificationPreset;
   let notificationCaps;
+  let deliveryCountLegacyFallback;
   try {
     servicePhase = normalizeServicePhase(payload.servicePhase);
     notificationPreset = normalizeNotificationPreset(payload.notificationPreset);
-    const currentCaps = await systemFlagsRepo.getNotificationCaps();
+    const [currentCaps, currentDeliveryCountLegacyFallback] = await Promise.all([
+      systemFlagsRepo.getNotificationCaps(),
+      systemFlagsRepo.getDeliveryCountLegacyFallback()
+    ]);
     notificationCaps = normalizeCaps(payload, currentCaps);
+    deliveryCountLegacyFallback = normalizeDeliveryCountLegacyFallback(
+      payload.deliveryCountLegacyFallback,
+      currentDeliveryCountLegacyFallback
+    );
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'invalid', traceId }));
     return;
   }
 
-  const expectedPlanHash = computePlanHash(servicePhase, notificationPreset, notificationCaps);
+  const expectedPlanHash = computePlanHash(
+    servicePhase,
+    notificationPreset,
+    notificationCaps,
+    deliveryCountLegacyFallback
+  );
   if (planHash !== expectedPlanHash) {
     await appendAuditLog({
       actor,
@@ -294,7 +335,8 @@ async function handleSet(req, res, body) {
   await Promise.all([
     systemFlagsRepo.setServicePhase(servicePhase),
     systemFlagsRepo.setNotificationPreset(notificationPreset),
-    systemFlagsRepo.setNotificationCaps(notificationCaps)
+    systemFlagsRepo.setNotificationCaps(notificationCaps),
+    systemFlagsRepo.setDeliveryCountLegacyFallback(deliveryCountLegacyFallback)
   ]);
 
   await appendAuditLog({
@@ -304,7 +346,7 @@ async function handleSet(req, res, body) {
     entityId: 'phase0',
     traceId,
     requestId,
-    payloadSummary: { ok: true, servicePhase, notificationPreset, notificationCaps }
+    payloadSummary: { ok: true, servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback }
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -315,7 +357,8 @@ async function handleSet(req, res, body) {
     requestId,
     servicePhase,
     notificationPreset,
-    notificationCaps
+    notificationCaps,
+    deliveryCountLegacyFallback
   }));
 }
 

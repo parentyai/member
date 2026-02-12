@@ -254,6 +254,7 @@ async function executeSegmentSend(params, deps) {
   let servicePhase = null;
   let notificationPreset = null;
   let notificationCaps = normalizeNotificationCaps(null);
+  let deliveryCountLegacyFallback = true;
   try {
     const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
     const getNotificationPreset = deps && deps.getNotificationPreset
@@ -271,6 +272,14 @@ async function executeSegmentSend(params, deps) {
     servicePhase = null;
     notificationPreset = null;
     notificationCaps = normalizeNotificationCaps(null);
+  }
+  try {
+    const getDeliveryCountLegacyFallback = deps && deps.getDeliveryCountLegacyFallback
+      ? deps.getDeliveryCountLegacyFallback
+      : systemFlagsRepo.getDeliveryCountLegacyFallback;
+    deliveryCountLegacyFallback = await getDeliveryCountLegacyFallback();
+  } catch (_err) {
+    deliveryCountLegacyFallback = true;
   }
   const policyResult = evaluateNotificationPolicy({
     servicePhase,
@@ -441,6 +450,7 @@ async function executeSegmentSend(params, deps) {
       lineUserId,
       now,
       notificationCaps,
+      deliveryCountLegacyFallback,
       notificationCategory: notificationCategory || null
     }, {
       countDeliveredByUserSince: deps && deps.countDeliveredByUserSince

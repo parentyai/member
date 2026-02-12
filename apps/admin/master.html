@@ -167,6 +167,13 @@
         <label>notificationCaps.quietHours.endHourUtc（null = clear）</label>
         <input id="config-notification-quiet-end" placeholder="0-23" />
       </div>
+      <div>
+        <label>deliveryCountLegacyFallback（false = deliveredAtのみで集計）</label>
+        <select id="config-delivery-count-legacy-fallback">
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
     </div>
     <div class="note">
       <button id="config-plan" type="button">plan</button>
@@ -571,6 +578,10 @@
         };
       }
 
+      function parseDeliveryCountLegacyFallback(value) {
+        return String(value || '').trim().toLowerCase() !== 'false';
+      }
+
       function parseBackfillLimit(value) {
         const trimmed = String(value || '').trim();
         if (!trimmed) return { ok: true, value: 200 };
@@ -610,6 +621,8 @@
             : '';
           document.getElementById('config-notification-quiet-start').value = quietStart;
           document.getElementById('config-notification-quiet-end').value = quietEnd;
+          const legacyFallback = data.deliveryCountLegacyFallback === false ? 'false' : 'true';
+          document.getElementById('config-delivery-count-legacy-fallback').value = legacyFallback;
         }
       }
 
@@ -621,11 +634,14 @@
           document.getElementById('config-plan-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
           return;
         }
+        const deliveryCountLegacyFallback = parseDeliveryCountLegacyFallback(
+          document.getElementById('config-delivery-count-legacy-fallback').value
+        );
         const notificationCaps = capParsed.value;
         const res = await fetch('/api/admin/os/config/plan', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
-          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps })
+          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
@@ -643,17 +659,27 @@
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
           return;
         }
+        const deliveryCountLegacyFallback = parseDeliveryCountLegacyFallback(
+          document.getElementById('config-delivery-count-legacy-fallback').value
+        );
         const notificationCaps = capParsed.value;
         if (!configPlanHash || !configConfirmToken) {
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
           return;
         }
-        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}`); // eslint-disable-line no-alert
+        const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}\ndeliveryCountLegacyFallback=${deliveryCountLegacyFallback}`); // eslint-disable-line no-alert
         if (!ok) return;
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
-          body: JSON.stringify({ servicePhase, notificationPreset, notificationCaps, planHash: configPlanHash, confirmToken: configConfirmToken })
+          body: JSON.stringify({
+            servicePhase,
+            notificationPreset,
+            notificationCaps,
+            deliveryCountLegacyFallback,
+            planHash: configPlanHash,
+            confirmToken: configConfirmToken
+          })
         });
         const data = await jsonOrText(res);
         document.getElementById('config-set-result').textContent = JSON.stringify(data, null, 2);

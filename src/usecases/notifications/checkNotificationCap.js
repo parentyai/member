@@ -40,21 +40,24 @@ async function checkNotificationCap(params, deps) {
   const countDeliveredByUserCategorySince = deps && deps.countDeliveredByUserCategorySince
     ? deps.countDeliveredByUserCategorySince
     : deliveriesRepo.countDeliveredByUserCategorySince;
+  const includeLegacyFallback = payload.deliveryCountLegacyFallback !== false;
+  const countOptions = { includeLegacyFallback };
 
   let deliveredCountWeekly = 0;
   let deliveredCountDaily = 0;
   let deliveredCountCategoryWeekly = 0;
   if (notificationCaps.perUserWeeklyCap !== null) {
-    deliveredCountWeekly = await countDeliveredByUserSince(lineUserId, weeklyWindowStart);
+    deliveredCountWeekly = await countDeliveredByUserSince(lineUserId, weeklyWindowStart, countOptions);
   }
   if (notificationCaps.perUserDailyCap !== null) {
-    deliveredCountDaily = await countDeliveredByUserSince(lineUserId, dailyWindowStart);
+    deliveredCountDaily = await countDeliveredByUserSince(lineUserId, dailyWindowStart, countOptions);
   }
   if (notificationCaps.perCategoryWeeklyCap !== null && payload.notificationCategory) {
     deliveredCountCategoryWeekly = await countDeliveredByUserCategorySince(
       lineUserId,
       String(payload.notificationCategory),
-      weeklyWindowStart
+      weeklyWindowStart,
+      countOptions
     );
   }
 

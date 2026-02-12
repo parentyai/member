@@ -15,6 +15,7 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
   - `notificationCaps.perUserDailyCap`（number | null）
   - `notificationCaps.perCategoryWeeklyCap`（number | null）
   - `notificationCaps.quietHours`（object | null, UTC）
+  - `deliveryCountLegacyFallback`（boolean, default true）
 - `send_retry_queue`（失敗送信の再実行キュー）
 
 ## Draft / Active Rules (SSOT)

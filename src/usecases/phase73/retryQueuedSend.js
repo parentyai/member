@@ -76,6 +76,7 @@ async function retryQueuedSend(params, deps) {
   let servicePhase = null;
   let notificationPreset = null;
   let notificationCaps = normalizeNotificationCaps(null);
+  let deliveryCountLegacyFallback = true;
   try {
     const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
     const getNotificationPreset = deps && deps.getNotificationPreset
@@ -93,6 +94,14 @@ async function retryQueuedSend(params, deps) {
     servicePhase = null;
     notificationPreset = null;
     notificationCaps = normalizeNotificationCaps(null);
+  }
+  try {
+    const getDeliveryCountLegacyFallback = deps && deps.getDeliveryCountLegacyFallback
+      ? deps.getDeliveryCountLegacyFallback
+      : systemFlagsRepo.getDeliveryCountLegacyFallback;
+    deliveryCountLegacyFallback = await getDeliveryCountLegacyFallback();
+  } catch (_err) {
+    deliveryCountLegacyFallback = true;
   }
   const policyResult = evaluateNotificationPolicy({
     servicePhase,
@@ -174,6 +183,7 @@ async function retryQueuedSend(params, deps) {
     lineUserId: snapshot.lineUserId,
     now,
     notificationCaps,
+    deliveryCountLegacyFallback,
     notificationCategory
   }, {
     countDeliveredByUserSince: deps && deps.countDeliveredByUserSince

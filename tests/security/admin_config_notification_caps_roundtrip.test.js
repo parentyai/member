@@ -71,7 +71,8 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
     body: JSON.stringify({
       servicePhase: 2,
       notificationPreset: 'B',
-      notificationCaps: { perUserWeeklyCap: 3 }
+      notificationCaps: { perUserWeeklyCap: 3 },
+      deliveryCountLegacyFallback: false
     })
   });
   assert.strictEqual(planRes.status, 200);
@@ -83,6 +84,7 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
     perCategoryWeeklyCap: null,
     quietHours: null
   });
+  assert.strictEqual(plan.deliveryCountLegacyFallback, false);
 
   const setRes = await httpRequest({
     port,
@@ -93,6 +95,7 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
       servicePhase: 2,
       notificationPreset: 'B',
       notificationCaps: { perUserWeeklyCap: 3 },
+      deliveryCountLegacyFallback: false,
       planHash: plan.planHash,
       confirmToken: plan.confirmToken
     })
@@ -106,6 +109,7 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
     perCategoryWeeklyCap: null,
     quietHours: null
   });
+  assert.strictEqual(setJson.deliveryCountLegacyFallback, false);
 
   // plan/set without notificationCaps should keep current cap.
   const planRes2 = await httpRequest({
@@ -127,6 +131,7 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
     perCategoryWeeklyCap: null,
     quietHours: null
   });
+  assert.strictEqual(plan2.deliveryCountLegacyFallback, false);
 
   const setRes2 = await httpRequest({
     port,
@@ -149,4 +154,5 @@ test('security: system config notificationCaps roundtrip and fallback', async (t
     perCategoryWeeklyCap: null,
     quietHours: null
   });
+  assert.strictEqual(setJson2.deliveryCountLegacyFallback, false);
 });

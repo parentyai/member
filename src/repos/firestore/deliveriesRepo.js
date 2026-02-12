@@ -64,6 +64,13 @@ function buildDeliveredBaseQuery(db, lineUserId, notificationCategory) {
   return query;
 }
 
+function normalizeCountOptions(options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  return {
+    includeLegacyFallback: payload.includeLegacyFallback !== false
+  };
+}
+
 async function queryCount(query) {
   if (query && typeof query.count === 'function') {
     try {
@@ -91,13 +98,26 @@ async function countDeliveredSinceFallback({ db, lineUserId, sinceDate, notifica
   return count;
 }
 
-async function countDeliveredSinceOptimized({ db, lineUserId, sinceDate, notificationCategory }) {
+async function countDeliveredAtSinceFallback({ db, lineUserId, sinceDate, notificationCategory }) {
+  const snap = await buildDeliveredBaseQuery(db, lineUserId, notificationCategory).get();
+  let count = 0;
+  for (const doc of snap.docs) {
+    const record = doc.data() || {};
+    const deliveredAt = toDate(record.deliveredAt);
+    if (!deliveredAt) continue;
+    if (deliveredAt.getTime() >= sinceDate.getTime()) count += 1;
+  }
+  return count;
+}
+
+async function countDeliveredSinceOptimized({ db, lineUserId, sinceDate, notificationCategory, includeLegacyFallback }) {
   const sinceIso = toIso(sinceDate);
   if (!sinceIso) throw new Error('sinceAt required');
 
   const base = buildDeliveredBaseQuery(db, lineUserId, notificationCategory);
   const deliveredAtQuery = base.where('deliveredAt', '>=', sinceIso);
   const deliveredAtCount = await queryCount(deliveredAtQuery);
+  if (!includeLegacyFallback) return deliveredAtCount;
 
   // Legacy compatibility: old rows may not have deliveredAt but still have sentAt.
   const legacySnap = await base.where('sentAt', '>=', sinceIso).get();
@@ -224,20 +244,30 @@ async function listDeliveriesByNotificationId(notificationId) {
   return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
-async function countDeliveredByUserSince(lineUserId, sinceAt) {
+async function countDeliveredByUserSince(lineUserId, sinceAt, options) {
   if (!lineUserId) throw new Error('lineUserId required');
   const sinceDate = toDate(sinceAt);
   if (!sinceDate) throw new Error('sinceAt required');
+  const countOptions = normalizeCountOptions(options);
   const db = getDb();
   try {
     return await countDeliveredSinceOptimized({
       db,
       lineUserId,
       sinceDate,
-      notificationCategory: null
+      notificationCategory: null,
+      includeLegacyFallback: countOptions.includeLegacyFallback
     });
   } catch (err) {
     if (!isIndexError(err)) throw err;
+    if (!countOptions.includeLegacyFallback) {
+      return countDeliveredAtSinceFallback({
+        db,
+        lineUserId,
+        sinceDate,
+        notificationCategory: null
+      });
+    }
     return countDeliveredSinceFallback({
       db,
       lineUserId,
@@ -247,22 +277,32 @@ async function countDeliveredByUserSince(lineUserId, sinceAt) {
   }
 }
 
-async function countDeliveredByUserCategorySince(lineUserId, notificationCategory, sinceAt) {
+async function countDeliveredByUserCategorySince(lineUserId, notificationCategory, sinceAt, options) {
   if (!lineUserId) throw new Error('lineUserId required');
   const category = typeof notificationCategory === 'string' ? notificationCategory.trim().toUpperCase() : '';
   if (!category) throw new Error('notificationCategory required');
   const sinceDate = toDate(sinceAt);
   if (!sinceDate) throw new Error('sinceAt required');
+  const countOptions = normalizeCountOptions(options);
   const db = getDb();
   try {
     return await countDeliveredSinceOptimized({
       db,
       lineUserId,
       sinceDate,
-      notificationCategory: category
+      notificationCategory: category,
+      includeLegacyFallback: countOptions.includeLegacyFallback
     });
   } catch (err) {
     if (!isIndexError(err)) throw err;
+    if (!countOptions.includeLegacyFallback) {
+      return countDeliveredAtSinceFallback({
+        db,
+        lineUserId,
+        sinceDate,
+        notificationCategory: category
+      });
+    }
     return countDeliveredSinceFallback({
       db,
       lineUserId,
