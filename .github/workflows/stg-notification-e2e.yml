@@ -1,0 +1,185 @@
+name: STG notification e2e checklist
+
+on:
+  workflow_dispatch:
+    inputs:
+      segment_template_key:
+        description: "Active template key for segment scenario"
+        required: true
+        type: string
+      composer_notification_id:
+        description: "Active notificationId for composer cap scenario"
+        required: true
+        type: string
+      retry_queue_id:
+        description: "Optional pending retry queue id (auto-detect when empty)"
+        required: false
+        default: ""
+        type: string
+      actor:
+        description: "x-actor used in audit logs"
+        required: false
+        default: "ops_stg_e2e"
+        type: string
+      route_error_limit:
+        description: "Max route_error log lines to fetch per scenario (1-200)"
+        required: false
+        default: "20"
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+
+jobs:
+  stg-e2e:
+    name: stg-e2e
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: stg-notification-e2e
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate required workflow variables
+        run: |
+          set -euo pipefail
+          REQUIRED_VARS=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            SERVICE_NAME
+            GCP_WIF_PROVIDER
+            DEPLOY_SA_EMAIL
+          )
+          MISSING=0
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Validate required secret exists
+        run: |
+          set -euo pipefail
+          SECRET_NAME="ADMIN_OS_TOKEN"
+          if gcloud secrets describe "$SECRET_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --format='value(name)' >/dev/null 2>&1; then
+            echo "Secret found: ${SECRET_NAME}"
+          else
+            echo "::error title=Missing Secret Manager secret::${SECRET_NAME} is missing or inaccessible in ${GCP_PROJECT_ID}"
+            exit 1
+          fi
+
+      - name: Read ADMIN_OS_TOKEN from Secret Manager
+        run: |
+          set -euo pipefail
+          TOKEN="$(gcloud secrets versions access latest --secret=ADMIN_OS_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::ADMIN_OS_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "ADMIN_OS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run stg notification e2e checklist
+        id: run_e2e
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/stg-notification-e2e
+          RUN_TS="$(date -u +%Y%m%d%H%M%S)"
+          JSON_OUT="artifacts/stg-notification-e2e/stg-notification-e2e-${RUN_TS}.json"
+          MD_OUT="artifacts/stg-notification-e2e/stg-notification-e2e-${RUN_TS}.md"
+          echo "json_out=$JSON_OUT" >> "$GITHUB_OUTPUT"
+          echo "md_out=$MD_OUT" >> "$GITHUB_OUTPUT"
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --port 18080 >/tmp/member-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18080/admin/login" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18080 did not become ready"
+            tail -n 80 /tmp/member-proxy.log || true
+            exit 1
+          fi
+
+          ARGS=(
+            --base-url "http://127.0.0.1:18080"
+            --admin-token "$ADMIN_OS_TOKEN"
+            --actor "${{ github.event.inputs.actor }}"
+            --project-id "$GCP_PROJECT_ID"
+            --fetch-route-errors
+            --fail-on-route-errors
+            --route-error-limit "${{ github.event.inputs.route_error_limit }}"
+            --segment-template-key "${{ github.event.inputs.segment_template_key }}"
+            --composer-notification-id "${{ github.event.inputs.composer_notification_id }}"
+            --out-file "$JSON_OUT"
+            --md-out "$MD_OUT"
+          )
+
+          if [ -n "${{ github.event.inputs.retry_queue_id }}" ]; then
+            ARGS+=(--retry-queue-id "${{ github.event.inputs.retry_queue_id }}")
+          fi
+
+          npm run ops:stg-e2e -- "${ARGS[@]}"
+
+      - name: Upload stg e2e artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stg-notification-e2e-${{ github.run_id }}
+          path: artifacts/stg-notification-e2e
+          if-no-files-found: warn
+
+      - name: Append markdown summary to job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          MD_OUT='${{ steps.run_e2e.outputs.md_out }}'
+          if [ -n "$MD_OUT" ] && [ -f "$MD_OUT" ]; then
+            cat "$MD_OUT" >> "$GITHUB_STEP_SUMMARY"
+          fi

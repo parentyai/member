@@ -28,6 +28,21 @@ npm run ops:stg-e2e -- \
 - 既定で automation mode が `EXECUTE` でない場合は一時的に切替えて終了時に復元する
 - Kill Switch と system config（quietHours）はシナリオ内で一時変更し、終了時に復元する
 
+## Recommended Command (GitHub Actions)
+ローカル実行が難しい場合は workflow_dispatch で同じ固定順チェックを実行する。
+
+```bash
+gh workflow run stg-notification-e2e.yml --ref main \
+  -f segment_template_key=<ACTIVE_TEMPLATE_KEY> \
+  -f composer_notification_id=<ACTIVE_NOTIFICATION_ID> \
+  -f actor=ops_stg_e2e \
+  -f route_error_limit=20
+```
+
+- 実行 workflow: `.github/workflows/stg-notification-e2e.yml`
+- 実行環境: `stg`
+- 収集物: `stg-notification-e2e-<run_id>` artifact（JSON/Markdown）
+
 ### Required Inputs
 - `ADMIN_OS_TOKEN`: 管理APIトークン
 - `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー
