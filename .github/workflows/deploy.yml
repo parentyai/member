@@ -17,6 +17,11 @@ on:
         options:
           - stg
           - prod
+      confirm_production:
+        description: "Required when target_environment=prod (type: DEPLOY_PROD)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -92,6 +97,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate production confirmation
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment == 'prod' }}
+        run: |
+          if [ "${{ github.event.inputs.confirm_production }}" != "DEPLOY_PROD" ]; then
+            echo "confirm_production must be DEPLOY_PROD when target_environment=prod"
+            exit 1
+          fi
 
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
