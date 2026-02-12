@@ -44,11 +44,30 @@ function parseJson(body, res) {
   }
 }
 
+function sanitizeLogToken(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/\s+/g, '_').slice(0, 512);
+}
+
+function logRouteError(routeId, err, context) {
+  const route = sanitizeLogToken(routeId || 'unknown');
+  const traceId = sanitizeLogToken(context && context.traceId ? context.traceId : '');
+  const requestId = sanitizeLogToken(context && context.requestId ? context.requestId : '');
+  const actor = sanitizeLogToken(context && context.actor ? context.actor : '');
+  const name = sanitizeLogToken(err && err.name ? err.name : 'Error');
+  const message = sanitizeLogToken(err && err.message ? err.message : 'error');
+  const parts = [`[route_error] route=${route}`, `name=${name}`, `message=${message}`];
+  if (traceId) parts.push(`traceId=${traceId}`);
+  if (requestId) parts.push(`requestId=${requestId}`);
+  if (actor) parts.push(`actor=${actor}`);
+  console.error(parts.join(' '));
+}
+
 module.exports = {
   resolveActor,
   requireActor,
   resolveRequestId,
   resolveTraceId,
-  parseJson
+  parseJson,
+  logRouteError
 };
-

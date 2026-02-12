@@ -2,7 +2,7 @@
 
 const templatesRepo = require('../repos/firestore/notificationTemplatesRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
-const { resolveActor, resolveRequestId, resolveTraceId } = require('./admin/osContext');
+const { resolveActor, resolveRequestId, resolveTraceId, logRouteError } = require('./admin/osContext');
 
 function parseJson(body, res) {
   try {
@@ -14,7 +14,7 @@ function parseJson(body, res) {
   }
 }
 
-function handleError(res, err) {
+function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required') || message.includes('invalid') || message.includes('exists')
     || message.includes('not found') || message.includes('editable')) {
@@ -22,8 +22,11 @@ function handleError(res, err) {
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
   }
+  const traceId = context && context.traceId ? context.traceId : null;
+  const requestId = context && context.requestId ? context.requestId : null;
+  logRouteError('phase61.templates', err, context);
   res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error' }));
+  res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
 }
 
 function parsePath(pathname) {
@@ -147,7 +150,7 @@ async function handleTemplates(req, res, body, pathname) {
     res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'not found' }));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 

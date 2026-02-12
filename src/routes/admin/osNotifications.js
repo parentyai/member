@@ -6,9 +6,9 @@ const { approveNotification } = require('../../usecases/adminOs/approveNotificat
 const { previewNotification } = require('../../usecases/adminOs/previewNotification');
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../usecases/adminOs/executeNotificationSend');
-const { requireActor, resolveRequestId, resolveTraceId, parseJson } = require('./osContext');
+const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
-function handleError(res, err) {
+function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required') || message.includes('invalid') || message.includes('not editable')
     || message.includes('not active') || message.includes('not found') || message.includes('no recipients')) {
@@ -16,8 +16,11 @@ function handleError(res, err) {
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
   }
+  const traceId = context && context.traceId ? context.traceId : null;
+  const requestId = context && context.requestId ? context.requestId : null;
+  logRouteError('admin.os_notifications', err, context);
   res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error' }));
+  res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
 }
 
 function requireTargetLimit(payload) {
@@ -49,7 +52,7 @@ async function handleDraft(req, res, body) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
@@ -74,7 +77,7 @@ async function handlePreview(req, res, body) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
@@ -99,7 +102,7 @@ async function handleApprove(req, res, body) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
@@ -120,7 +123,7 @@ async function handleSendPlan(req, res, body) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
@@ -143,7 +146,7 @@ async function handleSendExecute(req, res, body, deps) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
