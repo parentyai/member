@@ -2,13 +2,18 @@
 
 const crypto = require('crypto');
 
+const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
-const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
+const {
+  normalizeNotificationCaps,
+  resolveWeeklyWindowStart,
+  resolveDailyWindowStart,
+  evaluateNotificationCapsByCount
+} = require('../../domain/notificationCaps');
 const { NOTIFICATION_CATEGORIES } = require('../../domain/notificationCategory');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { checkNotificationCap } = require('../../usecases/notifications/checkNotificationCap');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson } = require('./osContext');
 
 function normalizeServicePhase(value) {
@@ -68,8 +73,39 @@ function confirmTokenData(planHash) {
   };
 }
 
-async function buildImpactPreview(notificationCaps) {
+function sumCounterValues(counter) {
+  let total = 0;
+  for (const value of Object.values(counter || {})) {
+    if (!Number.isFinite(value)) continue;
+    total += value;
+  }
+  return total;
+}
+
+function pickTopCounterKey(counter) {
+  let topKey = null;
+  let topCount = -1;
+  for (const [key, value] of Object.entries(counter || {})) {
+    const count = Number.isFinite(value) ? value : 0;
+    if (count > topCount) {
+      topKey = key;
+      topCount = count;
+    }
+  }
+  return topKey;
+}
+
+function toPercent(numerator, denominator) {
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return 0;
+  return Number(((numerator / denominator) * 100).toFixed(2));
+}
+
+async function buildImpactPreview(notificationCaps, options) {
   const caps = normalizeNotificationCaps(notificationCaps);
+  const opts = options && typeof options === 'object' ? options : {};
+  const includeLegacyFallback = opts.deliveryCountLegacyFallback !== false;
+  const sampleLimit = Number.isInteger(opts.sampleLimit) && opts.sampleLimit > 0 ? opts.sampleLimit : 100;
+  const now = opts.now instanceof Date ? opts.now : new Date();
   const allNull = caps.perUserWeeklyCap === null
     && caps.perUserDailyCap === null
     && caps.perCategoryWeeklyCap === null
@@ -78,18 +114,24 @@ async function buildImpactPreview(notificationCaps) {
     return {
       sampledUsers: 0,
       sampledEvaluations: 0,
+      blockedEvaluations: 0,
       estimatedBlockedUsers: 0,
+      estimatedBlockedUserRatePercent: 0,
+      blockedEvaluationRatePercent: 0,
       simulatedCategories: [],
       blockedByCapType: {},
       blockedByCategory: {},
       blockedByReason: {},
+      topBlockedCapType: null,
+      topBlockedCategory: null,
       notes: ['caps_disabled']
     };
   }
 
-  const now = new Date();
-  const sampleLimit = 100;
   const categories = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [null];
+  const categoryTargets = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [];
+  const weeklyWindowStart = resolveWeeklyWindowStart(now);
+  const dailyWindowStart = resolveDailyWindowStart(now);
   let users;
   try {
     users = await usersRepo.listUsers({ limit: sampleLimit });
@@ -97,11 +139,16 @@ async function buildImpactPreview(notificationCaps) {
     return {
       sampledUsers: 0,
       sampledEvaluations: 0,
+      blockedEvaluations: 0,
       estimatedBlockedUsers: null,
+      estimatedBlockedUserRatePercent: null,
+      blockedEvaluationRatePercent: null,
       simulatedCategories: [],
       blockedByCapType: {},
       blockedByCategory: {},
       blockedByReason: {},
+      topBlockedCapType: null,
+      topBlockedCategory: null,
       notes: ['preview_unavailable']
     };
   }
@@ -111,15 +158,50 @@ async function buildImpactPreview(notificationCaps) {
   const blockedByReason = {};
   const blockedUsers = new Set();
   let sampledEvaluations = 0;
-  let estimatedBlockedUsers = 0;
+  let skippedUsersForCountErrors = 0;
   for (const user of users) {
     const lineUserId = user && typeof user.id === 'string' ? user.id : null;
     if (!lineUserId) continue;
-    for (const category of categories) {
-      const result = await checkNotificationCap({
+    const countOptions = { includeLegacyFallback };
+    const deliveredCountByCategoryWeekly = {};
+    let deliveredCountWeekly = 0;
+    let deliveredCountDaily = 0;
+    const countTasks = [];
+    if (caps.perUserWeeklyCap !== null) {
+      countTasks.push(deliveriesRepo.countDeliveredByUserSince(lineUserId, weeklyWindowStart, countOptions)
+        .then((value) => { deliveredCountWeekly = Number.isFinite(value) ? value : 0; }));
+    }
+    if (caps.perUserDailyCap !== null) {
+      countTasks.push(deliveriesRepo.countDeliveredByUserSince(lineUserId, dailyWindowStart, countOptions)
+        .then((value) => { deliveredCountDaily = Number.isFinite(value) ? value : 0; }));
+    }
+    for (const category of categoryTargets) {
+      countTasks.push(deliveriesRepo.countDeliveredByUserCategorySince(
         lineUserId,
+        category,
+        weeklyWindowStart,
+        countOptions
+      ).then((value) => {
+        deliveredCountByCategoryWeekly[category] = Number.isFinite(value) ? value : 0;
+      }));
+    }
+    try {
+      await Promise.all(countTasks);
+    } catch (_err) {
+      skippedUsersForCountErrors += 1;
+      continue;
+    }
+
+    for (const category of categories) {
+      const deliveredCountCategoryWeekly = category
+        ? (deliveredCountByCategoryWeekly[category] || 0)
+        : 0;
+      const result = evaluateNotificationCapsByCount({
         now,
         notificationCaps: caps,
+        deliveredCountWeekly,
+        deliveredCountDaily,
+        deliveredCountCategoryWeekly,
         notificationCategory: category
       });
       sampledEvaluations += 1;
@@ -137,20 +219,30 @@ async function buildImpactPreview(notificationCaps) {
       }
     }
   }
-  estimatedBlockedUsers = blockedUsers.size;
+  const estimatedBlockedUsers = blockedUsers.size;
+  const blockedEvaluations = sumCounterValues(blockedByReason);
 
   const notes = [];
   if (caps.perCategoryWeeklyCap !== null) notes.push('perCategoryWeeklyCap preview simulates all categories');
   if (caps.quietHours) notes.push('quietHours evaluated in UTC');
+  if (!includeLegacyFallback) notes.push('deliveryCountLegacyFallback=false (deliveredAt only)');
+  if (skippedUsersForCountErrors > 0) {
+    notes.push(`users_skipped_for_count_errors=${skippedUsersForCountErrors}`);
+  }
 
   return {
     sampledUsers: users.length,
     sampledEvaluations,
+    blockedEvaluations,
     estimatedBlockedUsers,
+    estimatedBlockedUserRatePercent: toPercent(estimatedBlockedUsers, users.length),
+    blockedEvaluationRatePercent: toPercent(blockedEvaluations, sampledEvaluations),
     simulatedCategories: categories.filter((v) => typeof v === 'string'),
     blockedByCapType,
     blockedByCategory,
     blockedByReason,
+    topBlockedCapType: pickTopCounterKey(blockedByCapType),
+    topBlockedCategory: pickTopCounterKey(blockedByCategory),
     notes
   };
 }
@@ -224,7 +316,7 @@ async function handlePlan(req, res, body) {
 
   const planHash = computePlanHash(servicePhase, notificationPreset, notificationCaps, deliveryCountLegacyFallback);
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
-  const impactPreview = await buildImpactPreview(notificationCaps);
+  const impactPreview = await buildImpactPreview(notificationCaps, { deliveryCountLegacyFallback });
 
   await appendAuditLog({
     actor,
@@ -242,9 +334,13 @@ async function handlePlan(req, res, body) {
       impactPreview: {
         sampledUsers: impactPreview.sampledUsers,
         sampledEvaluations: impactPreview.sampledEvaluations,
+        blockedEvaluations: impactPreview.blockedEvaluations,
         estimatedBlockedUsers: impactPreview.estimatedBlockedUsers,
+        estimatedBlockedUserRatePercent: impactPreview.estimatedBlockedUserRatePercent,
+        blockedEvaluationRatePercent: impactPreview.blockedEvaluationRatePercent,
         blockedByCapType: impactPreview.blockedByCapType,
-        blockedByCategory: impactPreview.blockedByCategory
+        blockedByCategory: impactPreview.blockedByCategory,
+        blockedByReason: impactPreview.blockedByReason
       }
     }
   });

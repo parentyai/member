@@ -64,6 +64,10 @@
 操作手順:
 1) status で現行値を確認
 2) desired cap を入力して plan
+   - impact preview の確認ポイント:
+     - `blockedEvaluations` / `blockedEvaluationRatePercent`: 評価件数ベースのブロック見込み
+     - `estimatedBlockedUsers` / `estimatedBlockedUserRatePercent`: ユーザー単位のブロック見込み
+     - `topBlockedCapType` / `blockedByReason`: 主要ブロック要因
 3) set（confirmToken 必須）
 4) trace search で `system_config.plan` / `system_config.set` を確認
 
