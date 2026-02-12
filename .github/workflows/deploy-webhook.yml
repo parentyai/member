@@ -72,11 +72,15 @@ jobs:
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
           do
             echo "Granting roles/secretmanager.secretAccessor on ${SECRET_NAME} to ${RUNTIME_MEMBER}"
-            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
+            if gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
               --project "$GCP_PROJECT_ID" \
               --member "$RUNTIME_MEMBER" \
               --role "roles/secretmanager.secretAccessor" \
-              --quiet >/dev/null
+              --quiet >/dev/null; then
+              echo "Secret IAM updated: ${SECRET_NAME}"
+            else
+              echo "::warning title=Secret IAM update skipped::${SECRET_NAME} secret IAM update failed (insufficient permission or secret not found); continuing deploy."
+            fi
           done
 
       - name: Build image (Cloud Build)

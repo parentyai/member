@@ -47,8 +47,9 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
 - `.github/workflows/deploy-track.yml`
 
 前提:
-- deploy SA（`GCP_DEPLOY_SA`）に Secret IAM ポリシー更新権限があること
+- deploy SA（`GCP_DEPLOY_SA`）に Secret IAM ポリシー更新権限があると自動付与まで完了する
   - 例: `roles/secretmanager.admin`（または同等権限）
+  - 権限がない場合は workflow で warning を出して継続する（Cloud Run deploy が最終判定）
 
 ## OIDC / WIF Guardrail（workflow_dispatch 対応）
 `workflow_dispatch(target_environment=prod)` で OIDC が `unauthorized_client` になる場合は、
