@@ -240,3 +240,81 @@ test('security: system config impactPreview respects deliveryCountLegacyFallback
   assert.strictEqual(planLegacyFallback.impactPreview.estimatedBlockedUsers, 1);
   assert.ok(planLegacyFallback.impactPreview.blockedByCapType.PER_USER_WEEKLY >= 1);
 });
+
+test('security: system config impactPreview skips delivery counters during active quietHours', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test_confirm_secret';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  await usersRepo.createUser('U_QUIET_1', {
+    createdAt: '2026-02-10T00:00:00.000Z',
+    scenarioKey: 'A',
+    stepKey: 'THREE_MONTHS',
+    memberNumber: null
+  });
+
+  let counterCalls = 0;
+  const originalCountByUser = deliveriesRepo.countDeliveredByUserSince;
+  const originalCountByUserCategory = deliveriesRepo.countDeliveredByUserCategorySince;
+  deliveriesRepo.countDeliveredByUserSince = async () => {
+    counterCalls += 1;
+    throw new Error('delivery counters should not be called during quiet hours preview');
+  };
+  deliveriesRepo.countDeliveredByUserCategorySince = async () => {
+    counterCalls += 1;
+    throw new Error('delivery counters should not be called during quiet hours preview');
+  };
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    deliveriesRepo.countDeliveredByUserSince = originalCountByUser;
+    deliveriesRepo.countDeliveredByUserCategorySince = originalCountByUserCategory;
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = prevSecret;
+  });
+
+  const nowHour = new Date().getUTCHours();
+  const endHour = (nowHour + 1) % 24;
+  const res = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: {
+      'x-admin-token': 'test_admin_token',
+      'x-actor': 'admin_master',
+      'x-trace-id': 'TRACE_CFG_IMPACT_QUIET_HOURS_SKIP_COUNTS',
+      'content-type': 'application/json; charset=utf-8'
+    },
+    body: JSON.stringify({
+      servicePhase: 2,
+      notificationPreset: 'B',
+      notificationCaps: {
+        perUserWeeklyCap: 3,
+        quietHours: { startHourUtc: nowHour, endHourUtc: endHour }
+      }
+    })
+  });
+
+  assert.strictEqual(res.status, 200);
+  const json = JSON.parse(res.body);
+  assert.strictEqual(json.ok, true);
+  assert.strictEqual(counterCalls, 0);
+  assert.strictEqual(json.impactPreview.sampledUsers, 1);
+  assert.strictEqual(json.impactPreview.blockedEvaluations, 1);
+  assert.strictEqual(json.impactPreview.blockedByCapType.QUIET_HOURS, 1);
+  assert.strictEqual(json.impactPreview.blockedByReason.quiet_hours_active, 1);
+  assert.strictEqual(json.impactPreview.blockedByCategory.UNCATEGORIZED, 1);
+});

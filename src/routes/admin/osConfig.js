@@ -9,6 +9,7 @@ const {
   normalizeNotificationCaps,
   resolveWeeklyWindowStart,
   resolveDailyWindowStart,
+  isQuietHoursActive,
   evaluateNotificationCapsByCount
 } = require('../../domain/notificationCaps');
 const { NOTIFICATION_CATEGORIES } = require('../../domain/notificationCategory');
@@ -100,6 +101,39 @@ function toPercent(numerator, denominator) {
   return Number(((numerator / denominator) * 100).toFixed(2));
 }
 
+function buildQuietHoursImpactPreview(users, categories, includeLegacyFallback) {
+  const sampledUsers = Array.isArray(users) ? users.length : 0;
+  const categoryList = Array.isArray(categories) ? categories : [null];
+  const sampledEvaluations = sampledUsers * categoryList.length;
+  const blockedByCategory = {};
+  if (categoryList.length === 1 && categoryList[0] === null) {
+    blockedByCategory.UNCATEGORIZED = sampledEvaluations;
+  } else {
+    for (const category of categoryList) {
+      if (typeof category !== 'string') continue;
+      blockedByCategory[category] = sampledUsers;
+    }
+  }
+  const notes = ['quietHours evaluated in UTC', 'quietHours preview blocks all send attempts during active window'];
+  if (!includeLegacyFallback) notes.push('deliveryCountLegacyFallback=false (count queries skipped by quietHours)');
+
+  return {
+    sampledUsers,
+    sampledEvaluations,
+    blockedEvaluations: sampledEvaluations,
+    estimatedBlockedUsers: sampledUsers,
+    estimatedBlockedUserRatePercent: toPercent(sampledUsers, sampledUsers),
+    blockedEvaluationRatePercent: toPercent(sampledEvaluations, sampledEvaluations),
+    simulatedCategories: categoryList.filter((v) => typeof v === 'string'),
+    blockedByCapType: { QUIET_HOURS: sampledEvaluations },
+    blockedByCategory,
+    blockedByReason: { quiet_hours_active: sampledEvaluations },
+    topBlockedCapType: sampledEvaluations > 0 ? 'QUIET_HOURS' : null,
+    topBlockedCategory: pickTopCounterKey(blockedByCategory),
+    notes
+  };
+}
+
 async function buildImpactPreview(notificationCaps, options) {
   const caps = normalizeNotificationCaps(notificationCaps);
   const opts = options && typeof options === 'object' ? options : {};
@@ -130,8 +164,6 @@ async function buildImpactPreview(notificationCaps, options) {
 
   const categories = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [null];
   const categoryTargets = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [];
-  const weeklyWindowStart = resolveWeeklyWindowStart(now);
-  const dailyWindowStart = resolveDailyWindowStart(now);
   let users;
   try {
     users = await usersRepo.listUsers({ limit: sampleLimit });
@@ -152,6 +184,13 @@ async function buildImpactPreview(notificationCaps, options) {
       notes: ['preview_unavailable']
     };
   }
+
+  if (isQuietHoursActive(now, caps.quietHours)) {
+    return buildQuietHoursImpactPreview(users, categories, includeLegacyFallback);
+  }
+
+  const weeklyWindowStart = resolveWeeklyWindowStart(now);
+  const dailyWindowStart = resolveDailyWindowStart(now);
 
   const blockedByCapType = {};
   const blockedByCategory = {};
