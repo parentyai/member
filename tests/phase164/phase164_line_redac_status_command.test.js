@@ -52,10 +52,10 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
     stepKey: 'THREE_MONTHS',
     memberNumber: null,
     memberCardAsset: null,
-    ridacMembershipIdHash: 'HASH1',
-    ridacMembershipIdLast4: '3456',
-    ridacMembershipDeclaredAt: '2026-02-10T01:02:03.000Z',
-    ridacMembershipDeclaredBy: 'user'
+    redacMembershipIdHash: 'HASH1',
+    redacMembershipIdLast4: '3456',
+    redacMembershipDeclaredAt: '2026-02-10T01:02:03.000Z',
+    redacMembershipDeclaredBy: 'user'
   });
 
   // Unlinked user (no last4, has unlinkedAt)
@@ -65,10 +65,10 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
     stepKey: 'THREE_MONTHS',
     memberNumber: null,
     memberCardAsset: null,
-    ridacMembershipIdHash: null,
-    ridacMembershipIdLast4: null,
-    ridacMembershipUnlinkedAt: '2026-02-10T02:03:04.000Z',
-    ridacMembershipUnlinkedBy: 'ops'
+    redacMembershipIdHash: null,
+    redacMembershipIdLast4: null,
+    redacMembershipUnlinkedAt: '2026-02-10T02:03:04.000Z',
+    redacMembershipUnlinkedBy: 'ops'
   });
 
   // None user
@@ -78,8 +78,8 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
     stepKey: 'THREE_MONTHS',
     memberNumber: null,
     memberCardAsset: null,
-    ridacMembershipIdHash: null,
-    ridacMembershipIdLast4: null
+    redacMembershipIdHash: null,
+    redacMembershipIdLast4: null
   });
 
   const replies = [];

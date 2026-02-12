@@ -517,8 +517,8 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'POST' && (pathname === '/api/admin/ridac-membership/unlink' || pathname === '/api/admin/ridac-membership/unlink/')) {
-    const { handleRidacMembershipUnlink } = require('./routes/admin/ridacMembershipUnlink');
+  if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
+    const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -539,7 +539,7 @@ function createServer() {
     });
     (async () => {
       const body = await collectBody();
-      await handleRidacMembershipUnlink(req, res, body);
+      await handleRedacMembershipUnlink(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));
@@ -569,6 +569,7 @@ function createServer() {
       handlePlan: handleDeliveryBackfillPlan,
       handleExecute: handleDeliveryBackfillExecute
     } = require('./routes/admin/osDeliveryBackfill');
+    const { handleStatus: handleRedacStatus } = require('./routes/admin/osRedacStatus');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
     const {
       handleDraft,
@@ -666,6 +667,10 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/delivery-backfill/execute') {
         const body = await collectBody();
         await handleDeliveryBackfillExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/redac/status') {
+        await handleRedacStatus(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {

@@ -27,5 +27,5 @@
   - `readinessStatus`: `READY|NOT_READY`（未指定はALL）
   - `needsAttention`: `1` の場合、READYでもblockingありを含める
   - `hasMemberNumber`: `true|false`（未指定/`any` は無視）
-  - `ridacStatus`: `DECLARED|UNLINKED|NONE`（未指定/`any` は無視）
+  - `redacStatus`: `DECLARED|UNLINKED|NONE`（未指定/`any` は無視）
   - `limit`: number（未指定は50）

@@ -9,7 +9,7 @@ This document describes what data the Member system stores, where it is stored, 
 ## Primary Identifiers
 - `lineUserId`: LINE userId (primary key in Member)
 - `memberNumber`: user-provided number (not verified by Member)
-- `ridacMembershipIdHash`: HMAC-SHA256 of user-declared Redac membership id (not reversible without secret)
+- `redacMembershipIdHash`: HMAC-SHA256 of user-declared Redac membership id (not reversible without secret)
 
 ## Stored Data (Firestore)
 ### `users/{lineUserId}`
@@ -20,20 +20,20 @@ Typical fields (not exhaustive):
 - `memberNumber`: user-provided number (string|null)
 - `createdAt`: created timestamp
 - `memberCardAsset`: member card asset reference (object|null)
-- `ridacMembershipIdHash`: HMAC hash (string|null)
-- `ridacMembershipIdLast4`: last 4 digits only (string|null)
-- `ridacMembershipDeclaredAt`, `ridacMembershipDeclaredBy`: declaration timestamp + actor (`user`/`ops`)
-- `ridacMembershipUnlinkedAt`, `ridacMembershipUnlinkedBy`: unlink timestamp + actor (`user`/`ops`)
+- `redacMembershipIdHash`: HMAC hash (string|null)
+- `redacMembershipIdLast4`: last 4 digits only (string|null)
+- `redacMembershipDeclaredAt`, `redacMembershipDeclaredBy`: declaration timestamp + actor (`user`/`ops`)
+- `redacMembershipUnlinkedAt`, `redacMembershipUnlinkedBy`: unlink timestamp + actor (`user`/`ops`)
 
 Notes:
 - Plaintext Redac membership id is not stored.
 
-### `ridac_membership_links/{ridacMembershipIdHash}`
+### `redac_membership_links/{redacMembershipIdHash}`
 Purpose: enforce uniqueness (one Redac membership id can be linked to only one LINE user).
 
 Fields:
-- `ridacMembershipIdHash`: HMAC hash (doc id and field)
-- `ridacMembershipIdLast4`: last 4 digits only
+- `redacMembershipIdHash`: HMAC hash (doc id and field)
+- `redacMembershipIdLast4`: last 4 digits only
 - `lineUserId`: linked LINE user
 - `linkedAt`, `linkedBy`: link timestamp + actor (`user`/`ops`)
 
@@ -73,7 +73,7 @@ Examples (stg):
 - `LINE_CHANNEL_ACCESS_TOKEN`
 - `ADMIN_OS_TOKEN`
 - `TRACK_TOKEN_SECRET`
-- `RIDAC_MEMBERSHIP_ID_HMAC_SECRET`
+- `REDAC_MEMBERSHIP_ID_HMAC_SECRET`
 
 ## Logs
 ### Cloud Logging

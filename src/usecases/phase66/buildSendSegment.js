@@ -3,7 +3,7 @@
 const { listOpsConsole } = require('../phase26/listOpsConsole');
 
 const STATUS_VALUES = new Set(['READY', 'NOT_READY']);
-const RIDAC_STATUS_VALUES = new Set(['DECLARED', 'UNLINKED', 'NONE']);
+const REDAC_STATUS_VALUES = new Set(['DECLARED', 'UNLINKED', 'NONE']);
 
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -12,11 +12,11 @@ function parseStatus(value) {
   return status;
 }
 
-function parseRidacStatus(value) {
+function parseRedacStatus(value) {
   if (value === undefined || value === null || value === '') return null;
   const s = String(value).trim().toUpperCase();
   if (!s || s === 'ANY') return null;
-  if (!RIDAC_STATUS_VALUES.has(s)) throw new Error('invalid ridacStatus');
+  if (!REDAC_STATUS_VALUES.has(s)) throw new Error('invalid redacStatus');
   return s;
 }
 
@@ -57,10 +57,10 @@ function matchHasMemberNumber(item, expected) {
   return Boolean(flags.hasMemberNumber) === expected;
 }
 
-function matchRidacStatus(item, expected) {
+function matchRedacStatus(item, expected) {
   if (!expected) return true;
   const flags = item && item.memberFlags && typeof item.memberFlags === 'object' ? item.memberFlags : {};
-  const status = typeof flags.ridacStatus === 'string' ? flags.ridacStatus : 'NONE';
+  const status = typeof flags.redacStatus === 'string' ? flags.redacStatus : 'NONE';
   return status === expected;
 }
 
@@ -69,7 +69,7 @@ async function buildSendSegment(params, deps) {
   const readinessStatus = parseStatus(payload.readinessStatus);
   const onlyNeedsAttention = parseBoolean(payload.needsAttention);
   const hasMemberNumber = parseTriState(payload.hasMemberNumber);
-  const ridacStatus = parseRidacStatus(payload.ridacStatus);
+  const redacStatus = parseRedacStatus(payload.redacStatus);
   const limit = parseLimit(payload.limit);
 
   const listFn = deps && deps.listOpsConsole ? deps.listOpsConsole : listOpsConsole;
@@ -85,7 +85,7 @@ async function buildSendSegment(params, deps) {
     items = items.filter((item) => needsAttention(item));
   }
   items = items.filter((item) => matchHasMemberNumber(item, hasMemberNumber));
-  items = items.filter((item) => matchRidacStatus(item, ridacStatus));
+  items = items.filter((item) => matchRedacStatus(item, redacStatus));
   items = items.slice(0, rawLimit);
 
   const trimmed = items.map((item) => ({

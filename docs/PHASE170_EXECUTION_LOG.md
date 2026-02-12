@@ -96,7 +96,7 @@ local HEAD: `e0350964c55a86b3a454fad0660e92b207fd4f5a`
 - `GET /api/phase61/templates?status=active&limit=5`: `200` (fixed)
 - `GET /api/phase73/retry-queue?limit=10`: `200` (fixed)
 - `GET /api/phase66/segments/send-targets?limit=5`: `200` (fixed)
-- `GET /api/phase25/ops/console?lineUserId=U_TEST_RIDAC_A_20260210092935`: `200` (fixed)
+- `GET /api/phase25/ops/console?lineUserId=U_TEST_REDAC_A_20260210092935`: `200` (fixed)
 - `POST /api/phase67/send/plan`: `200` (fixed)
 - `POST /api/phase81/segment-send/dry-run`: `200` (fixed)
 - `POST /api/admin/os/notifications/send/plan`: `200` (fixed)

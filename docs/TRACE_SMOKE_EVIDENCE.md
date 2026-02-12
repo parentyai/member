@@ -173,3 +173,20 @@ counts: audits=2 decisions=1 timeline=2
 sample.auditActions: ops_decision.submit,ops_console.view
 sample.timelineActions: EXECUTE,DECIDE
 
+## TRACE_SMOKE
+UTC: 2026-02-12T03:37:58.001Z
+HEAD: 975d1e3937e55bf984a99500cb476e5491d1cced
+traceId: trace-smoke-view-1770867477960-5d370540
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_decision.submit,ops_console.view
+sample.timelineActions: EXECUTE,DECIDE
+
+## TRACE_SMOKE
+UTC: 2026-02-12T11:12:24.457Z
+HEAD: 5dbfd37cec9de5c1e7ac552a6d5b7991de4fd8f9
+traceId: trace-smoke-view-1770894744405-c6b71ec7
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_decision.submit,ops_console.view
+sample.timelineActions: EXECUTE,DECIDE

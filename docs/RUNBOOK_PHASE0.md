@@ -68,14 +68,14 @@ Steps:
    - Login with `ADMIN_OS_TOKEN`.
 3) Open:
    - `http://127.0.0.1:18080/admin/master`
-4) In "Redacクラブ会員ID（例外解除）", input `ridacMembershipId` (format `NN-NNNN`) and click `unlink`.
+4) In "Redacクラブ会員ID（例外解除）", input `redacMembershipId` (format `NN-NNNN`) and click `unlink`.
 
 Expected:
-- The unlink result returns `{ ok: true, lineUserId, ridacMembershipIdLast4 }`.
+- The unlink result returns `{ ok: true, lineUserId, redacMembershipIdLast4 }`.
 - The previously blocked user can re-declare a different id.
 
 Audit (trace):
-- Use Trace Search (`/api/admin/trace?traceId=...`) and confirm `ridac_membership.unlink_ok` exists with `ridacMembershipIdLast4` (no plaintext id).
+- Use Trace Search (`/api/admin/trace?traceId=...`) and confirm `redac_membership.unlink_ok` exists with `redacMembershipIdLast4` (no plaintext id).
 
 ## Redac Membership (LINE User Commands)
 User-side commands (LINE):
@@ -88,3 +88,24 @@ Expected replies:
 - duplicate: already registered message (no owner info exposure)
 - invalid format: example format guidance
 - usage: registration + status command guidance
+
+## Redac Health (Ops Sample Check)
+Use this when you need a quick consistency snapshot before/after unlink or config changes.
+
+Steps:
+1) Proxy the member service:
+   - `gcloud run services proxy member --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --port 18080`
+2) Open:
+   - `http://127.0.0.1:18080/admin/master`
+3) In "Redac Health（運用確認）", click `reload status`.
+
+Expected:
+- Response includes:
+  - `secretConfigured`
+  - `summary.status` (`OK` or `WARN`)
+  - `summary.issues[]`
+  - sampled counters (`usersSampled`, `linksSampled`, `orphanLinksSampled`, `missingLinksSampled`)
+- Plaintext membership id is never returned.
+
+Audit (trace):
+- Use the current traceId and confirm `redac_membership.status.view` is present in `/api/admin/trace`.

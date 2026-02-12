@@ -1,7 +1,7 @@
 # PHASE175_EXECUTION_LOG
 
 UTC: 2026-02-12T03:33:00Z
-branch: `codex/phasec-c10-ridac-ux-guidance`
+branch: `codex/phasec-c10-redac-ux-guidance`
 base: `origin/main` @ `8a450b3e96cc27472abf9a9911b824662f1ea916`
 
 ## Track Mapping
@@ -10,9 +10,9 @@ base: `origin/main` @ `8a450b3e96cc27472abf9a9911b824662f1ea916`
 - 通番とプロダクトフェーズは別軸で管理する。
 
 ## Scope
-- 外部表示・運用資料のブランド表記を `Ridac` から `Redac` へ統一。
+- 外部表示・運用資料のブランド表記を `Redac` から `Redac` へ統一。
 - 管理UIの表示語（ops/master）を `Redac` に修正。
-- 互換性維持のため、内部キー/コレクション/環境変数名（`ridac*`, `RIDAC_*`）は変更しない。
+- 互換性維持のため、内部キー/コレクション/環境変数名（`redac*`, `REDAC_*`）は変更しない。
 
 ## Code / Docs Changes
 - `apps/admin/master.html`
@@ -25,12 +25,12 @@ base: `origin/main` @ `8a450b3e96cc27472abf9a9911b824662f1ea916`
   - 説明文中のブランド表記を `Redac` に統一。
 - `docs/PHASE174_EXECUTION_LOG.md`
   - Scope表記を `Redac` に修正（履歴の文言修正）。
-- `tests/phase163/ops_readonly_includes_ridac.test.js`
+- `tests/phase163/ops_readonly_includes_redac.test.js`
   - 表示ラベル検証を `Redac（derived）` に更新。
 
 ## Local Verification
-- `node --test tests/phase163/ops_readonly_includes_ridac.test.js` PASS
-- `node --test tests/phase164/phase164_ridac_line_messages.test.js` PASS
+- `node --test tests/phase163/ops_readonly_includes_redac.test.js` PASS
+- `node --test tests/phase164/phase164_redac_line_messages.test.js` PASS
 - `npm test` PASS
 - `npm run test:trace-smoke` PASS
 - `npm run test:ops-smoke` PASS

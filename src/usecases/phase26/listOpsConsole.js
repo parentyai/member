@@ -14,20 +14,20 @@ const DEFAULT_CURSOR_SIGNING = Object.freeze({ secret: null, enforce: false, all
 function deriveMemberFlags(memberSummary) {
   const ms = memberSummary && typeof memberSummary === 'object' ? memberSummary : null;
   const member = ms && ms.member && typeof ms.member === 'object' ? ms.member : null;
-  const ridac = member && member.ridac && typeof member.ridac === 'object' ? member.ridac : null;
+  const redac = member && member.redac && typeof member.redac === 'object' ? member.redac : null;
   const hasMemberNumber = Boolean(member && member.hasMemberNumber === true);
   const memberNumberStale = Boolean(member && member.memberNumberStale === true);
-  const ridacLast4 = ridac && typeof ridac.ridacMembershipIdLast4 === 'string' ? ridac.ridacMembershipIdLast4 : null;
-  const hasRidac = Boolean(ridac && ridac.hasRidacMembership === true && ridacLast4);
-  const ridacUnlinkedAt = ridac && ridac.ridacMembershipUnlinkedAt ? String(ridac.ridacMembershipUnlinkedAt) : null;
-  let ridacStatus = 'NONE';
-  if (hasRidac) ridacStatus = 'DECLARED';
-  else if (ridacUnlinkedAt) ridacStatus = 'UNLINKED';
+  const redacLast4 = redac && typeof redac.redacMembershipIdLast4 === 'string' ? redac.redacMembershipIdLast4 : null;
+  const hasRedac = Boolean(redac && redac.hasRedacMembership === true && redacLast4);
+  const redacUnlinkedAt = redac && redac.redacMembershipUnlinkedAt ? String(redac.redacMembershipUnlinkedAt) : null;
+  let redacStatus = 'NONE';
+  if (hasRedac) redacStatus = 'DECLARED';
+  else if (redacUnlinkedAt) redacStatus = 'UNLINKED';
   return {
     hasMemberNumber,
     memberNumberStale,
-    ridacStatus,
-    ridacMembershipIdLast4: ridacLast4
+    redacStatus,
+    redacMembershipIdLast4: redacLast4
   };
 }
 

@@ -59,11 +59,11 @@ async function getMemberSummary(params) {
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const hasNumber = hasMemberNumber(user);
   const stale = isMemberNumberStale(user, nowMs);
-  const ridacLast4 = typeof user.ridacMembershipIdLast4 === 'string' ? user.ridacMembershipIdLast4 : null;
-  const ridacDeclaredAt = resolveTimestamp(user.ridacMembershipDeclaredAt);
-  const ridacDeclaredBy = user.ridacMembershipDeclaredBy === 'ops' ? 'ops' : (user.ridacMembershipDeclaredBy === 'user' ? 'user' : null);
-  const ridacUnlinkedAt = resolveTimestamp(user.ridacMembershipUnlinkedAt);
-  const ridacUnlinkedBy = user.ridacMembershipUnlinkedBy === 'ops' ? 'ops' : (user.ridacMembershipUnlinkedBy === 'user' ? 'user' : null);
+  const redacLast4 = typeof user.redacMembershipIdLast4 === 'string' ? user.redacMembershipIdLast4 : null;
+  const redacDeclaredAt = resolveTimestamp(user.redacMembershipDeclaredAt);
+  const redacDeclaredBy = user.redacMembershipDeclaredBy === 'ops' ? 'ops' : (user.redacMembershipDeclaredBy === 'user' ? 'user' : null);
+  const redacUnlinkedAt = resolveTimestamp(user.redacMembershipUnlinkedAt);
+  const redacUnlinkedBy = user.redacMembershipUnlinkedBy === 'ops' ? 'ops' : (user.redacMembershipUnlinkedBy === 'user' ? 'user' : null);
 
   const summary = {
     ok: true,
@@ -72,13 +72,13 @@ async function getMemberSummary(params) {
       hasMemberNumber: hasNumber,
       memberNumberMasked: hasNumber ? maskMemberNumber(user.memberNumber) : null,
       memberNumberStale: stale,
-      ridac: {
-        hasRidacMembership: Boolean(ridacLast4),
-        ridacMembershipIdLast4: ridacLast4,
-        ridacMembershipDeclaredAt: ridacDeclaredAt,
-        ridacMembershipDeclaredBy: ridacDeclaredBy,
-        ridacMembershipUnlinkedAt: ridacUnlinkedAt,
-        ridacMembershipUnlinkedBy: ridacUnlinkedBy
+      redac: {
+        hasRedacMembership: Boolean(redacLast4),
+        redacMembershipIdLast4: redacLast4,
+        redacMembershipDeclaredAt: redacDeclaredAt,
+        redacMembershipDeclaredBy: redacDeclaredBy,
+        redacMembershipUnlinkedAt: redacUnlinkedAt,
+        redacMembershipUnlinkedBy: redacUnlinkedBy
       }
     },
     ops: {

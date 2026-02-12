@@ -113,10 +113,21 @@
       重複拒否（B）の運用で詰まった場合のみ使用。入力した会員ID全文は保存しない（HMAC hash + last4のみ）。
       誰に紐付いているかは「解除結果」でのみ返る（運用者向け）。
     </div>
-    <label>ridacMembershipId（例: 00-0000）</label>
-    <input id="ridac-unlink-id" placeholder="00-0000" />
-    <button id="ridac-unlink" type="button">unlink</button>
-    <pre id="ridac-unlink-result">-</pre>
+    <label>redacMembershipId（例: 00-0000）</label>
+    <input id="redac-unlink-id" placeholder="00-0000" />
+    <button id="redac-unlink" type="button">unlink</button>
+    <pre id="redac-unlink-result">-</pre>
+
+    <hr />
+
+    <h2>Redac Health（運用確認）</h2>
+    <div class="note">
+      Redac運用の整合性を確認する。secret設定有無、ユーザーとlinkの不整合（sample内）を表示。
+    </div>
+    <div class="note">
+      <button id="redac-health-reload" type="button">reload status</button>
+    </div>
+    <pre id="redac-health-result">-</pre>
 
     <hr />
 
@@ -564,17 +575,24 @@
         await loadLinks();
       }
 
-      async function unlinkRidacMembership() {
-        const ridacMembershipId = document.getElementById('ridac-unlink-id').value.trim();
-        if (!ridacMembershipId) return;
-        const ok = window.confirm(`Redac会員IDを解除しますか？\n\n${ridacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
+      async function unlinkRedacMembership() {
+        const redacMembershipId = document.getElementById('redac-unlink-id').value.trim();
+        if (!redacMembershipId) return;
+        const ok = window.confirm(`Redac会員IDを解除しますか？\n\n${redacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
         if (!ok) return;
-        const res = await fetch('/api/admin/ridac-membership/unlink', {
+        const res = await fetch('/api/admin/redac-membership/unlink', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
-          body: JSON.stringify({ ridacMembershipId })
+          body: JSON.stringify({ redacMembershipId })
         });
-        document.getElementById('ridac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+        document.getElementById('redac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+      }
+
+      async function loadRedacStatus() {
+        const res = await fetch('/api/admin/os/redac/status?limit=500', {
+          headers: buildHeaders()
+        });
+        document.getElementById('redac-health-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
       }
 
       function parseNullableInt(value) {
@@ -939,7 +957,8 @@
       document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
       document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
       document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
-      document.getElementById('ridac-unlink').addEventListener('click', () => unlinkRidacMembership().catch(() => {}));
+      document.getElementById('redac-unlink').addEventListener('click', () => unlinkRedacMembership().catch(() => {}));
+      document.getElementById('redac-health-reload').addEventListener('click', () => loadRedacStatus().catch(() => {}));
       document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
       document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
       document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
@@ -955,6 +974,7 @@
 
       loadTemplates().catch(() => {});
       loadLinks().catch(() => {});
+      loadRedacStatus().catch(() => {});
       loadSystemConfigStatus().catch(() => {});
       loadAutomationConfigStatus().catch(() => {});
       loadDeliveryBackfillStatus().catch(() => {});

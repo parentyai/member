@@ -3,9 +3,9 @@
 const assert = require('assert');
 const { test } = require('node:test');
 
-const messages = require('../../src/domain/ridacLineMessages');
+const messages = require('../../src/domain/redacLineMessages');
 
-test('phase164: ridac line message templates include next action guidance', () => {
+test('phase164: redac line message templates include next action guidance', () => {
   const declared = messages.statusDeclared('1234');
   const unlinked = messages.statusUnlinked();
   const none = messages.statusNotDeclared();

@@ -15,15 +15,15 @@ function resolveTimestamp(value) {
 }
 
 function deriveStatus(user) {
-  const last4 = typeof user.ridacMembershipIdLast4 === 'string' ? user.ridacMembershipIdLast4 : null;
+  const last4 = typeof user.redacMembershipIdLast4 === 'string' ? user.redacMembershipIdLast4 : null;
   const has = Boolean(last4);
-  const unlinkedAt = resolveTimestamp(user.ridacMembershipUnlinkedAt);
+  const unlinkedAt = resolveTimestamp(user.redacMembershipUnlinkedAt);
   if (has && last4) return { status: 'DECLARED', last4 };
   if (!has && unlinkedAt) return { status: 'UNLINKED', last4: null };
   return { status: 'NONE', last4: null };
 }
 
-async function getRidacMembershipStatusForLine(params) {
+async function getRedacMembershipStatusForLine(params) {
   const payload = params || {};
   const lineUserId = payload.lineUserId;
   const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0
@@ -42,7 +42,7 @@ async function getRidacMembershipStatusForLine(params) {
   try {
     await appendAuditLog({
       actor: 'line',
-      action: 'ridac_membership.status_view',
+      action: 'redac_membership.status_view',
       entityType: 'user',
       entityId: lineUserId,
       traceId: requestId,
@@ -50,7 +50,7 @@ async function getRidacMembershipStatusForLine(params) {
       payloadSummary: {
         ok: true,
         status: derived.status,
-        ridacMembershipIdLast4: derived.last4
+        redacMembershipIdLast4: derived.last4
       }
     });
   } catch (_err) {
@@ -61,6 +61,6 @@ async function getRidacMembershipStatusForLine(params) {
 }
 
 module.exports = {
-  getRidacMembershipStatusForLine
+  getRedacMembershipStatusForLine
 };
 
