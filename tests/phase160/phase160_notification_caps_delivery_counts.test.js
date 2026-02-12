@@ -60,10 +60,28 @@ test('phase160: delivery count uses deliveredAt and falls back to legacy sentAt'
     since,
     { includeLegacyFallback: false }
   );
+  const snapshot = await deliveriesRepo.getDeliveredCountsSnapshot('U1', {
+    weeklySinceAt: since,
+    dailySinceAt: since,
+    categories: ['DEADLINE_REQUIRED', 'IMMEDIATE_ACTION']
+  });
+  const snapshotDeliveredAtOnly = await deliveriesRepo.getDeliveredCountsSnapshot('U1', {
+    weeklySinceAt: since,
+    dailySinceAt: since,
+    categories: ['DEADLINE_REQUIRED'],
+    includeLegacyFallback: false
+  });
 
   assert.strictEqual(byUser, 2);
   assert.strictEqual(byCategory, 2);
   assert.strictEqual(byOtherCategory, 0);
   assert.strictEqual(byUserDeliveredAtOnly, 1);
   assert.strictEqual(byCategoryDeliveredAtOnly, 1);
+  assert.strictEqual(snapshot.weeklyCount, 2);
+  assert.strictEqual(snapshot.dailyCount, 2);
+  assert.strictEqual(snapshot.categoryWeeklyCounts.DEADLINE_REQUIRED, 2);
+  assert.strictEqual(snapshot.categoryWeeklyCounts.IMMEDIATE_ACTION, 0);
+  assert.strictEqual(snapshotDeliveredAtOnly.weeklyCount, 1);
+  assert.strictEqual(snapshotDeliveredAtOnly.dailyCount, 1);
+  assert.strictEqual(snapshotDeliveredAtOnly.categoryWeeklyCounts.DEADLINE_REQUIRED, 1);
 });

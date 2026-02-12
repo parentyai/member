@@ -258,13 +258,8 @@ test('security: system config impactPreview skips delivery counters during activ
   });
 
   let counterCalls = 0;
-  const originalCountByUser = deliveriesRepo.countDeliveredByUserSince;
-  const originalCountByUserCategory = deliveriesRepo.countDeliveredByUserCategorySince;
-  deliveriesRepo.countDeliveredByUserSince = async () => {
-    counterCalls += 1;
-    throw new Error('delivery counters should not be called during quiet hours preview');
-  };
-  deliveriesRepo.countDeliveredByUserCategorySince = async () => {
+  const originalSnapshot = deliveriesRepo.getDeliveredCountsSnapshot;
+  deliveriesRepo.getDeliveredCountsSnapshot = async () => {
     counterCalls += 1;
     throw new Error('delivery counters should not be called during quiet hours preview');
   };
@@ -276,8 +271,7 @@ test('security: system config impactPreview skips delivery counters during activ
 
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
-    deliveriesRepo.countDeliveredByUserSince = originalCountByUser;
-    deliveriesRepo.countDeliveredByUserCategorySince = originalCountByUserCategory;
+    deliveriesRepo.getDeliveredCountsSnapshot = originalSnapshot;
     clearDbForTest();
     clearServerTimestampForTest();
     if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;

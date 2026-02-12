@@ -71,6 +71,25 @@ function normalizeCountOptions(options) {
   };
 }
 
+function normalizeCategoryValue(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toUpperCase();
+}
+
+function normalizeCategoryList(values) {
+  if (!Array.isArray(values)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const value of values) {
+    const normalized = normalizeCategoryValue(value);
+    if (!normalized) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
 async function queryCount(query) {
   if (query && typeof query.count === 'function') {
     try {
@@ -312,6 +331,152 @@ async function countDeliveredByUserCategorySince(lineUserId, notificationCategor
   }
 }
 
+async function getDeliveredCountsSnapshotOptimized(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const db = payload.db;
+  const lineUserId = payload.lineUserId;
+  const weeklySinceDate = payload.weeklySinceDate;
+  const dailySinceDate = payload.dailySinceDate || null;
+  const categories = normalizeCategoryList(payload.categories);
+  const includeLegacyFallback = payload.includeLegacyFallback !== false;
+  const weeklySinceIso = toIso(weeklySinceDate);
+  const dailySinceIso = toIso(dailySinceDate);
+  if (!weeklySinceIso) throw new Error('weeklySinceAt required');
+
+  const base = buildDeliveredBaseQuery(db, lineUserId, null);
+  const promises = [
+    queryCount(base.where('deliveredAt', '>=', weeklySinceIso)),
+    dailySinceIso ? queryCount(base.where('deliveredAt', '>=', dailySinceIso)) : Promise.resolve(0),
+    Promise.all(categories.map((category) => (
+      queryCount(
+        base
+          .where('notificationCategory', '==', category)
+          .where('deliveredAt', '>=', weeklySinceIso)
+      ).then((count) => ({ category, count }))
+    )))
+  ];
+  const [weeklyDeliveredAtCount, dailyDeliveredAtCount, byCategoryDeliveredAt] = await Promise.all(promises);
+
+  const categoryWeeklyCounts = {};
+  for (const entry of byCategoryDeliveredAt) {
+    categoryWeeklyCounts[entry.category] = Number.isFinite(entry.count) ? entry.count : 0;
+  }
+  let weeklyCount = Number.isFinite(weeklyDeliveredAtCount) ? weeklyDeliveredAtCount : 0;
+  let dailyCount = Number.isFinite(dailyDeliveredAtCount) ? dailyDeliveredAtCount : 0;
+
+  if (includeLegacyFallback) {
+    const categorySet = new Set(categories);
+    const legacySnap = await base.where('sentAt', '>=', weeklySinceIso).get();
+    for (const doc of legacySnap.docs) {
+      const record = doc.data() || {};
+      // deliveredAt を持つ行は aggregate 側で計上済み。
+      if (toDate(record.deliveredAt)) continue;
+      const at = resolveDeliveredAt(record);
+      if (!at) continue;
+      if (at.getTime() < weeklySinceDate.getTime()) continue;
+      weeklyCount += 1;
+      if (dailySinceDate && at.getTime() >= dailySinceDate.getTime()) {
+        dailyCount += 1;
+      }
+      if (categorySet.size > 0) {
+        const category = normalizeCategoryValue(record.notificationCategory);
+        if (category && categorySet.has(category)) {
+          categoryWeeklyCounts[category] = (categoryWeeklyCounts[category] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  return {
+    weeklyCount,
+    dailyCount: dailySinceDate ? dailyCount : 0,
+    categoryWeeklyCounts,
+    weeklySinceIso,
+    dailySinceIso: dailySinceIso || null,
+    includeLegacyFallback
+  };
+}
+
+async function getDeliveredCountsSnapshotFallback(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const db = payload.db;
+  const lineUserId = payload.lineUserId;
+  const weeklySinceDate = payload.weeklySinceDate;
+  const dailySinceDate = payload.dailySinceDate || null;
+  const categories = normalizeCategoryList(payload.categories);
+  const includeLegacyFallback = payload.includeLegacyFallback !== false;
+  const weeklySinceIso = toIso(weeklySinceDate);
+  const dailySinceIso = toIso(dailySinceDate);
+
+  const snap = await buildDeliveredBaseQuery(db, lineUserId, null).get();
+  const categorySet = new Set(categories);
+  const categoryWeeklyCounts = {};
+  for (const category of categories) categoryWeeklyCounts[category] = 0;
+
+  let weeklyCount = 0;
+  let dailyCount = 0;
+
+  for (const doc of snap.docs) {
+    const record = doc.data() || {};
+    const deliveredAt = toDate(record.deliveredAt);
+    const at = includeLegacyFallback ? resolveDeliveredAt(record) : deliveredAt;
+    if (!at) continue;
+    if (at.getTime() < weeklySinceDate.getTime()) continue;
+    weeklyCount += 1;
+    if (dailySinceDate && at.getTime() >= dailySinceDate.getTime()) {
+      dailyCount += 1;
+    }
+    if (categorySet.size > 0) {
+      const category = normalizeCategoryValue(record.notificationCategory);
+      if (category && categorySet.has(category)) {
+        categoryWeeklyCounts[category] = (categoryWeeklyCounts[category] || 0) + 1;
+      }
+    }
+  }
+
+  return {
+    weeklyCount,
+    dailyCount: dailySinceDate ? dailyCount : 0,
+    categoryWeeklyCounts,
+    weeklySinceIso,
+    dailySinceIso: dailySinceIso || null,
+    includeLegacyFallback
+  };
+}
+
+async function getDeliveredCountsSnapshot(lineUserId, params) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const payload = params && typeof params === 'object' ? params : {};
+  const weeklySinceDate = toDate(payload.weeklySinceAt);
+  if (!weeklySinceDate) throw new Error('weeklySinceAt required');
+  const dailySinceDate = payload.dailySinceAt ? toDate(payload.dailySinceAt) : null;
+  if (payload.dailySinceAt && !dailySinceDate) throw new Error('dailySinceAt invalid');
+  const categories = normalizeCategoryList(payload.categories);
+  const countOptions = normalizeCountOptions(payload);
+  const db = getDb();
+
+  try {
+    return await getDeliveredCountsSnapshotOptimized({
+      db,
+      lineUserId,
+      weeklySinceDate,
+      dailySinceDate,
+      categories,
+      includeLegacyFallback: countOptions.includeLegacyFallback
+    });
+  } catch (err) {
+    if (!isIndexError(err)) throw err;
+    return getDeliveredCountsSnapshotFallback({
+      db,
+      lineUserId,
+      weeklySinceDate,
+      dailySinceDate,
+      categories,
+      includeLegacyFallback: countOptions.includeLegacyFallback
+    });
+  }
+}
+
 async function getDeliveredAtBackfillSummary(limit) {
   const max = normalizeBackfillLimit(limit);
   const db = getDb();
@@ -408,6 +573,7 @@ module.exports = {
   listDeliveriesByNotificationId,
   countDeliveredByUserSince,
   countDeliveredByUserCategorySince,
+  getDeliveredCountsSnapshot,
   getDeliveredAtBackfillSummary,
   applyDeliveredAtBackfill
 };
