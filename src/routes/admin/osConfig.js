@@ -101,6 +101,65 @@ function toPercent(numerator, denominator) {
   return Number(((numerator / denominator) * 100).toFixed(2));
 }
 
+function sortCounterEntries(counter) {
+  return Object.entries(counter || {}).sort((a, b) => {
+    const aCount = Number.isFinite(a[1]) ? a[1] : 0;
+    const bCount = Number.isFinite(b[1]) ? b[1] : 0;
+    if (aCount !== bCount) return bCount - aCount;
+    if (a[0] === b[0]) return 0;
+    return a[0] > b[0] ? 1 : -1;
+  });
+}
+
+function buildBreakdownRows(counter, total) {
+  const rows = [];
+  const entries = sortCounterEntries(counter);
+  for (const [key, value] of entries) {
+    const count = Number.isFinite(value) ? value : 0;
+    rows.push({
+      key,
+      count,
+      ratePercent: toPercent(count, total)
+    });
+  }
+  return rows;
+}
+
+function resolveImpactRiskLevel(sampledEvaluations, blockedEvaluations, sampledUsers, estimatedBlockedUsers) {
+  if (!Number.isFinite(sampledEvaluations) || sampledEvaluations <= 0) return 'NONE';
+  const evalRate = toPercent(blockedEvaluations, sampledEvaluations);
+  const userRate = toPercent(estimatedBlockedUsers, sampledUsers);
+  const maxRate = Math.max(evalRate, userRate);
+  if (maxRate >= 75) return 'HIGH';
+  if (maxRate >= 40) return 'MEDIUM';
+  if (maxRate > 0) return 'LOW';
+  return 'NONE';
+}
+
+function resolveImpactRecommendedAction(riskLevel, blockedEvaluations) {
+  if (!Number.isFinite(blockedEvaluations) || blockedEvaluations <= 0) return 'SAFE_TO_SET';
+  if (riskLevel === 'LOW') return 'REVIEW_SAMPLE_BEFORE_SET';
+  if (riskLevel === 'MEDIUM') return 'DRY_RUN_AND_REVIEW';
+  if (riskLevel === 'HIGH') return 'ADJUST_CAPS_BEFORE_SET';
+  return 'REVIEW_BEFORE_SET';
+}
+
+function attachImpactDerivedFields(preview) {
+  const payload = preview && typeof preview === 'object' ? Object.assign({}, preview) : {};
+  const sampledEvaluations = Number.isFinite(payload.sampledEvaluations) ? payload.sampledEvaluations : 0;
+  const blockedEvaluations = Number.isFinite(payload.blockedEvaluations) ? payload.blockedEvaluations : 0;
+  const sampledUsers = Number.isFinite(payload.sampledUsers) ? payload.sampledUsers : 0;
+  const estimatedBlockedUsers = Number.isFinite(payload.estimatedBlockedUsers) ? payload.estimatedBlockedUsers : 0;
+  const riskLevel = resolveImpactRiskLevel(sampledEvaluations, blockedEvaluations, sampledUsers, estimatedBlockedUsers);
+  return Object.assign(payload, {
+    capTypeBreakdown: buildBreakdownRows(payload.blockedByCapType, blockedEvaluations),
+    reasonBreakdown: buildBreakdownRows(payload.blockedByReason, blockedEvaluations),
+    categoryBreakdown: buildBreakdownRows(payload.blockedByCategory, blockedEvaluations),
+    riskLevel,
+    recommendedAction: resolveImpactRecommendedAction(riskLevel, blockedEvaluations)
+  });
+}
+
 function buildQuietHoursImpactPreview(users, categories, includeLegacyFallback) {
   const sampledUsers = Array.isArray(users) ? users.length : 0;
   const categoryList = Array.isArray(categories) ? categories : [null];
@@ -117,7 +176,7 @@ function buildQuietHoursImpactPreview(users, categories, includeLegacyFallback) 
   const notes = ['quietHours evaluated in UTC', 'quietHours preview blocks all send attempts during active window'];
   if (!includeLegacyFallback) notes.push('deliveryCountLegacyFallback=false (count queries skipped by quietHours)');
 
-  return {
+  return attachImpactDerivedFields({
     sampledUsers,
     sampledEvaluations,
     blockedEvaluations: sampledEvaluations,
@@ -131,7 +190,7 @@ function buildQuietHoursImpactPreview(users, categories, includeLegacyFallback) 
     topBlockedCapType: sampledEvaluations > 0 ? 'QUIET_HOURS' : null,
     topBlockedCategory: pickTopCounterKey(blockedByCategory),
     notes
-  };
+  });
 }
 
 async function buildImpactPreview(notificationCaps, options) {
@@ -145,7 +204,7 @@ async function buildImpactPreview(notificationCaps, options) {
     && caps.perCategoryWeeklyCap === null
     && caps.quietHours === null;
   if (allNull) {
-    return {
+    return attachImpactDerivedFields({
       sampledUsers: 0,
       sampledEvaluations: 0,
       blockedEvaluations: 0,
@@ -159,7 +218,7 @@ async function buildImpactPreview(notificationCaps, options) {
       topBlockedCapType: null,
       topBlockedCategory: null,
       notes: ['caps_disabled']
-    };
+    });
   }
 
   const categories = caps.perCategoryWeeklyCap !== null ? NOTIFICATION_CATEGORIES : [null];
@@ -168,7 +227,7 @@ async function buildImpactPreview(notificationCaps, options) {
   try {
     users = await usersRepo.listUsers({ limit: sampleLimit });
   } catch (_err) {
-    return {
+    return attachImpactDerivedFields({
       sampledUsers: 0,
       sampledEvaluations: 0,
       blockedEvaluations: 0,
@@ -182,7 +241,7 @@ async function buildImpactPreview(notificationCaps, options) {
       topBlockedCapType: null,
       topBlockedCategory: null,
       notes: ['preview_unavailable']
-    };
+    });
   }
 
   if (isQuietHoursActive(now, caps.quietHours)) {
@@ -267,7 +326,7 @@ async function buildImpactPreview(notificationCaps, options) {
     notes.push(`users_skipped_for_count_errors=${skippedUsersForCountErrors}`);
   }
 
-  return {
+  return attachImpactDerivedFields({
     sampledUsers: users.length,
     sampledEvaluations,
     blockedEvaluations,
@@ -281,7 +340,7 @@ async function buildImpactPreview(notificationCaps, options) {
     topBlockedCapType: pickTopCounterKey(blockedByCapType),
     topBlockedCategory: pickTopCounterKey(blockedByCategory),
     notes
-  };
+  });
 }
 
 async function handleStatus(req, res) {

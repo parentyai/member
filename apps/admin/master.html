@@ -346,6 +346,20 @@
         });
       }
 
+      function formatBreakdownRows(label, rows) {
+        const list = Array.isArray(rows) ? rows : [];
+        if (!list.length) return [];
+        const lines = [`${label}:`];
+        for (const row of list) {
+          if (!row || typeof row !== 'object') continue;
+          const key = row.key || '-';
+          const count = Number.isFinite(row.count) ? row.count : 0;
+          const ratePercent = Number.isFinite(row.ratePercent) ? row.ratePercent : 0;
+          lines.push(`- ${key}: ${count} (${ratePercent}%)`);
+        }
+        return lines;
+      }
+
       function formatImpactPreview(preview) {
         if (!preview || typeof preview !== 'object') return 'impact preview unavailable';
         const sampledUsers = Number.isFinite(preview.sampledUsers) ? preview.sampledUsers : 0;
@@ -365,6 +379,8 @@
         const blockedByReason = sortedEntries(preview.blockedByReason);
         const categories = Array.isArray(preview.simulatedCategories) ? preview.simulatedCategories : [];
         const notes = Array.isArray(preview.notes) ? preview.notes : [];
+        const riskLevel = preview.riskLevel ? String(preview.riskLevel) : 'UNKNOWN';
+        const recommendedAction = preview.recommendedAction ? String(preview.recommendedAction) : 'REVIEW_BEFORE_SET';
         const lines = [
           `sampledUsers: ${sampledUsers}`,
           `sampledEvaluations: ${sampledEvaluations}`,
@@ -372,10 +388,18 @@
           `blockedEvaluationRatePercent: ${blockedEvaluationRatePercent}`,
           `estimatedBlockedUsers: ${estimatedBlockedUsers}`,
           `estimatedBlockedUserRatePercent: ${estimatedBlockedUserRatePercent}`,
+          `riskLevel: ${riskLevel}`,
+          `recommendedAction: ${recommendedAction}`,
           `topBlockedCapType: ${topBlockedCapType}`,
           `topBlockedCategory: ${topBlockedCategory}`,
           `simulatedCategories: ${categories.length ? categories.join(', ') : '(none)'}`
         ];
+        const capTypeBreakdown = formatBreakdownRows('capTypeBreakdown', preview.capTypeBreakdown);
+        const reasonBreakdown = formatBreakdownRows('reasonBreakdown', preview.reasonBreakdown);
+        const categoryBreakdown = formatBreakdownRows('categoryBreakdown', preview.categoryBreakdown);
+        lines.push(...capTypeBreakdown);
+        lines.push(...reasonBreakdown);
+        lines.push(...categoryBreakdown);
         if (blockedByCapType.length) {
           lines.push('blockedByCapType:');
           for (const [k, v] of blockedByCapType) lines.push(`- ${k}: ${v}`);
@@ -391,6 +415,31 @@
         if (notes.length) {
           lines.push('notes:');
           for (const note of notes) lines.push(`- ${String(note)}`);
+        }
+        return lines.join('\n');
+      }
+
+      function formatDeliveryRecoveryRecommendation(recovery) {
+        const payload = recovery && typeof recovery === 'object' ? recovery : {};
+        const recommendedAction = payload.recommendedAction ? String(payload.recommendedAction) : 'INSPECT';
+        const allowedActions = Array.isArray(payload.allowedActions) ? payload.allowedActions : [];
+        const retryPossible = payload.retryPossible === true;
+        const canSeal = payload.canSeal === true;
+        const lines = [
+          `recommendedAction: ${recommendedAction}`,
+          `allowedActions: ${allowedActions.length ? allowedActions.join(', ') : '(none)'}`,
+          `retryPossible: ${retryPossible ? 'yes' : 'no'}`,
+          `canSeal: ${canSeal ? 'yes' : 'no'}`
+        ];
+        lines.push('guide:');
+        if (recommendedAction === 'NO_ACTION') {
+          lines.push('- this delivery is already settled. no operation is required.');
+        } else if (recommendedAction === 'RETRY_OR_SEAL') {
+          lines.push('- retry first if cause is recoverable; use seal only when retry is not appropriate.');
+        } else if (recommendedAction === 'SEAL') {
+          lines.push('- use seal to close stuck reserved/in-flight records and avoid duplicate delivery.');
+        } else {
+          lines.push('- inspect audit/trace first, then choose action.');
         }
         return lines.join('\n');
       }
@@ -778,7 +827,10 @@
         const data = await jsonOrText(res);
         document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify(data, null, 2);
         const rec = data && data.delivery && data.delivery.recovery ? data.delivery.recovery : null;
-        document.getElementById('delivery-recovery-recommendation').textContent = JSON.stringify(rec || { note: 'no recommendation' }, null, 2);
+        const recommendationText = rec
+          ? `${formatDeliveryRecoveryRecommendation(rec)}\n\nraw:\n${JSON.stringify(rec, null, 2)}`
+          : 'no recommendation';
+        document.getElementById('delivery-recovery-recommendation').textContent = recommendationText;
       }
 
       async function planDeliveryRecovery() {
