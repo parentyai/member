@@ -3,7 +3,7 @@
 const { listRetryQueue } = require('../usecases/phase73/listRetryQueue');
 const { planRetryQueuedSend } = require('../usecases/phase73/planRetryQueuedSend');
 const { retryQueuedSend } = require('../usecases/phase73/retryQueuedSend');
-const { requireActor, resolveRequestId, resolveTraceId } = require('./admin/osContext');
+const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./admin/osContext');
 
 function parseJson(body, res) {
   try {
@@ -15,18 +15,23 @@ function parseJson(body, res) {
   }
 }
 
-function handleError(res, err) {
+function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required') || message.includes('invalid')) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
   }
+  const traceId = context && context.traceId ? context.traceId : null;
+  const requestId = context && context.requestId ? context.requestId : null;
+  logRouteError('phase73.retry_queue', err, context);
   res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: false, error: 'error' }));
+  res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
 }
 
 async function handleListRetryQueue(req, res, deps) {
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
   try {
     const url = new URL(req.url, 'http://localhost');
     const limit = url.searchParams.get('limit');
@@ -34,9 +39,9 @@ async function handleListRetryQueue(req, res, deps) {
       limit: limit !== null ? Number(limit) : undefined
     }, deps);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    res.end(JSON.stringify(Object.assign({}, result, { traceId, requestId })));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId });
   }
 }
 
@@ -53,7 +58,7 @@ async function handlePlanRetryQueue(req, res, body, deps) {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({}, result, { traceId, requestId })));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 
@@ -70,7 +75,7 @@ async function handleRetrySend(req, res, body, deps) {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({}, result, { traceId, requestId })));
   } catch (err) {
-    handleError(res, err);
+    handleError(res, err, { traceId, requestId, actor });
   }
 }
 

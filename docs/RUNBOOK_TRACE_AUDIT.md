@@ -36,10 +36,12 @@ Firestore を直叩きせず、API で bundle を確認する：
   - `TRACE_SMOKE_NO_START_SERVER=1` が有効になっている。解除する。
 - `LINE_CHANNEL_ACCESS_TOKEN required`:
   - trace smoke が送信副作用を踏んでいる疑い（P0）。Phase132 の kill switch / NO_ACTION 経路を確認。
+- API が `{"ok":false,"error":"error","traceId":"...","requestId":"..."}` を返す:
+  - Cloud Run logs で `[route_error]` を `traceId` または `requestId` で検索する。
+  - 例: `gcloud logging read 'textPayload:\"[route_error]\" AND textPayload:\"traceId=<TRACE_ID>\"' --project <PROJECT_ID> --limit 50 --format='value(textPayload)'`
 
 ## Rollback / Safety
 - Kill Switch を ON にして送信副作用を止める（Phase0）
 - 回帰が入った場合:
   - 実装PRを `revert`
   - docs-only PRを `revert`
-
