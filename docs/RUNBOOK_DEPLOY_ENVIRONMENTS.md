@@ -37,6 +37,19 @@ Secrets（例）:
 - `REDAC_MEMBERSHIP_ID_HMAC_SECRET`
 - `OPS_CONFIRM_TOKEN_SECRET`
 
+## Runtime Secret Access Guardrail
+Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
+`roles/secretmanager.secretAccessor` を idempotent に付与する。
+
+対象:
+- `.github/workflows/deploy.yml`
+- `.github/workflows/deploy-webhook.yml`
+- `.github/workflows/deploy-track.yml`
+
+前提:
+- deploy SA（`GCP_DEPLOY_SA`）に Secret IAM ポリシー更新権限があること
+  - 例: `roles/secretmanager.admin`（または同等権限）
+
 ## OIDC / WIF Guardrail（workflow_dispatch 対応）
 `workflow_dispatch(target_environment=prod)` で OIDC が `unauthorized_client` になる場合は、
 Workload Identity Provider の `attributeCondition` が `push(main)` のみ許可している可能性が高い。

@@ -105,6 +105,25 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
+      - name: Ensure runtime SA can access required secrets
+        run: |
+          RUNTIME_MEMBER="serviceAccount:${RUNTIME_SA_EMAIL}"
+          for SECRET_NAME in \
+            LINE_CHANNEL_SECRET \
+            LINE_CHANNEL_ACCESS_TOKEN \
+            ADMIN_OS_TOKEN \
+            TRACK_TOKEN_SECRET \
+            REDAC_MEMBERSHIP_ID_HMAC_SECRET \
+            OPS_CONFIRM_TOKEN_SECRET
+          do
+            echo "Granting roles/secretmanager.secretAccessor on ${SECRET_NAME} to ${RUNTIME_MEMBER}"
+            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
+              --project "$GCP_PROJECT_ID" \
+              --member "$RUNTIME_MEMBER" \
+              --role "roles/secretmanager.secretAccessor" \
+              --quiet >/dev/null
+          done
+
       - name: Build image (Cloud Build)
         run: |
           IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
