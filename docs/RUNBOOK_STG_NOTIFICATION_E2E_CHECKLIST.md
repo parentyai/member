@@ -18,6 +18,24 @@ stg 実測を毎回同じ順番で実施し、traceId で証跡化するため�
 - 実施者: Ops 担当（`x-actor` は固定値を使う）
 - 失敗時: その時点で中断し、`docs/PHASE*_EXECUTION_LOG.md` に fail を残す
 
+## Execution Log Rule (fixed)
+- 証跡の記録先は次のいずれかに統一する:
+  - 既存ログ追記: `docs/PHASE170_EXECUTION_LOG.md`
+  - 新規ログ作成: `docs/PHASE_C_STG_E2E_YYYY-MM-DD.md`
+- 各実行ごとに必須で残す:
+  - `UTC`（ISO8601）
+  - `main SHA`（`git rev-parse origin/main`）
+  - `service image tag`（member / member-webhook / member-track）
+  - `traceId` / `requestId`
+  - `expected` / `actual` / `result`
+
+## TraceId Naming (recommended)
+- Segment plan/dry-run/execute: `trace-stg-segment-<UTC compact>`
+- Retry plan/retry: `trace-stg-retry-<UTC compact>`
+- Kill switch block: `trace-stg-killswitch-<UTC compact>`
+- Composer cap block: `trace-stg-composer-cap-<UTC compact>`
+- 形式を固定し、操作単位で trace を分ける（bundle の混線を防ぐ）
+
 ## Evidence Capture
 - 各操作で `x-trace-id` を固定して送る
 - `GET /api/admin/trace?traceId=<id>&limit=50` で bundle を回収
@@ -27,6 +45,12 @@ stg 実測を毎回同じ順番で実施し、traceId で証跡化するため�
   - expected
   - actual
   - pass/fail
+
+### Evidence Quality Gate（記録時のチェック）
+- `audit_actions` に `plan` と `execute` の両方が含まれること
+- `result=FAIL` の場合、再実施条件（何を直して再試行するか）を `notes` に書く
+- 個人情報（平文会員ID、token、secret）は書かない
+- URL証跡（Actions run / Cloud Run revision / trace API）を可能な限り添付する
 
 ### Evidence Template（copy）
 ```
@@ -45,7 +69,12 @@ result: <PASS|FAIL>
 notes: <optional>
 ```
 
+### Full Log Template
+- テンプレートファイルを使って記録を開始:
+  - `docs/EXECUTION_LOG_TEMPLATE_STG_NOTIFICATION.md`
+
 ## Acceptance
 - `audits/decisions/timeline` が欠損しない
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
+- 4シナリオすべての `result` が記録されている（PASS/FAIL問わず）
