@@ -2,12 +2,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:18080';
 const DEFAULT_ACTOR = 'ops_stg_e2e';
 const DEFAULT_TRACE_PREFIX = 'trace-stg-e2e';
 const DEFAULT_OUT_DIR = 'artifacts/stg-notification-e2e';
+const DEFAULT_ROUTE_ERROR_LIMIT = 20;
 
 function readValue(argv, index, label) {
   if (index >= argv.length) throw new Error(`${label} value required`);
@@ -34,6 +35,14 @@ function normalizeBaseUrl(value) {
   return input.replace(/\/+$/, '');
 }
 
+function parsePositiveInt(value, label, min, max) {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num < min || num > max) {
+    throw new Error(`${label} must be integer ${min}-${max}`);
+  }
+  return num;
+}
+
 function parseArgs(argv, env) {
   const sourceEnv = env || process.env;
   const opts = {
@@ -41,6 +50,11 @@ function parseArgs(argv, env) {
     adminToken: sourceEnv.ADMIN_OS_TOKEN || '',
     actor: sourceEnv.E2E_ACTOR || DEFAULT_ACTOR,
     tracePrefix: sourceEnv.E2E_TRACE_PREFIX || DEFAULT_TRACE_PREFIX,
+    projectId: sourceEnv.E2E_GCP_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '',
+    fetchRouteErrors: sourceEnv.E2E_FETCH_ROUTE_ERRORS === '1',
+    routeErrorLimit: sourceEnv.E2E_ROUTE_ERROR_LIMIT
+      ? parsePositiveInt(sourceEnv.E2E_ROUTE_ERROR_LIMIT, 'E2E_ROUTE_ERROR_LIMIT', 1, 200)
+      : DEFAULT_ROUTE_ERROR_LIMIT,
     segmentTemplateKey: sourceEnv.E2E_SEGMENT_TEMPLATE_KEY || '',
     segmentTemplateVersion: sourceEnv.E2E_SEGMENT_TEMPLATE_VERSION || '',
     segmentQuery: parseJsonArg(sourceEnv.E2E_SEGMENT_QUERY_JSON || '', 'E2E_SEGMENT_QUERY_JSON') || {},
@@ -60,6 +74,10 @@ function parseArgs(argv, env) {
     const arg = argv[i];
     if (arg === '--allow-skip') {
       opts.allowSkip = true;
+      continue;
+    }
+    if (arg === '--fetch-route-errors') {
+      opts.fetchRouteErrors = true;
       continue;
     }
     if (arg === '--no-auto-set-automation-mode') {
@@ -99,6 +117,14 @@ function parseArgs(argv, env) {
       opts.tracePrefix = readValue(argv, ++i, '--trace-prefix');
       continue;
     }
+    if (arg === '--project-id') {
+      opts.projectId = readValue(argv, ++i, '--project-id').trim();
+      continue;
+    }
+    if (arg === '--route-error-limit') {
+      opts.routeErrorLimit = parsePositiveInt(readValue(argv, ++i, '--route-error-limit'), '--route-error-limit', 1, 200);
+      continue;
+    }
     if (arg === '--segment-template-key') {
       opts.segmentTemplateKey = readValue(argv, ++i, '--segment-template-key');
       continue;
@@ -134,6 +160,9 @@ function parseArgs(argv, env) {
   if (!opts.adminToken || typeof opts.adminToken !== 'string' || opts.adminToken.trim().length === 0) {
     throw new Error('admin token required (ADMIN_OS_TOKEN or --admin-token)');
   }
+  if (opts.fetchRouteErrors && (!opts.projectId || typeof opts.projectId !== 'string' || opts.projectId.trim().length === 0)) {
+    throw new Error('project id required when --fetch-route-errors is enabled');
+  }
   return opts;
 }
 
@@ -163,6 +192,72 @@ function pickHeadSha() {
     return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   } catch (_err) {
     return null;
+  }
+}
+
+function buildRouteErrorLoggingFilter(traceId) {
+  const token = String(traceId || '').trim();
+  if (!token) return '';
+  return `textPayload:\"[route_error]\" AND textPayload:\"traceId=${token}\"`;
+}
+
+function normalizeRouteErrorLines(raw, maxLines) {
+  const text = typeof raw === 'string' ? raw : String(raw || '');
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  if (maxLines && maxLines > 0) return lines.slice(0, maxLines);
+  return lines;
+}
+
+function extractExecErrorMessage(err) {
+  if (!err) return 'unknown';
+  if (typeof err.stderr === 'string' && err.stderr.trim().length > 0) return err.stderr.trim();
+  if (err && err.message) return String(err.message);
+  return 'unknown';
+}
+
+function fetchRouteErrors(ctx, traceId, execFn) {
+  const projectId = ctx && typeof ctx.projectId === 'string' ? ctx.projectId.trim() : '';
+  if (!ctx || ctx.fetchRouteErrors !== true) {
+    return { ok: false, reason: 'disabled' };
+  }
+  if (!projectId) {
+    return { ok: false, reason: 'project_id_missing' };
+  }
+  if (!traceId || String(traceId).trim().length === 0) {
+    return { ok: false, reason: 'trace_id_missing' };
+  }
+  const filter = buildRouteErrorLoggingFilter(traceId);
+  const runner = typeof execFn === 'function' ? execFn : execFileSync;
+  try {
+    const out = runner('gcloud', [
+      'logging',
+      'read',
+      filter,
+      '--project',
+      projectId,
+      '--limit',
+      String(ctx.routeErrorLimit || DEFAULT_ROUTE_ERROR_LIMIT),
+      '--format=value(textPayload)'
+    ], { encoding: 'utf8' });
+    const lines = normalizeRouteErrorLines(out, 10);
+    return {
+      ok: true,
+      projectId,
+      filter,
+      count: lines.length,
+      lines
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'gcloud_logging_read_failed',
+      projectId,
+      filter,
+      error: extractExecErrorMessage(err)
+    };
   }
 }
 
@@ -587,6 +682,14 @@ function renderMarkdownSummary(report) {
     if (bundle) {
       lines.push(`- trace bundle: audits=${bundle.audits || 0} decisions=${bundle.decisions || 0} timeline=${bundle.timeline || 0}`);
     }
+    const routeErrors = scenario.routeErrors || null;
+    if (routeErrors) {
+      if (routeErrors.ok) {
+        lines.push(`- route_error logs: count=${routeErrors.count}`);
+      } else {
+        lines.push(`- route_error logs: unavailable (${routeErrors.reason || 'unknown'})`);
+      }
+    }
     lines.push('');
   }
   return `${lines.join('\n')}\n`;
@@ -598,6 +701,7 @@ async function runScenario(ctx, scenarioName, runner) {
   try {
     const result = await runner(traceId);
     const traceBundle = await fetchTraceBundle(ctx, traceId);
+    const routeErrors = result.status === 'FAIL' ? fetchRouteErrors(ctx, traceId) : null;
     return {
       name: scenarioName,
       traceId,
@@ -607,10 +711,12 @@ async function runScenario(ctx, scenarioName, runner) {
       reason: result.reason || null,
       steps: result.steps || null,
       queueId: result.queueId || null,
-      traceBundle
+      traceBundle,
+      routeErrors
     };
   } catch (err) {
     const traceBundle = await fetchTraceBundle(ctx, traceId);
+    const routeErrors = fetchRouteErrors(ctx, traceId);
     return {
       name: scenarioName,
       traceId,
@@ -618,7 +724,8 @@ async function runScenario(ctx, scenarioName, runner) {
       endedAt: new Date().toISOString(),
       status: 'FAIL',
       reason: err && err.message ? err.message : 'error',
-      traceBundle
+      traceBundle,
+      routeErrors
     };
   }
 }
@@ -629,7 +736,10 @@ async function runAll(opts) {
     baseUrl: opts.baseUrl,
     adminToken: opts.adminToken,
     actor: opts.actor,
-    tracePrefix: opts.tracePrefix
+    tracePrefix: opts.tracePrefix,
+    projectId: opts.projectId || '',
+    fetchRouteErrors: opts.fetchRouteErrors === true,
+    routeErrorLimit: opts.routeErrorLimit || DEFAULT_ROUTE_ERROR_LIMIT
   };
 
   const scenarios = [];
@@ -667,7 +777,8 @@ async function runAll(opts) {
       pass: scenarios.filter((item) => item.status === 'PASS').length,
       fail: scenarios.filter((item) => item.status === 'FAIL').length,
       skip: scenarios.filter((item) => item.status === 'SKIP').length,
-      strict: opts.allowSkip !== true
+      strict: opts.allowSkip !== true,
+      routeErrorFetchEnabled: opts.fetchRouteErrors === true
     }
   };
   return report;
@@ -686,6 +797,10 @@ function printSummary(report) {
     console.log(`${scenario.name}: ${scenario.status}${scenario.reason ? ` (${scenario.reason})` : ''}`);
     console.log(`  traceId=${scenario.traceId}`);
     console.log(`  audits=${bundle.audits || 0} decisions=${bundle.decisions || 0} timeline=${bundle.timeline || 0}`);
+    if (scenario.routeErrors) {
+      if (scenario.routeErrors.ok) console.log(`  route_error_logs=${scenario.routeErrors.count}`);
+      else console.log(`  route_error_logs=unavailable (${scenario.routeErrors.reason || 'unknown'})`);
+    }
   }
   console.log(`pass=${report.summary.pass} fail=${report.summary.fail} skip=${report.summary.skip}`);
 }
@@ -719,7 +834,9 @@ module.exports = {
   renderMarkdownSummary,
   buildActiveQuietHours,
   normalizeNotificationCaps,
-  resolveOutFile
+  resolveOutFile,
+  buildRouteErrorLoggingFilter,
+  fetchRouteErrors
 };
 
 if (require.main === module) {

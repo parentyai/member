@@ -15,6 +15,8 @@ npm run ops:stg-e2e -- \
   --base-url http://127.0.0.1:18080 \
   --admin-token "$ADMIN_OS_TOKEN" \
   --actor ops_stg_e2e \
+  --fetch-route-errors \
+  --project-id member-485303 \
   --segment-template-key <ACTIVE_TEMPLATE_KEY> \
   --composer-notification-id <ACTIVE_NOTIFICATION_ID> \
   --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
@@ -34,6 +36,7 @@ npm run ops:stg-e2e -- \
 - `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
 - `segment-template-version`: 固定バージョン指定が必要な場合のみ
 - `segment-query-json`: Segment フィルタを明示したい場合のみ
+- `fetch-route-errors + project-id`: FAIL時に Cloud Logging の `[route_error]` を traceId で回収
 
 ## Checklist (fixed order)
 1. Segment Send: `plan -> dry-run -> execute`
