@@ -91,6 +91,16 @@ Notes:
 - The codebase does not implement automatic TTL deletion for Firestore collections.
 - Retention is therefore effectively indefinite unless GCP-level retention policies are configured separately.
 
+### Governance Cadence (recommended)
+- Weekly:
+  - check `audit_logs` / `notification_deliveries` growth trend
+  - verify no plaintext secrets or full membership ids appear in sampled logs
+- Monthly:
+  - review retention settings for Firestore / Logging / Secret Manager
+  - verify deletion/archival run evidence exists
+- On incident/request:
+  - run scoped deletion procedure and capture approval + execution evidence
+
 ### Operational Responsibility Split
 - Application responsibility:
   - avoid storing plaintext secrets and full Ridac membership ids
@@ -100,9 +110,23 @@ Notes:
   - define and enforce retention/backup/deletion policies in GCP (Firestore/Logging/Secret Manager)
   - maintain IAM least-privilege and service account boundaries between environments
   - maintain WIF/OIDC trust policy for CI deploy identities
+- Compliance/legal responsibility:
+  - approve retention/deletion policy changes before rollout
+  - keep policy decision records and approval dates
 
 ### Minimum Deletion Runbook Inputs (for legal/ops review)
 - Which collection(s) or log sink(s) are in scope
 - Reason for deletion (request/incident/policy)
 - Approval record (who approved, when)
 - Execution evidence (traceId, command/run URL, resulting counts)
+
+### Minimum Deletion Evidence Outputs (fixed)
+- ticket_or_request_id
+- approver
+- approved_at (UTC)
+- executed_by
+- executed_at (UTC)
+- scope_summary (collections/sinks)
+- before_count / after_count
+- verification_command_and_result
+- rollback_or_restore_plan
