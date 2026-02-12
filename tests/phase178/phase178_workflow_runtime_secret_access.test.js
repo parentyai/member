@@ -11,9 +11,10 @@ function read(relPath) {
 
 function assertHasSecretAccessGuard(contents, label) {
   assert.match(contents, /Ensure runtime SA can access required secrets/, `${label}: guard step missing`);
-  assert.match(contents, /gcloud secrets add-iam-policy-binding/, `${label}: binding command missing`);
+  assert.match(contents, /if gcloud secrets add-iam-policy-binding/, `${label}: binding command missing`);
   assert.match(contents, /roles\/secretmanager\.secretAccessor/, `${label}: secret accessor role missing`);
   assert.match(contents, /serviceAccount:\$\{RUNTIME_SA_EMAIL\}/, `${label}: runtime SA binding target missing`);
+  assert.match(contents, /::warning title=Secret IAM update skipped::/, `${label}: warning fallback missing`);
 }
 
 test('phase178: deploy workflow grants runtime SA secret accessor for member secrets', () => {
