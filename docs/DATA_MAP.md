@@ -9,7 +9,7 @@ This document describes what data the Member system stores, where it is stored, 
 ## Primary Identifiers
 - `lineUserId`: LINE userId (primary key in Member)
 - `memberNumber`: user-provided number (not verified by Member)
-- `ridacMembershipIdHash`: HMAC-SHA256 of user-declared Ridac membership id (not reversible without secret)
+- `ridacMembershipIdHash`: HMAC-SHA256 of user-declared Redac membership id (not reversible without secret)
 
 ## Stored Data (Firestore)
 ### `users/{lineUserId}`
@@ -26,10 +26,10 @@ Typical fields (not exhaustive):
 - `ridacMembershipUnlinkedAt`, `ridacMembershipUnlinkedBy`: unlink timestamp + actor (`user`/`ops`)
 
 Notes:
-- Plaintext Ridac membership id is not stored.
+- Plaintext Redac membership id is not stored.
 
 ### `ridac_membership_links/{ridacMembershipIdHash}`
-Purpose: enforce uniqueness (one Ridac membership id can be linked to only one LINE user).
+Purpose: enforce uniqueness (one Redac membership id can be linked to only one LINE user).
 
 Fields:
 - `ridacMembershipIdHash`: HMAC hash (doc id and field)
@@ -103,7 +103,7 @@ Notes:
 
 ### Operational Responsibility Split
 - Application responsibility:
-  - avoid storing plaintext secrets and full Ridac membership ids
+  - avoid storing plaintext secrets and full Redac membership ids
   - append audit logs with traceId/requestId for sensitive operations
   - provide manual recovery and administrative controls via `/api/admin/*`
 - Infrastructure responsibility:
