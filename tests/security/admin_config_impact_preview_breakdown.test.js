@@ -98,6 +98,9 @@ test('security: system config impactPreview includes cap breakdown fields', asyn
   assert.ok(json.impactPreview.blockedByCapType);
   assert.ok(json.impactPreview.blockedByCategory);
   assert.ok(json.impactPreview.blockedByReason);
+  assert.ok(typeof json.impactPreview.blockedEvaluations === 'number');
+  assert.ok(typeof json.impactPreview.blockedEvaluationRatePercent === 'number');
+  assert.ok(typeof json.impactPreview.estimatedBlockedUserRatePercent === 'number');
 });
 
 test('security: system config plan succeeds when notificationCaps are all null', async (t) => {
@@ -151,7 +154,89 @@ test('security: system config plan succeeds when notificationCaps are all null',
   assert.strictEqual(json.ok, true);
   assert.strictEqual(json.impactPreview.sampledUsers, 0);
   assert.strictEqual(json.impactPreview.sampledEvaluations, 0);
+  assert.strictEqual(json.impactPreview.blockedEvaluations, 0);
+  assert.strictEqual(json.impactPreview.blockedEvaluationRatePercent, 0);
+  assert.strictEqual(json.impactPreview.estimatedBlockedUserRatePercent, 0);
   assert.deepStrictEqual(json.impactPreview.blockedByCapType, {});
   assert.deepStrictEqual(json.impactPreview.blockedByCategory, {});
   assert.deepStrictEqual(json.impactPreview.blockedByReason, {});
+});
+
+test('security: system config impactPreview respects deliveryCountLegacyFallback mode', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test_confirm_secret';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  await usersRepo.createUser('U_LEGACY', {
+    createdAt: '2026-02-10T00:00:00.000Z',
+    scenarioKey: 'A',
+    stepKey: 'THREE_MONTHS',
+    memberNumber: null
+  });
+  await deliveriesRepo.createDeliveryWithId('legacy_no_delivered_at', {
+    lineUserId: 'U_LEGACY',
+    delivered: true,
+    sentAt: new Date().toISOString(),
+    deliveredAt: null
+  });
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevSecret === undefined) delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+    else process.env.OPS_CONFIRM_TOKEN_SECRET = prevSecret;
+  });
+
+  const headers = {
+    'x-admin-token': 'test_admin_token',
+    'x-actor': 'admin_master',
+    'content-type': 'application/json; charset=utf-8'
+  };
+
+  const planDeliveredAtOnlyRes = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: Object.assign({}, headers, { 'x-trace-id': 'TRACE_CFG_IMPACT_DELIVERED_ONLY' }),
+    body: JSON.stringify({
+      servicePhase: 2,
+      notificationPreset: 'B',
+      notificationCaps: { perUserWeeklyCap: 1 },
+      deliveryCountLegacyFallback: false
+    })
+  });
+  assert.strictEqual(planDeliveredAtOnlyRes.status, 200);
+  const planDeliveredAtOnly = JSON.parse(planDeliveredAtOnlyRes.body);
+  assert.strictEqual(planDeliveredAtOnly.ok, true);
+  assert.strictEqual(planDeliveredAtOnly.impactPreview.estimatedBlockedUsers, 0);
+
+  const planLegacyFallbackRes = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/api/admin/os/config/plan',
+    headers: Object.assign({}, headers, { 'x-trace-id': 'TRACE_CFG_IMPACT_LEGACY_FALLBACK' }),
+    body: JSON.stringify({
+      servicePhase: 2,
+      notificationPreset: 'B',
+      notificationCaps: { perUserWeeklyCap: 1 },
+      deliveryCountLegacyFallback: true
+    })
+  });
+  assert.strictEqual(planLegacyFallbackRes.status, 200);
+  const planLegacyFallback = JSON.parse(planLegacyFallbackRes.body);
+  assert.strictEqual(planLegacyFallback.ok, true);
+  assert.strictEqual(planLegacyFallback.impactPreview.estimatedBlockedUsers, 1);
+  assert.ok(planLegacyFallback.impactPreview.blockedByCapType.PER_USER_WEEKLY >= 1);
 });

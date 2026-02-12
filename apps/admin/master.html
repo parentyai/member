@@ -350,7 +350,16 @@
         if (!preview || typeof preview !== 'object') return 'impact preview unavailable';
         const sampledUsers = Number.isFinite(preview.sampledUsers) ? preview.sampledUsers : 0;
         const sampledEvaluations = Number.isFinite(preview.sampledEvaluations) ? preview.sampledEvaluations : sampledUsers;
+        const blockedEvaluations = Number.isFinite(preview.blockedEvaluations) ? preview.blockedEvaluations : 0;
         const estimatedBlockedUsers = Number.isFinite(preview.estimatedBlockedUsers) ? preview.estimatedBlockedUsers : 0;
+        const estimatedBlockedUserRatePercent = Number.isFinite(preview.estimatedBlockedUserRatePercent)
+          ? preview.estimatedBlockedUserRatePercent
+          : 0;
+        const blockedEvaluationRatePercent = Number.isFinite(preview.blockedEvaluationRatePercent)
+          ? preview.blockedEvaluationRatePercent
+          : 0;
+        const topBlockedCapType = preview.topBlockedCapType ? String(preview.topBlockedCapType) : '(none)';
+        const topBlockedCategory = preview.topBlockedCategory ? String(preview.topBlockedCategory) : '(none)';
         const blockedByCapType = sortedEntries(preview.blockedByCapType);
         const blockedByCategory = sortedEntries(preview.blockedByCategory);
         const blockedByReason = sortedEntries(preview.blockedByReason);
@@ -359,7 +368,12 @@
         const lines = [
           `sampledUsers: ${sampledUsers}`,
           `sampledEvaluations: ${sampledEvaluations}`,
+          `blockedEvaluations: ${blockedEvaluations}`,
+          `blockedEvaluationRatePercent: ${blockedEvaluationRatePercent}`,
           `estimatedBlockedUsers: ${estimatedBlockedUsers}`,
+          `estimatedBlockedUserRatePercent: ${estimatedBlockedUserRatePercent}`,
+          `topBlockedCapType: ${topBlockedCapType}`,
+          `topBlockedCategory: ${topBlockedCategory}`,
           `simulatedCategories: ${categories.length ? categories.join(', ') : '(none)'}`
         ];
         if (blockedByCapType.length) {
