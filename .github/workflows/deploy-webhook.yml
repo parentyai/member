@@ -107,16 +107,35 @@ jobs:
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
           )
           MISSING=0
+          VISIBILITY_SKIPPED=0
           for SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do
-            if gcloud secrets describe "$SECRET_NAME" \
+            DESCRIBE_OUTPUT=""
+            if DESCRIBE_OUTPUT=$(gcloud secrets describe "$SECRET_NAME" \
               --project "$GCP_PROJECT_ID" \
-              --format='value(name)' >/dev/null 2>&1; then
+              --format='value(name)' 2>&1); then
               echo "Secret found: ${SECRET_NAME}"
-            else
-              echo "::error title=Missing Secret Manager secret::${SECRET_NAME} is missing or inaccessible in ${GCP_PROJECT_ID}"
-              MISSING=1
+              continue
             fi
+
+            if echo "$DESCRIBE_OUTPUT" | grep -qi "NOT_FOUND"; then
+              echo "::error title=Missing Secret Manager secret::${SECRET_NAME} was not found in ${GCP_PROJECT_ID}"
+              MISSING=1
+              continue
+            fi
+
+            if echo "$DESCRIBE_OUTPUT" | grep -Eqi "PERMISSION_DENIED|does not have permission|secretmanager.secrets.get"; then
+              echo "::warning title=Secret visibility skipped::${SECRET_NAME} metadata is not visible to deploy SA; existence check skipped."
+              VISIBILITY_SKIPPED=1
+              continue
+            fi
+
+            echo "::error title=Secret preflight failed::${SECRET_NAME} existence check failed unexpectedly"
+            echo "$DESCRIBE_OUTPUT"
+            MISSING=1
           done
+          if [ "$VISIBILITY_SKIPPED" -ne 0 ]; then
+            echo "::notice title=Secret preflight mode::Some secrets were not visibility-checked due to deploy SA permissions; deploy/runtime checks remain authoritative."
+          fi
           if [ "$MISSING" -ne 0 ]; then
             exit 1
           fi
