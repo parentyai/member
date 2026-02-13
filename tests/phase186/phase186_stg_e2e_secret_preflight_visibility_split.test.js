@@ -20,4 +20,6 @@ test('phase186: stg e2e workflow preflight separates missing from permission iss
   assert.match(contents, /Secret preflight mode/, 'permission notice branch missing');
   assert.match(contents, /secretmanager\.secrets\.get/, 'permission-denied matcher missing');
   assert.match(contents, /Admin token source::Using ADMIN_OS_TOKEN from GitHub secrets/, 'admin token source notice missing');
+  assert.match(contents, /print-identity-token --audiences/, 'identity token mint missing');
+  assert.match(contents, /--token "\$ID_TOKEN"/, 'proxy token injection missing');
 });
