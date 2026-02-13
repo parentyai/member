@@ -45,6 +45,26 @@ base: `origin/main` @ `6183f81`
 - 原因: access token 認証のため、audiences 付きの identity token を mint できなかった。
 - 該当 run: `21972657933`（workflow_dispatch）
 
+## Follow-up Run 6
+- E2E 実行は `segment` が FAIL、他は PASS。
+- 原因: Segment execute で LINE API 400 が発生し、全件失敗（executedCount=0）。
+- 該当 run: `21973137031`（workflow_dispatch）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260213031003`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260213031011`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260213031013`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260213031014`
+
+## Infra Fix (Index)
+- Firestore composite index 作成（audit_logs の query 失敗を解消）:
+  - `collectionGroup=audit_logs`
+  - fields: `action ASC`, `templateKey ASC`, `createdAt DESC`, `__name__ DESC`
+- 作成記録:
+  - operation: `projects/member-485303/databases/(default)/operations/S0U0aFhqT2dBQ0lDDCoDIDAzMTUwNDNjZTJkMS0xNmI4LTJiYzQtZDg1ZS0yYmFkYTBjNiQac2VuaWxlcGlwCQpBEg`
+  - index: `projects/member-485303/databases/(default)/collectionGroups/audit_logs/indexes/CICAgOjXh4EK`
+- 結果:
+  - index state: `READY`
+
 ## Scope
 - stg e2e workflow の secret preflight を「missing」と「permission不足」に分離。
 - missing は fail-fast、permission不足は warning/notice で継続。
@@ -52,6 +72,7 @@ base: `origin/main` @ `6183f81`
    - secrets が存在する場合は Secret Manager 参照を省略。
  - Cloud Run proxy に identity token を明示付与し、private service でも認証可能にする。
  - Auth action の `id_token` を使って proxy token を付与する（audience = service URL）。
+ - Firestore composite index の作成（audit_logs query の 9_FAILED_PRECONDITION 対応）。
 
 ## Code Changes
 - `.github/workflows/stg-notification-e2e.yml`
@@ -62,6 +83,7 @@ base: `origin/main` @ `6183f81`
     proxy に `--token` を渡す
   - `google-github-actions/auth@v2` の `token_format: id_token` で
     `id_token_audience` を service URL に固定し、`outputs.id_token` を proxy に渡す
+  - Firestore composite index (audit_logs) を作成
 - `tests/phase186/phase186_stg_e2e_secret_preflight_visibility_split.test.js`（新規）
   - 分岐ロジック（NOT_FOUND / permission warning / notice）を静的検証
   - GitHub secrets からの token 利用を静的検証
