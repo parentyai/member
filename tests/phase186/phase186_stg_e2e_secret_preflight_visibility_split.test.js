@@ -26,4 +26,6 @@ test('phase186: stg e2e workflow preflight separates missing from permission iss
   assert.match(contents, /create_credentials_file:\s+false/, 'proxy auth should not override credentials');
   assert.match(contents, /PROXY_ID_TOKEN:\s+\$\{\{\s*steps\.proxy_auth\.outputs\.id_token\s*\}\}/, 'proxy id token env missing');
   assert.match(contents, /--token "\$PROXY_ID_TOKEN"/, 'proxy token injection missing');
+  assert.match(contents, /segment_query_json/, 'segment_query_json input missing');
+  assert.match(contents, /--segment-query-json/, 'segment query arg missing');
 });
