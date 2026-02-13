@@ -59,8 +59,9 @@ base: `origin/main` @ `6183f81`
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
   - fields: `action ASC`, `templateKey ASC`, `createdAt DESC`, `__name__ DESC`
-- 作成コマンド:
-  - `gcloud firestore indexes composite create --project member-485303 --database='(default)' --collection-group=audit_logs --field-config field-path=action,order=ASCENDING --field-config field-path=templateKey,order=ASCENDING --field-config field-path=createdAt,order=DESCENDING --field-config field-path=__name__,order=DESCENDING`
+- 作成記録:
+  - operation: `projects/member-485303/databases/(default)/operations/S0U0aFhqT2dBQ0lDDCoDIDAzMTUwNDNjZTJkMS0xNmI4LTJiYzQtZDg1ZS0yYmFkYTBjNiQac2VuaWxlcGlwCQpBEg`
+  - index: `projects/member-485303/databases/(default)/collectionGroups/audit_logs/indexes/CICAgOjXh4EK`
 - 結果:
   - index state: `READY`
 
