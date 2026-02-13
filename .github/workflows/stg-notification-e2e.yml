@@ -148,9 +148,24 @@ jobs:
           echo "json_out=$JSON_OUT" >> "$GITHUB_OUTPUT"
           echo "md_out=$MD_OUT" >> "$GITHUB_OUTPUT"
 
+          SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          ID_TOKEN="$(gcloud auth print-identity-token --audiences "$SERVICE_URL")"
+          if [ -z "$ID_TOKEN" ]; then
+            echo "::error title=Identity token missing::Unable to mint identity token for Cloud Run proxy"
+            exit 1
+          fi
+
           gcloud run services proxy "$SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
+            --token "$ID_TOKEN" \
             --port 18080 >/tmp/member-proxy.log 2>&1 &
           PROXY_PID=$!
           trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
