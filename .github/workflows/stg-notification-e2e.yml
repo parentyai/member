@@ -92,14 +92,25 @@ jobs:
         run: |
           set -euo pipefail
           SECRET_NAME="ADMIN_OS_TOKEN"
-          if gcloud secrets describe "$SECRET_NAME" \
+          DESCRIBE_OUTPUT=""
+          if DESCRIBE_OUTPUT=$(gcloud secrets describe "$SECRET_NAME" \
             --project "$GCP_PROJECT_ID" \
-            --format='value(name)' >/dev/null 2>&1; then
+            --format='value(name)' 2>&1); then
             echo "Secret found: ${SECRET_NAME}"
-          else
-            echo "::error title=Missing Secret Manager secret::${SECRET_NAME} is missing or inaccessible in ${GCP_PROJECT_ID}"
+            exit 0
+          fi
+          if echo "$DESCRIBE_OUTPUT" | grep -qi "NOT_FOUND"; then
+            echo "::error title=Missing Secret Manager secret::${SECRET_NAME} was not found in ${GCP_PROJECT_ID}"
             exit 1
           fi
+          if echo "$DESCRIBE_OUTPUT" | grep -Eqi "PERMISSION_DENIED|does not have permission|secretmanager.secrets.get"; then
+            echo "::warning title=Secret visibility skipped::${SECRET_NAME} metadata is not visible to deploy SA; existence check skipped."
+            echo "::notice title=Secret preflight mode::Secret visibility check skipped due to deploy SA permissions; secret read step remains authoritative."
+            exit 0
+          fi
+          echo "::error title=Secret preflight failed::${SECRET_NAME} existence check failed unexpectedly"
+          echo "$DESCRIBE_OUTPUT"
+          exit 1
 
       - name: Read ADMIN_OS_TOKEN from Secret Manager
         run: |
