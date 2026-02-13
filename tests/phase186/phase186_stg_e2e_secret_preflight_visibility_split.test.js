@@ -20,6 +20,10 @@ test('phase186: stg e2e workflow preflight separates missing from permission iss
   assert.match(contents, /Secret preflight mode/, 'permission notice branch missing');
   assert.match(contents, /secretmanager\.secrets\.get/, 'permission-denied matcher missing');
   assert.match(contents, /Admin token source::Using ADMIN_OS_TOKEN from GitHub secrets/, 'admin token source notice missing');
-  assert.match(contents, /print-identity-token --audiences/, 'identity token mint missing');
-  assert.match(contents, /--token "\$ID_TOKEN"/, 'proxy token injection missing');
+  assert.match(contents, /Resolve Cloud Run service URL/, 'service url step missing');
+  assert.match(contents, /token_format:\s+id_token/, 'id_token auth missing');
+  assert.match(contents, /id_token_audience:\s+\$\{\{\s*steps\.service_url\.outputs\.service_url\s*\}\}/, 'id_token audience missing');
+  assert.match(contents, /create_credentials_file:\s+false/, 'proxy auth should not override credentials');
+  assert.match(contents, /PROXY_ID_TOKEN:\s+\$\{\{\s*steps\.proxy_auth\.outputs\.id_token\s*\}\}/, 'proxy id token env missing');
+  assert.match(contents, /--token "\$PROXY_ID_TOKEN"/, 'proxy token injection missing');
 });
