@@ -55,6 +55,26 @@ base: `origin/main` @ `6183f81`
   - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260213031013`
   - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260213031014`
 
+## Follow-up Run 7-8
+- `Run stg notification e2e checklist` で FAIL。
+- 原因: `segment_query_json` の入力が GitHub Actions の input 経由で
+  `--segment-query-json {lineUserIds:[...]}` の形式になり、JSON parse が失敗。
+- 該当 run:
+  - `21991156730`（workflow_dispatch）
+  - `21991216858`（workflow_dispatch）
+
+## Follow-up Run 9
+- `segment` と `composer_cap_block` が FAIL。
+- 原因:
+  - segment: `segment_execute_not_ok:unknown`（送信失敗で ok=false, reason未設定）
+  - composer_cap_block: `notification not active`（指定 notificationId が非active）
+- 該当 run: `21991317682`（workflow_dispatch / ref=codex/phasec-c27-stg-e2e-segment-target）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260213145536`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260213145545`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260213145546`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260213145548`
+
 ## Infra Fix (Index)
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
@@ -87,9 +107,14 @@ base: `origin/main` @ `6183f81`
 - `tests/phase186/phase186_stg_e2e_secret_preflight_visibility_split.test.js`（新規）
   - 分岐ロジック（NOT_FOUND / permission warning / notice）を静的検証
   - GitHub secrets からの token 利用を静的検証
+- `tools/run_stg_notification_e2e_checklist.js`
+  - `segment_query_json` の loose 形式（`{lineUserIds:[U1,U2]}`）を許容
+- `tests/phase186/phase186_stg_e2e_segment_query_loose_parse.test.js`（新規）
+  - loose 形式の `segment_query_json` を parse できることを検証
 
 ## Local Verification
 - `node --test tests/phase186/phase186_stg_e2e_secret_preflight_visibility_split.test.js` PASS
+- `node --test tests/phase186/phase186_stg_e2e_segment_query_loose_parse.test.js` PASS
 - `npm test` PASS
 
 ## Rollback
