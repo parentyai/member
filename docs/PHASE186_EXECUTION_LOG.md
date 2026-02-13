@@ -22,6 +22,12 @@ base: `origin/main` @ `6183f81`
 - 原因: deploy SA が `ADMIN_OS_TOKEN` の version access 権限を持たない。
 - 該当 run: `21971156805`（workflow_dispatch）
 
+## Follow-up Run 2
+- `Resolve ADMIN_OS_TOKEN` で FAIL。
+- 原因: GitHub Secrets の `ADMIN_OS_TOKEN` が空で、
+  Secret Manager read にフォールバック → deploy SA が `secretmanager.versions.access` を持たず失敗。
+- 該当 run: `21971258314`（workflow_dispatch）
+
 ## Scope
 - stg e2e workflow の secret preflight を「missing」と「permission不足」に分離。
 - missing は fail-fast、permission不足は warning/notice で継続。
