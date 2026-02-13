@@ -37,6 +37,7 @@ env:
   SERVICE_NAME: ${{ vars.SERVICE_NAME }}
   GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
   DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  ADMIN_OS_TOKEN: ${{ secrets.ADMIN_OS_TOKEN }}
 
 jobs:
   stg-e2e:
@@ -91,6 +92,10 @@ jobs:
       - name: Validate required secret exists
         run: |
           set -euo pipefail
+          if [ -n "${ADMIN_OS_TOKEN:-}" ]; then
+            echo "::notice title=Secret preflight skipped::ADMIN_OS_TOKEN provided via GitHub secrets."
+            exit 0
+          fi
           SECRET_NAME="ADMIN_OS_TOKEN"
           DESCRIBE_OUTPUT=""
           if DESCRIBE_OUTPUT=$(gcloud secrets describe "$SECRET_NAME" \
@@ -112,9 +117,15 @@ jobs:
           echo "$DESCRIBE_OUTPUT"
           exit 1
 
-      - name: Read ADMIN_OS_TOKEN from Secret Manager
+      - name: Resolve ADMIN_OS_TOKEN
         run: |
           set -euo pipefail
+          if [ -n "${ADMIN_OS_TOKEN:-}" ]; then
+            echo "::notice title=Admin token source::Using ADMIN_OS_TOKEN from GitHub secrets."
+            echo "::add-mask::$ADMIN_OS_TOKEN"
+            echo "ADMIN_OS_TOKEN=$ADMIN_OS_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
           TOKEN="$(gcloud secrets versions access latest --secret=ADMIN_OS_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
           if [ -z "$TOKEN" ]; then
             echo "::error title=Secret read failed::ADMIN_OS_TOKEN is empty"
