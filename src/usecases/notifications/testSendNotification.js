@@ -31,6 +31,7 @@ async function testSendNotification(params) {
   const deliveryId = typeof payload.deliveryId === 'string' && payload.deliveryId.trim().length > 0
     ? payload.deliveryId.trim()
     : null;
+  const sentAt = payload.sentAt || new Date().toISOString();
 
   if (!lineUserId) {
     throw new Error('lineUserId required');
@@ -69,7 +70,7 @@ async function testSendNotification(params) {
           delivered: false,
           state: 'failed',
           lastError: err && err.message ? String(err.message) : 'send failed',
-          lastErrorAt: payload.sentAt || undefined
+          lastErrorAt: sentAt
         });
       } catch (_ignored) {
         // best-effort only
@@ -82,13 +83,13 @@ async function testSendNotification(params) {
     notificationId,
     lineUserId,
     notificationCategory,
-    sentAt: payload.sentAt,
+    sentAt,
     delivered: true
   };
   const result = deliveryId
     ? await deliveriesRepo.createDeliveryWithId(deliveryId, Object.assign({}, delivery, {
       state: 'delivered',
-      deliveredAt: payload.sentAt || undefined,
+      deliveredAt: sentAt,
       lastError: null,
       lastErrorAt: null
     }))
