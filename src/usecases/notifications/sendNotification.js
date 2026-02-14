@@ -89,7 +89,7 @@ async function sendNotification(params) {
   }
 
   const pushFn = payload.pushFn || pushMessage;
-  const sentAt = payload.sentAt;
+  const sentAt = payload.sentAt || new Date().toISOString();
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
@@ -142,7 +142,7 @@ async function sendNotification(params) {
         sentAt,
         delivered: true,
         state: 'delivered',
-        deliveredAt: sentAt || undefined,
+        deliveredAt: sentAt,
         lastError: null,
         lastErrorAt: null
       });
@@ -156,7 +156,7 @@ async function sendNotification(params) {
           delivered: false,
           state: 'failed',
           lastError: err && err.message ? String(err.message) : 'send failed',
-          lastErrorAt: sentAt || undefined
+          lastErrorAt: sentAt
         });
       } catch (_ignored) {
         // best-effort only
