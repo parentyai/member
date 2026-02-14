@@ -152,6 +152,22 @@ base: `origin/main` @ `6183f81`
   - `stg-notification-e2e-20260214145522.json`
   - `stg-notification-e2e-20260214145522.md`
 
+## Follow-up Run 16 (Post-merge verification)
+UTC: 2026-02-14T16:07:32Z
+- Deploy workflows (main push) が全て success:
+  - Deploy to Cloud Run: `22020274075`
+  - Deploy webhook service: `22020274067`
+  - Deploy track service: `22020274064`
+  - Audit Gate: `22020274077`
+- Cloud Run images (stg):
+  - member: `us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:8e267f744610c9a1e4edb52e49c190c1873728c1` (rev: `member-00398-5lb`)
+  - member-webhook: `us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:8e267f744610c9a1e4edb52e49c190c1873728c1` (rev: `member-webhook-00057-ggh`)
+  - member-track: `us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:8e267f744610c9a1e4edb52e49c190c1873728c1` (rev: `member-track-00219-lqk`)
+- smoke:
+  - trace-smoke: PASS (headSha `dfaaecc578990f179c3640e20401fff31a9bdc48`)
+  - ops-smoke: PASS (headSha `dfaaecc578990f179c3640e20401fff31a9bdc48`)
+  - evidence: `docs/TRACE_SMOKE_EVIDENCE.md` updated by run
+
 ## Infra Fix (Index)
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
