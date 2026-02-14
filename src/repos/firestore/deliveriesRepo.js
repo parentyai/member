@@ -32,6 +32,15 @@ function resolveDeliveredAt(record) {
   return toDate(record.deliveredAt) || toDate(record.sentAt) || null;
 }
 
+function stripUndefinedFields(data) {
+  const input = data && typeof data === 'object' ? data : {};
+  const cleaned = {};
+  for (const key of Object.keys(input)) {
+    if (input[key] !== undefined) cleaned[key] = input[key];
+  }
+  return cleaned;
+}
+
 function toIso(value) {
   const parsed = toDate(value);
   return parsed ? parsed.toISOString() : null;
@@ -160,7 +169,8 @@ async function countDeliveredSinceOptimized({ db, lineUserId, sinceDate, notific
 async function createDelivery(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
-  const payload = Object.assign({}, data || {}, { sentAt: resolveTimestamp(data && data.sentAt) });
+  const base = stripUndefinedFields(data);
+  const payload = Object.assign({}, base, { sentAt: resolveTimestamp(data && data.sentAt) });
   await docRef.set(payload, { merge: false });
   return { id: docRef.id };
 }
@@ -174,7 +184,8 @@ async function createDeliveryWithId(deliveryId, data) {
   if (!deliveryId) throw new Error('deliveryId required');
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(deliveryId);
-  const payload = Object.assign({}, data || {}, { sentAt: resolveTimestamp(data && data.sentAt) });
+  const base = stripUndefinedFields(data);
+  const payload = Object.assign({}, base, { sentAt: resolveTimestamp(data && data.sentAt) });
   await docRef.set(payload, { merge: true });
   return { id: docRef.id };
 }
