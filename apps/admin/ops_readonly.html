@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>運用判断支援（READ ONLY）</title>
+    <title>運用判断支援（Ops Console / READ ONLY）</title>
     <style>
       body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
@@ -19,21 +19,21 @@
     </style>
   </head>
   <body>
-    <h1>運用判断支援（READ ONLY）</h1>
+    <h1>運用判断支援（Ops Console / READ ONLY）</h1>
     <div class="note">表示のみ。判断と操作は人間が行います。</div>
     <div class="note">
       運用ナビ:
-      <a href="/admin/composer">Composer</a> →
-      <a href="/admin/monitor">Monitor</a> →
-      <a href="/admin/errors">Errors</a> →
+      <a href="/admin/composer">通知作成（Composer）</a> →
+      <a href="/admin/monitor">配信結果（Monitor）</a> →
+      <a href="/admin/errors">エラー一覧（Errors）</a> →
       <a href="#trace-search">Trace</a>
     </div>
     <div class="note">
-      <a href="/admin/read-model">通知集計</a> |
-      <a href="/admin/composer">Composer</a> |
-      <a href="/admin/monitor">Monitor</a> |
-      <a href="/admin/errors">Errors</a> |
-      <a href="/admin/master">Master</a> |
+      <a href="/admin/read-model">通知集計（Read Model）</a> |
+      <a href="/admin/composer">通知作成（Composer）</a> |
+      <a href="/admin/monitor">配信結果（Monitor）</a> |
+      <a href="/admin/errors">エラー一覧（Errors）</a> |
+      <a href="/admin/master">設定/回復（Master）</a> |
       <a href="#trace-search">Trace Search</a> |
       <a href="#implementation-targets">Implementation Targets</a>
     </div>
@@ -124,7 +124,7 @@
     </div>
 
     <div class="section" id="ops-dashboard-section">
-      <h2>Ops Dashboard（Phase38）</h2>
+      <h2>Ops Dashboard（参考）</h2>
       <div class="note">ユーザー×通知×notice×decision を一覧で参照。</div>
       <div class="note">
         limit: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" />
@@ -147,7 +147,7 @@
     </div>
 
     <div class="section" id="ops-console-list-section">
-      <h2>Ops Console（Phase26 list）</h2>
+      <h2>Ops Console（一覧）</h2>
       <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
       <div class="note">
         limit: <input type="number" id="ops-console-limit" min="1" max="200" value="20" />
@@ -322,7 +322,7 @@
     </div>
 
     <div class="section" id="retry-queue-section">
-      <h2>Send Retry Queue（READ ONLY + Manual Retry）</h2>
+      <h2>再試行キュー（READ ONLY + Manual Retry）</h2>
       <div class="note">PENDING の再送キュー一覧。危険操作（retry）は plan → confirmToken → retry を固定する。</div>
       <div class="note">
         limit:

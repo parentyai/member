@@ -6,7 +6,9 @@
     "firebase-admin": "^12.0.0"
   },
   "scripts": {
+    "pretest": "npm run test:docs",
     "test": "node --test tests/**/*.test.js",
+    "test:docs": "node tools/verify_docs.js",
     "test:trace-smoke": "node tools/run_trace_smoke.js",
     "test:ops-smoke": "node tools/run_ops_smoke.js",
     "ops:stg-e2e": "node tools/run_stg_notification_e2e_checklist.js",

@@ -1,6 +1,8 @@
 # SSOT_ADMIN_UI_OS
 
 管理UIを「運用OS」として定義し、**人間Opsが UI だけで自走できる**ことを SSOT として固定する。
+UI表示（画面タイトル/見出し/画面名）は `docs/ADMIN_UI_DICTIONARY_JA.md` を唯一のSSOTとする。
+本書は運用OSの原則/要件のSSOTであり、UI表示に関する記述は辞書に準拠する。
 
 ## Non-Goals
 - LLM を実行主体にしない（提案/文面整形のみ）
@@ -46,11 +48,14 @@ MUST:
 ## IA (Information Architecture) — Screens
 以下は ServicePhase1 の「運用OS v1」で最低限提供される画面（追加は add-only）。
 
-- `/admin/ops`（Ops Console / Trace Search / Segment Send / Retry Queue / Operations）
-- `/admin/composer`（Notification Composer）
-- `/admin/monitor`（Delivery Monitor）
-- `/admin/errors`（Error Console）
-- `/admin/master`（Master Data）
+- `/admin/ops`（運用判断支援（Ops Console / READ ONLY））
+- `/admin/composer`（通知作成（Composer / 運用OS））
+- `/admin/monitor`（配信結果（Monitor / READ ONLY））
+- `/admin/errors`（エラー一覧（Errors / READ ONLY））
+- `/admin/master`（設定/回復（Master / 運用OS））
+- `/admin/read-model`（通知集計（Read Model / READ ONLY））
+- `/admin/review`（運用レビュー記録（Review））
+- `/admin/login`（Admin Login）
 
 ## Audit Points (Minimum)
 画面/操作に対して audit_logs に best-effort で残す（traceId を必須保存）。
@@ -70,4 +75,3 @@ MUST:
   - `kill_switch.plan`
   - `kill_switch.set`
   - `template.*` / `link_registry.*`（既存アクションを利用）
-
