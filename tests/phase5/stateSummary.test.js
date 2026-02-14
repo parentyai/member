@@ -75,13 +75,14 @@ test('getUserStateSummary: returns read-only state', async () => {
   });
   assert.deepStrictEqual(result.userSummaryCompleteness, {
     ok: true,
-    missing: [],
-    needsAttention: false,
-    severity: 'INFO'
+    missing: ['checklist_incomplete'],
+    needsAttention: true,
+    severity: 'WARN'
   });
   assert.deepStrictEqual(result.overallDecisionReadiness, {
     status: 'NOT_READY',
     blocking: [
+      'user_summary:checklist_incomplete',
       'missing_notification_summary',
       'checklist:missing_required_item',
       'ops_state:missing_ops_state',

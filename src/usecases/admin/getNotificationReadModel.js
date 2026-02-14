@@ -44,12 +44,19 @@ function computeLastSentAt(deliveries) {
 
 async function getNotificationReadModel(params) {
   const opts = params || {};
-  const notifications = await notificationsRepo.listNotifications({
-    limit: opts.limit,
-    status: opts.status,
-    scenarioKey: opts.scenarioKey,
-    stepKey: opts.stepKey
-  });
+  let notifications = [];
+  const notificationId = typeof opts.notificationId === 'string' ? opts.notificationId.trim() : '';
+  if (notificationId) {
+    const notification = await notificationsRepo.getNotification(notificationId);
+    notifications = notification ? [notification] : [];
+  } else {
+    notifications = await notificationsRepo.listNotifications({
+      limit: opts.limit,
+      status: opts.status,
+      scenarioKey: opts.scenarioKey,
+      stepKey: opts.stepKey
+    });
+  }
 
   const items = [];
   for (const notification of notifications) {

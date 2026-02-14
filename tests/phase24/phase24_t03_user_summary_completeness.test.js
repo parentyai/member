@@ -43,3 +43,19 @@ test('phase24 t03: memberNumber ok => INFO', () => {
   assert.strictEqual(result.severity, 'INFO');
   assert.strictEqual(result.needsAttention, false);
 });
+
+test('phase24 t03: checklist incomplete => WARN', () => {
+  const result = evaluateUserSummaryCompleteness({
+    member: {
+      hasMemberNumber: true,
+      memberNumberStale: false
+    },
+    checklist: {
+      completion: { isComplete: false }
+    }
+  });
+  assert.strictEqual(result.ok, true);
+  assert.ok(result.missing.includes('checklist_incomplete'));
+  assert.strictEqual(result.severity, 'WARN');
+  assert.strictEqual(result.needsAttention, true);
+});
