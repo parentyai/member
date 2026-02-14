@@ -108,6 +108,50 @@ base: `origin/main` @ `6183f81`
   - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214033419`
   - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214033423`
 
+## Follow-up Run 13
+- `segment` / `composer_cap_block` が FAIL、`retry_queue` / `kill_switch_block` は PASS。
+- 該当 run: `22018905090`（workflow_dispatch / ref=main）
+- headSha: `f9f6b7dbc85e35453477824051ada1886fbdfd33`
+- Fail 原因:
+  - segment: `segment_execute_not_ok:unknown`（execute ok=false, reason未設定）
+  - composer_cap_block: `notification not active`（通知がactiveでないため plan が 400）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214141852`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214141901`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214141903`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214141905`
+- Artifacts:
+  - `stg-notification-e2e-20260214141833.json`
+  - `stg-notification-e2e-20260214141833.md`
+
+## Follow-up Run 14
+- `composer_cap_block` が FAIL、`segment` / `retry_queue` / `kill_switch_block` は PASS。
+- 該当 run: `22018973539`（workflow_dispatch / ref=main）
+- headSha: `f9f6b7dbc85e35453477824051ada1886fbdfd33`
+- Fail 原因:
+  - composer_cap_block: `notification not active`（通知がactiveでないため plan が 400）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214142409`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214142412`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214142414`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214142416`
+- Artifacts:
+  - `stg-notification-e2e-20260214142348.json`
+  - `stg-notification-e2e-20260214142348.md`
+
+## Follow-up Run 15
+- `segment` / `retry_queue` / `kill_switch_block` / `composer_cap_block` 全て PASS。
+- 該当 run: `22019381909`（workflow_dispatch / ref=main）
+- headSha: `f9f6b7dbc85e35453477824051ada1886fbdfd33`
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214145545`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214145548`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214145551`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214145552`
+- Artifacts:
+  - `stg-notification-e2e-20260214145522.json`
+  - `stg-notification-e2e-20260214145522.md`
+
 ## Infra Fix (Index)
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
