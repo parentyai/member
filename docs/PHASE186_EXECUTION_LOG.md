@@ -75,6 +75,29 @@ base: `origin/main` @ `6183f81`
   - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260213145546`
   - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260213145548`
 
+## Follow-up Run 10
+- `segment` が FAIL、他は PASS。
+- 原因:
+  - segment: `segment_execute_not_ok:unknown`（送信失敗で ok=false, reason未設定）
+- 該当 run: `22009474454`（workflow_dispatch / ref=codex/phasec-c27-stg-e2e-segment-target）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214022723`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214022726`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214022728`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214022730`
+
+## Follow-up Run 11
+- `segment` が FAIL、他は PASS。
+- 原因:
+  - segment: Firestore write で `deliveredAt` が undefined になり失敗。
+  - 失敗詳細: `Value for argument "data" is not a valid Firestore document. Cannot use "undefined" as a Firestore value (found in field "deliveredAt").`
+- 該当 run: `22009651714`（workflow_dispatch / ref=codex/phasec-c27-stg-e2e-segment-target）
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214024016`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214024020`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214024022`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214024025`
+
 ## Infra Fix (Index)
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
