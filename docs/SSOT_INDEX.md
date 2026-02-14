@@ -1,6 +1,7 @@
 # SSOT_INDEX
 
 SSOT / Runbook / Traceability 入口の index（append-only）。
+UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 
 ## Index
 - `docs/SSOT_LINE_ONLY_DELTA.md`（LINE-only 境界 / reaction 定義 / webhook events SSOT）
@@ -16,5 +17,11 @@ SSOT / Runbook / Traceability 入口の index（append-only）。
 - `docs/SSOT_SERVICE_PHASES.md`（ServicePhase 1〜4 定義 / scope / guardrails）
 - `docs/SSOT_NOTIFICATION_PRESETS.md`（NotificationPreset A/B/C 定義 / guardrails）
 - `docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md`（ServicePhase × Preset 許可範囲マトリクス）
-- `docs/SSOT_ADMIN_UI_OS.md`（管理UI=運用OS 定義 / IA / 監査ポイント）
+- `docs/SSOT_ADMIN_UI_OS.md`（管理UI=運用OS 定義 / IA / 監査ポイント。UI表示は辞書準拠）
 - `docs/SSOT_ADMIN_UI_DATA_MODEL.md`（運用OSの編集対象 / draft-active ルール）
+- `docs/ADMIN_MANUAL_JA.md`（非エンジニア向け運用マニュアル）
+- `docs/ADMIN_UI_DICTIONARY_JA.md`（管理UI辞書 / UI表示SSOT）
+- `docs/RUNBOOK_JA.md`（日本語RUNBOOK）
+- `docs/SECURITY_MODEL_JA.md`（セキュリティ責任分界）
+- `docs/CHANGELOG_DOCS.md`（ドキュメント更新履歴）
+- `docs/REPO_AUDIT_PHASE0_1_2026-02-14.md`（監査計画/現状監査）

@@ -34,6 +34,16 @@ npm run audit:gate
 
 In CI (GitHub Actions), the audit gate additionally runs Docker-based scans (gitleaks / semgrep / osv-scanner).
 
+## Admin Manual (Japanese)
+
+- `docs/ADMIN_MANUAL_JA.md`
+- `docs/ADMIN_UI_DICTIONARY_JA.md` (UI display SSOT)
+
+## 開発手順（UI表示変更）
+
+- UI表示変更時は必ず `npm run test:docs` を実行
+- 辞書未登録のUI表示変更は禁止（UI表示SSOT: `docs/ADMIN_UI_DICTIONARY_JA.md`）
+
 ## Deploy Environments
 
 - `push(main)` deploys to `stg` (Cloud Run).

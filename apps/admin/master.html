@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Master Data（運用OS）</title>
+    <title>設定/回復（Master / 運用OS）</title>
     <style>
       body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
       .nav a { margin-right: 12px; }
@@ -21,13 +21,13 @@
   </head>
   <body>
     <div class="nav">
-      <a href="/admin/ops">ops</a>
-      <a href="/admin/composer">composer</a>
-      <a href="/admin/monitor">monitor</a>
-      <a href="/admin/errors">errors</a>
+      <a href="/admin/ops">運用判断支援（Ops）</a>
+      <a href="/admin/composer">通知作成（Composer）</a>
+      <a href="/admin/monitor">配信結果（Monitor）</a>
+      <a href="/admin/errors">エラー一覧（Errors）</a>
     </div>
 
-    <h1>Master Data（運用OS）</h1>
+    <h1>設定/回復（Master / 運用OS）</h1>
     <div class="note">templates / link_registry を UI から管理（add-only）。</div>
 
     <div class="note">
@@ -39,7 +39,7 @@
 
     <div class="grid">
       <div>
-        <h2>Templates</h2>
+        <h2>Templates（通知テンプレ）</h2>
         <div class="note">API: `/api/phase61/templates`</div>
         <div class="note">
           status:
@@ -78,7 +78,7 @@
       </div>
 
       <div>
-        <h2>Link Registry</h2>
+        <h2>Link Registry（リンク管理）</h2>
         <div class="note">API: `/admin/link-registry`</div>
         <div class="note">
           state:

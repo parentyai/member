@@ -58,6 +58,9 @@ run_step "preflight" bash -lc "cd \"$ROOT_DIR\" && npm run preflight" \
 run_step "tests" bash -lc "cd \"$ROOT_DIR\" && npm test" \
   || fail "tests failed"
 
+run_step "docs check" bash -lc "cd \"$ROOT_DIR\" && npm run test:docs" \
+  || fail "docs check failed"
+
 run_step "trace smoke" bash -lc "cd \"$ROOT_DIR\" && TRACE_SMOKE_WRITE_EVIDENCE=0 TRACE_SMOKE_EVIDENCE_PATH=/tmp/trace_smoke_evidence.md npm run test:trace-smoke" \
   || fail "trace smoke failed"
 
