@@ -98,6 +98,16 @@ base: `origin/main` @ `6183f81`
   - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214024022`
   - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214024025`
 
+## Follow-up Run 12
+- `segment` / `retry_queue` / `kill_switch_block` / `composer_cap_block` 全て PASS。
+- 該当 run: `22010373031`（workflow_dispatch / ref=main）
+- headSha: `f22ba33660a7c16c30bb6973bd4dd5be17af4d39`
+- Trace:
+  - segment: `trace-stg-e2e-segment-20260214033412`
+  - retry_queue: `trace-stg-e2e-retry-queue-20260214033417`
+  - kill_switch_block: `trace-stg-e2e-kill-switch-block-20260214033419`
+  - composer_cap_block: `trace-stg-e2e-composer-cap-block-20260214033423`
+
 ## Infra Fix (Index)
 - Firestore composite index 作成（audit_logs の query 失敗を解消）:
   - `collectionGroup=audit_logs`
