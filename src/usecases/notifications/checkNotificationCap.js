@@ -15,6 +15,8 @@ async function checkNotificationCap(params, deps) {
   if (!lineUserId) throw new Error('lineUserId required');
   const notificationCaps = normalizeNotificationCaps(payload.notificationCaps);
   const now = payload.now instanceof Date ? payload.now : new Date();
+  const includeLegacyFallback = payload.deliveryCountLegacyFallback !== false;
+  const countMode = includeLegacyFallback ? 'delivered_at_with_legacy' : 'delivered_at_only';
   const allNull = notificationCaps.perUserWeeklyCap === null
     && notificationCaps.perUserDailyCap === null
     && notificationCaps.perCategoryWeeklyCap === null
@@ -29,7 +31,14 @@ async function checkNotificationCap(params, deps) {
         deliveredCountCategoryWeekly: 0,
         notificationCategory: payload.notificationCategory || null
       }),
-      { dailyWindowStart: null, weeklyWindowStart: null }
+      {
+        dailyWindowStart: null,
+        weeklyWindowStart: null,
+        countMode,
+        countSource: 'skipped',
+        countStrategy: 'skipped',
+        includeLegacyFallback
+      }
     );
   }
 
@@ -43,7 +52,14 @@ async function checkNotificationCap(params, deps) {
         deliveredCountCategoryWeekly: 0,
         notificationCategory: payload.notificationCategory || null
       }),
-      { dailyWindowStart: null, weeklyWindowStart: null }
+      {
+        dailyWindowStart: null,
+        weeklyWindowStart: null,
+        countMode,
+        countSource: 'skipped',
+        countStrategy: 'skipped',
+        includeLegacyFallback
+      }
     );
   }
 
@@ -59,12 +75,13 @@ async function checkNotificationCap(params, deps) {
   const countDeliveredByUserCategorySince = deps && deps.countDeliveredByUserCategorySince
     ? deps.countDeliveredByUserCategorySince
     : deliveriesRepo.countDeliveredByUserCategorySince;
-  const includeLegacyFallback = payload.deliveryCountLegacyFallback !== false;
   const countOptions = { includeLegacyFallback };
 
   let deliveredCountWeekly = 0;
   let deliveredCountDaily = 0;
   let deliveredCountCategoryWeekly = 0;
+  let countSource = 'direct';
+  let countStrategy = includeLegacyFallback ? 'direct_with_legacy' : 'direct_delivered_at_only';
   const hasCountOverrides = Boolean(
     deps
       && (typeof deps.countDeliveredByUserSince === 'function'
@@ -76,6 +93,7 @@ async function checkNotificationCap(params, deps) {
     : '';
 
   if ((hasSnapshotOverride || !hasCountOverrides) && typeof getDeliveredCountsSnapshot === 'function') {
+    countSource = 'snapshot';
     const snapshot = await getDeliveredCountsSnapshot(lineUserId, {
       weeklySinceAt: weeklyWindowStart,
       dailySinceAt: notificationCaps.perUserDailyCap !== null ? dailyWindowStart : null,
@@ -84,6 +102,7 @@ async function checkNotificationCap(params, deps) {
         : [],
       includeLegacyFallback
     });
+    countStrategy = snapshot && snapshot.countStrategy ? snapshot.countStrategy : 'snapshot';
     if (notificationCaps.perUserWeeklyCap !== null) {
       deliveredCountWeekly = Number.isFinite(snapshot.weeklyCount) ? snapshot.weeklyCount : 0;
     }
@@ -126,7 +145,11 @@ async function checkNotificationCap(params, deps) {
     }),
     {
       dailyWindowStart: dailyWindowStart.toISOString(),
-      weeklyWindowStart: weeklyWindowStart.toISOString()
+      weeklyWindowStart: weeklyWindowStart.toISOString(),
+      countMode,
+      countSource,
+      countStrategy,
+      includeLegacyFallback
     }
   );
 }

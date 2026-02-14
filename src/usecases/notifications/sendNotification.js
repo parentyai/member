@@ -90,6 +90,15 @@ async function sendNotification(params) {
 
   const pushFn = payload.pushFn || pushMessage;
   const sentAt = payload.sentAt || new Date().toISOString();
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0
+    ? payload.traceId.trim()
+    : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0
+    ? payload.requestId.trim()
+    : null;
+  const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0
+    ? payload.actor.trim()
+    : null;
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
@@ -170,6 +179,9 @@ async function sendNotification(params) {
         action: 'NOTIFY',
         refId: notificationId,
         notificationId,
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        actor: actor || undefined,
         snapshot: {
           delivered: true,
           sentAt: sentAt || null

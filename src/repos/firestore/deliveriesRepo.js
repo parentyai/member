@@ -404,7 +404,8 @@ async function getDeliveredCountsSnapshotOptimized(params) {
     categoryWeeklyCounts,
     weeklySinceIso,
     dailySinceIso: dailySinceIso || null,
-    includeLegacyFallback
+    includeLegacyFallback,
+    countStrategy: 'snapshot_optimized'
   };
 }
 
@@ -451,7 +452,8 @@ async function getDeliveredCountsSnapshotFallback(params) {
     categoryWeeklyCounts,
     weeklySinceIso,
     dailySinceIso: dailySinceIso || null,
-    includeLegacyFallback
+    includeLegacyFallback,
+    countStrategy: 'snapshot_fallback'
   };
 }
 

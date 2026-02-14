@@ -3,6 +3,8 @@
 const sendRetryQueueRepo = require('../../repos/firestore/sendRetryQueueRepo');
 const notificationTemplatesRepo = require('../../repos/firestore/notificationTemplatesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { testSendNotification } = require('../notifications/testSendNotification');
@@ -32,6 +34,26 @@ async function retryQueuedSend(params, deps) {
   const sendFn = deps && deps.sendFn ? deps.sendFn : testSendNotification;
   const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;
   const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
+  const decisionsRepo = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
+  const timelineRepo = deps && deps.decisionTimelineRepo ? deps.decisionTimelineRepo : decisionTimelineRepo;
+
+  async function appendDecisionLog(decision, reason, audit) {
+    if (!decisionsRepo || typeof decisionsRepo.appendDecision !== 'function') return;
+    try {
+      await decisionsRepo.appendDecision({
+        subjectType: 'retry_queue',
+        subjectId: queueId,
+        decision,
+        decidedBy: actor,
+        reason: reason || 'execute',
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        audit: Object.assign({ queueId }, audit || {})
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+  }
 
   const item = await repo.getQueueItem(queueId);
   if (!item) return { ok: false, reason: 'queue_not_found', status: 404 };
@@ -59,6 +81,7 @@ async function retryQueuedSend(params, deps) {
     } catch (_err) {
       // best-effort only
     }
+    await appendDecisionLog('BLOCK', 'kill_switch_on', { reason: 'kill_switch_on' });
     return { ok: false, reason: 'kill_switch_on' };
   }
 
@@ -77,6 +100,9 @@ async function retryQueuedSend(params, deps) {
   let notificationPreset = null;
   let notificationCaps = normalizeNotificationCaps(null);
   let deliveryCountLegacyFallback = true;
+  let capCountMode = null;
+  let capCountSource = null;
+  let capCountStrategy = null;
   try {
     const getServicePhase = deps && deps.getServicePhase ? deps.getServicePhase : systemFlagsRepo.getServicePhase;
     const getNotificationPreset = deps && deps.getNotificationPreset
@@ -126,6 +152,12 @@ async function retryQueuedSend(params, deps) {
         queueId
       }
     });
+    await appendDecisionLog('BLOCK', 'notification_policy_blocked', {
+      policyReason: policyResult.reason,
+      servicePhase: policyResult.servicePhase,
+      notificationPreset: policyResult.notificationPreset,
+      notificationCategory: policyResult.notificationCategory
+    });
     return {
       ok: false,
       reason: 'notification_policy_blocked',
@@ -147,6 +179,7 @@ async function retryQueuedSend(params, deps) {
       requestId: requestId || undefined,
       payloadSummary: { ok: false, reason: 'confirm_token_required', queueId }
     });
+    await appendDecisionLog('FAIL', 'confirm_token_required', { reason: 'confirm_token_required' });
     return { ok: false, reason: 'confirm_token_required', status: 400 };
   }
   if (payloadPlanHash !== expectedPlanHash) {
@@ -159,6 +192,7 @@ async function retryQueuedSend(params, deps) {
       requestId: requestId || undefined,
       payloadSummary: { ok: false, reason: 'plan_hash_mismatch', queueId, expectedPlanHash }
     });
+    await appendDecisionLog('FAIL', 'plan_hash_mismatch', { expectedPlanHash });
     return { ok: false, reason: 'plan_hash_mismatch', status: 409, expectedPlanHash };
   }
   const now = deps && deps.now instanceof Date ? deps.now : new Date();
@@ -176,6 +210,7 @@ async function retryQueuedSend(params, deps) {
       requestId: requestId || undefined,
       payloadSummary: { ok: false, reason: 'confirm_token_mismatch', queueId }
     });
+    await appendDecisionLog('FAIL', 'confirm_token_mismatch', { reason: 'confirm_token_mismatch' });
     return { ok: false, reason: 'confirm_token_mismatch', status: 409 };
   }
 
@@ -193,6 +228,9 @@ async function retryQueuedSend(params, deps) {
       ? deps.countDeliveredByUserCategorySince
       : undefined
   });
+  if (capResult.countMode) capCountMode = capResult.countMode;
+  if (capResult.countSource) capCountSource = capResult.countSource;
+  if (capResult.countStrategy) capCountStrategy = capResult.countStrategy;
   if (!capResult.allowed) {
     await appendAuditLog({
       actor,
@@ -208,6 +246,9 @@ async function retryQueuedSend(params, deps) {
         lineUserId: snapshot.lineUserId,
         capType: capResult.capType || null,
         capReason: capResult.reason || null,
+        capCountMode,
+        capCountSource,
+        capCountStrategy,
         perUserWeeklyCap: capResult.perUserWeeklyCap,
         perUserDailyCap: capResult.perUserDailyCap,
         perCategoryWeeklyCap: capResult.perCategoryWeeklyCap,
@@ -218,6 +259,35 @@ async function retryQueuedSend(params, deps) {
         weeklyWindowStart: capResult.weeklyWindowStart || null
       }
     });
+    await appendDecisionLog('BLOCK', 'notification_cap_blocked', {
+      lineUserId: snapshot.lineUserId,
+      capType: capResult.capType || null,
+      capReason: capResult.reason || null,
+      capCountMode,
+      capCountSource,
+      capCountStrategy
+    });
+    if (traceId && timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
+      try {
+        await timelineRepo.appendTimelineEntry({
+          lineUserId: snapshot.lineUserId,
+          source: 'retry_queue',
+          action: 'BLOCKED',
+          refId: queueId,
+          notificationId: snapshot.notificationId || item.templateKey || null,
+          traceId,
+          requestId: requestId || undefined,
+          actor,
+          snapshot: {
+            reason: 'notification_cap_blocked',
+            capType: capResult.capType || null,
+            capReason: capResult.reason || null
+          }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
+    }
     return {
       ok: false,
       reason: 'notification_cap_blocked',
@@ -226,6 +296,9 @@ async function retryQueuedSend(params, deps) {
       lineUserId: snapshot.lineUserId,
       capType: capResult.capType || null,
       capReason: capResult.reason || null,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
       perUserWeeklyCap: capResult.perUserWeeklyCap,
       perUserDailyCap: capResult.perUserDailyCap,
       perCategoryWeeklyCap: capResult.perCategoryWeeklyCap,
@@ -244,7 +317,13 @@ async function retryQueuedSend(params, deps) {
         notificationId: snapshot.notificationId || item.templateKey || 'retry',
         notificationCategory: notificationCategory || null,
         deliveryId: snapshot.deliveryId || null,
-        killSwitch
+        killSwitch,
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        actor,
+        timelineSource: 'retry_queue',
+        timelineAction: 'SEND',
+        timelineRefId: queueId
       }, deps);
     await repo.markDone(queueId);
     await appendAuditLog({
@@ -263,6 +342,13 @@ async function retryQueuedSend(params, deps) {
         deliveryId: snapshot.deliveryId || null,
         notificationCategory: notificationCategory || null
       }
+    });
+    await appendDecisionLog('EXECUTE', 'ok', {
+      templateKey: item.templateKey || null,
+      lineUserId: snapshot.lineUserId || null,
+      notificationId: snapshot.notificationId || null,
+      deliveryId: snapshot.deliveryId || null,
+      notificationCategory: notificationCategory || null
     });
     return { ok: true, queueId };
   } catch (err) {
@@ -286,6 +372,14 @@ async function retryQueuedSend(params, deps) {
         deliveryId: snapshot.deliveryId || null,
         notificationCategory: notificationCategory || null
       }
+    });
+    await appendDecisionLog('FAIL', 'send_failed', {
+      error: message,
+      templateKey: item.templateKey || null,
+      lineUserId: snapshot.lineUserId || null,
+      notificationId: snapshot.notificationId || null,
+      deliveryId: snapshot.deliveryId || null,
+      notificationCategory: notificationCategory || null
     });
     return { ok: false, reason: 'send_failed', error: message };
   }

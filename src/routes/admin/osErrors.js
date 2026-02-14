@@ -13,12 +13,42 @@ async function handleErrorsSummary(req, res) {
   const requestId = resolveRequestId(req);
   const serverTime = new Date().toISOString();
 
-  const [warnLinks, retryQueuePending, recentOpsExecAudits, recentNotificationExecAudits] = await Promise.all([
+  const [
+    warnLinks,
+    retryQueuePending,
+    recentOpsExecAudits,
+    recentNotificationExecAudits,
+    recentSegmentExecAuditsRaw,
+    recentRetryExecAuditsRaw
+  ] = await Promise.all([
     linkRegistryRepo.listLinks({ state: 'WARN', limit: 20 }),
     sendRetryQueueRepo.listPending(20),
     auditLogsRepo.listAuditLogs({ action: 'ops_decision.execute', limit: 20 }),
-    auditLogsRepo.listAuditLogs({ action: 'notifications.send.execute', limit: 20 })
+    auditLogsRepo.listAuditLogs({ action: 'notifications.send.execute', limit: 20 }),
+    auditLogsRepo.listAuditLogs({ action: 'segment_send.execute', limit: 40 }),
+    auditLogsRepo.listAuditLogs({ action: 'retry_queue.execute', limit: 40 })
   ]);
+
+  const recentSegmentSendExecAudits = (Array.isArray(recentSegmentExecAuditsRaw) ? recentSegmentExecAuditsRaw : [])
+    .filter((log) => {
+      const summary = log && log.payloadSummary ? log.payloadSummary : null;
+      if (!summary) return false;
+      if (summary.ok === false) return true;
+      if (Number(summary.failures) > 0) return true;
+      if (typeof summary.reason === 'string' && summary.reason.length > 0) return true;
+      return false;
+    })
+    .slice(0, 20);
+
+  const recentRetryQueueExecAudits = (Array.isArray(recentRetryExecAuditsRaw) ? recentRetryExecAuditsRaw : [])
+    .filter((log) => {
+      const summary = log && log.payloadSummary ? log.payloadSummary : null;
+      if (!summary) return false;
+      if (summary.ok === false) return true;
+      if (typeof summary.reason === 'string' && summary.reason.length > 0) return true;
+      return false;
+    })
+    .slice(0, 20);
 
   await appendAuditLog({
     actor,
@@ -41,11 +71,12 @@ async function handleErrorsSummary(req, res) {
     warnLinks: Array.isArray(warnLinks) ? warnLinks : [],
     retryQueuePending: Array.isArray(retryQueuePending) ? retryQueuePending : [],
     recentOpsDecisionExecAudits: Array.isArray(recentOpsExecAudits) ? recentOpsExecAudits : [],
-    recentNotificationSendExecAudits: Array.isArray(recentNotificationExecAudits) ? recentNotificationExecAudits : []
+    recentNotificationSendExecAudits: Array.isArray(recentNotificationExecAudits) ? recentNotificationExecAudits : [],
+    recentSegmentSendExecAudits,
+    recentRetryQueueExecAudits
   }));
 }
 
 module.exports = {
   handleErrorsSummary
 };
-

@@ -575,6 +575,7 @@ function createServer() {
       handleDraft,
       handlePreview,
       handleApprove,
+      handleStatus: handleNotificationStatus,
       handleSendPlan,
       handleSendExecute
     } = require('./routes/admin/osNotifications');
@@ -695,6 +696,10 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/approve') {
         const body = await collectBody();
         await handleApprove(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/notifications/status') {
+        await handleNotificationStatus(req, res);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/plan') {

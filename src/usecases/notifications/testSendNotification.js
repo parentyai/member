@@ -2,6 +2,7 @@
 
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const { computeLineRetryKey } = require('../../domain/deliveryId');
 const { validateKillSwitch } = require('../../domain/validators');
@@ -32,6 +33,43 @@ async function testSendNotification(params) {
     ? payload.deliveryId.trim()
     : null;
   const sentAt = payload.sentAt || new Date().toISOString();
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0
+    ? payload.traceId.trim()
+    : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0
+    ? payload.requestId.trim()
+    : null;
+  const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0
+    ? payload.actor.trim()
+    : null;
+  const timelineSource = typeof payload.timelineSource === 'string' && payload.timelineSource.trim().length > 0
+    ? payload.timelineSource.trim()
+    : 'notification';
+  const timelineAction = typeof payload.timelineAction === 'string' && payload.timelineAction.trim().length > 0
+    ? payload.timelineAction.trim()
+    : 'NOTIFY';
+  const timelineRefId = typeof payload.timelineRefId === 'string' && payload.timelineRefId.trim().length > 0
+    ? payload.timelineRefId.trim()
+    : notificationId;
+
+  async function appendTimelineEntry(snapshot) {
+    if (!traceId) return;
+    try {
+      await decisionTimelineRepo.appendTimelineEntry({
+        lineUserId,
+        source: timelineSource,
+        action: timelineAction,
+        refId: timelineRefId,
+        notificationId,
+        traceId,
+        requestId: requestId || undefined,
+        actor: actor || undefined,
+        snapshot
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+  }
 
   if (!lineUserId) {
     throw new Error('lineUserId required');
@@ -76,6 +114,14 @@ async function testSendNotification(params) {
         // best-effort only
       }
     }
+    await appendTimelineEntry({
+      ok: false,
+      delivered: false,
+      sentAt: null,
+      error: err && err.message ? String(err.message) : 'send failed',
+      deliveryId: deliveryId || null,
+      notificationCategory
+    });
     throw err;
   }
 
@@ -94,6 +140,13 @@ async function testSendNotification(params) {
       lastErrorAt: null
     }))
     : await deliveriesRepo.createDelivery(delivery);
+  await appendTimelineEntry({
+    ok: true,
+    delivered: true,
+    sentAt,
+    deliveryId: deliveryId || null,
+    notificationCategory
+  });
 
   // Best-effort: do not let stats recording break sending.
   try {
