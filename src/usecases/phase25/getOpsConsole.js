@@ -29,10 +29,13 @@ function optionalString(value) {
 
 function buildReadiness(summary, evaluator) {
   const checklistCompleteness = summary && summary.checklist ? summary.checklist.completeness : null;
+  const notificationSummaryCompleteness = summary && summary.notificationSummaryCompleteness
+    ? summary.notificationSummaryCompleteness
+    : null;
   return evaluator({
     registrationCompleteness: summary ? summary.registrationCompleteness : null,
     userSummaryCompleteness: summary ? summary.userSummaryCompleteness : null,
-    notificationSummaryCompleteness: null,
+    notificationSummaryCompleteness,
     checklistCompleteness,
     opsStateCompleteness: summary ? summary.opsStateCompleteness : null,
     opsDecisionCompleteness: summary ? summary.opsDecisionCompleteness : null

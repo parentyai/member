@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -61,6 +62,19 @@ function logRouteError(routeId, err, context) {
   if (requestId) parts.push(`requestId=${requestId}`);
   if (actor) parts.push(`actor=${actor}`);
   console.error(parts.join(' '));
+  void appendAuditLog({
+    actor: actor || 'unknown',
+    action: 'route_error',
+    entityType: 'route',
+    entityId: route,
+    traceId: traceId || null,
+    requestId: requestId || null,
+    payloadSummary: {
+      route,
+      name,
+      message
+    }
+  }).catch(() => {});
 }
 
 module.exports = {

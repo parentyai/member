@@ -21,6 +21,9 @@ function evaluateUserSummaryCompleteness(summary) {
   const member = summary && summary.member ? summary.member : {};
   const hasMemberNumber = Boolean(member.hasMemberNumber);
   const memberNumberStale = Boolean(member.memberNumberStale);
+  const checklist = summary && summary.checklist ? summary.checklist : null;
+  const checklistCompletion = checklist && checklist.completion ? checklist.completion : null;
+  const checklistCompleteness = checklist && checklist.completeness ? checklist.completeness : (summary && summary.checklistCompleteness ? summary.checklistCompleteness : null);
 
   const missing = [];
   if (!hasMemberNumber && !memberNumberStale) {
@@ -29,7 +32,11 @@ function evaluateUserSummaryCompleteness(summary) {
   if (memberNumberStale) {
     missing.push('stale_member_number');
   }
-  // TODO(phase24-t03): checklist_incomplete when summary provides checklist status
+  if (checklistCompletion && checklistCompletion.isComplete === false) {
+    missing.push('checklist_incomplete');
+  } else if (checklistCompleteness && checklistCompleteness.ok === false) {
+    missing.push('checklist_incomplete');
+  }
 
   let severity = 'INFO';
   let hasBlock = false;

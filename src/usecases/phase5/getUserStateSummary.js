@@ -7,6 +7,7 @@ const {
   listAllUserChecklists,
   listAllNotificationDeliveries
 } = require('../../repos/firestore/phase2ReadRepo');
+const { getNotificationReadModel } = require('../admin/getNotificationReadModel');
 const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
 const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
 const { evaluateRegistrationCompleteness } = require('../phase24/registrationCompleteness');
@@ -114,6 +115,32 @@ function findLastReactionAt(deliveries, lineUserId) {
   return null;
 }
 
+function resolveLatestNotificationId(deliveries, lineUserId) {
+  let latestId = null;
+  let latestMs = null;
+  for (const delivery of deliveries) {
+    const data = delivery.data || {};
+    if (data.lineUserId !== lineUserId) continue;
+    const notificationId = typeof data.notificationId === 'string' ? data.notificationId : null;
+    if (!notificationId) continue;
+    const ms = toMillis(data.deliveredAt) || toMillis(data.sentAt);
+    if (!ms) continue;
+    if (!latestMs || ms > latestMs) {
+      latestMs = ms;
+      latestId = notificationId;
+    }
+  }
+  return latestId;
+}
+
+async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
+  const notificationId = resolveLatestNotificationId(deliveries, lineUserId);
+  if (!notificationId) return null;
+  const items = await getNotificationReadModel({ notificationId, limit: 1 });
+  const item = Array.isArray(items) && items.length > 0 ? items[0] : null;
+  return item && item.completeness ? item.completeness : null;
+}
+
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
@@ -137,6 +164,7 @@ async function getUserStateSummary(params) {
   const checklistCompleted = countChecklistCompletedByUser(user, userChecklists);
   const lastActionAt = findLatestAction(events, user.id);
   const lastReactionAt = findLastReactionAt(deliveries, user.id);
+  const notificationSummaryCompleteness = await resolveNotificationSummaryCompleteness(deliveries, user.id);
 
   const checklistEval = evaluateChecklistCompleteness(
     { totalItems: checklistTotal },
@@ -146,13 +174,14 @@ async function getUserStateSummary(params) {
   const opsState = await opsStatesRepo.getOpsState(user.id);
   const opsStateCompleteness = evaluateOpsStateCompleteness(opsState);
   const userSummaryCompleteness = evaluateUserSummaryCompleteness({
-    member: { hasMemberNumber, memberNumberStale }
+    member: { hasMemberNumber, memberNumberStale },
+    checklist: checklistEval
   });
   const opsDecisionCompleteness = await evaluateOpsDecisionCompleteness(opsState);
   const overallDecisionReadiness = evaluateOverallDecisionReadiness({
     registrationCompleteness,
     userSummaryCompleteness,
-    notificationSummaryCompleteness: null,
+    notificationSummaryCompleteness,
     checklistCompleteness: checklistEval.completeness,
     opsStateCompleteness,
     opsDecisionCompleteness
@@ -164,6 +193,7 @@ async function getUserStateSummary(params) {
     checklistCompleted,
     checklistTotal,
     checklist: checklistEval,
+    notificationSummaryCompleteness,
     opsState,
     opsStateCompleteness,
     opsDecisionCompleteness,
