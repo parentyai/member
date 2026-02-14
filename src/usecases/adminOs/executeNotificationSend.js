@@ -4,6 +4,8 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
+const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { verifyConfirmToken } = require('../../domain/confirmToken');
 const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
@@ -49,8 +51,19 @@ async function executeNotificationSend(params, deps) {
   const requestId = payload.requestId || null;
 
   const audit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  const decisionsRepo = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
+  const timelineRepo = deps && deps.decisionTimelineRepo ? deps.decisionTimelineRepo : decisionTimelineRepo;
+
+  function resolveDecision(reason) {
+    if (!reason) return 'EXECUTE';
+    if (reason === 'notification_cap_blocked') return 'BLOCK';
+    if (reason === 'notification_policy_blocked') return 'BLOCK';
+    if (reason === 'kill_switch_on') return 'BLOCK';
+    return 'FAIL';
+  }
 
   async function appendExecuteAudit(summary) {
+    const payloadSummary = Object.assign({ ok: false }, summary || {});
     await audit({
       actor,
       action: 'notifications.send.execute',
@@ -59,8 +72,23 @@ async function executeNotificationSend(params, deps) {
       traceId,
       requestId,
       templateKey: buildTemplateKey(notificationId),
-      payloadSummary: Object.assign({ ok: false }, summary || {})
+      payloadSummary
     });
+    if (!decisionsRepo || typeof decisionsRepo.appendDecision !== 'function') return;
+    try {
+      await decisionsRepo.appendDecision({
+        subjectType: 'notification_send',
+        subjectId: notificationId,
+        decision: resolveDecision(payloadSummary.reason),
+        decidedBy: actor,
+        reason: payloadSummary.reason || 'execute_failed',
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        audit: Object.assign({ notificationId }, payloadSummary)
+      });
+    } catch (_err) {
+      // best-effort only
+    }
   }
 
   const planHash = typeof payload.planHash === 'string' ? payload.planHash : null;
@@ -182,6 +210,9 @@ async function executeNotificationSend(params, deps) {
   const capEligibleLineUserIds = [];
   const capBlockedLineUserIds = [];
   const capBlockedSummary = {};
+  let capCountMode = null;
+  let capCountSource = null;
+  let capCountStrategy = null;
   const perUserWeeklyCap = notificationCaps.perUserWeeklyCap;
   for (const lineUserId of lineUserIds) {
     const capResult = await checkNotificationCap({
@@ -198,10 +229,34 @@ async function executeNotificationSend(params, deps) {
         ? deps.countDeliveredByUserCategorySince
         : undefined
     });
+    if (!capCountMode && capResult.countMode) capCountMode = capResult.countMode;
+    if (!capCountSource && capResult.countSource) capCountSource = capResult.countSource;
+    if (!capCountStrategy && capResult.countStrategy) capCountStrategy = capResult.countStrategy;
     if (!capResult.allowed) {
       if (capBlockedLineUserIds.length < 50) capBlockedLineUserIds.push(lineUserId);
       const key = `${capResult.capType || 'UNKNOWN'}:${capResult.reason || 'unknown'}`;
       capBlockedSummary[key] = (capBlockedSummary[key] || 0) + 1;
+      if (traceId && timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
+        try {
+          await timelineRepo.appendTimelineEntry({
+            lineUserId,
+            source: 'notification_send',
+            action: 'BLOCKED',
+            refId: notificationId,
+            notificationId,
+            traceId,
+            requestId: requestId || undefined,
+            actor,
+            snapshot: {
+              reason: 'notification_cap_blocked',
+              capType: capResult.capType || null,
+              capReason: capResult.reason || null
+            }
+          });
+        } catch (_err) {
+          // best-effort only
+        }
+      }
       continue;
     }
     capEligibleLineUserIds.push(lineUserId);
@@ -212,7 +267,10 @@ async function executeNotificationSend(params, deps) {
       reason: 'notification_cap_blocked',
       capBlockedCount,
       perUserWeeklyCap,
-      capBlockedSummary
+      capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy
     });
     return {
       ok: false,
@@ -220,6 +278,9 @@ async function executeNotificationSend(params, deps) {
       capBlockedCount,
       capBlockedLineUserIds,
       capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
       perUserWeeklyCap,
       traceId
     };
@@ -233,32 +294,73 @@ async function executeNotificationSend(params, deps) {
       sentAt: now.toISOString(),
       killSwitch,
       lineUserIds: capEligibleLineUserIds,
-      pushFn
+      pushFn,
+      traceId: traceId || undefined,
+      requestId: requestId || undefined,
+      actor
     });
   } catch (err) {
     await appendExecuteAudit({ reason: 'send_failed', errorClass: err && err.name ? String(err.name) : 'Error' });
     throw err;
   }
 
-  await audit({
-    actor,
-    action: 'notifications.send.execute',
-    entityType: 'notification',
-    entityId: notificationId,
+    await audit({
+      actor,
+      action: 'notifications.send.execute',
+      entityType: 'notification',
+      entityId: notificationId,
+      traceId,
+      requestId,
+      templateKey,
+      payloadSummary: {
+        ok: true,
+        deliveredCount: result.deliveredCount,
+        skippedCount: result.skippedCount || 0,
+        capBlockedCount,
+        capBlockedSummary,
+        capCountMode,
+        capCountSource,
+        capCountStrategy,
+        notificationCategory: notification.notificationCategory || null
+      }
+    });
+    if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
+      try {
+        await decisionsRepo.appendDecision({
+          subjectType: 'notification_send',
+          subjectId: notificationId,
+          decision: 'EXECUTE',
+          decidedBy: actor,
+          reason: 'ok',
+          traceId: traceId || undefined,
+          requestId: requestId || undefined,
+          audit: {
+            notificationId,
+            deliveredCount: result.deliveredCount,
+            skippedCount: result.skippedCount || 0,
+            capBlockedCount,
+            capBlockedSummary,
+            capCountMode,
+            capCountSource,
+            capCountStrategy,
+            notificationCategory: notification.notificationCategory || null
+          }
+        });
+      } catch (_err) {
+        // best-effort only
+      }
+    }
+
+  return Object.assign({
+    ok: true,
     traceId,
     requestId,
-    templateKey,
-    payloadSummary: {
-      ok: true,
-      deliveredCount: result.deliveredCount,
-      skippedCount: result.skippedCount || 0,
-      capBlockedCount,
-      capBlockedSummary,
-      notificationCategory: notification.notificationCategory || null
-    }
-  });
-
-  return Object.assign({ ok: true, traceId, requestId, capBlockedCount, capBlockedSummary }, result);
+    capBlockedCount,
+    capBlockedSummary,
+    capCountMode,
+    capCountSource,
+    capCountStrategy
+  }, result);
 }
 
 module.exports = {

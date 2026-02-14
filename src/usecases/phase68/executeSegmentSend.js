@@ -4,6 +4,8 @@ const automationConfigRepo = require('../../repos/firestore/automationConfigRepo
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const automationRunsRepo = require('../../repos/firestore/automationRunsRepo');
 const crypto = require('crypto');
+const decisionLogsRepo = require('../../repos/firestore/decisionLogsRepo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const notificationTemplatesRepo = require('../../repos/firestore/notificationTemplatesRepo');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 const sendRetryQueueRepo = require('../../repos/firestore/sendRetryQueueRepo');
@@ -138,6 +140,8 @@ async function executeSegmentSend(params, deps) {
   const templateRepo = deps && deps.notificationTemplatesRepo ? deps.notificationTemplatesRepo : notificationTemplatesRepo;
   const templatesV = deps && deps.templatesVRepo ? deps.templatesVRepo : templatesVRepo;
   const auditRepo = deps && deps.auditLogsRepo ? deps.auditLogsRepo : auditLogsRepo;
+  const decisionsRepo = deps && deps.decisionLogsRepo ? deps.decisionLogsRepo : decisionLogsRepo;
+  const timelineRepo = deps && deps.decisionTimelineRepo ? deps.decisionTimelineRepo : decisionTimelineRepo;
   const retryQueueRepo = deps && deps.sendRetryQueueRepo ? deps.sendRetryQueueRepo : sendRetryQueueRepo;
   const segmentFn = deps && deps.buildSendSegment ? deps.buildSendSegment : buildSendSegment;
   const sendFn = deps && deps.sendFn ? deps.sendFn : testSendNotification;
@@ -157,6 +161,25 @@ async function executeSegmentSend(params, deps) {
       });
     } catch (_err) {
       // best-effort only
+    }
+    if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
+      try {
+        const decision = reason === 'kill_switch_on' || reason === 'notification_policy_blocked'
+          ? 'BLOCK'
+          : 'FAIL';
+        await decisionsRepo.appendDecision({
+          subjectType: 'segment_send',
+          subjectId: templateKey,
+          decision,
+          decidedBy: requestedBy,
+          reason: reason || 'execute_rejected',
+          traceId: traceId || undefined,
+          requestId: requestId || undefined,
+          audit: Object.assign({ templateKey }, extra || {}, { reason })
+        });
+      } catch (_err) {
+        // best-effort only
+      }
     }
   }
 
@@ -406,6 +429,9 @@ async function executeSegmentSend(params, deps) {
   let capBlockedCount = 0;
   const capBlockedLineUserIds = [];
   const capBlockedSummary = {};
+  let capCountMode = null;
+  let capCountSource = null;
+  let capCountStrategy = null;
   let aborted = false;
   let abortReason = null;
   let abortDetail = null;
@@ -423,7 +449,13 @@ async function executeSegmentSend(params, deps) {
           notificationId: templateKey,
           killSwitch,
           deliveryId,
-          notificationCategory: notificationCategory || null
+          notificationCategory: notificationCategory || null,
+          traceId: traceId || undefined,
+          requestId: requestId || undefined,
+          actor: requestedBy,
+          timelineSource: 'segment_send',
+          timelineAction: 'SEND',
+          timelineRefId: templateKey
         }, deps);
         return { ok: true, attempts: attempt + 1, error: null };
       } catch (err) {
@@ -460,6 +492,9 @@ async function executeSegmentSend(params, deps) {
         ? deps.countDeliveredByUserCategorySince
         : undefined
     });
+    if (!capCountMode && capResult.countMode) capCountMode = capResult.countMode;
+    if (!capCountSource && capResult.countSource) capCountSource = capResult.countSource;
+    if (!capCountStrategy && capResult.countStrategy) capCountStrategy = capResult.countStrategy;
     if (!capResult.allowed) {
       counters.attempted += 1;
       counters.skipped += 1;
@@ -467,6 +502,27 @@ async function executeSegmentSend(params, deps) {
       if (capBlockedLineUserIds.length < 50) capBlockedLineUserIds.push(lineUserId);
       const key = `${capResult.capType || 'UNKNOWN'}:${capResult.reason || 'unknown'}`;
       capBlockedSummary[key] = (capBlockedSummary[key] || 0) + 1;
+      if (traceId && timelineRepo && typeof timelineRepo.appendTimelineEntry === 'function') {
+        try {
+          await timelineRepo.appendTimelineEntry({
+            lineUserId,
+            source: 'segment_send',
+            action: 'BLOCKED',
+            refId: templateKey,
+            notificationId: templateKey,
+            traceId,
+            requestId: requestId || undefined,
+            actor: requestedBy,
+            snapshot: {
+              reason: 'notification_cap_blocked',
+              capType: capResult.capType || null,
+              capReason: capResult.reason || null
+            }
+          });
+        } catch (_err) {
+          // best-effort only
+        }
+      }
       continue;
     }
 
@@ -590,6 +646,10 @@ async function executeSegmentSend(params, deps) {
     });
   }
 
+  const finalReason = aborted
+    ? 'automation_aborted'
+    : (failures.length > 0 ? 'send_failed' : (capBlockedCount > 0 && counters.success === 0 ? 'notification_cap_blocked' : null));
+
   await auditRepo.appendAuditLog({
     actor: requestedBy,
     action: 'segment_send.execute',
@@ -606,11 +666,15 @@ async function executeSegmentSend(params, deps) {
       executedCount: counters.success,
       capBlockedCount,
       capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
       failures: failures.length,
       queueEnqueuedCount,
       runId,
       confirmTokenId,
-      notificationCategory: notificationCategory || null
+      notificationCategory: notificationCategory || null,
+      reason: finalReason
     },
     snapshot: {
       templateKey,
@@ -625,6 +689,9 @@ async function executeSegmentSend(params, deps) {
       capBlockedCount,
       capBlockedLineUserIds,
       capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
       failures,
       queueEnqueuedCount,
       runId,
@@ -637,11 +704,39 @@ async function executeSegmentSend(params, deps) {
     }
   });
 
+  if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
+    try {
+      await decisionsRepo.appendDecision({
+        subjectType: 'segment_send',
+        subjectId: templateKey,
+        decision: finalReason ? (finalReason === 'notification_cap_blocked' ? 'BLOCK' : 'FAIL') : 'EXECUTE',
+        decidedBy: requestedBy,
+        reason: finalReason || 'ok',
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        audit: {
+          templateKey,
+          runId,
+          executedCount: counters.success,
+          capBlockedCount,
+          capBlockedSummary,
+          capCountMode,
+          capCountSource,
+          capCountStrategy,
+          failures: failures.length,
+          queueEnqueuedCount,
+          notificationCategory: notificationCategory || null,
+          reason: finalReason
+        }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+  }
+
   return {
     ok: !aborted && failures.length === 0 && !(capBlockedCount > 0 && counters.success === 0),
-    reason: !aborted && failures.length === 0 && capBlockedCount > 0 && counters.success === 0
-      ? 'notification_cap_blocked'
-      : undefined,
+    reason: finalReason || undefined,
     serverTime,
     traceId: traceId || undefined,
     requestId: requestId || undefined,
@@ -652,6 +747,9 @@ async function executeSegmentSend(params, deps) {
     capBlockedCount,
     capBlockedLineUserIds,
     capBlockedSummary,
+    capCountMode,
+    capCountSource,
+    capCountStrategy,
     failures,
     runSummary: {
       status: aborted ? 'ABORTED' : (counters.failed > 0 ? 'DONE_WITH_ERRORS' : 'DONE'),

@@ -2,6 +2,7 @@
 
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { createNotification } = require('../../usecases/notifications/createNotification');
+const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { approveNotification } = require('../../usecases/adminOs/approveNotification');
 const { previewNotification } = require('../../usecases/adminOs/previewNotification');
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
@@ -127,6 +128,54 @@ async function handleSendPlan(req, res, body) {
   }
 }
 
+async function handleStatus(req, res) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const url = new URL(req.url, 'http://localhost');
+  const notificationId = url.searchParams.get('notificationId');
+  if (!notificationId) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'notificationId required' }));
+    return;
+  }
+  try {
+    const notification = await notificationsRepo.getNotification(notificationId);
+    if (!notification) {
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'notification not found' }));
+      return;
+    }
+    await appendAuditLog({
+      actor,
+      action: 'notifications.status.view',
+      entityType: 'notification',
+      entityId: notificationId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        status: notification.status || null,
+        notificationCategory: notification.notificationCategory || null
+      }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: true,
+      traceId,
+      requestId,
+      notificationId,
+      status: notification.status || null,
+      notificationCategory: notification.notificationCategory || null,
+      scenarioKey: notification.scenarioKey || null,
+      stepKey: notification.stepKey || null,
+      title: notification.title || null
+    }));
+  } catch (err) {
+    handleError(res, err, { traceId, requestId, actor });
+  }
+}
+
 async function handleSendExecute(req, res, body, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -155,5 +204,6 @@ module.exports = {
   handlePreview,
   handleApprove,
   handleSendPlan,
+  handleStatus,
   handleSendExecute
 };

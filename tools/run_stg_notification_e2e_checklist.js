@@ -653,6 +653,23 @@ async function runComposerCapScenario(ctx, opts, traceId) {
   if (opts.skipComposerCap) return { status: 'SKIP', reason: 'skip_composer_cap_flag' };
   if (!opts.composerNotificationId) return { status: 'SKIP', reason: 'composer_notification_id_missing' };
 
+  const statusResp = await apiRequest(
+    ctx,
+    'GET',
+    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(opts.composerNotificationId)}`,
+    traceId
+  );
+  const statusBody = requireHttpOk(statusResp, 'composer notification status');
+  if (statusBody.status !== 'active') {
+    return {
+      status: 'FAIL',
+      reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
+      steps: {
+        status: summarizeResponse(statusResp)
+      }
+    };
+  }
+
   const baseline = await getSystemConfig(ctx, `${traceId}-status`);
   const desiredCaps = normalizeNotificationCaps(baseline.notificationCaps);
   desiredCaps.quietHours = buildActiveQuietHours(new Date());
