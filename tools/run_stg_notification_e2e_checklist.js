@@ -25,8 +25,23 @@ function parseJsonArg(text, label) {
     return parsed;
   } catch (err) {
     if (err && typeof err.message === 'string' && err.message.includes('must be JSON object')) throw err;
+    const loose = parseLooseSegmentQuery(text);
+    if (loose) return loose;
     throw new Error(`${label} invalid JSON`);
   }
+}
+
+function parseLooseSegmentQuery(text) {
+  if (!text) return null;
+  const trimmed = String(text).trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/lineUserIds\s*:\s*\[([^\]]*)\]/i);
+  if (!match) return null;
+  const raw = match[1].trim();
+  const ids = raw
+    ? raw.split(/[,\s]+/).map((value) => value.trim()).filter(Boolean)
+    : [];
+  return { lineUserIds: ids };
 }
 
 function normalizeBaseUrl(value) {

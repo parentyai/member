@@ -5,6 +5,31 @@ const { listOpsConsole } = require('../phase26/listOpsConsole');
 const STATUS_VALUES = new Set(['READY', 'NOT_READY']);
 const REDAC_STATUS_VALUES = new Set(['DECLARED', 'UNLINKED', 'NONE']);
 
+function parseLineUserIds(value) {
+  if (value === undefined || value === null) return null;
+  let raw = null;
+  if (Array.isArray(value)) {
+    raw = value;
+  } else if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    raw = trimmed.split(/[\s,]+/);
+  } else {
+    return null;
+  }
+
+  const seen = new Set();
+  const ids = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const trimmed = item.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    ids.push(trimmed);
+  }
+  return ids.length > 0 ? ids : null;
+}
+
 function parseStatus(value) {
   if (value === undefined || value === null || value === '') return null;
   const status = String(value).trim().toUpperCase();
@@ -66,11 +91,28 @@ function matchRedacStatus(item, expected) {
 
 async function buildSendSegment(params, deps) {
   const payload = params || {};
+  const lineUserIds = parseLineUserIds(payload.lineUserIds);
+  const limit = parseLimit(payload.limit);
+
+  if (lineUserIds) {
+    const limitedIds = limit ? lineUserIds.slice(0, limit) : lineUserIds;
+    return {
+      ok: true,
+      serverTime: new Date().toISOString(),
+      items: limitedIds.map((lineUserId) => ({
+        lineUserId,
+        readiness: null,
+        recommendedNextAction: null,
+        allowedNextActions: null,
+        memberFlags: null
+      }))
+    };
+  }
+
   const readinessStatus = parseStatus(payload.readinessStatus);
   const onlyNeedsAttention = parseBoolean(payload.needsAttention);
   const hasMemberNumber = parseTriState(payload.hasMemberNumber);
   const redacStatus = parseRedacStatus(payload.redacStatus);
-  const limit = parseLimit(payload.limit);
 
   const listFn = deps && deps.listOpsConsole ? deps.listOpsConsole : listOpsConsole;
   const rawLimit = limit || 50;

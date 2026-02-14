@@ -7,6 +7,11 @@ on:
         description: "Active template key for segment scenario"
         required: true
         type: string
+      segment_query_json:
+        description: "Optional segment query JSON (lineUserIds, filters)."
+        required: false
+        default: ""
+        type: string
       composer_notification_id:
         description: "Active notificationId for composer cap scenario"
         required: true
@@ -217,6 +222,10 @@ jobs:
 
           if [ -n "${{ github.event.inputs.retry_queue_id }}" ]; then
             ARGS+=(--retry-queue-id "${{ github.event.inputs.retry_queue_id }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.segment_query_json }}" ]; then
+            ARGS+=(--segment-query-json "${{ github.event.inputs.segment_query_json }}")
           fi
 
           npm run ops:stg-e2e -- "${ARGS[@]}"
