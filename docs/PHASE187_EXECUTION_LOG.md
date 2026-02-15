@@ -33,9 +33,9 @@ base: `origin/main` @ `fbcae933e63c65d575f479a3981a75d2608dd229`
 - `npm run test:docs`: PASS
 
 ## CI
-- run id: TBD
-- log saved: `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>.log`
+- run id: 22042575607 (Audit Gate, push, headSha=fa7ef0503341b223b08313ea1da36d52a024186a)
+- log saved: `docs/CI_EVIDENCE/2026-02-15_22042575607.log`
 
 ## Close
-- CLOSE: TBD
-- Reason: CI evidence pending (merge後のrunid保存が条件)
+- CLOSE: YES
+- Reason: merge commit run id saved + tests/docs PASS
