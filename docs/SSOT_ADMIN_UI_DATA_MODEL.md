@@ -18,6 +18,19 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
   - `deliveryCountLegacyFallback`（boolean, default true）
 - `send_retry_queue`（失敗送信の再実行キュー）
 
+## Read Model (View only)
+- `notification_read_model`（通知集計の参照専用）
+  - UI参照キー（monitor/read_model）
+    - `notificationId`
+    - `title`
+    - `scenarioKey`
+    - `stepKey`
+    - `deliveredCount`
+    - `readCount`
+    - `clickCount`
+    - `reactionSummary.ctr`
+    - `notificationHealth`
+
 ## Draft / Active Rules (SSOT)
 - Active（承認済み）の編集は禁止
   - 更新が必要な場合は draft を新規作成 → approve の一本道
