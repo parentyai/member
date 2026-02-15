@@ -22,6 +22,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/ADMIN_UI_REDESIGN_2026_PLAN.md`（管理UI再設計・構造・実装計画）
 - `docs/ADMIN_MANUAL_JA.md`（非エンジニア向け運用マニュアル）
 - `docs/ADMIN_UI_DICTIONARY_JA.md`（管理UI辞書 / UI表示SSOT）
+- `docs/SSOT_NOTIFICATION_WAIT_RULES.md`（通知待機方式 SSOT / 値はTBD）
 - `docs/RUNBOOK_JA.md`（日本語RUNBOOK）
 - `docs/SECURITY_MODEL_JA.md`（セキュリティ責任分界）
 - `docs/CHANGELOG_DOCS.md`（ドキュメント更新履歴）
