@@ -5,38 +5,129 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>通知集計（Read Model / READ ONLY）</title>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
-      th { background: #f7f7f7; }
-      .note { font-size: 12px; color: #666; margin-bottom: 8px; }
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;600;700&display=swap');
+
+      :root {
+        --bg: #f4f6f8;
+        --surface: #ffffff;
+        --surface-muted: #f8fafc;
+        --text: #0f1f2d;
+        --muted: #5d6b7b;
+        --line: #e2e8f0;
+        --accent: #1f4b67;
+        --danger: #b42318;
+        --warn: #b54708;
+        --ok: #027a48;
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        --radius: 16px;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .nav { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+      h1 { font-size: 24px; margin: 4px 0 8px; }
+      .note { font-size: 12px; color: var(--muted); margin: 8px 0; }
+      .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      input {
+        padding: 8px 10px;
+        font-size: 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #f1f5f9;
+        cursor: pointer;
+      }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      th, td { border-bottom: 1px solid var(--line); padding: 10px; text-align: left; font-size: 13px; vertical-align: top; }
+      th { background: var(--surface-muted); color: var(--muted); font-weight: 600; }
+      tbody tr:hover { background: #f8fafc; }
+      .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+      .badge.ok { background: #ecfdf3; color: var(--ok); }
+      .badge.warn { background: #fffaeb; color: var(--warn); }
+      .badge.danger { background: #ffe4e8; color: var(--danger); }
+      .ops-block { display: grid; gap: 4px; font-size: 12px; }
+      .cards { display: none; margin-top: 12px; gap: 12px; }
+      .card-item { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface); }
+      .card-item h3 { font-size: 15px; margin: 0 0 6px; }
+      .card-item .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+      .kv { display: grid; gap: 6px; font-size: 12px; }
+      @media (max-width: 900px) {
+        table { display: none; }
+        .cards { display: grid; }
+      }
     </style>
   </head>
   <body>
-    <h1>通知集計（Read Model / READ ONLY）</h1>
-    <div class="note">表示のみ。書き込みや判断は行いません。</div>
-    <div class="note">
-      traceId:
-      <input type="text" id="traceId" style="max-width: 420px;" />
-      <button id="regen-trace" type="button">regen</button>
-      <span id="trace-note"></span>
+    <div class="page">
+      <div class="topbar">
+        <div>
+          <h1>通知集計（Read Model / READ ONLY）</h1>
+          <div class="note">表示のみ。書き込みや判断は行いません。</div>
+        </div>
+        <div class="nav">
+          <a href="/admin/ops">運用判断支援（Ops）</a>
+          <a href="/admin/composer">通知作成（Composer）</a>
+          <a href="/admin/monitor">配信結果（Monitor）</a>
+          <a href="/admin/errors">エラー一覧（Errors）</a>
+          <a href="/admin/master">設定/回復（Master）</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="note">traceId</div>
+        <div class="controls">
+          <input type="text" id="traceId" class="mono" style="max-width: 420px;" />
+          <button id="regen-trace" type="button">regen</button>
+          <span id="trace-note" class="note"></span>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>notification</th>
+            <th>scenario/step</th>
+            <th>delivery</th>
+            <th>CTR / health</th>
+            <th>運用構造</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+
+      <div id="cards" class="cards"></div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>notificationId</th>
-          <th>title</th>
-          <th>scenario</th>
-          <th>step</th>
-          <th>delivered</th>
-          <th>read</th>
-          <th>click</th>
-          <th>CTR</th>
-          <th>health</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_read_model' };
       const TRACE_HEADER_NAME = 'x-trace-id';
@@ -97,7 +188,7 @@
         const tr = document.createElement('tr');
         for (const value of values) {
           const td = document.createElement('td');
-          td.textContent = value === null || value === undefined ? '-' : String(value);
+          td.appendChild(value instanceof Node ? value : document.createTextNode(String(value)));
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
@@ -107,35 +198,171 @@
         if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
         return `${Math.round(value * 1000) / 10}%`;
       }
+
+      function badge(value) {
+        const health = value || '-';
+        const cls = health === 'DANGER' ? 'badge danger' : health === 'WARN' ? 'badge warn' : 'badge ok';
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = health;
+        return span;
+      }
+
+      function buildLine(label, value) {
+        const span = document.createElement('span');
+        span.textContent = `${label}: ${value}`;
+        return span;
+      }
+
+      function formatPolicy(decision) {
+        if (!decision) return '-';
+        const status = decision.allowed ? '許可' : 'ブロック';
+        const reason = decision.reason || '-';
+        const allowed = Array.isArray(decision.allowedCategories) && decision.allowedCategories.length
+          ? decision.allowedCategories.join(', ')
+          : '-';
+        const warning = reason === 'policy_not_configured' ? ' / warn=policy_not_configured' : '';
+        return `${status} (${reason}) / allowed=${allowed}${warning}`;
+      }
+
+      function formatCaps(summary) {
+        if (!summary) return '-';
+        const weekly = summary.perUserWeeklyCap === null ? '-' : summary.perUserWeeklyCap;
+        const daily = summary.perUserDailyCap === null ? '-' : summary.perUserDailyCap;
+        const cat = summary.perCategoryWeeklyCap === null ? '-' : summary.perCategoryWeeklyCap;
+        const quiet = summary.quietHours
+          ? `${summary.quietHours.startHourUtc}-${summary.quietHours.endHourUtc} UTC`
+          : '-';
+        const reason = summary.decision && summary.decision.reason ? summary.decision.reason : '-';
+        return `週:${weekly} 日:${daily} カテゴリ週:${cat} quiet:${quiet} / ${reason}`;
+      }
+
+      function formatSuppression(summary) {
+        if (!summary) return '-';
+        const dedupe = summary.dedupe && summary.dedupe.enabled ? '有効' : '無効';
+        const quiet = summary.quietHoursActive ? 'quietHours: active' : 'quietHours: inactive';
+        return `重複抑制:${dedupe} / ${quiet}`;
+      }
+
+      function formatTarget(item) {
+        const count = item.targetCount !== null && item.targetCount !== undefined ? item.targetCount : '未計画';
+        const limit = item.targetLimit !== null && item.targetLimit !== undefined ? item.targetLimit : '-';
+        return `${count} / limit=${limit}`;
+      }
+
+      function formatStep(item) {
+        const step = item.stepKey || '-';
+        const index = item.stepIndex ? `#${item.stepIndex}` : '-';
+        return `${step} ${index}`.trim();
+      }
+
+      const WAIT_RULE_TYPE_LABELS = {
+        TYPE_A: 'TYPE_A（固定日数）',
+        TYPE_B: 'TYPE_B（基準日+相対日）',
+        TYPE_C: 'TYPE_C（状態遷移）'
+      };
+
+      function formatWaitRuleType(value) {
+        if (!value) return '未設定（SSOT未入力）';
+        return WAIT_RULE_TYPE_LABELS[value] || value;
+      }
+
+      function buildTraceLink(label, traceId) {
+        if (!traceId) return document.createTextNode(`${label}: -`);
+        const link = document.createElement('a');
+        link.href = `/admin/ops?traceId=${encodeURIComponent(traceId)}#trace-search`;
+        link.textContent = `${label}: ${traceId}`;
+        return link;
+      }
+
+      function buildOpsBlock(item) {
+        const wrap = document.createElement('div');
+        wrap.className = 'ops-block';
+        wrap.appendChild(buildLine('カテゴリ', item.notificationCategory || '-'));
+        wrap.appendChild(buildLine('ステップ', formatStep(item)));
+        wrap.appendChild(buildLine('待機方式（型）', formatWaitRuleType(item.waitRuleType)));
+        wrap.appendChild(buildLine('次通知までの待機日数', item.nextWaitDays === null ? '未設定（SSOT未入力）' : `${item.nextWaitDays}日`));
+        wrap.appendChild(buildLine('対象人数/上限', formatTarget(item)));
+        wrap.appendChild(buildLine('抑制条件', formatSuppression(item.suppressionSummary)));
+        wrap.appendChild(buildLine('頻度上限（設定値ベース）', formatCaps(item.capSummary)));
+        wrap.appendChild(buildLine('Policy 判定', formatPolicy(item.policyDecision)));
+        wrap.appendChild(buildLine('Tracking', item.trackingEnabled ? 'enabled' : 'disabled'));
+        const planTrace = item.planSummary ? item.planSummary.traceId : null;
+        const execTrace = item.executeSummary ? item.executeSummary.traceId : null;
+        const logRow = document.createElement('span');
+        logRow.textContent = 'ログ: ';
+        logRow.appendChild(buildTraceLink('plan', planTrace));
+        logRow.appendChild(document.createTextNode(' / '));
+        logRow.appendChild(buildTraceLink('execute', execTrace));
+        wrap.appendChild(logRow);
+        return wrap;
+      }
+
+      function buildCard(item) {
+        const card = document.createElement('div');
+        card.className = 'card-item';
+        const title = document.createElement('h3');
+        title.textContent = item.title || item.notificationId || '-';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `notificationId: ${item.notificationId || '-'}`;
+        const kv = document.createElement('div');
+        kv.className = 'kv';
+        kv.appendChild(buildLine('scenario/step', `${item.scenarioKey || '-'} / ${formatStep(item)}`));
+        kv.appendChild(buildLine('delivered/read/click', `${item.deliveredCount}/${item.readCount}/${item.clickCount}`));
+        kv.appendChild(buildLine('CTR', formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null)));
+        const ops = buildOpsBlock(item);
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.appendChild(kv);
+        card.appendChild(ops);
+        return card;
+      }
+
       async function loadReadModel() {
         const res = await fetch('/admin/read-model/notifications', { headers: buildHeaders() });
         const data = await res.json();
         const rows = document.getElementById('rows');
+        const cards = document.getElementById('cards');
         if (!data.ok) {
-          appendMessageRow(rows, 9, 'error');
+          appendMessageRow(rows, 5, 'error');
+          clearChildren(cards);
           return;
         }
         if (!data.items.length) {
-          appendMessageRow(rows, 9, 'no data');
+          appendMessageRow(rows, 5, 'no data');
+          clearChildren(cards);
           return;
         }
         clearChildren(rows);
+        clearChildren(cards);
         for (const item of data.items) {
+          const notifCell = document.createElement('div');
+          notifCell.className = 'ops-block';
+          notifCell.appendChild(buildLine('title', item.title || '-'));
+          notifCell.appendChild(buildLine('id', item.notificationId || '-'));
+          const stepCell = document.createElement('div');
+          stepCell.className = 'ops-block';
+          stepCell.appendChild(buildLine('scenario', item.scenarioKey || '-'));
+          stepCell.appendChild(buildLine('step', formatStep(item)));
           appendRow(rows, [
-            item.notificationId,
-            item.title || '-',
-            item.scenarioKey || '-',
-            item.stepKey || '-',
-            item.deliveredCount,
-            item.readCount,
-            item.clickCount,
-            formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
-            item.notificationHealth || '-'
+            notifCell,
+            stepCell,
+            `${item.deliveredCount}/${item.readCount}/${item.clickCount}`,
+            (() => {
+              const span = document.createElement('span');
+              span.appendChild(document.createTextNode(formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null)));
+              span.appendChild(document.createTextNode(' '));
+              span.appendChild(badge(item.notificationHealth || null));
+              return span;
+            })(),
+            buildOpsBlock(item)
           ]);
+          cards.appendChild(buildCard(item));
         }
       }
       loadReadModel().catch(() => {
-        appendMessageRow(document.getElementById('rows'), 9, 'error');
+        appendMessageRow(document.getElementById('rows'), 5, 'error');
       });
     </script>
   </body>

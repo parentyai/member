@@ -18,6 +18,13 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
   - `deliveryCountLegacyFallback`（boolean, default true）
 - `send_retry_queue`（失敗送信の再実行キュー）
 
+## Read Model (View only)
+- `notification_read_model`（通知集計の参照専用）
+  - `waitRuleType`（TYPE_A / TYPE_B / TYPE_C）
+  - `waitRuleConfigured`（boolean）
+  - `nextWaitDays`（number | null）
+  - `nextWaitDaysSource`（`ssot_value` / `ssot_unset`）
+
 ## Draft / Active Rules (SSOT)
 - Active（承認済み）の編集は禁止
   - 更新が必要な場合は draft を新規作成 → approve の一本道

@@ -5,117 +5,293 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>通知作成（Composer / 運用OS）</title>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .nav a { margin-right: 12px; }
-      .note { font-size: 12px; color: #666; margin: 8px 0; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      label { display: block; font-size: 12px; color: #333; margin-top: 8px; }
-      input, select, textarea { width: 100%; padding: 6px 8px; font-size: 14px; }
-      textarea { min-height: 110px; }
-      button { padding: 6px 10px; font-size: 14px; }
-      pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;600;700&display=swap');
+
+      :root {
+        --bg: #f4f6f8;
+        --surface: #ffffff;
+        --surface-muted: #f8fafc;
+        --text: #0f1f2d;
+        --muted: #5d6b7b;
+        --line: #e2e8f0;
+        --accent: #1f4b67;
+        --accent-strong: #153447;
+        --danger: #b42318;
+        --warn: #b54708;
+        --ok: #027a48;
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        --radius: 16px;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 13px;
+      }
+      h1 { font-size: 24px; margin: 4px 0 8px; }
+      h2 { font-size: 18px; margin: 0 0 12px; }
+      h3 { font-size: 15px; margin: 16px 0 8px; }
+      .note { font-size: 12px; color: var(--muted); margin: 8px 0; }
+      .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+      .card.danger {
+        border-color: #f4c7c3;
+        background: #fff6f5;
+      }
+      .stack { display: grid; gap: 16px; }
+      .field { margin-bottom: 12px; }
+      label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+      input, select, textarea {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+      }
+      textarea { min-height: 120px; resize: vertical; }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #f1f5f9;
+        color: var(--text);
+        cursor: pointer;
+      }
+      button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      button.danger { background: #b42318; color: #fff; border-color: #b42318; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
       .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      .danger { color: #b00020; font-weight: 600; }
-      .ok { color: #0a7a0a; font-weight: 600; }
+      .alert {
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #fff1f1;
+        border: 1px solid #f4c7c3;
+        color: #7a271a;
+        font-size: 12px;
+      }
+      pre {
+        background: var(--surface-muted);
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        overflow: auto;
+        font-size: 12px;
+      }
+      .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+      .kv {
+        background: var(--surface-muted);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+      .kv .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+      .kv .value { margin-top: 6px; font-size: 14px; font-weight: 600; }
+      .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+      .badge.ok { background: #ecfdf3; color: var(--ok); }
+      .badge.warn { background: #fffaeb; color: var(--warn); }
+      .badge.danger { background: #ffe4e8; color: var(--danger); }
+      .tag { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #e2e8f0; color: #334155; }
+      .inline-list { display: flex; flex-wrap: wrap; gap: 6px; }
+      .divider { height: 1px; background: var(--line); margin: 12px 0; }
     </style>
   </head>
   <body>
-    <div class="nav">
-      <a href="/admin/ops">運用判断支援（Ops）</a>
-      <a href="/admin/monitor">配信結果（Monitor）</a>
-      <a href="/admin/errors">エラー一覧（Errors）</a>
-      <a href="/admin/master">設定/回復（Master）</a>
-    </div>
-
-    <h1>通知作成（Composer / 運用OS）</h1>
-    <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
-
-    <div class="note">
-      traceId:
-      <input type="text" id="traceId" style="max-width: 420px;" />
-      <button id="regen-trace" type="button">regen</button>
-      <span id="trace-note"></span>
-    </div>
-
-    <div class="grid">
-      <div>
-        <h2>Draft</h2>
-        <label>title</label>
-        <input id="title" />
-        <label>body</label>
-        <textarea id="body"></textarea>
-        <label>ctaText</label>
-        <input id="ctaText" />
-        <label>linkRegistryId</label>
-        <input id="linkRegistryId" placeholder="link_registry doc id" />
-
-        <div class="row">
-          <div style="flex:1">
-            <label>scenarioKey</label>
-            <select id="scenarioKey">
-              <option value="A">A</option>
-              <option value="C">C</option>
-            </select>
-          </div>
-          <div style="flex:1">
-            <label>stepKey</label>
-            <select id="stepKey">
-              <option value="3mo">3mo</option>
-              <option value="1mo">1mo</option>
-              <option value="week">week</option>
-              <option value="after1w">after1w</option>
-            </select>
-          </div>
+    <div class="page">
+      <div class="topbar">
+        <div>
+          <h1>通知作成（Composer / 運用OS）</h1>
+          <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
         </div>
-        <label>notificationCategory</label>
-        <select id="notificationCategory">
-          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
-          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
-          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
-          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
-          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
-        </select>
-
-        <h3>Target</h3>
-        <div class="row">
-          <div style="flex:1">
-            <label>region (optional)</label>
-            <input id="targetRegion" />
-          </div>
-          <div style="flex:1">
-            <label>limit (required for safety)</label>
-            <input id="targetLimit" type="number" min="1" max="500" value="50" />
-          </div>
+        <div class="nav">
+          <a href="/admin/ops">運用判断支援（Ops）</a>
+          <a href="/admin/monitor">配信結果（Monitor）</a>
+          <a href="/admin/errors">エラー一覧（Errors）</a>
+          <a href="/admin/master">設定/回復（Master）</a>
         </div>
-        <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
-
-        <div class="row" style="margin-top: 10px;">
-          <button id="create-draft" type="button">Create Draft</button>
-          <button id="preview" type="button">Preview</button>
-          <button id="approve" type="button">Approve (active)</button>
-        </div>
-        <div class="note">notificationId: <span id="notificationId">-</span></div>
-        <pre id="draft-result">-</pre>
       </div>
 
-      <div>
-        <h2>Plan / Execute（Danger）</h2>
-        <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
+      <div class="card">
+        <div class="note">traceId</div>
         <div class="row">
-          <button id="plan" type="button">Plan Send</button>
-          <button id="execute" type="button">Execute Send</button>
+          <input type="text" id="traceId" class="mono" style="max-width: 420px;" />
+          <button id="regen-trace" type="button">regen</button>
+          <span id="trace-note" class="note"></span>
         </div>
-        <div class="note">
-          planHash: <span id="planHash">-</span>
-          / confirmToken: <span id="confirmToken">-</span>
+      </div>
+
+      <div class="grid" style="margin-top: 16px;">
+        <section class="card">
+          <h2>Draft</h2>
+          <div class="field">
+            <label>title</label>
+            <input id="title" />
+          </div>
+          <div class="field">
+            <label>body</label>
+            <textarea id="body"></textarea>
+          </div>
+          <div class="field">
+            <label>ctaText</label>
+            <input id="ctaText" />
+          </div>
+          <div class="field">
+            <label>linkRegistryId</label>
+            <input id="linkRegistryId" placeholder="link_registry doc id" />
+          </div>
+
+          <div class="row">
+            <div style="flex:1">
+              <label>scenarioKey</label>
+              <select id="scenarioKey">
+                <option value="A">A</option>
+                <option value="C">C</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label>stepKey</label>
+              <select id="stepKey">
+                <option value="3mo">3mo</option>
+                <option value="1mo">1mo</option>
+                <option value="week">week</option>
+                <option value="after1w">after1w</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>notificationCategory</label>
+            <select id="notificationCategory">
+              <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+              <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+              <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+              <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+              <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+            </select>
+          </div>
+
+          <h3>Target</h3>
+          <div class="row">
+            <div style="flex:1">
+              <label>region (optional)</label>
+              <input id="targetRegion" />
+            </div>
+            <div style="flex:1">
+              <label>limit (required for safety)</label>
+              <input id="targetLimit" type="number" min="1" max="500" value="50" />
+            </div>
+          </div>
+          <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
+
+          <div class="row" style="margin-top: 10px;">
+            <button id="create-draft" type="button" class="primary">Create Draft</button>
+            <button id="preview" type="button">Preview</button>
+            <button id="approve" type="button">Approve (active)</button>
+          </div>
+          <div class="note">notificationId: <span id="notificationId" class="mono">-</span></div>
+          <pre id="draft-result">-</pre>
+        </section>
+
+        <div class="stack">
+          <section class="card danger">
+            <h2>Plan / Execute（Danger）</h2>
+            <div class="alert">execute は副作用（送信）があります。kill switch を確認してください。</div>
+            <div class="row" style="margin-top: 10px;">
+              <button id="plan" type="button" class="primary">Plan Send</button>
+              <button id="execute" type="button" class="danger">Execute Send</button>
+            </div>
+            <div class="note">
+              planHash: <span id="planHash" class="mono">-</span>
+              / confirmToken: <span id="confirmToken" class="mono">-</span>
+            </div>
+            <pre id="plan-result">-</pre>
+            <pre id="execute-result">-</pre>
+          </section>
+
+          <section class="card">
+            <h3>運用構造スナップショット</h3>
+            <div class="note">通知運用構造（カテゴリ / 頻度 / 抑制 / 証跡）を固定表示。</div>
+            <div class="kv-grid" id="snapshot-grid">
+              <div class="kv">
+                <div class="label">カテゴリ</div>
+                <div class="value" id="snapshot-category">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">ステップ番号</div>
+                <div class="value" id="snapshot-step">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">待機方式（型）</div>
+                <div class="value" id="snapshot-wait-type">未設定（SSOT未入力）</div>
+              </div>
+              <div class="kv">
+                <div class="label">次通知までの待機日数</div>
+                <div class="value" id="snapshot-wait">未設定（SSOT未入力）</div>
+              </div>
+              <div class="kv">
+                <div class="label">対象人数 / 上限</div>
+                <div class="value" id="snapshot-target">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">抑制条件</div>
+                <div class="value" id="snapshot-suppression">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">頻度上限</div>
+                <div class="value" id="snapshot-caps">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">Policy 判定</div>
+                <div class="value" id="snapshot-policy">-</div>
+              </div>
+              <div class="kv">
+                <div class="label">Tracking</div>
+                <div class="value" id="snapshot-tracking">-</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="note">頻度上限は設定値ベース（実カウントは含まない）</div>
+            <div class="note">ログリンク（traceId）</div>
+            <div class="inline-list" id="snapshot-logs">
+              <span class="tag">plan: -</span>
+              <span class="tag">execute: -</span>
+            </div>
+            <div class="note" id="snapshot-note"></div>
+          </section>
         </div>
-        <pre id="plan-result">-</pre>
-        <pre id="execute-result">-</pre>
       </div>
     </div>
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_composer' };
+      const TRACE_HEADER_NAME = 'x-trace-id';
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -133,6 +309,19 @@
       function setTraceId(value) {
         const el = document.getElementById('traceId');
         el.value = value || '';
+      }
+
+      function ensureTraceId() {
+        const value = getTraceId();
+        if (value) return value;
+        const next = newTraceId();
+        setTraceId(next);
+        return next;
+      }
+
+      function buildHeaders(extra) {
+        const traceId = ensureTraceId();
+        return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: traceId });
       }
 
       function jsonOrText(res) {
@@ -171,14 +360,147 @@
       let currentConfirmToken = null;
 
       async function postJson(url, payload) {
-        const traceId = getTraceId() || newTraceId();
-        setTraceId(traceId);
+        const traceId = ensureTraceId();
         const res = await fetch(url, {
           method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
+          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', [TRACE_HEADER_NAME]: traceId }, OPS_ACTOR_HEADERS),
           body: JSON.stringify(payload || {})
         });
         return jsonOrText(res);
+      }
+
+      function setSnapshotValue(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = value === undefined || value === null || value === '' ? '-' : String(value);
+      }
+
+      const WAIT_RULE_TYPE_LABELS = {
+        TYPE_A: 'TYPE_A（固定日数）',
+        TYPE_B: 'TYPE_B（基準日+相対日）',
+        TYPE_C: 'TYPE_C（状態遷移）'
+      };
+
+      function formatWaitRuleType(value) {
+        if (!value) return '未設定（SSOT未入力）';
+        return WAIT_RULE_TYPE_LABELS[value] || value;
+      }
+
+      function formatCaps(summary) {
+        if (!summary) return '-';
+        const weekly = summary.perUserWeeklyCap === null ? '-' : summary.perUserWeeklyCap;
+        const daily = summary.perUserDailyCap === null ? '-' : summary.perUserDailyCap;
+        const cat = summary.perCategoryWeeklyCap === null ? '-' : summary.perCategoryWeeklyCap;
+        const quiet = summary.quietHours
+          ? `${summary.quietHours.startHourUtc}-${summary.quietHours.endHourUtc} UTC`
+          : '-';
+        const reason = summary.decision && summary.decision.reason ? summary.decision.reason : '-';
+        return `週:${weekly} 日:${daily} カテゴリ週:${cat} quiet:${quiet} / ${reason}`;
+      }
+
+      function formatSuppression(summary) {
+        if (!summary) return '-';
+        const dedupe = summary.dedupe && summary.dedupe.enabled ? '有効' : '無効';
+        const quiet = summary.quietHoursActive ? 'quietHours: active' : 'quietHours: inactive';
+        const legacy = summary.deliveryCountLegacyFallback ? 'legacyCount: on' : 'legacyCount: off';
+        return `重複抑制:${dedupe} / ${quiet} / ${legacy}`;
+      }
+
+      function formatPolicy(decision) {
+        if (!decision) return '-';
+        const status = decision.allowed ? '許可' : 'ブロック';
+        const reason = decision.reason || '-';
+        const phase = decision.servicePhase === null || decision.servicePhase === undefined ? '-' : decision.servicePhase;
+        const preset = decision.notificationPreset || '-';
+        const categories = Array.isArray(decision.allowedCategories) && decision.allowedCategories.length
+          ? decision.allowedCategories.join(', ')
+          : '-';
+        return `${status} / reason=${reason} / phase=${phase} preset=${preset} / allowed=${categories}`;
+      }
+
+      function formatTarget(item) {
+        if (!item) return '-';
+        const count = item.targetCount !== null && item.targetCount !== undefined ? item.targetCount : '未計画';
+        const limit = item.targetLimit !== null && item.targetLimit !== undefined ? item.targetLimit : '-';
+        const source = item.targetCountSource ? ` (${item.targetCountSource})` : '';
+        return `${count} / limit=${limit}${source}`;
+      }
+
+      function formatStep(item) {
+        if (!item) return '-';
+        const step = item.stepKey || '-';
+        const index = item.stepIndex ? `#${item.stepIndex}` : '-';
+        return `${step} ${index}`.trim();
+      }
+
+      function setLogLinks(item) {
+        const container = document.getElementById('snapshot-logs');
+        if (!container) return;
+        while (container.firstChild) container.removeChild(container.firstChild);
+        const planTrace = item && item.planSummary ? item.planSummary.traceId : null;
+        const execTrace = item && item.executeSummary ? item.executeSummary.traceId : null;
+        const links = [
+          { label: 'plan', traceId: planTrace },
+          { label: 'execute', traceId: execTrace }
+        ];
+        links.forEach((entry) => {
+          const span = document.createElement('span');
+          span.className = 'tag';
+          if (entry.traceId) {
+            const link = document.createElement('a');
+            link.href = `/admin/ops?traceId=${encodeURIComponent(entry.traceId)}#trace-search`;
+            link.textContent = `${entry.label}: ${entry.traceId}`;
+            span.appendChild(link);
+          } else {
+            span.textContent = `${entry.label}: -`;
+          }
+          container.appendChild(span);
+        });
+      }
+
+      async function loadSnapshot() {
+        const note = document.getElementById('snapshot-note');
+        if (!currentNotificationId) {
+          setSnapshotValue('snapshot-category', '-');
+          setSnapshotValue('snapshot-step', '-');
+          setSnapshotValue('snapshot-wait-type', '-');
+          setSnapshotValue('snapshot-wait', '-');
+          setSnapshotValue('snapshot-target', '-');
+          setSnapshotValue('snapshot-suppression', '-');
+          setSnapshotValue('snapshot-caps', '-');
+          setSnapshotValue('snapshot-policy', '-');
+          setSnapshotValue('snapshot-tracking', '-');
+          setLogLinks(null);
+          if (note) note.textContent = 'notificationId が未確定です';
+          return;
+        }
+        try {
+          const params = new URLSearchParams();
+          params.set('notificationId', currentNotificationId);
+          const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: buildHeaders() });
+          const data = await res.json();
+          if (!data || !data.ok || !Array.isArray(data.items) || !data.items.length) {
+            if (note) note.textContent = 'read-model が取得できません';
+            return;
+          }
+          const item = data.items[0];
+          setSnapshotValue('snapshot-category', item.notificationCategory || '-');
+          setSnapshotValue('snapshot-step', formatStep(item));
+          setSnapshotValue('snapshot-wait-type', formatWaitRuleType(item.waitRuleType));
+          setSnapshotValue('snapshot-target', formatTarget(item));
+          const waitValue = item.nextWaitDays === null || item.nextWaitDays === undefined
+            ? '未設定（SSOT未入力）'
+            : `${item.nextWaitDays}日`;
+          setSnapshotValue('snapshot-wait', waitValue);
+          setSnapshotValue('snapshot-suppression', formatSuppression(item.suppressionSummary));
+          setSnapshotValue('snapshot-caps', formatCaps(item.capSummary));
+          setSnapshotValue('snapshot-policy', formatPolicy(item.policyDecision));
+          setSnapshotValue('snapshot-tracking', item.trackingEnabled ? 'enabled' : 'disabled');
+          setLogLinks(item);
+          if (note) note.textContent = `read-model traceId: ${data.traceId || '-'} / serverTime: ${data.serverTime || '-'}`;
+        } catch (_err) {
+          if (note) note.textContent = 'read-model error';
+        }
       }
 
       document.getElementById('regen-trace').addEventListener('click', () => {
@@ -191,10 +513,10 @@
       // Best-effort view audit (do not block UI).
       (async () => {
         try {
-          const traceId = getTraceId() || newTraceId();
+          const traceId = ensureTraceId();
           await fetch('/api/admin/os/view', {
             method: 'POST',
-            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', [TRACE_HEADER_NAME]: traceId }, OPS_ACTOR_HEADERS),
             body: JSON.stringify({ screen: 'composer' })
           });
         } catch (_err) {}
@@ -213,6 +535,7 @@
           currentConfirmToken = null;
           document.getElementById('planHash').textContent = '-';
           document.getElementById('confirmToken').textContent = '-';
+          await loadSnapshot();
         }
       });
 
@@ -221,6 +544,7 @@
         const payload = Object.assign({}, buildDraftPayload(), { notificationId: currentNotificationId });
         const result = await postJson('/api/admin/os/notifications/preview', payload);
         resultEl.textContent = JSON.stringify(result, null, 2);
+        await loadSnapshot();
       });
 
       document.getElementById('approve').addEventListener('click', async () => {
@@ -231,6 +555,7 @@
         }
         const result = await postJson('/api/admin/os/notifications/approve', { notificationId: currentNotificationId });
         resultEl.textContent = JSON.stringify(result, null, 2);
+        await loadSnapshot();
       });
 
       document.getElementById('plan').addEventListener('click', async () => {
@@ -250,6 +575,7 @@
           document.getElementById('planHash').textContent = currentPlanHash || '-';
           document.getElementById('confirmToken').textContent = currentConfirmToken ? 'set' : '-';
         }
+        await loadSnapshot();
       });
 
       document.getElementById('execute').addEventListener('click', async () => {
@@ -265,6 +591,7 @@
           confirmToken: currentConfirmToken
         });
         resultEl.textContent = JSON.stringify(result, null, 2);
+        await loadSnapshot();
       });
     </script>
   </body>

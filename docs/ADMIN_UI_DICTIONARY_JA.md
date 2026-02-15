@@ -1,6 +1,6 @@
 # 管理UI辞書（日本語）
 
-更新日: 2026-02-14
+更新日: 2026-02-15
 
 この文書は管理UIの用語・画面・状態を非エンジニア向けに整理した辞書。
 本書は管理UI表示の唯一SSOTであり、画面名/見出し/状態は本書に準拠する。
@@ -68,6 +68,42 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 - `/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:11-31`
 - `/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:12-21`
 - `/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:11-33`
+
+## UIラベル（運用構造の可視化）
+- 運用構造スナップショット: 通知のカテゴリ/ステップ/抑制/頻度/証跡をまとめた固定表示枠
+- 待機方式（型）: TYPE_A（固定日数）/ TYPE_B（基準日+相対日）/ TYPE_C（状態遷移）
+- waitRuleType: 待機方式（型）
+- 次通知までの待機日数: SSOT未入力時は「未設定（SSOT未入力）」と表示
+- 通知ID（notificationId）: 通知の一意ID表示
+- title: 通知タイトル
+- id: 通知ID（一覧の短縮ラベル）
+- scenario: シナリオ表示
+- step: ステップ表示
+- scenario/step: シナリオとステップの併記
+- 配信健全性（health）: OK/WARN/DANGER の健全性指標
+- notificationHealth: 配信健全性（health）
+- CTR: クリック率（%）
+- delivered/read/click: 配信/既読/クリックの件数表示
+- 対象人数 / 上限: plan audit の count と target.limit を併記
+- 抑制条件: quietHours / 重複抑制 / legacy count の可視化
+- 頻度上限: perUserWeekly / perUserDaily / perCategoryWeekly / quietHours の可視化
+- 頻度上限（設定値ベース）: 設定値のみを表示（実カウントは含まない）
+- 頻度上限は設定値ベース（実カウントは含まない）: UI注記
+- Policy 判定: notificationPolicy の allowed/reason/allowedCategories を可視化
+- 警告: policy_not_configured: Policy未設定の警告表示
+- Tracking: TRACK_BASE_URL + TRACK_TOKEN_SECRET の有効判定
+- 通知送信ブロック（最新）: notifications.send.execute の audit summary 表示
+- Policy / Caps: system config（servicePhase/notificationPreset/notificationCaps）を表示
+- Readiness: overallDecisionReadiness のステータス/ブロッキングを表示
+- postCheck: decision_timeline POSTCHECK の結果サマリ
+- AI提案: LLM提案（自動実行はしない）
+
+根拠:
+- `/Users/parentyai.com/Projects/Member/apps/admin/composer.html`
+- `/Users/parentyai.com/Projects/Member/apps/admin/monitor.html`
+- `/Users/parentyai.com/Projects/Member/apps/admin/read_model.html`
+- `/Users/parentyai.com/Projects/Member/apps/admin/errors.html`
+- `/Users/parentyai.com/Projects/Member/apps/admin/ops_readonly.html`
 
 ## Admin_UI_Master_Dictionary v2.0 の所在確認結果
 - 検索1: `rg -n "Admin_UI_Master_Dictionary" /Users/parentyai.com/Projects/Member/docs` → 未検出
