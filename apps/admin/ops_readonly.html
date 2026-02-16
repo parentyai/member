@@ -125,6 +125,32 @@
       <pre id="trace-search-result">-</pre>
     </div>
 
+    <div class="section" id="notification-test">
+      <h2>Notification Test（Dry-run / Self-send）</h2>
+      <div class="note">dry-run は validators のみ検証し、delivery/LINE送信は行わない。</div>
+      <div class="note">self-send は validators + killSwitch を通過し、指定 lineUserId に1件だけ送信する。</div>
+      <div class="note">
+        notificationId: <input type="text" id="notification-test-id" class="input-inline input-min-260" />
+        lineUserId: <input type="text" id="notification-test-line-user-id" class="input-inline input-min-260" />
+      </div>
+      <div class="note">
+        <button class="btn" id="notification-test-dry-run">dry-run</button>
+        <button class="btn" id="notification-test-self-send">self-send</button>
+      </div>
+      <pre id="notification-test-result">-</pre>
+    </div>
+
+    <div class="section" id="user-timeline">
+      <h2>User Timeline（指定ユーザー履歴）</h2>
+      <div class="note">notification_deliveries / decision_timeline / audit_logs / events を統合表示。</div>
+      <div class="note">
+        lineUserId: <input type="text" id="user-timeline-line-user-id" class="input-inline input-min-260" />
+        limit: <input type="number" id="user-timeline-limit" min="1" max="200" value="50" class="input-inline" />
+        <button class="btn" id="user-timeline-run">検索</button>
+      </div>
+      <pre id="user-timeline-result">-</pre>
+    </div>
+
     <div class="section">
       <h2>ユーザー状態一覧（READ ONLY）</h2>
       <div class="note">期間フィルタ（UTC）</div>
@@ -990,6 +1016,47 @@
         params.set('traceId', traceId);
         if (limit) params.set('limit', String(limit));
         const res = await fetch(`/api/admin/trace?${params.toString()}`, { headers: OPS_ACTOR_HEADERS });
+        return res.json();
+      }
+
+      async function runNotificationTest(mode) {
+        const notificationId = document.getElementById('notification-test-id').value.trim();
+        const lineUserId = document.getElementById('notification-test-line-user-id').value.trim();
+        const resultEl = document.getElementById('notification-test-result');
+        if (!notificationId) {
+          setText(resultEl, 'notificationId required');
+          return { ok: false };
+        }
+        if (mode === 'self_send' && !lineUserId) {
+          setText(resultEl, 'lineUserId required');
+          return { ok: false };
+        }
+        if (mode === 'self_send') {
+          const confirmed = window.confirm(`self-send: ${notificationId} -> ${lineUserId} を実行しますか？`);
+          if (!confirmed) {
+            setText(resultEl, 'cancelled');
+            return { ok: false, cancelled: true };
+          }
+        }
+        const traceId = newTraceId('notification-test');
+        const res = await fetch('/api/admin/send-test', {
+          method: 'POST',
+          headers: Object.assign(
+            { 'content-type': 'application/json; charset=utf-8', [OPS_TRACE_HEADER_NAME]: traceId },
+            OPS_ACTOR_HEADERS
+          ),
+          body: JSON.stringify({ notificationId, lineUserId, mode })
+        });
+        const data = await res.json();
+        setText(resultEl, formatJson(data));
+        return data;
+      }
+
+      async function fetchUserTimeline(lineUserId, limit) {
+        const params = new URLSearchParams();
+        params.set('lineUserId', lineUserId);
+        if (limit) params.set('limit', String(limit));
+        const res = await fetch(`/api/admin/user-timeline?${params.toString()}`, { headers: OPS_ACTOR_HEADERS });
         return res.json();
       }
 
@@ -2000,6 +2067,32 @@
         handleTraceSearch()
           .then((ok) => toastByResult('trace 検索', ok))
           .catch(() => showToast('trace 検索 失敗', 'danger'));
+      });
+      document.getElementById('notification-test-dry-run').addEventListener('click', () => {
+        runNotificationTest('dry_run')
+          .then((data) => toastByResult('notification test', data))
+          .catch(() => showToast('notification test 失敗', 'danger'));
+      });
+      document.getElementById('notification-test-self-send').addEventListener('click', () => {
+        runNotificationTest('self_send')
+          .then((data) => toastByResult('notification test', data))
+          .catch(() => showToast('notification test 失敗', 'danger'));
+      });
+      document.getElementById('user-timeline-run').addEventListener('click', () => {
+        const lineUserId = document.getElementById('user-timeline-line-user-id').value.trim();
+        const limitValue = document.getElementById('user-timeline-limit').value;
+        const resultEl = document.getElementById('user-timeline-result');
+        if (!lineUserId) {
+          setText(resultEl, 'lineUserId required');
+          return;
+        }
+        const limit = Number(limitValue);
+        fetchUserTimeline(lineUserId, Number.isFinite(limit) ? limit : null)
+          .then((data) => {
+            setText(resultEl, formatJson(data));
+            toastByResult('user timeline', data);
+          })
+          .catch(() => showToast('user timeline 失敗', 'danger'));
       });
       document.getElementById('ops-console-detail-trace-id').addEventListener('click', () => {
         const traceIdEl = document.getElementById('trace-search-trace-id');

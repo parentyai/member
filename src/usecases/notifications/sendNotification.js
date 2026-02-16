@@ -99,6 +99,7 @@ async function sendNotification(params) {
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0
     ? payload.actor.trim()
     : null;
+  const skipStatusUpdate = payload.skipStatusUpdate === true;
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
@@ -201,10 +202,12 @@ async function sendNotification(params) {
     }
   }
 
-  await notificationsRepo.updateNotificationStatus(notificationId, {
-    status: 'sent',
-    sentAt: sentAt || null
-  });
+  if (!skipStatusUpdate) {
+    await notificationsRepo.updateNotificationStatus(notificationId, {
+      status: 'sent',
+      sentAt: sentAt || null
+    });
+  }
 
   return { notificationId, deliveredCount, skippedCount };
 }

@@ -165,6 +165,8 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
     "h2": [
       "Operations（安全操作）",
       "Trace Search（監査）",
+      "Notification Test（Dry-run / Self-send）",
+      "User Timeline（指定ユーザー履歴）",
       "ユーザー状態一覧（READ ONLY）",
       "通知状態一覧",
       "Ops Dashboard（参考）",
