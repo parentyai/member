@@ -27,7 +27,7 @@
 
     <h1>配信結果（Monitor / READ ONLY）</h1>
     <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
-    <div class="note">capCountMode / capCountSource は上限値ではなく「計数方式/出所」を示す。</div>
+    <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
     <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
 
     <div class="note">
@@ -61,6 +61,7 @@
           <th>targetCountSource</th>
           <th>capCountMode</th>
           <th>capCountSource</th>
+          <th>capCountStrategy</th>
           <th>lastExecuteReason</th>
           <th>sent</th>
           <th>read</th>
@@ -178,11 +179,11 @@
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
-          appendMessageRow(rows, 14, 'error');
+          appendMessageRow(rows, 15, 'error');
           return;
         }
         if (!data.items.length) {
-          appendMessageRow(rows, 14, 'no data');
+          appendMessageRow(rows, 15, 'no data');
           return;
         }
         clearChildren(rows);
@@ -196,6 +197,7 @@
             item.targetCountSource || '-',
             item.capCountMode || '-',
             item.capCountSource || '-',
+            item.capCountStrategy || '-',
             item.lastExecuteReason || '-',
             item.deliveredCount,
             item.readCount,
@@ -209,12 +211,12 @@
 
       document.getElementById('reload').addEventListener('click', () => {
         loadReadModel().catch(() => {
-          appendMessageRow(document.getElementById('rows'), 14, 'error');
+          appendMessageRow(document.getElementById('rows'), 15, 'error');
         });
       });
 
       loadReadModel().catch(() => {
-        appendMessageRow(document.getElementById('rows'), 14, 'error');
+        appendMessageRow(document.getElementById('rows'), 15, 'error');
       });
     </script>
   </body>
