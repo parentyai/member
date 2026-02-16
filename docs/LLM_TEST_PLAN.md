@@ -15,6 +15,10 @@
   - tests/phaseLLM2/phaseLLM2_ops_explanation_usecase.test.js
 - admin UI wiring: ops_readonly includes ops-explain display
   - tests/phaseLLM2/phaseLLM2_ops_explanation_ui.test.js
+- next action candidates: abstract actions only + fallback on invalid schema
+  - tests/phaseLLM3/phaseLLM3_next_action_candidates_usecase.test.js
+- admin UI wiring: ops_readonly includes next action candidates display
+  - tests/phaseLLM3/phaseLLM3_next_action_candidates_ui.test.js
 
 ## Manual Checks
 - Admin ops console shows llmExplanation JSON and status without affecting ops decisions.

@@ -305,6 +305,10 @@
       <div>llmExplanation status: <span id="ops-console-detail-llm-explanation-status">-</span></div>
       <pre id="ops-console-detail-llm-explanation">-</pre>
 
+      <h3>Next Action Candidates（abstract）</h3>
+      <div>nextActionCandidates status: <span id="ops-console-detail-next-actions-status">-</span></div>
+      <pre id="ops-console-detail-next-actions">-</pre>
+
       <h3>Notification Health（add-only）</h3>
       <div class="note">通知の sent/click/read をSSOT（notification_deliveries）から再計算した read-model に基づく（表示のみ）。</div>
       <div>notificationHealthSummary:</div>
@@ -905,6 +909,14 @@
         return res.json();
       }
 
+      async function fetchOpsNextActions(lineUserId) {
+        const res = await fetch(
+          `/api/phaseLLM3/ops-next-actions?lineUserId=${encodeURIComponent(lineUserId)}`,
+          { headers: OPS_ACTOR_HEADERS }
+        );
+        return res.json();
+      }
+
       async function submitOpsDecisionRequest(payload) {
         const res = await fetch('/api/phase25/ops/decision', {
           method: 'POST',
@@ -1323,6 +1335,20 @@
         setText(explanationEl, formatJson(detail.explanation));
       }
 
+      function renderOpsNextActions(detail) {
+        const statusEl = document.getElementById('ops-console-detail-next-actions-status');
+        const actionsEl = document.getElementById('ops-console-detail-next-actions');
+        if (!detail || !detail.ok) {
+          setText(statusEl, 'error');
+          setText(actionsEl, formatJson(detail || {}));
+          return;
+        }
+        const statusText = detail.llmStatus || '-';
+        const auditId = detail.auditId || '-';
+        setText(statusEl, `${statusText} / auditId: ${auditId}`);
+        setText(actionsEl, formatJson(detail.nextActionCandidates));
+      }
+
       function renderSavedSegments(items) {
         const select = document.getElementById('saved-segment-select');
         clearChildren(select);
@@ -1562,6 +1588,7 @@
           await loadOpsAssistDetail(lineUserId);
           await loadPhase39Suggestion(lineUserId);
           await loadOpsExplanation(lineUserId);
+          await loadOpsNextActions(lineUserId);
         } catch (err) {
           setText(errorEl, 'error');
         }
@@ -1627,6 +1654,16 @@
           renderOpsExplanation(detail);
         } catch (err) {
           renderOpsExplanation(null);
+        }
+      }
+
+      async function loadOpsNextActions(lineUserId) {
+        if (!lineUserId) return;
+        try {
+          const detail = await fetchOpsNextActions(lineUserId);
+          renderOpsNextActions(detail);
+        } catch (err) {
+          renderOpsNextActions(null);
         }
       }
 
