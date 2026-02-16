@@ -19,16 +19,24 @@ const systemFlagsRepo = require('../../src/repos/firestore/systemFlagsRepo');
 const { planNotificationSend } = require('../../src/usecases/adminOs/planNotificationSend');
 
 let db;
+let previousSecret;
 
 beforeEach(() => {
   db = createDbStub();
   setDbForTest(db);
   setServerTimestampForTest('SERVER_TIMESTAMP');
+  previousSecret = process.env.OPS_CONFIRM_TOKEN_SECRET;
+  process.env.OPS_CONFIRM_TOKEN_SECRET = 'test-confirm-secret';
 });
 
 afterEach(() => {
   clearDbForTest();
   clearServerTimestampForTest();
+  if (previousSecret === undefined) {
+    delete process.env.OPS_CONFIRM_TOKEN_SECRET;
+  } else {
+    process.env.OPS_CONFIRM_TOKEN_SECRET = previousSecret;
+  }
 });
 
 test('phase205: plan returns capBlockedCount based on caps', async () => {
