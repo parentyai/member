@@ -172,6 +172,9 @@
               planHash: <span id="planHash">-</span>
               / confirmToken: <span id="confirmToken">-</span>
             </div>
+            <div class="note">
+              対象人数（plan）: <span id="planTargetCount">-</span>
+            </div>
             <pre id="plan-result">-</pre>
             <pre id="execute-result">-</pre>
             <div class="note" id="execute-cap-meta">capCountMode: - / capCountSource: - / capCountStrategy: - / reason: -</div>
@@ -301,7 +304,9 @@
 
       document.getElementById('plan').addEventListener('click', async () => {
         const resultEl = document.getElementById('plan-result');
+        const planTargetCountEl = document.getElementById('planTargetCount');
         resultEl.textContent = '';
+        if (planTargetCountEl) planTargetCountEl.textContent = '-';
         if (!currentNotificationId) {
           resultEl.textContent = 'notificationId required';
           return;
@@ -315,6 +320,10 @@
           currentConfirmToken = result.confirmToken || null;
           document.getElementById('planHash').textContent = currentPlanHash || '-';
           document.getElementById('confirmToken').textContent = currentConfirmToken ? 'set' : '-';
+          if (planTargetCountEl) {
+            const count = typeof result.count === 'number' ? result.count : null;
+            planTargetCountEl.textContent = count !== null ? String(count) : '-';
+          }
         }
       });
 
