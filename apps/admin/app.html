@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>通知運用ダッシュボード（Linear UI）</title>
+    <link rel="stylesheet" href="/admin/assets/admin.css" />
+  </head>
+  <body class="app-body">
+    <div id="app-shell" class="app-shell" data-role="operator">
+      <aside class="app-nav">
+        <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
+        <button class="nav-item is-active" data-pane-target="home">
+          <span class="nav-icon" aria-hidden="true">H</span>
+          <span data-dict-key="ui.label.nav.home">ホーム</span>
+        </button>
+        <button class="nav-item" data-pane-target="composer">
+          <span class="nav-icon" aria-hidden="true">C</span>
+          <span data-dict-key="ui.label.nav.compose">通知配信</span>
+        </button>
+        <button class="nav-item" data-pane-target="monitor">
+          <span class="nav-icon" aria-hidden="true">M</span>
+          <span data-dict-key="ui.label.nav.monitor">配信結果</span>
+        </button>
+        <button class="nav-item" data-pane-target="errors">
+          <span class="nav-icon" aria-hidden="true">E</span>
+          <span data-dict-key="ui.label.nav.errors">異常対応</span>
+        </button>
+        <button class="nav-item" data-pane-target="read-model">
+          <span class="nav-icon" aria-hidden="true">R</span>
+          <span data-dict-key="ui.label.nav.readModel">通知集計</span>
+        </button>
+        <button class="nav-item" data-pane-target="audit">
+          <span class="nav-icon" aria-hidden="true">A</span>
+          <span data-dict-key="ui.label.nav.audit">証跡</span>
+        </button>
+        <button class="nav-item" data-pane-target="settings">
+          <span class="nav-icon" aria-hidden="true">S</span>
+          <span data-dict-key="ui.label.nav.settings">設定</span>
+        </button>
+        <button class="nav-item" data-pane-target="maintenance" data-role="admin">
+          <span class="nav-icon" aria-hidden="true">M</span>
+          <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
+        </button>
+      </aside>
+
+      <main class="app-content">
+        <header class="app-topbar">
+          <div class="top-metric">
+            <div class="top-label" data-dict-key="ui.label.top.todo">今日の要対応</div>
+            <div id="top-todo" class="top-value">0</div>
+          </div>
+          <div class="top-metric">
+            <div class="top-label" data-dict-key="ui.label.top.health">状態内訳</div>
+            <div id="top-health" class="top-sub" data-dict-key="ui.desc.top.healthDefault">要対応 0 / 注意 0 / 問題なし 0 / 未設定 0</div>
+          </div>
+          <div class="top-metric">
+            <div class="top-label" data-dict-key="ui.label.top.anomaly">直近の異常</div>
+            <div id="top-anomaly" class="top-sub">-</div>
+          </div>
+          <div class="top-role">
+            <span class="role-label" data-dict-key="ui.label.role">Role</span>
+            <div class="role-switch" role="group" aria-label="Role Switch">
+              <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operator">運用者</button>
+              <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.admin">管理者</button>
+            </div>
+          </div>
+        </header>
+
+        <h1 data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
+
+        <section id="pane-home" class="app-pane is-active" data-pane="home">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.home.focus">要対応 / 最優先通知 / 異常の主因</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.home.help">要対応から開く</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.home.risk">要対応を後回しにする</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel today-card">
+                <div class="panel-title" data-dict-key="ui.label.home.today">今日の要対応</div>
+                <div class="panel-body">
+                  <div class="today-metrics">
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.count">要対応件数</span><span id="home-todo" class="metric-value">0</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.causes">主因トップ3</span><span id="home-causes" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.anomaly">直近の異常</span><span id="home-anomaly" class="metric-value">-</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.home.flow">今日の流れ</div>
+                <div class="panel-body">
+                  <ol class="flow-list">
+                    <li data-dict-key="ui.desc.home.flow1">通知を作成/承認</li>
+                    <li data-dict-key="ui.desc.home.flow2">対象と上限を確認</li>
+                    <li data-dict-key="ui.desc.home.flow3">送信実行</li>
+                    <li data-dict-key="ui.desc.home.flow4">結果と異常を確認</li>
+                    <li data-dict-key="ui.desc.home.flow5">証跡を残す</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.home.detail">対象の選択</div>
+                <div class="panel-body">
+                  <p data-dict-key="ui.desc.home.detail">左ナビから配信/結果/異常を切り替え、右の操作パネルで実行します。</p>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.home.actions">最初に「通知配信」から着手するのが最短です。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-composer" class="app-pane" data-pane="composer">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.composer.focus">目的 / 対象 / 確認トークン</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.composer.help">Planで対象数を確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.composer.risk">limit未設定でplanが弾かれる</span></div>
+          </div>
+
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
+                <div class="panel-body">
+                  <div class="summary-metrics">
+                    <div><span class="metric-label" data-dict-key="ui.label.composer.purpose">目的</span><span id="composer-summary-purpose" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.label.composer.target">対象</span><span id="composer-summary-target" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.label.composer.timing">タイミング</span><span id="composer-summary-timing" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.label.composer.risk">リスク</span><span id="composer-summary-risk" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.label.composer.status">状態</span><span id="composer-summary-status" class="metric-value">-</span></div>
+                  </div>
+                  <div class="summary-badge">
+                    <span id="composer-safety" class="badge badge-ok" data-dict-key="ui.status.ok">問題なし</span>
+                    <span data-dict-key="ui.label.composer.safety">送信前安全チェック</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知入力</div>
+                <div class="panel-body">
+                  <div class="input-grid">
+                    <div>
+                      <label data-dict-key="ui.label.composer.title" data-dict-tip="ui.help.composer.title">タイトル</label>
+                      <input id="title" data-dict-placeholder="ui.desc.composer.titlePlaceholder" placeholder="" />
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.composer.body" data-dict-tip="ui.help.composer.body">本文</label>
+                      <textarea id="body" data-dict-placeholder="ui.desc.composer.bodyPlaceholder" placeholder=""></textarea>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.composer.cta" data-dict-tip="ui.help.composer.cta">ボタン文言</label>
+                      <input id="ctaText" data-dict-placeholder="ui.desc.composer.ctaPlaceholder" placeholder="" />
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
+                      <input id="linkRegistryId" data-dict-placeholder="ui.desc.composer.linkPlaceholder" placeholder="" />
+                    </div>
+                    <div class="row">
+                      <div class="flex-1">
+                        <label data-dict-key="ui.label.composer.scenario" data-dict-tip="ui.help.composer.scenario">シナリオ</label>
+                        <select id="scenarioKey">
+                          <option value="A">A</option>
+                          <option value="C">C</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
+                        <label data-dict-key="ui.label.composer.step" data-dict-tip="ui.help.composer.step">ステップ</label>
+                        <select id="stepKey">
+                          <option value="3mo">3mo</option>
+                          <option value="1mo">1mo</option>
+                          <option value="week">week</option>
+                          <option value="after1w">after1w</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
+                      <select id="notificationCategory">
+                        <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+                        <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+                        <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+                        <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+                        <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+                      </select>
+                    </div>
+                    <div class="row">
+                      <div class="flex-1">
+                        <label data-dict-key="ui.label.composer.region" data-dict-tip="ui.help.composer.region">地域（任意）</label>
+                        <input id="targetRegion" />
+                      </div>
+                      <div class="flex-1">
+                        <label data-dict-key="ui.label.composer.limit" data-dict-tip="ui.help.composer.limit">上限件数（必須）</label>
+                        <input id="targetLimit" type="number" min="1" max="500" value="50" />
+                      </div>
+                    </div>
+                    <label class="checkbox" data-dict-tip="ui.help.composer.membersOnly"><input id="membersOnly" type="checkbox" /> <span data-dict-key="ui.label.composer.membersOnly">会員のみ</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <details class="panel" open>
+                <summary data-dict-key="ui.label.composer.details">詳細（内部キー）</summary>
+                <div class="panel-body">
+                  <div class="note"><span data-dict-key="ui.label.composer.notificationId">通知ID</span>: <span id="notificationId">-</span></div>
+                  <div class="note"><span data-dict-key="ui.label.composer.planHash">計画ハッシュ</span>: <span id="planHash">-</span></div>
+                  <div class="note"><span data-dict-key="ui.label.composer.confirmToken">確認トークン</span>: <span id="confirmToken">-</span></div>
+                  <pre id="draft-result">-</pre>
+                  <pre id="plan-result">-</pre>
+                  <pre id="execute-result">-</pre>
+                </div>
+              </details>
+            </div>
+
+            <div class="pane-detail">
+              <div class="panel status-card status-unknown" id="composer-status-panel">
+                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+                <div class="panel-body">
+                  <span id="composer-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
+                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+                  <div class="status-meta" data-dict-key="ui.metric.composer.status" data-dict-tip="ui.help.metric.composer.status">直近操作の結果（作成/承認/計画/実行）</div>
+                  <div class="status-focus">
+                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
+                    <span id="composer-action-count" class="action-count">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.composer.actions">下書き → 承認 → 計画 → 実行の順です。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="traceId" class="input-inline input-trace" />
+                    <button id="regen-trace" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <span id="trace-note"></span>
+                  </div>
+                  <div class="row row-top">
+                    <button id="create-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
+                    <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                    <button id="approve" type="button" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                  </div>
+                  <div class="row row-top" data-role="admin">
+                    <button id="plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
+                    <button id="execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                  </div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.composer.planTarget">対象人数（plan）</span>: <span id="planTargetCount">-</span>
+                  </div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.composer.planBlocked">抑制数（plan）</span>: <span id="planCapBlockedCount">-</span>
+                  </div>
+                  <div class="note" id="execute-cap-meta" data-dict-key="ui.desc.composer.executeMeta">計数方式: - / 計数元: - / 計数戦略: - / 最終理由: -</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-monitor" class="app-pane" data-pane="monitor">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.monitor.focus">健康度 / 反応率 / 最終結果</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.monitor.help">要対応から開く</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.monitor.risk">状態未指定で全件を見てしまう</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel today-card">
+                <div class="panel-title" data-dict-key="ui.label.monitor.today">今日の要対応</div>
+                <div class="panel-body">
+                  <div class="today-metrics">
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.count">要対応件数</span><span id="monitor-todo" class="metric-value">0</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.causes">主因トップ3</span><span id="monitor-causes" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.todo.anomaly">直近の異常</span><span id="monitor-anomaly" class="metric-value">-</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <details class="table-section section">
+                <summary data-dict-key="ui.label.monitor.table">配信結果（参照）</summary>
+                <table class="table-compact">
+                  <thead>
+                    <tr>
+                      <th data-dict-key="ui.label.monitor.col.title" data-dict-tip="ui.help.monitor.title">タイトル</th>
+                      <th data-dict-key="ui.label.monitor.col.scenario" data-dict-tip="ui.help.monitor.scenario">シナリオ</th>
+                      <th data-dict-key="ui.label.monitor.col.step" data-dict-tip="ui.help.monitor.step">ステップ</th>
+                      <th data-dict-key="ui.label.monitor.col.target" data-dict-tip="ui.help.monitor.target">対象数</th>
+                      <th data-dict-key="ui.label.monitor.col.last" data-dict-tip="ui.help.monitor.last">最終結果</th>
+                      <th data-dict-key="ui.label.monitor.col.ctr" data-dict-tip="ui.help.monitor.ctr">反応率</th>
+                      <th data-dict-key="ui.label.monitor.col.health" data-dict-tip="ui.help.monitor.health">健康度</th>
+                    </tr>
+                  </thead>
+                  <tbody id="monitor-rows"></tbody>
+                </table>
+              </details>
+            </div>
+            <div class="pane-detail">
+              <div class="panel status-card status-unknown" id="monitor-status-panel">
+                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+                <div class="panel-body">
+                  <span id="monitor-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
+                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+                  <div class="status-meta" data-dict-key="ui.metric.monitor.status" data-dict-tip="ui.help.metric.monitor.status">通知単位の健康度集計（一覧表示分）</div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.monitor.detail">詳細</div>
+                <div class="panel-body">
+                  <pre id="monitor-detail">-</pre>
+                  <details>
+                    <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
+                    <pre id="monitor-raw">-</pre>
+                  </details>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.monitor.actions">配信結果の取得条件を指定します。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="monitor-trace" class="input-inline input-trace" />
+                    <button id="monitor-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <span id="monitor-trace-note"></span>
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.monitor.limit" data-dict-tip="ui.help.monitor.limit">件数</label>
+                    <input type="number" id="monitor-limit" min="1" max="200" value="50" class="input-inline input-sm" />
+                    <label data-dict-key="ui.label.monitor.status" data-dict-tip="ui.help.monitor.status">状態</label>
+                    <input type="text" id="monitor-status" class="input-inline input-sm" />
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.monitor.scenario" data-dict-tip="ui.help.monitor.scenario">シナリオ</label>
+                    <input type="text" id="monitor-scenario" class="input-inline input-xs" />
+                    <label data-dict-key="ui.label.monitor.step" data-dict-tip="ui.help.monitor.step">ステップ</label>
+                    <input type="text" id="monitor-step" class="input-inline input-xs" />
+                  </div>
+                  <div class="row row-top">
+                    <button id="monitor-reload" type="button" data-dict-key="ui.label.monitor.reload">更新</button>
+                  </div>
+                  <div id="monitor-skeleton" class="skeleton-stack is-hidden">
+                    <div class="skeleton-line lg w-50"></div>
+                    <div class="skeleton-line w-70"></div>
+                    <div class="skeleton-line w-30"></div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-errors" class="app-pane" data-pane="errors">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.errors.focus">危険リンク / 再送待ち / まとめ</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.errors.help">再送待ちの最新から確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.errors.risk">再送を忘れて放置する</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.errors.recovery">復旧パネル</div>
+                <div class="panel-body">
+                  <div class="summary-metrics">
+                    <div><span class="metric-label" data-dict-key="ui.label.errors.problems">今ある問題</span><span id="errors-problems" class="metric-value">0</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.label.errors.recommend">推奨アクション</span><span id="errors-recommend" class="metric-value">-</span></div>
+                  </div>
+                  <button id="errors-to-ops" type="button" data-dict-key="ui.label.errors.toOps">Opsで復旧する</button>
+                </div>
+              </div>
+              <details class="table-section section" open>
+                <summary data-dict-key="ui.label.errors.summary">まとめ</summary>
+                <pre id="errors-summary">-</pre>
+              </details>
+              <details class="table-section section">
+                <summary data-dict-key="ui.label.errors.warnLinks">危険リンク一覧</summary>
+                <table class="table-compact">
+                  <thead>
+                    <tr>
+                      <th data-dict-key="ui.label.errors.linkId" data-dict-tip="ui.help.errors.linkId">リンクID</th>
+                      <th data-dict-key="ui.label.errors.linkTitle" data-dict-tip="ui.help.errors.linkTitle">タイトル</th>
+                      <th data-dict-key="ui.label.errors.linkUrl" data-dict-tip="ui.help.errors.linkUrl">リンク先</th>
+                      <th data-dict-key="ui.label.errors.linkChecked" data-dict-tip="ui.help.errors.linkChecked">最終確認</th>
+                    </tr>
+                  </thead>
+                  <tbody id="errors-warn-rows"></tbody>
+                </table>
+              </details>
+              <details class="table-section section">
+                <summary data-dict-key="ui.label.errors.retryQueue">再送待ち一覧</summary>
+                <table class="table-compact">
+                  <thead>
+                    <tr>
+                      <th data-dict-key="ui.label.errors.queueId" data-dict-tip="ui.help.errors.queueId">キューID</th>
+                      <th data-dict-key="ui.label.errors.lineUserId" data-dict-tip="ui.help.errors.lineUserId">LINEユーザーID</th>
+                      <th data-dict-key="ui.label.errors.template" data-dict-tip="ui.help.errors.template">テンプレ</th>
+                      <th data-dict-key="ui.label.errors.lastError" data-dict-tip="ui.help.errors.lastError">最終エラー</th>
+                      <th data-dict-key="ui.label.errors.updatedAt" data-dict-tip="ui.help.errors.updatedAt">更新日時</th>
+                    </tr>
+                  </thead>
+                  <tbody id="errors-retry-rows"></tbody>
+                </table>
+              </details>
+            </div>
+            <div class="pane-detail">
+              <div class="panel status-card status-unknown" id="errors-status-panel">
+                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+                <div class="panel-body">
+                  <span id="errors-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
+                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+                  <div class="status-meta" data-dict-key="ui.metric.errors.status" data-dict-tip="ui.help.metric.errors.status">危険リンク＋再送待ち件数（summary由来）</div>
+                  <div class="status-focus">
+                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
+                    <span id="errors-action-count" class="action-count">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.errors.actions">危険リンクと再送待ちを確認します。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="errors-trace" class="input-inline input-trace" />
+                    <button id="errors-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <span id="errors-trace-note"></span>
+                  </div>
+                  <div class="row row-top">
+                    <button id="errors-reload" type="button" data-dict-key="ui.label.errors.reload">更新</button>
+                  </div>
+                  <div id="errors-skeleton" class="skeleton-stack is-hidden">
+                    <div class="skeleton-line lg w-50"></div>
+                    <div class="skeleton-line w-70"></div>
+                    <div class="skeleton-line w-30"></div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-read-model" class="app-pane" data-pane="read-model">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.readModel.focus">要対応 / 反応率 / 最終結果</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.readModel.help">未取得がないか確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.readModel.risk">未取得を正常と誤解する</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <details class="table-section section" open>
+                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
+                <table class="table-compact">
+                  <thead>
+                    <tr>
+                      <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
+                      <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
+                      <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
+                      <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
+                      <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
+                      <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
+                      <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
+                    </tr>
+                  </thead>
+                  <tbody id="read-model-rows"></tbody>
+                </table>
+              </details>
+            </div>
+            <div class="pane-detail">
+              <div class="panel status-card status-unknown" id="read-model-status-panel">
+                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+                <div class="panel-body">
+                  <span id="read-model-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
+                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+                  <div class="status-meta" data-dict-key="ui.metric.readModel.status" data-dict-tip="ui.help.metric.readModel.status">通知集計の健康度（一覧表示分）</div>
+                  <div class="status-focus">
+                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
+                    <span id="read-model-action-count" class="action-count">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.readModel.actions">集計結果を取得します。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="read-model-trace" class="input-inline input-trace" />
+                    <button id="read-model-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <span id="read-model-trace-note"></span>
+                  </div>
+                  <div class="row row-top">
+                    <button id="read-model-reload" type="button" data-dict-key="ui.label.readModel.reload">更新</button>
+                  </div>
+                  <div id="read-model-skeleton" class="skeleton-stack is-hidden">
+                    <div class="skeleton-line lg w-50"></div>
+                    <div class="skeleton-line w-70"></div>
+                    <div class="skeleton-line w-30"></div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-audit" class="app-pane" data-pane="audit">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.audit.focus">traceId / 監査ログ / 操作結果</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.audit.help">traceIdを入力して検索</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.audit.risk">traceIdの誤入力</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.audit.search">監査検索</div>
+                <div class="panel-body">
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="audit-trace" class="input-inline input-trace" />
+                    <button id="audit-search" type="button" data-dict-key="ui.label.audit.searchBtn">検索</button>
+                    <span id="audit-note"></span>
+                  </div>
+                  <pre id="audit-result">-</pre>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.audit.detail">詳細</div>
+                <div class="panel-body">
+                  <pre id="audit-detail">-</pre>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.audit.actions">traceIdで証跡を確認します。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-settings" class="app-pane" data-pane="settings">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.settings.focus">通知テンプレ / リンク / System Config</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.settings.help">Masterへ移動</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.settings.risk">planなしでset</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.settings.notice">設定は管理者で操作</div>
+                <div class="panel-body">
+                  <p data-dict-key="ui.desc.settings.notice">設定・回復は /admin/master に集約されています。</p>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail"></div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <a class="btn" href="/admin/master" data-dict-key="ui.label.settings.toMaster">設定画面へ</a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.maintenance.focus">回復 / 保守 / 監査</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.maintenance.help">Masterで確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.maintenance.risk">confirmToken未確認</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.notice">保守操作はMasterで実行</div>
+                <div class="panel-body">
+                  <p data-dict-key="ui.desc.maintenance.notice">配信回復/補正は /admin/master に集約されています。</p>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail"></div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <a class="btn" href="/admin/master" data-dict-key="ui.label.maintenance.toMaster">回復画面へ</a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="/admin/assets/admin_app.js"></script>
+  </body>
+</html>

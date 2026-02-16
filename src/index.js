@@ -41,6 +41,20 @@ function parseCookies(headerValue) {
   return out;
 }
 
+function parseJsonBlock(text, startMarker, endMarker) {
+  if (typeof text !== 'string') return null;
+  const startIdx = text.indexOf(startMarker);
+  const endIdx = text.indexOf(endMarker);
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null;
+  const block = text.slice(startIdx + startMarker.length, endIdx).trim();
+  if (!block) return null;
+  try {
+    return JSON.parse(block);
+  } catch (_err) {
+    return null;
+  }
+}
+
 function resolveAdminTokenFromRequest(req) {
   const headerToken = req && req.headers && req.headers['x-admin-token'];
   if (typeof headerToken === 'string' && headerToken.trim().length > 0) {
@@ -545,6 +559,38 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/admin/assets/admin_app.js') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'assets', 'admin_app.js');
+    try {
+      const js = fs.readFileSync(filePath, 'utf8');
+      res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8' });
+      res.end(js);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/admin/ui-dict') {
+    const dictPath = path.resolve(__dirname, '..', 'docs', 'ADMIN_UI_DICTIONARY_JA.md');
+    try {
+      const dictText = fs.readFileSync(dictPath, 'utf8');
+      const data = parseJsonBlock(dictText, '<!-- ADMIN_UI_DICT_BEGIN -->', '<!-- ADMIN_UI_DICT_END -->');
+      if (!data) {
+        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('ui dict missing');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(data));
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/admin/ops' || pathname === '/admin/ops/')) {
     const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'ops_readonly.html');
     serveHtml(res, filePath);
@@ -577,6 +623,12 @@ function createServer() {
 
   if (req.method === 'GET' && (pathname === '/admin/master' || pathname === '/admin/master/')) {
     const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'master.html');
+    serveHtml(res, filePath);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
     serveHtml(res, filePath);
     return;
   }
