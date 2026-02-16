@@ -301,6 +301,10 @@
       <pre id="ops-console-detail-phase39-suggestion">-</pre>
       <div>phase39AuditId: <span id="ops-console-detail-phase39-audit-id">-</span></div>
 
+      <h3>LLM Explanation（advisory-only）</h3>
+      <div>llmExplanation status: <span id="ops-console-detail-llm-explanation-status">-</span></div>
+      <pre id="ops-console-detail-llm-explanation">-</pre>
+
       <h3>Notification Health（add-only）</h3>
       <div class="note">通知の sent/click/read をSSOT（notification_deliveries）から再計算した read-model に基づく（表示のみ）。</div>
       <div>notificationHealthSummary:</div>
@@ -893,6 +897,14 @@
         return res.json();
       }
 
+      async function fetchOpsExplanation(lineUserId) {
+        const res = await fetch(
+          `/api/phaseLLM2/ops-explain?lineUserId=${encodeURIComponent(lineUserId)}`,
+          { headers: OPS_ACTOR_HEADERS }
+        );
+        return res.json();
+      }
+
       async function submitOpsDecisionRequest(payload) {
         const res = await fetch('/api/phase25/ops/decision', {
           method: 'POST',
@@ -1297,6 +1309,20 @@
         setText(document.getElementById('ops-decision-use-suggestion-note'), '');
       }
 
+      function renderOpsExplanation(detail) {
+        const statusEl = document.getElementById('ops-console-detail-llm-explanation-status');
+        const explanationEl = document.getElementById('ops-console-detail-llm-explanation');
+        if (!detail || !detail.ok) {
+          setText(statusEl, 'error');
+          setText(explanationEl, formatJson(detail || {}));
+          return;
+        }
+        const statusText = detail.llmStatus || '-';
+        const auditId = detail.auditId || '-';
+        setText(statusEl, `${statusText} / auditId: ${auditId}`);
+        setText(explanationEl, formatJson(detail.explanation));
+      }
+
       function renderSavedSegments(items) {
         const select = document.getElementById('saved-segment-select');
         clearChildren(select);
@@ -1535,6 +1561,7 @@
           renderOpsConsoleDetail(detail);
           await loadOpsAssistDetail(lineUserId);
           await loadPhase39Suggestion(lineUserId);
+          await loadOpsExplanation(lineUserId);
         } catch (err) {
           setText(errorEl, 'error');
         }
@@ -1590,6 +1617,16 @@
         } catch (err) {
           setText(document.getElementById('ops-console-detail-phase39-suggestion'), '-');
           setText(document.getElementById('ops-console-detail-phase39-audit-id'), '-');
+        }
+      }
+
+      async function loadOpsExplanation(lineUserId) {
+        if (!lineUserId) return;
+        try {
+          const detail = await fetchOpsExplanation(lineUserId);
+          renderOpsExplanation(detail);
+        } catch (err) {
+          renderOpsExplanation(null);
         }
       }
 
