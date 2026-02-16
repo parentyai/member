@@ -64,3 +64,43 @@
 #### Errors
 - 400: `lineUserId required`
 - 500: `error`
+
+### POST /api/phaseLLM4/faq/answer
+- Purpose: Provide FAQ answer with link_registry sourceId citations only.
+- Auth: admin UI with `x-actor` header (read-only).
+- Feature gate: `LLM_FEATURE_FLAG` must be true for LLM output. Otherwise fallback is returned.
+
+#### Body
+```json
+{
+  "question": "string",
+  "sourceIds": ["link_registry_id_1", "link_registry_id_2"]
+}
+```
+
+#### Response (200)
+```json
+{
+  "ok": true,
+  "question": "string",
+  "serverTime": "2026-02-16T00:00:00.000Z",
+  "faqAnswer": {
+    "schemaId": "FAQAnswer.v1",
+    "generatedAt": "...",
+    "advisoryOnly": true,
+    "question": "string",
+    "answer": "string",
+    "citations": []
+  },
+  "llmUsed": false,
+  "llmStatus": "disabled",
+  "llmModel": null,
+  "schemaErrors": null,
+  "blockedSourceIds": null,
+  "auditId": "audit-xxx"
+}
+```
+
+#### Errors
+- 400: `question required`
+- 500: `error`
