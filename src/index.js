@@ -375,33 +375,7 @@ function createServer() {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin Login</title>
-    <style>
-      :root {
-        --status-danger-bg: #ffebee;
-        --status-danger-text: #b71c1c;
-        --status-warn-bg: #fff8e1;
-        --status-warn-text: #8d6e63;
-        --status-ok-bg: #e8f5e9;
-        --status-ok-text: #1b5e20;
-        --status-unknown-bg: #f5f5f5;
-        --status-unknown-text: #666;
-      }
-      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
-      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
-      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-      .card-purpose { font-size: 12px; color: #555; }
-      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
-      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-      .panel-body { font-size: 13px; }
-      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
-      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
-      .status-legend { font-size: 12px; color: #666; }
-      label { display: block; margin: 8px 0; }
-      input { padding: 6px 8px; font-size: 14px; min-width: 280px; }
-      button { padding: 6px 10px; font-size: 14px; }
-      .note { font-size: 12px; color: #666; margin-bottom: 12px; }
-    </style>
+    <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
     <div class="card-nav">
@@ -457,7 +431,7 @@ function createServer() {
         <form method="post" action="/admin/login">
           <label>
             token
-            <input type="password" name="token" required />
+            <input type="password" name="token" required class="input-inline input-min-280" />
           </label>
           <button type="submit">Login</button>
         </form>
@@ -536,6 +510,19 @@ function createServer() {
       'set-cookie': buildAdminCookieValue('', req, { maxAgeSeconds: 0 })
     });
     res.end();
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/admin/assets/admin.css') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'assets', 'admin.css');
+    try {
+      const css = fs.readFileSync(filePath, 'utf8');
+      res.writeHead(200, { 'content-type': 'text/css; charset=utf-8' });
+      res.end(css);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
     return;
   }
 

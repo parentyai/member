@@ -4,42 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>運用判断支援（Ops Console / READ ONLY）</title>
-    <style>
-      :root {
-        --status-danger-bg: #ffebee;
-        --status-danger-text: #b71c1c;
-        --status-warn-bg: #fff8e1;
-        --status-warn-text: #8d6e63;
-        --status-ok-bg: #e8f5e9;
-        --status-ok-text: #1b5e20;
-        --status-unknown-bg: #f5f5f5;
-        --status-unknown-text: #666;
-      }
-      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
-      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
-      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-      .card-purpose { font-size: 12px; color: #555; }
-      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
-      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-      .panel-body { font-size: 13px; }
-      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
-      .status-ok { background: var(--status-ok-bg); color: var(--status-ok-text); }
-      .status-warn { background: var(--status-warn-bg); color: var(--status-warn-text); }
-      .status-danger { background: var(--status-danger-bg); color: var(--status-danger-text); }
-      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
-      .status-legend { font-size: 12px; color: #666; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-      th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
-      th { background: #f7f7f7; }
-      .note { font-size: 12px; color: #666; margin-bottom: 8px; }
-      .section { margin-bottom: 24px; }
-      .btn { font-size: 12px; padding: 4px 8px; }
-      .badge { display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 12px; }
-      .badge-danger { background: #ffe3e3; color: #a40000; }
-      .badge-warn { background: #fff4d6; color: #7a4a00; }
-      .badge-ok { background: #e6ffed; color: #0f5f2e; }
-    </style>
+    <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
     <div class="card-nav">
@@ -132,8 +97,8 @@
       <h2>Trace Search（監査）</h2>
       <div class="note">traceId を入力して audit_logs / decision_logs / decision_timeline を参照。</div>
       <div class="note">
-        traceId: <input type="text" id="trace-search-trace-id" style="min-width: 260px" />
-        limit: <input type="number" id="trace-search-limit" min="1" max="200" value="50" />
+        traceId: <input type="text" id="trace-search-trace-id" class="input-inline input-min-260" />
+        limit: <input type="number" id="trace-search-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="trace-search-run">検索</button>
       </div>
       <pre id="trace-search-result">-</pre>
@@ -143,15 +108,15 @@
       <h2>ユーザー状態一覧（READ ONLY）</h2>
       <div class="note">期間フィルタ（UTC）</div>
       <div class="note">
-        from: <input type="date" id="users-from" />
-        to: <input type="date" id="users-to" />
+        from: <input type="date" id="users-from" class="input-inline" />
+        to: <input type="date" id="users-to" class="input-inline" />
         <button class="btn" id="users-apply">適用</button>
       </div>
       <div class="note">
         <label><input type="checkbox" id="filter-needsAttention" /> needsAttention</label>
         <label><input type="checkbox" id="filter-stale" /> stale</label>
         <label><input type="checkbox" id="filter-unreviewed" /> unreviewed</label>
-        <label>reviewAgeDays: <input type="number" id="filter-reviewAgeDays" min="1" max="365" /></label>
+        <label>reviewAgeDays: <input type="number" id="filter-reviewAgeDays" min="1" max="365" class="input-inline" /></label>
       </div>
       <div class="note" id="user-summary-note"></div>
       <table>
@@ -177,8 +142,8 @@
       <div class="note">期間フィルタ（UTC）</div>
       <div class="note">最終反応はLINE-only定義（click優先、readは補助、openは内部イベント扱い）</div>
       <div class="note">
-        from: <input type="date" id="notifications-from" />
-        to: <input type="date" id="notifications-to" />
+        from: <input type="date" id="notifications-from" class="input-inline" />
+        to: <input type="date" id="notifications-to" class="input-inline" />
         <button class="btn" id="notifications-apply">適用</button>
       </div>
       <table>
@@ -200,7 +165,7 @@
       <h2>Ops Dashboard（参考）</h2>
       <div class="note">ユーザー×通知×notice×decision を一覧で参照。</div>
       <div class="note">
-        limit: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" />
+        limit: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" class="input-inline" />
         <button class="btn" id="ops-dashboard-refresh">更新</button>
       </div>
       <div class="note" id="ops-dashboard-note"></div>
@@ -223,7 +188,7 @@
       <h2>Ops Console（一覧）</h2>
       <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
       <div class="note">
-        limit: <input type="number" id="ops-console-limit" min="1" max="200" value="20" />
+        limit: <input type="number" id="ops-console-limit" min="1" max="200" value="20" class="input-inline" />
         <button class="btn" id="ops-console-refresh">更新</button>
       </div>
       <div class="note" id="ops-console-list-note"></div>
@@ -322,9 +287,9 @@
       <div class="note">allowedNextActions のみ選択可。</div>
       <div class="note">
         nextAction:
-        <select id="ops-decision-action"></select>
+        <select id="ops-decision-action" class="select-inline"></select>
         failure_class:
-        <select id="ops-decision-failure-class">
+        <select id="ops-decision-failure-class" class="select-inline">
           <option value="PASS">PASS</option>
           <option value="ENV">ENV</option>
           <option value="IMPL">IMPL</option>
@@ -333,11 +298,11 @@
         </select>
       </div>
       <div class="note">
-        reasonCode: <input type="text" id="ops-decision-reason-code" />
-        stage: <input type="text" id="ops-decision-stage" />
+        reasonCode: <input type="text" id="ops-decision-reason-code" class="input-inline" />
+        stage: <input type="text" id="ops-decision-stage" class="input-inline" />
       </div>
       <div class="note">
-        note: <input type="text" id="ops-decision-note" />
+        note: <input type="text" id="ops-decision-note" class="input-inline" />
         <button class="btn" id="ops-decision-submit">submit</button>
       </div>
       <div class="note">
@@ -346,13 +311,13 @@
       </div>
       <div class="note">
         notification mitigation decision（advisory）:
-        <select id="ops-mitigation-decision">
+        <select id="ops-mitigation-decision" class="select-inline">
           <option value="">(no record)</option>
           <option value="SKIP">SKIP</option>
           <option value="ADOPT">ADOPT</option>
           <option value="REJECT">REJECT</option>
         </select>
-        note: <input type="text" id="ops-mitigation-note" />
+        note: <input type="text" id="ops-mitigation-note" class="input-inline" />
       </div>
       <pre id="ops-decision-result">-</pre>
     </div>
@@ -362,13 +327,13 @@
       <div class="note">Plan/Execute は人間操作。送信自体は Phase68 のガードに従う。</div>
       <div class="note">
         templateKey:
-        <input type="text" id="segment-template-key" />
+        <input type="text" id="segment-template-key" class="input-inline" />
         templateVersion:
-        <input type="number" id="segment-template-version" min="1" />
+        <input type="number" id="segment-template-version" min="1" class="input-inline" />
         savedSegment:
-        <select id="saved-segment-select"></select>
+        <select id="saved-segment-select" class="select-inline"></select>
         readiness:
-        <select id="segment-readiness">
+        <select id="segment-readiness" class="select-inline">
           <option value="">ALL</option>
           <option value="READY">READY</option>
           <option value="NOT_READY">NOT_READY</option>
@@ -376,20 +341,20 @@
         needsAttention:
         <input type="checkbox" id="segment-needs-attention" />
         hasMemberNumber:
-        <select id="segment-has-member-number">
+        <select id="segment-has-member-number" class="select-inline">
           <option value="any">any</option>
           <option value="true">yes</option>
           <option value="false">no</option>
         </select>
         redacStatus:
-        <select id="segment-redac-status">
+        <select id="segment-redac-status" class="select-inline">
           <option value="any">any</option>
           <option value="DECLARED">declared</option>
           <option value="UNLINKED">unlinked</option>
           <option value="NONE">none</option>
         </select>
         limit:
-        <input type="number" id="segment-limit" min="1" max="200" value="50" />
+        <input type="number" id="segment-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="segment-plan">Plan</button>
         <button class="btn" id="segment-dryrun">Dry-run</button>
         <button class="btn" id="segment-execute">Execute</button>
@@ -407,7 +372,7 @@
       <div class="note">PENDING の再送キュー一覧。危険操作（retry）は plan → confirmToken → retry を固定する。</div>
       <div class="note">
         limit:
-        <input type="number" id="retry-queue-limit" min="1" max="200" value="50" />
+        <input type="number" id="retry-queue-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="retry-queue-refresh">更新</button>
       </div>
       <div class="note" id="retry-queue-note"></div>

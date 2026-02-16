@@ -4,39 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>設定/回復（Master / 運用OS）</title>
-    <style>
-      :root {
-        --status-danger-bg: #ffebee;
-        --status-danger-text: #b71c1c;
-        --status-warn-bg: #fff8e1;
-        --status-warn-text: #8d6e63;
-        --status-ok-bg: #e8f5e9;
-        --status-ok-text: #1b5e20;
-        --status-unknown-bg: #f5f5f5;
-        --status-unknown-text: #666;
-      }
-      body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
-      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
-      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-      .card-purpose { font-size: 12px; color: #555; }
-      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
-      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-      .panel-body { font-size: 13px; }
-      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
-      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
-      .status-legend { font-size: 12px; color: #666; }
-      .note { font-size: 12px; color: #666; margin: 8px 0; }
-      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-      label { display: block; font-size: 12px; color: #333; margin-top: 8px; }
-      input, textarea, select { width: 100%; padding: 6px 8px; font-size: 14px; }
-      textarea { min-height: 80px; }
-      button { padding: 6px 10px; font-size: 14px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border-bottom: 1px solid #eee; padding: 6px; text-align: left; font-size: 13px; }
-      th { background: #f7f7f7; }
-      pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
-    </style>
+    <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
     <div class="card-nav">
@@ -93,7 +61,7 @@
 
         <div class="note">
           traceId:
-          <input type="text" id="traceId" style="max-width: 420px;" />
+          <input type="text" id="traceId" class="input-inline input-trace" />
           <button id="regen-trace" type="button">regen</button>
           <span id="trace-note"></span>
         </div>
@@ -104,7 +72,7 @@
         <div class="note">API: `/api/phase61/templates`</div>
         <div class="note">
           status:
-          <select id="tpl-status">
+          <select id="tpl-status" class="select-inline">
             <option value="">(all)</option>
             <option value="draft">draft</option>
             <option value="active">active</option>
@@ -143,7 +111,7 @@
         <div class="note">API: `/admin/link-registry`</div>
         <div class="note">
           state:
-          <select id="link-state">
+          <select id="link-state" class="select-inline">
             <option value="">(all)</option>
             <option value="OK">OK</option>
             <option value="WARN">WARN</option>
