@@ -29,7 +29,7 @@
           <div class="card-title">設定/回復（Master）</div>
           <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
         </a>
-        <a class="card" href="/admin/read-model">
+        <a class="card card-active" href="/admin/read-model">
           <div class="card-title">通知集計（Read Model）</div>
           <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
         </a>
@@ -48,14 +48,25 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">通知集計を参照し、判断材料を得る。</div>
+            <div class="panel-body">
+              通知集計を参照し、判断材料を得る。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>通知集計を一覧で確認し、判断材料を揃える。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>health / CTR / lastExecuteReason。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>未取得データを正常と誤解する。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="read-model-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="read-model-status-pill" class="status-pill status-unknown">未取得</span>
               <span id="read-model-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
               <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="read-model-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -68,9 +79,14 @@
               <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
               <div class="note">
                 traceId:
-                <input type="text" id="traceId" class="input-inline input-trace" />
+                <input type="text" id="traceId" class="input-inline input-trace" title="traceId" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
+              </div>
+              <div id="read-model-skeleton" class="skeleton-stack is-hidden">
+                <div class="skeleton-line lg w-50"></div>
+                <div class="skeleton-line w-70"></div>
+                <div class="skeleton-line w-30"></div>
               </div>
             </div>
           </div>
@@ -107,9 +123,14 @@
         </div>
       </details>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_read_model' };
       const TRACE_HEADER_NAME = 'x-trace-id';
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('read-model-skeleton');
+      const statusPanelEl = document.getElementById('read-model-status-panel');
+      const actionCountEl = document.getElementById('read-model-action-count');
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -127,6 +148,34 @@
       function setTraceId(value) {
         const el = document.getElementById('traceId');
         el.value = value || '';
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+      }
+
+      function applyHeaderTooltips() {
+        document.querySelectorAll('th').forEach((th) => {
+          const text = (th.textContent || '').trim();
+          if (text && !th.title) th.title = text;
+        });
       }
 
       function ensureTraceId() {
@@ -168,7 +217,11 @@
         tr.className = 'clickable-row';
         for (const value of values) {
           const td = document.createElement('td');
-          td.textContent = value === null || value === undefined ? '-' : String(value);
+          if (value instanceof Node) {
+            td.appendChild(value);
+          } else {
+            td.textContent = value === null || value === undefined ? '-' : String(value);
+          }
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
@@ -199,6 +252,18 @@
         return `sent:${formatDeltaNumber(delta.sent)} read:${formatDeltaNumber(delta.read)} click:${formatDeltaNumber(delta.click)} ctr:${formatDeltaPercent(delta.ctr)}`;
       }
 
+      function badge(health) {
+        if (!health) return '-';
+        const span = document.createElement('span');
+        let cls = 'badge';
+        if (health === 'OK') cls += ' badge-ok';
+        else if (health === 'WARN') cls += ' badge-warn';
+        else if (health === 'DANGER') cls += ' badge-danger';
+        span.className = cls;
+        span.textContent = health;
+        return span;
+      }
+
       function renderReadModelDetail(item) {
         const detailEl = document.getElementById('read-model-detail');
         if (!detailEl) return;
@@ -221,6 +286,8 @@
           pill.className = 'status-pill status-unknown';
           pill.textContent = '未取得';
           summary.textContent = 'DANGER: - / WARN: - / OK: -';
+          if (actionCountEl) actionCountEl.textContent = '0';
+          setStatusTone('unknown');
           return;
         }
         let overall = 'OK';
@@ -235,52 +302,69 @@
         pill.className = `status-pill ${cls}`;
         pill.textContent = overall;
         summary.textContent = `DANGER: ${counts.DANGER} / WARN: ${counts.WARN} / OK: ${counts.OK}`;
+        if (actionCountEl) actionCountEl.textContent = String(counts.DANGER);
+        setStatusTone(overall === 'OK' ? 'ok' : overall === 'WARN' ? 'warn' : 'danger');
       }
       async function loadReadModel() {
-        const res = await fetch('/admin/read-model/notifications', { headers: buildHeaders() });
-        const data = await res.json();
-        const rows = document.getElementById('rows');
-        if (!data.ok) {
-          appendMessageRow(rows, 16, 'error');
-          updateReadModelStatusSummary([]);
-          renderReadModelDetail(null);
-          return;
+        setLoading(true);
+        let ok = false;
+        try {
+          const res = await fetch('/admin/read-model/notifications', { headers: buildHeaders() });
+          const data = await res.json();
+          const rows = document.getElementById('rows');
+          if (!data.ok) {
+            appendMessageRow(rows, 16, 'error');
+            updateReadModelStatusSummary([]);
+            renderReadModelDetail(null);
+            return;
+          }
+          if (!data.items.length) {
+            appendMessageRow(rows, 16, 'no data');
+            updateReadModelStatusSummary([]);
+            renderReadModelDetail(null);
+            ok = true;
+            return;
+          }
+          clearChildren(rows);
+          for (const item of data.items) {
+            const tr = appendRow(rows, [
+              item.notificationId,
+              item.title || '-',
+              item.scenarioKey || '-',
+              item.stepKey || '-',
+              item.targetCount,
+              item.targetCountSource || '-',
+              item.capCountMode || '-',
+              item.capCountSource || '-',
+              item.capCountStrategy || '-',
+              item.lastExecuteReason || '-',
+              item.deliveredCount,
+              item.readCount,
+              item.clickCount,
+              formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
+              formatWeekOverWeekDelta(item.weekOverWeek),
+              badge(item.notificationHealth || null)
+            ]);
+            if (item && item.notificationHealth === 'DANGER') tr.classList.add('row-health-danger');
+            else if (item && item.notificationHealth === 'WARN') tr.classList.add('row-health-warn');
+            else if (item && item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
+            tr.addEventListener('click', () => renderReadModelDetail(item));
+          }
+          updateReadModelStatusSummary(data.items);
+          renderReadModelDetail(data.items[0] || null);
+          ok = true;
+        } finally {
+          setLoading(false);
+          showToast(ok ? 'read-model 更新 OK' : 'read-model 更新 失敗', ok ? 'ok' : 'danger');
         }
-        if (!data.items.length) {
-          appendMessageRow(rows, 16, 'no data');
-          updateReadModelStatusSummary([]);
-          renderReadModelDetail(null);
-          return;
-        }
-        clearChildren(rows);
-        for (const item of data.items) {
-          const tr = appendRow(rows, [
-            item.notificationId,
-            item.title || '-',
-            item.scenarioKey || '-',
-            item.stepKey || '-',
-            item.targetCount,
-            item.targetCountSource || '-',
-            item.capCountMode || '-',
-            item.capCountSource || '-',
-            item.capCountStrategy || '-',
-            item.lastExecuteReason || '-',
-            item.deliveredCount,
-            item.readCount,
-            item.clickCount,
-            formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
-            formatWeekOverWeekDelta(item.weekOverWeek),
-            item.notificationHealth || '-'
-          ]);
-          tr.addEventListener('click', () => renderReadModelDetail(item));
-        }
-        updateReadModelStatusSummary(data.items);
-        renderReadModelDetail(data.items[0] || null);
       }
+      applyHeaderTooltips();
       loadReadModel().catch(() => {
         appendMessageRow(document.getElementById('rows'), 16, 'error');
         updateReadModelStatusSummary([]);
         renderReadModelDetail(null);
+        showToast('read-model 更新 失敗', 'danger');
+        setStatusTone('danger');
       });
     </script>
   </body>

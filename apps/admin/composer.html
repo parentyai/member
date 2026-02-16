@@ -13,7 +13,7 @@
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
       </a>
-      <a class="card" href="/admin/composer">
+      <a class="card card-active" href="/admin/composer">
         <div class="card-title">通知作成（Composer）</div>
         <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
       </a>
@@ -49,12 +49,18 @@
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
             <div class="panel-body">通知を作成・承認し、送信計画を安全に実行する。</div>
+            <div class="guide">
+              <div class="guide-item"><span class="guide-label">ここでできること</span>通知の作成から送信計画までを安全に進める。</div>
+              <div class="guide-item"><span class="guide-label">先に見るべき3項目</span>カテゴリ / 対象条件 / confirmToken。</div>
+              <div class="guide-item"><span class="guide-label">よくあるミス</span>limit未設定でplanが弾かれる。</div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="composer-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-focus">今日の要対応: <span id="composer-action-count" class="action-count">0</span></div>
             </div>
           </div>
         </div>
@@ -63,6 +69,11 @@
             <div class="panel-title">操作領域</div>
             <div class="panel-body">
               <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
+              <div id="composer-skeleton" class="skeleton-stack is-hidden">
+                <div class="skeleton-line lg w-50"></div>
+                <div class="skeleton-line w-70"></div>
+                <div class="skeleton-line w-30"></div>
+              </div>
 
               <div class="note">
                 traceId:
@@ -74,25 +85,25 @@
               <div class="grid">
                 <div>
                   <h2>Draft</h2>
-                  <label>title</label>
+                  <label title="title">title</label>
                   <input id="title" />
-                  <label>body</label>
+                  <label title="body">body</label>
                   <textarea id="body"></textarea>
-                  <label>ctaText</label>
+                  <label title="ctaText">ctaText</label>
                   <input id="ctaText" />
-                  <label>linkRegistryId</label>
+                  <label title="linkRegistryId">linkRegistryId</label>
                   <input id="linkRegistryId" placeholder="link_registry doc id" />
 
                   <div class="row">
                     <div class="flex-1">
-                      <label>scenarioKey</label>
+                      <label title="scenarioKey">scenarioKey</label>
                       <select id="scenarioKey">
                         <option value="A">A</option>
                         <option value="C">C</option>
                       </select>
                     </div>
                     <div class="flex-1">
-                      <label>stepKey</label>
+                      <label title="stepKey">stepKey</label>
                       <select id="stepKey">
                         <option value="3mo">3mo</option>
                         <option value="1mo">1mo</option>
@@ -101,7 +112,7 @@
                       </select>
                     </div>
                   </div>
-                  <label>notificationCategory</label>
+                  <label title="notificationCategory">notificationCategory</label>
                   <select id="notificationCategory">
                     <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
                     <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
@@ -113,15 +124,15 @@
                   <h3>Target</h3>
                   <div class="row">
                     <div class="flex-1">
-                      <label>region (optional)</label>
+                      <label title="region">region (optional)</label>
                       <input id="targetRegion" />
                     </div>
                     <div class="flex-1">
-                      <label>limit (required for safety)</label>
+                      <label title="limit">limit (required for safety)</label>
                       <input id="targetLimit" type="number" min="1" max="500" value="50" />
                     </div>
                   </div>
-                  <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
+                  <label title="membersOnly"><input id="membersOnly" type="checkbox" /> membersOnly</label>
 
                   <div class="row row-top">
                     <button id="create-draft" type="button">Create Draft</button>
@@ -163,6 +174,7 @@
           </div>
         </div>
       </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </div>
 
     <script>
@@ -221,15 +233,45 @@
       let currentPlanHash = null;
       let currentConfirmToken = null;
 
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('composer-skeleton');
+      const statusPanelEl = document.getElementById('composer-status-panel');
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+      }
+
       async function postJson(url, payload) {
         const traceId = getTraceId() || newTraceId();
         setTraceId(traceId);
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
-          body: JSON.stringify(payload || {})
-        });
-        return jsonOrText(res);
+        setLoading(true);
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'x-trace-id': traceId }, OPS_ACTOR_HEADERS),
+            body: JSON.stringify(payload || {})
+          });
+          return jsonOrText(res);
+        } finally {
+          setLoading(false);
+        }
       }
 
       document.getElementById('regen-trace').addEventListener('click', () => {
@@ -264,6 +306,11 @@
           currentConfirmToken = null;
           document.getElementById('planHash').textContent = '-';
           document.getElementById('confirmToken').textContent = '-';
+          showToast('draft 作成 OK', 'ok');
+          setStatusTone('ok');
+        } else {
+          showToast('draft 作成 失敗', 'danger');
+          setStatusTone('danger');
         }
       });
 
@@ -272,16 +319,32 @@
         const payload = Object.assign({}, buildDraftPayload(), { notificationId: currentNotificationId });
         const result = await postJson('/api/admin/os/notifications/preview', payload);
         resultEl.textContent = JSON.stringify(result, null, 2);
+        if (result && result.ok) {
+          showToast('preview OK', 'ok');
+          setStatusTone('ok');
+        } else {
+          showToast('preview 失敗', 'danger');
+          setStatusTone('danger');
+        }
       });
 
       document.getElementById('approve').addEventListener('click', async () => {
         const resultEl = document.getElementById('draft-result');
         if (!currentNotificationId) {
           resultEl.textContent = 'notificationId required (create draft first)';
+          showToast('notificationId required', 'warn');
+          setStatusTone('warn');
           return;
         }
         const result = await postJson('/api/admin/os/notifications/approve', { notificationId: currentNotificationId });
         resultEl.textContent = JSON.stringify(result, null, 2);
+        if (result && result.ok) {
+          showToast('approve OK', 'ok');
+          setStatusTone('ok');
+        } else {
+          showToast('approve 失敗', 'danger');
+          setStatusTone('danger');
+        }
       });
 
       document.getElementById('plan').addEventListener('click', async () => {
@@ -293,6 +356,8 @@
         if (planCapBlockedEl) planCapBlockedEl.textContent = '-';
         if (!currentNotificationId) {
           resultEl.textContent = 'notificationId required';
+          showToast('notificationId required', 'warn');
+          setStatusTone('warn');
           return;
         }
         const result = await postJson('/api/admin/os/notifications/send/plan', {
@@ -312,6 +377,11 @@
             const blocked = typeof result.capBlockedCount === 'number' ? result.capBlockedCount : null;
             planCapBlockedEl.textContent = blocked !== null ? String(blocked) : '-';
           }
+          showToast('plan OK', 'ok');
+          setStatusTone('ok');
+        } else {
+          showToast('plan 失敗', 'danger');
+          setStatusTone('danger');
         }
       });
 
@@ -321,6 +391,8 @@
         resultEl.textContent = '';
         if (!currentNotificationId || !currentPlanHash || !currentConfirmToken) {
           resultEl.textContent = 'planHash/confirmToken required (run plan)';
+          showToast('planHash/confirmToken required', 'warn');
+          setStatusTone('warn');
           return;
         }
         const result = await postJson('/api/admin/os/notifications/send/execute', {
@@ -337,6 +409,13 @@
           const capCountSource = result && typeof result === 'object' ? (result.capCountSource || '-') : '-';
           const capCountStrategy = result && typeof result === 'object' ? (result.capCountStrategy || '-') : '-';
           metaEl.textContent = `capCountMode: ${capCountMode} / capCountSource: ${capCountSource} / capCountStrategy: ${capCountStrategy} / reason: ${reason}`;
+        }
+        if (result && result.ok) {
+          showToast('execute OK', 'ok');
+          setStatusTone('ok');
+        } else {
+          showToast('execute 失敗', 'danger');
+          setStatusTone('danger');
         }
       });
     </script>

@@ -25,7 +25,7 @@
         <div class="card-title">エラー一覧（Errors）</div>
         <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
       </a>
-      <a class="card" href="/admin/master">
+      <a class="card card-active" href="/admin/master">
         <div class="card-title">設定/回復（Master）</div>
         <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
       </a>
@@ -48,13 +48,24 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">運用設定と回復操作を安全に実行する。</div>
+            <div class="panel-body">
+              運用設定と回復操作を安全に実行する。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>設定と回復を安全に実行する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>テンプレ / リンク / System Config。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>planなしでsetを押す。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="master-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
-              <span class="status-pill status-unknown">未取得</span>
+              <span id="master-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="master-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -69,6 +80,11 @@
           <input type="text" id="traceId" class="input-inline input-trace" />
           <button id="regen-trace" type="button">regen</button>
           <span id="trace-note"></span>
+        </div>
+        <div id="master-skeleton" class="skeleton-stack is-hidden">
+          <div class="skeleton-line lg w-50"></div>
+          <div class="skeleton-line w-70"></div>
+          <div class="skeleton-line w-30"></div>
         </div>
 
         <div class="grid">
@@ -301,6 +317,7 @@
   </div>
     </div>
 
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };
       const TRACE_HEADER_NAME = 'x-trace-id';
@@ -312,6 +329,11 @@
       let deliveryRecoveryConfirmToken = null;
       let deliveryBackfillPlanHash = null;
       let deliveryBackfillConfirmToken = null;
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('master-skeleton');
+      const statusPanelEl = document.getElementById('master-status-panel');
+      const actionCountEl = document.getElementById('master-action-count');
+      const statusPillEl = document.getElementById('master-status-pill');
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -350,6 +372,7 @@
       });
 
       setTraceId(newTraceId());
+      if (actionCountEl) actionCountEl.textContent = '0';
 
       // Best-effort view audit (do not block UI).
       (async () => {
@@ -395,6 +418,72 @@
         return res.text().then((text) => {
           try { return JSON.parse(text); } catch (_err) { return { ok: false, error: text || 'error' }; }
         });
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function toastByResult(label, result) {
+        const ok = result === true || (result && typeof result === 'object' && result.ok);
+        showToast(`${label} ${ok ? 'OK' : '失敗'}`, ok ? 'ok' : 'danger');
+        return ok;
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+        if (statusPillEl) {
+          const nextTone = tone || 'unknown';
+          statusPillEl.className = `status-pill status-${nextTone}`;
+          if (nextTone === 'ok') statusPillEl.textContent = 'OK';
+          else if (nextTone === 'warn') statusPillEl.textContent = 'WARN';
+          else if (nextTone === 'danger') statusPillEl.textContent = 'DANGER';
+          else statusPillEl.textContent = '未取得';
+        }
+      }
+
+      function applyHeaderTooltips() {
+        document.querySelectorAll('th').forEach((th) => {
+          const text = (th.textContent || '').trim();
+          if (text && !th.title) th.title = text;
+        });
+      }
+
+      function applyInputTooltips() {
+        document.querySelectorAll('input, select, textarea').forEach((el) => {
+          if (el.id && !el.title) el.title = el.id;
+        });
+      }
+
+      function runWithToast(label, fn) {
+        setLoading(true);
+        return fn()
+          .then((result) => {
+            const ok = toastByResult(label, result);
+            setStatusTone(ok ? 'ok' : 'danger');
+            return result;
+          })
+          .catch((err) => {
+            showToast(`${label} 失敗`, 'danger');
+            setStatusTone('danger');
+            throw err;
+          })
+          .finally(() => {
+            setLoading(false);
+          });
       }
 
       function sortedEntries(obj) {
@@ -511,12 +600,12 @@
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
           appendMessageRow(rows, 5, 'error');
-          return;
+          return data;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
           appendMessageRow(rows, 5, 'no data');
-          return;
+          return data;
         }
         clearChildren(rows);
         for (const item of items) {
@@ -563,6 +652,7 @@
             actions
           ]);
         }
+        return data;
       }
 
       async function createTemplate() {
@@ -577,8 +667,10 @@
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
-        document.getElementById('tpl-result').textContent = JSON.stringify(await res.json(), null, 2);
+        const data = await res.json();
+        document.getElementById('tpl-result').textContent = JSON.stringify(data, null, 2);
         await loadTemplates();
+        return data;
       }
 
       async function loadLinks() {
@@ -590,12 +682,12 @@
         const rows = document.getElementById('link-rows');
         if (!data.ok) {
           appendMessageRow(rows, 4, 'error');
-          return;
+          return data;
         }
         const items = Array.isArray(data.items) ? data.items : [];
         if (!items.length) {
           appendMessageRow(rows, 4, 'no data');
-          return;
+          return data;
         }
         clearChildren(rows);
         for (const item of items) {
@@ -606,6 +698,7 @@
             item.lastHealth && item.lastHealth.state ? item.lastHealth.state : '-'
           ]);
         }
+        return data;
       }
 
       async function createLink() {
@@ -618,28 +711,34 @@
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify(payload)
         });
-        document.getElementById('link-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+        const data = await jsonOrText(res);
+        document.getElementById('link-result').textContent = JSON.stringify(data, null, 2);
         await loadLinks();
+        return data;
       }
 
       async function unlinkRedacMembership() {
         const redacMembershipId = document.getElementById('redac-unlink-id').value.trim();
-        if (!redacMembershipId) return;
+        if (!redacMembershipId) return { ok: false, error: 'redacMembershipId required' };
         const ok = window.confirm(`Redac会員IDを解除しますか？\n\n${redacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
-        if (!ok) return;
+        if (!ok) return { ok: false, error: 'cancelled' };
         const res = await fetch('/api/admin/redac-membership/unlink', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
           body: JSON.stringify({ redacMembershipId })
         });
-        document.getElementById('redac-unlink-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+        const data = await jsonOrText(res);
+        document.getElementById('redac-unlink-result').textContent = JSON.stringify(data, null, 2);
+        return data;
       }
 
       async function loadRedacStatus() {
         const res = await fetch('/api/admin/os/redac/status?limit=500', {
           headers: buildHeaders()
         });
-        document.getElementById('redac-health-result').textContent = JSON.stringify(await jsonOrText(res), null, 2);
+        const data = await jsonOrText(res);
+        document.getElementById('redac-health-result').textContent = JSON.stringify(data, null, 2);
+        return data;
       }
 
       function parseNullableInt(value) {
@@ -752,6 +851,7 @@
           const legacyFallback = data.deliveryCountLegacyFallback === false ? 'false' : 'true';
           document.getElementById('config-delivery-count-legacy-fallback').value = legacyFallback;
         }
+        return data;
       }
 
       async function planSystemConfig() {
@@ -760,7 +860,7 @@
         const capParsed = readNotificationCapsFromForm();
         if (!capParsed.ok) {
           document.getElementById('config-plan-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
-          return;
+          return { ok: false, error: capParsed.error };
         }
         const deliveryCountLegacyFallback = parseDeliveryCountLegacyFallback(
           document.getElementById('config-delivery-count-legacy-fallback').value
@@ -777,6 +877,7 @@
         document.getElementById('config-impact-preview').textContent = `${formatImpactPreview(impactPreview)}\n\nraw:\n${JSON.stringify(impactPreview, null, 2)}`;
         configPlanHash = data && data.ok ? data.planHash || null : null;
         configConfirmToken = data && data.ok ? data.confirmToken || null : null;
+        return data;
       }
 
       async function setSystemConfig() {
@@ -785,7 +886,7 @@
         const capParsed = readNotificationCapsFromForm();
         if (!capParsed.ok) {
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: capParsed.error }, null, 2);
-          return;
+          return { ok: false, error: capParsed.error };
         }
         const deliveryCountLegacyFallback = parseDeliveryCountLegacyFallback(
           document.getElementById('config-delivery-count-legacy-fallback').value
@@ -793,10 +894,10 @@
         const notificationCaps = capParsed.value;
         if (!configPlanHash || !configConfirmToken) {
           document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return;
+          return { ok: false, error: 'plan required' };
         }
         const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}\ndeliveryCountLegacyFallback=${deliveryCountLegacyFallback}`); // eslint-disable-line no-alert
-        if (!ok) return;
+        if (!ok) return { ok: false, error: 'cancelled' };
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -812,6 +913,7 @@
         const data = await jsonOrText(res);
         document.getElementById('config-set-result').textContent = JSON.stringify(data, null, 2);
         await loadSystemConfigStatus();
+        return data;
       }
 
       function parseMode(value) {
@@ -827,13 +929,14 @@
         if (data && data.ok && data.config && data.config.mode) {
           document.getElementById('automation-config-mode').value = String(data.config.mode);
         }
+        return data;
       }
 
       async function planAutomationConfig() {
         const mode = parseMode(document.getElementById('automation-config-mode').value);
         if (!mode) {
           document.getElementById('automation-config-plan-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
-          return;
+          return { ok: false, error: 'invalid mode' };
         }
         const res = await fetch('/api/admin/os/automation-config/plan', {
           method: 'POST',
@@ -844,20 +947,21 @@
         document.getElementById('automation-config-plan-result').textContent = JSON.stringify(data, null, 2);
         automationPlanHash = data && data.ok ? data.planHash || null : null;
         automationConfirmToken = data && data.ok ? data.confirmToken || null : null;
+        return data;
       }
 
       async function setAutomationConfig() {
         const mode = parseMode(document.getElementById('automation-config-mode').value);
         if (!mode) {
           document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
-          return;
+          return { ok: false, error: 'invalid mode' };
         }
         if (!automationPlanHash || !automationConfirmToken) {
           document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return;
+          return { ok: false, error: 'plan required' };
         }
         const ok = window.confirm(`Automation Config を set しますか？\n\nmode=${mode}`); // eslint-disable-line no-alert
-        if (!ok) return;
+        if (!ok) return { ok: false, error: 'cancelled' };
         const res = await fetch('/api/admin/os/automation-config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -866,6 +970,7 @@
         const data = await jsonOrText(res);
         document.getElementById('automation-config-set-result').textContent = JSON.stringify(data, null, 2);
         await loadAutomationConfigStatus();
+        return data;
       }
 
       function getDeliveryRecoveryPayload() {
@@ -885,7 +990,7 @@
         const parsed = getDeliveryRecoveryPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-recovery-status-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         const params = new URLSearchParams({ deliveryId: parsed.payload.deliveryId });
         const res = await fetch(`/api/admin/os/delivery-recovery/status?${params.toString()}`, { headers: buildHeaders() });
@@ -896,13 +1001,14 @@
           ? `${formatDeliveryRecoveryRecommendation(rec)}\n\nraw:\n${JSON.stringify(rec, null, 2)}`
           : 'no recommendation';
         document.getElementById('delivery-recovery-recommendation').textContent = recommendationText;
+        return data;
       }
 
       async function planDeliveryRecovery() {
         const parsed = getDeliveryRecoveryPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         const res = await fetch('/api/admin/os/delivery-recovery/plan', {
           method: 'POST',
@@ -913,20 +1019,21 @@
         document.getElementById('delivery-recovery-plan-result').textContent = JSON.stringify(data, null, 2);
         deliveryRecoveryPlanHash = data && data.ok ? data.planHash || null : null;
         deliveryRecoveryConfirmToken = data && data.ok ? data.confirmToken || null : null;
+        return data;
       }
 
       async function executeDeliveryRecovery() {
         const parsed = getDeliveryRecoveryPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         if (!deliveryRecoveryPlanHash || !deliveryRecoveryConfirmToken) {
           document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return;
+          return { ok: false, error: 'plan required' };
         }
         const ok = window.confirm(`delivery recovery を実行しますか？\n\ndeliveryId=${parsed.payload.deliveryId}\nsealedReason=${parsed.payload.sealedReason || '(null)'}`); // eslint-disable-line no-alert
-        if (!ok) return;
+        if (!ok) return { ok: false, error: 'cancelled' };
         const res = await fetch('/api/admin/os/delivery-recovery/execute', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -938,6 +1045,7 @@
         const data = await jsonOrText(res);
         document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify(data, null, 2);
         await loadDeliveryRecoveryStatus();
+        return data;
       }
 
       function getDeliveryBackfillPayload() {
@@ -950,19 +1058,20 @@
         const parsed = getDeliveryBackfillPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-backfill-status-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         const params = new URLSearchParams({ limit: String(parsed.payload.limit) });
         const res = await fetch(`/api/admin/os/delivery-backfill/status?${params.toString()}`, { headers: buildHeaders() });
         const data = await jsonOrText(res);
         document.getElementById('delivery-backfill-status-result').textContent = JSON.stringify(data, null, 2);
+        return data;
       }
 
       async function planDeliveryBackfill() {
         const parsed = getDeliveryBackfillPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-backfill-plan-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         const res = await fetch('/api/admin/os/delivery-backfill/plan', {
           method: 'POST',
@@ -973,20 +1082,21 @@
         document.getElementById('delivery-backfill-plan-result').textContent = JSON.stringify(data, null, 2);
         deliveryBackfillPlanHash = data && data.ok ? data.planHash || null : null;
         deliveryBackfillConfirmToken = data && data.ok ? data.confirmToken || null : null;
+        return data;
       }
 
       async function executeDeliveryBackfill() {
         const parsed = getDeliveryBackfillPayload();
         if (!parsed.ok) {
           document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: parsed.error }, null, 2);
-          return;
+          return { ok: false, error: parsed.error };
         }
         if (!deliveryBackfillPlanHash || !deliveryBackfillConfirmToken) {
           document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return;
+          return { ok: false, error: 'plan required' };
         }
         const ok = window.confirm(`delivery deliveredAt backfill を実行しますか？\n\nlimit=${parsed.payload.limit}`); // eslint-disable-line no-alert
-        if (!ok) return;
+        if (!ok) return { ok: false, error: 'cancelled' };
         const res = await fetch('/api/admin/os/delivery-backfill/execute', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -998,33 +1108,43 @@
         const data = await jsonOrText(res);
         document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify(data, null, 2);
         await loadDeliveryBackfillStatus();
+        return data;
       }
 
-      document.getElementById('tpl-reload').addEventListener('click', () => loadTemplates().catch(() => {}));
-      document.getElementById('tpl-create').addEventListener('click', () => createTemplate().catch(() => {}));
-      document.getElementById('link-reload').addEventListener('click', () => loadLinks().catch(() => {}));
-      document.getElementById('link-create').addEventListener('click', () => createLink().catch(() => {}));
-      document.getElementById('redac-unlink').addEventListener('click', () => unlinkRedacMembership().catch(() => {}));
-      document.getElementById('redac-health-reload').addEventListener('click', () => loadRedacStatus().catch(() => {}));
-      document.getElementById('config-reload').addEventListener('click', () => loadSystemConfigStatus().catch(() => {}));
-      document.getElementById('config-plan').addEventListener('click', () => planSystemConfig().catch(() => {}));
-      document.getElementById('config-set').addEventListener('click', () => setSystemConfig().catch(() => {}));
-      document.getElementById('automation-config-reload').addEventListener('click', () => loadAutomationConfigStatus().catch(() => {}));
-      document.getElementById('automation-config-plan').addEventListener('click', () => planAutomationConfig().catch(() => {}));
-      document.getElementById('automation-config-set').addEventListener('click', () => setAutomationConfig().catch(() => {}));
-      document.getElementById('delivery-recovery-status').addEventListener('click', () => loadDeliveryRecoveryStatus().catch(() => {}));
-      document.getElementById('delivery-recovery-plan').addEventListener('click', () => planDeliveryRecovery().catch(() => {}));
-      document.getElementById('delivery-recovery-execute').addEventListener('click', () => executeDeliveryRecovery().catch(() => {}));
-      document.getElementById('delivery-backfill-status').addEventListener('click', () => loadDeliveryBackfillStatus().catch(() => {}));
-      document.getElementById('delivery-backfill-plan').addEventListener('click', () => planDeliveryBackfill().catch(() => {}));
-      document.getElementById('delivery-backfill-execute').addEventListener('click', () => executeDeliveryBackfill().catch(() => {}));
+      document.getElementById('tpl-reload').addEventListener('click', () => runWithToast('templates 更新', loadTemplates));
+      document.getElementById('tpl-create').addEventListener('click', () => runWithToast('template 作成', createTemplate));
+      document.getElementById('link-reload').addEventListener('click', () => runWithToast('link 更新', loadLinks));
+      document.getElementById('link-create').addEventListener('click', () => runWithToast('link 作成', createLink));
+      document.getElementById('redac-unlink').addEventListener('click', () => runWithToast('redac unlink', unlinkRedacMembership));
+      document.getElementById('redac-health-reload').addEventListener('click', () => runWithToast('redac health 更新', loadRedacStatus));
+      document.getElementById('config-reload').addEventListener('click', () => runWithToast('system config 更新', loadSystemConfigStatus));
+      document.getElementById('config-plan').addEventListener('click', () => runWithToast('system config plan', planSystemConfig));
+      document.getElementById('config-set').addEventListener('click', () => runWithToast('system config set', setSystemConfig));
+      document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('automation config 更新', loadAutomationConfigStatus));
+      document.getElementById('automation-config-plan').addEventListener('click', () => runWithToast('automation config plan', planAutomationConfig));
+      document.getElementById('automation-config-set').addEventListener('click', () => runWithToast('automation config set', setAutomationConfig));
+      document.getElementById('delivery-recovery-status').addEventListener('click', () => runWithToast('delivery recovery status', loadDeliveryRecoveryStatus));
+      document.getElementById('delivery-recovery-plan').addEventListener('click', () => runWithToast('delivery recovery plan', planDeliveryRecovery));
+      document.getElementById('delivery-recovery-execute').addEventListener('click', () => runWithToast('delivery recovery execute', executeDeliveryRecovery));
+      document.getElementById('delivery-backfill-status').addEventListener('click', () => runWithToast('delivery backfill status', loadDeliveryBackfillStatus));
+      document.getElementById('delivery-backfill-plan').addEventListener('click', () => runWithToast('delivery backfill plan', planDeliveryBackfill));
+      document.getElementById('delivery-backfill-execute').addEventListener('click', () => runWithToast('delivery backfill execute', executeDeliveryBackfill));
 
-      loadTemplates().catch(() => {});
-      loadLinks().catch(() => {});
-      loadRedacStatus().catch(() => {});
-      loadSystemConfigStatus().catch(() => {});
-      loadAutomationConfigStatus().catch(() => {});
-      loadDeliveryBackfillStatus().catch(() => {});
+      applyHeaderTooltips();
+      applyInputTooltips();
+      setLoading(true);
+      Promise.all([
+        loadTemplates(),
+        loadLinks(),
+        loadRedacStatus(),
+        loadSystemConfigStatus(),
+        loadAutomationConfigStatus(),
+        loadDeliveryBackfillStatus()
+      ]).catch(() => {
+        setStatusTone('danger');
+      }).finally(() => {
+        setLoading(false);
+      });
     </script>
   </body>
 </html>

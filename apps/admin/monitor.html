@@ -17,7 +17,7 @@
         <div class="card-title">通知作成（Composer）</div>
         <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
       </a>
-      <a class="card" href="/admin/monitor">
+      <a class="card card-active" href="/admin/monitor">
         <div class="card-title">配信結果（Monitor）</div>
         <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
       </a>
@@ -48,14 +48,25 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">配信反応と健康状態を把握し、異常を見逃さない。</div>
+            <div class="panel-body">
+              配信反応と健康状態を把握し、異常を見逃さない。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>配信の反応と健康状態を一覧で確認する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>health / CTR / lastExecuteReason。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>status未指定で全件を見てしまう。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="monitor-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="monitor-status-pill" class="status-pill status-unknown">未取得</span>
               <span id="monitor-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
               <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="monitor-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -69,22 +80,27 @@
 
               <div class="note">
                 traceId:
-                <input type="text" id="traceId" class="input-inline input-trace" />
+                <input type="text" id="traceId" class="input-inline input-trace" title="traceId" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
               </div>
 
               <div class="note">
                 limit:
-                <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" />
+                <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" title="limit" />
                 status:
-                <input type="text" id="status" placeholder="(optional)" class="input-inline input-sm" />
+                <input type="text" id="status" placeholder="(optional)" class="input-inline input-sm" title="status" />
                 scenario:
-                <input type="text" id="scenarioKey" placeholder="(optional)" class="input-inline input-xs" />
+                <input type="text" id="scenarioKey" placeholder="(optional)" class="input-inline input-xs" title="scenarioKey" />
                 step:
-                <input type="text" id="stepKey" placeholder="(optional)" class="input-inline input-xs" />
+                <input type="text" id="stepKey" placeholder="(optional)" class="input-inline input-xs" title="stepKey" />
                 <button id="reload">reload</button>
                 <span id="note"></span>
+              </div>
+              <div id="monitor-skeleton" class="skeleton-stack is-hidden">
+                <div class="skeleton-line lg w-50"></div>
+                <div class="skeleton-line w-70"></div>
+                <div class="skeleton-line w-30"></div>
               </div>
             </div>
           </div>
@@ -121,10 +137,15 @@
         </div>
       </details>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_monitor' };
       const TRACE_HEADER_NAME = 'x-trace-id';
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('monitor-skeleton');
+      const statusPanelEl = document.getElementById('monitor-status-panel');
+      const actionCountEl = document.getElementById('monitor-action-count');
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -142,6 +163,34 @@
       function setTraceId(value) {
         const el = document.getElementById('traceId');
         el.value = value || '';
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+      }
+
+      function applyHeaderTooltips() {
+        document.querySelectorAll('th').forEach((th) => {
+          const text = (th.textContent || '').trim();
+          if (text && !th.title) th.title = text;
+        });
       }
 
       function ensureTraceId() {
@@ -257,6 +306,8 @@
           pill.className = 'status-pill status-unknown';
           pill.textContent = '未取得';
           summary.textContent = 'DANGER: - / WARN: - / OK: -';
+          if (actionCountEl) actionCountEl.textContent = '0';
+          setStatusTone('unknown');
           return;
         }
         let overall = 'OK';
@@ -271,9 +322,14 @@
         pill.className = `status-pill ${cls}`;
         pill.textContent = overall;
         summary.textContent = `DANGER: ${counts.DANGER} / WARN: ${counts.WARN} / OK: ${counts.OK}`;
+        if (actionCountEl) actionCountEl.textContent = String(counts.DANGER);
+        setStatusTone(overall === 'OK' ? 'ok' : overall === 'WARN' ? 'warn' : 'danger');
       }
 
-      async function loadReadModel() {
+      async function loadReadModel(options) {
+        const notify = options && options.notify;
+        setLoading(true);
+        let ok = false;
         const limit = document.getElementById('limit').value;
         const status = document.getElementById('status').value.trim();
         const scenarioKey = document.getElementById('scenarioKey').value.trim();
@@ -283,60 +339,74 @@
         if (status) params.set('status', status);
         if (scenarioKey) params.set('scenarioKey', scenarioKey);
         if (stepKey) params.set('stepKey', stepKey);
-        const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: buildHeaders() });
-        const data = await res.json();
-        const rows = document.getElementById('rows');
-        if (!data.ok) {
-          appendMessageRow(rows, 16, 'error');
-          updateMonitorStatusSummary([]);
-          renderMonitorDetail(null);
-          return;
+        try {
+          const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: buildHeaders() });
+          const data = await res.json();
+          const rows = document.getElementById('rows');
+          if (!data.ok) {
+            appendMessageRow(rows, 16, 'error');
+            updateMonitorStatusSummary([]);
+            renderMonitorDetail(null);
+            return;
+          }
+          if (!data.items.length) {
+            appendMessageRow(rows, 16, 'no data');
+            updateMonitorStatusSummary([]);
+            renderMonitorDetail(null);
+            ok = true;
+            return;
+          }
+          clearChildren(rows);
+          for (const item of data.items) {
+            const tr = appendRow(rows, [
+              item.notificationId || '-',
+              item.title || '-',
+              item.scenarioKey || '-',
+              item.stepKey || '-',
+              item.targetCount,
+              item.targetCountSource || '-',
+              item.capCountMode || '-',
+              item.capCountSource || '-',
+              item.capCountStrategy || '-',
+              item.lastExecuteReason || '-',
+              item.deliveredCount,
+              item.readCount,
+              item.clickCount,
+              formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
+              formatWeekOverWeekDelta(item.weekOverWeek),
+              badge(item.notificationHealth || null)
+            ]);
+            if (item && item.notificationHealth === 'DANGER') tr.classList.add('row-health-danger');
+            else if (item && item.notificationHealth === 'WARN') tr.classList.add('row-health-warn');
+            else if (item && item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
+            tr.addEventListener('click', () => renderMonitorDetail(item));
+          }
+          document.getElementById('note').textContent = `items: ${data.items.length}`;
+          updateMonitorStatusSummary(data.items);
+          renderMonitorDetail(data.items[0] || null);
+          ok = true;
+        } finally {
+          setLoading(false);
+          if (notify) showToast(ok ? 'reload OK' : 'reload 失敗', ok ? 'ok' : 'danger');
         }
-        if (!data.items.length) {
-          appendMessageRow(rows, 16, 'no data');
-          updateMonitorStatusSummary([]);
-          renderMonitorDetail(null);
-          return;
-        }
-        clearChildren(rows);
-        for (const item of data.items) {
-          const tr = appendRow(rows, [
-            item.notificationId || '-',
-            item.title || '-',
-            item.scenarioKey || '-',
-            item.stepKey || '-',
-            item.targetCount,
-            item.targetCountSource || '-',
-            item.capCountMode || '-',
-            item.capCountSource || '-',
-            item.capCountStrategy || '-',
-            item.lastExecuteReason || '-',
-            item.deliveredCount,
-            item.readCount,
-            item.clickCount,
-            formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
-            formatWeekOverWeekDelta(item.weekOverWeek),
-            badge(item.notificationHealth || null)
-          ]);
-          tr.addEventListener('click', () => renderMonitorDetail(item));
-        }
-        document.getElementById('note').textContent = `items: ${data.items.length}`;
-        updateMonitorStatusSummary(data.items);
-        renderMonitorDetail(data.items[0] || null);
       }
 
       document.getElementById('reload').addEventListener('click', () => {
-        loadReadModel().catch(() => {
+        loadReadModel({ notify: true }).catch(() => {
           appendMessageRow(document.getElementById('rows'), 16, 'error');
           updateMonitorStatusSummary([]);
           renderMonitorDetail(null);
+          showToast('reload 失敗', 'danger');
+          setStatusTone('danger');
         });
       });
 
+      applyHeaderTooltips();
       loadReadModel().catch(() => {
         appendMessageRow(document.getElementById('rows'), 16, 'error');
         updateMonitorStatusSummary([]);
         renderMonitorDetail(null);
+        setStatusTone('danger');
       });
     </script>
   </body>

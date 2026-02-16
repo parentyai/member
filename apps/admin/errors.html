@@ -21,7 +21,7 @@
           <div class="card-title">配信結果（Monitor）</div>
           <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
         </a>
-        <a class="card" href="/admin/errors">
+        <a class="card card-active" href="/admin/errors">
           <div class="card-title">エラー一覧（Errors）</div>
           <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
         </a>
@@ -48,13 +48,24 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">WARN/Retryなどのエラーを素早く確認する。</div>
+            <div class="panel-body">
+              WARN/Retryなどのエラーを素早く確認する。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>WARNリンクと再送待ちをまとめて確認する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>WARN Links / Retry Queue / Summary。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>retry対象をOpsで実行し忘れる。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="errors-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
-              <span class="status-pill status-unknown">未取得</span>
+              <span id="errors-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="errors-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -74,6 +85,11 @@
               <div class="note">
                 <button id="reload">reload</button>
                 <span id="note"></span>
+              </div>
+              <div id="errors-skeleton" class="skeleton-stack is-hidden">
+                <div class="skeleton-line lg w-50"></div>
+                <div class="skeleton-line w-70"></div>
+                <div class="skeleton-line w-30"></div>
               </div>
             </div>
           </div>
@@ -109,10 +125,15 @@
         </table>
       </details>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_errors' };
       const TRACE_HEADER_NAME = 'x-trace-id';
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('errors-skeleton');
+      const statusPanelEl = document.getElementById('errors-status-panel');
+      const actionCountEl = document.getElementById('errors-action-count');
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -130,6 +151,40 @@
       function setTraceId(value) {
         const el = document.getElementById('traceId');
         el.value = value || '';
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+      }
+
+      function applyHeaderTooltips() {
+        document.querySelectorAll('th').forEach((th) => {
+          const text = (th.textContent || '').trim();
+          if (text && !th.title) th.title = text;
+        });
+      }
+
+      function applyInputTooltips() {
+        document.querySelectorAll('input, select, textarea').forEach((el) => {
+          if (el.id && !el.title) el.title = el.id;
+        });
       }
 
       function ensureTraceId() {
@@ -209,27 +264,67 @@
         }
       }
 
-      async function loadAll() {
-        const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: buildHeaders() });
-        const summary = await summaryRes.json();
-        document.getElementById('summary').textContent = JSON.stringify(summary, null, 2);
-        document.getElementById('note').textContent = summary && summary.ok ? `serverTime: ${summary.serverTime || '-'}` : 'error';
+      function updateErrorsStatusSummary(summary) {
+        const pill = document.getElementById('errors-status-pill');
+        if (!pill) return;
+        if (!summary || !summary.ok) {
+          pill.className = 'status-pill status-unknown';
+          pill.textContent = '未取得';
+          if (actionCountEl) actionCountEl.textContent = '0';
+          setStatusTone('unknown');
+          return;
+        }
+        const warnCount = Array.isArray(summary.warnLinks) ? summary.warnLinks.length : 0;
+        const retryCount = Array.isArray(summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+        const total = warnCount + retryCount;
+        if (total === 0) {
+          pill.className = 'status-pill status-ok';
+          pill.textContent = 'OK';
+          setStatusTone('ok');
+        } else {
+          pill.className = 'status-pill status-danger';
+          pill.textContent = 'DANGER';
+          setStatusTone('danger');
+        }
+        if (actionCountEl) actionCountEl.textContent = String(total);
+      }
 
-        const warnLinksEl = document.getElementById('warn-links');
-        renderRows(warnLinksEl, Array.isArray(summary.warnLinks) ? summary.warnLinks : [], 4);
+      async function loadAll(options) {
+        const notify = options && options.notify;
+        setLoading(true);
+        let ok = false;
+        try {
+          const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: buildHeaders() });
+          const summary = await summaryRes.json();
+          document.getElementById('summary').textContent = JSON.stringify(summary, null, 2);
+          document.getElementById('note').textContent = summary && summary.ok ? `serverTime: ${summary.serverTime || '-'}` : 'error';
+          updateErrorsStatusSummary(summary);
 
-        const retryRowsEl = document.getElementById('retry-rows');
-        renderRetry(retryRowsEl, Array.isArray(summary.retryQueuePending) ? summary.retryQueuePending : []);
+          const warnLinksEl = document.getElementById('warn-links');
+          renderRows(warnLinksEl, Array.isArray(summary.warnLinks) ? summary.warnLinks : [], 4);
+
+          const retryRowsEl = document.getElementById('retry-rows');
+          renderRetry(retryRowsEl, Array.isArray(summary.retryQueuePending) ? summary.retryQueuePending : []);
+          ok = Boolean(summary && summary.ok);
+        } finally {
+          setLoading(false);
+          if (notify) showToast(ok ? 'errors 更新 OK' : 'errors 更新 失敗', ok ? 'ok' : 'danger');
+        }
       }
 
       document.getElementById('reload').addEventListener('click', () => {
-        loadAll().catch(() => {
+        loadAll({ notify: true }).catch(() => {
           document.getElementById('summary').textContent = 'error';
+          showToast('errors 更新 失敗', 'danger');
+          setStatusTone('danger');
         });
       });
 
+      applyHeaderTooltips();
+      applyInputTooltips();
       loadAll().catch(() => {
         document.getElementById('summary').textContent = 'error';
+        setStatusTone('danger');
       });
     </script>
   </body>
