@@ -9,7 +9,7 @@
   <body>
     <div class="container">
       <div class="card-nav">
-      <a class="card" href="/admin/ops">
+      <a class="card card-active" href="/admin/ops">
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
       </a>
@@ -48,14 +48,25 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">運用判断を安全に確定し、証跡を確認する。</div>
+            <div class="panel-body">
+              運用判断を安全に確定し、証跡を確認する。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>判断に必要な情報をまとめて把握する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>readiness / blocking / 最新 decision。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>NOT_READY理由の確認漏れ。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="ops-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="ops-status-pill" class="status-pill status-unknown">未取得</span>
               <span id="ops-status-summary" class="status-legend">READY: - / NOT_READY: -</span>
               <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="ops-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -79,6 +90,11 @@
           <a href="/admin/master">設定/回復（Master）</a> |
           <a href="#trace-search">Trace Search</a> |
           <a href="#implementation-targets">Implementation Targets</a>
+        </div>
+        <div id="ops-skeleton" class="skeleton-stack is-hidden">
+          <div class="skeleton-line lg w-50"></div>
+          <div class="skeleton-line w-70"></div>
+          <div class="skeleton-line w-30"></div>
         </div>
 
     <div class="section" id="operations">
@@ -463,6 +479,7 @@
     </div>
   </div>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
       let opsConsoleListCache = [];
@@ -478,10 +495,14 @@
 	      let segmentSendPlanCache = null;
 	      let segmentSendDryRunCache = null;
 	      let segmentSendTraceIdCache = null;
-	      let retryQueueCache = [];
-	      let retryQueuePlanCache = {};
-	      let savedSegmentsCache = [];
-	      let selectedSegmentCache = null;
+      let retryQueueCache = [];
+      let retryQueuePlanCache = {};
+      let savedSegmentsCache = [];
+      let selectedSegmentCache = null;
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('ops-skeleton');
+      const statusPanelEl = document.getElementById('ops-status-panel');
+      const actionCountEl = document.getElementById('ops-action-count');
 
       function clearChildren(node) {
         while (node.firstChild) {
@@ -497,6 +518,46 @@
       function formatJson(value) {
         if (value === undefined || value === null) return '-';
         return JSON.stringify(value, null, 2);
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function toastByResult(label, result) {
+        const ok = result === true || (result && typeof result === 'object' && result.ok);
+        showToast(`${label} ${ok ? 'OK' : '失敗'}`, ok ? 'ok' : 'danger');
+        return ok;
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+      }
+
+      function applyHeaderTooltips() {
+        document.querySelectorAll('th').forEach((th) => {
+          const text = (th.textContent || '').trim();
+          if (text && !th.title) th.title = text;
+        });
+      }
+
+      function applyInputTooltips() {
+        document.querySelectorAll('input, select, textarea').forEach((el) => {
+          if (el.id && !el.title) el.title = el.id;
+        });
       }
 
       function formatSuggestionShort(suggestion) {
@@ -616,11 +677,11 @@
         renderReview(data.review);
         if (!data.ok) {
           renderTableMessage(rows, 9, 'error');
-          return;
+          return false;
         }
         if (!data.items.length) {
           renderTableMessage(rows, 9, 'no data');
-          return;
+          return true;
         }
         clearChildren(rows);
         data.items.forEach((item) => {
@@ -666,7 +727,7 @@
         const lineUserId = params.get('lineUserId');
         if (!lineUserId) {
           note.textContent = 'lineUserId を指定すると個別の状態サマリを表示します';
-          return;
+          return true;
         }
         const summaryRes = await fetch(`/api/phase5/state/summary?lineUserId=${encodeURIComponent(lineUserId)}`);
         const summary = await summaryRes.json();
@@ -676,6 +737,7 @@
         } else {
           note.textContent = 'summary: unavailable';
         }
+        return true;
       }
 
       async function loadNotifications() {
@@ -684,11 +746,11 @@
         const rows = document.getElementById('notifications-rows');
         if (!data.ok) {
           renderTableMessage(rows, 6, 'error');
-          return;
+          return false;
         }
         if (!data.items.length) {
           renderTableMessage(rows, 6, 'no data');
-          return;
+          return true;
         }
         clearChildren(rows);
         data.items.forEach((item) => {
@@ -714,6 +776,7 @@
           tr.appendChild(actionTd);
           rows.appendChild(tr);
         });
+        return true;
       }
 
       function renderOpsDashboard(items) {
@@ -757,13 +820,15 @@
           if (!data || !data.ok) {
             setText(errorEl, 'error');
             renderOpsDashboard([]);
-            return;
+            return false;
           }
           setText(note, `serverTime: ${data.serverTime || '-'}`);
           renderOpsDashboard(Array.isArray(data.items) ? data.items : []);
+          return true;
         } catch (err) {
           setText(errorEl, 'error');
           renderOpsDashboard([]);
+          return false;
         }
       }
 
@@ -1126,6 +1191,9 @@
         }
         items.forEach((item) => {
           const tr = document.createElement('tr');
+          const readinessStatus = item && item.readiness && item.readiness.status ? item.readiness.status : null;
+          if (readinessStatus === 'NOT_READY') tr.classList.add('row-health-danger');
+          else if (readinessStatus === 'READY') tr.classList.add('row-health-ok');
           const cells = [
             item.lineUserId,
             item.readiness && item.readiness.status ? item.readiness.status : '-',
@@ -1174,12 +1242,16 @@
           pill.className = 'status-pill status-unknown';
           pill.textContent = '未取得';
           summary.textContent = 'READY: - / NOT_READY: -';
+          if (actionCountEl) actionCountEl.textContent = '0';
+          setStatusTone('unknown');
           return;
         }
         const overall = counts.NOT_READY > 0 ? 'NOT_READY' : 'READY';
         pill.className = `status-pill ${overall === 'READY' ? 'status-ok' : 'status-danger'}`;
         pill.textContent = overall;
         summary.textContent = `READY: ${counts.READY} / NOT_READY: ${counts.NOT_READY}`;
+        if (actionCountEl) actionCountEl.textContent = String(counts.NOT_READY);
+        setStatusTone(overall === 'READY' ? 'ok' : 'danger');
       }
 
       function updateDecisionActionOptions(detail) {
@@ -1552,17 +1624,19 @@
             setText(errorEl, 'error');
             renderOpsConsoleList([]);
             updateOpsStatusSummary([]);
-            return;
+            return false;
           }
           opsConsoleListCache = Array.isArray(data.items) ? data.items : [];
           const pageInfoText = data.pageInfo ? JSON.stringify(data.pageInfo) : '-';
           note.textContent = `serverTime: ${data.serverTime || '-'} / pageInfo: ${pageInfoText} / nextPageToken: ${data.nextPageToken || '-'}`;
           renderOpsConsoleList(opsConsoleListCache);
           updateOpsStatusSummary(opsConsoleListCache);
+          return true;
         } catch (err) {
           setText(errorEl, 'error');
           renderOpsConsoleList([]);
           updateOpsStatusSummary([]);
+          return false;
         }
       }
 
@@ -1783,7 +1857,7 @@
           if (!data || !data.ok) {
             setText(errorEl, 'error');
             renderRetryQueue([]);
-            return;
+            return false;
           }
           retryQueueCache = Array.isArray(data.items) ? data.items : [];
           // Drop plans for items that no longer exist/pending in the current view.
@@ -1795,9 +1869,11 @@
           } catch (_err) {}
           setText(note, `serverTime: ${data.serverTime || '-'}`);
           renderRetryQueue(retryQueueCache);
+          return true;
         } catch (err) {
           setText(errorEl, 'error');
           renderRetryQueue([]);
+          return false;
         }
       }
 
@@ -1897,36 +1973,50 @@
         setText(resultEl, '');
         if (!traceId || !String(traceId).trim()) {
           setText(resultEl, 'traceId required');
-          return;
+          return false;
         }
         try {
           const data = await fetchTraceBundle(String(traceId).trim(), limit);
           setText(resultEl, formatJson(data));
+          return Boolean(data && data.ok);
         } catch (_err) {
           setText(resultEl, 'error');
+          return false;
         }
       }
 
       document.getElementById('users-apply').addEventListener('click', () => {
         syncUsersQueryToUrl();
-        loadUsers().catch(() => {});
+        loadUsers()
+          .then((ok) => toastByResult('users 更新', ok))
+          .catch(() => showToast('users 更新 失敗', 'danger'));
       });
       document.getElementById('notifications-apply').addEventListener('click', () => {
-        loadNotifications().catch(() => {});
+        loadNotifications()
+          .then((ok) => toastByResult('通知一覧 更新', ok))
+          .catch(() => showToast('通知一覧 更新 失敗', 'danger'));
       });
       document.getElementById('trace-search-run').addEventListener('click', () => {
-        handleTraceSearch().catch(() => {});
+        handleTraceSearch()
+          .then((ok) => toastByResult('trace 検索', ok))
+          .catch(() => showToast('trace 検索 失敗', 'danger'));
       });
       document.getElementById('ops-console-detail-trace-id').addEventListener('click', () => {
         const traceIdEl = document.getElementById('trace-search-trace-id');
         if (traceIdEl && selectedOpsConsoleTraceId) traceIdEl.value = selectedOpsConsoleTraceId;
-        handleTraceSearch().catch(() => {});
+        handleTraceSearch()
+          .then((ok) => toastByResult('trace 検索', ok))
+          .catch(() => showToast('trace 検索 失敗', 'danger'));
       });
       document.getElementById('ops-dashboard-refresh').addEventListener('click', () => {
-        loadOpsDashboard().catch(() => {});
+        loadOpsDashboard()
+          .then((ok) => toastByResult('ops dashboard 更新', ok))
+          .catch(() => showToast('ops dashboard 更新 失敗', 'danger'));
       });
       document.getElementById('ops-console-refresh').addEventListener('click', () => {
-        loadOpsConsoleList().catch(() => {});
+        loadOpsConsoleList()
+          .then((ok) => toastByResult('ops console 更新', ok))
+          .catch(() => showToast('ops console 更新 失敗', 'danger'));
       });
       document.getElementById('ops-decision-submit').addEventListener('click', () => {
         handleSubmitOpsDecision().catch(() => {});
@@ -1956,7 +2046,9 @@
         handleSegmentExecute().catch(() => {});
       });
       document.getElementById('retry-queue-refresh').addEventListener('click', () => {
-        loadRetryQueue().catch(() => {});
+        loadRetryQueue()
+          .then((ok) => toastByResult('retry queue 更新', ok))
+          .catch(() => showToast('retry queue 更新 失敗', 'danger'));
       });
       document.getElementById('saved-segment-select').addEventListener('change', (event) => {
         const key = event.currentTarget.value;
@@ -1970,19 +2062,30 @@
       });
 
       document.getElementById('kill-switch-refresh').addEventListener('click', () => {
-        loadKillSwitchStatus().catch(() => {});
+        loadKillSwitchStatus()
+          .then((data) => toastByResult('killSwitch 更新', data))
+          .catch(() => showToast('killSwitch 更新 失敗', 'danger'));
       });
       document.getElementById('kill-switch-plan-on').addEventListener('click', () => {
-        handleKillSwitchPlan(true).catch(() => {});
+        handleKillSwitchPlan(true)
+          .then((data) => toastByResult('killSwitch plan ON', data))
+          .catch(() => showToast('killSwitch plan ON 失敗', 'danger'));
       });
       document.getElementById('kill-switch-plan-off').addEventListener('click', () => {
-        handleKillSwitchPlan(false).catch(() => {});
+        handleKillSwitchPlan(false)
+          .then((data) => toastByResult('killSwitch plan OFF', data))
+          .catch(() => showToast('killSwitch plan OFF 失敗', 'danger'));
       });
       document.getElementById('kill-switch-set').addEventListener('click', () => {
-        handleKillSwitchSet().catch(() => {});
+        handleKillSwitchSet()
+          .then((data) => toastByResult('killSwitch set', data))
+          .catch(() => showToast('killSwitch set 失敗', 'danger'));
       });
 
+      applyHeaderTooltips();
+      applyInputTooltips();
       hydrateUsersFilters();
+      setLoading(true);
       Promise.all([
         loadUsers(),
         loadNotifications(),
@@ -1999,6 +2102,9 @@
         renderTableMessage(document.getElementById('ops-dashboard-rows'), 5, 'error');
         renderTableMessage(document.getElementById('member-stale-rows'), 3, 'error');
         renderTableMessage(document.getElementById('implementation-targets-rows'), 4, 'error');
+        setStatusTone('danger');
+      }).finally(() => {
+        setLoading(false);
       });
     </script>
   </body>

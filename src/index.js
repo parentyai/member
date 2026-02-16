@@ -408,7 +408,7 @@ function createServer() {
         <div class="card-title">運用レビュー記録（Review）</div>
         <div class="card-purpose">運用レビュー記録を残す。</div>
       </a>
-      <a class="card" href="/admin/login">
+      <a class="card card-active" href="/admin/login">
         <div class="card-title">Admin Login</div>
         <div class="card-purpose">管理トークンで認証する。</div>
       </a>
@@ -418,13 +418,24 @@ function createServer() {
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">管理トークンで認証する。</div>
+            <div class="panel-body">
+              管理トークンで認証する。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>管理トークンで認証する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>token / 認証結果 / 画面遷移。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>tokenの入力ミス。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="login-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
-              <span class="status-pill status-unknown">未取得</span>
+              <span id="login-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="login-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -436,7 +447,7 @@ function createServer() {
               <form method="post" action="/admin/login">
                 <label>
                   token
-                  <input type="password" name="token" required class="input-inline input-min-280" />
+                  <input type="password" name="token" required class="input-inline input-min-280" title="token" />
                 </label>
                 <button type="submit">Login</button>
               </form>

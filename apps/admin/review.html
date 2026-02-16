@@ -33,7 +33,7 @@
           <div class="card-title">通知集計（Read Model）</div>
           <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
         </a>
-        <a class="card" href="/admin/review">
+        <a class="card card-active" href="/admin/review">
           <div class="card-title">運用レビュー記録（Review）</div>
           <div class="card-purpose">運用レビュー記録を残す。</div>
         </a>
@@ -48,13 +48,24 @@
         <div class="layout-left panel-stack">
           <div class="panel panel-purpose">
             <div class="panel-title">目的</div>
-            <div class="panel-body">運用レビュー記録を残す。</div>
+            <div class="panel-body">
+              運用レビュー記録を残す。
+              <div class="guide">
+                <div class="guide-item"><span class="guide-label">ここでできること</span><span>レビュー担当と日時を記録する。</span></div>
+                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>reviewedBy / reviewedAt / 保存結果。</span></div>
+                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>reviewedBy 未入力のまま送信する。</span></div>
+              </div>
+            </div>
           </div>
-          <div class="panel panel-status">
+          <div id="review-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
-              <span class="status-pill status-unknown">未取得</span>
+              <span id="review-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-focus">
+                <span>今日の要対応</span>
+                <span id="review-action-count" class="action-count">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -84,17 +95,28 @@
               </form>
 
               <div id="result"></div>
+              <div id="review-skeleton" class="skeleton-stack is-hidden">
+                <div class="skeleton-line lg w-50"></div>
+                <div class="skeleton-line w-70"></div>
+                <div class="skeleton-line w-30"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
       const form = document.getElementById('review-form');
       const result = document.getElementById('result');
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_review' };
       const TRACE_HEADER_NAME = 'x-trace-id';
+      const toastEl = document.getElementById('toast');
+      const skeletonEl = document.getElementById('review-skeleton');
+      const statusPanelEl = document.getElementById('review-status-panel');
+      const statusPillEl = document.getElementById('review-status-pill');
+      const actionCountEl = document.getElementById('review-action-count');
 
       function newTraceId() {
         if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
@@ -112,6 +134,41 @@
       function setTraceId(value) {
         const el = document.getElementById('traceId');
         el.value = value || '';
+      }
+
+      function showToast(message, tone) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className = `toast ${tone || ''} show`;
+        setTimeout(() => {
+          toastEl.className = 'toast';
+          toastEl.textContent = '';
+        }, 2200);
+      }
+
+      function setLoading(isLoading) {
+        if (!skeletonEl) return;
+        skeletonEl.classList.toggle('is-hidden', !isLoading);
+      }
+
+      function setStatusTone(tone) {
+        if (!statusPanelEl) return;
+        statusPanelEl.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
+        statusPanelEl.classList.add(`status-${tone || 'unknown'}`);
+        if (statusPillEl) {
+          const nextTone = tone || 'unknown';
+          statusPillEl.className = `status-pill status-${nextTone}`;
+          if (nextTone === 'ok') statusPillEl.textContent = 'OK';
+          else if (nextTone === 'warn') statusPillEl.textContent = 'WARN';
+          else if (nextTone === 'danger') statusPillEl.textContent = 'DANGER';
+          else statusPillEl.textContent = '未取得';
+        }
+      }
+
+      function applyInputTooltips() {
+        document.querySelectorAll('input, select, textarea').forEach((el) => {
+          if (el.id && !el.title) el.title = el.id;
+        });
       }
 
       function ensureTraceId() {
@@ -133,16 +190,22 @@
       });
 
       setTraceId(newTraceId());
+      if (actionCountEl) actionCountEl.textContent = '0';
+      applyInputTooltips();
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         result.textContent = '';
+        setLoading(true);
 
         const reviewedBy = document.getElementById('reviewedBy').value.trim();
         const reviewedAtInput = document.getElementById('reviewedAt').value;
 
         if (!reviewedBy) {
           result.textContent = 'reviewedBy required';
+          showToast('reviewedBy required', 'warn');
+          setStatusTone('warn');
+          setLoading(false);
           return;
         }
 
@@ -151,6 +214,9 @@
           const date = new Date(reviewedAtInput);
           if (Number.isNaN(date.getTime())) {
             result.textContent = 'invalid reviewedAt';
+            showToast('reviewedAt invalid', 'warn');
+            setStatusTone('warn');
+            setLoading(false);
             return;
           }
           payload.reviewedAt = date.toISOString();
@@ -171,10 +237,16 @@
 
         if (!res.ok || !data || !data.ok) {
           result.textContent = 'error';
+          showToast('review 保存 失敗', 'danger');
+          setStatusTone('danger');
+          setLoading(false);
           return;
         }
 
         result.textContent = 'saved';
+        showToast('review 保存 OK', 'ok');
+        setStatusTone('ok');
+        setLoading(false);
       });
     </script>
   </body>
