@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
-    <div class="card-nav">
+    <div class="container">
+      <div class="card-nav">
       <a class="card" href="/admin/ops">
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
@@ -40,21 +41,25 @@
         <div class="card-title">Admin Login</div>
         <div class="card-purpose">管理トークンで認証する。</div>
       </a>
-    </div>
-
-    <h1>設定/回復（Master / 運用OS）</h1>
-    <div class="panel panel-purpose">
-      <div class="panel-title">目的</div>
-      <div class="panel-body">運用設定と回復操作を安全に実行する。</div>
-    </div>
-    <div class="panel panel-status">
-      <div class="panel-title">状態サマリー</div>
-      <div class="panel-body">
-        <span class="status-pill status-unknown">未取得</span>
-        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
       </div>
-    </div>
-    <div class="panel panel-actions">
+
+      <h1>設定/回復（Master / 運用OS）</h1>
+      <div class="layout section">
+        <div class="layout-left panel-stack">
+          <div class="panel panel-purpose">
+            <div class="panel-title">目的</div>
+            <div class="panel-body">運用設定と回復操作を安全に実行する。</div>
+          </div>
+          <div class="panel panel-status">
+            <div class="panel-title">状態サマリー</div>
+            <div class="panel-body">
+              <span class="status-pill status-unknown">未取得</span>
+              <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+            </div>
+          </div>
+        </div>
+        <div class="layout-right">
+          <div class="panel panel-actions">
       <div class="panel-title">操作領域</div>
       <div class="panel-body">
         <div class="note">templates / link_registry を UI から管理（add-only）。</div>
@@ -80,12 +85,15 @@
           </select>
           <button id="tpl-reload" type="button">reload</button>
         </div>
-        <table>
-          <thead>
-            <tr><th>key</th><th>status</th><th>category</th><th>title</th><th>actions</th></tr>
-          </thead>
-          <tbody id="tpl-rows"></tbody>
-        </table>
+        <details class="table-section" open>
+          <summary>Templates（通知テンプレ）</summary>
+          <table>
+            <thead>
+              <tr><th>key</th><th>status</th><th>category</th><th>title</th><th>actions</th></tr>
+            </thead>
+            <tbody id="tpl-rows"></tbody>
+          </table>
+        </details>
 
         <h3>Create Template</h3>
         <label>key</label>
@@ -118,12 +126,15 @@
           </select>
           <button id="link-reload" type="button">reload</button>
         </div>
-        <table>
-          <thead>
-            <tr><th>id</th><th>title</th><th>url</th><th>state</th></tr>
-          </thead>
-          <tbody id="link-rows"></tbody>
-        </table>
+        <details class="table-section" open>
+          <summary>Link Registry（リンク管理）</summary>
+          <table>
+            <thead>
+              <tr><th>id</th><th>title</th><th>url</th><th>state</th></tr>
+            </thead>
+            <tbody id="link-rows"></tbody>
+          </table>
+        </details>
 
         <h3>Create Link</h3>
         <label>title</label>
@@ -285,6 +296,9 @@
     <pre id="delivery-backfill-execute-result">-</pre>
 
       </div>
+    </div>
+    </div>
+  </div>
     </div>
 
     <script>
