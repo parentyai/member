@@ -28,3 +28,32 @@
 | 1mo | TBD | TBD | false |
 | week | TBD | TBD | false |
 | after1w | TBD | TBD | false |
+
+## StepKey -> Wait Rule Type（Phase188B add-only）
+| stepKey | waitRuleType | 根拠 |
+|---|---|---|
+| 2mo | TYPE_B | `docs/SSOT_NOTIFICATION_WAIT_RULES.md:Wait Rule Values (Confirmed)` |
+| after1mo | TYPE_B | `docs/SSOT_NOTIFICATION_WAIT_RULES.md:Wait Rule Values (Confirmed)` |
+
+## BaseDate Values（SSOT）
+| baseDate | 説明 | 根拠 |
+|---|---|---|
+| departureDate | 出発日 | `docs/SSOT_PHASE0.md:94-104`（出発前の基準） |
+
+## nextWaitDaysSource（SSOT）
+| value | 意味 |
+|---|---|
+| ssot_unset | SSOTの値未入力により算出不可 |
+| ssot_value | SSOTの値（offsetDays）により算出 |
+
+## Wait Rule Values（SSOT / Confirmed 2026-02-16）
+以下の表は「Wait Rule Values（SSOT / TBD）」を上書きする（append-only）。
+
+| stepKey | baseDate | offsetDays | configured |
+|---|---|---|---|
+| 3mo | departureDate | -90 | true |
+| 2mo | departureDate | -60 | true |
+| 1mo | departureDate | -30 | true |
+| week | departureDate | -7 | true |
+| after1w | departureDate | 7 | true |
+| after1mo | departureDate | 30 | true |

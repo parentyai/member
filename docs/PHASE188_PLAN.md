@@ -33,3 +33,19 @@
 - waitRuleType の追加/意味変更
 - 通知送信フロー変更
 - UI構造変更
+
+### Acceptance / Done（Phase188B）
+- SSOT_NOTIFICATION_WAIT_RULES に WAIT_RULE_VALUES が add-only で確定している
+- read-model が waitRuleConfigured=true で nextWaitDays を返す
+- tests/phase188 が PASS
+- `npm test` / `npm run test:docs` PASS
+- working tree CLEAN
+
+### Verification（Phase188B）
+- `node --test tests/phase188/*.test.js`
+- `npm test`
+- `npm run test:docs`
+
+### Evidence（Phase188B）
+- `docs/PHASE188_EXECUTION_LOG.md`
+- `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase188B.log`

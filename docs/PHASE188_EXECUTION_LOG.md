@@ -49,3 +49,34 @@ log saved: `docs/CI_EVIDENCE/2026-02-16_22045668361_phase188A.log`
 ### Close
 - CLOSE: YES
 - Reason: docs-only SSOT scaffold merged via PR with CI evidence stored
+
+## Phase188B Execution
+UTC: 2026-02-16T00:45:01Z
+branch: `codex/phase188B`
+base: `origin/main` @ `8da72c6f0dbe9d3c02a46e3b0d3004b5bb7c69f3`
+
+### Scope
+- SSOT_NOTIFICATION_WAIT_RULES: WAIT_RULE_VALUES を確定（add-only）
+- read-model: nextWaitDays 算出
+- tests/phase188: wait rule values の閉路テスト
+
+### Tests
+- `node --test tests/phase188/*.test.js`: TBD
+- `npm test`: TBD
+- `npm run test:docs`: TBD
+
+### CI
+- run id: TBD
+- log saved: TBD
+
+### Close
+- CLOSE: TBD
+- Reason: TBD
+
+### Tests Update 2026-02-16
+- `node --test tests/phase188/*.test.js`: PASS
+- `npm test`: PASS (516)
+- `npm run test:docs`: PASS
+
+### Base Update 2026-02-16
+- origin/main @ `8da72c65a4e9bf630a6d4745ed51bc2735709425`

@@ -7,6 +7,18 @@ const { getNotificationDecisionTrace } = require('../phase37/getNotificationDeci
 const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
 
+const WAIT_RULE_TYPE = 'TYPE_B';
+const WAIT_RULE_SOURCE_UNSET = 'ssot_unset';
+const WAIT_RULE_SOURCE_VALUE = 'ssot_value';
+const WAIT_RULE_VALUES = Object.freeze({
+  '3mo': { baseDate: 'departureDate', offsetDays: -90 },
+  '2mo': { baseDate: 'departureDate', offsetDays: -60 },
+  '1mo': { baseDate: 'departureDate', offsetDays: -30 },
+  week: { baseDate: 'departureDate', offsetDays: -7 },
+  after1w: { baseDate: 'departureDate', offsetDays: 7 },
+  after1mo: { baseDate: 'departureDate', offsetDays: 30 }
+});
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date) return value.getTime();
@@ -42,6 +54,19 @@ function computeLastSentAt(deliveries) {
   return latest ? formatTimestamp(latest) : null;
 }
 
+function resolveWaitRule(stepKey) {
+  const rule = WAIT_RULE_VALUES[stepKey];
+  const baseDate = rule && typeof rule.baseDate === 'string' ? rule.baseDate : null;
+  const offsetDays = rule && typeof rule.offsetDays === 'number' ? rule.offsetDays : null;
+  const configured = Boolean(baseDate) && typeof offsetDays === 'number';
+  return {
+    waitRuleType: rule ? WAIT_RULE_TYPE : null,
+    waitRuleConfigured: configured,
+    nextWaitDays: configured ? offsetDays : null,
+    nextWaitDaysSource: configured ? WAIT_RULE_SOURCE_VALUE : WAIT_RULE_SOURCE_UNSET
+  };
+}
+
 async function getNotificationReadModel(params) {
   const opts = params || {};
   let notifications = [];
@@ -70,6 +95,7 @@ async function getNotificationReadModel(params) {
       if (delivery.readAt) readCount += 1;
       if (delivery.clickAt) clickCount += 1;
     }
+    const waitRule = resolveWaitRule(notification.stepKey);
     const reaction = await getNotificationReactionSummary({ notificationId: notification.id }, { deliveriesRepo: { listDeliveriesByNotificationId: async () => deliveries } });
     const reactionSummary = {
       sent: reaction.sent,
@@ -89,7 +115,11 @@ async function getNotificationReadModel(params) {
       clickCount,
       reactionSummary,
       notificationHealth,
-      lastSentAt
+      lastSentAt,
+      waitRuleType: waitRule.waitRuleType,
+      waitRuleConfigured: waitRule.waitRuleConfigured,
+      nextWaitDays: waitRule.nextWaitDays,
+      nextWaitDaysSource: waitRule.nextWaitDaysSource
     };
     item.decisionTrace = await getNotificationDecisionTrace(notification.id);
     item.completeness = evaluateNotificationSummaryCompleteness(item);
