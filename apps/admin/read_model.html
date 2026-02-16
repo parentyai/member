@@ -115,6 +115,7 @@
               <th>read</th>
               <th>click</th>
               <th>CTR</th>
+              <th>前週比（7日）</th>
               <th>health</th>
             </tr>
           </thead>
@@ -199,6 +200,25 @@
         return `${Math.round(value * 1000) / 10}%`;
       }
 
+      function formatDeltaNumber(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+        const sign = value > 0 ? '+' : '';
+        return `${sign}${value}`;
+      }
+
+      function formatDeltaPercent(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+        const pct = Math.round(value * 1000) / 10;
+        const sign = pct > 0 ? '+' : '';
+        return `${sign}${pct}%`;
+      }
+
+      function formatWeekOverWeekDelta(weekOverWeek) {
+        if (!weekOverWeek || !weekOverWeek.delta) return '-';
+        const delta = weekOverWeek.delta;
+        return `sent:${formatDeltaNumber(delta.sent)} read:${formatDeltaNumber(delta.read)} click:${formatDeltaNumber(delta.click)} ctr:${formatDeltaPercent(delta.ctr)}`;
+      }
+
       function renderReadModelDetail(item) {
         const detailEl = document.getElementById('read-model-detail');
         if (!detailEl) return;
@@ -241,13 +261,13 @@
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
-          appendMessageRow(rows, 15, 'error');
+          appendMessageRow(rows, 16, 'error');
           updateReadModelStatusSummary([]);
           renderReadModelDetail(null);
           return;
         }
         if (!data.items.length) {
-          appendMessageRow(rows, 15, 'no data');
+          appendMessageRow(rows, 16, 'no data');
           updateReadModelStatusSummary([]);
           renderReadModelDetail(null);
           return;
@@ -269,6 +289,7 @@
             item.readCount,
             item.clickCount,
             formatCtr(item.reactionSummary ? item.reactionSummary.ctr : null),
+            formatWeekOverWeekDelta(item.weekOverWeek),
             item.notificationHealth || '-'
           ]);
           tr.addEventListener('click', () => renderReadModelDetail(item));
@@ -277,7 +298,7 @@
         renderReadModelDetail(data.items[0] || null);
       }
       loadReadModel().catch(() => {
-        appendMessageRow(document.getElementById('rows'), 15, 'error');
+        appendMessageRow(document.getElementById('rows'), 16, 'error');
         updateReadModelStatusSummary([]);
         renderReadModelDetail(null);
       });

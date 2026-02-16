@@ -15,6 +15,8 @@ const WAIT_RULE_SOURCE_VALUE = 'ssot_value';
 const TARGET_COUNT_SOURCE_PLAN = 'plan_audit';
 const TARGET_COUNT_SOURCE_MISSING = 'plan_missing';
 const EXECUTE_REASON_MISSING = 'execute_missing';
+const WEEK_WINDOW_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const WAIT_RULE_VALUES = Object.freeze({
   '3mo': { baseDate: 'departureDate', offsetDays: -90 },
   '2mo': { baseDate: 'departureDate', offsetDays: -60 },
@@ -57,6 +59,58 @@ function computeLastSentAt(deliveries) {
     }
   }
   return latest ? formatTimestamp(latest) : null;
+}
+
+function computeWeekOverWeek(deliveries, now) {
+  const nowMs = toMillis(now) || Date.now();
+  const windowMs = WEEK_WINDOW_DAYS * MS_PER_DAY;
+  const currentStart = nowMs - windowMs;
+  const previousStart = currentStart - windowMs;
+  const current = { sent: 0, read: 0, click: 0 };
+  const previous = { sent: 0, read: 0, click: 0 };
+
+  for (const delivery of deliveries) {
+    const sentMs = toMillis(delivery && (delivery.sentAt || delivery.deliveredAt));
+    if (sentMs) {
+      if (sentMs >= currentStart && sentMs < nowMs) current.sent += 1;
+      else if (sentMs >= previousStart && sentMs < currentStart) previous.sent += 1;
+    }
+    const readMs = toMillis(delivery && delivery.readAt);
+    if (readMs) {
+      if (readMs >= currentStart && readMs < nowMs) current.read += 1;
+      else if (readMs >= previousStart && readMs < currentStart) previous.read += 1;
+    }
+    const clickMs = toMillis(delivery && delivery.clickAt);
+    if (clickMs) {
+      if (clickMs >= currentStart && clickMs < nowMs) current.click += 1;
+      else if (clickMs >= previousStart && clickMs < currentStart) previous.click += 1;
+    }
+  }
+
+  const currentCtr = current.sent ? current.click / current.sent : 0;
+  const previousCtr = previous.sent ? previous.click / previous.sent : 0;
+
+  return {
+    windowDays: WEEK_WINDOW_DAYS,
+    current: {
+      sent: current.sent,
+      read: current.read,
+      click: current.click,
+      ctr: currentCtr
+    },
+    previous: {
+      sent: previous.sent,
+      read: previous.read,
+      click: previous.click,
+      ctr: previousCtr
+    },
+    delta: {
+      sent: current.sent - previous.sent,
+      read: current.read - previous.read,
+      click: current.click - previous.click,
+      ctr: currentCtr - previousCtr
+    }
+  };
 }
 
 function resolveWaitRule(stepKey) {
@@ -121,6 +175,7 @@ async function resolveExecuteSummary(notificationId) {
 
 async function getNotificationReadModel(params) {
   const opts = params || {};
+  const now = opts.now instanceof Date ? opts.now : new Date();
   let notifications = [];
   const notificationId = typeof opts.notificationId === 'string' ? opts.notificationId.trim() : '';
   if (notificationId) {
@@ -157,6 +212,7 @@ async function getNotificationReadModel(params) {
       ctr: reaction.ctr
     };
     const notificationHealth = evaluateNotificationHealth({ sent: reaction.sent, ctr: reaction.ctr });
+    const weekOverWeek = computeWeekOverWeek(deliveries, now);
     const item = {
       notificationId: notification.id,
       title: notification.title || null,
@@ -175,6 +231,7 @@ async function getNotificationReadModel(params) {
       clickCount,
       reactionSummary,
       notificationHealth,
+      weekOverWeek,
       lastSentAt,
       waitRuleType: waitRule.waitRuleType,
       waitRuleConfigured: waitRule.waitRuleConfigured,
