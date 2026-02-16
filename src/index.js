@@ -587,6 +587,54 @@ function createServer() {
     return;
   }
 
+  if (pathname === '/api/admin/send-test' || pathname === '/api/admin/test-runs') {
+    const { handleSendTest, handleTestRuns } = require('./routes/admin/notificationTest');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => {
+        resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+    });
+    (async () => {
+      if (req.method === 'POST' && pathname === '/api/admin/send-test') {
+        const body = await collectBody();
+        await handleSendTest(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/test-runs') {
+        const body = await collectBody();
+        await handleTestRuns(req, res, body);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/admin/user-timeline') {
+    const { handleUserTimeline } = require('./routes/admin/userTimeline');
+    handleUserTimeline(req, res);
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {
     const { handleAdminTraceSearch } = require('./routes/admin/traceSearch');
     handleAdminTraceSearch(req, res);
