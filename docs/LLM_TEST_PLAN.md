@@ -19,6 +19,8 @@
   - tests/phaseLLM3/phaseLLM3_next_action_candidates_usecase.test.js
 - admin UI wiring: ops_readonly includes next action candidates display
   - tests/phaseLLM3/phaseLLM3_next_action_candidates_ui.test.js
+- FAQ answer: direct URL blocked + citation sourceId enforcement
+  - tests/phaseLLM4/phaseLLM4_faq_usecase.test.js
 
 ## Manual Checks
 - Admin ops console shows llmExplanation JSON and status without affecting ops decisions.
