@@ -1121,6 +1121,22 @@ function createServer() {
     return;
   }
 
+  if (pathname.startsWith('/api/phaseLLM3/ops-next-actions')) {
+    const { handleOpsNextActions } = require('./routes/phaseLLM3OpsNextActions');
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/phaseLLM3/ops-next-actions') {
+        await handleOpsNextActions(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('not found');
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/phase105/ops-assist')) {
     const { handleOpsAssistAdopt } = require('./routes/phase105OpsAssistAdopt');
     let bytes = 0;
