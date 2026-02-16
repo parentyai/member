@@ -378,7 +378,8 @@ function createServer() {
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
-    <div class="card-nav">
+    <div class="container">
+      <div class="card-nav">
       <a class="card" href="/admin/ops">
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
@@ -411,30 +412,37 @@ function createServer() {
         <div class="card-title">Admin Login</div>
         <div class="card-purpose">管理トークンで認証する。</div>
       </a>
-    </div>
-    <h1>Admin Login</h1>
-    <div class="panel panel-purpose">
-      <div class="panel-title">目的</div>
-      <div class="panel-body">管理トークンで認証する。</div>
-    </div>
-    <div class="panel panel-status">
-      <div class="panel-title">状態サマリー</div>
-      <div class="panel-body">
-        <span class="status-pill status-unknown">未取得</span>
-        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
       </div>
-    </div>
-    <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
-      <div class="panel-body">
-        <div class="note">Enter the admin token to access /admin/* and ops/admin APIs.</div>
-        <form method="post" action="/admin/login">
-          <label>
-            token
-            <input type="password" name="token" required class="input-inline input-min-280" />
-          </label>
-          <button type="submit">Login</button>
-        </form>
+      <h1>Admin Login</h1>
+      <div class="layout section">
+        <div class="layout-left panel-stack">
+          <div class="panel panel-purpose">
+            <div class="panel-title">目的</div>
+            <div class="panel-body">管理トークンで認証する。</div>
+          </div>
+          <div class="panel panel-status">
+            <div class="panel-title">状態サマリー</div>
+            <div class="panel-body">
+              <span class="status-pill status-unknown">未取得</span>
+              <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+            </div>
+          </div>
+        </div>
+        <div class="layout-right">
+          <div class="panel panel-actions">
+            <div class="panel-title">操作領域</div>
+            <div class="panel-body">
+              <div class="note">Enter the admin token to access /admin/* and ops/admin APIs.</div>
+              <form method="post" action="/admin/login">
+                <label>
+                  token
+                  <input type="password" name="token" required class="input-inline input-min-280" />
+                </label>
+                <button type="submit">Login</button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </body>

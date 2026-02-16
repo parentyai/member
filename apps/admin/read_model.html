@@ -7,66 +7,77 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
-    <div class="card-nav">
-      <a class="card" href="/admin/ops">
-        <div class="card-title">運用判断支援（Ops）</div>
-        <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
-      </a>
-      <a class="card" href="/admin/composer">
-        <div class="card-title">通知作成（Composer）</div>
-        <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
-      </a>
-      <a class="card" href="/admin/monitor">
-        <div class="card-title">配信結果（Monitor）</div>
-        <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
-      </a>
-      <a class="card" href="/admin/errors">
-        <div class="card-title">エラー一覧（Errors）</div>
-        <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
-      </a>
-      <a class="card" href="/admin/master">
-        <div class="card-title">設定/回復（Master）</div>
-        <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
-      </a>
-      <a class="card" href="/admin/read-model">
-        <div class="card-title">通知集計（Read Model）</div>
-        <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
-      </a>
-      <a class="card" href="/admin/review">
-        <div class="card-title">運用レビュー記録（Review）</div>
-        <div class="card-purpose">運用レビュー記録を残す。</div>
-      </a>
-      <a class="card" href="/admin/login">
-        <div class="card-title">Admin Login</div>
-        <div class="card-purpose">管理トークンで認証する。</div>
-      </a>
-    </div>
-
-    <h1>通知集計（Read Model / READ ONLY）</h1>
-    <div class="panel panel-purpose">
-      <div class="panel-title">目的</div>
-      <div class="panel-body">通知集計を参照し、判断材料を得る。</div>
-    </div>
-    <div class="panel panel-status">
-      <div class="panel-title">状態サマリー</div>
-      <div class="panel-body">
-        <span id="read-model-status-pill" class="status-pill status-unknown">未取得</span>
-        <span id="read-model-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
-        <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+    <div class="container">
+      <div class="card-nav">
+        <a class="card" href="/admin/ops">
+          <div class="card-title">運用判断支援（Ops）</div>
+          <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
+        </a>
+        <a class="card" href="/admin/composer">
+          <div class="card-title">通知作成（Composer）</div>
+          <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
+        </a>
+        <a class="card" href="/admin/monitor">
+          <div class="card-title">配信結果（Monitor）</div>
+          <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
+        </a>
+        <a class="card" href="/admin/errors">
+          <div class="card-title">エラー一覧（Errors）</div>
+          <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
+        </a>
+        <a class="card" href="/admin/master">
+          <div class="card-title">設定/回復（Master）</div>
+          <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
+        </a>
+        <a class="card" href="/admin/read-model">
+          <div class="card-title">通知集計（Read Model）</div>
+          <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
+        </a>
+        <a class="card" href="/admin/review">
+          <div class="card-title">運用レビュー記録（Review）</div>
+          <div class="card-purpose">運用レビュー記録を残す。</div>
+        </a>
+        <a class="card" href="/admin/login">
+          <div class="card-title">Admin Login</div>
+          <div class="card-purpose">管理トークンで認証する。</div>
+        </a>
       </div>
-    </div>
-    <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
-      <div class="panel-body">
-        <div class="note">表示のみ。書き込みや判断は行いません。</div>
-        <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
-        <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
-        <div class="note">
-          traceId:
-          <input type="text" id="traceId" class="input-inline input-trace" />
-          <button id="regen-trace" type="button">regen</button>
-          <span id="trace-note"></span>
+
+      <h1>通知集計（Read Model / READ ONLY）</h1>
+      <div class="layout section">
+        <div class="layout-left panel-stack">
+          <div class="panel panel-purpose">
+            <div class="panel-title">目的</div>
+            <div class="panel-body">通知集計を参照し、判断材料を得る。</div>
+          </div>
+          <div class="panel panel-status">
+            <div class="panel-title">状態サマリー</div>
+            <div class="panel-body">
+              <span id="read-model-status-pill" class="status-pill status-unknown">未取得</span>
+              <span id="read-model-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
+              <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+            </div>
+          </div>
         </div>
+        <div class="layout-right">
+          <div class="panel panel-actions">
+            <div class="panel-title">操作領域</div>
+            <div class="panel-body">
+              <div class="note">表示のみ。書き込みや判断は行いません。</div>
+              <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
+              <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
+              <div class="note">
+                traceId:
+                <input type="text" id="traceId" class="input-inline input-trace" />
+                <button id="regen-trace" type="button">regen</button>
+                <span id="trace-note"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <details class="table-section section" open>
+        <summary>通知集計（Read Model / READ ONLY）</summary>
         <table>
           <thead>
             <tr>
@@ -94,7 +105,7 @@
           <div class="panel-title">詳細</div>
           <pre id="read-model-detail">-</pre>
         </div>
-      </div>
+      </details>
     </div>
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_read_model' };

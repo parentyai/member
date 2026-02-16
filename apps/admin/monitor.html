@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
-    <div class="card-nav">
+    <div class="container">
+      <div class="card-nav">
       <a class="card" href="/admin/ops">
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
@@ -40,48 +41,57 @@
         <div class="card-title">Admin Login</div>
         <div class="card-purpose">管理トークンで認証する。</div>
       </a>
-    </div>
-
-    <h1>配信結果（Monitor / READ ONLY）</h1>
-    <div class="panel panel-purpose">
-      <div class="panel-title">目的</div>
-      <div class="panel-body">配信反応と健康状態を把握し、異常を見逃さない。</div>
-    </div>
-    <div class="panel panel-status">
-      <div class="panel-title">状態サマリー</div>
-      <div class="panel-body">
-        <span id="monitor-status-pill" class="status-pill status-unknown">未取得</span>
-        <span id="monitor-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
-        <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
       </div>
-    </div>
-    <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
-      <div class="panel-body">
-        <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
-        <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
-        <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
 
-        <div class="note">
-          traceId:
-          <input type="text" id="traceId" class="input-inline input-trace" />
-          <button id="regen-trace" type="button">regen</button>
-          <span id="trace-note"></span>
+      <h1>配信結果（Monitor / READ ONLY）</h1>
+      <div class="layout section">
+        <div class="layout-left panel-stack">
+          <div class="panel panel-purpose">
+            <div class="panel-title">目的</div>
+            <div class="panel-body">配信反応と健康状態を把握し、異常を見逃さない。</div>
+          </div>
+          <div class="panel panel-status">
+            <div class="panel-title">状態サマリー</div>
+            <div class="panel-body">
+              <span id="monitor-status-pill" class="status-pill status-unknown">未取得</span>
+              <span id="monitor-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
+              <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+            </div>
+          </div>
         </div>
+        <div class="layout-right">
+          <div class="panel panel-actions">
+            <div class="panel-title">操作領域</div>
+            <div class="panel-body">
+              <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
+              <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
+              <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
 
-        <div class="note">
-          limit:
-          <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" />
-          status:
-          <input type="text" id="status" placeholder="(optional)" class="input-inline input-sm" />
-          scenario:
-          <input type="text" id="scenarioKey" placeholder="(optional)" class="input-inline input-xs" />
-          step:
-          <input type="text" id="stepKey" placeholder="(optional)" class="input-inline input-xs" />
-          <button id="reload">reload</button>
-          <span id="note"></span>
+              <div class="note">
+                traceId:
+                <input type="text" id="traceId" class="input-inline input-trace" />
+                <button id="regen-trace" type="button">regen</button>
+                <span id="trace-note"></span>
+              </div>
+
+              <div class="note">
+                limit:
+                <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" />
+                status:
+                <input type="text" id="status" placeholder="(optional)" class="input-inline input-sm" />
+                scenario:
+                <input type="text" id="scenarioKey" placeholder="(optional)" class="input-inline input-xs" />
+                step:
+                <input type="text" id="stepKey" placeholder="(optional)" class="input-inline input-xs" />
+                <button id="reload">reload</button>
+                <span id="note"></span>
+              </div>
+            </div>
+          </div>
         </div>
-
+      </div>
+      <details class="table-section section" open>
+        <summary>配信結果（Monitor / READ ONLY）</summary>
         <table>
           <thead>
             <tr>
@@ -109,7 +119,7 @@
           <div class="panel-title">詳細</div>
           <pre id="monitor-detail">-</pre>
         </div>
-      </div>
+      </details>
     </div>
 
     <script>

@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body>
-    <div class="card-nav">
+    <div class="container">
+      <div class="card-nav">
       <a class="card" href="/admin/ops">
         <div class="card-title">運用判断支援（Ops）</div>
         <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
@@ -40,115 +41,125 @@
         <div class="card-title">Admin Login</div>
         <div class="card-purpose">管理トークンで認証する。</div>
       </a>
-    </div>
-
-    <h1>通知作成（Composer / 運用OS）</h1>
-    <div class="panel panel-purpose">
-      <div class="panel-title">目的</div>
-      <div class="panel-body">通知を作成・承認し、送信計画を安全に実行する。</div>
-    </div>
-    <div class="panel panel-status">
-      <div class="panel-title">状態サマリー</div>
-      <div class="panel-body">
-        <span class="status-pill status-unknown">未取得</span>
-        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
       </div>
-    </div>
-    <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
-      <div class="panel-body">
-        <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
 
-        <div class="note">
-          traceId:
-          <input type="text" id="traceId" class="input-inline input-trace" />
-          <button id="regen-trace" type="button">regen</button>
-          <span id="trace-note"></span>
-        </div>
-
-        <div class="grid">
-          <div>
-            <h2>Draft</h2>
-            <label>title</label>
-            <input id="title" />
-            <label>body</label>
-            <textarea id="body"></textarea>
-            <label>ctaText</label>
-            <input id="ctaText" />
-            <label>linkRegistryId</label>
-            <input id="linkRegistryId" placeholder="link_registry doc id" />
-
-            <div class="row">
-              <div class="flex-1">
-                <label>scenarioKey</label>
-                <select id="scenarioKey">
-                  <option value="A">A</option>
-                  <option value="C">C</option>
-                </select>
-              </div>
-              <div class="flex-1">
-                <label>stepKey</label>
-                <select id="stepKey">
-                  <option value="3mo">3mo</option>
-                  <option value="1mo">1mo</option>
-                  <option value="week">week</option>
-                  <option value="after1w">after1w</option>
-                </select>
-              </div>
-            </div>
-            <label>notificationCategory</label>
-            <select id="notificationCategory">
-              <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
-              <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
-              <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
-              <option value="TARGETED_ONLY">TARGETED_ONLY</option>
-              <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
-            </select>
-
-            <h3>Target</h3>
-            <div class="row">
-              <div class="flex-1">
-                <label>region (optional)</label>
-                <input id="targetRegion" />
-              </div>
-              <div class="flex-1">
-                <label>limit (required for safety)</label>
-                <input id="targetLimit" type="number" min="1" max="500" value="50" />
-              </div>
-            </div>
-            <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
-
-            <div class="row row-top">
-              <button id="create-draft" type="button">Create Draft</button>
-              <button id="preview" type="button">Preview</button>
-              <button id="approve" type="button">Approve (active)</button>
-            </div>
-            <div class="note">notificationId: <span id="notificationId">-</span></div>
-            <pre id="draft-result">-</pre>
+      <h1>通知作成（Composer / 運用OS）</h1>
+      <div class="layout section">
+        <div class="layout-left panel-stack">
+          <div class="panel panel-purpose">
+            <div class="panel-title">目的</div>
+            <div class="panel-body">通知を作成・承認し、送信計画を安全に実行する。</div>
           </div>
+          <div class="panel panel-status">
+            <div class="panel-title">状態サマリー</div>
+            <div class="panel-body">
+              <span class="status-pill status-unknown">未取得</span>
+              <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+            </div>
+          </div>
+        </div>
+        <div class="layout-right">
+          <div class="panel panel-actions">
+            <div class="panel-title">操作領域</div>
+            <div class="panel-body">
+              <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
 
-          <div>
-            <h2>Plan / Execute（Danger）</h2>
-            <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
-            <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所」を示す。</div>
-            <div class="note">reason は直近 execute の結果理由（ok/blocked/fail）。</div>
-            <div class="row">
-              <button id="plan" type="button">Plan Send</button>
-              <button id="execute" type="button">Execute Send</button>
+              <div class="note">
+                traceId:
+                <input type="text" id="traceId" class="input-inline input-trace" />
+                <button id="regen-trace" type="button">regen</button>
+                <span id="trace-note"></span>
+              </div>
+
+              <div class="grid">
+                <div>
+                  <h2>Draft</h2>
+                  <label>title</label>
+                  <input id="title" />
+                  <label>body</label>
+                  <textarea id="body"></textarea>
+                  <label>ctaText</label>
+                  <input id="ctaText" />
+                  <label>linkRegistryId</label>
+                  <input id="linkRegistryId" placeholder="link_registry doc id" />
+
+                  <div class="row">
+                    <div class="flex-1">
+                      <label>scenarioKey</label>
+                      <select id="scenarioKey">
+                        <option value="A">A</option>
+                        <option value="C">C</option>
+                      </select>
+                    </div>
+                    <div class="flex-1">
+                      <label>stepKey</label>
+                      <select id="stepKey">
+                        <option value="3mo">3mo</option>
+                        <option value="1mo">1mo</option>
+                        <option value="week">week</option>
+                        <option value="after1w">after1w</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label>notificationCategory</label>
+                  <select id="notificationCategory">
+                    <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+                    <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+                    <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+                    <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+                    <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+                  </select>
+
+                  <h3>Target</h3>
+                  <div class="row">
+                    <div class="flex-1">
+                      <label>region (optional)</label>
+                      <input id="targetRegion" />
+                    </div>
+                    <div class="flex-1">
+                      <label>limit (required for safety)</label>
+                      <input id="targetLimit" type="number" min="1" max="500" value="50" />
+                    </div>
+                  </div>
+                  <label><input id="membersOnly" type="checkbox" /> membersOnly</label>
+
+                  <div class="row row-top">
+                    <button id="create-draft" type="button">Create Draft</button>
+                    <button id="preview" type="button">Preview</button>
+                    <button id="approve" type="button">Approve (active)</button>
+                  </div>
+                  <div class="note">notificationId: <span id="notificationId">-</span></div>
+                  <pre id="draft-result">-</pre>
+                </div>
+
+                <details class="panel danger-zone" open>
+                  <summary>Plan / Execute（Danger）</summary>
+                  <div class="panel-body">
+                    <h2>Plan / Execute（Danger）</h2>
+                    <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
+                    <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所」を示す。</div>
+                    <div class="note">reason は直近 execute の結果理由（ok/blocked/fail）。</div>
+                    <div class="row">
+                      <button id="plan" type="button">Plan Send</button>
+                      <button id="execute" type="button">Execute Send</button>
+                    </div>
+                    <div class="note">
+                      planHash: <span id="planHash">-</span>
+                      / confirmToken: <span id="confirmToken">-</span>
+                    </div>
+                    <div class="note">
+                      対象人数（plan）: <span id="planTargetCount">-</span>
+                    </div>
+                    <div class="note">
+                      抑制数（plan）: <span id="planCapBlockedCount">-</span>
+                    </div>
+                    <pre id="plan-result">-</pre>
+                    <pre id="execute-result">-</pre>
+                    <div class="note" id="execute-cap-meta">capCountMode: - / capCountSource: - / capCountStrategy: - / reason: -</div>
+                  </div>
+                </details>
+              </div>
             </div>
-            <div class="note">
-              planHash: <span id="planHash">-</span>
-              / confirmToken: <span id="confirmToken">-</span>
-            </div>
-            <div class="note">
-              対象人数（plan）: <span id="planTargetCount">-</span>
-            </div>
-            <div class="note">
-              抑制数（plan）: <span id="planCapBlockedCount">-</span>
-            </div>
-            <pre id="plan-result">-</pre>
-            <pre id="execute-result">-</pre>
-            <div class="note" id="execute-cap-meta">capCountMode: - / capCountSource: - / capCountStrategy: - / reason: -</div>
           </div>
         </div>
       </div>
