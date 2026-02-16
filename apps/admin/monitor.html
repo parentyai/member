@@ -55,6 +55,8 @@
           <th>title</th>
           <th>scenario</th>
           <th>step</th>
+          <th>targetCount</th>
+          <th>targetCountSource</th>
           <th>sent</th>
           <th>read</th>
           <th>click</th>
@@ -171,11 +173,11 @@
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
-          appendMessageRow(rows, 9, 'error');
+          appendMessageRow(rows, 11, 'error');
           return;
         }
         if (!data.items.length) {
-          appendMessageRow(rows, 9, 'no data');
+          appendMessageRow(rows, 11, 'no data');
           return;
         }
         clearChildren(rows);
@@ -185,6 +187,8 @@
             item.title || '-',
             item.scenarioKey || '-',
             item.stepKey || '-',
+            item.targetCount,
+            item.targetCountSource || '-',
             item.deliveredCount,
             item.readCount,
             item.clickCount,
@@ -197,12 +201,12 @@
 
       document.getElementById('reload').addEventListener('click', () => {
         loadReadModel().catch(() => {
-          appendMessageRow(document.getElementById('rows'), 9, 'error');
+          appendMessageRow(document.getElementById('rows'), 11, 'error');
         });
       });
 
       loadReadModel().catch(() => {
-        appendMessageRow(document.getElementById('rows'), 9, 'error');
+        appendMessageRow(document.getElementById('rows'), 11, 'error');
       });
     </script>
   </body>

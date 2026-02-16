@@ -6,10 +6,13 @@ const { evaluateNotificationSummaryCompleteness } = require('../phase24/notifica
 const { getNotificationDecisionTrace } = require('../phase37/getNotificationDecisionTrace');
 const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
+const { getLatestNotificationPlan } = require('../adminOs/planNotificationSend');
 
 const WAIT_RULE_TYPE = 'TYPE_B';
 const WAIT_RULE_SOURCE_UNSET = 'ssot_unset';
 const WAIT_RULE_SOURCE_VALUE = 'ssot_value';
+const TARGET_COUNT_SOURCE_PLAN = 'plan_audit';
+const TARGET_COUNT_SOURCE_MISSING = 'plan_missing';
 const WAIT_RULE_VALUES = Object.freeze({
   '3mo': { baseDate: 'departureDate', offsetDays: -90 },
   '2mo': { baseDate: 'departureDate', offsetDays: -60 },
@@ -67,6 +70,27 @@ function resolveWaitRule(stepKey) {
   };
 }
 
+async function resolveTargetCount(notificationId) {
+  let targetCount = null;
+  let targetCountSource = TARGET_COUNT_SOURCE_MISSING;
+  if (!notificationId) {
+    return { targetCount, targetCountSource };
+  }
+  try {
+    const latestPlan = await getLatestNotificationPlan(notificationId);
+    const payloadCount = latestPlan && latestPlan.payloadSummary ? latestPlan.payloadSummary.count : null;
+    const snapshotCount = latestPlan && latestPlan.snapshot ? latestPlan.snapshot.count : null;
+    const count = typeof payloadCount === 'number' ? payloadCount : (typeof snapshotCount === 'number' ? snapshotCount : null);
+    if (typeof count === 'number') {
+      targetCount = count;
+      targetCountSource = TARGET_COUNT_SOURCE_PLAN;
+    }
+  } catch (_err) {
+    // best-effort only
+  }
+  return { targetCount, targetCountSource };
+}
+
 async function getNotificationReadModel(params) {
   const opts = params || {};
   let notifications = [];
@@ -96,6 +120,7 @@ async function getNotificationReadModel(params) {
       if (delivery.clickAt) clickCount += 1;
     }
     const waitRule = resolveWaitRule(notification.stepKey);
+    const { targetCount, targetCountSource } = await resolveTargetCount(notification.id);
     const reaction = await getNotificationReactionSummary({ notificationId: notification.id }, { deliveriesRepo: { listDeliveriesByNotificationId: async () => deliveries } });
     const reactionSummary = {
       sent: reaction.sent,
@@ -110,6 +135,8 @@ async function getNotificationReadModel(params) {
       stepKey: notification.stepKey || null,
       ctaText: notification.ctaText || null,
       linkRegistryId: notification.linkRegistryId || null,
+      targetCount,
+      targetCountSource,
       deliveredCount,
       readCount,
       clickCount,
