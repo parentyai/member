@@ -7,8 +7,11 @@ SSOT → ReadModel → UI → Test → CI の閉路保証をテストで固定�
 - `tests/phase191` に閉路保証テストを追加
 - `docs/PHASE191_EXECUTION_LOG.md` の追加
 
+## Scope IN (add-only / 追記)
+- SSOT参照キーのUI表示整合のための最小列追加（monitor/read_model）
+
 ## Scope OUT
-- UI構造変更
+- UI構造変更（リデザイン/情報設計の変更）
 - read-model ロジック変更
 - SSOT の意味変更
 
