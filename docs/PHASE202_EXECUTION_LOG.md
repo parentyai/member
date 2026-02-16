@@ -14,9 +14,9 @@ base: `origin/main` @ `8eebc61c963b0e1af9fa273b678b92fcefa9d57d`
 - `npm run test:docs`: PASS
 
 ## CI
-- run id: PENDING
-- log saved: PENDING
+- run id: 22048806424
+- log saved: `docs/CI_EVIDENCE/2026-02-16_22048806424_phase202.log`
 
 ## Close
-- CLOSE: NO
-- Reason: CI未実行
+- CLOSE: YES
+- Reason: tests PASS + docs PASS + CI PASS + evidence saved
