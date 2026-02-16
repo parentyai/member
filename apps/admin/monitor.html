@@ -44,25 +44,20 @@
       </div>
 
       <h1>配信結果（Monitor / READ ONLY）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>健康度 / 反応率 / 最終結果</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>DANGERから開く</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>status未指定で全件を見てしまう</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">
-              配信反応と健康状態を把握し、異常を見逃さない。
-              <div class="guide">
-                <div class="guide-item"><span class="guide-label">ここでできること</span><span>配信の反応と健康状態を一覧で確認する。</span></div>
-                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>health / CTR / lastExecuteReason。</span></div>
-                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>status未指定で全件を見てしまう。</span></div>
-              </div>
-            </div>
-          </div>
           <div id="monitor-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="monitor-status-pill" class="status-pill status-unknown">未取得</span>
               <span id="monitor-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
               <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+              <div class="status-meta">通知単位の健康度集計（一覧表示分）</div>
               <div class="status-focus">
                 <span>今日の要対応</span>
                 <span id="monitor-action-count" class="action-count">0</span>
@@ -71,29 +66,27 @@
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-            <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+            <div class="panel-title">操作パネル</div>
             <div class="panel-body">
-              <div class="note">通知単位の deliveries / click / read / CTR / health を表示（表示のみ）。</div>
-              <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所/戦略」を示す。</div>
-              <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
+              <div class="note">配信結果は表示のみです。内部キーの意味は項目のヘルプで確認できます。</div>
 
               <div class="note">
-                traceId:
-                <input type="text" id="traceId" class="input-inline input-trace" title="traceId" />
+                <span data-tip="traceId" tabindex="0">追跡ID</span>:
+                <input type="text" id="traceId" class="input-inline input-trace" title="監査や操作結果の追跡に使うID" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
               </div>
 
               <div class="note">
-                limit:
-                <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" title="limit" />
-                status:
-                <input type="text" id="status" placeholder="(optional)" class="input-inline input-sm" title="status" />
-                scenario:
-                <input type="text" id="scenarioKey" placeholder="(optional)" class="input-inline input-xs" title="scenarioKey" />
-                step:
-                <input type="text" id="stepKey" placeholder="(optional)" class="input-inline input-xs" title="stepKey" />
+                <span data-tip="limit" tabindex="0">件数</span>:
+                <input type="number" id="limit" min="1" max="200" value="50" class="input-inline input-sm" title="取得件数の上限" />
+                <span data-tip="status" tabindex="0">状態</span>:
+                <input type="text" id="status" placeholder="(任意)" class="input-inline input-sm" title="通知の状態で絞り込み" />
+                <span data-tip="scenarioKey" tabindex="0">シナリオ</span>:
+                <input type="text" id="scenarioKey" placeholder="(任意)" class="input-inline input-xs" title="シナリオで絞り込み" />
+                <span data-tip="stepKey" tabindex="0">ステップ</span>:
+                <input type="text" id="stepKey" placeholder="(任意)" class="input-inline input-xs" title="ステップで絞り込み" />
                 <button id="reload">reload</button>
                 <span id="note"></span>
               </div>
@@ -107,26 +100,26 @@
         </div>
       </div>
       <details class="table-section section" open>
-        <summary>配信結果（Monitor / READ ONLY）</summary>
-        <table>
+        <summary>配信結果（参照のみ）</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>notificationId</th>
-              <th>title</th>
-              <th>scenario</th>
-              <th>step</th>
-              <th>targetCount</th>
-              <th>targetCountSource</th>
-              <th>capCountMode</th>
-              <th>capCountSource</th>
-              <th>capCountStrategy</th>
-              <th>lastExecuteReason</th>
-              <th>sent</th>
-              <th>read</th>
-              <th>click</th>
-              <th>CTR</th>
-              <th>前週比（7日）</th>
-              <th>health</th>
+              <th data-tip="notificationId" tabindex="0">通知ID</th>
+              <th data-tip="title" tabindex="0">タイトル</th>
+              <th data-tip="scenarioKey" tabindex="0">シナリオ</th>
+              <th data-tip="stepKey" tabindex="0">ステップ</th>
+              <th data-tip="targetCount" tabindex="0">対象数</th>
+              <th data-tip="targetCountSource" tabindex="0">対象数の出所</th>
+              <th data-tip="capCountMode" tabindex="0">計数方式</th>
+              <th data-tip="capCountSource" tabindex="0">計数元</th>
+              <th data-tip="capCountStrategy" tabindex="0">計数戦略</th>
+              <th data-tip="lastExecuteReason" tabindex="0">最終結果（理由）</th>
+              <th data-tip="sentCount" tabindex="0">送信</th>
+              <th data-tip="readCount" tabindex="0">既読</th>
+              <th data-tip="clickCount" tabindex="0">クリック</th>
+              <th data-tip="ctr" tabindex="0">反応率</th>
+              <th data-tip="weekOverWeek.delta" tabindex="0">前週比（7日）</th>
+              <th data-tip="notificationHealth" tabindex="0">健康度</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -189,7 +182,10 @@
       function applyHeaderTooltips() {
         document.querySelectorAll('th').forEach((th) => {
           const text = (th.textContent || '').trim();
-          if (text && !th.title) th.title = text;
+          if (text && !th.dataset.tip) {
+            th.dataset.tip = text;
+            th.setAttribute('tabindex', '0');
+          }
         });
       }
 
@@ -344,13 +340,13 @@
           const data = await res.json();
           const rows = document.getElementById('rows');
           if (!data.ok) {
-            appendMessageRow(rows, 16, 'error');
+            appendMessageRow(rows, 16, '取得失敗');
             updateMonitorStatusSummary([]);
             renderMonitorDetail(null);
             return;
           }
           if (!data.items.length) {
-            appendMessageRow(rows, 16, 'no data');
+            appendMessageRow(rows, 16, 'データなし');
             updateMonitorStatusSummary([]);
             renderMonitorDetail(null);
             ok = true;
@@ -381,7 +377,7 @@
             else if (item && item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
             tr.addEventListener('click', () => renderMonitorDetail(item));
           }
-          document.getElementById('note').textContent = `items: ${data.items.length}`;
+          document.getElementById('note').textContent = `表示件数: ${data.items.length}`;
           updateMonitorStatusSummary(data.items);
           renderMonitorDetail(data.items[0] || null);
           ok = true;

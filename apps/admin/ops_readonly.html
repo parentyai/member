@@ -44,25 +44,20 @@
       </div>
 
       <h1>運用判断支援（Ops Console / READ ONLY）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>準備状況 / ブロック理由 / 最新判断</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>未準備の理由を先に確認</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>理由を確認せずに進める</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">
-              運用判断を安全に確定し、証跡を確認する。
-              <div class="guide">
-                <div class="guide-item"><span class="guide-label">ここでできること</span><span>判断に必要な情報をまとめて把握する。</span></div>
-                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>readiness / blocking / 最新 decision。</span></div>
-                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>NOT_READY理由の確認漏れ。</span></div>
-              </div>
-            </div>
-          </div>
           <div id="ops-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="ops-status-pill" class="status-pill status-unknown">未取得</span>
               <span id="ops-status-summary" class="status-legend">READY: - / NOT_READY: -</span>
               <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
+              <div class="status-meta">運用判断対象の READY/NOT_READY 件数（一覧表示分）</div>
               <div class="status-focus">
                 <span>今日の要対応</span>
                 <span id="ops-action-count" class="action-count">0</span>
@@ -71,8 +66,8 @@
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+      <div class="panel-title">操作パネル</div>
       <div class="panel-body">
         <div class="note">表示のみ。判断と操作は人間が行います。</div>
         <div class="note">
@@ -88,8 +83,8 @@
           <a href="/admin/monitor">配信結果（Monitor）</a> |
           <a href="/admin/errors">エラー一覧（Errors）</a> |
           <a href="/admin/master">設定/回復（Master）</a> |
-          <a href="#trace-search">Trace Search</a> |
-          <a href="#implementation-targets">Implementation Targets</a>
+          <a href="#trace-search">監査検索</a> |
+          <a href="#implementation-targets">実装対象</a>
         </div>
         <div id="ops-skeleton" class="skeleton-stack is-hidden">
           <div class="skeleton-line lg w-50"></div>
@@ -98,87 +93,87 @@
         </div>
 
     <div class="section" id="operations">
-      <h2>Operations（安全操作）</h2>
-      <div class="note">危険操作（kill switch）は confirm token 必須。</div>
+      <h2>安全操作</h2>
+      <div class="note">送信停止の切替は確認トークン必須です。</div>
       <div class="note">
-        killSwitch: <span id="kill-switch-state">-</span>
-        / planHash: <span id="kill-switch-plan-hash">-</span>
-        / confirmToken: <span id="kill-switch-confirm-token">-</span>
+        <span data-tip="killSwitch" tabindex="0">送信停止</span>: <span id="kill-switch-state">-</span>
+        / <span data-tip="planHash" tabindex="0">計画ハッシュ</span>: <span id="kill-switch-plan-hash">-</span>
+        / <span data-tip="confirmToken" tabindex="0">確認トークン</span>: <span id="kill-switch-confirm-token">-</span>
       </div>
       <div class="note">
-        <button class="btn" id="kill-switch-refresh">refresh</button>
-        <button class="btn" id="kill-switch-plan-on">plan ON</button>
-        <button class="btn" id="kill-switch-plan-off">plan OFF</button>
-        <button class="btn" id="kill-switch-set">set</button>
+        <button class="btn" id="kill-switch-refresh">更新</button>
+        <button class="btn" id="kill-switch-plan-on">ON計画</button>
+        <button class="btn" id="kill-switch-plan-off">OFF計画</button>
+        <button class="btn" id="kill-switch-set">適用</button>
       </div>
       <pre id="kill-switch-result">-</pre>
     </div>
 
     <div class="section" id="trace-search">
-      <h2>Trace Search（監査）</h2>
-      <div class="note">traceId を入力して audit_logs / decision_logs / decision_timeline を参照。</div>
+      <h2>監査検索</h2>
+      <div class="note">追跡IDを入力して監査ログを確認します。</div>
       <div class="note">
-        traceId: <input type="text" id="trace-search-trace-id" class="input-inline input-min-260" />
-        limit: <input type="number" id="trace-search-limit" min="1" max="200" value="50" class="input-inline" />
+        <span data-tip="traceId" tabindex="0">追跡ID</span>: <input type="text" id="trace-search-trace-id" class="input-inline input-min-260" />
+        <span data-tip="limit" tabindex="0">件数</span>: <input type="number" id="trace-search-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="trace-search-run">検索</button>
       </div>
       <pre id="trace-search-result">-</pre>
     </div>
 
     <div class="section" id="notification-test">
-      <h2>Notification Test（Dry-run / Self-send）</h2>
-      <div class="note">dry-run は validators のみ検証し、delivery/LINE送信は行わない。</div>
-      <div class="note">self-send は validators + killSwitch を通過し、指定 lineUserId に1件だけ送信する。</div>
+      <h2>通知テスト（検証 / 自己送信）</h2>
+      <div class="note">検証のみはガード確認だけ行い、送信はしません。</div>
+      <div class="note">自己送信はガード通過後に1件だけ送信します。</div>
       <div class="note">
-        notificationId: <input type="text" id="notification-test-id" class="input-inline input-min-260" />
-        lineUserId: <input type="text" id="notification-test-line-user-id" class="input-inline input-min-260" />
+        <span data-tip="notificationId" tabindex="0">通知ID</span>: <input type="text" id="notification-test-id" class="input-inline input-min-260" />
+        <span data-tip="lineUserId" tabindex="0">LINEユーザーID</span>: <input type="text" id="notification-test-line-user-id" class="input-inline input-min-260" />
       </div>
       <div class="note">
-        <button class="btn" id="notification-test-dry-run">dry-run</button>
-        <button class="btn" id="notification-test-self-send">self-send</button>
+        <button class="btn" id="notification-test-dry-run">検証のみ</button>
+        <button class="btn" id="notification-test-self-send">自己送信</button>
       </div>
       <pre id="notification-test-result">-</pre>
     </div>
 
     <div class="section" id="user-timeline">
-      <h2>User Timeline（指定ユーザー履歴）</h2>
-      <div class="note">notification_deliveries / decision_timeline / audit_logs / events を統合表示。</div>
+      <h2>ユーザー履歴（指定ユーザー）</h2>
+      <div class="note">配信履歴・判断履歴・監査ログをまとめて表示します。</div>
       <div class="note">
-        lineUserId: <input type="text" id="user-timeline-line-user-id" class="input-inline input-min-260" />
-        limit: <input type="number" id="user-timeline-limit" min="1" max="200" value="50" class="input-inline" />
+        <span data-tip="lineUserId" tabindex="0">LINEユーザーID</span>: <input type="text" id="user-timeline-line-user-id" class="input-inline input-min-260" />
+        <span data-tip="limit" tabindex="0">件数</span>: <input type="number" id="user-timeline-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="user-timeline-run">検索</button>
       </div>
       <pre id="user-timeline-result">-</pre>
     </div>
 
     <div class="section">
-      <h2>ユーザー状態一覧（READ ONLY）</h2>
+      <h2>ユーザー状態一覧（参照のみ）</h2>
       <div class="note">期間フィルタ（UTC）</div>
       <div class="note">
-        from: <input type="date" id="users-from" class="input-inline" />
-        to: <input type="date" id="users-to" class="input-inline" />
+        <span data-tip="from" tabindex="0">開始日</span>: <input type="date" id="users-from" class="input-inline" />
+        <span data-tip="to" tabindex="0">終了日</span>: <input type="date" id="users-to" class="input-inline" />
         <button class="btn" id="users-apply">適用</button>
       </div>
       <div class="note">
-        <label><input type="checkbox" id="filter-needsAttention" /> needsAttention</label>
-        <label><input type="checkbox" id="filter-stale" /> stale</label>
-        <label><input type="checkbox" id="filter-unreviewed" /> unreviewed</label>
-        <label>reviewAgeDays: <input type="number" id="filter-reviewAgeDays" min="1" max="365" class="input-inline" /></label>
+        <label data-tip="needsAttention" tabindex="0"><input type="checkbox" id="filter-needsAttention" /> 注意が必要</label>
+        <label data-tip="stale" tabindex="0"><input type="checkbox" id="filter-stale" /> 反応なし</label>
+        <label data-tip="unreviewed" tabindex="0"><input type="checkbox" id="filter-unreviewed" /> 未レビュー</label>
+        <label data-tip="reviewAgeDays" tabindex="0">レビュー経過日数: <input type="number" id="filter-reviewAgeDays" min="1" max="365" class="input-inline" /></label>
       </div>
       <div class="note" id="user-summary-note"></div>
       <details class="table-section" open>
-        <summary>ユーザー状態一覧（READ ONLY）</summary>
-        <table>
+        <summary>ユーザー状態一覧（参照のみ）</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>lineUserId</th>
-              <th>memberNumber</th>
-              <th>checklist</th>
-              <th>stale</th>
-              <th>needsAttention</th>
-              <th>lastReviewedAt</th>
-              <th>lastReviewedBy</th>
-              <th>lastActionAt</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="memberNumber" tabindex="0">会員番号</th>
+              <th data-tip="checklist" tabindex="0">チェックリスト</th>
+              <th data-tip="stale" tabindex="0">反応なし</th>
+              <th data-tip="needsAttention" tabindex="0">注意</th>
+              <th data-tip="lastReviewedAt" tabindex="0">最終レビュー</th>
+              <th data-tip="lastReviewedBy" tabindex="0">レビュー担当</th>
+              <th data-tip="lastActionAt" tabindex="0">最終行動</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -190,22 +185,22 @@
     <div class="section">
       <h2>通知状態一覧</h2>
       <div class="note">期間フィルタ（UTC）</div>
-      <div class="note">最終反応はLINE-only定義（click優先、readは補助、openは内部イベント扱い）</div>
+      <div class="note">最終反応はLINEの反応（クリック優先、既読は補助）で算出します。</div>
       <div class="note">
-        from: <input type="date" id="notifications-from" class="input-inline" />
-        to: <input type="date" id="notifications-to" class="input-inline" />
+        <span data-tip="from" tabindex="0">開始日</span>: <input type="date" id="notifications-from" class="input-inline" />
+        <span data-tip="to" tabindex="0">終了日</span>: <input type="date" id="notifications-to" class="input-inline" />
         <button class="btn" id="notifications-apply">適用</button>
       </div>
       <details class="table-section" open>
         <summary>通知状態一覧</summary>
-        <table>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>notificationId</th>
-              <th>sentAt</th>
-              <th>open</th>
-              <th>click</th>
-              <th>最終反応（LINE定義）</th>
+              <th data-tip="notificationId" tabindex="0">通知ID</th>
+              <th data-tip="sentAt" tabindex="0">送信日時</th>
+              <th data-tip="open" tabindex="0">開封（参考）</th>
+              <th data-tip="click" tabindex="0">クリック</th>
+              <th data-tip="lastReactionAt" tabindex="0">最終反応</th>
               <th>詳細</th>
             </tr>
           </thead>
@@ -215,24 +210,24 @@
     </div>
 
     <div class="section" id="ops-dashboard-section">
-      <h2>Ops Dashboard（参考）</h2>
-      <div class="note">ユーザー×通知×notice×decision を一覧で参照。</div>
+      <h2>運用ダッシュボード（参考）</h2>
+      <div class="note">運用判断に関わる履歴をまとめて確認します。</div>
       <div class="note">
-        limit: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" class="input-inline" />
+        <span data-tip="limit" tabindex="0">件数</span>: <input type="number" id="ops-dashboard-limit" min="1" max="200" value="20" class="input-inline" />
         <button class="btn" id="ops-dashboard-refresh">更新</button>
       </div>
       <div class="note" id="ops-dashboard-note"></div>
       <div class="note" id="ops-dashboard-error"></div>
       <details class="table-section" open>
-        <summary>Ops Dashboard（参考）</summary>
-        <table>
+        <summary>運用ダッシュボード（参考）</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>lineUserId</th>
-              <th>memberNumber</th>
-              <th>lastDelivery</th>
-              <th>lastNoticeSent</th>
-              <th>latestDecisionLog</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="memberNumber" tabindex="0">会員番号</th>
+              <th data-tip="lastDelivery" tabindex="0">最終配信</th>
+              <th data-tip="lastNoticeSent" tabindex="0">最終通知</th>
+              <th data-tip="latestDecisionLog" tabindex="0">最新判断</th>
             </tr>
           </thead>
           <tbody id="ops-dashboard-rows"></tbody>
@@ -240,27 +235,27 @@
       </details>
     </div>
 
-    <div class="section" id="ops-console-list-section">
-      <h2>Ops Console（一覧）</h2>
-      <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
-      <div class="note">
-        limit: <input type="number" id="ops-console-limit" min="1" max="200" value="20" class="input-inline" />
+      <div class="section" id="ops-console-list-section">
+        <h2>運用判断一覧</h2>
+        <div class="note">運用判断の一覧（READY優先・安定ソート）。</div>
+        <div class="note">
+        <span data-tip="limit" tabindex="0">件数</span>: <input type="number" id="ops-console-limit" min="1" max="200" value="20" class="input-inline" />
         <button class="btn" id="ops-console-refresh">更新</button>
       </div>
       <div class="note" id="ops-console-list-note"></div>
       <div class="note" id="ops-console-list-error"></div>
       <details class="table-section" open>
-        <summary>Ops Console（一覧）</summary>
-        <table>
+        <summary>運用判断一覧</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>lineUserId</th>
-              <th>readiness</th>
-              <th>recommendedNextAction</th>
-              <th>allowedNextActions</th>
-              <th>opsState.nextAction</th>
-              <th>latestDecisionLog</th>
-              <th>LLM suggestion</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="readiness.status" tabindex="0">準備状況</th>
+              <th data-tip="recommendedNextAction" tabindex="0">推奨アクション</th>
+              <th data-tip="allowedNextActions" tabindex="0">選べるアクション</th>
+              <th data-tip="opsState.nextAction" tabindex="0">現在の判断</th>
+              <th data-tip="latestDecisionLog" tabindex="0">最新判断</th>
+              <th data-tip="llmSuggestion" tabindex="0">参考提案</th>
               <th>詳細</th>
             </tr>
           </thead>
@@ -269,59 +264,51 @@
       </details>
     </div>
 
-    <div class="section" id="ops-console-detail-section">
-      <h2>Ops Console 詳細</h2>
-      <div class="note">lineUserId: <span id="ops-console-detail-line-user-id">-</span></div>
-      <div class="note">servicePhase（サービス提供phase SSOT）: <span id="ops-console-detail-service-phase">-</span></div>
-      <div class="note">notificationPreset（SSOT）: <span id="ops-console-detail-notification-preset">-</span></div>
-      <div class="note">notificationCaps.perUserWeeklyCap（SSOT）: <span id="ops-console-detail-notification-cap-weekly">-</span></div>
+      <div class="section" id="ops-console-detail-section">
+        <h2>運用判断詳細</h2>
+      <div class="note"><span data-tip="lineUserId" tabindex="0">LINEユーザーID</span>: <span id="ops-console-detail-line-user-id">-</span></div>
+      <div class="note"><span data-tip="servicePhase" tabindex="0">サービスフェーズ</span>: <span id="ops-console-detail-service-phase">-</span></div>
+      <div class="note"><span data-tip="notificationPreset" tabindex="0">通知プリセット</span>: <span id="ops-console-detail-notification-preset">-</span></div>
+      <div class="note"><span data-tip="notificationCaps.perUserWeeklyCap" tabindex="0">週あたり上限</span>: <span id="ops-console-detail-notification-cap-weekly">-</span></div>
       <div class="note" id="ops-console-detail-error"></div>
       <div class="note">
-        traceId:
+        <span data-tip="traceId" tabindex="0">追跡ID</span>:
         <a href="#trace-search" id="ops-console-detail-trace-id">-</a>
-        / viewAuditId: <span id="ops-console-detail-view-audit-id">-</span>
+        / <span data-tip="viewAuditId" tabindex="0">画面監査ID</span>: <span id="ops-console-detail-view-audit-id">-</span>
       </div>
-      <div>
-        readiness.status:
-        <span id="ops-console-detail-readiness-status">-</span>
-        <span id="ops-console-detail-danger-badge" class="badge">-</span>
-      </div>
-      <div>
-        riskLevel:
-        <span id="ops-console-detail-risk-level">-</span>
-        <span id="ops-console-detail-risk-badge" class="badge">-</span>
-      </div>
-      <div>blockingReasons: <span id="ops-console-detail-blocking-reasons">-</span></div>
-      <div>lastReactionAt（LINE定義）: <span id="ops-console-detail-last-reaction-at">-</span></div>
-      <div>stopReason: <span id="ops-console-detail-stop-reason">-</span></div>
-      <div>execution: <span id="ops-console-detail-execution-message">-</span></div>
-      <div>latestDecisionSummary:</div>
+      <div><span data-tip="readiness.status" tabindex="0">準備状況</span>: <span id="ops-console-detail-readiness-status">-</span> <span id="ops-console-detail-danger-badge" class="badge">-</span></div>
+      <div><span data-tip="riskLevel" tabindex="0">リスク</span>: <span id="ops-console-detail-risk-level">-</span> <span id="ops-console-detail-risk-badge" class="badge">-</span></div>
+      <div><span data-tip="blockingReasons" tabindex="0">ブロック理由</span>: <span id="ops-console-detail-blocking-reasons">-</span></div>
+      <div><span data-tip="lastReactionAt" tabindex="0">最終反応</span>: <span id="ops-console-detail-last-reaction-at">-</span></div>
+      <div><span data-tip="stopReason" tabindex="0">停止理由</span>: <span id="ops-console-detail-stop-reason">-</span></div>
+      <div><span data-tip="execution" tabindex="0">実行結果</span>: <span id="ops-console-detail-execution-message">-</span></div>
+      <div>最新判断サマリ:</div>
       <pre id="ops-console-detail-latest-decision-summary">-</pre>
-      <div>recommendedNextAction: <span id="ops-console-detail-recommended">-</span></div>
-      <div>allowedNextActions: <span id="ops-console-detail-allowed">-</span></div>
-      <div>readiness:</div>
+      <div><span data-tip="recommendedNextAction" tabindex="0">推奨アクション</span>: <span id="ops-console-detail-recommended">-</span></div>
+      <div><span data-tip="allowedNextActions" tabindex="0">選べるアクション</span>: <span id="ops-console-detail-allowed">-</span></div>
+      <div>準備状況（詳細）:</div>
       <pre id="ops-console-detail-readiness">-</pre>
-      <div>opsState:</div>
+      <div>運用状態:</div>
       <pre id="ops-console-detail-ops-state">-</pre>
-      <div>latestDecisionLog:</div>
+      <div>最新判断ログ:</div>
       <pre id="ops-console-detail-latest-decision">-</pre>
-      <div>userStateSummary:</div>
+      <div>ユーザー状態:</div>
       <pre id="ops-console-detail-user-summary">-</pre>
-      <div>memberSummary:</div>
+      <div>会員状態:</div>
       <pre id="ops-console-detail-member-summary">-</pre>
-      <div>Redac（derived）: <span id="ops-console-detail-redac-status">-</span></div>
-      <div>llmSuggestion:</div>
+      <div><span data-tip="redacStatus" tabindex="0">会員状態（補足）</span>: <span id="ops-console-detail-redac-status">-</span></div>
+      <div>LLM提案:</div>
       <pre id="ops-console-detail-llm-suggestion">-</pre>
-      <div>suggestion(schema):</div>
+      <div>提案スキーマ:</div>
       <pre id="ops-console-detail-suggestion-schema">-</pre>
-      <div>lastSuggestionAuditId: <span id="ops-console-detail-suggestion-audit-id">-</span></div>
-      <div>llmSuggestion summary:</div>
-      <div>suggestedNextAction: <span id="ops-console-detail-suggested-action">-</span></div>
-      <div>safety:</div>
+      <div><span data-tip="lastSuggestionAuditId" tabindex="0">提案監査ID</span>: <span id="ops-console-detail-suggestion-audit-id">-</span></div>
+      <div>提案要約:</div>
+      <div><span data-tip="suggestedNextAction" tabindex="0">提案アクション</span>: <span id="ops-console-detail-suggested-action">-</span></div>
+      <div>安全性:</div>
       <pre id="ops-console-detail-safety">-</pre>
-      <div>evidence:</div>
+      <div>根拠:</div>
       <pre id="ops-console-detail-evidence">-</pre>
-      <div>phase39Suggestion:</div>
+      <div>旧提案（履歴）:</div>
       <pre id="ops-console-detail-phase39-suggestion">-</pre>
       <div>phase39AuditId: <span id="ops-console-detail-phase39-audit-id">-</span></div>
 
@@ -330,24 +317,24 @@
       <pre id="ops-console-detail-llm-explanation">-</pre>
 
       <h3>Next Action Candidates（abstract）</h3>
-      <div>nextActionCandidates status: <span id="ops-console-detail-next-actions-status">-</span></div>
+      <div><span data-tip="nextActionCandidates.status" tabindex="0">次アクション候補（状態）</span>: <span id="ops-console-detail-next-actions-status">-</span></div>
       <pre id="ops-console-detail-next-actions">-</pre>
 
-      <h3>Notification Health（add-only）</h3>
-      <div class="note">通知の sent/click/read をSSOT（notification_deliveries）から再計算した read-model に基づく（表示のみ）。</div>
-      <div>notificationHealthSummary:</div>
+      <h3>通知の健康度（参照のみ）</h3>
+      <div class="note">配信結果を集計した健康度サマリです（表示のみ）。</div>
+      <div>健康度サマリ:</div>
       <pre id="ops-console-detail-notification-health-summary">-</pre>
-      <div>topUnhealthyNotifications:</div>
+      <div>不健康通知（上位）:</div>
       <pre id="ops-console-detail-top-unhealthy">-</pre>
-      <div>mitigationSuggestion（advisory）:</div>
+      <div>改善提案（参考）:</div>
       <pre id="ops-console-detail-mitigation-suggestion">-</pre>
 
-      <h3>Ops Decision Submit</h3>
-      <div class="note">allowedNextActions のみ選択可。</div>
+      <h3>判断の記録</h3>
+      <div class="note">選べるアクションのみ選択できます。</div>
       <div class="note">
-        nextAction:
+        <span data-tip="nextAction" tabindex="0">アクション</span>:
         <select id="ops-decision-action" class="select-inline"></select>
-        failure_class:
+        <span data-tip="failure_class" tabindex="0">失敗分類</span>:
         <select id="ops-decision-failure-class" class="select-inline">
           <option value="PASS">PASS</option>
           <option value="ENV">ENV</option>
@@ -357,66 +344,66 @@
         </select>
       </div>
       <div class="note">
-        reasonCode: <input type="text" id="ops-decision-reason-code" class="input-inline" />
-        stage: <input type="text" id="ops-decision-stage" class="input-inline" />
+        <span data-tip="reasonCode" tabindex="0">理由コード</span>: <input type="text" id="ops-decision-reason-code" class="input-inline" />
+        <span data-tip="stage" tabindex="0">段階</span>: <input type="text" id="ops-decision-stage" class="input-inline" />
       </div>
       <div class="note">
-        note: <input type="text" id="ops-decision-note" class="input-inline" />
-        <button class="btn" id="ops-decision-submit">submit</button>
+        <span data-tip="note" tabindex="0">メモ</span>: <input type="text" id="ops-decision-note" class="input-inline" />
+        <button class="btn" id="ops-decision-submit">保存</button>
       </div>
       <div class="note">
-        <button class="btn" id="ops-decision-use-suggestion">Use Suggestion</button>
+        <button class="btn" id="ops-decision-use-suggestion">提案を反映</button>
         <span id="ops-decision-use-suggestion-note"></span>
       </div>
       <div class="note">
-        notification mitigation decision（advisory）:
+        <span data-tip="mitigationDecision" tabindex="0">改善提案の扱い</span>:
         <select id="ops-mitigation-decision" class="select-inline">
           <option value="">(no record)</option>
           <option value="SKIP">SKIP</option>
           <option value="ADOPT">ADOPT</option>
           <option value="REJECT">REJECT</option>
         </select>
-        note: <input type="text" id="ops-mitigation-note" class="input-inline" />
+        <span data-tip="note" tabindex="0">メモ</span>: <input type="text" id="ops-mitigation-note" class="input-inline" />
       </div>
       <pre id="ops-decision-result">-</pre>
     </div>
 
     <div class="section" id="segment-send-section">
-      <h2>Segment Send（Plan / Execute）</h2>
-      <div class="note">Plan/Execute は人間操作。送信自体は Phase68 のガードに従う。</div>
+      <h2>セグメント送信（計画 / 実行）</h2>
+      <div class="note">計画と実行は人間操作です。送信は既存ガードに従います。</div>
       <div class="note">
-        templateKey:
+        <span data-tip="templateKey" tabindex="0">テンプレ</span>:
         <input type="text" id="segment-template-key" class="input-inline" />
-        templateVersion:
+        <span data-tip="templateVersion" tabindex="0">バージョン</span>:
         <input type="number" id="segment-template-version" min="1" class="input-inline" />
-        savedSegment:
+        <span data-tip="savedSegment" tabindex="0">保存済みセグメント</span>:
         <select id="saved-segment-select" class="select-inline"></select>
-        readiness:
+        <span data-tip="readiness.status" tabindex="0">準備状況</span>:
         <select id="segment-readiness" class="select-inline">
           <option value="">ALL</option>
           <option value="READY">READY</option>
           <option value="NOT_READY">NOT_READY</option>
         </select>
-        needsAttention:
+        <span data-tip="needsAttention" tabindex="0">注意</span>:
         <input type="checkbox" id="segment-needs-attention" />
-        hasMemberNumber:
+        <span data-tip="hasMemberNumber" tabindex="0">会員番号</span>:
         <select id="segment-has-member-number" class="select-inline">
           <option value="any">any</option>
           <option value="true">yes</option>
           <option value="false">no</option>
         </select>
-        redacStatus:
+        <span data-tip="redacStatus" tabindex="0">会員状態</span>:
         <select id="segment-redac-status" class="select-inline">
           <option value="any">any</option>
           <option value="DECLARED">declared</option>
           <option value="UNLINKED">unlinked</option>
           <option value="NONE">none</option>
         </select>
-        limit:
+        <span data-tip="limit" tabindex="0">件数</span>:
         <input type="number" id="segment-limit" min="1" max="200" value="50" class="input-inline" />
-        <button class="btn" id="segment-plan">Plan</button>
-        <button class="btn" id="segment-dryrun">Dry-run</button>
-        <button class="btn" id="segment-execute">Execute</button>
+        <button class="btn" id="segment-plan">計画</button>
+        <button class="btn" id="segment-dryrun">検証</button>
+        <button class="btn" id="segment-execute">実行</button>
       </div>
       <div class="note" id="segment-plan-note"></div>
       <pre id="segment-plan-result">-</pre>
@@ -427,26 +414,26 @@
     </div>
 
     <div class="section" id="retry-queue-section">
-      <h2>再試行キュー（READ ONLY + Manual Retry）</h2>
-      <div class="note">PENDING の再送キュー一覧。危険操作（retry）は plan → confirmToken → retry を固定する。</div>
+      <h2>再送待ち（参照のみ）</h2>
+      <div class="note">再送待ちの一覧です。実行は計画→確認トークン→再送の順です。</div>
       <div class="note">
-        limit:
+        <span data-tip="limit" tabindex="0">件数</span>:
         <input type="number" id="retry-queue-limit" min="1" max="200" value="50" class="input-inline" />
         <button class="btn" id="retry-queue-refresh">更新</button>
       </div>
       <div class="note" id="retry-queue-note"></div>
       <div class="note" id="retry-queue-error"></div>
       <details class="table-section" open>
-        <summary>再試行キュー（READ ONLY + Manual Retry）</summary>
-        <table>
+        <summary>再送待ち（参照のみ）</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>queueId</th>
-              <th>lineUserId</th>
-              <th>templateKey</th>
-              <th>status</th>
-              <th>lastError</th>
-              <th>updatedAt</th>
+              <th data-tip="queueId" tabindex="0">キューID</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="templateKey" tabindex="0">テンプレ</th>
+              <th data-tip="status" tabindex="0">状態</th>
+              <th data-tip="lastError" tabindex="0">最終エラー</th>
+              <th data-tip="updatedAt" tabindex="0">更新日時</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -457,16 +444,16 @@
     </div>
 
     <div class="section">
-      <h2>memberNumber 未入力（14日超）</h2>
+      <h2>会員番号未入力（14日超）</h2>
       <div class="note" id="member-stale-count"></div>
       <details class="table-section" open>
-        <summary>memberNumber 未入力（14日超）</summary>
-        <table>
+        <summary>会員番号未入力（14日超）</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>lineUserId</th>
-              <th>createdAt</th>
-              <th>daysSinceCreated</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="createdAt" tabindex="0">登録日</th>
+              <th data-tip="daysSinceCreated" tabindex="0">経過日数</th>
             </tr>
           </thead>
           <tbody id="member-stale-rows"></tbody>
@@ -475,24 +462,24 @@
     </div>
 
     <div class="section">
-      <h2>Last reviewed</h2>
+      <h2>レビュー最終日</h2>
       <div class="note">手動入力のみ（閲覧や集計では更新しない）</div>
-      <div>At: <span id="ops-review-at">-</span></div>
-      <div>By: <span id="ops-review-by">-</span></div>
+      <div><span data-tip="reviewedAt" tabindex="0">最終レビュー日時</span>: <span id="ops-review-at">-</span></div>
+      <div><span data-tip="reviewedBy" tabindex="0">最終レビュー担当</span>: <span id="ops-review-by">-</span></div>
     </div>
 
     <div class="section" id="implementation-targets">
-      <h2>Implementation Targets</h2>
-      <div class="note">READ ONLY（参照のみ）</div>
+      <h2>実装対象</h2>
+      <div class="note">参照のみ</div>
       <details class="table-section" open>
-        <summary>Implementation Targets</summary>
-        <table>
+        <summary>実装対象</summary>
+        <table class="table-compact">
           <thead>
             <tr>
-              <th>id</th>
-              <th>name</th>
-              <th>tag</th>
-              <th>status</th>
+              <th data-tip="id" tabindex="0">ID</th>
+              <th data-tip="name" tabindex="0">名称</th>
+              <th data-tip="tag" tabindex="0">タグ</th>
+              <th data-tip="status" tabindex="0">状態</th>
             </tr>
           </thead>
           <tbody id="implementation-targets-rows"></tbody>
@@ -576,13 +563,18 @@
       function applyHeaderTooltips() {
         document.querySelectorAll('th').forEach((th) => {
           const text = (th.textContent || '').trim();
-          if (text && !th.title) th.title = text;
+          if (text && !th.dataset.tip) {
+            th.dataset.tip = text;
+            th.setAttribute('tabindex', '0');
+          }
         });
       }
 
       function applyInputTooltips() {
         document.querySelectorAll('input, select, textarea').forEach((el) => {
-          if (el.id && !el.title) el.title = el.id;
+          if (el.id && !el.dataset.tip) {
+            el.dataset.tip = el.id;
+          }
         });
       }
 
@@ -702,11 +694,11 @@
         const note = document.getElementById('user-summary-note');
         renderReview(data.review);
         if (!data.ok) {
-          renderTableMessage(rows, 9, 'error');
+          renderTableMessage(rows, 9, '取得失敗');
           return false;
         }
         if (!data.items.length) {
-          renderTableMessage(rows, 9, 'no data');
+          renderTableMessage(rows, 9, 'データなし');
           return true;
         }
         clearChildren(rows);
@@ -759,9 +751,9 @@
         const summary = await summaryRes.json();
         if (summary.ok && summary.item) {
           const item = summary.item;
-          note.textContent = `summary: ${item.lineUserId} / memberNumber: ${item.hasMemberNumber ? 'あり' : 'なし'} / checklist: ${item.checklistCompleted}/${item.checklistTotal} / lastActionAt: ${item.lastActionAt || '-'}`;
+          note.textContent = `サマリ: LINEユーザーID ${item.lineUserId} / 会員番号 ${item.hasMemberNumber ? 'あり' : 'なし'} / チェックリスト ${item.checklistCompleted}/${item.checklistTotal} / 最終行動 ${item.lastActionAt || '-'}`;
         } else {
-          note.textContent = 'summary: unavailable';
+          note.textContent = 'サマリ: 取得不可';
         }
         return true;
       }
@@ -771,11 +763,11 @@
         const data = await res.json();
         const rows = document.getElementById('notifications-rows');
         if (!data.ok) {
-          renderTableMessage(rows, 6, 'error');
+          renderTableMessage(rows, 6, '取得失敗');
           return false;
         }
         if (!data.items.length) {
-          renderTableMessage(rows, 6, 'no data');
+          renderTableMessage(rows, 6, 'データなし');
           return true;
         }
         clearChildren(rows);
@@ -848,7 +840,7 @@
             renderOpsDashboard([]);
             return false;
           }
-          setText(note, `serverTime: ${data.serverTime || '-'}`);
+          setText(note, `サーバ時刻: ${data.serverTime || '-'}`);
           renderOpsDashboard(Array.isArray(data.items) ? data.items : []);
           return true;
         } catch (err) {
@@ -865,7 +857,7 @@
         const rows = document.getElementById('member-stale-rows');
         if (!data.ok) {
           countEl.textContent = 'error';
-          renderTableMessage(rows, 3, 'error');
+          renderTableMessage(rows, 3, '取得失敗');
           return;
         }
         countEl.textContent = `count: ${data.count}`;
@@ -908,11 +900,11 @@
         const rows = document.getElementById('implementation-targets-rows');
         const data = await res.json();
         if (!Array.isArray(data)) {
-          renderTableMessage(rows, 4, 'error');
+          renderTableMessage(rows, 4, '取得失敗');
           return;
         }
         if (!data.length) {
-          renderTableMessage(rows, 4, 'no data');
+          renderTableMessage(rows, 4, 'データなし');
           return;
         }
         clearChildren(rows);
@@ -1024,15 +1016,15 @@
         const lineUserId = document.getElementById('notification-test-line-user-id').value.trim();
         const resultEl = document.getElementById('notification-test-result');
         if (!notificationId) {
-          setText(resultEl, 'notificationId required');
+          setText(resultEl, '通知IDが必要です');
           return { ok: false };
         }
         if (mode === 'self_send' && !lineUserId) {
-          setText(resultEl, 'lineUserId required');
+          setText(resultEl, 'LINEユーザーIDが必要です');
           return { ok: false };
         }
         if (mode === 'self_send') {
-          const confirmed = window.confirm(`self-send: ${notificationId} -> ${lineUserId} を実行しますか？`);
+          const confirmed = window.confirm(`自己送信: ${notificationId} → ${lineUserId} を実行しますか？`);
           if (!confirmed) {
             setText(resultEl, 'cancelled');
             return { ok: false, cancelled: true };
@@ -1207,7 +1199,7 @@
           setText(stateEl, summary.killSwitch ? 'ON' : 'OFF');
         }
         if (summary.ok && summary.planHash) setText(planHashEl, summary.planHash);
-        if (summary.ok && summary.confirmToken) setText(tokenEl, 'set');
+        if (summary.ok && summary.confirmToken) setText(tokenEl, '設定済み');
         setText(resultEl, formatJson(summary));
       }
 
@@ -1235,8 +1227,8 @@
 
       async function handleKillSwitchSet() {
         if (!killSwitchPlanCache || !killSwitchPlanCache.planHash || !killSwitchPlanCache.confirmToken) {
-          renderKillSwitchSummary({ ok: false, error: 'plan required' });
-          return { ok: false, error: 'plan required' };
+          renderKillSwitchSummary({ ok: false, error: '計画が必要です' });
+          return { ok: false, error: '計画が必要です' };
         }
         const data = await setKillSwitchPlanned(killSwitchPlanCache);
         renderKillSwitchSummary(data);
@@ -1543,7 +1535,7 @@
 	        const note = document.getElementById('segment-plan-note');
 	        const resultEl = document.getElementById('segment-plan-result');
 	        if (!result || !result.ok) {
-	          setText(note, 'plan error');
+	          setText(note, '計画取得失敗');
           setText(resultEl, formatJson(result || {}));
           return;
 	        }
@@ -1557,13 +1549,13 @@
 	        const note = document.getElementById('segment-dryrun-note');
 	        const resultEl = document.getElementById('segment-dryrun-result');
 	        if (!result || !result.ok) {
-	          setText(note, 'dry-run error');
+	          setText(note, '検証失敗');
           setText(resultEl, formatJson(result || {}));
           return;
 	        }
 	        const sample = Array.isArray(result.targetsSample) ? result.targetsSample.join(', ') : '-';
 	        const traceId = result.traceId || '-';
-	        setText(note, `traceId: ${traceId} / targetCount: ${result.targetCount} / confirmToken: ${result.confirmToken || '-'} / sample: ${sample}`);
+	        setText(note, `追跡ID: ${traceId} / 対象数: ${result.targetCount} / 確認トークン: ${result.confirmToken || '-'} / 例: ${sample}`);
 	        setText(resultEl, formatJson(result));
 	      }
 
@@ -1571,7 +1563,7 @@
 	        const note = document.getElementById('segment-execute-note');
 	        const resultEl = document.getElementById('segment-execute-result');
 	        if (!result) {
-	          setText(note, 'execute error');
+	          setText(note, '実行失敗');
           setText(resultEl, '-');
           return;
 	        }
@@ -1652,7 +1644,7 @@
             if (!qid) return;
             const plan = retryQueuePlanCache[qid];
             if (!plan || !plan.planHash || !plan.confirmToken) {
-              setText(errorEl, 'plan required');
+              setText(errorEl, '計画が必要です');
               return;
             }
             const res = await retryQueueSend({
@@ -1668,7 +1660,7 @@
           });
 
           const planState = document.createElement('span');
-          planState.textContent = planned && planned.planHash && planned.confirmToken ? ' token:set' : ' token:-';
+          planState.textContent = planned && planned.planHash && planned.confirmToken ? ' トークン:あり' : ' トークン:なし';
 
           actionTd.appendChild(planBtn);
           actionTd.appendChild(document.createTextNode(' '));
@@ -1695,7 +1687,7 @@
           }
           opsConsoleListCache = Array.isArray(data.items) ? data.items : [];
           const pageInfoText = data.pageInfo ? JSON.stringify(data.pageInfo) : '-';
-          note.textContent = `serverTime: ${data.serverTime || '-'} / pageInfo: ${pageInfoText} / nextPageToken: ${data.nextPageToken || '-'}`;
+          note.textContent = `サーバ時刻: ${data.serverTime || '-'} / ページ: ${pageInfoText} / 次トークン: ${data.nextPageToken || '-'}`;
           renderOpsConsoleList(opsConsoleListCache);
           updateOpsStatusSummary(opsConsoleListCache);
           return true;
@@ -1812,7 +1804,7 @@
 	        const templateVersionValue = document.getElementById('segment-template-version').value;
 	        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
 	        if (!templateKey) {
-	          setText(note, 'templateKey required');
+	          setText(note, 'テンプレが必要です');
           return;
         }
         const segmentQuery = buildSegmentQueryFromInputs();
@@ -1850,7 +1842,7 @@
 	        const templateVersionValue = document.getElementById('segment-template-version').value;
 	        const templateVersion = templateVersionValue ? Number(templateVersionValue) : null;
         if (!templateKey) {
-          setText(note, 'templateKey required');
+          setText(note, 'テンプレが必要です');
           return;
         }
         const segmentQuery = buildSegmentQueryFromInputs();
@@ -1881,19 +1873,19 @@
 	        if (!segmentSendTraceIdCache) segmentSendTraceIdCache = newTraceId('segment-send');
 	        const templateKey = document.getElementById('segment-template-key').value.trim();
 	        if (!templateKey) {
-	          setText(note, 'templateKey required');
+	          setText(note, 'テンプレが必要です');
 	          return;
         }
         if (!segmentSendPlanCache || !segmentSendPlanCache.planHash) {
-          setText(note, 'plan required');
+          setText(note, '計画が必要です');
           return;
         }
         if (!segmentSendDryRunCache || !segmentSendDryRunCache.confirmToken) {
-          setText(note, 'confirmToken required (run dry-run)');
+          setText(note, '確認トークンが必要です（先に検証）');
           return;
         }
         if (segmentSendPlanCache.templateKey && segmentSendPlanCache.templateKey !== templateKey) {
-          setText(note, 'plan/template mismatch');
+          setText(note, '計画とテンプレが一致しません');
           return;
         }
         const payload = {
@@ -1934,7 +1926,7 @@
               if (!ids.has(id)) delete retryQueuePlanCache[id];
             });
           } catch (_err) {}
-          setText(note, `serverTime: ${data.serverTime || '-'}`);
+          setText(note, `サーバ時刻: ${data.serverTime || '-'}`);
           renderRetryQueue(retryQueueCache);
           return true;
         } catch (err) {
@@ -2039,7 +2031,7 @@
         const resultEl = document.getElementById('trace-search-result');
         setText(resultEl, '');
         if (!traceId || !String(traceId).trim()) {
-          setText(resultEl, 'traceId required');
+          setText(resultEl, '追跡IDが必要です');
           return false;
         }
         try {
@@ -2083,7 +2075,7 @@
         const limitValue = document.getElementById('user-timeline-limit').value;
         const resultEl = document.getElementById('user-timeline-result');
         if (!lineUserId) {
-          setText(resultEl, 'lineUserId required');
+          setText(resultEl, 'LINEユーザーIDが必要です');
           return;
         }
         const limit = Number(limitValue);
@@ -2103,13 +2095,13 @@
       });
       document.getElementById('ops-dashboard-refresh').addEventListener('click', () => {
         loadOpsDashboard()
-          .then((ok) => toastByResult('ops dashboard 更新', ok))
-          .catch(() => showToast('ops dashboard 更新 失敗', 'danger'));
+          .then((ok) => toastByResult('運用ダッシュボード 更新', ok))
+          .catch(() => showToast('運用ダッシュボード 更新 失敗', 'danger'));
       });
       document.getElementById('ops-console-refresh').addEventListener('click', () => {
         loadOpsConsoleList()
-          .then((ok) => toastByResult('ops console 更新', ok))
-          .catch(() => showToast('ops console 更新 失敗', 'danger'));
+          .then((ok) => toastByResult('運用判断 更新', ok))
+          .catch(() => showToast('運用判断 更新 失敗', 'danger'));
       });
       document.getElementById('ops-decision-submit').addEventListener('click', () => {
         handleSubmitOpsDecision().catch(() => {});
@@ -2118,7 +2110,7 @@
         const noteEl = document.getElementById('ops-decision-use-suggestion-note');
         const action = extractSuggestedAction(lastOpsSuggestion);
         if (!action) {
-          setText(noteEl, 'no suggestion');
+          setText(noteEl, '提案なし');
           lastSuggestionUsed = false;
           return;
         }
@@ -2140,8 +2132,8 @@
       });
       document.getElementById('retry-queue-refresh').addEventListener('click', () => {
         loadRetryQueue()
-          .then((ok) => toastByResult('retry queue 更新', ok))
-          .catch(() => showToast('retry queue 更新 失敗', 'danger'));
+          .then((ok) => toastByResult('再送待ち 更新', ok))
+          .catch(() => showToast('再送待ち 更新 失敗', 'danger'));
       });
       document.getElementById('saved-segment-select').addEventListener('change', (event) => {
         const key = event.currentTarget.value;
@@ -2190,11 +2182,11 @@
         loadRetryQueue(),
         loadSavedSegments()
       ]).catch(() => {
-        renderTableMessage(document.getElementById('users-rows'), 9, 'error');
-        renderTableMessage(document.getElementById('notifications-rows'), 6, 'error');
-        renderTableMessage(document.getElementById('ops-dashboard-rows'), 5, 'error');
-        renderTableMessage(document.getElementById('member-stale-rows'), 3, 'error');
-        renderTableMessage(document.getElementById('implementation-targets-rows'), 4, 'error');
+        renderTableMessage(document.getElementById('users-rows'), 9, '取得失敗');
+        renderTableMessage(document.getElementById('notifications-rows'), 6, '取得失敗');
+        renderTableMessage(document.getElementById('ops-dashboard-rows'), 5, '取得失敗');
+        renderTableMessage(document.getElementById('member-stale-rows'), 3, '取得失敗');
+        renderTableMessage(document.getElementById('implementation-targets-rows'), 4, '取得失敗');
         setStatusTone('danger');
       }).finally(() => {
         setLoading(false);

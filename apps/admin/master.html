@@ -44,24 +44,19 @@
       </div>
 
       <h1>設定/回復（Master / 運用OS）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>テンプレ / リンク / システム設定</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>Plan → 確認トークンの順で進める</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>planなしでsetを押す</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">
-              運用設定と回復操作を安全に実行する。
-              <div class="guide">
-                <div class="guide-item"><span class="guide-label">ここでできること</span><span>設定と回復を安全に実行する。</span></div>
-                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>テンプレ / リンク / System Config。</span></div>
-                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>planなしでsetを押す。</span></div>
-              </div>
-            </div>
-          </div>
           <div id="master-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="master-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-meta">直近の設定操作結果（plan/set/回復）</div>
               <div class="status-focus">
                 <span>今日の要対応</span>
                 <span id="master-action-count" class="action-count">0</span>
@@ -70,13 +65,13 @@
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-      <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+      <div class="panel-title">操作パネル</div>
       <div class="panel-body">
-        <div class="note">templates / link_registry を UI から管理（add-only）。</div>
+        <div class="note">テンプレとリンクを安全に管理します。</div>
 
         <div class="note">
-          traceId:
+          <span data-tip="traceId" tabindex="0">追跡ID</span>:
           <input type="text" id="traceId" class="input-inline input-trace" />
           <button id="regen-trace" type="button">regen</button>
           <span id="trace-note"></span>
@@ -89,34 +84,39 @@
 
         <div class="grid">
       <div>
-        <h2>Templates（通知テンプレ）</h2>
-        <div class="note">API: `/api/phase61/templates`</div>
+        <h2 data-tip="API: /api/phase61/templates" tabindex="0">通知テンプレ</h2>
         <div class="note">
           status:
           <select id="tpl-status" class="select-inline">
-            <option value="">(all)</option>
-            <option value="draft">draft</option>
-            <option value="active">active</option>
-            <option value="inactive">inactive</option>
+            <option value="">(全て)</option>
+            <option value="draft">下書き</option>
+            <option value="active">有効</option>
+            <option value="inactive">停止</option>
           </select>
-          <button id="tpl-reload" type="button">reload</button>
+          <button id="tpl-reload" type="button">更新</button>
         </div>
         <details class="table-section" open>
-          <summary>Templates（通知テンプレ）</summary>
-          <table>
+          <summary>通知テンプレ</summary>
+          <table class="table-compact">
             <thead>
-              <tr><th>key</th><th>status</th><th>category</th><th>title</th><th>actions</th></tr>
+              <tr>
+                <th data-tip="key" tabindex="0">キー</th>
+                <th data-tip="status" tabindex="0">状態</th>
+                <th data-tip="notificationCategory" tabindex="0">カテゴリ</th>
+                <th data-tip="title" tabindex="0">タイトル</th>
+                <th>操作</th>
+              </tr>
             </thead>
             <tbody id="tpl-rows"></tbody>
           </table>
         </details>
 
-        <h3>Create Template</h3>
-        <label>key</label>
+        <h3>テンプレ作成</h3>
+        <label data-tip="key" tabindex="0">キー</label>
         <input id="tpl-key" placeholder="ops_escalate" />
-        <label>title</label>
+        <label data-tip="title" tabindex="0">タイトル</label>
         <input id="tpl-title" />
-        <label>notificationCategory</label>
+        <label data-tip="notificationCategory" tabindex="0">カテゴリ</label>
         <select id="tpl-category">
           <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
           <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
@@ -124,15 +124,14 @@
           <option value="TARGETED_ONLY">TARGETED_ONLY</option>
           <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
         </select>
-        <label>text/body</label>
+        <label data-tip="body" tabindex="0">本文</label>
         <textarea id="tpl-text"></textarea>
-        <button id="tpl-create" type="button">create</button>
+        <button id="tpl-create" type="button">作成</button>
         <pre id="tpl-result">-</pre>
       </div>
 
       <div>
-        <h2>Link Registry（リンク管理）</h2>
-        <div class="note">API: `/admin/link-registry`</div>
+        <h2 data-tip="API: /admin/link-registry" tabindex="0">リンク管理</h2>
         <div class="note">
           state:
           <select id="link-state" class="select-inline">
@@ -140,13 +139,18 @@
             <option value="OK">OK</option>
             <option value="WARN">WARN</option>
           </select>
-          <button id="link-reload" type="button">reload</button>
+          <button id="link-reload" type="button">更新</button>
         </div>
         <details class="table-section" open>
-          <summary>Link Registry（リンク管理）</summary>
-          <table>
+          <summary>リンク管理</summary>
+          <table class="table-compact">
             <thead>
-              <tr><th>id</th><th>title</th><th>url</th><th>state</th></tr>
+              <tr>
+                <th data-tip="id" tabindex="0">ID</th>
+                <th data-tip="title" tabindex="0">タイトル</th>
+                <th data-tip="url" tabindex="0">リンク先</th>
+                <th data-tip="state" tabindex="0">状態</th>
+              </tr>
             </thead>
             <tbody id="link-rows"></tbody>
           </table>
@@ -169,35 +173,35 @@
       重複拒否（B）の運用で詰まった場合のみ使用。入力した会員ID全文は保存しない（HMAC hash + last4のみ）。
       誰に紐付いているかは「解除結果」でのみ返る（運用者向け）。
     </div>
-    <label>redacMembershipId（例: 00-0000）</label>
+    <label data-tip="redacMembershipId" tabindex="0">会員ID（例: 00-0000）</label>
     <input id="redac-unlink-id" placeholder="00-0000" />
-    <button id="redac-unlink" type="button">unlink</button>
+    <button id="redac-unlink" type="button">解除</button>
     <pre id="redac-unlink-result">-</pre>
 
     <hr />
 
-    <h2>Redac Health（運用確認）</h2>
+    <h2>Redac運用確認</h2>
     <div class="note">
-      Redac運用の整合性を確認する。secret設定有無、ユーザーとlinkの不整合（sample内）を表示。
+      Redac運用の整合性を確認します（secret設定や不整合の検出）。
     </div>
     <div class="note">
-      <button id="redac-health-reload" type="button">reload status</button>
+      <button id="redac-health-reload" type="button">更新</button>
     </div>
     <pre id="redac-health-result">-</pre>
 
     <hr />
 
-    <h2>System Config（SSOT）</h2>
-    <div class="note">servicePhase / notificationPreset を安全に変更（plan → confirmToken → set）。</div>
+    <h2>システム設定（SSOT）</h2>
+    <div class="note">設定変更は計画 → 確認トークン → 適用の順で行います。</div>
     <div class="note">
-      <button id="config-reload" type="button">reload status</button>
+      <button id="config-reload" type="button">更新</button>
     </div>
     <pre id="config-status">-</pre>
 
         </div>
       </div>
       <div>
-        <label>servicePhase（null = clear）</label>
+        <label data-tip="servicePhase" tabindex="0">サービスフェーズ（未設定で解除）</label>
         <select id="config-service-phase">
           <option value="">(null)</option>
           <option value="1">1</option>
@@ -207,7 +211,7 @@
         </select>
       </div>
       <div>
-        <label>notificationPreset（null = clear）</label>
+        <label data-tip="notificationPreset" tabindex="0">通知プリセット（未設定で解除）</label>
         <select id="config-notification-preset">
           <option value="">(null)</option>
           <option value="A">A</option>
@@ -216,27 +220,27 @@
         </select>
       </div>
       <div>
-        <label>notificationCaps.perUserWeeklyCap（null = clear）</label>
-        <input id="config-notification-cap-weekly" placeholder="(null or integer)" />
+        <label data-tip="notificationCaps.perUserWeeklyCap" tabindex="0">週あたり上限（ユーザー）</label>
+        <input id="config-notification-cap-weekly" placeholder="(未設定 or 数値)" />
       </div>
       <div>
-        <label>notificationCaps.perUserDailyCap（null = clear）</label>
-        <input id="config-notification-cap-daily" placeholder="(null or integer)" />
+        <label data-tip="notificationCaps.perUserDailyCap" tabindex="0">日あたり上限（ユーザー）</label>
+        <input id="config-notification-cap-daily" placeholder="(未設定 or 数値)" />
       </div>
       <div>
-        <label>notificationCaps.perCategoryWeeklyCap（null = clear）</label>
-        <input id="config-notification-cap-category-weekly" placeholder="(null or integer)" />
+        <label data-tip="notificationCaps.perCategoryWeeklyCap" tabindex="0">週あたり上限（カテゴリ）</label>
+        <input id="config-notification-cap-category-weekly" placeholder="(未設定 or 数値)" />
       </div>
       <div>
-        <label>notificationCaps.quietHours.startHourUtc（null = clear）</label>
+        <label data-tip="notificationCaps.quietHours.startHourUtc" tabindex="0">静穏時間（開始 UTC）</label>
         <input id="config-notification-quiet-start" placeholder="0-23" />
       </div>
       <div>
-        <label>notificationCaps.quietHours.endHourUtc（null = clear）</label>
+        <label data-tip="notificationCaps.quietHours.endHourUtc" tabindex="0">静穏時間（終了 UTC）</label>
         <input id="config-notification-quiet-end" placeholder="0-23" />
       </div>
       <div>
-        <label>deliveryCountLegacyFallback（false = deliveredAtのみで集計）</label>
+        <label data-tip="deliveryCountLegacyFallback" tabindex="0">配信集計の互換モード</label>
         <select id="config-delivery-count-legacy-fallback">
           <option value="true">true</option>
           <option value="false">false</option>
@@ -244,8 +248,8 @@
       </div>
     </div>
     <div class="note">
-      <button id="config-plan" type="button">plan</button>
-      <button id="config-set" type="button">set</button>
+      <button id="config-plan" type="button">計画</button>
+      <button id="config-set" type="button">適用</button>
     </div>
     <pre id="config-plan-result">-</pre>
     <pre id="config-impact-preview">-</pre>
@@ -253,40 +257,39 @@
 
     <hr />
 
-    <h2>Automation Config（Segment Execute Guard）</h2>
-    <div class="note">automation mode を安全に変更（plan → confirmToken → set）。</div>
+    <h2>自動化設定（実行ガード）</h2>
+    <div class="note">変更は計画 → 確認トークン → 適用の順で行います。</div>
     <div class="note">
-      <button id="automation-config-reload" type="button">reload status</button>
+      <button id="automation-config-reload" type="button">更新</button>
     </div>
     <pre id="automation-config-status">-</pre>
-    <label>mode</label>
+    <label data-tip="mode" tabindex="0">実行モード</label>
     <select id="automation-config-mode">
-      <option value="OFF">OFF</option>
-      <option value="DRY_RUN_ONLY">DRY_RUN_ONLY</option>
-      <option value="EXECUTE">EXECUTE</option>
+      <option value="OFF">停止</option>
+      <option value="DRY_RUN_ONLY">検証のみ</option>
+      <option value="EXECUTE">実行</option>
     </select>
     <div class="note">
-      <button id="automation-config-plan" type="button">plan</button>
-      <button id="automation-config-set" type="button">set</button>
+      <button id="automation-config-plan" type="button">計画</button>
+      <button id="automation-config-set" type="button">適用</button>
     </div>
     <pre id="automation-config-plan-result">-</pre>
     <pre id="automation-config-set-result">-</pre>
 
     <hr />
 
-    <h2>Delivery Recovery（seal）</h2>
+    <h2>配信回復（封印）</h2>
     <div class="note">
-      送信前に reserve 済みで詰まった delivery を「sealed」にして回復操作を完了扱いにする。
-      sealed は送信対象から skip される（再送しない）。
+      送信前に停止した配信を「封印」して回復処理を完了扱いにします（再送しません）。
     </div>
-    <label>deliveryId</label>
+    <label data-tip="deliveryId" tabindex="0">配信ID</label>
     <input id="delivery-recovery-id" placeholder="delivery id" />
-    <label>sealedReason（任意）</label>
+    <label data-tip="sealedReason" tabindex="0">封印理由（任意）</label>
     <input id="delivery-recovery-reason" placeholder="manual_recovery" />
     <div class="note">
-      <button id="delivery-recovery-status" type="button">status</button>
-      <button id="delivery-recovery-plan" type="button">plan</button>
-      <button id="delivery-recovery-execute" type="button">execute(seal)</button>
+      <button id="delivery-recovery-status" type="button">状況確認</button>
+      <button id="delivery-recovery-plan" type="button">計画</button>
+      <button id="delivery-recovery-execute" type="button">封印実行</button>
     </div>
     <pre id="delivery-recovery-status-result">-</pre>
     <pre id="delivery-recovery-recommendation">-</pre>
@@ -295,17 +298,16 @@
 
     <hr />
 
-    <h2>Delivery deliveredAt Backfill</h2>
+    <h2>配信補正（deliveredAt）</h2>
     <div class="note">
-      旧delivery（`delivered=true` だが `deliveredAt` 欠損）のみを対象に、`sentAt` から `deliveredAt` を補完する。
-      危険操作のため plan → confirmToken → execute でのみ反映。
+      過去データの不足を補正します。計画 → 確認トークン → 実行の順で行います。
     </div>
-    <label>limit（1-1000）</label>
+    <label data-tip="limit" tabindex="0">件数（1-1000）</label>
     <input id="delivery-backfill-limit" placeholder="200" />
     <div class="note">
-      <button id="delivery-backfill-status" type="button">status</button>
-      <button id="delivery-backfill-plan" type="button">plan</button>
-      <button id="delivery-backfill-execute" type="button">execute(backfill)</button>
+      <button id="delivery-backfill-status" type="button">状況確認</button>
+      <button id="delivery-backfill-plan" type="button">計画</button>
+      <button id="delivery-backfill-execute" type="button">補正実行</button>
     </div>
     <pre id="delivery-backfill-status-result">-</pre>
     <pre id="delivery-backfill-plan-result">-</pre>
@@ -458,13 +460,18 @@
       function applyHeaderTooltips() {
         document.querySelectorAll('th').forEach((th) => {
           const text = (th.textContent || '').trim();
-          if (text && !th.title) th.title = text;
+          if (text && !th.dataset.tip) {
+            th.dataset.tip = text;
+            th.setAttribute('tabindex', '0');
+          }
         });
       }
 
       function applyInputTooltips() {
         document.querySelectorAll('input, select, textarea').forEach((el) => {
-          if (el.id && !el.title) el.title = el.id;
+          if (el.id && !el.dataset.tip) {
+            el.dataset.tip = el.id;
+          }
         });
       }
 
@@ -599,7 +606,7 @@
         const data = await res.json();
         const rows = document.getElementById('tpl-rows');
         if (!data.ok) {
-          appendMessageRow(rows, 5, 'error');
+          appendMessageRow(rows, 5, '取得失敗');
           return data;
         }
         const items = Array.isArray(data.items) ? data.items : [];
@@ -681,7 +688,7 @@
         const data = await res.json();
         const rows = document.getElementById('link-rows');
         if (!data.ok) {
-          appendMessageRow(rows, 4, 'error');
+          appendMessageRow(rows, 4, '取得失敗');
           return data;
         }
         const items = Array.isArray(data.items) ? data.items : [];
@@ -719,9 +726,9 @@
 
       async function unlinkRedacMembership() {
         const redacMembershipId = document.getElementById('redac-unlink-id').value.trim();
-        if (!redacMembershipId) return { ok: false, error: 'redacMembershipId required' };
+        if (!redacMembershipId) return { ok: false, error: '会員IDが必要です' };
         const ok = window.confirm(`Redac会員IDを解除しますか？\n\n${redacMembershipId}\n\n(例外対応: 通常は使いません)`); // eslint-disable-line no-alert
-        if (!ok) return { ok: false, error: 'cancelled' };
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
         const res = await fetch('/api/admin/redac-membership/unlink', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -758,7 +765,7 @@
         const trimmed = String(value || '').trim();
         if (!trimmed) return { ok: true, value: null };
         const num = Number(trimmed);
-        if (!Number.isInteger(num) || num < 1) return { ok: false, error: 'cap must be a positive integer or empty' };
+        if (!Number.isInteger(num) || num < 1) return { ok: false, error: '上限は正の整数または未設定です' };
         return { ok: true, value: num };
       }
 
@@ -767,7 +774,7 @@
         if (!trimmed) return { ok: true, value: null };
         const num = Number(trimmed);
         if (!Number.isInteger(num) || num < 0 || num > 23) {
-          return { ok: false, error: 'quietHours must be 0-23 or empty' };
+          return { ok: false, error: '静穏時間は0-23または未設定です' };
         }
         return { ok: true, value: num };
       }
@@ -787,7 +794,7 @@
         let quietHours = null;
         if (quietStart.value !== null || quietEnd.value !== null) {
           if (quietStart.value === null || quietEnd.value === null) {
-            return { ok: false, error: 'quietHours start/end must both be set or both empty' };
+            return { ok: false, error: '開始/終了は両方設定または両方未設定です' };
           }
           quietHours = {
             startHourUtc: quietStart.value,
@@ -814,7 +821,7 @@
         if (!trimmed) return { ok: true, value: 200 };
         const num = Number(trimmed);
         if (!Number.isInteger(num) || num < 1 || num > 1000) {
-          return { ok: false, error: 'limit must be integer 1-1000' };
+          return { ok: false, error: '件数は1-1000の整数です' };
         }
         return { ok: true, value: num };
       }
@@ -873,7 +880,7 @@
         });
         const data = await jsonOrText(res);
         document.getElementById('config-plan-result').textContent = JSON.stringify(data, null, 2);
-        const impactPreview = data && data.impactPreview ? data.impactPreview : { ok: false, error: 'impact preview unavailable' };
+        const impactPreview = data && data.impactPreview ? data.impactPreview : { ok: false, error: '影響プレビュー取得不可' };
         document.getElementById('config-impact-preview').textContent = `${formatImpactPreview(impactPreview)}\n\nraw:\n${JSON.stringify(impactPreview, null, 2)}`;
         configPlanHash = data && data.ok ? data.planHash || null : null;
         configConfirmToken = data && data.ok ? data.confirmToken || null : null;
@@ -893,11 +900,11 @@
         );
         const notificationCaps = capParsed.value;
         if (!configPlanHash || !configConfirmToken) {
-          document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return { ok: false, error: 'plan required' };
+          document.getElementById('config-set-result').textContent = JSON.stringify({ ok: false, error: '計画が必要です' }, null, 2);
+          return { ok: false, error: '計画が必要です' };
         }
         const ok = window.confirm(`System Config を set しますか？\n\nservicePhase=${servicePhase === null ? 'null' : String(servicePhase)}\nnotificationPreset=${notificationPreset === null ? 'null' : String(notificationPreset)}\nnotificationCaps=${JSON.stringify(notificationCaps)}\ndeliveryCountLegacyFallback=${deliveryCountLegacyFallback}`); // eslint-disable-line no-alert
-        if (!ok) return { ok: false, error: 'cancelled' };
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
         const res = await fetch('/api/admin/os/config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -935,8 +942,8 @@
       async function planAutomationConfig() {
         const mode = parseMode(document.getElementById('automation-config-mode').value);
         if (!mode) {
-          document.getElementById('automation-config-plan-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
-          return { ok: false, error: 'invalid mode' };
+          document.getElementById('automation-config-plan-result').textContent = JSON.stringify({ ok: false, error: '不正なモードです' }, null, 2);
+          return { ok: false, error: '不正なモードです' };
         }
         const res = await fetch('/api/admin/os/automation-config/plan', {
           method: 'POST',
@@ -953,15 +960,15 @@
       async function setAutomationConfig() {
         const mode = parseMode(document.getElementById('automation-config-mode').value);
         if (!mode) {
-          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'invalid mode' }, null, 2);
-          return { ok: false, error: 'invalid mode' };
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: '不正なモードです' }, null, 2);
+          return { ok: false, error: '不正なモードです' };
         }
         if (!automationPlanHash || !automationConfirmToken) {
-          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return { ok: false, error: 'plan required' };
+          document.getElementById('automation-config-set-result').textContent = JSON.stringify({ ok: false, error: '計画が必要です' }, null, 2);
+          return { ok: false, error: '計画が必要です' };
         }
         const ok = window.confirm(`Automation Config を set しますか？\n\nmode=${mode}`); // eslint-disable-line no-alert
-        if (!ok) return { ok: false, error: 'cancelled' };
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
         const res = await fetch('/api/admin/os/automation-config/set', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -976,7 +983,7 @@
       function getDeliveryRecoveryPayload() {
         const deliveryId = document.getElementById('delivery-recovery-id').value.trim();
         const sealedReason = document.getElementById('delivery-recovery-reason').value.trim();
-        if (!deliveryId) return { ok: false, error: 'deliveryId required' };
+        if (!deliveryId) return { ok: false, error: '配信IDが必要です' };
         return {
           ok: true,
           payload: {
@@ -1029,11 +1036,11 @@
           return { ok: false, error: parsed.error };
         }
         if (!deliveryRecoveryPlanHash || !deliveryRecoveryConfirmToken) {
-          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return { ok: false, error: 'plan required' };
+          document.getElementById('delivery-recovery-execute-result').textContent = JSON.stringify({ ok: false, error: '計画が必要です' }, null, 2);
+          return { ok: false, error: '計画が必要です' };
         }
         const ok = window.confirm(`delivery recovery を実行しますか？\n\ndeliveryId=${parsed.payload.deliveryId}\nsealedReason=${parsed.payload.sealedReason || '(null)'}`); // eslint-disable-line no-alert
-        if (!ok) return { ok: false, error: 'cancelled' };
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
         const res = await fetch('/api/admin/os/delivery-recovery/execute', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -1092,11 +1099,11 @@
           return { ok: false, error: parsed.error };
         }
         if (!deliveryBackfillPlanHash || !deliveryBackfillConfirmToken) {
-          document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: 'plan required' }, null, 2);
-          return { ok: false, error: 'plan required' };
+          document.getElementById('delivery-backfill-execute-result').textContent = JSON.stringify({ ok: false, error: '計画が必要です' }, null, 2);
+          return { ok: false, error: '計画が必要です' };
         }
         const ok = window.confirm(`delivery deliveredAt backfill を実行しますか？\n\nlimit=${parsed.payload.limit}`); // eslint-disable-line no-alert
-        if (!ok) return { ok: false, error: 'cancelled' };
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
         const res = await fetch('/api/admin/os/delivery-backfill/execute', {
           method: 'POST',
           headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
@@ -1117,12 +1124,12 @@
       document.getElementById('link-create').addEventListener('click', () => runWithToast('link 作成', createLink));
       document.getElementById('redac-unlink').addEventListener('click', () => runWithToast('redac unlink', unlinkRedacMembership));
       document.getElementById('redac-health-reload').addEventListener('click', () => runWithToast('redac health 更新', loadRedacStatus));
-      document.getElementById('config-reload').addEventListener('click', () => runWithToast('system config 更新', loadSystemConfigStatus));
-      document.getElementById('config-plan').addEventListener('click', () => runWithToast('system config plan', planSystemConfig));
-      document.getElementById('config-set').addEventListener('click', () => runWithToast('system config set', setSystemConfig));
-      document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('automation config 更新', loadAutomationConfigStatus));
-      document.getElementById('automation-config-plan').addEventListener('click', () => runWithToast('automation config plan', planAutomationConfig));
-      document.getElementById('automation-config-set').addEventListener('click', () => runWithToast('automation config set', setAutomationConfig));
+      document.getElementById('config-reload').addEventListener('click', () => runWithToast('システム設定 更新', loadSystemConfigStatus));
+      document.getElementById('config-plan').addEventListener('click', () => runWithToast('システム設定 計画', planSystemConfig));
+      document.getElementById('config-set').addEventListener('click', () => runWithToast('システム設定 適用', setSystemConfig));
+      document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('自動化設定 更新', loadAutomationConfigStatus));
+      document.getElementById('automation-config-plan').addEventListener('click', () => runWithToast('自動化設定 計画', planAutomationConfig));
+      document.getElementById('automation-config-set').addEventListener('click', () => runWithToast('自動化設定 適用', setAutomationConfig));
       document.getElementById('delivery-recovery-status').addEventListener('click', () => runWithToast('delivery recovery status', loadDeliveryRecoveryStatus));
       document.getElementById('delivery-recovery-plan').addEventListener('click', () => runWithToast('delivery recovery plan', planDeliveryRecovery));
       document.getElementById('delivery-recovery-execute').addEventListener('click', () => runWithToast('delivery recovery execute', executeDeliveryRecovery));

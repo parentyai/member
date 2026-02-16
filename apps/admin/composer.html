@@ -44,31 +44,28 @@
       </div>
 
       <h1>通知作成（Composer / 運用OS）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>カテゴリ / 対象条件 / 確認トークン</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>Planで対象数を確認</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>limit未設定でplanが弾かれる</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">通知を作成・承認し、送信計画を安全に実行する。</div>
-            <div class="guide">
-              <div class="guide-item"><span class="guide-label">ここでできること</span>通知の作成から送信計画までを安全に進める。</div>
-              <div class="guide-item"><span class="guide-label">先に見るべき3項目</span>カテゴリ / 対象条件 / confirmToken。</div>
-              <div class="guide-item"><span class="guide-label">よくあるミス</span>limit未設定でplanが弾かれる。</div>
-            </div>
-          </div>
           <div id="composer-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-meta">直近操作の結果（作成/承認/計画/実行）</div>
               <div class="status-focus">今日の要対応: <span id="composer-action-count" class="action-count">0</span></div>
             </div>
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-            <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+            <div class="panel-title">操作パネル</div>
             <div class="panel-body">
-              <div class="note">draft → preview → approve → plan → execute（executeはconfirm token必須）</div>
+              <div class="note">手順は下書き → プレビュー → 承認 → 計画 → 実行の順です。</div>
               <div id="composer-skeleton" class="skeleton-stack is-hidden">
                 <div class="skeleton-line lg w-50"></div>
                 <div class="skeleton-line w-70"></div>
@@ -76,7 +73,7 @@
               </div>
 
               <div class="note">
-                traceId:
+                <span data-tip="traceId" tabindex="0">追跡ID</span>:
                 <input type="text" id="traceId" class="input-inline input-trace" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
@@ -84,26 +81,26 @@
 
               <div class="grid">
                 <div>
-                  <h2>Draft</h2>
-                  <label title="title">title</label>
+                  <h2>下書き</h2>
+                  <label data-tip="title" tabindex="0">タイトル</label>
                   <input id="title" />
-                  <label title="body">body</label>
+                  <label data-tip="body" tabindex="0">本文</label>
                   <textarea id="body"></textarea>
-                  <label title="ctaText">ctaText</label>
+                  <label data-tip="ctaText" tabindex="0">ボタン文言</label>
                   <input id="ctaText" />
-                  <label title="linkRegistryId">linkRegistryId</label>
-                  <input id="linkRegistryId" placeholder="link_registry doc id" />
+                  <label data-tip="linkRegistryId" tabindex="0">リンクID</label>
+                  <input id="linkRegistryId" placeholder="link registry のID" />
 
                   <div class="row">
                     <div class="flex-1">
-                      <label title="scenarioKey">scenarioKey</label>
+                      <label data-tip="scenarioKey" tabindex="0">シナリオ</label>
                       <select id="scenarioKey">
                         <option value="A">A</option>
                         <option value="C">C</option>
                       </select>
                     </div>
                     <div class="flex-1">
-                      <label title="stepKey">stepKey</label>
+                      <label data-tip="stepKey" tabindex="0">ステップ</label>
                       <select id="stepKey">
                         <option value="3mo">3mo</option>
                         <option value="1mo">1mo</option>
@@ -112,7 +109,7 @@
                       </select>
                     </div>
                   </div>
-                  <label title="notificationCategory">notificationCategory</label>
+                  <label data-tip="notificationCategory" tabindex="0">カテゴリ</label>
                   <select id="notificationCategory">
                     <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
                     <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
@@ -121,42 +118,40 @@
                     <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
                   </select>
 
-                  <h3>Target</h3>
+                  <h3>対象条件</h3>
                   <div class="row">
                     <div class="flex-1">
-                      <label title="region">region (optional)</label>
+                      <label data-tip="region" tabindex="0">地域（任意）</label>
                       <input id="targetRegion" />
                     </div>
                     <div class="flex-1">
-                      <label title="limit">limit (required for safety)</label>
+                      <label data-tip="limit" tabindex="0">上限件数（必須）</label>
                       <input id="targetLimit" type="number" min="1" max="500" value="50" />
                     </div>
                   </div>
-                  <label title="membersOnly"><input id="membersOnly" type="checkbox" /> membersOnly</label>
+                  <label data-tip="membersOnly" tabindex="0"><input id="membersOnly" type="checkbox" /> 会員のみ</label>
 
                   <div class="row row-top">
-                    <button id="create-draft" type="button">Create Draft</button>
-                    <button id="preview" type="button">Preview</button>
-                    <button id="approve" type="button">Approve (active)</button>
+                    <button id="create-draft" type="button">下書き作成</button>
+                    <button id="preview" type="button">プレビュー</button>
+                    <button id="approve" type="button">承認（有効化）</button>
                   </div>
-                  <div class="note">notificationId: <span id="notificationId">-</span></div>
+                  <div class="note"><span data-tip="notificationId" tabindex="0">通知ID</span>: <span id="notificationId">-</span></div>
                   <pre id="draft-result">-</pre>
                 </div>
 
                 <details class="panel danger-zone" open>
-                  <summary>Plan / Execute（Danger）</summary>
+                  <summary>計画 / 実行（危険操作）</summary>
                   <div class="panel-body">
-                    <h2>Plan / Execute（Danger）</h2>
-                    <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
-                    <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所」を示す。</div>
-                    <div class="note">reason は直近 execute の結果理由（ok/blocked/fail）。</div>
+                    <h2>計画 / 実行（危険操作）</h2>
+                    <div class="note danger">送信を伴う操作です。kill switch の状態を確認してください。</div>
                     <div class="row">
-                      <button id="plan" type="button">Plan Send</button>
-                      <button id="execute" type="button">Execute Send</button>
+                      <button id="plan" type="button">送信計画</button>
+                      <button id="execute" type="button">送信実行</button>
                     </div>
                     <div class="note">
-                      planHash: <span id="planHash">-</span>
-                      / confirmToken: <span id="confirmToken">-</span>
+                      <span data-tip="planHash" tabindex="0">計画ハッシュ</span>: <span id="planHash">-</span>
+                      / <span data-tip="confirmToken" tabindex="0">確認トークン</span>: <span id="confirmToken">-</span>
                     </div>
                     <div class="note">
                       対象人数（plan）: <span id="planTargetCount">-</span>
@@ -166,7 +161,7 @@
                     </div>
                     <pre id="plan-result">-</pre>
                     <pre id="execute-result">-</pre>
-                    <div class="note" id="execute-cap-meta">capCountMode: - / capCountSource: - / capCountStrategy: - / reason: -</div>
+                    <div class="note" id="execute-cap-meta" data-tip="capCountMode / capCountSource / capCountStrategy / lastExecuteReason" tabindex="0">計数方式: - / 計数元: - / 計数戦略: - / 最終理由: -</div>
                   </div>
                 </details>
               </div>
@@ -331,8 +326,8 @@
       document.getElementById('approve').addEventListener('click', async () => {
         const resultEl = document.getElementById('draft-result');
         if (!currentNotificationId) {
-          resultEl.textContent = 'notificationId required (create draft first)';
-          showToast('notificationId required', 'warn');
+        resultEl.textContent = '通知IDが必要です（先に下書きを作成）';
+        showToast('通知IDが必要です', 'warn');
           setStatusTone('warn');
           return;
         }
@@ -355,8 +350,8 @@
         if (planTargetCountEl) planTargetCountEl.textContent = '-';
         if (planCapBlockedEl) planCapBlockedEl.textContent = '-';
         if (!currentNotificationId) {
-          resultEl.textContent = 'notificationId required';
-          showToast('notificationId required', 'warn');
+          resultEl.textContent = '通知IDが必要です';
+          showToast('通知IDが必要です', 'warn');
           setStatusTone('warn');
           return;
         }
@@ -390,8 +385,8 @@
         const metaEl = document.getElementById('execute-cap-meta');
         resultEl.textContent = '';
         if (!currentNotificationId || !currentPlanHash || !currentConfirmToken) {
-          resultEl.textContent = 'planHash/confirmToken required (run plan)';
-          showToast('planHash/confirmToken required', 'warn');
+          resultEl.textContent = '計画ハッシュと確認トークンが必要です（先に計画）';
+          showToast('計画ハッシュ/確認トークンが必要です', 'warn');
           setStatusTone('warn');
           return;
         }
@@ -408,7 +403,7 @@
           const capCountMode = result && typeof result === 'object' ? (result.capCountMode || '-') : '-';
           const capCountSource = result && typeof result === 'object' ? (result.capCountSource || '-') : '-';
           const capCountStrategy = result && typeof result === 'object' ? (result.capCountStrategy || '-') : '-';
-          metaEl.textContent = `capCountMode: ${capCountMode} / capCountSource: ${capCountSource} / capCountStrategy: ${capCountStrategy} / reason: ${reason}`;
+          metaEl.textContent = `計数方式: ${capCountMode} / 計数元: ${capCountSource} / 計数戦略: ${capCountStrategy} / 最終理由: ${reason}`;
         }
         if (result && result.ok) {
           showToast('execute OK', 'ok');

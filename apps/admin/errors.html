@@ -44,24 +44,19 @@
       </div>
 
       <h1>エラー一覧（Errors / READ ONLY）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>危険リンク / 再送待ち / まとめ</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>再送待ちの最新から確認</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>再送を忘れて放置する</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">
-              WARN/Retryなどのエラーを素早く確認する。
-              <div class="guide">
-                <div class="guide-item"><span class="guide-label">ここでできること</span><span>WARNリンクと再送待ちをまとめて確認する。</span></div>
-                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>WARN Links / Retry Queue / Summary。</span></div>
-                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>retry対象をOpsで実行し忘れる。</span></div>
-              </div>
-            </div>
-          </div>
           <div id="errors-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="errors-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-meta">WARNリンク＋再送待ち件数（summary由来）</div>
               <div class="status-focus">
                 <span>今日の要対応</span>
                 <span id="errors-action-count" class="action-count">0</span>
@@ -70,13 +65,13 @@
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-            <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+            <div class="panel-title">操作パネル</div>
             <div class="panel-body">
-              <div class="note">link WARN / retry queue / guard拒否（audit）を一覧化（表示のみ）。</div>
+              <div class="note">危険リンクと再送待ちを一覧で確認します（表示のみ）。</div>
 
               <div class="note">
-                traceId:
+                <span data-tip="traceId" tabindex="0">追跡ID</span>:
                 <input type="text" id="traceId" class="input-inline input-trace" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
@@ -97,29 +92,40 @@
       </div>
 
       <details class="table-section section" open>
-        <summary>Summary</summary>
-        <h2>Summary</h2>
+        <summary>まとめ</summary>
+        <h2>まとめ</h2>
         <pre id="summary">-</pre>
       </details>
 
       <details class="table-section section" open>
-        <summary>WARN Links (link_registry.lastHealth.state == WARN)</summary>
-        <h2>WARN Links (link_registry.lastHealth.state == WARN)</h2>
-        <table>
+        <summary>危険リンク一覧</summary>
+        <h2>危険リンク一覧</h2>
+        <table class="table-compact">
           <thead>
-            <tr><th>id</th><th>title</th><th>url</th><th>checkedAt</th></tr>
+            <tr>
+              <th data-tip="link_registry.id" tabindex="0">リンクID</th>
+              <th data-tip="title" tabindex="0">タイトル</th>
+              <th data-tip="url" tabindex="0">リンク先</th>
+              <th data-tip="checkedAt" tabindex="0">最終確認</th>
+            </tr>
           </thead>
           <tbody id="warn-links"></tbody>
         </table>
       </details>
 
       <details class="table-section section" open>
-        <summary>Retry Queue (pending)</summary>
-        <h2>Retry Queue (pending)</h2>
-        <div class="note">再送操作は `/admin/ops` の Retry Queue から実施。</div>
-        <table>
+        <summary>再送待ち一覧</summary>
+        <h2>再送待ち一覧</h2>
+        <div class="note">再送は Ops 画面の「再送待ち」から実行します。</div>
+        <table class="table-compact">
           <thead>
-            <tr><th>id</th><th>lineUserId</th><th>templateKey</th><th>lastError</th><th>updatedAt</th></tr>
+            <tr>
+              <th data-tip="queueId" tabindex="0">キューID</th>
+              <th data-tip="lineUserId" tabindex="0">LINEユーザーID</th>
+              <th data-tip="templateKey" tabindex="0">テンプレ</th>
+              <th data-tip="lastError" tabindex="0">最終エラー</th>
+              <th data-tip="updatedAt" tabindex="0">更新日時</th>
+            </tr>
           </thead>
           <tbody id="retry-rows"></tbody>
         </table>
@@ -177,13 +183,18 @@
       function applyHeaderTooltips() {
         document.querySelectorAll('th').forEach((th) => {
           const text = (th.textContent || '').trim();
-          if (text && !th.title) th.title = text;
+          if (text && !th.dataset.tip) {
+            th.dataset.tip = text;
+            th.setAttribute('tabindex', '0');
+          }
         });
       }
 
       function applyInputTooltips() {
         document.querySelectorAll('input, select, textarea').forEach((el) => {
-          if (el.id && !el.title) el.title = el.id;
+          if (el.id && !el.dataset.tip) {
+            el.dataset.tip = el.id;
+          }
         });
       }
 
@@ -233,7 +244,7 @@
 
       function renderRows(rowsEl, items, cols) {
         if (!items.length) {
-          appendMessageRow(rowsEl, cols, 'no data');
+          appendMessageRow(rowsEl, cols, 'データなし');
           return;
         }
         clearChildren(rowsEl);
@@ -249,7 +260,7 @@
 
       function renderRetry(rowsEl, items) {
         if (!items.length) {
-          appendMessageRow(rowsEl, 5, 'no data');
+          appendMessageRow(rowsEl, 5, 'データなし');
           return;
         }
         clearChildren(rowsEl);
@@ -297,7 +308,7 @@
           const summaryRes = await fetch('/api/admin/os/errors/summary', { headers: buildHeaders() });
           const summary = await summaryRes.json();
           document.getElementById('summary').textContent = JSON.stringify(summary, null, 2);
-          document.getElementById('note').textContent = summary && summary.ok ? `serverTime: ${summary.serverTime || '-'}` : 'error';
+          document.getElementById('note').textContent = summary && summary.ok ? `サーバ時刻: ${summary.serverTime || '-'}` : '取得失敗';
           updateErrorsStatusSummary(summary);
 
           const warnLinksEl = document.getElementById('warn-links');
@@ -314,7 +325,7 @@
 
       document.getElementById('reload').addEventListener('click', () => {
         loadAll({ notify: true }).catch(() => {
-          document.getElementById('summary').textContent = 'error';
+          document.getElementById('summary').textContent = '取得失敗';
           showToast('errors 更新 失敗', 'danger');
           setStatusTone('danger');
         });
@@ -323,7 +334,7 @@
       applyHeaderTooltips();
       applyInputTooltips();
       loadAll().catch(() => {
-        document.getElementById('summary').textContent = 'error';
+        document.getElementById('summary').textContent = '取得失敗';
         setStatusTone('danger');
       });
     </script>

@@ -116,7 +116,7 @@ test('phase177: redac status route returns sampled consistency summary', async (
 test('phase177: master ui includes redac health section and status endpoint call', () => {
   const file = path.resolve('apps/admin/master.html');
   const text = fs.readFileSync(file, 'utf8');
-  assert.match(text, /Redac Health（運用確認）/);
+  assert.match(text, /Redac運用確認/);
   assert.match(text, /id="redac-health-reload"/);
   assert.match(text, /\/api\/admin\/os\/redac\/status\?limit=500/);
   assert.match(text, /loadRedacStatus\(\)/);
