@@ -163,26 +163,26 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
     "title": "運用判断支援（Ops Console / READ ONLY）",
     "h1": "運用判断支援（Ops Console / READ ONLY）",
     "h2": [
-      "Operations（安全操作）",
-      "Trace Search（監査）",
-      "Notification Test（Dry-run / Self-send）",
-      "User Timeline（指定ユーザー履歴）",
-      "ユーザー状態一覧（READ ONLY）",
+      "安全操作",
+      "監査検索",
+      "通知テスト（検証 / 自己送信）",
+      "ユーザー履歴（指定ユーザー）",
+      "ユーザー状態一覧（参照のみ）",
       "通知状態一覧",
-      "Ops Dashboard（参考）",
-      "Ops Console（一覧）",
-      "Ops Console 詳細",
-      "Segment Send（Plan / Execute）",
-      "再試行キュー（READ ONLY + Manual Retry）",
-      "memberNumber 未入力（14日超）",
-      "Last reviewed",
-      "Implementation Targets"
+      "運用ダッシュボード（参考）",
+      "運用判断一覧",
+      "運用判断詳細",
+      "セグメント送信（計画 / 実行）",
+      "再送待ち（参照のみ）",
+      "会員番号未入力（14日超）",
+      "レビュー最終日",
+      "実装対象"
     ]
   },
   "/admin/composer": {
     "title": "通知作成（Composer / 運用OS）",
     "h1": "通知作成（Composer / 運用OS）",
-    "h2": ["Draft", "Plan / Execute（Danger）"]
+    "h2": ["下書き", "計画 / 実行（危険操作）"]
   },
   "/admin/monitor": {
     "title": "配信結果（Monitor / READ ONLY）",
@@ -193,23 +193,23 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
     "title": "エラー一覧（Errors / READ ONLY）",
     "h1": "エラー一覧（Errors / READ ONLY）",
     "h2": [
-      "Summary",
-      "WARN Links (link_registry.lastHealth.state == WARN)",
-      "Retry Queue (pending)"
+      "まとめ",
+      "危険リンク一覧",
+      "再送待ち一覧"
     ]
   },
   "/admin/master": {
     "title": "設定/回復（Master / 運用OS）",
     "h1": "設定/回復（Master / 運用OS）",
     "h2": [
-      "Templates（通知テンプレ）",
-      "Link Registry（リンク管理）",
+      "通知テンプレ",
+      "リンク管理",
       "Redacクラブ会員ID（例外解除）",
-      "Redac Health（運用確認）",
-      "System Config（SSOT）",
-      "Automation Config（Segment Execute Guard）",
-      "Delivery Recovery（seal）",
-      "Delivery deliveredAt Backfill"
+      "Redac運用確認",
+      "システム設定（SSOT）",
+      "自動化設定（実行ガード）",
+      "配信回復（封印）",
+      "配信補正（deliveredAt）"
     ]
   },
   "/admin/read-model": {

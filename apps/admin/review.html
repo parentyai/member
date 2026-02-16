@@ -44,24 +44,19 @@
       </div>
 
       <h1>運用レビュー記録（Review）</h1>
+      <div class="summary-header">
+        <div class="summary-items"><span class="summary-label">見るべき3点</span><span>担当者 / 日時 / 保存結果</span></div>
+        <div class="summary-help"><span class="summary-label">迷ったら</span><span>未レビューのみ先に記録</span></div>
+        <div class="summary-risk"><span class="summary-label">よくある失敗</span><span>担当者未入力のまま送信</span></div>
+      </div>
       <div class="layout section">
         <div class="layout-left panel-stack">
-          <div class="panel panel-purpose">
-            <div class="panel-title">目的</div>
-            <div class="panel-body">
-              運用レビュー記録を残す。
-              <div class="guide">
-                <div class="guide-item"><span class="guide-label">ここでできること</span><span>レビュー担当と日時を記録する。</span></div>
-                <div class="guide-item"><span class="guide-label">先に見るべき3項目</span><span>reviewedBy / reviewedAt / 保存結果。</span></div>
-                <div class="guide-item"><span class="guide-label">よくあるミス</span><span>reviewedBy 未入力のまま送信する。</span></div>
-              </div>
-            </div>
-          </div>
           <div id="review-status-panel" class="panel panel-status status-card status-unknown">
             <div class="panel-title">状態サマリー</div>
             <div class="panel-body">
               <span id="review-status-pill" class="status-pill status-unknown">未取得</span>
               <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+              <div class="status-meta">直近のレビュー保存結果</div>
               <div class="status-focus">
                 <span>今日の要対応</span>
                 <span id="review-action-count" class="action-count">0</span>
@@ -70,13 +65,13 @@
           </div>
         </div>
         <div class="layout-right">
-          <div class="panel panel-actions">
-            <div class="panel-title">操作領域</div>
+          <div class="action-panel panel-actions">
+            <div class="panel-title">操作パネル</div>
             <div class="panel-body">
-              <div class="note">手動入力のみ。閲覧や集計では更新しません。</div>
+              <div class="note">手動入力のみです。閲覧や集計では更新しません。</div>
 
               <div class="note">
-                traceId:
+                <span data-tip="traceId" tabindex="0">追跡ID</span>:
                 <input type="text" id="traceId" class="input-inline input-trace" />
                 <button id="regen-trace" type="button">regen</button>
                 <span id="trace-note"></span>
@@ -84,14 +79,14 @@
 
               <form id="review-form">
                 <label>
-                  reviewedBy (必須)
+                  <span data-tip="reviewedBy" tabindex="0">レビュー担当（必須）</span>
                   <input type="text" id="reviewedBy" required />
                 </label>
                 <label>
-                  reviewedAt (任意)
+                  <span data-tip="reviewedAt" tabindex="0">レビュー日時（任意）</span>
                   <input type="datetime-local" id="reviewedAt" />
                 </label>
-                <button type="submit">Submit</button>
+                <button type="submit">保存</button>
               </form>
 
               <div id="result"></div>
@@ -167,7 +162,9 @@
 
       function applyInputTooltips() {
         document.querySelectorAll('input, select, textarea').forEach((el) => {
-          if (el.id && !el.title) el.title = el.id;
+          if (el.id && !el.dataset.tip) {
+            el.dataset.tip = el.id;
+          }
         });
       }
 
