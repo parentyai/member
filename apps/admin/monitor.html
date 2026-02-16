@@ -24,6 +24,9 @@
       .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
       .panel-body { font-size: 13px; }
       .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
+      .status-ok { background: var(--status-ok-bg); color: var(--status-ok-text); }
+      .status-warn { background: var(--status-warn-bg); color: var(--status-warn-text); }
+      .status-danger { background: var(--status-danger-bg); color: var(--status-danger-text); }
       .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
       .status-legend { font-size: 12px; color: #666; }
       table { width: 100%; border-collapse: collapse; }
@@ -80,8 +83,9 @@
     <div class="panel panel-status">
       <div class="panel-title">状態サマリー</div>
       <div class="panel-body">
-        <span class="status-pill status-unknown">未取得</span>
-        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+        <span id="monitor-status-pill" class="status-pill status-unknown">未取得</span>
+        <span id="monitor-status-summary" class="status-legend">DANGER: - / WARN: - / OK: -</span>
+        <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
       </div>
     </div>
     <div class="panel panel-actions">
@@ -228,6 +232,38 @@
         return span;
       }
 
+      function updateMonitorStatusSummary(items) {
+        const pill = document.getElementById('monitor-status-pill');
+        const summary = document.getElementById('monitor-status-summary');
+        if (!pill || !summary) return;
+        const counts = { OK: 0, WARN: 0, DANGER: 0 };
+        (items || []).forEach((item) => {
+          const health = item && item.notificationHealth ? item.notificationHealth : null;
+          if (health === 'DANGER') counts.DANGER += 1;
+          else if (health === 'WARN') counts.WARN += 1;
+          else if (health === 'OK') counts.OK += 1;
+        });
+        const total = counts.OK + counts.WARN + counts.DANGER;
+        if (!total) {
+          pill.className = 'status-pill status-unknown';
+          pill.textContent = '未取得';
+          summary.textContent = 'DANGER: - / WARN: - / OK: -';
+          return;
+        }
+        let overall = 'OK';
+        let cls = 'status-ok';
+        if (counts.DANGER > 0) {
+          overall = 'DANGER';
+          cls = 'status-danger';
+        } else if (counts.WARN > 0) {
+          overall = 'WARN';
+          cls = 'status-warn';
+        }
+        pill.className = `status-pill ${cls}`;
+        pill.textContent = overall;
+        summary.textContent = `DANGER: ${counts.DANGER} / WARN: ${counts.WARN} / OK: ${counts.OK}`;
+      }
+
       async function loadReadModel() {
         const limit = document.getElementById('limit').value;
         const status = document.getElementById('status').value.trim();
@@ -243,10 +279,12 @@
         const rows = document.getElementById('rows');
         if (!data.ok) {
           appendMessageRow(rows, 15, 'error');
+          updateMonitorStatusSummary([]);
           return;
         }
         if (!data.items.length) {
           appendMessageRow(rows, 15, 'no data');
+          updateMonitorStatusSummary([]);
           return;
         }
         clearChildren(rows);
@@ -270,16 +308,19 @@
           ]);
         }
         document.getElementById('note').textContent = `items: ${data.items.length}`;
+        updateMonitorStatusSummary(data.items);
       }
 
       document.getElementById('reload').addEventListener('click', () => {
         loadReadModel().catch(() => {
           appendMessageRow(document.getElementById('rows'), 15, 'error');
+          updateMonitorStatusSummary([]);
         });
       });
 
       loadReadModel().catch(() => {
         appendMessageRow(document.getElementById('rows'), 15, 'error');
+        updateMonitorStatusSummary([]);
       });
     </script>
   </body>
