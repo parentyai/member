@@ -41,7 +41,8 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "status_unknown": "未取得",
   "impact_target_count": "対象人数（plan）",
   "detail_title": "詳細",
-  "week_over_week_label": "前週比（7日）"
+  "week_over_week_label": "前週比（7日）",
+  "plan_cap_blocked_count": "抑制数（plan）"
 }
 <!-- ADMIN_UI_PANEL_LABELS_END -->
 

@@ -2,10 +2,12 @@
 
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { createConfirmToken } = require('../../domain/confirmToken');
 const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
+const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 
 function buildTemplateKey(notificationId) {
   return `notification_send:${notificationId}`;
@@ -22,6 +24,69 @@ function toLineUserIds(users) {
     .map((u) => (u && typeof u.id === 'string' ? u.id : null))
     .filter((id) => typeof id === 'string')
     .sort();
+}
+
+async function resolveCapBlockedSummary(lineUserIds, notification, now, deps) {
+  let notificationCaps = null;
+  let deliveryCountLegacyFallback = true;
+  try {
+    const getNotificationCaps = deps && deps.getNotificationCaps
+      ? deps.getNotificationCaps
+      : systemFlagsRepo.getNotificationCaps;
+    notificationCaps = await getNotificationCaps();
+  } catch (_err) {
+    notificationCaps = null;
+  }
+  try {
+    const getDeliveryCountLegacyFallback = deps && deps.getDeliveryCountLegacyFallback
+      ? deps.getDeliveryCountLegacyFallback
+      : systemFlagsRepo.getDeliveryCountLegacyFallback;
+    deliveryCountLegacyFallback = await getDeliveryCountLegacyFallback();
+  } catch (_err) {
+    deliveryCountLegacyFallback = true;
+  }
+
+  let capCountMode = null;
+  let capCountSource = null;
+  let capCountStrategy = null;
+  let capBlockedCount = 0;
+  const capBlockedSummary = {};
+
+  for (const lineUserId of lineUserIds) {
+    const capResult = await checkNotificationCap({
+      lineUserId,
+      now,
+      notificationCaps,
+      deliveryCountLegacyFallback,
+      notificationCategory: notification.notificationCategory || null
+    }, {
+      countDeliveredByUserSince: deps && deps.countDeliveredByUserSince
+        ? deps.countDeliveredByUserSince
+        : undefined,
+      countDeliveredByUserCategorySince: deps && deps.countDeliveredByUserCategorySince
+        ? deps.countDeliveredByUserCategorySince
+        : undefined,
+      getDeliveredCountsSnapshot: deps && deps.getDeliveredCountsSnapshot
+        ? deps.getDeliveredCountsSnapshot
+        : undefined
+    });
+    if (!capCountMode && capResult.countMode) capCountMode = capResult.countMode;
+    if (!capCountSource && capResult.countSource) capCountSource = capResult.countSource;
+    if (!capCountStrategy && capResult.countStrategy) capCountStrategy = capResult.countStrategy;
+    if (!capResult.allowed) {
+      capBlockedCount += 1;
+      const key = `${capResult.capType || 'UNKNOWN'}:${capResult.reason || 'unknown'}`;
+      capBlockedSummary[key] = (capBlockedSummary[key] || 0) + 1;
+    }
+  }
+
+  return {
+    capBlockedCount,
+    capBlockedSummary,
+    capCountMode,
+    capCountSource,
+    capCountStrategy
+  };
 }
 
 async function planNotificationSend(params, deps) {
@@ -60,6 +125,7 @@ async function planNotificationSend(params, deps) {
     templateVersion: '',
     segmentKey: notificationId
   }, { now });
+  const capSummary = await resolveCapBlockedSummary(lineUserIds, notification, now, deps);
 
   const audit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   await audit({
@@ -76,7 +142,12 @@ async function planNotificationSend(params, deps) {
       planHash,
       bucket,
       limit,
-      notificationCategory: notification.notificationCategory || null
+      notificationCategory: notification.notificationCategory || null,
+      capBlockedCount: capSummary.capBlockedCount,
+      capCountMode: capSummary.capCountMode,
+      capCountSource: capSummary.capCountSource,
+      capCountStrategy: capSummary.capCountStrategy,
+      capBlockedSummary: capSummary.capBlockedSummary
     },
     snapshot: {
       notificationId,
@@ -89,7 +160,9 @@ async function planNotificationSend(params, deps) {
       lineUserIdsSample: lineUserIds.slice(0, 10),
       planHash,
       bucket,
-      serverTime
+      serverTime,
+      capBlockedCount: capSummary.capBlockedCount,
+      capBlockedSummary: capSummary.capBlockedSummary
     }
   });
 
@@ -101,7 +174,12 @@ async function planNotificationSend(params, deps) {
     notificationId,
     count: lineUserIds.length,
     planHash,
-    confirmToken
+    confirmToken,
+    capBlockedCount: capSummary.capBlockedCount,
+    capBlockedSummary: capSummary.capBlockedSummary,
+    capCountMode: capSummary.capCountMode,
+    capCountSource: capSummary.capCountSource,
+    capCountStrategy: capSummary.capCountStrategy
   };
 }
 
