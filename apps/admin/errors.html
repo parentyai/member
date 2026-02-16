@@ -5,8 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>エラー一覧（Errors / READ ONLY）</title>
     <style>
+      :root {
+        --status-danger-bg: #ffebee;
+        --status-danger-text: #b71c1c;
+        --status-warn-bg: #fff8e1;
+        --status-warn-text: #8d6e63;
+        --status-ok-bg: #e8f5e9;
+        --status-ok-text: #1b5e20;
+        --status-unknown-bg: #f5f5f5;
+        --status-unknown-text: #666;
+      }
       body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .nav a { margin-right: 12px; }
+      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
+      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+      .card-purpose { font-size: 12px; color: #555; }
+      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
+      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+      .panel-body { font-size: 13px; }
+      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
+      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
+      .status-legend { font-size: 12px; color: #666; }
       .note { font-size: 12px; color: #666; margin: 8px 0; }
       pre { background: #f7f7f7; padding: 8px; border: 1px solid #eee; overflow: auto; }
       table { width: 100%; border-collapse: collapse; }
@@ -15,47 +34,91 @@
     </style>
   </head>
   <body>
-    <div class="nav">
-      <a href="/admin/ops">運用判断支援（Ops）</a>
-      <a href="/admin/composer">通知作成（Composer）</a>
-      <a href="/admin/monitor">配信結果（Monitor）</a>
-      <a href="/admin/master">設定/回復（Master）</a>
+    <div class="card-nav">
+      <a class="card" href="/admin/ops">
+        <div class="card-title">運用判断支援（Ops）</div>
+        <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
+      </a>
+      <a class="card" href="/admin/composer">
+        <div class="card-title">通知作成（Composer）</div>
+        <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/monitor">
+        <div class="card-title">配信結果（Monitor）</div>
+        <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
+      </a>
+      <a class="card" href="/admin/errors">
+        <div class="card-title">エラー一覧（Errors）</div>
+        <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
+      </a>
+      <a class="card" href="/admin/master">
+        <div class="card-title">設定/回復（Master）</div>
+        <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/read-model">
+        <div class="card-title">通知集計（Read Model）</div>
+        <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
+      </a>
+      <a class="card" href="/admin/review">
+        <div class="card-title">運用レビュー記録（Review）</div>
+        <div class="card-purpose">運用レビュー記録を残す。</div>
+      </a>
+      <a class="card" href="/admin/login">
+        <div class="card-title">Admin Login</div>
+        <div class="card-purpose">管理トークンで認証する。</div>
+      </a>
     </div>
 
     <h1>エラー一覧（Errors / READ ONLY）</h1>
-    <div class="note">link WARN / retry queue / guard拒否（audit）を一覧化（表示のみ）。</div>
-
-    <div class="note">
-      traceId:
-      <input type="text" id="traceId" style="max-width: 420px;" />
-      <button id="regen-trace" type="button">regen</button>
-      <span id="trace-note"></span>
+    <div class="panel panel-purpose">
+      <div class="panel-title">目的</div>
+      <div class="panel-body">WARN/Retryなどのエラーを素早く確認する。</div>
     </div>
-
-    <div class="note">
-      <button id="reload">reload</button>
-      <span id="note"></span>
+    <div class="panel panel-status">
+      <div class="panel-title">状態サマリー</div>
+      <div class="panel-body">
+        <span class="status-pill status-unknown">未取得</span>
+        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+      </div>
     </div>
+    <div class="panel panel-actions">
+      <div class="panel-title">操作領域</div>
+      <div class="panel-body">
+        <div class="note">link WARN / retry queue / guard拒否（audit）を一覧化（表示のみ）。</div>
 
-    <h2>Summary</h2>
-    <pre id="summary">-</pre>
+        <div class="note">
+          traceId:
+          <input type="text" id="traceId" style="max-width: 420px;" />
+          <button id="regen-trace" type="button">regen</button>
+          <span id="trace-note"></span>
+        </div>
 
-    <h2>WARN Links (link_registry.lastHealth.state == WARN)</h2>
-    <table>
-      <thead>
-        <tr><th>id</th><th>title</th><th>url</th><th>checkedAt</th></tr>
-      </thead>
-      <tbody id="warn-links"></tbody>
-    </table>
+        <div class="note">
+          <button id="reload">reload</button>
+          <span id="note"></span>
+        </div>
 
-    <h2>Retry Queue (pending)</h2>
-    <div class="note">再送操作は `/admin/ops` の Retry Queue から実施。</div>
-    <table>
-      <thead>
-        <tr><th>id</th><th>lineUserId</th><th>templateKey</th><th>lastError</th><th>updatedAt</th></tr>
-      </thead>
-      <tbody id="retry-rows"></tbody>
-    </table>
+        <h2>Summary</h2>
+        <pre id="summary">-</pre>
+
+        <h2>WARN Links (link_registry.lastHealth.state == WARN)</h2>
+        <table>
+          <thead>
+            <tr><th>id</th><th>title</th><th>url</th><th>checkedAt</th></tr>
+          </thead>
+          <tbody id="warn-links"></tbody>
+        </table>
+
+        <h2>Retry Queue (pending)</h2>
+        <div class="note">再送操作は `/admin/ops` の Retry Queue から実施。</div>
+        <table>
+          <thead>
+            <tr><th>id</th><th>lineUserId</th><th>templateKey</th><th>lastError</th><th>updatedAt</th></tr>
+          </thead>
+          <tbody id="retry-rows"></tbody>
+        </table>
+      </div>
+    </div>
 
     <script>
       const OPS_ACTOR_HEADERS = { 'x-actor': 'admin_errors' };

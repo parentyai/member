@@ -368,15 +368,35 @@ function createServer() {
   }
 
   if (req.method === 'GET' && (pathname === '/admin/login' || pathname === '/admin/login/')) {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(`<!doctype html>
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+  res.end(`<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin Login</title>
     <style>
+      :root {
+        --status-danger-bg: #ffebee;
+        --status-danger-text: #b71c1c;
+        --status-warn-bg: #fff8e1;
+        --status-warn-text: #8d6e63;
+        --status-ok-bg: #e8f5e9;
+        --status-ok-text: #1b5e20;
+        --status-unknown-bg: #f5f5f5;
+        --status-unknown-text: #666;
+      }
       body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
+      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
+      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+      .card-purpose { font-size: 12px; color: #555; }
+      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
+      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+      .panel-body { font-size: 13px; }
+      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
+      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
+      .status-legend { font-size: 12px; color: #666; }
       label { display: block; margin: 8px 0; }
       input { padding: 6px 8px; font-size: 14px; min-width: 280px; }
       button { padding: 6px 10px; font-size: 14px; }
@@ -384,15 +404,65 @@ function createServer() {
     </style>
   </head>
   <body>
+    <div class="card-nav">
+      <a class="card" href="/admin/ops">
+        <div class="card-title">運用判断支援（Ops）</div>
+        <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
+      </a>
+      <a class="card" href="/admin/composer">
+        <div class="card-title">通知作成（Composer）</div>
+        <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/monitor">
+        <div class="card-title">配信結果（Monitor）</div>
+        <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
+      </a>
+      <a class="card" href="/admin/errors">
+        <div class="card-title">エラー一覧（Errors）</div>
+        <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
+      </a>
+      <a class="card" href="/admin/master">
+        <div class="card-title">設定/回復（Master）</div>
+        <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/read-model">
+        <div class="card-title">通知集計（Read Model）</div>
+        <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
+      </a>
+      <a class="card" href="/admin/review">
+        <div class="card-title">運用レビュー記録（Review）</div>
+        <div class="card-purpose">運用レビュー記録を残す。</div>
+      </a>
+      <a class="card" href="/admin/login">
+        <div class="card-title">Admin Login</div>
+        <div class="card-purpose">管理トークンで認証する。</div>
+      </a>
+    </div>
     <h1>Admin Login</h1>
-    <div class="note">Enter the admin token to access /admin/* and ops/admin APIs.</div>
-    <form method="post" action="/admin/login">
-      <label>
-        token
-        <input type="password" name="token" required />
-      </label>
-      <button type="submit">Login</button>
-    </form>
+    <div class="panel panel-purpose">
+      <div class="panel-title">目的</div>
+      <div class="panel-body">管理トークンで認証する。</div>
+    </div>
+    <div class="panel panel-status">
+      <div class="panel-title">状態サマリー</div>
+      <div class="panel-body">
+        <span class="status-pill status-unknown">未取得</span>
+        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+      </div>
+    </div>
+    <div class="panel panel-actions">
+      <div class="panel-title">操作領域</div>
+      <div class="panel-body">
+        <div class="note">Enter the admin token to access /admin/* and ops/admin APIs.</div>
+        <form method="post" action="/admin/login">
+          <label>
+            token
+            <input type="password" name="token" required />
+          </label>
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    </div>
   </body>
 </html>`);
     return;

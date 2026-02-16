@@ -18,6 +18,47 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 | 運用レビュー記録（Review） | `/admin/review` | 手動レビュー記録 | `/Users/parentyai.com/Projects/Member/apps/admin/review.html:6-17` |
 | Admin Login | `/admin/login` | 管理トークン入力 | `/Users/parentyai.com/Projects/Member/src/index.js:370-388` |
 
+## 画面目的（Purpose）
+<!-- ADMIN_UI_PURPOSES_BEGIN -->
+{
+  "/admin/ops": "運用判断を安全に確定し、証跡を確認する。",
+  "/admin/composer": "通知を作成・承認し、送信計画を安全に実行する。",
+  "/admin/monitor": "配信反応と健康状態を把握し、異常を見逃さない。",
+  "/admin/errors": "WARN/Retryなどのエラーを素早く確認する。",
+  "/admin/master": "運用設定と回復操作を安全に実行する。",
+  "/admin/read-model": "通知集計を参照し、判断材料を得る。",
+  "/admin/review": "運用レビュー記録を残す。",
+  "/admin/login": "管理トークンで認証する。"
+}
+<!-- ADMIN_UI_PURPOSES_END -->
+
+## UI共通ラベル
+<!-- ADMIN_UI_PANEL_LABELS_BEGIN -->
+{
+  "purpose_title": "目的",
+  "status_title": "状態サマリー",
+  "action_title": "操作領域",
+  "status_unknown": "未取得"
+}
+<!-- ADMIN_UI_PANEL_LABELS_END -->
+
+## 色意味（固定）
+<!-- ADMIN_UI_COLOR_RULES_BEGIN -->
+[
+  {"label":"赤","meaning":"要対応"},
+  {"label":"黄","meaning":"注意"},
+  {"label":"緑","meaning":"問題なし"},
+  {"label":"灰","meaning":"未設定/不明"}
+]
+<!-- ADMIN_UI_COLOR_RULES_END -->
+
+## パンくず（固定）
+<!-- ADMIN_UI_BREADCRUMBS_BEGIN -->
+{
+  "format": "ページ名 / 対象ID / 詳細"
+}
+<!-- ADMIN_UI_BREADCRUMBS_END -->
+
 ## 操作のガード（事故防止）
 - 危険操作（送信/停止/回復）は confirmToken 必須
 - Kill Switch は最終停止装置
