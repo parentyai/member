@@ -39,7 +39,8 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "status_title": "状態サマリー",
   "action_title": "操作領域",
   "status_unknown": "未取得",
-  "impact_target_count": "対象人数（plan）"
+  "impact_target_count": "対象人数（plan）",
+  "detail_title": "詳細"
 }
 <!-- ADMIN_UI_PANEL_LABELS_END -->
 
