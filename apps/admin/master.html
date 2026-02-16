@@ -5,8 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>設定/回復（Master / 運用OS）</title>
     <style>
+      :root {
+        --status-danger-bg: #ffebee;
+        --status-danger-text: #b71c1c;
+        --status-warn-bg: #fff8e1;
+        --status-warn-text: #8d6e63;
+        --status-ok-bg: #e8f5e9;
+        --status-ok-text: #1b5e20;
+        --status-unknown-bg: #f5f5f5;
+        --status-unknown-text: #666;
+      }
       body { font-family: system-ui, sans-serif; margin: 16px; color: #222; }
-      .nav a { margin-right: 12px; }
+      .card-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .card { display: block; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; background: #fafafa; }
+      .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+      .card-purpose { font-size: 12px; color: #555; }
+      .panel { border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 12px 0; background: #fff; }
+      .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+      .panel-body { font-size: 13px; }
+      .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
+      .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
+      .status-legend { font-size: 12px; color: #666; }
       .note { font-size: 12px; color: #666; margin: 8px 0; }
       .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
       label { display: block; font-size: 12px; color: #333; margin-top: 8px; }
@@ -20,24 +39,66 @@
     </style>
   </head>
   <body>
-    <div class="nav">
-      <a href="/admin/ops">運用判断支援（Ops）</a>
-      <a href="/admin/composer">通知作成（Composer）</a>
-      <a href="/admin/monitor">配信結果（Monitor）</a>
-      <a href="/admin/errors">エラー一覧（Errors）</a>
+    <div class="card-nav">
+      <a class="card" href="/admin/ops">
+        <div class="card-title">運用判断支援（Ops）</div>
+        <div class="card-purpose">運用判断を安全に確定し、証跡を確認する。</div>
+      </a>
+      <a class="card" href="/admin/composer">
+        <div class="card-title">通知作成（Composer）</div>
+        <div class="card-purpose">通知を作成・承認し、送信計画を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/monitor">
+        <div class="card-title">配信結果（Monitor）</div>
+        <div class="card-purpose">配信反応と健康状態を把握し、異常を見逃さない。</div>
+      </a>
+      <a class="card" href="/admin/errors">
+        <div class="card-title">エラー一覧（Errors）</div>
+        <div class="card-purpose">WARN/Retryなどのエラーを素早く確認する。</div>
+      </a>
+      <a class="card" href="/admin/master">
+        <div class="card-title">設定/回復（Master）</div>
+        <div class="card-purpose">運用設定と回復操作を安全に実行する。</div>
+      </a>
+      <a class="card" href="/admin/read-model">
+        <div class="card-title">通知集計（Read Model）</div>
+        <div class="card-purpose">通知集計を参照し、判断材料を得る。</div>
+      </a>
+      <a class="card" href="/admin/review">
+        <div class="card-title">運用レビュー記録（Review）</div>
+        <div class="card-purpose">運用レビュー記録を残す。</div>
+      </a>
+      <a class="card" href="/admin/login">
+        <div class="card-title">Admin Login</div>
+        <div class="card-purpose">管理トークンで認証する。</div>
+      </a>
     </div>
 
     <h1>設定/回復（Master / 運用OS）</h1>
-    <div class="note">templates / link_registry を UI から管理（add-only）。</div>
-
-    <div class="note">
-      traceId:
-      <input type="text" id="traceId" style="max-width: 420px;" />
-      <button id="regen-trace" type="button">regen</button>
-      <span id="trace-note"></span>
+    <div class="panel panel-purpose">
+      <div class="panel-title">目的</div>
+      <div class="panel-body">運用設定と回復操作を安全に実行する。</div>
     </div>
+    <div class="panel panel-status">
+      <div class="panel-title">状態サマリー</div>
+      <div class="panel-body">
+        <span class="status-pill status-unknown">未取得</span>
+        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+      </div>
+    </div>
+    <div class="panel panel-actions">
+      <div class="panel-title">操作領域</div>
+      <div class="panel-body">
+        <div class="note">templates / link_registry を UI から管理（add-only）。</div>
 
-    <div class="grid">
+        <div class="note">
+          traceId:
+          <input type="text" id="traceId" style="max-width: 420px;" />
+          <button id="regen-trace" type="button">regen</button>
+          <span id="trace-note"></span>
+        </div>
+
+        <div class="grid">
       <div>
         <h2>Templates（通知テンプレ）</h2>
         <div class="note">API: `/api/phase61/templates`</div>
@@ -138,7 +199,8 @@
     </div>
     <pre id="config-status">-</pre>
 
-    <div class="grid">
+        </div>
+      </div>
       <div>
         <label>servicePhase（null = clear）</label>
         <select id="config-service-phase">
@@ -253,6 +315,9 @@
     <pre id="delivery-backfill-status-result">-</pre>
     <pre id="delivery-backfill-plan-result">-</pre>
     <pre id="delivery-backfill-execute-result">-</pre>
+
+      </div>
+    </div>
 
     <script>
       const ACTOR_HEADERS = { 'x-actor': 'admin_master' };

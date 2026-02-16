@@ -16,6 +16,14 @@ UI表示（画面タイトル/見出し/画面名）は `docs/ADMIN_UI_DICTIONAR
 - 危険操作（execute / kill / rollback 相当）は confirm token 必須
 - 監査ログ（audit_logs）/ 判断ログ（decision_logs）/ タイムライン（decision_timeline）で後追い再現できる
 
+## UI構造（共通）
+すべての管理UIは共通の情報構造を持つ（add-only）。
+
+- 上部カードナビ: 8画面（ops/composer/monitor/errors/master/read-model/review/login）
+- 下部パネル3層: 目的文 / 状態サマリー / 操作領域
+- 色意味は固定: 赤=要対応、黄=注意、緑=問題なし、灰=未設定/不明
+- パンくず: `ページ名 / 対象ID / 詳細`
+
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。
 本ドキュメントでは、ServicePhase を **管理UIで運用自走するための成熟度（運用OS）**として要求定義する。
