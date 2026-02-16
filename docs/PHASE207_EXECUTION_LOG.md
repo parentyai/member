@@ -14,9 +14,9 @@ base: `origin/main`
 - `npm run test:docs`: PASS
 
 ## CI
-- run id: TBD
-- log saved: `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase207.log`
+- run id: 22080955563
+- log saved: `docs/CI_EVIDENCE/2026-02-16_22080955563_phase207.log`
 
 ## Close
-- CLOSE: NO
-- Reason: CI evidence 取得前
+- CLOSE: YES
+- Reason: phase207テスト・全体テスト・docsテスト・CI証跡がそろったため
