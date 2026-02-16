@@ -49,6 +49,13 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
 - `lastExecuteReason`: `notifications.send.execute` の payloadSummary.reason（未実行時は `execute_missing`）
 - `capCountMode` / `capCountSource` / `capCountStrategy`: cap計数の方式/出所/戦略（上限値ではない）
 
+### Plan Output（Composer / 運用OS）
+- `plan.capBlockedCount`
+- `plan.capBlockedSummary`
+- `plan.capCountMode`
+- `plan.capCountSource`
+- `plan.capCountStrategy`
+
 ## Draft / Active Rules (SSOT)
 - Active（承認済み）の編集は禁止
   - 更新が必要な場合は draft を新規作成 → approve の一本道
