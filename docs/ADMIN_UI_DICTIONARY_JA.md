@@ -60,9 +60,15 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 ## 通知集計/配信結果 表示項目（Read Model / Monitor）
 - targetCount: 通知送信 plan で算出された対象人数
 - targetCountSource: targetCount の出所（`plan_audit` / `plan_missing`）
+- capCountMode: cap計数の方式（上限値ではない）
+- capCountSource: cap計数の出所（上限値ではない）
+- capCountStrategy: cap計数の戦略（上限値ではない）
+- lastExecuteReason: 直近 execute の reason（未実行は `execute_missing`）
 
 根拠:
 - `/Users/parentyai.com/Projects/Member/src/usecases/adminOs/planNotificationSend.js:49-110`
+- `/Users/parentyai.com/Projects/Member/src/usecases/adminOs/executeNotificationSend.js:40-360`
+- `/Users/parentyai.com/Projects/Member/src/usecases/notifications/checkNotificationCap.js:19-170`
 - `/Users/parentyai.com/Projects/Member/src/usecases/admin/getNotificationReadModel.js:1-200`
 
 ## ログ/追跡（調査に使う項目）

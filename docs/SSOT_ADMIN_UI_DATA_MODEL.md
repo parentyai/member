@@ -27,6 +27,10 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
     - `stepKey`
     - `targetCount`
     - `targetCountSource`
+    - `lastExecuteReason`
+    - `capCountMode`
+    - `capCountSource`
+    - `capCountStrategy`
     - `deliveredCount`
     - `readCount`
     - `clickCount`
@@ -36,6 +40,10 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
 ### Read Model Notes（targetCountSource）
 - `plan_audit`: `notifications.send.plan` の audit_logs（payloadSummary.count）由来
 - `plan_missing`: plan監査が存在しない/取得できない
+
+### Read Model Notes（execute summary）
+- `lastExecuteReason`: `notifications.send.execute` の payloadSummary.reason（未実行時は `execute_missing`）
+- `capCountMode` / `capCountSource` / `capCountStrategy`: cap計数の方式/出所/戦略（上限値ではない）
 
 ## Draft / Active Rules (SSOT)
 - Active（承認済み）の編集は禁止
