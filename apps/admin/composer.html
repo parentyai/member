@@ -101,6 +101,8 @@
       <div>
         <h2>Plan / Execute（Danger）</h2>
         <div class="note danger">execute は副作用（送信）があります。kill switch を確認してください。</div>
+        <div class="note">capCountMode / capCountSource / capCountStrategy は上限値ではなく「計数方式/出所」を示す。</div>
+        <div class="note">reason は直近 execute の結果理由（ok/blocked/fail）。</div>
         <div class="row">
           <button id="plan" type="button">Plan Send</button>
           <button id="execute" type="button">Execute Send</button>
@@ -111,6 +113,7 @@
         </div>
         <pre id="plan-result">-</pre>
         <pre id="execute-result">-</pre>
+        <div class="note" id="execute-cap-meta">capCountMode: - / capCountSource: - / capCountStrategy: - / reason: -</div>
       </div>
     </div>
 
@@ -254,6 +257,7 @@
 
       document.getElementById('execute').addEventListener('click', async () => {
         const resultEl = document.getElementById('execute-result');
+        const metaEl = document.getElementById('execute-cap-meta');
         resultEl.textContent = '';
         if (!currentNotificationId || !currentPlanHash || !currentConfirmToken) {
           resultEl.textContent = 'planHash/confirmToken required (run plan)';
@@ -265,6 +269,15 @@
           confirmToken: currentConfirmToken
         });
         resultEl.textContent = JSON.stringify(result, null, 2);
+        if (metaEl) {
+          const reason = result && typeof result === 'object' && result.reason
+            ? result.reason
+            : (result && result.ok ? 'ok' : '-');
+          const capCountMode = result && typeof result === 'object' ? (result.capCountMode || '-') : '-';
+          const capCountSource = result && typeof result === 'object' ? (result.capCountSource || '-') : '-';
+          const capCountStrategy = result && typeof result === 'object' ? (result.capCountStrategy || '-') : '-';
+          metaEl.textContent = `capCountMode: ${capCountMode} / capCountSource: ${capCountSource} / capCountStrategy: ${capCountStrategy} / reason: ${reason}`;
+        }
       });
     </script>
   </body>

@@ -15,6 +15,8 @@
   <body>
     <h1>通知集計（Read Model / READ ONLY）</h1>
     <div class="note">表示のみ。書き込みや判断は行いません。</div>
+    <div class="note">capCountMode / capCountSource は上限値ではなく「計数方式/出所」を示す。</div>
+    <div class="note">lastExecuteReason は直近 execute の reason（未実行は execute_missing）。</div>
     <div class="note">
       traceId:
       <input type="text" id="traceId" style="max-width: 420px;" />
@@ -30,6 +32,9 @@
           <th>step</th>
           <th>targetCount</th>
           <th>targetCountSource</th>
+          <th>capCountMode</th>
+          <th>capCountSource</th>
+          <th>lastExecuteReason</th>
           <th>delivered</th>
           <th>read</th>
           <th>click</th>
@@ -114,11 +119,11 @@
         const data = await res.json();
         const rows = document.getElementById('rows');
         if (!data.ok) {
-          appendMessageRow(rows, 11, 'error');
+          appendMessageRow(rows, 14, 'error');
           return;
         }
         if (!data.items.length) {
-          appendMessageRow(rows, 11, 'no data');
+          appendMessageRow(rows, 14, 'no data');
           return;
         }
         clearChildren(rows);
@@ -130,6 +135,9 @@
             item.stepKey || '-',
             item.targetCount,
             item.targetCountSource || '-',
+            item.capCountMode || '-',
+            item.capCountSource || '-',
+            item.lastExecuteReason || '-',
             item.deliveredCount,
             item.readCount,
             item.clickCount,
@@ -139,7 +147,7 @@
         }
       }
       loadReadModel().catch(() => {
-        appendMessageRow(document.getElementById('rows'), 11, 'error');
+        appendMessageRow(document.getElementById('rows'), 14, 'error');
       });
     </script>
   </body>

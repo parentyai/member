@@ -2,17 +2,19 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
+const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { evaluateNotificationSummaryCompleteness } = require('../phase24/notificationSummaryCompleteness');
 const { getNotificationDecisionTrace } = require('../phase37/getNotificationDecisionTrace');
 const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
-const { getLatestNotificationPlan } = require('../adminOs/planNotificationSend');
+const { getLatestNotificationPlan, buildTemplateKey } = require('../adminOs/planNotificationSend');
 
 const WAIT_RULE_TYPE = 'TYPE_B';
 const WAIT_RULE_SOURCE_UNSET = 'ssot_unset';
 const WAIT_RULE_SOURCE_VALUE = 'ssot_value';
 const TARGET_COUNT_SOURCE_PLAN = 'plan_audit';
 const TARGET_COUNT_SOURCE_MISSING = 'plan_missing';
+const EXECUTE_REASON_MISSING = 'execute_missing';
 const WAIT_RULE_VALUES = Object.freeze({
   '3mo': { baseDate: 'departureDate', offsetDays: -90 },
   '2mo': { baseDate: 'departureDate', offsetDays: -60 },
@@ -91,6 +93,32 @@ async function resolveTargetCount(notificationId) {
   return { targetCount, targetCountSource };
 }
 
+async function resolveExecuteSummary(notificationId) {
+  const empty = {
+    lastExecuteReason: EXECUTE_REASON_MISSING,
+    capCountMode: null,
+    capCountSource: null,
+    capCountStrategy: null
+  };
+  if (!notificationId) return empty;
+  try {
+    const latest = await auditLogsRepo.getLatestAuditLog({
+      action: 'notifications.send.execute',
+      templateKey: buildTemplateKey(notificationId)
+    });
+    if (!latest || !latest.payloadSummary) return empty;
+    const summary = latest.payloadSummary;
+    return {
+      lastExecuteReason: summary.reason || null,
+      capCountMode: summary.capCountMode || null,
+      capCountSource: summary.capCountSource || null,
+      capCountStrategy: summary.capCountStrategy || null
+    };
+  } catch (_err) {
+    return empty;
+  }
+}
+
 async function getNotificationReadModel(params) {
   const opts = params || {};
   let notifications = [];
@@ -121,6 +149,7 @@ async function getNotificationReadModel(params) {
     }
     const waitRule = resolveWaitRule(notification.stepKey);
     const { targetCount, targetCountSource } = await resolveTargetCount(notification.id);
+    const executeSummary = await resolveExecuteSummary(notification.id);
     const reaction = await getNotificationReactionSummary({ notificationId: notification.id }, { deliveriesRepo: { listDeliveriesByNotificationId: async () => deliveries } });
     const reactionSummary = {
       sent: reaction.sent,
@@ -137,6 +166,10 @@ async function getNotificationReadModel(params) {
       linkRegistryId: notification.linkRegistryId || null,
       targetCount,
       targetCountSource,
+      lastExecuteReason: executeSummary.lastExecuteReason,
+      capCountMode: executeSummary.capCountMode,
+      capCountSource: executeSummary.capCountSource,
+      capCountStrategy: executeSummary.capCountStrategy,
       deliveredCount,
       readCount,
       clickCount,
