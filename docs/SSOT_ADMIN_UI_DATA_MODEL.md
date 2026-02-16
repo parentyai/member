@@ -36,6 +36,10 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
     - `clickCount`
     - `reactionSummary.ctr`
     - `notificationHealth`
+    - `weekOverWeek.delta.sent`
+    - `weekOverWeek.delta.read`
+    - `weekOverWeek.delta.click`
+    - `weekOverWeek.delta.ctr`
 
 ### Read Model Notes（targetCountSource）
 - `plan_audit`: `notifications.send.plan` の audit_logs（payloadSummary.count）由来
