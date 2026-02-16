@@ -14,9 +14,9 @@ base: `origin/main`
 - `npm run test:docs`: PASS
 
 ## CI
-- run id: TBD
-- log saved: `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase206.log`
+- run id: 22078997319
+- log saved: `docs/CI_EVIDENCE/2026-02-16_22078997319_phase206.log`
 
 ## Close
-- CLOSE: TBD
-- Reason: TBD
+- CLOSE: NO
+- Reason: スクショ未取得（Ops/Composer/Monitor/Errors）と自己評価未実施
