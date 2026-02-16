@@ -8,6 +8,7 @@ const { appendLlmSuggestionAudit } = require('../phase104/appendLlmSuggestionAud
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const opsAssistCacheRepo = require('../../repos/firestore/opsAssistCacheRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { computeInputHash, shouldRefreshOpsAssist } = require('../phase51/shouldRefreshOpsAssist');
 const { emitObs } = require('../../ops/obs');
 
@@ -121,9 +122,12 @@ async function getOpsAssistSuggestion(params, deps) {
   const buildFn = deps && deps.buildSuggestion ? deps.buildSuggestion : buildSuggestion;
   const guardFn = deps && deps.guardOpsAssistSuggestion ? deps.guardOpsAssistSuggestion : guardOpsAssistSuggestion;
   const auditFn = deps && deps.appendLlmSuggestionAudit ? deps.appendLlmSuggestionAudit : appendLlmSuggestionAudit;
-  const llmEnabled = payload.llmEnabled === true
+  const featureEnabled = isLlmFeatureEnabled(deps && deps.env ? deps.env : process.env);
+  const llmEnabled = featureEnabled && (
+    payload.llmEnabled === true
     || (deps && deps.llmEnabled === true)
-    || process.env.OPS_ASSIST_LLM_ENABLED === 'true';
+    || process.env.OPS_ASSIST_LLM_ENABLED === 'true'
+  );
   const nowMs = deps && typeof deps.nowMs === 'number' ? deps.nowMs : Date.now();
 
   let killSwitch = false;
