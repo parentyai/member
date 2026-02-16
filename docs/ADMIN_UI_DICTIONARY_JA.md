@@ -57,6 +57,14 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 根拠:
 - `/Users/parentyai.com/Projects/Member/apps/admin/composer.html:54-67`
 
+## 通知集計/配信結果 表示項目（Read Model / Monitor）
+- targetCount: 通知送信 plan で算出された対象人数
+- targetCountSource: targetCount の出所（`plan_audit` / `plan_missing`）
+
+根拠:
+- `/Users/parentyai.com/Projects/Member/src/usecases/adminOs/planNotificationSend.js:49-110`
+- `/Users/parentyai.com/Projects/Member/src/usecases/admin/getNotificationReadModel.js:1-200`
+
 ## ログ/追跡（調査に使う項目）
 - audit_logs: `actor`, `action`, `entityType`, `entityId`, `traceId`, `requestId`, `payloadSummary`, `createdAt`
 - decision_logs: `subjectType`, `subjectId`, `decidedAt`, `traceId`

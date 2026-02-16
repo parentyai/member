@@ -25,11 +25,17 @@ ServicePhase1（運用OS v1）で UI から扱う編集対象。
     - `title`
     - `scenarioKey`
     - `stepKey`
+    - `targetCount`
+    - `targetCountSource`
     - `deliveredCount`
     - `readCount`
     - `clickCount`
     - `reactionSummary.ctr`
     - `notificationHealth`
+
+### Read Model Notes（targetCountSource）
+- `plan_audit`: `notifications.send.plan` の audit_logs（payloadSummary.count）由来
+- `plan_missing`: plan監査が存在しない/取得できない
 
 ## Draft / Active Rules (SSOT)
 - Active（承認済み）の編集は禁止
