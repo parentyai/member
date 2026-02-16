@@ -21,6 +21,8 @@
   - tests/phaseLLM3/phaseLLM3_next_action_candidates_ui.test.js
 - FAQ answer: direct URL blocked + citation sourceId enforcement
   - tests/phaseLLM4/phaseLLM4_faq_usecase.test.js
+- runbook + phase plan docs exist
+  - tests/phaseLLM5/phaseLLM5_docs_exist.test.js
 
 ## Manual Checks
 - Admin ops console shows llmExplanation JSON and status without affecting ops decisions.
