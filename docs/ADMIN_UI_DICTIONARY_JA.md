@@ -42,6 +42,17 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 }
 <!-- ADMIN_UI_PANEL_LABELS_END -->
 
+## 状態ラベル（固定）
+<!-- ADMIN_UI_STATUS_LABELS_BEGIN -->
+{
+  "status_ready": "READY",
+  "status_not_ready": "NOT_READY",
+  "health_ok": "OK",
+  "health_warn": "WARN",
+  "health_danger": "DANGER"
+}
+<!-- ADMIN_UI_STATUS_LABELS_END -->
+
 ## 色意味（固定）
 <!-- ADMIN_UI_COLOR_RULES_BEGIN -->
 [

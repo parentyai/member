@@ -24,6 +24,9 @@
       .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
       .panel-body { font-size: 13px; }
       .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; margin-right: 8px; }
+      .status-ok { background: var(--status-ok-bg); color: var(--status-ok-text); }
+      .status-warn { background: var(--status-warn-bg); color: var(--status-warn-text); }
+      .status-danger { background: var(--status-danger-bg); color: var(--status-danger-text); }
       .status-unknown { background: var(--status-unknown-bg); color: var(--status-unknown-text); }
       .status-legend { font-size: 12px; color: #666; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
@@ -82,8 +85,9 @@
     <div class="panel panel-status">
       <div class="panel-title">状態サマリー</div>
       <div class="panel-body">
-        <span class="status-pill status-unknown">未取得</span>
-        <span class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
+        <span id="ops-status-pill" class="status-pill status-unknown">未取得</span>
+        <span id="ops-status-summary" class="status-legend">READY: - / NOT_READY: -</span>
+        <div class="status-legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</div>
       </div>
     </div>
     <div class="panel panel-actions">
@@ -1137,6 +1141,29 @@
         });
       }
 
+      function updateOpsStatusSummary(items) {
+        const pill = document.getElementById('ops-status-pill');
+        const summary = document.getElementById('ops-status-summary');
+        if (!pill || !summary) return;
+        const counts = { READY: 0, NOT_READY: 0 };
+        (items || []).forEach((item) => {
+          const status = item && item.readiness && item.readiness.status ? item.readiness.status : 'NOT_READY';
+          if (status === 'READY') counts.READY += 1;
+          else counts.NOT_READY += 1;
+        });
+        const total = counts.READY + counts.NOT_READY;
+        if (!total) {
+          pill.className = 'status-pill status-unknown';
+          pill.textContent = '未取得';
+          summary.textContent = 'READY: - / NOT_READY: -';
+          return;
+        }
+        const overall = counts.NOT_READY > 0 ? 'NOT_READY' : 'READY';
+        pill.className = `status-pill ${overall === 'READY' ? 'status-ok' : 'status-danger'}`;
+        pill.textContent = overall;
+        summary.textContent = `READY: ${counts.READY} / NOT_READY: ${counts.NOT_READY}`;
+      }
+
       function updateDecisionActionOptions(detail) {
         const select = document.getElementById('ops-decision-action');
         clearChildren(select);
@@ -1478,15 +1505,18 @@
           if (!data || !data.ok) {
             setText(errorEl, 'error');
             renderOpsConsoleList([]);
+            updateOpsStatusSummary([]);
             return;
           }
           opsConsoleListCache = Array.isArray(data.items) ? data.items : [];
           const pageInfoText = data.pageInfo ? JSON.stringify(data.pageInfo) : '-';
           note.textContent = `serverTime: ${data.serverTime || '-'} / pageInfo: ${pageInfoText} / nextPageToken: ${data.nextPageToken || '-'}`;
           renderOpsConsoleList(opsConsoleListCache);
+          updateOpsStatusSummary(opsConsoleListCache);
         } catch (err) {
           setText(errorEl, 'error');
           renderOpsConsoleList([]);
+          updateOpsStatusSummary([]);
         }
       }
 
