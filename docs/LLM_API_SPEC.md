@@ -135,6 +135,24 @@
   - `direct_url_forbidden`
   - `llm_disabled`
 
+### GET /api/admin/llm/ops-explain
+- Purpose: Ops 状態説明（advisory-only）を admin 名前空間で提供。
+- Auth: `/api/admin/*` 保護 + `x-actor`。
+- Query:
+  - `lineUserId` (required)
+- Notes:
+  - 既存 `/api/phaseLLM2/ops-explain` と同一 usecase を利用。
+  - admin app は本エンドポイントを優先し、404 時のみ旧エンドポイントへフォールバック。
+
+### GET /api/admin/llm/next-actions
+- Purpose: 次アクション候補（抽象カテゴリのみ）を admin 名前空間で提供。
+- Auth: `/api/admin/*` 保護 + `x-actor`。
+- Query:
+  - `lineUserId` (required)
+- Notes:
+  - 既存 `/api/phaseLLM3/ops-next-actions` と同一 usecase を利用。
+  - admin app は本エンドポイントを優先し、404 時のみ旧エンドポイントへフォールバック。
+
 ### POST /api/phaseLLM4/faq/answer (deprecated compatibility)
 - Status: maintained for compatibility.
 - Behavior: internally delegates to `/api/admin/llm/faq/answer`.
