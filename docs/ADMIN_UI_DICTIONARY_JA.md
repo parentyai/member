@@ -487,6 +487,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.label.llm.runOpsExplain": "Ops説明を取得",
   "ui.label.llm.runNextActions": "次候補を取得",
   "ui.label.llm.runFaq": "FAQ回答を生成",
+  "ui.label.llm.openAudit": "証跡を開く",
   "ui.help.llm.lineUserId": "対象ユーザーのLINE ID",
   "ui.help.llm.question": "KBに照会する質問",
   "ui.help.llm.config.enabled": "DBフラグの有効/停止を切り替えます",

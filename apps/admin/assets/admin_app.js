@@ -142,13 +142,17 @@ function setupNav() {
     btn.addEventListener('click', () => {
       const target = btn.dataset.paneTarget;
       if (!target) return;
-      document.querySelectorAll('.nav-item').forEach((el) => {
-        el.classList.toggle('is-active', el === btn);
-      });
-      document.querySelectorAll('.app-pane').forEach((pane) => {
-        pane.classList.toggle('is-active', pane.dataset.pane === target);
-      });
+      activatePane(target);
     });
+  });
+}
+
+function activatePane(target) {
+  document.querySelectorAll('.nav-item').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.paneTarget === target);
+  });
+  document.querySelectorAll('.app-pane').forEach((pane) => {
+    pane.classList.toggle('is-active', pane.dataset.pane === target);
   });
 }
 
@@ -849,6 +853,14 @@ function getLlmFaqQuestion() {
   return el && typeof el.value === 'string' ? el.value.trim() : '';
 }
 
+function copyLlmTraceToAudit() {
+  const llmTrace = ensureTraceInput('llm-trace');
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace && llmTrace) {
+    auditTrace.value = llmTrace;
+  }
+}
+
 function parseLlmEnabled(value) {
   if (value === 'true') return true;
   if (value === 'false') return false;
@@ -1011,6 +1023,13 @@ function setupLlmControls() {
   document.getElementById('llm-run-ops-explain')?.addEventListener('click', runLlmOpsExplain);
   document.getElementById('llm-run-next-actions')?.addEventListener('click', runLlmNextActions);
   document.getElementById('llm-run-faq')?.addEventListener('click', runLlmFaq);
+  document.getElementById('llm-open-audit')?.addEventListener('click', async () => {
+    copyLlmTraceToAudit();
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
   document.getElementById('llm-config-reload')?.addEventListener('click', loadLlmConfigStatus);
   document.getElementById('llm-config-plan')?.addEventListener('click', planLlmConfig);
   document.getElementById('llm-config-set')?.addEventListener('click', setLlmConfig);
