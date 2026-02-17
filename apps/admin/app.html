@@ -604,6 +604,33 @@
                   <p data-dict-key="ui.desc.llm.policy">提案のみ。自動実行は行いません。最終判断は運用担当が実施します。</p>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.llm.config">LLM設定</div>
+                <div class="panel-body">
+                  <label data-dict-key="ui.label.llm.config.enabled" data-dict-tip="ui.help.llm.config.enabled">LLM提案機能</label>
+                  <select id="llm-config-enabled">
+                    <option value="true" data-dict-key="ui.value.llm.enabled">有効</option>
+                    <option value="false" data-dict-key="ui.value.llm.disabled">停止</option>
+                  </select>
+                  <div class="row row-top">
+                    <button id="llm-config-reload" type="button" data-dict-key="ui.label.llm.config.reload">状態更新</button>
+                    <button id="llm-config-plan" type="button" data-dict-key="ui.label.llm.config.plan">計画</button>
+                    <button id="llm-config-set" type="button" data-dict-key="ui.label.llm.config.set">適用</button>
+                  </div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.llm.config.status">状態</summary>
+                    <pre id="llm-config-status">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.llm.config.planResult">計画結果</summary>
+                    <pre id="llm-config-plan-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.llm.config.setResult">適用結果</summary>
+                    <pre id="llm-config-set-result">-</pre>
+                  </details>
+                </div>
+              </div>
             </div>
             <aside class="pane-actions">
               <div class="action-panel">
