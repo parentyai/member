@@ -212,6 +212,21 @@
     <pre id="llm-config-status">-</pre>
     <pre id="llm-config-plan-result">-</pre>
     <pre id="llm-config-set-result">-</pre>
+    <h3>LLM FAQ 検証（管理者）</h3>
+    <div class="note">KB候補が無い場合や根拠不足の場合は回答を出さずに停止します。</div>
+    <label data-tip="question" tabindex="0">質問</label>
+    <textarea id="llm-faq-question" placeholder="例: 会員番号の確認方法を教えて"></textarea>
+    <label data-tip="locale" tabindex="0">言語</label>
+    <select id="llm-faq-locale">
+      <option value="ja">ja</option>
+      <option value="en">en</option>
+    </select>
+    <label data-tip="intent" tabindex="0">意図（任意）</label>
+    <input id="llm-faq-intent" placeholder="例: membership_verify" />
+    <div class="note">
+      <button id="llm-faq-answer" type="button">FAQ回答を生成</button>
+    </div>
+    <pre id="llm-faq-result">-</pre>
 
         </div>
       </div>
@@ -929,6 +944,27 @@
         return data;
       }
 
+      async function generateLlmFaqAnswer() {
+        const question = document.getElementById('llm-faq-question').value.trim();
+        const locale = document.getElementById('llm-faq-locale').value;
+        const intentRaw = document.getElementById('llm-faq-intent').value.trim();
+        if (!question) {
+          const err = { ok: false, error: '質問が必要です' };
+          document.getElementById('llm-faq-result').textContent = JSON.stringify(err, null, 2);
+          return err;
+        }
+        const payload = { question, locale };
+        if (intentRaw) payload.intent = intentRaw;
+        const res = await fetch('/api/admin/llm/faq/answer', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify(payload)
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-faq-result').textContent = JSON.stringify(data, null, 2);
+        return data;
+      }
+
       async function planSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
@@ -1196,6 +1232,7 @@
       document.getElementById('llm-config-reload').addEventListener('click', () => runWithToast('LLM設定 更新', loadLlmConfigStatus));
       document.getElementById('llm-config-plan').addEventListener('click', () => runWithToast('LLM設定 計画', planLlmConfig));
       document.getElementById('llm-config-set').addEventListener('click', () => runWithToast('LLM設定 適用', setLlmConfig));
+      document.getElementById('llm-faq-answer').addEventListener('click', () => runWithToast('LLM FAQ', generateLlmFaqAnswer));
       document.getElementById('config-plan').addEventListener('click', () => runWithToast('システム設定 計画', planSystemConfig));
       document.getElementById('config-set').addEventListener('click', () => runWithToast('システム設定 適用', setSystemConfig));
       document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('自動化設定 更新', loadAutomationConfigStatus));
