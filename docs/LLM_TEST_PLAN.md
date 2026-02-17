@@ -27,3 +27,18 @@
 ## Manual Checks
 - Admin ops console shows llmExplanation JSON and status without affecting ops decisions.
 - When LLM_FEATURE_FLAG is off, explanation remains fallback and advisory-only.
+
+## Phase208 Additions
+- dual gate: `system_flags.llmEnabled` and `LLM_FEATURE_FLAG` both required
+  - tests/phaseLLM6/phaseLLM6_dual_gate.test.js
+- FAQ KB-only: candidates 0 or citations 0 => 422 BLOCK
+  - tests/phaseLLM6/phaseLLM6_faq_blocks_without_citations.test.js
+  - tests/phaseLLM6/phaseLLM6_faq_blocks_kb_no_match.test.js
+- FAQ link safety:
+  - direct URL forbidden
+  - WARN link blocked
+  - tests/phaseLLM6/phaseLLM6_faq_link_safety.test.js
+- minimization: Secret/PII not allowed into LLM payload
+  - tests/phaseLLM6/phaseLLM6_allowlist_prevents_secret.test.js
+- audit traceability: blocked/success both append trace-linked audit logs
+  - tests/phaseLLM6/phaseLLM6_audit_trace_required.test.js

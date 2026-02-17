@@ -15,7 +15,8 @@ const baseConsole = {
 function stubDeps(overrides) {
   return Object.assign({
     getOpsConsole: async () => baseConsole,
-    appendAuditLog: async () => ({ id: 'audit-1' })
+    appendAuditLog: async () => ({ id: 'audit-1' }),
+    getLlmEnabled: async () => false
   }, overrides || {});
 }
 
@@ -42,6 +43,7 @@ test('phaseLLM3: accepts valid LLM candidates when enabled', async () => {
     { lineUserId: 'U123' },
     stubDeps({
       env: { LLM_FEATURE_FLAG: 'true' },
+      getLlmEnabled: async () => true,
       llmAdapter: {
         suggestNextActionCandidates: async () => payload
       }
@@ -63,6 +65,7 @@ test('phaseLLM3: invalid LLM candidates fallback', async () => {
     { lineUserId: 'U123' },
     stubDeps({
       env: { LLM_FEATURE_FLAG: 'true' },
+      getLlmEnabled: async () => true,
       llmAdapter: {
         suggestNextActionCandidates: async () => invalid
       }

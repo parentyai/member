@@ -20,3 +20,11 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
 
 ## Phase5 (Operations)
 - Close: Runbook / Phase plan / Test plan が揃い、停止・監査・復旧が手順化されている。
+
+## Phase208 (LLM × DB Integration Hardening)
+- Close:
+  - FAQ が KB 限定（`faq_articles`）で動作
+  - citations 0 件は 422 BLOCK
+  - 二重ゲート（`llmEnabled` + `LLM_FEATURE_FLAG`）がテスト固定
+  - `/api/phaseLLM4/faq/answer` は互換維持（deprecated）
+  - 監査ログが traceId で成功/BLOCK両方追跡可能

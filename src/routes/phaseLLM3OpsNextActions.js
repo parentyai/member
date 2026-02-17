@@ -12,7 +12,8 @@ async function handleOpsNextActions(req, res) {
       return;
     }
     const traceId = req.headers['x-trace-id'] || null;
-    const result = await getNextActionCandidates({ lineUserId, traceId });
+    const actor = req.headers['x-actor'] || 'phaseLLM3_ops_next_actions';
+    const result = await getNextActionCandidates({ lineUserId, traceId, actor });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {

@@ -1,18 +1,27 @@
 'use strict';
 
-const { getFaqAnswer } = require('../usecases/phaseLLM4/getFaqAnswer');
+const { answerFaqFromKb } = require('../usecases/faq/answerFaqFromKb');
 
 async function handleFaqAnswer(req, res, body) {
   try {
     const payload = body ? JSON.parse(body) : {};
     const traceId = req.headers['x-trace-id'] || null;
-    const result = await getFaqAnswer({
+    const actor = req.headers['x-actor'] || 'phaseLLM4_faq_compat';
+    const requestId = req.headers['x-request-id'] || null;
+    const result = await answerFaqFromKb({
       question: payload.question,
-      sourceIds: payload.sourceIds,
-      traceId
+      locale: payload.locale,
+      intent: payload.intent,
+      traceId,
+      actor,
+      requestId
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
+    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(Object.assign({}, result, {
+      deprecated: true,
+      replacement: '/api/admin/llm/faq/answer'
+    })));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.includes('required') || message.includes('invalid')) {

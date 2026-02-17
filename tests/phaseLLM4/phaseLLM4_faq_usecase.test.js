@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { getFaqAnswer } = require('../../src/usecases/phaseLLM4/getFaqAnswer');
 
-function makeRepo(states) {
+function makeLinkRepo(states) {
   return {
     getLink: async (id) => {
       if (!Object.prototype.hasOwnProperty.call(states, id)) return null;
@@ -14,25 +14,35 @@ function makeRepo(states) {
   };
 }
 
+function makeFaqArticlesRepo(rows) {
+  return {
+    searchActiveArticles: async () => rows
+  };
+}
+
 function stubDeps(overrides) {
   return Object.assign({
-    appendAuditLog: async () => ({ id: 'audit-1' })
+    appendAuditLog: async () => ({ id: 'audit-1' }),
+    faqAnswerLogsRepo: { appendFaqAnswerLog: async () => ({ id: 'faq-log-1' }) },
+    getLlmEnabled: async () => false,
+    env: {}
   }, overrides || {});
 }
 
-test('phaseLLM4: fallback when LLM disabled', async () => {
+test('phaseLLM4: block when LLM disabled', async () => {
   const result = await getFaqAnswer(
-    { question: 'Q1', sourceIds: ['s1'] },
+    { question: 'Q1', locale: 'ja' },
     stubDeps({
-      env: {},
-      linkRegistryRepo: makeRepo({ s1: 'OK' })
+      faqArticlesRepo: makeFaqArticlesRepo([
+        { id: 'a1', title: 'T', body: 'B', tags: ['tag'], riskLevel: 'low', linkRegistryIds: ['s1'] }
+      ]),
+      linkRegistryRepo: makeLinkRepo({ s1: 'OK' })
     })
   );
-  assert.equal(result.ok, true);
-  assert.equal(result.llmStatus, 'disabled');
+  assert.equal(result.ok, false);
+  assert.equal(result.blockedReason, 'llm_disabled');
+  assert.equal(result.httpStatus, 422);
   assert.equal(result.llmUsed, false);
-  assert.equal(result.faqAnswer.schemaId, 'FAQAnswer.v1');
-  assert.equal(result.faqAnswer.citations.length, 1);
 });
 
 test('phaseLLM4: accepts valid LLM answer with allowed citations', async () => {
@@ -45,50 +55,71 @@ test('phaseLLM4: accepts valid LLM answer with allowed citations', async () => {
     citations: [{ sourceType: 'link_registry', sourceId: 's1' }]
   };
   const result = await getFaqAnswer(
-    { question: 'Q2', sourceIds: ['s1'] },
+    { question: 'Q2', locale: 'ja' },
     stubDeps({
       env: { LLM_FEATURE_FLAG: 'true' },
+      getLlmEnabled: async () => true,
       llmAdapter: { answerFaq: async () => payload },
-      linkRegistryRepo: makeRepo({ s1: 'OK' })
+      faqArticlesRepo: makeFaqArticlesRepo([
+        { id: 'a1', title: 'T', body: 'B', tags: ['tag'], riskLevel: 'low', linkRegistryIds: ['s1'] }
+      ]),
+      linkRegistryRepo: makeLinkRepo({ s1: 'OK' })
     })
   );
+  assert.equal(result.ok, true);
   assert.equal(result.llmUsed, true);
   assert.equal(result.llmStatus, 'ok');
   assert.deepEqual(result.faqAnswer, payload);
 });
 
-test('phaseLLM4: invalid citation source triggers fallback', async () => {
+test('phaseLLM4: citations required (0 citations => block)', async () => {
   const payload = {
     schemaId: 'FAQAnswer.v1',
     generatedAt: new Date().toISOString(),
     advisoryOnly: true,
     question: 'Q3',
     answer: 'A3',
-    citations: [{ sourceType: 'link_registry', sourceId: 'unknown' }]
+    citations: []
   };
   const result = await getFaqAnswer(
-    { question: 'Q3', sourceIds: ['s1'] },
+    { question: 'Q3', locale: 'ja' },
     stubDeps({
       env: { LLM_FEATURE_FLAG: 'true' },
+      getLlmEnabled: async () => true,
       llmAdapter: { answerFaq: async () => payload },
-      linkRegistryRepo: makeRepo({ s1: 'OK' })
+      faqArticlesRepo: makeFaqArticlesRepo([
+        { id: 'a1', title: 'T', body: 'B', tags: ['tag'], riskLevel: 'low', linkRegistryIds: ['s1'] }
+      ]),
+      linkRegistryRepo: makeLinkRepo({ s1: 'OK' })
     })
   );
-  assert.equal(result.llmUsed, false);
-  assert.equal(result.llmStatus, 'invalid_citation_source');
-  assert.ok(Array.isArray(result.faqAnswer.citations));
+  assert.equal(result.ok, false);
+  assert.equal(result.blockedReason, 'citations_required');
+  assert.equal(result.httpStatus, 422);
 });
 
 test('phaseLLM4: WARN link is blocked', async () => {
+  const payload = {
+    schemaId: 'FAQAnswer.v1',
+    generatedAt: new Date().toISOString(),
+    advisoryOnly: true,
+    question: 'Q4',
+    answer: 'A4',
+    citations: [{ sourceType: 'link_registry', sourceId: 's1' }]
+  };
   const result = await getFaqAnswer(
-    { question: 'Q4', sourceIds: ['s1'] },
+    { question: 'Q4', locale: 'ja' },
     stubDeps({
-      env: {},
-      linkRegistryRepo: makeRepo({ s1: 'WARN' })
+      env: { LLM_FEATURE_FLAG: 'true' },
+      getLlmEnabled: async () => true,
+      llmAdapter: { answerFaq: async () => payload },
+      faqArticlesRepo: makeFaqArticlesRepo([
+        { id: 'a1', title: 'T', body: 'B', tags: ['tag'], riskLevel: 'low', linkRegistryIds: ['s1'] }
+      ]),
+      linkRegistryRepo: makeLinkRepo({ s1: 'WARN' })
     })
   );
-  assert.equal(result.llmUsed, false);
-  assert.equal(result.llmStatus, 'disabled');
-  assert.ok(Array.isArray(result.blockedSourceIds));
-  assert.equal(result.blockedSourceIds[0], 's1');
+  assert.equal(result.ok, false);
+  assert.equal(result.blockedReason, 'warn_link_blocked');
+  assert.equal(result.httpStatus, 422);
 });
