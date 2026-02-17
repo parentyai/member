@@ -159,6 +159,7 @@
 - Response includes:
   - `deprecated: true`
   - `replacement: "/api/admin/llm/faq/answer"`
+  - `traceId` / `requestId` を互換 route から usecase へ転送（監査追跡維持）
 
 ### GET /api/admin/llm/config/status
 - Purpose: LLM config current value check.
