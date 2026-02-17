@@ -26,3 +26,11 @@
 ## 補足
 - phase233 PR `#476` は review requirement により merge 保留（`REVIEW_REQUIRED`）。
 - phase234 実装は `origin/main` 基点ブランチで分離済み。
+
+## CI
+- run id: `22111532750` (main push / Audit Gate)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22111532750_phase234.log`
+
+## Close
+- merge commit: `8e0b060`
+- CLOSE: YES

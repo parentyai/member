@@ -17,9 +17,9 @@ base: `origin/main`
   - result: PASS (618/618)
 
 ## CI
-- run id: `22105810586` (audit/docs), `22105810621` (dry-run/deploy)
-- log saved: TBD
+- run id: `22105991998` (main push / Audit Gate)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22105991998_phase230.log`
 
 ## Close
-- merge commit: TBD
-- CLOSE: NO
+- merge commit: `3d16168`
+- CLOSE: YES
