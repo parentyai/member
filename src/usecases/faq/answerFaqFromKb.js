@@ -5,7 +5,6 @@ const crypto = require('crypto');
 const faqArticlesRepo = require('../../repos/firestore/faqArticlesRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
-const { DEFAULT_ALLOW_LISTS } = require('../../llm/allowList');
 const { FAQ_ANSWER_SCHEMA_ID } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { appendAuditLog } = require('../audit/appendAuditLog');
@@ -33,7 +32,11 @@ const FAQ_FIELD_CATEGORIES = Object.freeze({
   'kbCandidates.body': 'Public',
   'kbCandidates.tags': 'Public',
   'kbCandidates.riskLevel': 'Public',
-  'kbCandidates.linkRegistryIds': 'Public'
+  'kbCandidates.linkRegistryIds': 'Public',
+  'kbCandidates.status': 'Public',
+  'kbCandidates.validUntil': 'Public',
+  'kbCandidates.allowedIntents': 'Public',
+  'kbCandidates.disclaimerVersion': 'Public'
 });
 
 function hashText(value) {
@@ -50,7 +53,16 @@ function hashJson(value) {
 
 function toIso(value) {
   if (value instanceof Date) return value.toISOString();
+  if (value && typeof value.toDate === 'function') {
+    const asDate = value.toDate();
+    if (asDate instanceof Date) return asDate.toISOString();
+  }
   return new Date().toISOString();
+}
+
+function toIsoOrNull(value) {
+  if (value === null || value === undefined) return null;
+  return toIso(value);
 }
 
 function normalizeLocale(value) {
@@ -113,6 +125,36 @@ function collectAllowedSourceIds(articles) {
   return Array.from(out);
 }
 
+function collectRequiredContactSourceIds(articles) {
+  const out = new Set();
+  for (const article of articles || []) {
+    if (!article || String(article.riskLevel || 'low').toLowerCase() !== 'high') continue;
+    const ids = Array.isArray(article.linkRegistryIds) ? article.linkRegistryIds : [];
+    for (const id of ids) {
+      if (typeof id === 'string' && id.trim().length > 0) out.add(id.trim());
+    }
+  }
+  return Array.from(out);
+}
+
+function extractCitationSourceIds(answer) {
+  const citations = answer && Array.isArray(answer.citations) ? answer.citations : [];
+  const out = new Set();
+  for (const citation of citations) {
+    if (!citation || citation.sourceType !== 'link_registry') continue;
+    if (typeof citation.sourceId !== 'string') continue;
+    const sourceId = citation.sourceId.trim();
+    if (sourceId) out.add(sourceId);
+  }
+  return out;
+}
+
+function hasRequiredCitation(answer, requiredSourceIds) {
+  if (!Array.isArray(requiredSourceIds) || requiredSourceIds.length === 0) return true;
+  const cited = extractCitationSourceIds(answer);
+  return requiredSourceIds.some((id) => cited.has(id));
+}
+
 async function appendAudit(data, deps) {
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   if (!auditFn) return null;
@@ -157,6 +199,7 @@ async function answerFaqFromKb(params, deps) {
 
   const matchedArticleIds = candidates.map((item) => item.id);
   const allowedSourceIds = collectAllowedSourceIds(candidates);
+  const requiredContactSourceIds = collectRequiredContactSourceIds(candidates);
 
   const llmInput = {
     question,
@@ -168,7 +211,11 @@ async function answerFaqFromKb(params, deps) {
       body: item.body || '',
       tags: Array.isArray(item.tags) ? item.tags : [],
       riskLevel: item.riskLevel || 'low',
-      linkRegistryIds: Array.isArray(item.linkRegistryIds) ? item.linkRegistryIds : []
+      linkRegistryIds: Array.isArray(item.linkRegistryIds) ? item.linkRegistryIds : [],
+      status: item.status || null,
+      validUntil: toIsoOrNull(item.validUntil),
+      allowedIntents: Array.isArray(item.allowedIntents) ? item.allowedIntents : [],
+      disclaimerVersion: item.disclaimerVersion || null
     }))
   };
 
@@ -184,7 +231,11 @@ async function answerFaqFromKb(params, deps) {
       'kbCandidates.body',
       'kbCandidates.tags',
       'kbCandidates.riskLevel',
-      'kbCandidates.linkRegistryIds'
+      'kbCandidates.linkRegistryIds',
+      'kbCandidates.status',
+      'kbCandidates.validUntil',
+      'kbCandidates.allowedIntents',
+      'kbCandidates.disclaimerVersion'
     ],
     fieldCategories: FAQ_FIELD_CATEGORIES,
     allowRestricted: false
@@ -197,6 +248,8 @@ async function answerFaqFromKb(params, deps) {
     blocked = buildBlocked({ blockedReason: 'llm_disabled', traceId, llmStatus: 'llm_disabled', serverTime });
   } else if (!candidates.length) {
     blocked = buildBlocked({ blockedReason: 'kb_no_match', traceId, llmStatus: 'kb_no_match', serverTime });
+  } else if (candidates.some((item) => String(item.riskLevel || '').toLowerCase() === 'high') && requiredContactSourceIds.length === 0) {
+    blocked = buildBlocked({ blockedReason: 'contact_source_required', traceId, llmStatus: 'contact_source_required', serverTime });
   }
 
   if (blocked) {
@@ -307,6 +360,46 @@ async function answerFaqFromKb(params, deps) {
       blockedReason
     }, deps).catch(() => null);
 
+    return Object.assign(blockedResult, { auditId });
+  }
+
+  if (!hasRequiredCitation(answer, requiredContactSourceIds)) {
+    const blockedReason = 'contact_source_required';
+    const blockedResult = buildBlocked({
+      blockedReason,
+      traceId,
+      llmStatus: blockedReason,
+      schemaErrors: null,
+      serverTime
+    });
+    const auditId = await appendAudit({
+      actor,
+      action: 'llm_faq_answer_blocked',
+      eventType: 'LLM_FAQ_ANSWER_BLOCKED',
+      entityType: 'llm_faq',
+      entityId: 'faq',
+      traceId,
+      requestId,
+      payloadSummary: {
+        purpose: 'faq',
+        llmEnabled,
+        envLlmFeatureFlag: envEnabled,
+        dbLlmEnabled: dbEnabled,
+        blockedReason,
+        schemaId: FAQ_ANSWER_SCHEMA_ID,
+        kbMatchedIds: matchedArticleIds,
+        inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
+        inputHash: hashJson(view.data),
+        outputHash: hashJson(answer)
+      }
+    }, deps).catch(() => null);
+    await appendFaqAnswerLog({
+      traceId,
+      questionHash: hashText(question),
+      locale,
+      matchedArticleIds,
+      blockedReason
+    }, deps).catch(() => null);
     return Object.assign(blockedResult, { auditId });
   }
 

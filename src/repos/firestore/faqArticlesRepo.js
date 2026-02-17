@@ -20,6 +20,44 @@ function normalizeStringArray(value) {
     .map((item) => item.trim());
 }
 
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  if (typeof value.toDate === 'function') {
+    const asDate = value.toDate();
+    if (asDate instanceof Date) {
+      const ms = asDate.getTime();
+      return Number.isFinite(ms) ? ms : null;
+    }
+  }
+  if (typeof value.toMillis === 'function') {
+    const ms = value.toMillis();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string') {
+    const ms = Date.parse(value);
+    return Number.isFinite(ms) ? ms : null;
+  }
+  return null;
+}
+
+function isValidByTime(article, nowMs) {
+  if (!article || article.validUntil === undefined || article.validUntil === null) return true;
+  const untilMs = toMillis(article.validUntil);
+  if (untilMs === null) return false;
+  return untilMs > nowMs;
+}
+
+function isIntentAllowed(article, resolvedIntent) {
+  const allowed = normalizeStringArray(article && article.allowedIntents).map((v) => v.toUpperCase());
+  if (!allowed.length) return true;
+  return allowed.includes(String(resolvedIntent || '').toUpperCase());
+}
+
 function scoreArticle(article, tokens, intent) {
   const keywordSet = new Set(normalizeStringArray(article.keywords).map((v) => v.toLowerCase()));
   const synonymSet = new Set(normalizeStringArray(article.synonyms).map((v) => v.toLowerCase()));
@@ -53,7 +91,8 @@ async function searchActiveArticles(params) {
   const locale = typeof payload.locale === 'string' && payload.locale.trim().length > 0 ? payload.locale.trim() : 'ja';
   const query = typeof payload.query === 'string' ? payload.query : '';
   const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? payload.limit : 5;
-  const intent = typeof payload.intent === 'string' && payload.intent.trim().length > 0 ? payload.intent.trim() : null;
+  const intent = typeof payload.intent === 'string' && payload.intent.trim().length > 0 ? payload.intent.trim() : 'FAQ';
+  const nowMs = toMillis(payload.now) || Date.now();
 
   const db = getDb();
   let snap;
@@ -73,6 +112,8 @@ async function searchActiveArticles(params) {
   const tokens = normalizeTokens(query);
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   const scored = rows
+    .filter((row) => isValidByTime(row, nowMs))
+    .filter((row) => isIntentAllowed(row, intent))
     .map((row) => ({ row, score: scoreArticle(row, tokens, intent) }))
     .filter((item) => item.score >= 0)
     .sort((a, b) => {

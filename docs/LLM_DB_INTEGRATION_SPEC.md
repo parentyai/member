@@ -14,6 +14,7 @@
   - LLM_FEATURE_FLAG=false
   - citations 0 件（FAQ）
   - KB 候補 0 件（FAQ）
+  - high risk 記事で問い合わせ導線 citation 不足（FAQ）
   - 直 URL 混入
   - WARN link 混入
   - Allow-list 違反
@@ -25,6 +26,7 @@
 - Input: `question`, `locale`, `intent`, `kbCandidates[]`
 - Output: `FAQAnswer.v1`
 - 必須: citations >= 1
+- high risk 記事が候補に含まれる場合、問い合わせ導線 sourceId を 1 件以上 citations に含める
 - 禁止: KB 外根拠、direct URL
 
 ### Ops 説明（READ ONLY）

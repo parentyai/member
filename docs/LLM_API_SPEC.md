@@ -134,6 +134,7 @@
 - Block (422):
   - `kb_no_match`
   - `citations_required`
+  - `contact_source_required`
   - `warn_link_blocked`
   - `direct_url_forbidden`
   - `llm_disabled`

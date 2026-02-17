@@ -27,6 +27,10 @@
 - `kbCandidates[].tags`
 - `kbCandidates[].riskLevel`
 - `kbCandidates[].linkRegistryIds`
+- `kbCandidates[].status`
+- `kbCandidates[].validUntil`
+- `kbCandidates[].allowedIntents`
+- `kbCandidates[].disclaimerVersion`
 
 ### OpsExplanation
 - `readiness.status`
