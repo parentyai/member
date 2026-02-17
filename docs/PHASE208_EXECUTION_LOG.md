@@ -16,8 +16,8 @@ base: `origin/main`
   - result: PASS (`[docs] OK`)
 
 ## CI
-- run id: `22081910502` (audit/docs), `22081910507` (dry-run)
-- log saved: `docs/CI_EVIDENCE/2026-02-17_22081910502_phase208.log`
+- run id: latest PR checks（Audit Gate / Deploy dry-run）
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22081910502_phase208.log`（代表ログ）
 
 ## Close
 - CLOSE: PENDING_MERGE
