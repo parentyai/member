@@ -849,6 +849,15 @@ function getLlmFaqQuestion() {
   return el && typeof el.value === 'string' ? el.value.trim() : '';
 }
 
+function parseLlmEnabled(value) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return null;
+}
+
+let llmConfigPlanHash = null;
+let llmConfigConfirmToken = null;
+
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();
   if (!lineUserId) {
@@ -913,6 +922,86 @@ async function runLlmFaq() {
   }
 }
 
+async function loadLlmConfigStatus() {
+  const traceId = ensureTraceInput('llm-trace');
+  try {
+    const res = await fetch('/api/admin/llm/config/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-config-status', data);
+    if (data && data.ok) {
+      const select = document.getElementById('llm-config-enabled');
+      if (select) select.value = data.llmEnabled ? 'true' : 'false';
+      showToast(t('ui.toast.llm.configStatusOk', 'LLM設定状態を取得しました'), 'ok');
+    } else {
+      showToast(t('ui.toast.llm.configStatusFail', 'LLM設定状態の取得に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    renderLlmResult('llm-config-status', { ok: false, error: 'fetch error' });
+    showToast(t('ui.toast.llm.configStatusFail', 'LLM設定状態の取得に失敗しました'), 'danger');
+  }
+}
+
+async function planLlmConfig() {
+  const traceId = ensureTraceInput('llm-trace');
+  const llmEnabled = parseLlmEnabled(document.getElementById('llm-config-enabled')?.value);
+  if (llmEnabled === null) {
+    renderLlmResult('llm-config-plan-result', { ok: false, error: t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です') });
+    showToast(t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です'), 'warn');
+    return;
+  }
+  try {
+    const data = await postJson('/api/admin/llm/config/plan', { llmEnabled }, traceId);
+    renderLlmResult('llm-config-plan-result', data);
+    if (data && data.ok) {
+      llmConfigPlanHash = data.planHash || null;
+      llmConfigConfirmToken = data.confirmToken || null;
+      showToast(t('ui.toast.llm.configPlanOk', 'LLM設定の計画を作成しました'), 'ok');
+    } else {
+      showToast(t('ui.toast.llm.configPlanFail', 'LLM設定の計画作成に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    renderLlmResult('llm-config-plan-result', { ok: false, error: 'fetch error' });
+    showToast(t('ui.toast.llm.configPlanFail', 'LLM設定の計画作成に失敗しました'), 'danger');
+  }
+}
+
+async function setLlmConfig() {
+  const traceId = ensureTraceInput('llm-trace');
+  const llmEnabled = parseLlmEnabled(document.getElementById('llm-config-enabled')?.value);
+  if (llmEnabled === null) {
+    renderLlmResult('llm-config-set-result', { ok: false, error: t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です') });
+    showToast(t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です'), 'warn');
+    return;
+  }
+  if (!llmConfigPlanHash || !llmConfigConfirmToken) {
+    renderLlmResult('llm-config-set-result', { ok: false, error: t('ui.toast.llm.needConfigPlan', '設定計画が必要です') });
+    showToast(t('ui.toast.llm.needConfigPlan', '設定計画が必要です'), 'warn');
+    return;
+  }
+  const approved = window.confirm(t('ui.confirm.llmConfigSet', 'LLM設定を適用しますか？')); // eslint-disable-line no-alert
+  if (!approved) {
+    showToast(t('ui.toast.llm.configSetCanceled', 'LLM設定の適用を中止しました'), 'warn');
+    return;
+  }
+  try {
+    const data = await postJson('/api/admin/llm/config/set', {
+      llmEnabled,
+      planHash: llmConfigPlanHash,
+      confirmToken: llmConfigConfirmToken
+    }, traceId);
+    renderLlmResult('llm-config-set-result', data);
+    if (data && data.ok) {
+      showToast(t('ui.toast.llm.configSetOk', 'LLM設定を適用しました'), 'ok');
+      await loadLlmConfigStatus();
+    } else {
+      showToast(t('ui.toast.llm.configSetFail', 'LLM設定の適用に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    renderLlmResult('llm-config-set-result', { ok: false, error: 'fetch error' });
+    showToast(t('ui.toast.llm.configSetFail', 'LLM設定の適用に失敗しました'), 'danger');
+  }
+}
+
 function setupLlmControls() {
   document.getElementById('llm-regen')?.addEventListener('click', () => {
     const el = document.getElementById('llm-trace');
@@ -922,6 +1011,10 @@ function setupLlmControls() {
   document.getElementById('llm-run-ops-explain')?.addEventListener('click', runLlmOpsExplain);
   document.getElementById('llm-run-next-actions')?.addEventListener('click', runLlmNextActions);
   document.getElementById('llm-run-faq')?.addEventListener('click', runLlmFaq);
+  document.getElementById('llm-config-reload')?.addEventListener('click', loadLlmConfigStatus);
+  document.getElementById('llm-config-plan')?.addEventListener('click', planLlmConfig);
+  document.getElementById('llm-config-set')?.addEventListener('click', setLlmConfig);
+  loadLlmConfigStatus();
 }
 
 (async () => {
