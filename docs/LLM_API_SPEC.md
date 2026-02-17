@@ -164,6 +164,7 @@
 
 ### GET /api/admin/llm/config/status
 - Purpose: LLM config current value check.
+- Fail-closed: `x-admin-token`（または admin cookie）不一致時は 401 を返す。
 - Response:
 ```json
 {
