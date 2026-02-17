@@ -25,6 +25,8 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       question: payload.question,
       locale: payload.locale,
       intent: payload.intent,
+      guideMode: payload.guideMode,
+      personalization: payload.personalization,
       traceId,
       requestId,
       actor

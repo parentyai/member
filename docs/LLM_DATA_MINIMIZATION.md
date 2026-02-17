@@ -32,6 +32,9 @@
 - `question`
 - `locale`
 - `intent`
+- `guideMode` (`faq_navigation|question_refine|checklist_guidance`)
+- `personalization.locale`
+- `personalization.servicePhase`
 - `kbCandidates[].articleId`
 - `kbCandidates[].title`
 - `kbCandidates[].body`
@@ -43,6 +46,15 @@
 - `kbCandidates[].allowedIntents`
 - `kbCandidates[].disclaimerVersion`
 - `kbCandidates[].searchScore`
+
+### FAQ Guide-only Guard (Phase235 add-only)
+- Allowed `guideMode`:
+  - `faq_navigation`
+  - `question_refine`
+  - `checklist_guidance`
+- Block:
+  - `guide_only_mode_blocked`（allowed list外 mode）
+  - `personalization_not_allowed`（`locale|servicePhase` 以外の personalization キー）
 
 ### OpsExplanation
 - `readiness.status`

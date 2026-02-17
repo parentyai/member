@@ -12,6 +12,8 @@ async function handleFaqAnswer(req, res, body) {
       question: payload.question,
       locale: payload.locale,
       intent: payload.intent,
+      guideMode: payload.guideMode,
+      personalization: payload.personalization,
       traceId,
       actor,
       requestId

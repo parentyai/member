@@ -16,6 +16,12 @@ const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
 const MIN_SCORE = 1.2;
 const TOP1_TOP2_RATIO = 1.2;
+const GUIDE_ONLY_MODES = new Set([
+  'faq_navigation',
+  'question_refine',
+  'checklist_guidance'
+]);
+const PERSONALIZATION_ALLOW_LIST = new Set(['locale', 'servicePhase']);
 const SYSTEM_PROMPT = [
   'You are a FAQ assistant.',
   'Answer only from kbCandidates.',
@@ -29,6 +35,10 @@ const FAQ_FIELD_CATEGORIES = Object.freeze({
   question: 'Internal',
   locale: 'Internal',
   intent: 'Internal',
+  guideMode: 'Internal',
+  personalization: 'Internal',
+  'personalization.locale': 'Internal',
+  'personalization.servicePhase': 'Internal',
   kbCandidates: 'Public',
   'kbCandidates.articleId': 'Public',
   'kbCandidates.title': 'Public',
@@ -84,6 +94,44 @@ function normalizeQuestion(value) {
   return value.trim();
 }
 
+function normalizeGuideMode(value) {
+  if (value === null || value === undefined) return 'faq_navigation';
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (!GUIDE_ONLY_MODES.has(normalized)) return null;
+  return normalized;
+}
+
+function normalizePersonalization(value) {
+  if (value === null || value === undefined) return {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value;
+}
+
+function detectPersonalizationViolations(personalization) {
+  const payload = personalization || {};
+  const keys = Object.keys(payload);
+  const violations = [];
+  for (const key of keys) {
+    if (!PERSONALIZATION_ALLOW_LIST.has(key)) {
+      violations.push({ key, reason: 'key_not_allowed' });
+      continue;
+    }
+    const value = payload[key];
+    if (value === null || value === undefined) continue;
+    const isPrimitive = ['string', 'number', 'boolean'].includes(typeof value);
+    if (!isPrimitive) {
+      violations.push({ key, reason: 'value_type_not_allowed' });
+    }
+  }
+  return {
+    keys,
+    violations,
+    isAllowed: violations.length === 0
+  };
+}
+
 function buildBlocked(params) {
   const payload = params || {};
   return {
@@ -115,6 +163,8 @@ function toBlockedReasonCategory(blockedReason) {
   if (reason === 'warn_link_blocked') return 'WARN_LINK_BLOCKED';
   if (reason === 'restricted_field_detected' || reason === 'secret_field_detected') return 'SENSITIVE_QUERY';
   if (reason === 'consent_missing') return 'CONSENT_MISSING';
+  if (reason === 'guide_only_mode_blocked') return 'GUIDE_MODE_BLOCKED';
+  if (reason === 'personalization_not_allowed') return 'PERSONALIZATION_BLOCKED';
   return 'UNKNOWN';
 }
 
@@ -252,6 +302,8 @@ function buildAuditSummaryBase(params) {
     top1Score: payload.confidence.top1Score,
     top2Score: payload.confidence.top2Score,
     top1Top2Ratio: payload.confidence.top1Top2Ratio,
+    guideMode: payload.guideMode,
+    personalizationKeys: payload.personalizationKeys || [],
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -357,6 +409,9 @@ async function answerFaqFromKb(params, deps) {
 
   const locale = normalizeLocale(payload.locale);
   const intent = normalizeIntent(payload.intent);
+  const guideMode = normalizeGuideMode(payload.guideMode);
+  const personalization = normalizePersonalization(payload.personalization);
+  const personalizationCheck = detectPersonalizationViolations(personalization || {});
 
   const env = deps && deps.env ? deps.env : process.env;
   const envEnabled = isLlmFeatureEnabled(env);
@@ -382,11 +437,21 @@ async function answerFaqFromKb(params, deps) {
   const fallbackActions = buildFallbackActions(allowedSourceIds, requiredContactSourceIds);
   const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
+  const normalizedPersonalization = personalizationCheck.isAllowed
+    ? {
+      locale: personalizationCheck.keys.includes('locale') && personalization ? personalization.locale : undefined,
+      servicePhase: personalizationCheck.keys.includes('servicePhase') && personalization
+        ? personalization.servicePhase
+        : undefined
+    }
+    : {};
 
   const llmInput = {
     question,
     locale,
     intent,
+    guideMode,
+    personalization: normalizedPersonalization,
     kbCandidates: candidates.map((item) => ({
       articleId: item.id,
       title: item.title || '',
@@ -408,6 +473,10 @@ async function answerFaqFromKb(params, deps) {
       'question',
       'locale',
       'intent',
+      'guideMode',
+      'personalization',
+      'personalization.locale',
+      'personalization.servicePhase',
       'kbCandidates',
       'kbCandidates.articleId',
       'kbCandidates.title',
@@ -434,6 +503,26 @@ async function answerFaqFromKb(params, deps) {
       suggestedFaqs,
       traceId,
       llmStatus: view.blockedReason,
+      serverTime
+    });
+  } else if (guideMode === null) {
+    blocked = buildBlocked({
+      blockedReason: 'guide_only_mode_blocked',
+      blockedReasonCategory: toBlockedReasonCategory('guide_only_mode_blocked'),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: 'guide_only_mode_blocked',
+      serverTime
+    });
+  } else if (personalization === null || !personalizationCheck.isAllowed) {
+    blocked = buildBlocked({
+      blockedReason: 'personalization_not_allowed',
+      blockedReasonCategory: toBlockedReasonCategory('personalization_not_allowed'),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: 'personalization_not_allowed',
       serverTime
     });
   } else if (!llmEnabled) {
@@ -498,6 +587,8 @@ async function answerFaqFromKb(params, deps) {
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
+          guideMode,
+          personalizationKeys: personalizationCheck.keys,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -598,6 +689,8 @@ async function answerFaqFromKb(params, deps) {
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
+          guideMode,
+          personalizationKeys: personalizationCheck.keys,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -663,6 +756,8 @@ async function answerFaqFromKb(params, deps) {
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
+          guideMode,
+          personalizationKeys: personalizationCheck.keys,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -712,6 +807,8 @@ async function answerFaqFromKb(params, deps) {
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
         confidence,
+        guideMode,
+        personalizationKeys: personalizationCheck.keys,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
       }),
       {
