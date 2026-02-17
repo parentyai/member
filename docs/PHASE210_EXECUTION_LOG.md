@@ -16,8 +16,8 @@ base: `origin/main`
   - result: PASS (578 tests)
 
 ## CI
-- run id: pending PR
-- log saved: pending
+- run id: `22082760427`（Audit Gate, main push）
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22082760427_phase210.log`
 
 ## Close
-- CLOSE: NO
+- CLOSE: YES
