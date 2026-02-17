@@ -102,6 +102,28 @@ function hashJson(value) {
   }
 }
 
+function toBlockedReasonCategory(blockedReason) {
+  const reason = String(blockedReason || '').trim();
+  if (!reason || reason === 'disabled') return null;
+  if (reason === 'kb_no_match') return 'NO_KB_MATCH';
+  if (reason === 'low_confidence') return 'LOW_CONFIDENCE';
+  if (reason === 'direct_url_forbidden') return 'DIRECT_URL_DETECTED';
+  if (reason === 'warn_link_blocked') return 'WARN_LINK_BLOCKED';
+  if (reason === 'restricted_field_detected' || reason === 'secret_field_detected') return 'SENSITIVE_QUERY';
+  if (reason === 'consent_missing') return 'CONSENT_MISSING';
+  return 'UNKNOWN';
+}
+
+function resolveLlmPolicySnapshot(policy) {
+  const normalized = systemFlagsRepo.normalizeLlmPolicy(policy);
+  if (normalized === null) return Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY);
+  return normalized;
+}
+
+function isConsentMissingByPolicy(policy) {
+  return Boolean(policy && policy.lawfulBasis === 'consent' && policy.consentVerified !== true);
+}
+
 async function callAdapter(adapter, payload, timeoutMs) {
   if (!adapter || typeof adapter.suggestNextActionCandidates !== 'function') throw new Error('adapter_missing');
   const exec = adapter.suggestNextActionCandidates(payload);
@@ -120,9 +142,13 @@ async function getNextActionCandidates(params, deps) {
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   const getLlmEnabled = deps && deps.getLlmEnabled ? deps.getLlmEnabled : systemFlagsRepo.getLlmEnabled;
+  const getLlmPolicy = deps && Object.prototype.hasOwnProperty.call(deps, 'getLlmPolicy')
+    ? deps.getLlmPolicy
+    : (deps ? async () => Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY) : systemFlagsRepo.getLlmPolicy);
   const env = deps && deps.env ? deps.env : process.env;
   const envEnabled = isLlmFeatureEnabled(env);
   const dbEnabled = await getLlmEnabled();
+  const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
   const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
   const disclaimer = getDisclaimer('next_actions');
@@ -149,6 +175,8 @@ async function getNextActionCandidates(params, deps) {
     llmStatus = view.blockedReason;
   } else if (!llmEnabled) {
     llmStatus = 'disabled';
+  } else if (isConsentMissingByPolicy(llmPolicy)) {
+    llmStatus = 'consent_missing';
   } else {
     try {
       const adapterResult = await callAdapter(
@@ -211,9 +239,14 @@ async function getNextActionCandidates(params, deps) {
           llmEnabled,
           envLlmFeatureFlag: envEnabled,
           dbLlmEnabled: dbEnabled,
+          lawfulBasis: llmPolicy.lawfulBasis,
+          consentVerified: llmPolicy.consentVerified,
+          crossBorder: llmPolicy.crossBorder,
           disclaimerVersion: disclaimer.version,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+          fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
           blockedReason: llmUsed ? null : llmStatus,
+          blockedReasonCategory: llmUsed ? null : toBlockedReasonCategory(llmStatus),
           inputHash: hashJson(view.ok ? view.data : input),
           outputHash: hashJson(nextActionCandidates)
         }

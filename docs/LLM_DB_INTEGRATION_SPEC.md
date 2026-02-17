@@ -19,6 +19,7 @@
   - 直 URL 混入
   - WARN link 混入
   - Allow-list 違反
+  - lawfulBasis=consent かつ consentVerified=false
 - 直 URL 禁止。リンクは `linkRegistryId` のみ返却。
 
 ## 用途別 I/O
@@ -61,7 +62,10 @@
 必須監査フィールド:
 - `traceId`, `purpose`, `llmEnabled`, `envLlmFeatureFlag`, `schemaId`
 - `blockedReason` (BLOCK 時)
+- `blockedReasonCategory` (BLOCK 時)
 - `inputFieldCategoriesUsed` (Public/Internal/Restricted/Secret)
+- `fieldCategoriesUsed` (監査ビュー用の集約名)
+- `lawfulBasis`, `consentVerified`, `crossBorder` (`system_flags.phase0.llmPolicy` snapshot)
 - `inputHash`, `outputHash`
 - `disclaimerVersion`
 

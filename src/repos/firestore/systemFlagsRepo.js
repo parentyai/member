@@ -5,6 +5,11 @@ const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 
 const COLLECTION = 'system_flags';
 const DOC_ID = 'phase0';
+const DEFAULT_LLM_POLICY = Object.freeze({
+  lawfulBasis: 'unspecified',
+  consentVerified: false,
+  crossBorder: false
+});
 
 function normalizeServicePhase(value) {
   if (value === null || value === undefined) return null;
@@ -32,6 +37,44 @@ function normalizeLlmEnabled(value) {
   if (value === null || value === undefined) return false;
   if (typeof value === 'boolean') return value;
   return null;
+}
+
+function normalizeLawfulBasis(value) {
+  if (value === null || value === undefined) return DEFAULT_LLM_POLICY.lawfulBasis;
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  const allowed = new Set([
+    'unspecified',
+    'consent',
+    'contract',
+    'legal_obligation',
+    'vital_interest',
+    'public_task',
+    'legitimate_interest'
+  ]);
+  if (!allowed.has(normalized)) return null;
+  return normalized;
+}
+
+function normalizeBooleanWithDefault(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
+function normalizeLlmPolicy(value) {
+  if (value === null || value === undefined) return Object.assign({}, DEFAULT_LLM_POLICY);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const lawfulBasis = normalizeLawfulBasis(value.lawfulBasis);
+  const consentVerified = normalizeBooleanWithDefault(value.consentVerified, DEFAULT_LLM_POLICY.consentVerified);
+  const crossBorder = normalizeBooleanWithDefault(value.crossBorder, DEFAULT_LLM_POLICY.crossBorder);
+  if (lawfulBasis === null || consentVerified === null || crossBorder === null) return null;
+  return {
+    lawfulBasis,
+    consentVerified,
+    crossBorder
+  };
 }
 
 async function getKillSwitch() {
@@ -153,7 +196,28 @@ async function setLlmEnabled(llmEnabled) {
   return { id: DOC_ID, llmEnabled: normalized };
 }
 
+async function getLlmPolicy() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return Object.assign({}, DEFAULT_LLM_POLICY);
+  const data = snap.data() || {};
+  const normalized = normalizeLlmPolicy(data.llmPolicy);
+  return normalized === null ? Object.assign({}, DEFAULT_LLM_POLICY) : normalized;
+}
+
+async function setLlmPolicy(llmPolicy) {
+  const normalized = normalizeLlmPolicy(llmPolicy);
+  if (normalized === null) throw new Error('invalid llmPolicy');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmPolicy: normalized }, { merge: true });
+  return { id: DOC_ID, llmPolicy: normalized };
+}
+
 module.exports = {
+  DEFAULT_LLM_POLICY,
+  normalizeLlmPolicy,
   getKillSwitch,
   setKillSwitch,
   getServicePhase,
@@ -165,5 +229,7 @@ module.exports = {
   getDeliveryCountLegacyFallback,
   setDeliveryCountLegacyFallback,
   getLlmEnabled,
-  setLlmEnabled
+  setLlmEnabled,
+  getLlmPolicy,
+  setLlmPolicy
 };
