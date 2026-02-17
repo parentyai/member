@@ -19,6 +19,7 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `LLM_NEXT_ACTION_CANDIDATES`
   - `LLM_FAQ_ANSWER_GENERATED`
   - `LLM_FAQ_ANSWER_BLOCKED`
+  - `LLM_DISCLAIMER_RENDERED`
 - phase208 以降は action も確認する。
   - `llm_faq_answer_generated`
   - `llm_faq_answer_blocked`
@@ -26,7 +27,9 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `llm_ops_explain_blocked`
   - `llm_next_actions_generated`
   - `llm_next_actions_blocked`
+  - `llm_disclaimer_rendered`
 - traceId で追跡する場合は `/api/admin/trace?traceId=...` を使用する。
+- `llm_disclaimer_rendered` の payloadSummary で `purpose` / `disclaimerVersion` / `disclaimerShown` を確認する。
 
 ## Failure Modes
 - schema mismatch / citation mismatch / allow-list violation => fallback へ退避。

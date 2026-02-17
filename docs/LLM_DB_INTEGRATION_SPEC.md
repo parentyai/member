@@ -52,12 +52,14 @@
 - `llm_ops_explain_blocked`
 - `llm_next_actions_generated`
 - `llm_next_actions_blocked`
+- `llm_disclaimer_rendered`
 
 必須監査フィールド:
 - `traceId`, `purpose`, `llmEnabled`, `envLlmFeatureFlag`, `schemaId`
 - `blockedReason` (BLOCK 時)
 - `inputFieldCategoriesUsed` (Public/Internal/Restricted/Secret)
 - `inputHash`, `outputHash`
+- `disclaimerVersion`
 
 ## 互換 API ポリシー
 - `POST /api/phaseLLM4/faq/answer` は互換維持（deprecated）。
