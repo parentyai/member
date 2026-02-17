@@ -978,20 +978,39 @@
         return res.json();
       }
 
+      async function readJsonResponse(res) {
+        const text = await res.text();
+        if (!text) return { ok: false, error: 'empty response' };
+        try {
+          return JSON.parse(text);
+        } catch (_err) {
+          return { ok: false, error: text };
+        }
+      }
+
+      async function fetchJsonWithFallback(primaryPath, fallbackPath) {
+        try {
+          const primaryRes = await fetch(primaryPath, { headers: OPS_ACTOR_HEADERS });
+          if (primaryRes.status !== 404) {
+            return await readJsonResponse(primaryRes);
+          }
+        } catch (_err) {}
+        const fallbackRes = await fetch(fallbackPath, { headers: OPS_ACTOR_HEADERS });
+        return await readJsonResponse(fallbackRes);
+      }
+
       async function fetchOpsExplanation(lineUserId) {
-        const res = await fetch(
-          `/api/phaseLLM2/ops-explain?lineUserId=${encodeURIComponent(lineUserId)}`,
-          { headers: OPS_ACTOR_HEADERS }
+        return fetchJsonWithFallback(
+          `/api/admin/llm/ops-explain?lineUserId=${encodeURIComponent(lineUserId)}`,
+          `/api/phaseLLM2/ops-explain?lineUserId=${encodeURIComponent(lineUserId)}`
         );
-        return res.json();
       }
 
       async function fetchOpsNextActions(lineUserId) {
-        const res = await fetch(
-          `/api/phaseLLM3/ops-next-actions?lineUserId=${encodeURIComponent(lineUserId)}`,
-          { headers: OPS_ACTOR_HEADERS }
+        return fetchJsonWithFallback(
+          `/api/admin/llm/next-actions?lineUserId=${encodeURIComponent(lineUserId)}`,
+          `/api/phaseLLM3/ops-next-actions?lineUserId=${encodeURIComponent(lineUserId)}`
         );
-        return res.json();
       }
 
       async function submitOpsDecisionRequest(payload) {
