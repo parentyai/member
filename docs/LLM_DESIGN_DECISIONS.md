@@ -19,3 +19,15 @@ This file isolates design decisions that are not directly backed by existing rep
 - Reason: Avoid coupling to Runbook commands; deterministic layer must provide execution steps.
 - Alternatives: Use full runbook action names.
 - Revisit: Only if SSOT defines explicit LLM action contract.
+
+## Decision: Dual gate for effective LLM enablement
+- Decision: effective enabled = `system_flags.phase0.llmEnabled && LLM_FEATURE_FLAG`.
+- Reason: DB運用停止と環境停止の二重ブレーキで fail-closed を強化する。
+- Alternatives: DB only / ENV only.
+- Revisit: if SSOT defines single-source governance.
+
+## Decision: KB retrieval mode (phase208 initial)
+- Decision: FAQ retrieval uses rule-based search over `keywords/synonyms/tags` only.
+- Reason: no new infra dependency; deterministic and auditable ranking.
+- Alternatives: embeddings.
+- Revisit: if recall is insufficient in ops evidence.

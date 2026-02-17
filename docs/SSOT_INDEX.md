@@ -24,6 +24,17 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/ADMIN_UI_DICTIONARY_JA.md`（管理UI辞書 / UI表示SSOT）
 - `docs/SSOT_NOTIFICATION_WAIT_RULES.md`（通知待機方式 SSOT / 値はTBD）
 - `docs/SSOT_NOTIFICATION_PATTERN_REGISTRY.json`（通知テスト pattern registry SSOT）
+- `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
+- `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
+- `docs/LLM_GUARDRAILS.md`（LLMガードレール）
+- `docs/LLM_DATA_MINIMIZATION.md`（LLM最小化ポリシー）
+- `docs/LLM_KB_SPEC.md`（FAQ KB仕様）
+- `docs/LLM_PROMPT_SPEC.md`（LLM出力スキーマ/プロンプト仕様）
+- `docs/LLM_API_SPEC.md`（LLM API仕様）
+- `docs/LLM_TEST_PLAN.md`（LLMテスト計画）
+- `docs/LLM_RUNBOOK.md`（LLM運用手順）
+- `docs/LLM_PHASE_PLAN.md`（LLMフェーズ計画）
+- `docs/LLM_THREAT_MODEL.md`（LLM脅威モデル）
 - `docs/RUNBOOK_JA.md`（日本語RUNBOOK）
 - `docs/SECURITY_MODEL_JA.md`（セキュリティ責任分界）
 - `docs/CHANGELOG_DOCS.md`（ドキュメント更新履歴）

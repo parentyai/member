@@ -5,7 +5,7 @@
 ### GET /api/phaseLLM2/ops-explain
 - Purpose: Provide an advisory-only explanation of current ops state.
 - Auth: admin UI with `x-actor` header (read-only).
-- Feature gate: `LLM_FEATURE_FLAG` must be true for LLM output. Otherwise fallback is returned.
+- Feature gate: `system_flags.phase0.llmEnabled === true` and `LLM_FEATURE_FLAG === true`. Otherwise fallback is returned.
 
 #### Query
 - `lineUserId` (required)
@@ -36,7 +36,7 @@
 ### GET /api/phaseLLM3/ops-next-actions
 - Purpose: Provide abstract next action candidates (advisory-only).
 - Auth: admin UI with `x-actor` header (read-only).
-- Feature gate: `LLM_FEATURE_FLAG` must be true for LLM output. Otherwise fallback is returned.
+- Feature gate: `system_flags.phase0.llmEnabled === true` and `LLM_FEATURE_FLAG === true`. Otherwise fallback is returned.
 
 #### Query
 - `lineUserId` (required)
@@ -68,13 +68,15 @@
 ### POST /api/phaseLLM4/faq/answer
 - Purpose: Provide FAQ answer with link_registry sourceId citations only.
 - Auth: admin UI with `x-actor` header (read-only).
-- Feature gate: `LLM_FEATURE_FLAG` must be true for LLM output. Otherwise fallback is returned.
+- Feature gate: `system_flags.phase0.llmEnabled === true` and `LLM_FEATURE_FLAG === true`.
+- Status: compatibility endpoint (`deprecated: true`); internally delegates to KB-only FAQ usecase.
 
 #### Body
 ```json
 {
   "question": "string",
-  "sourceIds": ["link_registry_id_1", "link_registry_id_2"]
+  "locale": "ja",
+  "intent": "string (optional)"
 }
 ```
 
@@ -96,11 +98,79 @@
   "llmStatus": "disabled",
   "llmModel": null,
   "schemaErrors": null,
-  "blockedSourceIds": null,
+  "deprecated": true,
+  "replacement": "/api/admin/llm/faq/answer",
   "auditId": "audit-xxx"
 }
 ```
 
 #### Errors
 - 400: `question required`
+- 422: `llm_disabled` / `kb_no_match` / `citations_required` / `direct_url_forbidden` / `warn_link_blocked`
 - 500: `error`
+
+## Phase208 Delta
+
+### Effective Feature Gate (all LLM endpoints)
+- `system_flags.phase0.llmEnabled === true`
+- `LLM_FEATURE_FLAG === true`
+- If either is false, endpoints must fail-closed (fallback or BLOCK by endpoint policy).
+
+### POST /api/admin/llm/faq/answer
+- Purpose: KB 限定 FAQ 回答（`faq_articles` のみ）。
+- Auth: `/api/admin/*` 保護 + `x-actor`。
+- Body:
+```json
+{
+  "question": "string",
+  "locale": "ja",
+  "intent": "string (optional)"
+}
+```
+- Success (200): FAQAnswer.v1 with citations (`link_registry` sourceId only)
+- Block (422):
+  - `kb_no_match`
+  - `citations_required`
+  - `warn_link_blocked`
+  - `direct_url_forbidden`
+  - `llm_disabled`
+
+### POST /api/phaseLLM4/faq/answer (deprecated compatibility)
+- Status: maintained for compatibility.
+- Behavior: internally delegates to `/api/admin/llm/faq/answer`.
+- Response includes:
+  - `deprecated: true`
+  - `replacement: "/api/admin/llm/faq/answer"`
+
+### GET /api/admin/llm/config/status
+- Purpose: LLM config current value check.
+- Response:
+```json
+{
+  "ok": true,
+  "traceId": "string",
+  "llmEnabled": false,
+  "effectiveEnabled": false
+}
+```
+
+### POST /api/admin/llm/config/plan
+- Purpose: llmEnabled 変更の plan 生成（planHash/confirmToken）。
+- Body:
+```json
+{ "llmEnabled": true }
+```
+
+### POST /api/admin/llm/config/set
+- Purpose: llmEnabled 適用。
+- Body:
+```json
+{
+  "llmEnabled": true,
+  "planHash": "string",
+  "confirmToken": "string"
+}
+```
+- Errors:
+  - 400: required fields missing
+  - 409: `plan_hash_mismatch` / `confirm_token_mismatch`
