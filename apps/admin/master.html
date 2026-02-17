@@ -197,6 +197,21 @@
       <button id="config-reload" type="button">更新</button>
     </div>
     <pre id="config-status">-</pre>
+    <h3>LLM提案機能（FAQ/Ops/NextAction）</h3>
+    <div class="note">提案機能の停止/再開のみを行います（送信停止killSwitchとは別機能）。</div>
+    <label data-tip="llmEnabled" tabindex="0">LLM提案機能</label>
+    <select id="llm-config-enabled">
+      <option value="false">停止</option>
+      <option value="true">有効</option>
+    </select>
+    <div class="note">
+      <button id="llm-config-reload" type="button">更新</button>
+      <button id="llm-config-plan" type="button">計画</button>
+      <button id="llm-config-set" type="button">適用</button>
+    </div>
+    <pre id="llm-config-status">-</pre>
+    <pre id="llm-config-plan-result">-</pre>
+    <pre id="llm-config-set-result">-</pre>
 
         </div>
       </div>
@@ -325,6 +340,8 @@
       const TRACE_HEADER_NAME = 'x-trace-id';
       let configPlanHash = null;
       let configConfirmToken = null;
+      let llmPlanHash = null;
+      let llmConfirmToken = null;
       let automationPlanHash = null;
       let automationConfirmToken = null;
       let deliveryRecoveryPlanHash = null;
@@ -826,6 +843,10 @@
         return { ok: true, value: num };
       }
 
+      function parseBooleanFlag(value) {
+        return String(value || '').trim().toLowerCase() === 'true';
+      }
+
       async function loadSystemConfigStatus() {
         const res = await fetch('/api/admin/os/config/status', { headers: buildHeaders() });
         const data = await jsonOrText(res);
@@ -858,6 +879,53 @@
           const legacyFallback = data.deliveryCountLegacyFallback === false ? 'false' : 'true';
           document.getElementById('config-delivery-count-legacy-fallback').value = legacyFallback;
         }
+        return data;
+      }
+
+      async function loadLlmConfigStatus() {
+        const res = await fetch('/api/admin/llm/config/status', { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-config-status').textContent = JSON.stringify(data, null, 2);
+        if (data && data.ok) {
+          document.getElementById('llm-config-enabled').value = data.llmEnabled ? 'true' : 'false';
+        }
+        return data;
+      }
+
+      async function planLlmConfig() {
+        const llmEnabled = parseBooleanFlag(document.getElementById('llm-config-enabled').value);
+        const res = await fetch('/api/admin/llm/config/plan', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({ llmEnabled })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-config-plan-result').textContent = JSON.stringify(data, null, 2);
+        llmPlanHash = data && data.ok ? data.planHash || null : null;
+        llmConfirmToken = data && data.ok ? data.confirmToken || null : null;
+        return data;
+      }
+
+      async function setLlmConfig() {
+        const llmEnabled = parseBooleanFlag(document.getElementById('llm-config-enabled').value);
+        if (!llmPlanHash || !llmConfirmToken) {
+          document.getElementById('llm-config-set-result').textContent = JSON.stringify({ ok: false, error: '計画が必要です' }, null, 2);
+          return { ok: false, error: '計画が必要です' };
+        }
+        const ok = window.confirm(`LLM提案機能を ${llmEnabled ? '有効' : '停止'} に設定しますか？`); // eslint-disable-line no-alert
+        if (!ok) return { ok: false, error: 'キャンセルしました' };
+        const res = await fetch('/api/admin/llm/config/set', {
+          method: 'POST',
+          headers: buildHeaders({ 'content-type': 'application/json; charset=utf-8' }),
+          body: JSON.stringify({
+            llmEnabled,
+            planHash: llmPlanHash,
+            confirmToken: llmConfirmToken
+          })
+        });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-config-set-result').textContent = JSON.stringify(data, null, 2);
+        await loadLlmConfigStatus();
         return data;
       }
 
@@ -1125,6 +1193,9 @@
       document.getElementById('redac-unlink').addEventListener('click', () => runWithToast('redac unlink', unlinkRedacMembership));
       document.getElementById('redac-health-reload').addEventListener('click', () => runWithToast('redac health 更新', loadRedacStatus));
       document.getElementById('config-reload').addEventListener('click', () => runWithToast('システム設定 更新', loadSystemConfigStatus));
+      document.getElementById('llm-config-reload').addEventListener('click', () => runWithToast('LLM設定 更新', loadLlmConfigStatus));
+      document.getElementById('llm-config-plan').addEventListener('click', () => runWithToast('LLM設定 計画', planLlmConfig));
+      document.getElementById('llm-config-set').addEventListener('click', () => runWithToast('LLM設定 適用', setLlmConfig));
       document.getElementById('config-plan').addEventListener('click', () => runWithToast('システム設定 計画', planSystemConfig));
       document.getElementById('config-set').addEventListener('click', () => runWithToast('システム設定 適用', setSystemConfig));
       document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('自動化設定 更新', loadAutomationConfigStatus));
@@ -1145,6 +1216,7 @@
         loadLinks(),
         loadRedacStatus(),
         loadSystemConfigStatus(),
+        loadLlmConfigStatus(),
         loadAutomationConfigStatus(),
         loadDeliveryBackfillStatus()
       ]).catch(() => {
