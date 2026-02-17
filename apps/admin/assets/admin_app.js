@@ -843,6 +843,20 @@ async function readJsonResponse(res) {
   }
 }
 
+async function fetchJsonWithFallback(primaryPath, fallbackPath, traceId) {
+  const headers = buildHeaders({}, traceId);
+  try {
+    const primaryRes = await fetch(primaryPath, { headers });
+    if (primaryRes.status !== 404) {
+      return await readJsonResponse(primaryRes);
+    }
+  } catch (_err) {
+    // fallback
+  }
+  const fallbackRes = await fetch(fallbackPath, { headers });
+  return await readJsonResponse(fallbackRes);
+}
+
 function getLlmLineUserId() {
   const el = document.getElementById('llm-line-user-id');
   return el && typeof el.value === 'string' ? el.value.trim() : '';
@@ -881,8 +895,11 @@ async function runLlmOpsExplain() {
   const traceId = ensureTraceInput('llm-trace');
   const qs = new URLSearchParams({ lineUserId });
   try {
-    const res = await fetch(`/api/phaseLLM2/ops-explain?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
-    const data = await readJsonResponse(res);
+    const data = await fetchJsonWithFallback(
+      `/api/admin/llm/ops-explain?${qs.toString()}`,
+      `/api/phaseLLM2/ops-explain?${qs.toString()}`,
+      traceId
+    );
     renderLlmResult('llm-ops-explain-result', data);
     showToast(data && data.ok ? t('ui.toast.llm.opsExplainOk', 'Ops説明を取得しました') : t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
@@ -903,8 +920,11 @@ async function runLlmNextActions() {
   const traceId = ensureTraceInput('llm-trace');
   const qs = new URLSearchParams({ lineUserId });
   try {
-    const res = await fetch(`/api/phaseLLM3/ops-next-actions?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
-    const data = await readJsonResponse(res);
+    const data = await fetchJsonWithFallback(
+      `/api/admin/llm/next-actions?${qs.toString()}`,
+      `/api/phaseLLM3/ops-next-actions?${qs.toString()}`,
+      traceId
+    );
     renderLlmResult('llm-next-actions-result', data);
     showToast(data && data.ok ? t('ui.toast.llm.nextActionsOk', '次候補を取得しました') : t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {

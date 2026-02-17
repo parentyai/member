@@ -906,6 +906,10 @@ function createServer() {
       handleSet: handleLlmConfigSet
     } = require('./routes/admin/llmConfig');
     const { handleAdminLlmFaqAnswer } = require('./routes/admin/llmFaq');
+    const {
+      handleAdminLlmOpsExplain,
+      handleAdminLlmNextActions
+    } = require('./routes/admin/llmOps');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -942,6 +946,14 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {
         const body = await collectBody();
         await handleAdminLlmFaqAnswer(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/llm/ops-explain') {
+        await handleAdminLlmOpsExplain(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/llm/next-actions') {
+        await handleAdminLlmNextActions(req, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
