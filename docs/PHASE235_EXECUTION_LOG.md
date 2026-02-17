@@ -21,3 +21,11 @@
 - `node --test tests/phase235/*.test.js` PASS
 - `npm run test:docs` PASS
 - `npm test` PASS（634/634）
+
+## CI
+- run id: `22117433354` (main push / Audit Gate)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22117433354_phase235.log`
+
+## Close
+- merge commit: `0642677`
+- CLOSE: YES

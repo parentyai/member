@@ -18,9 +18,9 @@ base: `origin/main`
   - result: PASS (628/628)
 
 ## CI
-- run id: TBD
-- log saved: TBD
+- run id: `22107252823` (main push / Audit Gate)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22107252823_phase233.log`
 
 ## Close
-- merge commit: TBD
-- CLOSE: NO
+- merge commit: `5674128`
+- CLOSE: YES
