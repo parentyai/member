@@ -28,6 +28,12 @@ function normalizeDeliveryCountLegacyFallback(value) {
   return null;
 }
 
+function normalizeLlmEnabled(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 async function getKillSwitch() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -128,6 +134,25 @@ async function setDeliveryCountLegacyFallback(deliveryCountLegacyFallback) {
   return { id: DOC_ID, deliveryCountLegacyFallback: normalized };
 }
 
+async function getLlmEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return false;
+  const data = snap.data() || {};
+  const normalized = normalizeLlmEnabled(data.llmEnabled);
+  return normalized === null ? false : normalized;
+}
+
+async function setLlmEnabled(llmEnabled) {
+  const normalized = normalizeLlmEnabled(llmEnabled);
+  if (normalized === null) throw new Error('invalid llmEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, llmEnabled: normalized };
+}
+
 module.exports = {
   getKillSwitch,
   setKillSwitch,
@@ -138,5 +163,7 @@ module.exports = {
   getNotificationCaps,
   setNotificationCaps,
   getDeliveryCountLegacyFallback,
-  setDeliveryCountLegacyFallback
+  setDeliveryCountLegacyFallback,
+  getLlmEnabled,
+  setLlmEnabled
 };

@@ -12,7 +12,8 @@ async function handleOpsExplain(req, res) {
       return;
     }
     const traceId = req.headers['x-trace-id'] || null;
-    const result = await getOpsExplanation({ lineUserId, traceId });
+    const actor = req.headers['x-actor'] || 'phaseLLM2_ops_explain';
+    const result = await getOpsExplanation({ lineUserId, traceId, actor });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {

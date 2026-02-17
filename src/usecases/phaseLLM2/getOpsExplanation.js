@@ -3,20 +3,39 @@
 const crypto = require('crypto');
 
 const { getOpsConsole } = require('../phase25/getOpsConsole');
-const { DEFAULT_ALLOW_LISTS, sanitizeInput } = require('../../llm/allowList');
-const { validateSchema } = require('../../llm/validateSchema');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const { DEFAULT_ALLOW_LISTS } = require('../../llm/allowList');
 const { OPS_EXPLANATION_SCHEMA_ID } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { buildLlmInputView } = require('../llm/buildLlmInputView');
+const { guardLlmOutput } = require('../llm/guardLlmOutput');
 
 const DEFAULT_TIMEOUT_MS = 2500;
-const PROMPT_VERSION = 'ops_explanation_v1';
+const PROMPT_VERSION = 'ops_explanation_v2';
 const SYSTEM_PROMPT = [
   'You are an ops assistant.',
   'Explain the current ops state using the OpsExplanation.v1 schema.',
-  'Do not suggest actions beyond abstract reasoning.',
-  'Advisory only.'
+  'Advisory only.',
+  'Do not emit direct URLs or execution commands.'
 ].join('\n');
+
+const OPS_FIELD_CATEGORIES = Object.freeze({
+  readiness: 'Internal',
+  blockingReasons: 'Internal',
+  riskLevel: 'Internal',
+  notificationHealthSummary: 'Internal',
+  mitigationSuggestion: 'Internal',
+  allowedNextActions: 'Internal',
+  recommendedNextAction: 'Internal',
+  executionStatus: 'Internal',
+  decisionDrift: 'Internal',
+  closeDecision: 'Internal',
+  closeReason: 'Internal',
+  phaseResult: 'Internal',
+  lastReactionAt: 'Internal',
+  dangerFlags: 'Internal'
+});
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -50,53 +69,21 @@ function buildFacts(input) {
   if (input.readiness) {
     pushFact(facts, 'readiness.status', 'readiness.status', input.readiness.status, 'read_model');
     if (Array.isArray(input.readiness.blocking)) {
-      pushFact(
-        facts,
-        'readiness.blocking',
-        'readiness.blocking',
-        input.readiness.blocking.join(', '),
-        'read_model'
-      );
+      pushFact(facts, 'readiness.blocking', 'readiness.blocking', input.readiness.blocking.join(', '), 'read_model');
     }
   }
-
   if (Array.isArray(input.blockingReasons)) {
     pushFact(facts, 'blockingReasons', 'blockingReasons', input.blockingReasons.join(', '), 'read_model');
   }
-
   pushFact(facts, 'riskLevel', 'riskLevel', input.riskLevel, 'read_model');
   pushFact(facts, 'allowedNextActions', 'allowedNextActions', input.allowedNextActions, 'ops_state');
   pushFact(facts, 'recommendedNextAction', 'recommendedNextAction', input.recommendedNextAction, 'ops_state');
 
   if (input.executionStatus) {
-    pushFact(
-      facts,
-      'executionStatus.lastExecutionResult',
-      'executionStatus.lastExecutionResult',
-      input.executionStatus.lastExecutionResult,
-      'decision_log'
-    );
-    pushFact(
-      facts,
-      'executionStatus.lastFailureClass',
-      'executionStatus.lastFailureClass',
-      input.executionStatus.lastFailureClass,
-      'decision_log'
-    );
-    pushFact(
-      facts,
-      'executionStatus.lastReasonCode',
-      'executionStatus.lastReasonCode',
-      input.executionStatus.lastReasonCode,
-      'decision_log'
-    );
-    pushFact(
-      facts,
-      'executionStatus.lastStage',
-      'executionStatus.lastStage',
-      input.executionStatus.lastStage,
-      'decision_log'
-    );
+    pushFact(facts, 'executionStatus.lastExecutionResult', 'executionStatus.lastExecutionResult', input.executionStatus.lastExecutionResult, 'decision_log');
+    pushFact(facts, 'executionStatus.lastFailureClass', 'executionStatus.lastFailureClass', input.executionStatus.lastFailureClass, 'decision_log');
+    pushFact(facts, 'executionStatus.lastReasonCode', 'executionStatus.lastReasonCode', input.executionStatus.lastReasonCode, 'decision_log');
+    pushFact(facts, 'executionStatus.lastStage', 'executionStatus.lastStage', input.executionStatus.lastStage, 'decision_log');
   }
 
   if (input.decisionDrift) {
@@ -111,37 +98,13 @@ function buildFacts(input) {
 
   if (input.dangerFlags) {
     pushFact(facts, 'dangerFlags.notReady', 'dangerFlags.notReady', input.dangerFlags.notReady, 'read_model');
-    pushFact(
-      facts,
-      'dangerFlags.staleMemberNumber',
-      'dangerFlags.staleMemberNumber',
-      input.dangerFlags.staleMemberNumber,
-      'read_model'
-    );
+    pushFact(facts, 'dangerFlags.staleMemberNumber', 'dangerFlags.staleMemberNumber', input.dangerFlags.staleMemberNumber, 'read_model');
   }
 
   if (input.notificationHealthSummary) {
-    pushFact(
-      facts,
-      'notificationHealthSummary.totalNotifications',
-      'notificationHealthSummary.totalNotifications',
-      input.notificationHealthSummary.totalNotifications,
-      'read_model'
-    );
-    pushFact(
-      facts,
-      'notificationHealthSummary.unhealthyCount',
-      'notificationHealthSummary.unhealthyCount',
-      input.notificationHealthSummary.unhealthyCount,
-      'read_model'
-    );
-    pushFact(
-      facts,
-      'notificationHealthSummary.countsByHealth',
-      'notificationHealthSummary.countsByHealth',
-      input.notificationHealthSummary.countsByHealth,
-      'read_model'
-    );
+    pushFact(facts, 'notificationHealthSummary.totalNotifications', 'notificationHealthSummary.totalNotifications', input.notificationHealthSummary.totalNotifications, 'read_model');
+    pushFact(facts, 'notificationHealthSummary.unhealthyCount', 'notificationHealthSummary.unhealthyCount', input.notificationHealthSummary.unhealthyCount, 'read_model');
+    pushFact(facts, 'notificationHealthSummary.countsByHealth', 'notificationHealthSummary.countsByHealth', input.notificationHealthSummary.countsByHealth, 'read_model');
   }
 
   if (input.mitigationSuggestion) {
@@ -219,11 +182,11 @@ function hashJson(value) {
 }
 
 async function callAdapter(adapter, payload, timeoutMs) {
-  if (!adapter || typeof adapter.explainOps !== 'function') return null;
+  if (!adapter || typeof adapter.explainOps !== 'function') throw new Error('adapter_missing');
   const exec = adapter.explainOps(payload);
   const limit = typeof timeoutMs === 'number' ? timeoutMs : DEFAULT_TIMEOUT_MS;
   const timeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('llm timeout')), limit);
+    setTimeout(() => reject(new Error('llm_timeout')), limit);
   });
   return Promise.race([exec, timeout]);
 }
@@ -235,8 +198,11 @@ async function getOpsExplanation(params, deps) {
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  const getLlmEnabled = deps && deps.getLlmEnabled ? deps.getLlmEnabled : systemFlagsRepo.getLlmEnabled;
   const env = deps && deps.env ? deps.env : process.env;
-  const llmEnabled = isLlmFeatureEnabled(env);
+  const envEnabled = isLlmFeatureEnabled(env);
+  const dbEnabled = await getLlmEnabled();
+  const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
 
   const consoleResult = payload.consoleResult
@@ -244,7 +210,12 @@ async function getOpsExplanation(params, deps) {
     : await consoleFn({ lineUserId, auditView: false }, deps);
 
   const input = buildInputFromConsole(consoleResult || {});
-  const sanitized = sanitizeInput({ input, allowList: DEFAULT_ALLOW_LISTS.opsExplanation });
+  const view = buildLlmInputView({
+    input,
+    allowList: DEFAULT_ALLOW_LISTS.opsExplanation,
+    fieldCategories: OPS_FIELD_CATEGORIES,
+    allowRestricted: false
+  });
 
   let llmStatus = 'disabled';
   let llmUsed = false;
@@ -252,40 +223,41 @@ async function getOpsExplanation(params, deps) {
   let explanation = buildFallbackExplanation(input, nowIso);
   let schemaErrors = [];
 
-  if (!sanitized.ok) {
-    llmStatus = 'allow_list_violation';
-    explanation = buildFallbackExplanation(input, nowIso);
+  if (!view.ok) {
+    llmStatus = view.blockedReason;
   } else if (!llmEnabled) {
     llmStatus = 'disabled';
-  } else if (!deps || !deps.llmAdapter || typeof deps.llmAdapter.explainOps !== 'function') {
-    llmStatus = 'adapter_missing';
   } else {
     try {
       const adapterResult = await callAdapter(
-        deps.llmAdapter,
+        deps && deps.llmAdapter,
         {
           schemaId: OPS_EXPLANATION_SCHEMA_ID,
           promptVersion: PROMPT_VERSION,
           system: SYSTEM_PROMPT,
-          input: sanitized.data
+          input: view.data
         },
         deps && typeof deps.llmTimeoutMs === 'number' ? deps.llmTimeoutMs : DEFAULT_TIMEOUT_MS
       );
       const candidate = adapterResult && isPlainObject(adapterResult.explanation)
         ? adapterResult.explanation
         : adapterResult;
-      const validation = validateSchema(OPS_EXPLANATION_SCHEMA_ID, candidate);
-      if (validation.ok) {
+      const guard = await guardLlmOutput({
+        purpose: 'ops_explain',
+        schemaId: OPS_EXPLANATION_SCHEMA_ID,
+        output: candidate
+      }, deps);
+      if (guard.ok) {
         explanation = candidate;
         llmUsed = true;
         llmStatus = 'ok';
         llmModel = adapterResult && typeof adapterResult.model === 'string' ? adapterResult.model : null;
       } else {
-        schemaErrors = validation.errors;
-        llmStatus = 'invalid_schema';
+        llmStatus = guard.blockedReason || 'invalid_schema';
+        schemaErrors = Array.isArray(guard.schemaErrors) ? guard.schemaErrors : [];
       }
-    } catch (_err) {
-      llmStatus = 'error';
+    } catch (err) {
+      llmStatus = err && err.message ? String(err.message) : 'error';
     }
   }
 
@@ -293,17 +265,27 @@ async function getOpsExplanation(params, deps) {
   if (auditFn) {
     try {
       const auditResult = await auditFn({
-        action: 'LLM_EXPLANATION',
-        eventType: 'LLM_EXPLANATION',
-        type: 'OPS_EXPLANATION',
+        actor: payload.actor || 'unknown',
+        action: llmUsed ? 'llm_ops_explain_generated' : 'llm_ops_explain_blocked',
+        eventType: 'LLM_OPS_EXPLAIN',
+        entityType: 'llm_ops_explain',
+        entityId: lineUserId,
         lineUserId,
         traceId: payload.traceId || null,
         schemaId: OPS_EXPLANATION_SCHEMA_ID,
         llmStatus,
         llmUsed,
         llmModel,
-        inputHash: hashJson(sanitized.ok ? sanitized.data : input),
-        outputHash: hashJson(explanation)
+        payloadSummary: {
+          purpose: 'ops_explain',
+          llmEnabled,
+          envLlmFeatureFlag: envEnabled,
+          dbLlmEnabled: dbEnabled,
+          inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+          blockedReason: llmUsed ? null : llmStatus,
+          inputHash: hashJson(view.ok ? view.data : input),
+          outputHash: hashJson(explanation)
+        }
       });
       auditId = auditResult && auditResult.id ? auditResult.id : null;
     } catch (_err) {

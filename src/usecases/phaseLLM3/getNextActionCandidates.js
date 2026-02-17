@@ -3,20 +3,30 @@
 const crypto = require('crypto');
 
 const { getOpsConsole } = require('../phase25/getOpsConsole');
-const { DEFAULT_ALLOW_LISTS, sanitizeInput } = require('../../llm/allowList');
-const { validateSchema } = require('../../llm/validateSchema');
+const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const { DEFAULT_ALLOW_LISTS } = require('../../llm/allowList');
 const { NEXT_ACTION_CANDIDATES_SCHEMA_ID, ABSTRACT_ACTIONS } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { buildLlmInputView } = require('../llm/buildLlmInputView');
+const { guardLlmOutput } = require('../llm/guardLlmOutput');
 
 const DEFAULT_TIMEOUT_MS = 2500;
-const PROMPT_VERSION = 'next_action_candidates_v1';
+const PROMPT_VERSION = 'next_action_candidates_v2';
 const SYSTEM_PROMPT = [
   'You are an ops assistant.',
   'Return abstract next action candidates only.',
   'Use NextActionCandidates.v1 schema.',
+  'Do not emit runbook commands.',
   'Advisory only.'
 ].join('\n');
+
+const NEXT_ACTION_FIELD_CATEGORIES = Object.freeze({
+  readiness: 'Internal',
+  opsState: 'Internal',
+  latestDecisionLog: 'Internal',
+  constraints: 'Internal'
+});
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -92,11 +102,11 @@ function hashJson(value) {
 }
 
 async function callAdapter(adapter, payload, timeoutMs) {
-  if (!adapter || typeof adapter.suggestNextActionCandidates !== 'function') return null;
+  if (!adapter || typeof adapter.suggestNextActionCandidates !== 'function') throw new Error('adapter_missing');
   const exec = adapter.suggestNextActionCandidates(payload);
   const limit = typeof timeoutMs === 'number' ? timeoutMs : DEFAULT_TIMEOUT_MS;
   const timeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('llm timeout')), limit);
+    setTimeout(() => reject(new Error('llm_timeout')), limit);
   });
   return Promise.race([exec, timeout]);
 }
@@ -108,8 +118,11 @@ async function getNextActionCandidates(params, deps) {
 
   const consoleFn = deps && deps.getOpsConsole ? deps.getOpsConsole : getOpsConsole;
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  const getLlmEnabled = deps && deps.getLlmEnabled ? deps.getLlmEnabled : systemFlagsRepo.getLlmEnabled;
   const env = deps && deps.env ? deps.env : process.env;
-  const llmEnabled = isLlmFeatureEnabled(env);
+  const envEnabled = isLlmFeatureEnabled(env);
+  const dbEnabled = await getLlmEnabled();
+  const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
 
   const consoleResult = payload.consoleResult
@@ -117,7 +130,12 @@ async function getNextActionCandidates(params, deps) {
     : await consoleFn({ lineUserId, auditView: false }, deps);
 
   const input = buildInputFromConsole(consoleResult || {});
-  const sanitized = sanitizeInput({ input, allowList: DEFAULT_ALLOW_LISTS.nextActionCandidates });
+  const view = buildLlmInputView({
+    input,
+    allowList: DEFAULT_ALLOW_LISTS.nextActionCandidates,
+    fieldCategories: NEXT_ACTION_FIELD_CATEGORIES,
+    allowRestricted: false
+  });
 
   let llmStatus = 'disabled';
   let llmUsed = false;
@@ -125,37 +143,41 @@ async function getNextActionCandidates(params, deps) {
   let schemaErrors = [];
   let nextActionCandidates = buildFallbackCandidates(input, nowIso);
 
-  if (!sanitized.ok) {
-    llmStatus = 'allow_list_violation';
+  if (!view.ok) {
+    llmStatus = view.blockedReason;
   } else if (!llmEnabled) {
     llmStatus = 'disabled';
-  } else if (!deps || !deps.llmAdapter || typeof deps.llmAdapter.suggestNextActionCandidates !== 'function') {
-    llmStatus = 'adapter_missing';
   } else {
     try {
       const adapterResult = await callAdapter(
-        deps.llmAdapter,
+        deps && deps.llmAdapter,
         {
           schemaId: NEXT_ACTION_CANDIDATES_SCHEMA_ID,
           promptVersion: PROMPT_VERSION,
           system: SYSTEM_PROMPT,
-          input: sanitized.data
+          input: view.data
         },
         deps && typeof deps.llmTimeoutMs === 'number' ? deps.llmTimeoutMs : DEFAULT_TIMEOUT_MS
       );
-      const candidate = adapterResult;
-      const validation = validateSchema(NEXT_ACTION_CANDIDATES_SCHEMA_ID, candidate);
-      if (validation.ok) {
+      const candidate = adapterResult && isPlainObject(adapterResult.nextActionCandidates)
+        ? adapterResult.nextActionCandidates
+        : adapterResult;
+      const guard = await guardLlmOutput({
+        purpose: 'next_actions',
+        schemaId: NEXT_ACTION_CANDIDATES_SCHEMA_ID,
+        output: candidate
+      }, deps);
+      if (guard.ok) {
         nextActionCandidates = candidate;
         llmUsed = true;
         llmStatus = 'ok';
         llmModel = adapterResult && typeof adapterResult.model === 'string' ? adapterResult.model : null;
       } else {
-        schemaErrors = validation.errors;
-        llmStatus = 'invalid_schema';
+        llmStatus = guard.blockedReason || 'invalid_schema';
+        schemaErrors = Array.isArray(guard.schemaErrors) ? guard.schemaErrors : [];
       }
-    } catch (_err) {
-      llmStatus = 'error';
+    } catch (err) {
+      llmStatus = err && err.message ? String(err.message) : 'error';
     }
   }
 
@@ -171,17 +193,27 @@ async function getNextActionCandidates(params, deps) {
   if (auditFn) {
     try {
       const auditResult = await auditFn({
-        action: 'LLM_NEXT_ACTION_CANDIDATES',
+        actor: payload.actor || 'unknown',
+        action: llmUsed ? 'llm_next_actions_generated' : 'llm_next_actions_blocked',
         eventType: 'LLM_NEXT_ACTION_CANDIDATES',
-        type: 'OPS_NEXT_ACTION_CANDIDATES',
+        entityType: 'llm_next_actions',
+        entityId: lineUserId,
         lineUserId,
         traceId: payload.traceId || null,
         schemaId: NEXT_ACTION_CANDIDATES_SCHEMA_ID,
         llmStatus,
         llmUsed,
         llmModel,
-        inputHash: hashJson(sanitized.ok ? sanitized.data : input),
-        outputHash: hashJson(nextActionCandidates)
+        payloadSummary: {
+          purpose: 'next_actions',
+          llmEnabled,
+          envLlmFeatureFlag: envEnabled,
+          dbLlmEnabled: dbEnabled,
+          inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+          blockedReason: llmUsed ? null : llmStatus,
+          inputHash: hashJson(view.ok ? view.data : input),
+          outputHash: hashJson(nextActionCandidates)
+        }
       });
       auditId = auditResult && auditResult.id ? auditResult.id : null;
     } catch (_err) {

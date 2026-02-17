@@ -77,6 +77,7 @@ function isProtectedOpsPath(pathname) {
 
   // Protect ops/admin APIs that are reachable from admin UI.
   if (pathname.startsWith('/api/phase')) {
+    if (pathname.startsWith('/api/phaseLLM')) return true; // llm endpoints are admin-only
     // Ops-only phase endpoints that intentionally omit "ops" in their path.
     // These must still be protected at the app layer to stay safe even if IAM/network is misconfigured.
     if (pathname.startsWith('/api/phase67/')) return true; // segment send plan
@@ -889,6 +890,60 @@ function createServer() {
         return;
       }
 
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin/llm/')) {
+    const {
+      handleStatus: handleLlmConfigStatus,
+      handlePlan: handleLlmConfigPlan,
+      handleSet: handleLlmConfigSet
+    } = require('./routes/admin/llmConfig');
+    const { handleAdminLlmFaqAnswer } = require('./routes/admin/llmFaq');
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/admin/llm/config/status') {
+        await handleLlmConfigStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/config/plan') {
+        const body = await collectBody();
+        await handleLlmConfigPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/config/set') {
+        const body = await collectBody();
+        await handleLlmConfigSet(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {
+        const body = await collectBody();
+        await handleAdminLlmFaqAnswer(req, res, body);
+        return;
+      }
       res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'not found' }));
     })().catch(() => {
