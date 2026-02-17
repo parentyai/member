@@ -1002,6 +1002,45 @@ th {
 
 .is-hidden { display: none !important; }
 
+.llm-block-panel {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-left: 4px solid var(--status-warn);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.llm-block-title {
+  font-size: var(--font-14);
+  font-weight: 700;
+  color: var(--status-warn);
+}
+
+.llm-block-row {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.llm-block-label {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+}
+
+.llm-block-value {
+  font-size: var(--font-14);
+  font-weight: 600;
+}
+
+.llm-block-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+}
+
 .is-loading { opacity: 0.7; }
 
 .is-disabled {

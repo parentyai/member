@@ -94,13 +94,71 @@ function buildBlocked(params) {
     traceId: payload.traceId || null,
     llmUsed: false,
     llmStatus: payload.llmStatus || 'blocked',
+    blockedReasonCategory: payload.blockedReasonCategory || 'UNKNOWN',
     schemaErrors: payload.schemaErrors || null,
+    fallbackActions: Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [],
+    suggestedFaqs: Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [],
     faqAnswer: null,
     disclaimerVersion: payload.disclaimerVersion || null,
     disclaimer: payload.disclaimer || null,
     serverTime: payload.serverTime || new Date().toISOString(),
     deprecated: false
   };
+}
+
+function toBlockedReasonCategory(blockedReason) {
+  const reason = String(blockedReason || '').trim();
+  if (!reason) return 'UNKNOWN';
+  if (reason === 'kb_no_match') return 'NO_KB_MATCH';
+  if (reason === 'low_confidence') return 'LOW_CONFIDENCE';
+  if (reason === 'direct_url_forbidden') return 'DIRECT_URL_DETECTED';
+  if (reason === 'warn_link_blocked') return 'WARN_LINK_BLOCKED';
+  if (reason === 'restricted_field_detected' || reason === 'secret_field_detected') return 'SENSITIVE_QUERY';
+  if (reason === 'consent_missing') return 'CONSENT_MISSING';
+  return 'UNKNOWN';
+}
+
+function looksLikeDirectUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
+}
+
+function buildFallbackActions(allowedSourceIds, requiredContactSourceIds) {
+  const safeAllowed = Array.isArray(allowedSourceIds)
+    ? allowedSourceIds.filter((id) => typeof id === 'string' && id.trim().length > 0 && !looksLikeDirectUrl(id))
+    : [];
+  const safeRequired = Array.isArray(requiredContactSourceIds)
+    ? requiredContactSourceIds.filter((id) => typeof id === 'string' && id.trim().length > 0 && !looksLikeDirectUrl(id))
+    : [];
+
+  const officialFaqSourceId = safeAllowed[0] || null;
+  const contactSourceId = safeRequired.find((id) => id !== officialFaqSourceId) || safeAllowed[1] || null;
+
+  const actions = [];
+  if (officialFaqSourceId) {
+    actions.push({
+      actionKey: 'open_official_faq',
+      label: '公式FAQを見る',
+      sourceId: officialFaqSourceId
+    });
+  }
+  if (contactSourceId) {
+    actions.push({
+      actionKey: 'open_contact',
+      label: '問い合わせる',
+      sourceId: contactSourceId
+    });
+  }
+  return actions;
+}
+
+function buildSuggestedFaqs(candidates) {
+  return (Array.isArray(candidates) ? candidates : [])
+    .slice(0, 3)
+    .map((item) => ({
+      articleId: item && item.id ? String(item.id) : '',
+      title: item && item.title ? String(item.title) : ''
+    }))
+    .filter((item) => item.articleId.length > 0);
 }
 
 async function callAdapter(adapter, payload, timeoutMs) {
@@ -284,6 +342,8 @@ async function answerFaqFromKb(params, deps) {
   const matchedArticleIds = candidates.map((item) => item.id);
   const allowedSourceIds = collectAllowedSourceIds(candidates);
   const requiredContactSourceIds = collectRequiredContactSourceIds(candidates);
+  const fallbackActions = buildFallbackActions(allowedSourceIds, requiredContactSourceIds);
+  const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
 
   const llmInput = {
@@ -330,18 +390,45 @@ async function answerFaqFromKb(params, deps) {
 
   let blocked = null;
   if (!view.ok) {
-    blocked = buildBlocked({ blockedReason: view.blockedReason, traceId, llmStatus: view.blockedReason, serverTime });
+    blocked = buildBlocked({
+      blockedReason: view.blockedReason,
+      blockedReasonCategory: toBlockedReasonCategory(view.blockedReason),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: view.blockedReason,
+      serverTime
+    });
   } else if (!llmEnabled) {
-    blocked = buildBlocked({ blockedReason: 'llm_disabled', traceId, llmStatus: 'llm_disabled', serverTime });
+    blocked = buildBlocked({
+      blockedReason: 'llm_disabled',
+      blockedReasonCategory: toBlockedReasonCategory('llm_disabled'),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: 'llm_disabled',
+      serverTime
+    });
   } else if (!confidence.confident) {
     blocked = buildBlocked({
       blockedReason: confidence.blockedReason || 'low_confidence',
+      blockedReasonCategory: toBlockedReasonCategory(confidence.blockedReason || 'low_confidence'),
+      fallbackActions,
+      suggestedFaqs,
       traceId,
       llmStatus: confidence.blockedReason || 'low_confidence',
       serverTime
     });
   } else if (candidates.some((item) => String(item.riskLevel || '').toLowerCase() === 'high') && requiredContactSourceIds.length === 0) {
-    blocked = buildBlocked({ blockedReason: 'contact_source_required', traceId, llmStatus: 'contact_source_required', serverTime });
+    blocked = buildBlocked({
+      blockedReason: 'contact_source_required',
+      blockedReasonCategory: toBlockedReasonCategory('contact_source_required'),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: 'contact_source_required',
+      serverTime
+    });
   }
 
   if (blocked) {
@@ -435,6 +522,9 @@ async function answerFaqFromKb(params, deps) {
     const blockedReason = llmStatus || 'blocked';
     const blockedResult = buildBlocked({
       blockedReason,
+      blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+      fallbackActions,
+      suggestedFaqs,
       traceId,
       llmStatus: blockedReason,
       schemaErrors: guardResult && guardResult.schemaErrors ? guardResult.schemaErrors : null,
@@ -495,6 +585,9 @@ async function answerFaqFromKb(params, deps) {
     const blockedReason = 'contact_source_required';
     const blockedResult = buildBlocked({
       blockedReason,
+      blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+      fallbackActions,
+      suggestedFaqs,
       traceId,
       llmStatus: blockedReason,
       schemaErrors: null,
@@ -607,6 +700,9 @@ async function answerFaqFromKb(params, deps) {
     llmModel,
     schemaErrors: null,
     blockedReason: null,
+    blockedReasonCategory: null,
+    fallbackActions: [],
+    suggestedFaqs,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
     inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,

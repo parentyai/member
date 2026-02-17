@@ -145,6 +145,23 @@
   - `warn_link_blocked`
   - `direct_url_forbidden`
   - `llm_disabled`
+- Block payload (add-only):
+```json
+{
+  "ok": false,
+  "blocked": true,
+  "httpStatus": 422,
+  "blockedReason": "kb_no_match",
+  "blockedReasonCategory": "NO_KB_MATCH",
+  "fallbackActions": [
+    { "actionKey": "open_official_faq", "label": "公式FAQを見る", "sourceId": "lk_xxx" },
+    { "actionKey": "open_contact", "label": "問い合わせる", "sourceId": "lk_yyy" }
+  ],
+  "suggestedFaqs": [
+    { "articleId": "faq-1", "title": "会員番号の確認方法" }
+  ]
+}
+```
 
 ### GET /api/admin/llm/ops-explain
 - Purpose: Ops 状態説明（advisory-only）を admin 名前空間で提供。

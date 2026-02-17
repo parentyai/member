@@ -833,6 +833,78 @@ function renderLlmResult(targetId, payload) {
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function llmBlockedReasonCategoryLabel(category) {
+  const key = String(category || 'UNKNOWN');
+  if (key === 'NO_KB_MATCH') return t('ui.label.llm.block.reason.NO_KB_MATCH', 'KB一致なし');
+  if (key === 'LOW_CONFIDENCE') return t('ui.label.llm.block.reason.LOW_CONFIDENCE', '根拠の信頼度不足');
+  if (key === 'DIRECT_URL_DETECTED') return t('ui.label.llm.block.reason.DIRECT_URL_DETECTED', '直接URLを検出');
+  if (key === 'WARN_LINK_BLOCKED') return t('ui.label.llm.block.reason.WARN_LINK_BLOCKED', '危険リンクを検出');
+  if (key === 'SENSITIVE_QUERY') return t('ui.label.llm.block.reason.SENSITIVE_QUERY', '機微情報を検出');
+  if (key === 'CONSENT_MISSING') return t('ui.label.llm.block.reason.CONSENT_MISSING', '同意未確認');
+  return t('ui.label.llm.block.reason.UNKNOWN', '安全ルールで停止');
+}
+
+function llmFallbackActionLabel(item) {
+  if (item && typeof item.label === 'string' && item.label.trim()) return item.label.trim();
+  const actionKey = item && typeof item.actionKey === 'string' ? item.actionKey.trim() : '';
+  if (actionKey === 'open_official_faq') return t('ui.label.llm.block.action.open_official_faq', '公式FAQを見る');
+  if (actionKey === 'open_contact') return t('ui.label.llm.block.action.open_contact', '問い合わせる');
+  return t('ui.label.llm.block.action.unknown', '対応先を確認する');
+}
+
+function appendListItem(listEl, text) {
+  if (!listEl) return;
+  const li = document.createElement('li');
+  li.textContent = text;
+  listEl.appendChild(li);
+}
+
+function renderLlmFaqBlockPanel(payload) {
+  const panel = document.getElementById('llm-faq-block');
+  const reasonEl = document.getElementById('llm-faq-block-reason');
+  const actionsEl = document.getElementById('llm-faq-block-actions');
+  const suggestedEl = document.getElementById('llm-faq-block-suggested');
+  if (!panel || !reasonEl || !actionsEl || !suggestedEl) return;
+
+  const blocked = payload && payload.ok === false && payload.blocked === true;
+  if (!blocked) {
+    panel.classList.add('is-hidden');
+    reasonEl.textContent = '-';
+    actionsEl.innerHTML = '';
+    suggestedEl.innerHTML = '';
+    return;
+  }
+
+  panel.classList.remove('is-hidden');
+  reasonEl.textContent = llmBlockedReasonCategoryLabel(payload.blockedReasonCategory);
+
+  actionsEl.innerHTML = '';
+  const fallbackActions = Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [];
+  if (!fallbackActions.length) {
+    appendListItem(actionsEl, t('ui.desc.llm.block.noActions', '代替アクションは未設定です。'));
+  } else {
+    fallbackActions.forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const label = llmFallbackActionLabel(item);
+      const sourceId = typeof item.sourceId === 'string' && item.sourceId.trim() ? item.sourceId.trim() : '-';
+      appendListItem(actionsEl, `${label} (${sourceId})`);
+    });
+  }
+
+  suggestedEl.innerHTML = '';
+  const suggestedFaqs = Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [];
+  if (!suggestedFaqs.length) {
+    appendListItem(suggestedEl, t('ui.desc.llm.block.none', '候補FAQはありません。'));
+  } else {
+    suggestedFaqs.forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const articleId = typeof item.articleId === 'string' && item.articleId.trim() ? item.articleId.trim() : '-';
+      const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : t('ui.label.common.empty', 'データなし');
+      appendListItem(suggestedEl, `${title} (${articleId})`);
+    });
+  }
+}
+
 async function readJsonResponse(res) {
   const text = await res.text();
   if (!text) return { ok: false, error: 'empty response' };
@@ -946,10 +1018,12 @@ async function runLlmFaq() {
   try {
     const data = await postJson('/api/admin/llm/faq/answer', { question, locale: 'ja' }, traceId);
     renderLlmResult('llm-faq-result', data);
+    renderLlmFaqBlockPanel(data);
     showToast(data && data.ok ? t('ui.toast.llm.faqOk', 'FAQ回答を生成しました') : t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
     const payload = { ok: false, error: 'fetch error' };
     renderLlmResult('llm-faq-result', payload);
+    renderLlmFaqBlockPanel(payload);
     showToast(t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), 'danger');
   }
 }
