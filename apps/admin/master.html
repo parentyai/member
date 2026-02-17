@@ -227,6 +227,16 @@
       <button id="llm-faq-answer" type="button">FAQ回答を生成</button>
     </div>
     <pre id="llm-faq-result">-</pre>
+    <h3>LLM Ops説明 / 次アクション候補（管理者）</h3>
+    <div class="note">lineUserId を指定して説明と候補を確認します（提案のみ、自動実行なし）。</div>
+    <label data-tip="lineUserId" tabindex="0">LINEユーザーID</label>
+    <input id="llm-ops-line-user-id" placeholder="Uxxxxxxxx" />
+    <div class="note">
+      <button id="llm-ops-explain" type="button">Ops説明を取得</button>
+      <button id="llm-next-actions" type="button">次候補を取得</button>
+    </div>
+    <pre id="llm-ops-explain-result">-</pre>
+    <pre id="llm-next-actions-result">-</pre>
 
         </div>
       </div>
@@ -965,6 +975,38 @@
         return data;
       }
 
+      function getLlmOpsLineUserId() {
+        return document.getElementById('llm-ops-line-user-id').value.trim();
+      }
+
+      async function fetchLlmOpsExplain() {
+        const lineUserId = getLlmOpsLineUserId();
+        if (!lineUserId) {
+          const err = { ok: false, error: 'lineUserId が必要です' };
+          document.getElementById('llm-ops-explain-result').textContent = JSON.stringify(err, null, 2);
+          return err;
+        }
+        const qs = new URLSearchParams({ lineUserId });
+        const res = await fetch(`/api/phaseLLM2/ops-explain?${qs.toString()}`, { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-ops-explain-result').textContent = JSON.stringify(data, null, 2);
+        return data;
+      }
+
+      async function fetchLlmNextActions() {
+        const lineUserId = getLlmOpsLineUserId();
+        if (!lineUserId) {
+          const err = { ok: false, error: 'lineUserId が必要です' };
+          document.getElementById('llm-next-actions-result').textContent = JSON.stringify(err, null, 2);
+          return err;
+        }
+        const qs = new URLSearchParams({ lineUserId });
+        const res = await fetch(`/api/phaseLLM3/ops-next-actions?${qs.toString()}`, { headers: buildHeaders() });
+        const data = await jsonOrText(res);
+        document.getElementById('llm-next-actions-result').textContent = JSON.stringify(data, null, 2);
+        return data;
+      }
+
       async function planSystemConfig() {
         const servicePhase = parseNullableInt(document.getElementById('config-service-phase').value);
         const notificationPreset = parseNullableString(document.getElementById('config-notification-preset').value);
@@ -1233,6 +1275,8 @@
       document.getElementById('llm-config-plan').addEventListener('click', () => runWithToast('LLM設定 計画', planLlmConfig));
       document.getElementById('llm-config-set').addEventListener('click', () => runWithToast('LLM設定 適用', setLlmConfig));
       document.getElementById('llm-faq-answer').addEventListener('click', () => runWithToast('LLM FAQ', generateLlmFaqAnswer));
+      document.getElementById('llm-ops-explain').addEventListener('click', () => runWithToast('LLM Ops説明', fetchLlmOpsExplain));
+      document.getElementById('llm-next-actions').addEventListener('click', () => runWithToast('LLM 次候補', fetchLlmNextActions));
       document.getElementById('config-plan').addEventListener('click', () => runWithToast('システム設定 計画', planSystemConfig));
       document.getElementById('config-set').addEventListener('click', () => runWithToast('システム設定 適用', setSystemConfig));
       document.getElementById('automation-config-reload').addEventListener('click', () => runWithToast('自動化設定 更新', loadAutomationConfigStatus));
