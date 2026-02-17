@@ -157,6 +157,7 @@
   - `low_confidence`
   - `citations_required`
   - `contact_source_required`
+  - `consent_missing`
   - `warn_link_blocked`
   - `direct_url_forbidden`
   - `llm_disabled`
@@ -213,6 +214,11 @@
   "ok": true,
   "traceId": "string",
   "llmEnabled": false,
+  "llmPolicy": {
+    "lawfulBasis": "unspecified",
+    "consentVerified": false,
+    "crossBorder": false
+  },
   "effectiveEnabled": false
 }
 ```
@@ -221,7 +227,14 @@
 - Purpose: llmEnabled 変更の plan 生成（planHash/confirmToken）。
 - Body:
 ```json
-{ "llmEnabled": true }
+{
+  "llmEnabled": true,
+  "llmPolicy": {
+    "lawfulBasis": "contract",
+    "consentVerified": false,
+    "crossBorder": false
+  }
+}
 ```
 
 ### POST /api/admin/llm/config/set
@@ -230,6 +243,11 @@
 ```json
 {
   "llmEnabled": true,
+  "llmPolicy": {
+    "lawfulBasis": "contract",
+    "consentVerified": false,
+    "crossBorder": false
+  },
   "planHash": "string",
   "confirmToken": "string"
 }

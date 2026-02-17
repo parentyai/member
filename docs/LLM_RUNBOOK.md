@@ -30,11 +30,30 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `llm_disclaimer_rendered`
 - traceId で追跡する場合は `/api/admin/trace?traceId=...` を使用する。
 - `llm_disclaimer_rendered` の payloadSummary で `purpose` / `disclaimerVersion` / `disclaimerShown` を確認する。
+- phase234 以降は以下の policy snapshot 項目も追跡する。
+  - `lawfulBasis`
+  - `consentVerified`
+  - `crossBorder`
+  - `blockedReasonCategory`
+  - `fieldCategoriesUsed`
 
 ## Failure Modes
 - schema mismatch / citation mismatch / allow-list violation => fallback へ退避。
 - provider timeout / error => fallback へ退避。
 - FAQ で `kb_no_match` / `citations_required` / `direct_url_forbidden` / `warn_link_blocked` は 422 BLOCK。
+- FAQ で `lawfulBasis=consent` かつ `consentVerified=false` の場合は `consent_missing` で 422 BLOCK。
+
+## LLM Policy Snapshot Operations (Phase234)
+- status:
+  - `GET /api/admin/llm/config/status`
+  - `llmPolicy`（`lawfulBasis/consentVerified/crossBorder`）を確認
+- plan:
+  - `POST /api/admin/llm/config/plan`
+  - body に `llmEnabled` と任意 `llmPolicy` を渡す
+  - 返却 `planHash` は `llmEnabled + llmPolicy` の組で固定
+- set:
+  - `POST /api/admin/llm/config/set`
+  - `planHash` と `confirmToken` が一致しない場合は `plan_hash_mismatch` / `confirm_token_mismatch`
 
 ## Notes
 - killSwitch は LINE 送信停止用。LLM 停止は `llmEnabled` と `LLM_FEATURE_FLAG` の二重ゲートで行う。

@@ -15,8 +15,23 @@ function normalizeLlmEnabled(value) {
   throw new Error('llmEnabled required');
 }
 
-function computePlanHash(llmEnabled) {
-  const text = `llmEnabled=${llmEnabled ? 'true' : 'false'}`;
+function normalizeLlmPolicy(value, fallback) {
+  if (value === undefined) return fallback;
+  const normalized = systemFlagsRepo.normalizeLlmPolicy(value);
+  if (normalized === null) throw new Error('invalid llmPolicy');
+  return normalized;
+}
+
+function serializeLlmPolicy(policy) {
+  return JSON.stringify({
+    lawfulBasis: policy.lawfulBasis,
+    consentVerified: Boolean(policy.consentVerified),
+    crossBorder: Boolean(policy.crossBorder)
+  });
+}
+
+function computePlanHash(llmEnabled, llmPolicy) {
+  const text = `llmEnabled=${llmEnabled ? 'true' : 'false'};llmPolicy=${serializeLlmPolicy(llmPolicy)}`;
   return `llmcfg_${crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
@@ -35,6 +50,7 @@ async function handleStatus(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const llmEnabled = await systemFlagsRepo.getLlmEnabled();
+  const llmPolicy = await systemFlagsRepo.getLlmPolicy();
   const envEnabled = isLlmFeatureEnabled(process.env);
   const effectiveEnabled = Boolean(llmEnabled && envEnabled);
 
@@ -45,7 +61,14 @@ async function handleStatus(req, res) {
     entityId: 'phase0',
     traceId,
     requestId,
-    payloadSummary: { llmEnabled, envLlmFeatureFlag: envEnabled, effectiveEnabled }
+    payloadSummary: {
+      llmEnabled,
+      envLlmFeatureFlag: envEnabled,
+      effectiveEnabled,
+      lawfulBasis: llmPolicy.lawfulBasis,
+      consentVerified: llmPolicy.consentVerified,
+      crossBorder: llmPolicy.crossBorder
+    }
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -55,6 +78,7 @@ async function handleStatus(req, res) {
     requestId,
     serverTime: new Date().toISOString(),
     llmEnabled,
+    llmPolicy,
     envLlmFeatureFlag: envEnabled,
     effectiveEnabled
   }));
@@ -69,15 +93,18 @@ async function handlePlan(req, res, body) {
   if (!payload) return;
 
   let llmEnabled;
+  const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
+  let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
+    llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: err.message || 'invalid', traceId }));
     return;
   }
 
-  const planHash = computePlanHash(llmEnabled);
+  const planHash = computePlanHash(llmEnabled, llmPolicy);
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
 
   await appendAuditLog({
@@ -87,7 +114,14 @@ async function handlePlan(req, res, body) {
     entityId: 'phase0',
     traceId,
     requestId,
-    payloadSummary: { llmEnabled, planHash }
+    payloadSummary: {
+      llmEnabled,
+      llmPolicy,
+      lawfulBasis: llmPolicy.lawfulBasis,
+      consentVerified: llmPolicy.consentVerified,
+      crossBorder: llmPolicy.crossBorder,
+      planHash
+    }
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -97,6 +131,7 @@ async function handlePlan(req, res, body) {
     requestId,
     serverTime: new Date().toISOString(),
     llmEnabled,
+    llmPolicy,
     planHash,
     confirmToken
   }));
@@ -111,8 +146,11 @@ async function handleSet(req, res, body) {
   if (!payload) return;
 
   let llmEnabled;
+  const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
+  let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
+    llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: err.message || 'invalid', traceId }));
@@ -127,7 +165,7 @@ async function handleSet(req, res, body) {
     return;
   }
 
-  const expectedPlanHash = computePlanHash(llmEnabled);
+  const expectedPlanHash = computePlanHash(llmEnabled, llmPolicy);
   if (planHash !== expectedPlanHash) {
     await appendAuditLog({
       actor,
@@ -136,7 +174,16 @@ async function handleSet(req, res, body) {
       entityId: 'phase0',
       traceId,
       requestId,
-      payloadSummary: { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash }
+      payloadSummary: {
+        ok: false,
+        reason: 'plan_hash_mismatch',
+        expectedPlanHash,
+        llmEnabled,
+        llmPolicy,
+        lawfulBasis: llmPolicy.lawfulBasis,
+        consentVerified: llmPolicy.consentVerified,
+        crossBorder: llmPolicy.crossBorder
+      }
     });
     res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId }));
@@ -160,6 +207,7 @@ async function handleSet(req, res, body) {
   }
 
   await systemFlagsRepo.setLlmEnabled(llmEnabled);
+  await systemFlagsRepo.setLlmPolicy(llmPolicy);
 
   await appendAuditLog({
     actor,
@@ -168,7 +216,14 @@ async function handleSet(req, res, body) {
     entityId: 'phase0',
     traceId,
     requestId,
-    payloadSummary: { ok: true, llmEnabled }
+    payloadSummary: {
+      ok: true,
+      llmEnabled,
+      llmPolicy,
+      lawfulBasis: llmPolicy.lawfulBasis,
+      consentVerified: llmPolicy.consentVerified,
+      crossBorder: llmPolicy.crossBorder
+    }
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -177,7 +232,8 @@ async function handleSet(req, res, body) {
     traceId,
     requestId,
     serverTime: new Date().toISOString(),
-    llmEnabled
+    llmEnabled,
+    llmPolicy
   }));
 }
 
