@@ -95,7 +95,12 @@
 {
   "question": "string",
   "locale": "ja",
-  "intent": "string (optional)"
+  "intent": "string (optional)",
+  "guideMode": "faq_navigation|question_refine|checklist_guidance",
+  "personalization": {
+    "locale": "ja",
+    "servicePhase": 2
+  }
 }
 ```
 
@@ -158,6 +163,8 @@
   - `citations_required`
   - `contact_source_required`
   - `consent_missing`
+  - `guide_only_mode_blocked`
+  - `personalization_not_allowed`
   - `warn_link_blocked`
   - `direct_url_forbidden`
   - `llm_disabled`

@@ -42,6 +42,8 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 - provider timeout / error => fallback へ退避。
 - FAQ で `kb_no_match` / `citations_required` / `direct_url_forbidden` / `warn_link_blocked` は 422 BLOCK。
 - FAQ で `lawfulBasis=consent` かつ `consentVerified=false` の場合は `consent_missing` で 422 BLOCK。
+- FAQ で `guideMode` が許可外の場合は `guide_only_mode_blocked` で 422 BLOCK。
+- FAQ で personalization が許可外キーを含む場合は `personalization_not_allowed` で 422 BLOCK。
 
 ## LLM Policy Snapshot Operations (Phase234)
 - status:

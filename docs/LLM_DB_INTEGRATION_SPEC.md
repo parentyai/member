@@ -20,6 +20,8 @@
   - WARN link 混入
   - Allow-list 違反
   - lawfulBasis=consent かつ consentVerified=false
+  - guideMode が guide-only 許可範囲外（`faq_navigation|question_refine|checklist_guidance` 以外）
+  - personalization が allow-list 外キーを含む（`locale|servicePhase` 以外）
 - 直 URL 禁止。リンクは `linkRegistryId` のみ返却。
 
 ## 用途別 I/O
@@ -68,6 +70,7 @@
 - `blockedReasonCategory` (BLOCK 時)
 - `inputFieldCategoriesUsed` (Public/Internal/Restricted/Secret)
 - `fieldCategoriesUsed` (監査ビュー用の集約名)
+- `guideMode`, `personalizationKeys`
 - `lawfulBasis`, `consentVerified`, `crossBorder` (`system_flags.phase0.llmPolicy` snapshot)
 - `inputHash`, `outputHash`
 - `disclaimerVersion`
