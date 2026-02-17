@@ -119,6 +119,7 @@
 ### POST /api/admin/llm/faq/answer
 - Purpose: KB 限定 FAQ 回答（`faq_articles` のみ）。
 - Auth: `/api/admin/*` 保護 + `x-actor`。
+- Fail-closed: `x-admin-token`（または admin cookie）不一致時は 401 を返す。
 - Body:
 ```json
 {
