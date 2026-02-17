@@ -192,3 +192,10 @@
 - Errors:
   - 400: required fields missing
   - 409: `plan_hash_mismatch` / `confirm_token_mismatch`
+
+## Phase218 Endpoint Priority Contract
+
+- Admin UI (`/admin/app`, `/admin/master`, `/admin/ops`) は以下の順で LLM Ops API を呼び出す。
+  1. `/api/admin/llm/ops-explain` / `/api/admin/llm/next-actions`
+  2. 404 または接続失敗時のみ `/api/phaseLLM2/ops-explain` / `/api/phaseLLM3/ops-next-actions` へフォールバック
+- 旧 phaseLLM2/3 ルートは互換維持のため残すが、優先利用はしない。
