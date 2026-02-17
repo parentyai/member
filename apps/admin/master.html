@@ -464,6 +464,17 @@
         });
       }
 
+      async function fetchJsonWithFallback(primaryPath, fallbackPath) {
+        try {
+          const primaryRes = await fetch(primaryPath, { headers: buildHeaders() });
+          if (primaryRes.status !== 404) {
+            return await jsonOrText(primaryRes);
+          }
+        } catch (_err) {}
+        const fallbackRes = await fetch(fallbackPath, { headers: buildHeaders() });
+        return await jsonOrText(fallbackRes);
+      }
+
       function showToast(message, tone) {
         if (!toastEl) return;
         toastEl.textContent = message;
@@ -987,8 +998,10 @@
           return err;
         }
         const qs = new URLSearchParams({ lineUserId });
-        const res = await fetch(`/api/phaseLLM2/ops-explain?${qs.toString()}`, { headers: buildHeaders() });
-        const data = await jsonOrText(res);
+        const data = await fetchJsonWithFallback(
+          `/api/admin/llm/ops-explain?${qs.toString()}`,
+          `/api/phaseLLM2/ops-explain?${qs.toString()}`
+        );
         document.getElementById('llm-ops-explain-result').textContent = JSON.stringify(data, null, 2);
         return data;
       }
@@ -1001,8 +1014,10 @@
           return err;
         }
         const qs = new URLSearchParams({ lineUserId });
-        const res = await fetch(`/api/phaseLLM3/ops-next-actions?${qs.toString()}`, { headers: buildHeaders() });
-        const data = await jsonOrText(res);
+        const data = await fetchJsonWithFallback(
+          `/api/admin/llm/next-actions?${qs.toString()}`,
+          `/api/phaseLLM3/ops-next-actions?${qs.toString()}`
+        );
         document.getElementById('llm-next-actions-result').textContent = JSON.stringify(data, null, 2);
         return data;
       }
