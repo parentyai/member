@@ -15,6 +15,17 @@
 - Drop any field not listed in the allow-list.
 - Block when disallowed fields are detected (fail-closed).
 
+## Policy Snapshot (Phase234 add-only)
+- `system_flags.phase0.llmPolicy` is the legal-policy snapshot used by LLM usecases.
+- Snapshot fields:
+  - `lawfulBasis` (`unspecified|consent|contract|legal_obligation|vital_interest|public_task|legitimate_interest`)
+  - `consentVerified` (boolean)
+  - `crossBorder` (boolean)
+- These fields are **not** user profile data; they are operation-policy metadata.
+- The snapshot is copied into audit payloadSummary to keep traceable legal context per response.
+- Consent gate:
+  - `lawfulBasis=consent` and `consentVerified=false` => `consent_missing` BLOCK (fail-closed).
+
 ## Allow-list Views
 
 ### FAQ

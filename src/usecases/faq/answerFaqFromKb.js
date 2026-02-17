@@ -224,6 +224,39 @@ function toNumberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function resolveLlmPolicySnapshot(policy) {
+  const normalized = systemFlagsRepo.normalizeLlmPolicy(policy);
+  if (normalized === null) {
+    return Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY);
+  }
+  return normalized;
+}
+
+function isConsentMissingByPolicy(policy) {
+  return Boolean(policy && policy.lawfulBasis === 'consent' && policy.consentVerified !== true);
+}
+
+function buildAuditSummaryBase(params) {
+  const payload = params || {};
+  return {
+    purpose: 'faq',
+    llmEnabled: payload.llmEnabled,
+    envLlmFeatureFlag: payload.envEnabled,
+    dbLlmEnabled: payload.dbEnabled,
+    schemaId: FAQ_ANSWER_SCHEMA_ID,
+    disclaimerVersion: payload.disclaimerVersion,
+    lawfulBasis: payload.llmPolicy.lawfulBasis,
+    consentVerified: payload.llmPolicy.consentVerified,
+    crossBorder: payload.llmPolicy.crossBorder,
+    kbMatchedIds: payload.matchedArticleIds,
+    top1Score: payload.confidence.top1Score,
+    top2Score: payload.confidence.top2Score,
+    top1Top2Ratio: payload.confidence.top1Top2Ratio,
+    inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
+    fieldCategoriesUsed: payload.inputFieldCategoriesUsed
+  };
+}
+
 function evaluateConfidence(candidates) {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return {
@@ -328,7 +361,11 @@ async function answerFaqFromKb(params, deps) {
   const env = deps && deps.env ? deps.env : process.env;
   const envEnabled = isLlmFeatureEnabled(env);
   const getLlmEnabled = deps && deps.getLlmEnabled ? deps.getLlmEnabled : systemFlagsRepo.getLlmEnabled;
+  const getLlmPolicy = deps && Object.prototype.hasOwnProperty.call(deps, 'getLlmPolicy')
+    ? deps.getLlmPolicy
+    : (deps ? async () => Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY) : systemFlagsRepo.getLlmPolicy);
   const dbEnabled = await getLlmEnabled();
+  const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
   const llmEnabled = Boolean(envEnabled && dbEnabled);
 
   const kbRepo = deps && deps.faqArticlesRepo ? deps.faqArticlesRepo : faqArticlesRepo;
@@ -409,6 +446,16 @@ async function answerFaqFromKb(params, deps) {
       llmStatus: 'llm_disabled',
       serverTime
     });
+  } else if (isConsentMissingByPolicy(llmPolicy)) {
+    blocked = buildBlocked({
+      blockedReason: 'consent_missing',
+      blockedReasonCategory: toBlockedReasonCategory('consent_missing'),
+      fallbackActions,
+      suggestedFaqs,
+      traceId,
+      llmStatus: 'consent_missing',
+      serverTime
+    });
   } else if (!confidence.confident) {
     blocked = buildBlocked({
       blockedReason: confidence.blockedReason || 'low_confidence',
@@ -442,21 +489,23 @@ async function answerFaqFromKb(params, deps) {
       entityId: 'faq',
       traceId,
       requestId,
-      payloadSummary: {
-        purpose: 'faq',
-        llmEnabled,
-        envLlmFeatureFlag: envEnabled,
-        dbLlmEnabled: dbEnabled,
-        blockedReason: blocked.blockedReason,
-        schemaId: FAQ_ANSWER_SCHEMA_ID,
-        disclaimerVersion: disclaimer.version,
-        kbMatchedIds: matchedArticleIds,
-        top1Score: confidence.top1Score,
-        top2Score: confidence.top2Score,
-        top1Top2Ratio: confidence.top1Top2Ratio,
-        inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
-        inputHash: hashJson(view.data || llmInput)
-      }
+      payloadSummary: Object.assign(
+        buildAuditSummaryBase({
+          llmEnabled,
+          envEnabled,
+          dbEnabled,
+          llmPolicy,
+          disclaimerVersion: disclaimer.version,
+          matchedArticleIds,
+          confidence,
+          inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
+        }),
+        {
+          blockedReasonCategory: toBlockedReasonCategory(blocked.blockedReason),
+          blockedReason: blocked.blockedReason,
+          inputHash: hashJson(view.data || llmInput)
+        }
+      )
     }, deps).catch(() => null);
 
     await appendFaqAnswerLog({
@@ -540,22 +589,24 @@ async function answerFaqFromKb(params, deps) {
       entityId: 'faq',
       traceId,
       requestId,
-      payloadSummary: {
-        purpose: 'faq',
-        llmEnabled,
-        envLlmFeatureFlag: envEnabled,
-        dbLlmEnabled: dbEnabled,
-        blockedReason,
-        schemaId: FAQ_ANSWER_SCHEMA_ID,
-        disclaimerVersion: disclaimer.version,
-        kbMatchedIds: matchedArticleIds,
-        top1Score: confidence.top1Score,
-        top2Score: confidence.top2Score,
-        top1Top2Ratio: confidence.top1Top2Ratio,
-        inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
-        inputHash: hashJson(view.data),
-        outputHash: answer ? hashJson(answer) : null
-      }
+      payloadSummary: Object.assign(
+        buildAuditSummaryBase({
+          llmEnabled,
+          envEnabled,
+          dbEnabled,
+          llmPolicy,
+          disclaimerVersion: disclaimer.version,
+          matchedArticleIds,
+          confidence,
+          inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
+        }),
+        {
+          blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+          blockedReason,
+          inputHash: hashJson(view.data),
+          outputHash: answer ? hashJson(answer) : null
+        }
+      )
     }, deps).catch(() => null);
 
     await appendFaqAnswerLog({
@@ -603,22 +654,24 @@ async function answerFaqFromKb(params, deps) {
       entityId: 'faq',
       traceId,
       requestId,
-      payloadSummary: {
-        purpose: 'faq',
-        llmEnabled,
-        envLlmFeatureFlag: envEnabled,
-        dbLlmEnabled: dbEnabled,
-        blockedReason,
-        schemaId: FAQ_ANSWER_SCHEMA_ID,
-        disclaimerVersion: disclaimer.version,
-        kbMatchedIds: matchedArticleIds,
-        top1Score: confidence.top1Score,
-        top2Score: confidence.top2Score,
-        top1Top2Ratio: confidence.top1Top2Ratio,
-        inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
-        inputHash: hashJson(view.data),
-        outputHash: hashJson(answer)
-      }
+      payloadSummary: Object.assign(
+        buildAuditSummaryBase({
+          llmEnabled,
+          envEnabled,
+          dbEnabled,
+          llmPolicy,
+          disclaimerVersion: disclaimer.version,
+          matchedArticleIds,
+          confidence,
+          inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
+        }),
+        {
+          blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+          blockedReason,
+          inputHash: hashJson(view.data),
+          outputHash: hashJson(answer)
+        }
+      )
     }, deps).catch(() => null);
     await appendFaqAnswerLog({
       traceId,
@@ -650,21 +703,24 @@ async function answerFaqFromKb(params, deps) {
     entityId: 'faq',
     traceId,
     requestId,
-    payloadSummary: {
-      purpose: 'faq',
-      llmEnabled,
-      envLlmFeatureFlag: envEnabled,
-      dbLlmEnabled: dbEnabled,
-      schemaId: FAQ_ANSWER_SCHEMA_ID,
-      disclaimerVersion: disclaimer.version,
-      kbMatchedIds: matchedArticleIds,
-      top1Score: confidence.top1Score,
-      top2Score: confidence.top2Score,
-      top1Top2Ratio: confidence.top1Top2Ratio,
-      inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
-      inputHash: hashJson(view.data),
-      outputHash: hashJson(answer)
-    }
+    payloadSummary: Object.assign(
+      buildAuditSummaryBase({
+        llmEnabled,
+        envEnabled,
+        dbEnabled,
+        llmPolicy,
+        disclaimerVersion: disclaimer.version,
+        matchedArticleIds,
+        confidence,
+        inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
+      }),
+      {
+        blockedReasonCategory: null,
+        blockedReason: null,
+        inputHash: hashJson(view.data),
+        outputHash: hashJson(answer)
+      }
+    )
   }, deps).catch(() => null);
 
   await appendFaqAnswerLog({
