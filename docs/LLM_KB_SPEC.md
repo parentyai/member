@@ -12,13 +12,18 @@
 - `tags` (string[])
 - `keywords` (string[])
 - `synonyms` (string[])
-- `status` (`active` | `draft` | `archived`)
-- `version` (integer)
+- `status` (`active` | `draft` | `disabled`)
+- `versionSemver` (string, e.g. `1.2.0`)
 - `riskLevel` (`low` | `medium` | `high`)
 - `allowedIntents` (string[])
 - `linkRegistryIds` (string[])
 - `locale` (string, default `ja`)
+- `validUntil` (timestamp)
+- `disclaimerVersion` (string)
 - `updatedAt` (timestamp)
+
+互換維持:
+- `version` (integer) は legacy reader 互換のため残置可。
 
 ### `faq_answer_logs/{id}`
 監査補助ログ（append-only）:
@@ -31,7 +36,8 @@
 
 ## 検索方式（初期）
 - ルール検索のみ（embedding 未使用）
-- 対象: `status=active` かつ `locale` 一致
+- 対象: `status=active` かつ `locale` 一致 かつ `validUntil > now`
+- `allowedIntents` が設定されている場合は、指定 intent（未指定時 `FAQ`）を含む記事のみ対象
 - スコア: `keywords/synonyms/tags` 一致数ベース
 - 上位 `limit` 件を候補にする
 
@@ -41,6 +47,7 @@
 - linkRegistryId が存在しない: `missing_link_registry`
 - link health WARN: `warn_link_blocked`
 - direct URL: `direct_url_forbidden`
+- high risk 記事で問い合わせ導線 citation が不足: `contact_source_required`
 
 ## 注入耐性
 - KB 本文は命令ではなくデータとして扱う。
