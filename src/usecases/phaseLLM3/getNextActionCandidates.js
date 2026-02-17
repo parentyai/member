@@ -102,6 +102,57 @@ function hashJson(value) {
   }
 }
 
+function sanitizeCandidate(candidate) {
+  const item = isPlainObject(candidate) ? candidate : {};
+  return {
+    action: typeof item.action === 'string' ? item.action : 'NO_ACTION',
+    reason: typeof item.reason === 'string' && item.reason.trim().length > 0
+      ? item.reason
+      : 'no reason',
+    confidence: typeof item.confidence === 'number' && Number.isFinite(item.confidence)
+      ? item.confidence
+      : 0,
+    safety: {
+      status: item.safety && item.safety.status === 'BLOCK' ? 'BLOCK' : 'OK',
+      reasons: Array.isArray(item.safety && item.safety.reasons)
+        ? item.safety.reasons.filter((reason) => typeof reason === 'string')
+        : []
+    }
+  };
+}
+
+function buildNextActionTemplate(input, nextActionCandidates) {
+  const sourceInput = input || {};
+  const data = nextActionCandidates || {};
+  const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+  return {
+    templateVersion: 'next_actions_template_v1',
+    currentState: {
+      readinessStatus: sourceInput.readiness && sourceInput.readiness.status
+        ? String(sourceInput.readiness.status)
+        : 'UNKNOWN',
+      previousAction: sourceInput.opsState && sourceInput.opsState.nextAction
+        ? String(sourceInput.opsState.nextAction)
+        : null
+    },
+    missingItems: sourceInput.readiness && Array.isArray(sourceInput.readiness.blocking)
+      ? sourceInput.readiness.blocking.filter(Boolean)
+      : [],
+    timelineSummary: {
+      latestDecisionAt: sourceInput.latestDecisionLog && sourceInput.latestDecisionLog.createdAt
+        ? String(sourceInput.latestDecisionLog.createdAt)
+        : null,
+      latestDecisionAction: sourceInput.latestDecisionLog && sourceInput.latestDecisionLog.nextAction
+        ? String(sourceInput.latestDecisionLog.nextAction)
+        : null
+    },
+    proposal: {
+      candidateCount: candidates.length,
+      actions: candidates.map((candidate) => candidate.action)
+    }
+  };
+}
+
 async function callAdapter(adapter, payload, timeoutMs) {
   if (!adapter || typeof adapter.suggestNextActionCandidates !== 'function') throw new Error('adapter_missing');
   const exec = adapter.suggestNextActionCandidates(payload);
@@ -188,8 +239,10 @@ async function getNextActionCandidates(params, deps) {
   } else {
     nextActionCandidates.candidates = nextActionCandidates.candidates
       .filter((item) => item && ABSTRACT_ACTIONS.includes(item.action))
+      .map((item) => sanitizeCandidate(item))
       .slice(0, 3);
   }
+  const nextActionTemplate = buildNextActionTemplate(input, nextActionCandidates);
 
   let auditId = null;
   if (auditFn) {
@@ -234,6 +287,7 @@ async function getNextActionCandidates(params, deps) {
     llmModel,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
+    nextActionTemplate,
     schemaErrors: schemaErrors.length ? schemaErrors : null,
     auditId
   };

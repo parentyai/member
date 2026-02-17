@@ -115,6 +115,19 @@
 - Direct URLs are forbidden in outputs.
 - Candidates must not contain runbook commands.
 
+## Fixed Templates (Phase233 add-only)
+- Ops explanation response adds `opsTemplate` with fixed sections:
+  - `currentState`
+  - `recentDiff`
+  - `missingItems`
+  - `timelineSummary`
+  - `proposal`
+- Next actions response adds `nextActionTemplate` with fixed sections:
+  - `currentState`
+  - `missingItems`
+  - `timelineSummary`
+  - `proposal`
+
 ## Validation
 - Output must pass schema validation.
 - Schema mismatch => reject and fallback.
