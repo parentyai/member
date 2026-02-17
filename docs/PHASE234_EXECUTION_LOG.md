@@ -21,7 +21,7 @@
   - `phase234_faq_consent_missing_blocks.test.js`
   - `phase234_ops_next_actions_audit_policy_fields.test.js`
 - `npm run test:docs` PASS
-- `npm test` PASS（629/629）
+- `npm test` PASS（631/631）
 
 ## 補足
 - phase233 PR `#476` は review requirement により merge 保留（`REVIEW_REQUIRED`）。
