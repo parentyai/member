@@ -38,6 +38,10 @@
           <span class="nav-icon" aria-hidden="true">S</span>
           <span data-dict-key="ui.label.nav.settings">設定</span>
         </button>
+        <button class="nav-item" data-pane-target="llm" data-role="admin">
+          <span class="nav-icon" aria-hidden="true">L</span>
+          <span data-dict-key="ui.label.nav.llm">LLM支援</span>
+        </button>
         <button class="nav-item" data-pane-target="maintenance" data-role="admin">
           <span class="nav-icon" aria-hidden="true">M</span>
           <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
@@ -547,6 +551,78 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <p class="note" data-dict-key="ui.desc.audit.actions">traceIdで証跡を確認します。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.llm.focus">lineUserId / FAQ質問 / 生成結果</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.llm.help">Ops説明から確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.llm.risk">lineUserId未入力で実行する</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.llm.validation">LLM検証</div>
+                <div class="panel-body">
+                  <div class="input-grid">
+                    <div>
+                      <label data-dict-key="ui.label.llm.lineUserId" data-dict-tip="ui.help.llm.lineUserId">LINEユーザーID</label>
+                      <input id="llm-line-user-id" data-dict-placeholder="ui.desc.llm.lineUserIdPlaceholder" placeholder="" />
+                    </div>
+                    <div>
+                      <label data-dict-key="ui.label.llm.question" data-dict-tip="ui.help.llm.question">FAQ質問</label>
+                      <input id="llm-faq-question" data-dict-placeholder="ui.desc.llm.questionPlaceholder" placeholder="" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.llm.results">結果</div>
+                <div class="panel-body">
+                  <details class="section" open>
+                    <summary data-dict-key="ui.label.llm.opsExplain">Ops説明</summary>
+                    <pre id="llm-ops-explain-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.llm.nextActions">次アクション候補</summary>
+                    <pre id="llm-next-actions-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.llm.faqAnswer">FAQ回答</summary>
+                    <pre id="llm-faq-result">-</pre>
+                  </details>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.llm.policy">運用ポリシー</div>
+                <div class="panel-body">
+                  <p data-dict-key="ui.desc.llm.policy">提案のみ。自動実行は行いません。最終判断は運用担当が実施します。</p>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.llm.actions">追跡IDを付けて実行し、結果を証跡として確認します。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                    <input type="text" id="llm-trace" class="input-inline input-trace" />
+                    <button id="llm-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    <span id="llm-trace-note"></span>
+                  </div>
+                  <div class="row row-top">
+                    <button id="llm-run-ops-explain" type="button" data-dict-key="ui.label.llm.runOpsExplain">Ops説明を取得</button>
+                    <button id="llm-run-next-actions" type="button" data-dict-key="ui.label.llm.runNextActions">次候補を取得</button>
+                  </div>
+                  <div class="row row-top">
+                    <button id="llm-run-faq" type="button" data-dict-key="ui.label.llm.runFaq">FAQ回答を生成</button>
+                  </div>
                 </div>
               </div>
             </aside>
