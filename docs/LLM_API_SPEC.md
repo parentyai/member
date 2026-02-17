@@ -120,6 +120,8 @@
 - Purpose: KB 限定 FAQ 回答（`faq_articles` のみ）。
 - Auth: `/api/admin/*` 保護 + `x-actor`。
 - Fail-closed: `x-admin-token`（または admin cookie）不一致時は 401 を返す。
+- Notes:
+  - `x-actor` は推奨（監査の actor 明確化）。未指定の場合も処理は継続し、監査側は `actor=unknown` となる。
 - Body:
 ```json
 {
