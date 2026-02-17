@@ -182,6 +182,44 @@ function hashJson(value) {
   }
 }
 
+function buildOpsTemplate(input) {
+  const data = input || {};
+  const readinessStatus = data.readiness && data.readiness.status ? String(data.readiness.status) : 'UNKNOWN';
+  const riskLevel = data.riskLevel ? String(data.riskLevel) : 'UNKNOWN';
+  const blockingReasons = Array.isArray(data.blockingReasons) ? data.blockingReasons.filter(Boolean) : [];
+  const driftTypes = data.decisionDrift && Array.isArray(data.decisionDrift.types)
+    ? data.decisionDrift.types.filter(Boolean)
+    : [];
+  const lastStage = data.executionStatus && data.executionStatus.lastStage
+    ? String(data.executionStatus.lastStage)
+    : null;
+  const lastReactionAt = data.lastReactionAt ? String(data.lastReactionAt) : null;
+  const recommended = data.recommendedNextAction ? String(data.recommendedNextAction) : null;
+  const allowed = Array.isArray(data.allowedNextActions) ? data.allowedNextActions.filter(Boolean) : [];
+
+  return {
+    templateVersion: 'ops_template_v1',
+    currentState: {
+      readinessStatus,
+      riskLevel,
+      executionStage: lastStage
+    },
+    recentDiff: {
+      driftStatus: data.decisionDrift && data.decisionDrift.status ? String(data.decisionDrift.status) : 'NONE',
+      driftTypes
+    },
+    missingItems: blockingReasons,
+    timelineSummary: {
+      lastReactionAt,
+      phaseResult: data.phaseResult ? String(data.phaseResult) : null
+    },
+    proposal: {
+      recommendedNextAction: recommended,
+      allowedNextActions: allowed
+    }
+  };
+}
+
 async function callAdapter(adapter, payload, timeoutMs) {
   if (!adapter || typeof adapter.explainOps !== 'function') throw new Error('adapter_missing');
   const exec = adapter.explainOps(payload);
@@ -212,6 +250,7 @@ async function getOpsExplanation(params, deps) {
     : await consoleFn({ lineUserId, auditView: false }, deps);
 
   const input = buildInputFromConsole(consoleResult || {});
+  const opsTemplate = buildOpsTemplate(input);
   const view = buildLlmInputView({
     input,
     allowList: DEFAULT_ALLOW_LISTS.opsExplanation,
@@ -306,6 +345,7 @@ async function getOpsExplanation(params, deps) {
     llmModel,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
+    opsTemplate,
     schemaErrors: schemaErrors.length ? schemaErrors : null,
     auditId
   };

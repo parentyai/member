@@ -22,6 +22,14 @@
   "llmModel": null,
   "disclaimerVersion": "ops_disclaimer_v1",
   "disclaimer": "提案です。自動実行は行いません。最終判断は運用担当が行ってください。",
+  "opsTemplate": {
+    "templateVersion": "ops_template_v1",
+    "currentState": {},
+    "recentDiff": {},
+    "missingItems": [],
+    "timelineSummary": {},
+    "proposal": {}
+  },
   "schemaErrors": null,
   "auditId": "audit-xxx"
 }
@@ -60,6 +68,13 @@
   "llmModel": null,
   "disclaimerVersion": "next_actions_disclaimer_v1",
   "disclaimer": "提案候補です。実行手順の確定は決定論レイヤで行ってください。",
+  "nextActionTemplate": {
+    "templateVersion": "next_actions_template_v1",
+    "currentState": {},
+    "missingItems": [],
+    "timelineSummary": {},
+    "proposal": {}
+  },
   "schemaErrors": null,
   "auditId": "audit-xxx"
 }
