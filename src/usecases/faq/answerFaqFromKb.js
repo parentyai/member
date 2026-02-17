@@ -7,6 +7,7 @@ const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { FAQ_ANSWER_SCHEMA_ID } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
+const { getDisclaimer } = require('../../llm/disclaimers');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
@@ -95,6 +96,8 @@ function buildBlocked(params) {
     llmStatus: payload.llmStatus || 'blocked',
     schemaErrors: payload.schemaErrors || null,
     faqAnswer: null,
+    disclaimerVersion: payload.disclaimerVersion || null,
+    disclaimer: payload.disclaimer || null,
     serverTime: payload.serverTime || new Date().toISOString(),
     deprecated: false
   };
@@ -229,6 +232,26 @@ async function appendFaqAnswerLog(data, deps) {
   return result && result.id ? result.id : null;
 }
 
+async function appendDisclaimerRenderedAudit(params, deps) {
+  const payload = params || {};
+  return appendAudit({
+    actor: payload.actor || 'unknown',
+    action: 'llm_disclaimer_rendered',
+    eventType: 'LLM_DISCLAIMER_RENDERED',
+    entityType: 'llm_disclaimer',
+    entityId: payload.purpose || 'faq',
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    payloadSummary: {
+      purpose: payload.purpose || 'faq',
+      disclaimerVersion: payload.disclaimerVersion || null,
+      disclaimerShown: payload.disclaimerShown !== false,
+      llmStatus: payload.llmStatus || null,
+      inputFieldCategoriesUsed: []
+    }
+  }, deps);
+}
+
 async function answerFaqFromKb(params, deps) {
   const payload = params || {};
   const question = normalizeQuestion(payload.question);
@@ -239,6 +262,7 @@ async function answerFaqFromKb(params, deps) {
   const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
   const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : 'unknown';
+  const disclaimer = getDisclaimer('faq');
 
   const locale = normalizeLocale(payload.locale);
   const intent = normalizeIntent(payload.intent);
@@ -321,6 +345,8 @@ async function answerFaqFromKb(params, deps) {
   }
 
   if (blocked) {
+    blocked.disclaimerVersion = disclaimer.version;
+    blocked.disclaimer = disclaimer.text;
     const auditId = await appendAudit({
       actor,
       action: 'llm_faq_answer_blocked',
@@ -336,6 +362,7 @@ async function answerFaqFromKb(params, deps) {
         dbLlmEnabled: dbEnabled,
         blockedReason: blocked.blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
+        disclaimerVersion: disclaimer.version,
         kbMatchedIds: matchedArticleIds,
         top1Score: confidence.top1Score,
         top2Score: confidence.top2Score,
@@ -352,6 +379,18 @@ async function answerFaqFromKb(params, deps) {
       matchedArticleIds,
       blockedReason: blocked.blockedReason
     }, deps).catch(() => null);
+    await appendDisclaimerRenderedAudit(
+      {
+        actor,
+        traceId,
+        requestId,
+        purpose: 'faq',
+        disclaimerVersion: disclaimer.version,
+        llmStatus: blocked.llmStatus,
+        disclaimerShown: true
+      },
+      deps
+    ).catch(() => null);
 
     return Object.assign(blocked, { auditId });
   }
@@ -399,7 +438,9 @@ async function answerFaqFromKb(params, deps) {
       traceId,
       llmStatus: blockedReason,
       schemaErrors: guardResult && guardResult.schemaErrors ? guardResult.schemaErrors : null,
-      serverTime
+      serverTime,
+      disclaimerVersion: disclaimer.version,
+      disclaimer: disclaimer.text
     });
     const auditId = await appendAudit({
       actor,
@@ -416,6 +457,7 @@ async function answerFaqFromKb(params, deps) {
         dbLlmEnabled: dbEnabled,
         blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
+        disclaimerVersion: disclaimer.version,
         kbMatchedIds: matchedArticleIds,
         top1Score: confidence.top1Score,
         top2Score: confidence.top2Score,
@@ -433,6 +475,18 @@ async function answerFaqFromKb(params, deps) {
       matchedArticleIds,
       blockedReason
     }, deps).catch(() => null);
+    await appendDisclaimerRenderedAudit(
+      {
+        actor,
+        traceId,
+        requestId,
+        purpose: 'faq',
+        disclaimerVersion: disclaimer.version,
+        llmStatus: blockedReason,
+        disclaimerShown: true
+      },
+      deps
+    ).catch(() => null);
 
     return Object.assign(blockedResult, { auditId });
   }
@@ -444,7 +498,9 @@ async function answerFaqFromKb(params, deps) {
       traceId,
       llmStatus: blockedReason,
       schemaErrors: null,
-      serverTime
+      serverTime,
+      disclaimerVersion: disclaimer.version,
+      disclaimer: disclaimer.text
     });
     const auditId = await appendAudit({
       actor,
@@ -461,6 +517,7 @@ async function answerFaqFromKb(params, deps) {
         dbLlmEnabled: dbEnabled,
         blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
+        disclaimerVersion: disclaimer.version,
         kbMatchedIds: matchedArticleIds,
         top1Score: confidence.top1Score,
         top2Score: confidence.top2Score,
@@ -477,6 +534,18 @@ async function answerFaqFromKb(params, deps) {
       matchedArticleIds,
       blockedReason
     }, deps).catch(() => null);
+    await appendDisclaimerRenderedAudit(
+      {
+        actor,
+        traceId,
+        requestId,
+        purpose: 'faq',
+        disclaimerVersion: disclaimer.version,
+        llmStatus: blockedReason,
+        disclaimerShown: true
+      },
+      deps
+    ).catch(() => null);
     return Object.assign(blockedResult, { auditId });
   }
 
@@ -494,6 +563,7 @@ async function answerFaqFromKb(params, deps) {
       envLlmFeatureFlag: envEnabled,
       dbLlmEnabled: dbEnabled,
       schemaId: FAQ_ANSWER_SCHEMA_ID,
+      disclaimerVersion: disclaimer.version,
       kbMatchedIds: matchedArticleIds,
       top1Score: confidence.top1Score,
       top2Score: confidence.top2Score,
@@ -511,6 +581,18 @@ async function answerFaqFromKb(params, deps) {
     matchedArticleIds,
     blockedReason: null
   }, deps).catch(() => null);
+  await appendDisclaimerRenderedAudit(
+    {
+      actor,
+      traceId,
+      requestId,
+      purpose: 'faq',
+      disclaimerVersion: disclaimer.version,
+      llmStatus: 'ok',
+      disclaimerShown: true
+    },
+    deps
+  ).catch(() => null);
 
   return {
     ok: true,
@@ -525,6 +607,8 @@ async function answerFaqFromKb(params, deps) {
     llmModel,
     schemaErrors: null,
     blockedReason: null,
+    disclaimerVersion: disclaimer.version,
+    disclaimer: disclaimer.text,
     inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
     auditId
   };

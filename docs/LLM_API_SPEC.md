@@ -20,6 +20,8 @@
   "llmUsed": false,
   "llmStatus": "disabled",
   "llmModel": null,
+  "disclaimerVersion": "ops_disclaimer_v1",
+  "disclaimer": "提案です。自動実行は行いません。最終判断は運用担当が行ってください。",
   "schemaErrors": null,
   "auditId": "audit-xxx"
 }
@@ -56,6 +58,8 @@
   "llmUsed": false,
   "llmStatus": "disabled",
   "llmModel": null,
+  "disclaimerVersion": "next_actions_disclaimer_v1",
+  "disclaimer": "提案候補です。実行手順の確定は決定論レイヤで行ってください。",
   "schemaErrors": null,
   "auditId": "audit-xxx"
 }
@@ -97,6 +101,8 @@
   "llmUsed": false,
   "llmStatus": "disabled",
   "llmModel": null,
+  "disclaimerVersion": "faq_disclaimer_v1",
+  "disclaimer": "この回答は公式FAQ（KB）に基づく要約です。個別事情により異なる場合があります。",
   "schemaErrors": null,
   "deprecated": true,
   "replacement": "/api/admin/llm/faq/answer",

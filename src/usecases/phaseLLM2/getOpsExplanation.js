@@ -7,6 +7,7 @@ const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { DEFAULT_ALLOW_LISTS } = require('../../llm/allowList');
 const { OPS_EXPLANATION_SCHEMA_ID } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
+const { getDisclaimer } = require('../../llm/disclaimers');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
@@ -204,6 +205,7 @@ async function getOpsExplanation(params, deps) {
   const dbEnabled = await getLlmEnabled();
   const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
+  const disclaimer = getDisclaimer('ops_explain');
 
   const consoleResult = payload.consoleResult
     ? payload.consoleResult
@@ -281,6 +283,7 @@ async function getOpsExplanation(params, deps) {
           llmEnabled,
           envLlmFeatureFlag: envEnabled,
           dbLlmEnabled: dbEnabled,
+          disclaimerVersion: disclaimer.version,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
           blockedReason: llmUsed ? null : llmStatus,
           inputHash: hashJson(view.ok ? view.data : input),
@@ -301,6 +304,8 @@ async function getOpsExplanation(params, deps) {
     llmUsed,
     llmStatus,
     llmModel,
+    disclaimerVersion: disclaimer.version,
+    disclaimer: disclaimer.text,
     schemaErrors: schemaErrors.length ? schemaErrors : null,
     auditId
   };

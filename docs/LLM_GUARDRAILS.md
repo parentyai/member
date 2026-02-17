@@ -22,8 +22,14 @@
 ## Output Constraints
 - All LLM outputs must pass JSON schema validation.
 - Action candidates are abstract categories only (no runbook commands).
+- Disclaimer is mandatory by purpose:
+  - FAQ: `faq_disclaimer_v1`
+  - Ops explain: `ops_disclaimer_v1`
+  - Next actions: `next_actions_disclaimer_v1`
+- Response must include `disclaimerVersion` and `disclaimer` fields (add-only).
 
 ## Auditability
 - Every LLM invocation must be traceable by traceId.
 - audit_logs is append-only.
 - Log both generated and blocked outcomes with `blockedReason`.
+- Log disclaimer render event: `llm_disclaimer_rendered` with `disclaimerVersion`.
