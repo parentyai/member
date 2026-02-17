@@ -823,6 +823,107 @@ function setupReadModelControls() {
   if (document.getElementById('read-model-trace')) document.getElementById('read-model-trace').value = newTraceId();
 }
 
+function renderLlmResult(targetId, payload) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.textContent = JSON.stringify(payload || {}, null, 2);
+}
+
+async function readJsonResponse(res) {
+  const text = await res.text();
+  if (!text) return { ok: false, error: 'empty response' };
+  try {
+    return JSON.parse(text);
+  } catch (_err) {
+    return { ok: false, error: text };
+  }
+}
+
+function getLlmLineUserId() {
+  const el = document.getElementById('llm-line-user-id');
+  return el && typeof el.value === 'string' ? el.value.trim() : '';
+}
+
+function getLlmFaqQuestion() {
+  const el = document.getElementById('llm-faq-question');
+  return el && typeof el.value === 'string' ? el.value.trim() : '';
+}
+
+async function runLlmOpsExplain() {
+  const lineUserId = getLlmLineUserId();
+  if (!lineUserId) {
+    const payload = { ok: false, error: t('ui.toast.llm.needLineUserId', 'lineUserId を入力してください') };
+    renderLlmResult('llm-ops-explain-result', payload);
+    showToast(t('ui.toast.llm.needLineUserId', 'lineUserId を入力してください'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('llm-trace');
+  const qs = new URLSearchParams({ lineUserId });
+  try {
+    const res = await fetch(`/api/phaseLLM2/ops-explain?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-ops-explain-result', data);
+    showToast(data && data.ok ? t('ui.toast.llm.opsExplainOk', 'Ops説明を取得しました') : t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
+  } catch (_err) {
+    const payload = { ok: false, error: 'fetch error' };
+    renderLlmResult('llm-ops-explain-result', payload);
+    showToast(t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました'), 'danger');
+  }
+}
+
+async function runLlmNextActions() {
+  const lineUserId = getLlmLineUserId();
+  if (!lineUserId) {
+    const payload = { ok: false, error: t('ui.toast.llm.needLineUserId', 'lineUserId を入力してください') };
+    renderLlmResult('llm-next-actions-result', payload);
+    showToast(t('ui.toast.llm.needLineUserId', 'lineUserId を入力してください'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('llm-trace');
+  const qs = new URLSearchParams({ lineUserId });
+  try {
+    const res = await fetch(`/api/phaseLLM3/ops-next-actions?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-next-actions-result', data);
+    showToast(data && data.ok ? t('ui.toast.llm.nextActionsOk', '次候補を取得しました') : t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
+  } catch (_err) {
+    const payload = { ok: false, error: 'fetch error' };
+    renderLlmResult('llm-next-actions-result', payload);
+    showToast(t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました'), 'danger');
+  }
+}
+
+async function runLlmFaq() {
+  const question = getLlmFaqQuestion();
+  if (!question) {
+    const payload = { ok: false, error: t('ui.toast.llm.needQuestion', 'FAQ質問を入力してください') };
+    renderLlmResult('llm-faq-result', payload);
+    showToast(t('ui.toast.llm.needQuestion', 'FAQ質問を入力してください'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('llm-trace');
+  try {
+    const data = await postJson('/api/admin/llm/faq/answer', { question, locale: 'ja' }, traceId);
+    renderLlmResult('llm-faq-result', data);
+    showToast(data && data.ok ? t('ui.toast.llm.faqOk', 'FAQ回答を生成しました') : t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), data && data.ok ? 'ok' : 'danger');
+  } catch (_err) {
+    const payload = { ok: false, error: 'fetch error' };
+    renderLlmResult('llm-faq-result', payload);
+    showToast(t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), 'danger');
+  }
+}
+
+function setupLlmControls() {
+  document.getElementById('llm-regen')?.addEventListener('click', () => {
+    const el = document.getElementById('llm-trace');
+    if (el) el.value = newTraceId();
+  });
+  if (document.getElementById('llm-trace')) document.getElementById('llm-trace').value = newTraceId();
+  document.getElementById('llm-run-ops-explain')?.addEventListener('click', runLlmOpsExplain);
+  document.getElementById('llm-run-next-actions')?.addEventListener('click', runLlmNextActions);
+  document.getElementById('llm-run-faq')?.addEventListener('click', runLlmFaq);
+}
+
 (async () => {
   await loadDict();
   applyDict();
@@ -833,6 +934,7 @@ function setupReadModelControls() {
   setupErrorsControls();
   setupReadModelControls();
   setupAudit();
+  setupLlmControls();
   setRole(state.role);
 
   loadMonitorData({ notify: false });
