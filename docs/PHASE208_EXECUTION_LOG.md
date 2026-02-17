@@ -16,9 +16,9 @@ base: `origin/main`
   - result: PASS (`[docs] OK`)
 
 ## CI
-- run id: pending PR
-- log saved: pending (`docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase208.log`)
+- run id: `22081910502` (audit/docs), `22081910507` (dry-run)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22081910502_phase208.log`
 
 ## Close
-- CLOSE: NO
-- Reason: PR/CI evidence pending
+- CLOSE: PENDING_MERGE
+- Reason: PR #431 checks PASS, merge待ち
