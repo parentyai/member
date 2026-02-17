@@ -106,7 +106,7 @@
 
 #### Errors
 - 400: `question required`
-- 422: `llm_disabled` / `kb_no_match` / `citations_required` / `direct_url_forbidden` / `warn_link_blocked`
+- 422: `llm_disabled` / `kb_no_match` / `low_confidence` / `citations_required` / `direct_url_forbidden` / `warn_link_blocked`
 - 500: `error`
 
 ## Phase208 Delta
@@ -133,6 +133,7 @@
 - Success (200): FAQAnswer.v1 with citations (`link_registry` sourceId only)
 - Block (422):
   - `kb_no_match`
+  - `low_confidence`
   - `citations_required`
   - `contact_source_required`
   - `warn_link_blocked`

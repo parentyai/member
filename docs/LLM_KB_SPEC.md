@@ -38,11 +38,16 @@
 - ルール検索のみ（embedding 未使用）
 - 対象: `status=active` かつ `locale` 一致 かつ `validUntil > now`
 - `allowedIntents` が設定されている場合は、指定 intent（未指定時 `FAQ`）を含む記事のみ対象
-- スコア: `keywords/synonyms/tags` 一致数ベース
+- スコア: BM25 風の重み付き一致（`keywords/synonyms/tags/title/body`）
+- 信頼度判定:
+  - `MIN_SCORE = 1.2`
+  - `TOP1_TOP2_RATIO = 1.2`
+  - `top1 < MIN_SCORE` または `top1/top2 < TOP1_TOP2_RATIO` は `low_confidence` として BLOCK
 - 上位 `limit` 件を候補にする
 
 ## Block 条件
 - active 候補 0 件: `kb_no_match`
+- 候補信頼度不足: `low_confidence`
 - citation 0 件: `citations_required`
 - linkRegistryId が存在しない: `missing_link_registry`
 - link health WARN: `warn_link_blocked`

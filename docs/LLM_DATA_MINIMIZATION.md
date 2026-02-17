@@ -31,6 +31,7 @@
 - `kbCandidates[].validUntil`
 - `kbCandidates[].allowedIntents`
 - `kbCandidates[].disclaimerVersion`
+- `kbCandidates[].searchScore`
 
 ### OpsExplanation
 - `readiness.status`

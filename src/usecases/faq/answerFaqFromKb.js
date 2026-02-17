@@ -13,6 +13,8 @@ const { guardLlmOutput } = require('../llm/guardLlmOutput');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
+const MIN_SCORE = 1.2;
+const TOP1_TOP2_RATIO = 1.2;
 const SYSTEM_PROMPT = [
   'You are a FAQ assistant.',
   'Answer only from kbCandidates.',
@@ -36,7 +38,8 @@ const FAQ_FIELD_CATEGORIES = Object.freeze({
   'kbCandidates.status': 'Public',
   'kbCandidates.validUntil': 'Public',
   'kbCandidates.allowedIntents': 'Public',
-  'kbCandidates.disclaimerVersion': 'Public'
+  'kbCandidates.disclaimerVersion': 'Public',
+  'kbCandidates.searchScore': 'Public'
 });
 
 function hashText(value) {
@@ -155,6 +158,63 @@ function hasRequiredCitation(answer, requiredSourceIds) {
   return requiredSourceIds.some((id) => cited.has(id));
 }
 
+function toNumberOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function evaluateConfidence(candidates) {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return {
+      confident: false,
+      blockedReason: 'kb_no_match',
+      top1Score: null,
+      top2Score: null,
+      top1Top2Ratio: null
+    };
+  }
+  const withScore = candidates
+    .map((item) => toNumberOrNull(item && item.searchScore))
+    .filter((value) => value !== null);
+  if (!withScore.length) {
+    return {
+      confident: true,
+      blockedReason: null,
+      top1Score: null,
+      top2Score: null,
+      top1Top2Ratio: null
+    };
+  }
+  const top1Score = withScore[0];
+  const top2Score = withScore.length > 1 ? withScore[1] : null;
+  const top1Top2Ratio = top2Score && top2Score > 0 ? top1Score / top2Score : null;
+  if (top1Score < MIN_SCORE) {
+    return {
+      confident: false,
+      blockedReason: 'low_confidence',
+      top1Score,
+      top2Score,
+      top1Top2Ratio
+    };
+  }
+  if (top2Score && top2Score > 0 && top1Top2Ratio !== null && top1Top2Ratio < TOP1_TOP2_RATIO) {
+    return {
+      confident: false,
+      blockedReason: 'low_confidence',
+      top1Score,
+      top2Score,
+      top1Top2Ratio
+    };
+  }
+  return {
+    confident: true,
+    blockedReason: null,
+    top1Score,
+    top2Score,
+    top1Top2Ratio
+  };
+}
+
 async function appendAudit(data, deps) {
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   if (!auditFn) return null;
@@ -200,6 +260,7 @@ async function answerFaqFromKb(params, deps) {
   const matchedArticleIds = candidates.map((item) => item.id);
   const allowedSourceIds = collectAllowedSourceIds(candidates);
   const requiredContactSourceIds = collectRequiredContactSourceIds(candidates);
+  const confidence = evaluateConfidence(candidates);
 
   const llmInput = {
     question,
@@ -215,7 +276,8 @@ async function answerFaqFromKb(params, deps) {
       status: item.status || null,
       validUntil: toIsoOrNull(item.validUntil),
       allowedIntents: Array.isArray(item.allowedIntents) ? item.allowedIntents : [],
-      disclaimerVersion: item.disclaimerVersion || null
+      disclaimerVersion: item.disclaimerVersion || null,
+      searchScore: toNumberOrNull(item.searchScore)
     }))
   };
 
@@ -235,7 +297,8 @@ async function answerFaqFromKb(params, deps) {
       'kbCandidates.status',
       'kbCandidates.validUntil',
       'kbCandidates.allowedIntents',
-      'kbCandidates.disclaimerVersion'
+      'kbCandidates.disclaimerVersion',
+      'kbCandidates.searchScore'
     ],
     fieldCategories: FAQ_FIELD_CATEGORIES,
     allowRestricted: false
@@ -246,8 +309,13 @@ async function answerFaqFromKb(params, deps) {
     blocked = buildBlocked({ blockedReason: view.blockedReason, traceId, llmStatus: view.blockedReason, serverTime });
   } else if (!llmEnabled) {
     blocked = buildBlocked({ blockedReason: 'llm_disabled', traceId, llmStatus: 'llm_disabled', serverTime });
-  } else if (!candidates.length) {
-    blocked = buildBlocked({ blockedReason: 'kb_no_match', traceId, llmStatus: 'kb_no_match', serverTime });
+  } else if (!confidence.confident) {
+    blocked = buildBlocked({
+      blockedReason: confidence.blockedReason || 'low_confidence',
+      traceId,
+      llmStatus: confidence.blockedReason || 'low_confidence',
+      serverTime
+    });
   } else if (candidates.some((item) => String(item.riskLevel || '').toLowerCase() === 'high') && requiredContactSourceIds.length === 0) {
     blocked = buildBlocked({ blockedReason: 'contact_source_required', traceId, llmStatus: 'contact_source_required', serverTime });
   }
@@ -269,6 +337,9 @@ async function answerFaqFromKb(params, deps) {
         blockedReason: blocked.blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
         kbMatchedIds: matchedArticleIds,
+        top1Score: confidence.top1Score,
+        top2Score: confidence.top2Score,
+        top1Top2Ratio: confidence.top1Top2Ratio,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
         inputHash: hashJson(view.data || llmInput)
       }
@@ -346,6 +417,9 @@ async function answerFaqFromKb(params, deps) {
         blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
         kbMatchedIds: matchedArticleIds,
+        top1Score: confidence.top1Score,
+        top2Score: confidence.top2Score,
+        top1Top2Ratio: confidence.top1Top2Ratio,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
         inputHash: hashJson(view.data),
         outputHash: answer ? hashJson(answer) : null
@@ -388,6 +462,9 @@ async function answerFaqFromKb(params, deps) {
         blockedReason,
         schemaId: FAQ_ANSWER_SCHEMA_ID,
         kbMatchedIds: matchedArticleIds,
+        top1Score: confidence.top1Score,
+        top2Score: confidence.top2Score,
+        top1Top2Ratio: confidence.top1Top2Ratio,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
         inputHash: hashJson(view.data),
         outputHash: hashJson(answer)
@@ -418,6 +495,9 @@ async function answerFaqFromKb(params, deps) {
       dbLlmEnabled: dbEnabled,
       schemaId: FAQ_ANSWER_SCHEMA_ID,
       kbMatchedIds: matchedArticleIds,
+      top1Score: confidence.top1Score,
+      top2Score: confidence.top2Score,
+      top1Top2Ratio: confidence.top1Top2Ratio,
       inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
       inputHash: hashJson(view.data),
       outputHash: hashJson(answer)

@@ -14,6 +14,7 @@
   - LLM_FEATURE_FLAG=false
   - citations 0 件（FAQ）
   - KB 候補 0 件（FAQ）
+  - FAQ 候補スコアが閾値未満（`low_confidence`）
   - high risk 記事で問い合わせ導線 citation 不足（FAQ）
   - 直 URL 混入
   - WARN link 混入
