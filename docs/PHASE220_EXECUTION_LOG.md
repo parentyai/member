@@ -16,8 +16,9 @@ base: `origin/main`
   - result: PASS (598/598)
 
 ## CI
-- run id: pending PR
-- log saved: pending
+- run id: `22084527728` (PR), `22084561144` (main merge audit)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22084561144_phase220.log`
 
 ## Close
-- CLOSE: NO
+- merge commit: `6101e6b`
+- CLOSE: YES
