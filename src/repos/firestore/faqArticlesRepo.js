@@ -20,6 +20,37 @@ function normalizeStringArray(value) {
     .map((item) => item.trim());
 }
 
+function countTokenMatches(textTokens, queryToken) {
+  let count = 0;
+  for (const token of textTokens) {
+    if (token === queryToken) count += 1;
+  }
+  return count;
+}
+
+function toLowerSet(items) {
+  return new Set(normalizeStringArray(items).map((v) => v.toLowerCase()));
+}
+
+function estimateDocLength(article) {
+  const titleTokens = normalizeTokens(article && article.title);
+  const bodyTokens = normalizeTokens(article && article.body);
+  const keywords = normalizeStringArray(article && article.keywords);
+  const synonyms = normalizeStringArray(article && article.synonyms);
+  const tags = normalizeStringArray(article && article.tags);
+  const length = titleTokens.length + bodyTokens.length + keywords.length + synonyms.length + tags.length;
+  return Math.max(1, length);
+}
+
+function bm25(tf, docLength, avgDocLength) {
+  if (!Number.isFinite(tf) || tf <= 0) return 0;
+  const k1 = 1.2;
+  const b = 0.75;
+  const denominator = tf + k1 * (1 - b + b * (docLength / avgDocLength));
+  if (!Number.isFinite(denominator) || denominator <= 0) return 0;
+  return (tf * (k1 + 1)) / denominator;
+}
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date) {
@@ -58,15 +89,25 @@ function isIntentAllowed(article, resolvedIntent) {
   return allowed.includes(String(resolvedIntent || '').toUpperCase());
 }
 
-function scoreArticle(article, tokens, intent) {
-  const keywordSet = new Set(normalizeStringArray(article.keywords).map((v) => v.toLowerCase()));
-  const synonymSet = new Set(normalizeStringArray(article.synonyms).map((v) => v.toLowerCase()));
-  const tagSet = new Set(normalizeStringArray(article.tags).map((v) => v.toLowerCase()));
+function scoreArticle(article, tokens, intent, context) {
+  const keywordSet = toLowerSet(article.keywords);
+  const synonymSet = toLowerSet(article.synonyms);
+  const tagSet = toLowerSet(article.tags);
+  const titleTokens = normalizeTokens(article.title);
+  const bodyTokens = normalizeTokens(article.body);
+  const docLength = estimateDocLength(article);
+  const avgDocLength = context && Number.isFinite(context.avgDocLength) && context.avgDocLength > 0 ? context.avgDocLength : docLength;
   let score = 0;
   for (const token of tokens) {
-    if (keywordSet.has(token)) score += 3;
-    if (synonymSet.has(token)) score += 2;
-    if (tagSet.has(token)) score += 1;
+    let tf = 0;
+    if (keywordSet.has(token)) tf += 3;
+    if (synonymSet.has(token)) tf += 2;
+    if (tagSet.has(token)) tf += 1;
+    const titleHits = countTokenMatches(titleTokens, token);
+    const bodyHits = countTokenMatches(bodyTokens, token);
+    tf += titleHits * 1.5;
+    tf += bodyHits * 0.5;
+    score += bm25(tf, docLength, avgDocLength);
   }
   if (typeof intent === 'string' && intent.trim().length > 0) {
     const allowed = normalizeStringArray(article.allowedIntents);
@@ -111,10 +152,15 @@ async function searchActiveArticles(params) {
 
   const tokens = normalizeTokens(query);
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const filtered = rows
+    .filter((row) => isValidByTime(row, nowMs))
+    .filter((row) => isIntentAllowed(row, intent));
+  const avgDocLength =
+    filtered.length > 0 ? filtered.reduce((sum, row) => sum + estimateDocLength(row), 0) / filtered.length : 1;
   const scored = rows
     .filter((row) => isValidByTime(row, nowMs))
     .filter((row) => isIntentAllowed(row, intent))
-    .map((row) => ({ row, score: scoreArticle(row, tokens, intent) }))
+    .map((row) => ({ row, score: scoreArticle(row, tokens, intent, { avgDocLength }) }))
     .filter((item) => item.score >= 0)
     .sort((a, b) => {
       if (a.score !== b.score) return b.score - a.score;
@@ -123,7 +169,7 @@ async function searchActiveArticles(params) {
       return bv.localeCompare(av);
     })
     .slice(0, limit)
-    .map((item) => item.row);
+    .map((item) => Object.assign({}, item.row, { searchScore: Number(item.score.toFixed(6)) }));
 
   return scored;
 }
