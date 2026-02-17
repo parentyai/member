@@ -29,6 +29,10 @@
 - 必須: citations >= 1
 - high risk 記事が候補に含まれる場合、問い合わせ導線 sourceId を 1 件以上 citations に含める
 - 禁止: KB 外根拠、direct URL
+- BLOCK 返却 (422) は add-only で次を含む:
+  - `blockedReasonCategory`（例: `NO_KB_MATCH`, `LOW_CONFIDENCE`）
+  - `fallbackActions[]`（`sourceId` は link_registry id のみ）
+  - `suggestedFaqs[]`（最大 3 件、KB articleId ベース）
 
 ### Ops 説明（READ ONLY）
 - Input: ops console snapshot の allow-list view

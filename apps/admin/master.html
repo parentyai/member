@@ -227,6 +227,21 @@
       <button id="llm-faq-answer" type="button">FAQ回答を生成</button>
     </div>
     <pre id="llm-faq-result">-</pre>
+    <div id="llm-faq-block" class="llm-block-panel is-hidden">
+      <div class="llm-block-title">回答を停止しました</div>
+      <div class="llm-block-row">
+        <span class="llm-block-label">停止理由</span>
+        <span id="llm-faq-block-reason" class="llm-block-value">-</span>
+      </div>
+      <div class="llm-block-row">
+        <span class="llm-block-label">代替アクション</span>
+        <ul id="llm-faq-block-actions" class="llm-block-list"></ul>
+      </div>
+      <div class="llm-block-row">
+        <span class="llm-block-label">候補FAQ</span>
+        <ul id="llm-faq-block-suggested" class="llm-block-list"></ul>
+      </div>
+    </div>
     <h3>LLM Ops説明 / 次アクション候補（管理者）</h3>
     <div class="note">lineUserId を指定して説明と候補を確認します（提案のみ、自動実行なし）。</div>
     <label data-tip="lineUserId" tabindex="0">LINEユーザーID</label>
@@ -965,6 +980,75 @@
         return data;
       }
 
+      function blockedReasonCategoryLabel(category) {
+        if (category === 'NO_KB_MATCH') return 'KB一致なし';
+        if (category === 'LOW_CONFIDENCE') return '根拠の信頼度不足';
+        if (category === 'DIRECT_URL_DETECTED') return '直接URLを検出';
+        if (category === 'WARN_LINK_BLOCKED') return '危険リンクを検出';
+        if (category === 'SENSITIVE_QUERY') return '機微情報を検出';
+        if (category === 'CONSENT_MISSING') return '同意未確認';
+        return '安全ルールで停止';
+      }
+
+      function fallbackActionLabel(item) {
+        if (item && typeof item.label === 'string' && item.label.trim()) return item.label.trim();
+        if (item && item.actionKey === 'open_official_faq') return '公式FAQを見る';
+        if (item && item.actionKey === 'open_contact') return '問い合わせる';
+        return '対応先を確認する';
+      }
+
+      function appendListItem(listEl, text) {
+        if (!listEl) return;
+        const li = document.createElement('li');
+        li.textContent = text;
+        listEl.appendChild(li);
+      }
+
+      function renderLlmFaqBlockPanel(payload) {
+        const panel = document.getElementById('llm-faq-block');
+        const reasonEl = document.getElementById('llm-faq-block-reason');
+        const actionsEl = document.getElementById('llm-faq-block-actions');
+        const suggestedEl = document.getElementById('llm-faq-block-suggested');
+        if (!panel || !reasonEl || !actionsEl || !suggestedEl) return;
+
+        const blocked = payload && payload.ok === false && payload.blocked === true;
+        if (!blocked) {
+          panel.classList.add('is-hidden');
+          reasonEl.textContent = '-';
+          actionsEl.textContent = '';
+          suggestedEl.textContent = '';
+          return;
+        }
+
+        panel.classList.remove('is-hidden');
+        reasonEl.textContent = blockedReasonCategoryLabel(payload.blockedReasonCategory);
+
+        actionsEl.textContent = '';
+        const fallbackActions = Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [];
+        if (!fallbackActions.length) {
+          appendListItem(actionsEl, '代替アクションは未設定です。');
+        } else {
+          fallbackActions.forEach((item) => {
+            if (!item || typeof item !== 'object') return;
+            const sourceId = typeof item.sourceId === 'string' && item.sourceId.trim() ? item.sourceId.trim() : '-';
+            appendListItem(actionsEl, `${fallbackActionLabel(item)} (${sourceId})`);
+          });
+        }
+
+        suggestedEl.textContent = '';
+        const suggestedFaqs = Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [];
+        if (!suggestedFaqs.length) {
+          appendListItem(suggestedEl, '候補FAQはありません。');
+        } else {
+          suggestedFaqs.forEach((item) => {
+            if (!item || typeof item !== 'object') return;
+            const articleId = typeof item.articleId === 'string' && item.articleId.trim() ? item.articleId.trim() : '-';
+            const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : '（タイトル未設定）';
+            appendListItem(suggestedEl, `${title} (${articleId})`);
+          });
+        }
+      }
+
       async function generateLlmFaqAnswer() {
         const question = document.getElementById('llm-faq-question').value.trim();
         const locale = document.getElementById('llm-faq-locale').value;
@@ -972,6 +1056,7 @@
         if (!question) {
           const err = { ok: false, error: '質問が必要です' };
           document.getElementById('llm-faq-result').textContent = JSON.stringify(err, null, 2);
+          renderLlmFaqBlockPanel(err);
           return err;
         }
         const payload = { question, locale };
@@ -983,6 +1068,7 @@
         });
         const data = await jsonOrText(res);
         document.getElementById('llm-faq-result').textContent = JSON.stringify(data, null, 2);
+        renderLlmFaqBlockPanel(data);
         return data;
       }
 
