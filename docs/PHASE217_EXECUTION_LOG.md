@@ -1,6 +1,6 @@
 # PHASE217_EXECUTION_LOG
 
-UTC: 2026-02-17T03:20:40Z
+UTC: 2026-02-17T03:28:40Z
 branch: `codex/phase217-ops-readonly-llm-admin-endpoints`
 base: `origin/main`
 
@@ -16,8 +16,9 @@ base: `origin/main`
   - result: PASS (592/592)
 
 ## CI
-- run id: pending PR
-- log saved: pending
+- run id: `22084122832` (PR), `22084149116` (main merge audit)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22084149116_phase217.log`
 
 ## Close
-- CLOSE: NO
+- merge commit: `1935fee`
+- CLOSE: YES
