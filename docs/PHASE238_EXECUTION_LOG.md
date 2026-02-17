@@ -14,3 +14,11 @@
 ## 結果
 - CI evidence 1ファイル保存完了
 - `npm run test:docs` PASS
+
+## CI
+- run id: `22119019436` (main push / Audit Gate)
+- log saved: `docs/CI_EVIDENCE/2026-02-17_22119019436_phase238.log`
+
+## Close
+- merge commit: `a5a4db8`
+- CLOSE: YES
