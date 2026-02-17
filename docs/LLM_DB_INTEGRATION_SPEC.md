@@ -39,11 +39,14 @@
 - Input: ops console snapshot の allow-list view
 - Output: `OpsExplanation.v1`
 - 必須: advisoryOnly=true
+- add-only 返却: `opsTemplate`（`currentState` / `recentDiff` / `missingItems` / `timelineSummary` / `proposal`）
 
 ### NextAction 候補（抽象カテゴリ）
 - Input: readiness/constraints 等の allow-list view
 - Output: `NextActionCandidates.v1`
 - action enum: `MONITOR|REVIEW|ESCALATE|DEFER|NO_ACTION`
+- 候補は最大3件、返却時に `action/reason/confidence/safety` 以外を除去
+- add-only 返却: `nextActionTemplate`（`currentState` / `missingItems` / `timelineSummary` / `proposal`）
 
 ## 有効化条件（二重ゲート）
 - `system_flags.phase0.llmEnabled === true`
