@@ -11,6 +11,8 @@
 - `npm test`: PASS
 - commit: `5fe05d1`
 - PR: https://github.com/parentyai/member/pull/509
+- CI run (main): `22154430800` (Audit Gate)
+- CI evidence: `docs/CI_EVIDENCE/2026-02-18_22154430800_phase264.log`
 
 ## Diff scope
 - `apps/admin/app.html`
