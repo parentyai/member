@@ -3,6 +3,9 @@
 const { getDb } = require('../../infra/firestore');
 
 const COLLECTION = 'faq_articles';
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+const ALLOWED_STATUSES = new Set(['active', 'draft', 'disabled']);
+const ALLOWED_RISK_LEVELS = new Set(['low', 'medium', 'high']);
 
 function normalizeTokens(value) {
   if (typeof value !== 'string') return [];
@@ -30,6 +33,63 @@ function countTokenMatches(textTokens, queryToken) {
 
 function toLowerSet(items) {
   return new Set(normalizeStringArray(items).map((v) => v.toLowerCase()));
+}
+
+function normalizeStatus(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!ALLOWED_STATUSES.has(normalized)) return null;
+  return normalized;
+}
+
+function normalizeRiskLevel(value) {
+  if (value === null || value === undefined) return 'low';
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!ALLOWED_RISK_LEVELS.has(normalized)) return null;
+  return normalized;
+}
+
+function normalizeAllowedIntents(value) {
+  if (value === null || value === undefined) return [];
+  if (!Array.isArray(value)) return null;
+  const normalized = value
+    .filter((item) => typeof item === 'string' && item.trim().length > 0)
+    .map((item) => item.trim().toUpperCase());
+  return normalized;
+}
+
+function normalizeVersionValue(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  if (!SEMVER_PATTERN.test(normalized)) return null;
+  return normalized;
+}
+
+function normalizeKbArticleForSearch(article) {
+  if (!article || typeof article !== 'object') return null;
+  const status = normalizeStatus(article.status);
+  if (status === null) return null;
+  const riskLevel = normalizeRiskLevel(article.riskLevel);
+  if (riskLevel === null) return null;
+  const allowedIntents = normalizeAllowedIntents(article.allowedIntents);
+  if (!allowedIntents) return null;
+  const version = normalizeVersionValue(article.version);
+  const versionSemver = normalizeVersionValue(article.versionSemver);
+  if ((article.version !== undefined && article.version !== null && version === null)
+    || (article.versionSemver !== undefined && article.versionSemver !== null && versionSemver === null)) {
+    return null;
+  }
+  return Object.assign({}, article, {
+    status,
+    riskLevel,
+    allowedIntents,
+    version: version || versionSemver || null,
+    versionSemver: versionSemver || version || null
+  });
 }
 
 function estimateDocLength(article) {
@@ -152,12 +212,16 @@ async function searchActiveArticles(params) {
 
   const tokens = normalizeTokens(query);
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  const filtered = rows
+  const normalizedRows = rows
+    .map((row) => normalizeKbArticleForSearch(row))
+    .filter((row) => row !== null)
+    .filter((row) => String(row.locale || '').trim() === locale);
+  const filtered = normalizedRows
     .filter((row) => isValidByTime(row, nowMs))
     .filter((row) => isIntentAllowed(row, intent));
   const avgDocLength =
     filtered.length > 0 ? filtered.reduce((sum, row) => sum + estimateDocLength(row), 0) / filtered.length : 1;
-  const scored = rows
+  const scored = normalizedRows
     .filter((row) => isValidByTime(row, nowMs))
     .filter((row) => isIntentAllowed(row, intent))
     .map((row) => ({ row, score: scoreArticle(row, tokens, intent, { avgDocLength }) }))

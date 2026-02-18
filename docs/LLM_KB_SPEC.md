@@ -58,3 +58,14 @@
 - KB 本文は命令ではなくデータとして扱う。
 - 回答生成時は schema 固定（FAQAnswer.v1）。
 - 根拠に存在しない断定は禁止。
+
+## Phase243-244 Add-only Contract
+- `faq_articles` のバージョン互換:
+  - `version` (semver string) を優先して使用する。
+  - `versionSemver` は legacy 互換として読み取り継続する。
+  - `version` / `versionSemver` が存在して形式不正（semver非準拠）の場合、該当記事は検索対象外（fail-closed）。
+- スキーマ正規化:
+  - `riskLevel` は `low|medium|high` のみ許可（不正値は検索対象外）。
+  - `allowedIntents` は配列のみ許可（不正型は検索対象外）。
+- FAQ 応答メタ:
+  - `kbMeta.matchedCount/top1Score/top2Score/top1Top2Ratio` を success / blocked の両方で返却する。
