@@ -54,7 +54,8 @@
 
 ## CI Evidence
 - Baseline: `docs/CI_EVIDENCE/2026-02-18_22123643929_phase250-baseline.log`
-- PR CI run: `TBD (merge後に runId を記録)`
+- PR CI run: `22124453590`
+- Stored log: `docs/CI_EVIDENCE/2026-02-18_22124453590_phase250.log`
 
 ## P-01..P-10 Mapping (City Pack scope)
 - P-06: User 履歴追跡と同様に source 監査履歴を Review Inbox/Evidence Viewer で可視化
