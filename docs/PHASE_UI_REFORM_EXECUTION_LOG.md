@@ -64,6 +64,5 @@
 - ベンダー別反応・AB・FAQ参照をMonitorで同時に確認できる。
 
 ## CI証跡
-- PR作成後の run id で保存:
-  - `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_ui-reform.log`
-- 現時点: ローカル実装完了。CI run id は未採番（PR未作成）。
+- run id: `22121704167`（Audit Gate / push on `main` for merge commit `f9f2859`）
+- 保存先: `docs/CI_EVIDENCE/2026-02-18_22121704167_ui-reform.log`
