@@ -43,6 +43,12 @@ function parseActionPath(pathname) {
   };
 }
 
+function parseRunPath(pathname) {
+  const match = pathname.match(/^\/api\/admin\/city-pack-source-audit\/runs\/([^/]+)$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
+}
+
 function resolveResultLabel(sourceRef) {
   const result = sourceRef && sourceRef.lastResult ? String(sourceRef.lastResult) : '';
   if (result === 'ok') return '正常';
@@ -245,6 +251,57 @@ async function handleCityPackAuditRuns(req, res, context) {
   });
 }
 
+async function handleCityPackAuditRunDetail(req, res, context, runId) {
+  const run = await sourceAuditRunsRepo.getRun(runId);
+  if (!run) {
+    writeJson(res, 404, { ok: false, error: 'source audit run not found' });
+    return;
+  }
+
+  const traceIdForEvidence = typeof run.traceId === 'string' && run.traceId.trim() ? run.traceId.trim() : null;
+  const evidences = traceIdForEvidence
+    ? await sourceEvidenceRepo.listEvidenceByTraceId(traceIdForEvidence, 50)
+    : [];
+
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.source_audit.run.view',
+    entityType: 'source_audit_run',
+    entityId: runId,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      runId,
+      evidenceCount: evidences.length
+    }
+  });
+
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    run: {
+      runId: run.runId || run.id,
+      mode: run.mode || 'scheduled',
+      startedAt: run.startedAt || null,
+      endedAt: run.endedAt || null,
+      processed: Number(run.processed) || 0,
+      succeeded: Number(run.succeeded) || 0,
+      failed: Number(run.failed) || 0,
+      failureTop3: Array.isArray(run.failureTop3) ? run.failureTop3 : [],
+      status: mapRunStatus(run),
+      sourceTraceId: traceIdForEvidence
+    },
+    evidences: evidences.map((item) => ({
+      evidenceId: item.id,
+      sourceRefId: item.sourceRefId || null,
+      result: item.result || null,
+      statusCode: item.statusCode || null,
+      finalUrl: item.finalUrl || null,
+      checkedAt: item.checkedAt || null
+    }))
+  });
+}
+
 async function handleCityPackAuditRun(req, res, bodyText, context) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
@@ -281,6 +338,14 @@ async function handleCityPackReviewInbox(req, res, bodyText) {
     if (req.method === 'GET' && pathname === '/api/admin/city-pack-source-audit/runs') {
       await handleCityPackAuditRuns(req, res, context);
       return;
+    }
+
+    if (req.method === 'GET') {
+      const runId = parseRunPath(pathname);
+      if (runId) {
+        await handleCityPackAuditRunDetail(req, res, context, runId);
+        return;
+      }
     }
 
     if (req.method === 'POST' && pathname === '/api/admin/city-pack-source-audit/run') {

@@ -70,8 +70,26 @@ async function listEvidenceBySourceRef(sourceRefId, limit) {
   }
 }
 
+async function listEvidenceByTraceId(traceId, limit) {
+  if (!traceId) throw new Error('traceId required');
+  const cap = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 100) : 20;
+  const db = getDb();
+  const baseQuery = db.collection(COLLECTION).where('traceId', '==', traceId);
+  try {
+    const snap = await baseQuery.orderBy('checkedAt', 'desc').limit(cap).get();
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  } catch (err) {
+    if (!isMissingIndexError(err)) throw err;
+    const snap = await baseQuery.get();
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    sortByTimestampDesc(rows, 'checkedAt');
+    return rows.slice(0, cap);
+  }
+}
+
 module.exports = {
   createEvidence,
   getEvidence,
-  listEvidenceBySourceRef
+  listEvidenceBySourceRef,
+  listEvidenceByTraceId
 };
