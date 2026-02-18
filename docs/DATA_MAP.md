@@ -76,6 +76,21 @@ Typical fields:
 - `allowedIntents` (固定: `CITY_PACK`)
 - `rules[]`
 
+### `city_pack_requests/{requestId}`
+Purpose: City Pack 生成リクエストの状態機械（LINE申告→草案→承認→有効化）。
+
+Typical fields:
+- `status` (`queued`/`collecting`/`drafted`/`needs_review`/`approved`/`active`/`rejected`/`failed`)
+- `lineUserId`
+- `regionCity`, `regionState`, `regionKey`
+- `requestedAt`
+- `lastJobRunId`
+- `traceId`
+- `draftCityPackIds[]`
+- `draftTemplateIds[]`
+- `draftSourceRefIds[]`
+- `error`
+
 ### `source_refs/{id}`
 Purpose: City Pack が参照する情報源の監査状態管理。
 

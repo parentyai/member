@@ -505,6 +505,46 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.requestInbox">Request Inbox</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.cityPack.requestInbox">LINE申告から生成されたCity Pack草案を確認し、Approve/Reject/Retryを実行します。</div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.requestStatus" data-dict-tip="ui.help.cityPack.requestStatus">状態
+                      <select id="city-pack-request-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.requestStatus.all">すべて</option>
+                        <option value="queued" data-dict-key="ui.value.cityPack.requestStatus.queued">待機</option>
+                        <option value="drafted" data-dict-key="ui.value.cityPack.requestStatus.drafted">草案作成済み</option>
+                        <option value="needs_review" data-dict-key="ui.value.cityPack.requestStatus.needsReview">要確認</option>
+                        <option value="approved" data-dict-key="ui.value.cityPack.requestStatus.approved">承認済み</option>
+                        <option value="active" data-dict-key="ui.value.cityPack.requestStatus.active">有効</option>
+                        <option value="rejected" data-dict-key="ui.value.cityPack.requestStatus.rejected">却下</option>
+                        <option value="failed" data-dict-key="ui.value.cityPack.requestStatus.failed">失敗</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.requestRegion" data-dict-tip="ui.help.cityPack.requestRegion">地域キー
+                      <input id="city-pack-request-region" type="text" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.requestRegion" placeholder="TX::austin" />
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.requestLimit" data-dict-tip="ui.help.cityPack.requestLimit">件数
+                      <input id="city-pack-request-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-request-reload" type="button" data-dict-key="ui.label.cityPack.requestReload">Request更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.cityPack.request.col.status">status</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.region">region</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.requestId">requestId</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.draft">draft</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.traceId">traceId</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.actions">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-request-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.reviewInbox">Review Inbox</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.cityPack.reviewInbox">情報源の有効期限と監査結果を確認し、Confirm / Retire / Replace / ManualOnly を実行します。</div>
@@ -541,6 +581,16 @@
               </div>
             </div>
             <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.requestDetail">Request Detail</div>
+                <div class="panel-body">
+                  <div id="city-pack-request-summary" class="note" data-dict-key="ui.desc.cityPack.requestDetailEmpty">Requestの行を選択すると詳細を表示します。</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.requestDetail.raw">RAW</summary>
+                    <pre id="city-pack-request-raw">-</pre>
+                  </details>
+                </div>
+              </div>
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.evidenceViewer">Evidence Viewer</div>
                 <div class="panel-body">
