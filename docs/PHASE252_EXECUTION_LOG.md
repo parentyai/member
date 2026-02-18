@@ -32,7 +32,8 @@
 - `docs/SSOT_INDEX.md`
 
 ## CI Evidence
-- Pending
+- PR CI run: `22124951266`（audit）
+- Saved log: `docs/CI_EVIDENCE/2026-02-18_22124951266_phase252.log`
 
 ## Risks
 - `source_audit_runs` 件数増大時は `limit` 上限を適切に維持する必要がある。
