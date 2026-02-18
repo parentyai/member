@@ -5,6 +5,7 @@ City Pack 追加コレクションの Security Rules 設計（add-only）。
 
 ## Collections
 - `city_packs`
+- `city_pack_requests`
 - `source_refs`
 - `source_evidence`
 - `source_audit_runs`
@@ -33,6 +34,11 @@ City Pack 追加コレクションの Security Rules 設計（add-only）。
   - `sourceRefs` が空でないこと
   - `allowedIntents` が `CITY_PACK` を含むこと
   - `validUntil` が存在すること
+
+### city_pack_requests
+- status は定義済み enum のみ。
+- `lineUserId` / `regionKey` / `traceId` 必須。
+- `draftCityPackIds[]` などの参照は add-only 更新のみ許可。
 
 ## Audit Requirements
 - `city_pack.*` 操作は `audit_logs` へ append-only で保存。

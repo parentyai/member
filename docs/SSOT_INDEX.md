@@ -27,6 +27,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_CITY_PACK_SECURITY_RULES.md`（City PackコレクションのSecurity Rules設計）
 - `docs/PHASE_CITY_PACK_REIMPLEMENT_PLAN.md`（City Pack再実装計画）
 - `docs/PHASE_CITY_PACK_REIMPLEMENT_EXECUTION_LOG.md`（City Pack再実装実行ログ）
+- `docs/PHASE_CITY_PACK_REQUEST_FLOW_PLAN.md`（City Pack申告→草案→承認フロー計画）
+- `docs/PHASE_CITY_PACK_REQUEST_FLOW_EXECUTION_LOG.md`（City Pack申告→草案→承認フロー実行ログ）
 - `docs/PHASE251_PLAN.md`（City Pack source audit定期実行計画）
 - `docs/PHASE251_EXECUTION_LOG.md`（City Pack source audit定期実行ログ）
 - `docs/PHASE252_PLAN.md`（City Pack source audit実行履歴可観測化計画）

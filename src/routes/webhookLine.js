@@ -7,6 +7,13 @@ const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebh
 const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareRedacMembershipIdFromLine');
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
 const { replyMessage } = require('../infra/lineClient');
+const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
+const {
+  regionPrompt,
+  regionDeclared,
+  regionInvalid,
+  regionAlreadySet
+} = require('../domain/regionLineMessages');
 const {
   statusDeclared,
   statusUnlinked,
@@ -150,17 +157,39 @@ async function handleLineWebhook(options) {
               type: 'text',
               text: declareLinked()
             });
+            continue;
           } else if (result.status === 'duplicate') {
             await replyFn(replyToken, {
               type: 'text',
               text: declareDuplicate()
             });
+            continue;
           } else if (result.status === 'invalid_format') {
             await replyFn(replyToken, { type: 'text', text: declareInvalidFormat() });
+            continue;
           } else if (result.status === 'usage') {
             await replyFn(replyToken, { type: 'text', text: declareUsage() });
+            continue;
           } else if (result.status === 'server_misconfigured') {
             await replyFn(replyToken, { type: 'text', text: declareServerMisconfigured() });
+            continue;
+          }
+
+          const region = await declareCityRegionFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
+          if (region.status === 'declared') {
+            await replyFn(replyToken, { type: 'text', text: regionDeclared(region.regionCity, region.regionState) });
+            continue;
+          }
+          if (region.status === 'prompt_required') {
+            const message = region.reason === 'invalid_format' ? regionInvalid() : regionPrompt();
+            await replyFn(replyToken, { type: 'text', text: message });
+            continue;
+          }
+          if (region.status === 'already_set') {
+            if (/地域|city|state|region/i.test(text)) {
+              await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
+              continue;
+            }
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';

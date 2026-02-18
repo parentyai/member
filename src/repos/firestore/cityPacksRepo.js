@@ -35,6 +35,10 @@ function normalizeStringArray(values) {
   return Array.from(new Set(values.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())));
 }
 
+function normalizeString(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 function normalizeRules(values) {
   if (!Array.isArray(values)) return [];
   return values.filter((value) => value && typeof value === 'object').map((value) => Object.assign({}, value));
@@ -60,11 +64,13 @@ function normalizePayload(data) {
     name,
     status: normalizeStatus(payload.status),
     sourceRefs: normalizeStringArray(payload.sourceRefs),
+    templateRefs: normalizeStringArray(payload.templateRefs),
     validUntil: resolveValidUntil(payload),
     allowedIntents: normalizeAllowedIntents(payload.allowedIntents),
     rules: normalizeRules(payload.rules),
     description: typeof payload.description === 'string' ? payload.description.trim() : '',
-    metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {}
+    metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {},
+    requestId: normalizeString(payload.requestId)
   };
 }
 
@@ -77,11 +83,13 @@ async function createCityPack(data) {
     name: payload.name,
     status: payload.status,
     sourceRefs: payload.sourceRefs,
+    templateRefs: payload.templateRefs,
     validUntil: payload.validUntil,
     allowedIntents: payload.allowedIntents,
     rules: payload.rules,
     description: payload.description,
     metadata: payload.metadata,
+    requestId: payload.requestId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
