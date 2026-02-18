@@ -47,6 +47,9 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE258_EXECUTION_LOG.md`（phase257 CI証跡固定ログ）
 - `docs/PHASE259_PLAN.md`（phase258 CI証跡固定計画）
 - `docs/PHASE259_EXECUTION_LOG.md`（phase258 CI証跡固定ログ）
+- `docs/SSOT_CITY_PACK_EXTENSIONS_1_12.md`（City Pack拡張1〜12の依存順/安全契約）
+- `docs/PHASE265_PLAN.md`（City Pack拡張1〜12 PR0導線固定計画）
+- `docs/PHASE265_EXECUTION_LOG.md`（City Pack拡張1〜12 PR0実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
