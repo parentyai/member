@@ -71,6 +71,24 @@ function decisionStateClass(stateValue) {
   return 'state-ready';
 }
 
+function decisionCardClass(stateValue) {
+  if (stateValue === 'STOP') return 'is-stop';
+  if (stateValue === 'ATTENTION') return 'is-attention';
+  return 'is-ready';
+}
+
+function buildDecisionReasons(pendingValue, primaryValue) {
+  const pendingLabel = t('ui.label.decision.reason.pending', '要対応');
+  const primaryLabel = t('ui.label.decision.reason.primary', '主因');
+  const pending = pendingValue == null || pendingValue === '' ? '-' : String(pendingValue);
+  const primary = primaryValue == null || primaryValue === '' ? '-' : String(primaryValue);
+  // Keep contract: 2 fixed lines, no newlines.
+  return {
+    reason1: `${pendingLabel}: ${pending}`.replace(/\s*\n\s*/g, ' '),
+    reason2: `${primaryLabel}: ${primary}`.replace(/\s*\n\s*/g, ' ')
+  };
+}
+
 function setPaneUpdatedAt(paneKey) {
   state.paneUpdatedAt[paneKey] = new Date().toISOString();
 }
@@ -81,19 +99,24 @@ function resolvePaneUpdatedAt(paneKey) {
 
 function renderDecisionCard(paneKey, vm) {
   if (!paneKey || !vm) return;
+  const cardEl = document.getElementById(`${paneKey}-decision-card`);
   const stateEl = document.getElementById(`${paneKey}-decision-state`);
   const reason1El = document.getElementById(`${paneKey}-decision-reason1`);
   const reason2El = document.getElementById(`${paneKey}-decision-reason2`);
   const updatedEl = document.getElementById(`${paneKey}-decision-updated`);
   const detailsEl = document.getElementById(`${paneKey}-pane-details`);
 
+  if (cardEl) {
+    cardEl.classList.remove('is-ready', 'is-attention', 'is-stop');
+    cardEl.classList.add(decisionCardClass(vm.state));
+  }
   if (stateEl) {
     stateEl.classList.remove('state-ready', 'state-attention', 'state-stop');
     stateEl.classList.add(decisionStateClass(vm.state));
     stateEl.textContent = decisionStateLabel(vm.state);
   }
-  if (reason1El) reason1El.textContent = vm.reason1 || '-';
-  if (reason2El) reason2El.textContent = vm.reason2 || '-';
+  if (reason1El) reason1El.textContent = (vm.reason1 || '-').replace(/\s*\n\s*/g, ' ');
+  if (reason2El) reason2El.textContent = (vm.reason2 || '-').replace(/\s*\n\s*/g, ' ');
   if (updatedEl) updatedEl.textContent = vm.updatedAt || resolvePaneUpdatedAt(paneKey);
   if (detailsEl && (vm.state === 'ATTENTION' || vm.state === 'STOP') && !detailsEl.open) {
     detailsEl.open = true;
@@ -443,10 +466,11 @@ function resolveComposerDecisionVm() {
     : tone === 'warn'
       ? 'ATTENTION'
       : 'READY';
+  const reasons = buildDecisionReasons(decisionState === 'READY' ? 0 : 1, state.lastRisk || state.currentComposerStatus || t('ui.desc.composer.riskDefault', 'Plan未実行'));
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.status', '状態')}: ${state.currentComposerStatus || '-'}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.lastRisk || t('ui.desc.composer.riskDefault', 'Plan未実行')}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: state.composerUpdatedAt || resolvePaneUpdatedAt('composer')
   };
 }
@@ -454,10 +478,11 @@ function resolveComposerDecisionVm() {
 function resolveMonitorDecisionVm() {
   const counts = getHealthCounts(state.monitorItems);
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.topCauses || '-'}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('monitor')
   };
 }
@@ -467,10 +492,16 @@ function resolveErrorsDecisionVm() {
   const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
   const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
   const decisionState = warnLinks > 0 ? 'STOP' : retryQueue > 0 ? 'ATTENTION' : 'READY';
+  const primary = warnLinks > 0
+    ? t('ui.label.errors.warnLinks', '危険リンク一覧')
+    : retryQueue > 0
+      ? t('ui.label.errors.retryQueue', '再送待ち一覧')
+      : t('ui.status.ok', '問題なし');
+  const reasons = buildDecisionReasons(warnLinks + retryQueue, primary);
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${warnLinks + retryQueue}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${warnLinks > 0 ? t('ui.label.errors.warnLinks', '危険リンク一覧') : retryQueue > 0 ? t('ui.label.errors.retryQueue', '再送待ち一覧') : t('ui.status.ok', '問題なし')}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('errors')
   };
 }
@@ -478,10 +509,11 @@ function resolveErrorsDecisionVm() {
 function resolveReadModelDecisionVm() {
   const counts = getHealthCounts(state.readModelItems);
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  const reasons = buildDecisionReasons(counts.DANGER || 0, counts.WARN > 0 ? statusLabel('WARN') : statusLabel('OK'));
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${counts.WARN > 0 ? statusLabel('WARN') : statusLabel('OK')}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('read-model')
   };
 }
@@ -494,10 +526,16 @@ function resolveCityPackDecisionVm() {
     return status === 'dead' || status === 'blocked';
   }).length;
   const decisionState = blocked > 0 ? 'STOP' : needsReview > 0 ? 'ATTENTION' : 'READY';
+  const primary = blocked > 0
+    ? t('ui.label.cityPack.col.result', 'result')
+    : needsReview > 0
+      ? t('ui.value.cityPack.status.needsReview', '要確認')
+      : t('ui.status.ok', '問題なし');
+  const reasons = buildDecisionReasons(blocked + needsReview, primary);
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${blocked + needsReview}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${blocked > 0 ? t('ui.label.cityPack.col.result', 'result') : needsReview > 0 ? t('ui.value.cityPack.status.needsReview', '要確認') : t('ui.status.ok', '問題なし')}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('city-pack')
   };
 }
@@ -507,21 +545,23 @@ function resolveVendorsDecisionVm() {
   const warnCount = items.filter((item) => String(item && item.healthState) === 'WARN').length;
   const staleCount = items.filter((item) => !item || !item.checkedAt).length;
   const decisionState = warnCount >= 3 ? 'STOP' : (warnCount > 0 || staleCount > 0) ? 'ATTENTION' : 'READY';
-  return {
-    state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${warnCount + staleCount}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${warnCount > 0 ? t('ui.status.warn', '注意') : staleCount > 0 ? t('ui.label.vendors.state.unknown', '未確認') : t('ui.status.ok', '問題なし')}`,
-    updatedAt: resolvePaneUpdatedAt('vendors')
-  };
+  const primary = warnCount > 0
+    ? t('ui.status.warn', '注意')
+    : staleCount > 0
+      ? t('ui.label.vendors.state.unknown', '未確認')
+      : t('ui.status.ok', '問題なし');
+  const reasons = buildDecisionReasons(warnCount + staleCount, primary);
+  return { state: decisionState, reason1: reasons.reason1, reason2: reasons.reason2, updatedAt: resolvePaneUpdatedAt('vendors') };
 }
 
 function resolveHomeDecisionVm() {
   const counts = getHealthCounts(state.monitorItems);
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
   return {
     state: decisionState,
-    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
-    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.topCauses || '-'}`,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
     updatedAt: resolvePaneUpdatedAt('monitor')
   };
 }
