@@ -35,3 +35,21 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
   - personalization は `locale|servicePhase` のみ許可
   - `guide_only_mode_blocked` / `personalization_not_allowed` を 422 BLOCK で返す
   - 監査 payloadSummary に `guideMode` / `personalizationKeys` が残る
+
+## Phase243-249 (Safety hardening and guide-only expansion)
+- Phase243:
+  - KB schema hardening (`version` add-only + `versionSemver` compatibility)
+  - invalid schema rows are excluded from search (fail-closed)
+- Phase244:
+  - confidence contract visibility (`kbMeta` in success/blocked)
+- Phase245:
+  - disclaimer render audit extended with `surface`
+- Phase246:
+  - BLOCK UX contract fixed (`fallbackActions` + `suggestedFaqs<=3`)
+- Phase247:
+  - Ops template ordering fixed
+  - NextAction UI displays lowercase while internal enum remains uppercase
+- Phase248:
+  - shared blockedReason taxonomy + `regulatoryProfile` in audit payload
+- Phase249:
+  - guide-only policy reaffirmed for user-facing rollout (`faq_navigation|question_refine|checklist_guidance`)

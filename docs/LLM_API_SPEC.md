@@ -269,3 +269,31 @@
   1. `/api/admin/llm/ops-explain` / `/api/admin/llm/next-actions`
   2. 404 または接続失敗時のみ `/api/phaseLLM2/ops-explain` / `/api/phaseLLM3/ops-next-actions` へフォールバック
 - 旧 phaseLLM2/3 ルートは互換維持のため残すが、優先利用はしない。
+
+## Phase243-249 Add-only Delta
+
+### FAQ (`/api/admin/llm/faq/answer`)
+- success / blocked 共通で以下を追加:
+  - `policySnapshotVersion` (`llm_policy_v1`)
+  - `kbMeta`:
+    - `matchedCount`
+    - `top1Score`
+    - `top2Score`
+    - `top1Top2Ratio`
+- blocked payload の契約:
+  - `fallbackActions` は `sourceId` のみ（直URL禁止）
+  - `suggestedFaqs` は最大3件
+
+### OpsExplain / NextActions
+- response に `policySnapshotVersion` を add-only 追加。
+- `NextActionCandidates` は内部 enum（大文字）を維持し、UI 表示のみ小文字化する。
+
+### Audit payloadSummary（LLM系共通）
+- `policySnapshotVersion` を add-only 追加。
+- `regulatoryProfile` を add-only 追加:
+  - `policySnapshotVersion`
+  - `lawfulBasis`
+  - `consentVerified`
+  - `crossBorder`
+  - `fieldCategoriesUsed`
+  - `blockedReasonCategory`
