@@ -41,6 +41,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE256_EXECUTION_LOG.md`（City Pack run detail証跡件数limit対応ログ）
 - `docs/PHASE257_PLAN.md`（phase256 CI証跡固定計画）
 - `docs/PHASE257_EXECUTION_LOG.md`（phase256 CI証跡固定ログ）
+- `docs/PHASE258_PLAN.md`（phase257 CI証跡固定計画）
+- `docs/PHASE258_EXECUTION_LOG.md`（phase257 CI証跡固定ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
