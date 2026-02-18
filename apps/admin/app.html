@@ -583,9 +583,25 @@
                   </div>
                   <div id="city-pack-safe-step" class="safe-next-step" data-dict-key="ui.desc.cityPack.safeStep">次の安全な一手: Confirm候補を確認して期限を更新する</div>
                   <div class="note" id="city-pack-runs-summary" data-dict-key="ui.desc.cityPack.runsSummary">実行履歴: 読み込み待ち</div>
-                  <details class="section">
+                  <details class="section" open>
                     <summary data-dict-key="ui.label.cityPack.runResult">実行結果</summary>
-                    <pre id="city-pack-run-result">-</pre>
+                    <div class="note" id="city-pack-run-detail-summary" data-dict-key="ui.desc.cityPack.runDetail.empty">実行履歴の行を選択すると詳細を表示します。</div>
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.cityPack.runDetail.col.evidence">証跡ID</th>
+                          <th data-dict-key="ui.label.cityPack.runDetail.col.result">結果</th>
+                          <th data-dict-key="ui.label.cityPack.runDetail.col.checkedAt">確認日時</th>
+                          <th data-dict-key="ui.label.cityPack.runDetail.col.statusCode">HTTP</th>
+                          <th data-dict-key="ui.label.cityPack.runDetail.col.action">表示</th>
+                        </tr>
+                      </thead>
+                      <tbody id="city-pack-run-detail-rows"></tbody>
+                    </table>
+                    <details class="section">
+                      <summary data-dict-key="ui.label.cityPack.runDetail.raw">RAW</summary>
+                      <pre id="city-pack-run-result">-</pre>
+                    </details>
                   </details>
                   <details class="section" open>
                     <summary data-dict-key="ui.label.cityPack.runs">実行履歴</summary>
