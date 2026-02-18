@@ -1,0 +1,207 @@
+name: City Pack source audit
+
+on:
+  schedule:
+    - cron: "15 2 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "scheduled or canary"
+        required: false
+        default: "scheduled"
+        type: choice
+        options:
+          - scheduled
+          - canary
+      target_source_ref_ids:
+        description: "Optional comma-separated sourceRefIds"
+        required: false
+        default: ""
+        type: string
+      run_id:
+        description: "Optional runId"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
+
+jobs:
+  source-audit:
+    name: source-audit
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: city-pack-source-audit
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate required workflow variables
+        run: |
+          set -euo pipefail
+          REQUIRED_VARS=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            SERVICE_NAME
+            GCP_WIF_PROVIDER
+            DEPLOY_SA_EMAIL
+          )
+          MISSING=0
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Resolve Cloud Run service URL
+        id: service_url
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          echo "service_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Auth (OIDC proxy token)
+        id: proxy_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.service_url.outputs.service_url }}
+          create_credentials_file: false
+
+      - name: Resolve CITY_PACK_JOB_TOKEN
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            echo "::notice title=Secret source::Using CITY_PACK_JOB_TOKEN from GitHub secrets."
+            echo "::add-mask::$CITY_PACK_JOB_TOKEN"
+            echo "CITY_PACK_JOB_TOKEN=$CITY_PACK_JOB_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=CITY_PACK_JOB_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::CITY_PACK_JOB_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CITY_PACK_JOB_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run City Pack source audit
+        env:
+          PROXY_ID_TOKEN: ${{ steps.proxy_auth.outputs.id_token }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_TARGET_SOURCE_REF_IDS: ${{ github.event.inputs.target_source_ref_ids }}
+          INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/city-pack-source-audit
+          RUN_TS="$(date -u +%Y%m%d%H%M%S)"
+          STDOUT_PATH="artifacts/city-pack-source-audit/stdout-${RUN_TS}.jsonl"
+          STDERR_PATH="artifacts/city-pack-source-audit/stderr-${RUN_TS}.log"
+
+          if [ -z "${PROXY_ID_TOKEN:-}" ]; then
+            echo "::error title=Identity token missing::Unable to mint identity token for Cloud Run proxy"
+            exit 1
+          fi
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --token "$PROXY_ID_TOKEN" \
+            --port 18081 >/tmp/city-pack-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18081/admin/login" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18081 did not become ready"
+            tail -n 80 /tmp/city-pack-proxy.log || true
+            exit 1
+          fi
+
+          MODE="${INPUT_MODE:-scheduled}"
+          if [ "$MODE" != "scheduled" ] && [ "$MODE" != "canary" ]; then
+            echo "::error title=Invalid mode::mode must be scheduled or canary"
+            exit 1
+          fi
+
+          ARGS=(
+            --service-url "http://127.0.0.1:18081"
+            --job-token "$CITY_PACK_JOB_TOKEN"
+            --mode "$MODE"
+          )
+          if [ -n "${INPUT_TARGET_SOURCE_REF_IDS:-}" ]; then
+            ARGS+=(--target-source-ref-ids "$INPUT_TARGET_SOURCE_REF_IDS")
+          fi
+          if [ -n "${INPUT_RUN_ID:-}" ]; then
+            ARGS+=(--run-id "$INPUT_RUN_ID")
+          fi
+
+          set +e
+          node scripts/city_pack_source_audit_runner.js "${ARGS[@]}" >"$STDOUT_PATH" 2>"$STDERR_PATH"
+          EXIT_CODE=$?
+          set -e
+          cat "$STDOUT_PATH" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "::error title=City Pack source audit failed::See artifacts for details"
+            exit "$EXIT_CODE"
+          fi
+
+      - name: Upload city pack audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-pack-source-audit-${{ github.run_id }}
+          path: artifacts/city-pack-source-audit
+          if-no-files-found: warn
