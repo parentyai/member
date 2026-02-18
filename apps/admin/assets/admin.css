@@ -646,7 +646,7 @@ hr {
 
 .decision-card {
   border: 1px solid var(--border);
-  border-left: 4px solid var(--status-info);
+  border-left: 4px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   box-shadow: var(--shadow-card);
@@ -654,6 +654,18 @@ hr {
   margin: var(--space-3) 0;
   display: grid;
   gap: var(--space-2);
+}
+
+.decision-card.is-ready {
+  border-left-color: var(--status-ok);
+}
+
+.decision-card.is-attention {
+  border-left-color: var(--status-warn);
+}
+
+.decision-card.is-stop {
+  border-left-color: var(--status-danger);
 }
 
 .decision-card-header {
@@ -728,6 +740,21 @@ hr {
 
 .decision-action-btn:hover {
   background: var(--surface-2);
+}
+
+.decision-action-btn[data-action-kind="primary"] {
+  border-color: rgba(34, 94, 168, 0.35);
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  font-weight: 700;
+}
+
+.decision-action-btn[data-action-kind="secondary"] {
+  border-color: rgba(16, 24, 40, 0.16);
+}
+
+.decision-action-btn[data-action-kind="tertiary"] {
+  color: var(--text-muted);
 }
 
 .decision-details.section {
