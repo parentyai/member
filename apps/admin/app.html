@@ -412,55 +412,61 @@
                     </label>
                     <button id="monitor-insights-reload" type="button" data-dict-key="ui.label.monitor.insightsReload">分析を更新</button>
                   </div>
-                  <div class="grid">
-                    <details class="table-section section" open>
-                      <summary data-dict-key="ui.label.monitor.vendorCtr">ベンダー別CTR Top</summary>
-                      <table class="table-compact">
-                        <thead>
-                          <tr>
-                            <th data-dict-key="ui.label.monitor.vendorCol.name">ベンダー</th>
-                            <th data-dict-key="ui.label.monitor.vendorCol.sent">送信</th>
-                            <th data-dict-key="ui.label.monitor.vendorCol.click">クリック</th>
-                            <th data-dict-key="ui.label.monitor.vendorCol.ctr">反応率</th>
-                          </tr>
-                        </thead>
-                        <tbody id="monitor-vendor-rows"></tbody>
-                      </table>
-                    </details>
-                    <details class="table-section section" open>
-                      <summary data-dict-key="ui.label.monitor.abFaq">AB/FAQ状況</summary>
-                      <div id="monitor-ab-summary" class="note">-</div>
-                      <table class="table-compact">
-                        <thead>
-                          <tr>
-                            <th data-dict-key="ui.label.monitor.faqCol.article">FAQ記事</th>
-                            <th data-dict-key="ui.label.monitor.faqCol.count">参照回数</th>
-                          </tr>
-                        </thead>
-                        <tbody id="monitor-faq-rows"></tbody>
-                      </table>
-                    </details>
-                  </div>
-                </div>
-              </div>
+	                  <div class="grid">
+	                    <details class="table-section section" open>
+	                      <summary data-dict-key="ui.label.monitor.vendorCtr">ベンダー別CTR Top</summary>
+	                      <div class="table-scroll">
+	                        <table class="table-compact">
+	                          <thead>
+	                            <tr>
+	                              <th data-dict-key="ui.label.monitor.vendorCol.name">ベンダー</th>
+	                              <th data-dict-key="ui.label.monitor.vendorCol.sent">送信</th>
+	                              <th data-dict-key="ui.label.monitor.vendorCol.click">クリック</th>
+	                              <th data-dict-key="ui.label.monitor.vendorCol.ctr">反応率</th>
+	                            </tr>
+	                          </thead>
+	                          <tbody id="monitor-vendor-rows"></tbody>
+	                        </table>
+	                      </div>
+	                    </details>
+	                    <details class="table-section section" open>
+	                      <summary data-dict-key="ui.label.monitor.abFaq">AB/FAQ状況</summary>
+	                      <div id="monitor-ab-summary" class="note">-</div>
+	                      <div class="table-scroll">
+	                        <table class="table-compact">
+	                          <thead>
+	                            <tr>
+	                              <th data-dict-key="ui.label.monitor.faqCol.article">FAQ記事</th>
+	                              <th data-dict-key="ui.label.monitor.faqCol.count">参照回数</th>
+	                            </tr>
+	                          </thead>
+	                          <tbody id="monitor-faq-rows"></tbody>
+	                        </table>
+	                      </div>
+	                    </details>
+	                  </div>
+	                </div>
+	              </div>
 
-              <details class="table-section section">
-                <summary data-dict-key="ui.label.monitor.table">配信結果（参照）</summary>
-                <table class="table-compact">
-                  <thead>
-                    <tr>
-                      <th data-dict-key="ui.label.monitor.col.title" data-dict-tip="ui.help.monitor.title">タイトル</th>
-                      <th data-dict-key="ui.label.monitor.col.scenario" data-dict-tip="ui.help.monitor.scenario">シナリオ</th>
-                      <th data-dict-key="ui.label.monitor.col.step" data-dict-tip="ui.help.monitor.step">ステップ</th>
-                      <th data-dict-key="ui.label.monitor.col.target" data-dict-tip="ui.help.monitor.target">対象数</th>
-                      <th data-dict-key="ui.label.monitor.col.last" data-dict-tip="ui.help.monitor.last">最終結果</th>
-                      <th data-dict-key="ui.label.monitor.col.ctr" data-dict-tip="ui.help.monitor.ctr">反応率</th>
-                      <th data-dict-key="ui.label.monitor.col.health" data-dict-tip="ui.help.monitor.health">健康度</th>
-                    </tr>
-                  </thead>
-                  <tbody id="monitor-rows"></tbody>
-                </table>
-              </details>
+	              <details class="table-section section">
+	                <summary data-dict-key="ui.label.monitor.table">配信結果（参照）</summary>
+	                <div class="table-scroll">
+	                  <table class="table-compact">
+	                    <thead>
+	                      <tr>
+	                        <th data-dict-key="ui.label.monitor.col.title" data-dict-tip="ui.help.monitor.title">タイトル</th>
+	                        <th data-dict-key="ui.label.monitor.col.scenario" data-dict-tip="ui.help.monitor.scenario">シナリオ</th>
+	                        <th data-dict-key="ui.label.monitor.col.step" data-dict-tip="ui.help.monitor.step">ステップ</th>
+	                        <th data-dict-key="ui.label.monitor.col.target" data-dict-tip="ui.help.monitor.target">対象数</th>
+	                        <th data-dict-key="ui.label.monitor.col.last" data-dict-tip="ui.help.monitor.last">最終結果</th>
+	                        <th data-dict-key="ui.label.monitor.col.ctr" data-dict-tip="ui.help.monitor.ctr">反応率</th>
+	                        <th data-dict-key="ui.label.monitor.col.health" data-dict-tip="ui.help.monitor.health">健康度</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody id="monitor-rows"></tbody>
+	                  </table>
+	                </div>
+	              </details>
             </div>
             <div class="pane-detail">
               <div class="panel">
@@ -684,40 +690,44 @@
                       <label data-dict-key="ui.label.cityPack.runDetail.limit" data-dict-tip="ui.help.cityPack.runDetail.limit">証跡表示件数</label>
                       <input id="city-pack-run-detail-limit" type="number" min="1" max="200" value="50" class="input-sm" />
                     </div>
-                    <div class="note" id="city-pack-run-detail-summary" data-dict-key="ui.desc.cityPack.runDetail.empty">実行履歴の行を選択すると詳細を表示します。</div>
-                    <table class="table-compact">
-                      <thead>
-                        <tr>
-                          <th data-dict-key="ui.label.cityPack.runDetail.col.evidence">証跡ID</th>
-                          <th data-dict-key="ui.label.cityPack.runDetail.col.result">結果</th>
-                          <th data-dict-key="ui.label.cityPack.runDetail.col.checkedAt">確認日時</th>
-                          <th data-dict-key="ui.label.cityPack.runDetail.col.statusCode">HTTP</th>
-                          <th data-dict-key="ui.label.cityPack.runDetail.col.action">表示</th>
-                        </tr>
-                      </thead>
-                      <tbody id="city-pack-run-detail-rows"></tbody>
-                    </table>
+	                    <div class="note" id="city-pack-run-detail-summary" data-dict-key="ui.desc.cityPack.runDetail.empty">実行履歴の行を選択すると詳細を表示します。</div>
+	                    <div class="table-scroll">
+	                      <table class="table-compact">
+	                        <thead>
+	                          <tr>
+	                            <th data-dict-key="ui.label.cityPack.runDetail.col.evidence">証跡ID</th>
+	                            <th data-dict-key="ui.label.cityPack.runDetail.col.result">結果</th>
+	                            <th data-dict-key="ui.label.cityPack.runDetail.col.checkedAt">確認日時</th>
+	                            <th data-dict-key="ui.label.cityPack.runDetail.col.statusCode">HTTP</th>
+	                            <th data-dict-key="ui.label.cityPack.runDetail.col.action">表示</th>
+	                          </tr>
+	                        </thead>
+	                        <tbody id="city-pack-run-detail-rows"></tbody>
+	                      </table>
+	                    </div>
                     <details class="section">
                       <summary data-dict-key="ui.label.cityPack.runDetail.raw">RAW</summary>
                       <pre id="city-pack-run-result">-</pre>
                     </details>
                   </details>
-                  <details class="section" open>
-                    <summary data-dict-key="ui.label.cityPack.runs">実行履歴</summary>
-                    <table class="table-compact">
-                      <thead>
-                        <tr>
-                          <th data-dict-key="ui.label.cityPack.runs.col.runId">runId</th>
-                          <th data-dict-key="ui.label.cityPack.runs.col.mode">mode</th>
-                          <th data-dict-key="ui.label.cityPack.runs.col.startedAt">startedAt</th>
-                          <th data-dict-key="ui.label.cityPack.runs.col.result">result</th>
-                          <th data-dict-key="ui.label.cityPack.runs.col.processed">processed</th>
-                          <th data-dict-key="ui.label.cityPack.runs.col.traceId">traceId</th>
-                        </tr>
-                      </thead>
-                      <tbody id="city-pack-run-rows"></tbody>
-                    </table>
-                  </details>
+	                  <details class="section" open>
+	                    <summary data-dict-key="ui.label.cityPack.runs">実行履歴</summary>
+	                    <div class="table-scroll">
+	                      <table class="table-compact">
+	                        <thead>
+	                          <tr>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.runId">runId</th>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.mode">mode</th>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.startedAt">startedAt</th>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.result">result</th>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.processed">processed</th>
+	                            <th data-dict-key="ui.label.cityPack.runs.col.traceId">traceId</th>
+	                          </tr>
+	                        </thead>
+	                        <tbody id="city-pack-run-rows"></tbody>
+	                      </table>
+	                    </div>
+	                  </details>
                 </div>
               </div>
             </aside>
@@ -761,35 +771,39 @@
                 <summary data-dict-key="ui.label.errors.summary">まとめ</summary>
                 <pre id="errors-summary">-</pre>
               </details>
-              <details class="table-section section">
-                <summary data-dict-key="ui.label.errors.warnLinks">危険リンク一覧</summary>
-                <table class="table-compact">
-                  <thead>
-                    <tr>
-                      <th data-dict-key="ui.label.errors.linkId" data-dict-tip="ui.help.errors.linkId">リンクID</th>
-                      <th data-dict-key="ui.label.errors.linkTitle" data-dict-tip="ui.help.errors.linkTitle">タイトル</th>
-                      <th data-dict-key="ui.label.errors.linkUrl" data-dict-tip="ui.help.errors.linkUrl">リンク先</th>
-                      <th data-dict-key="ui.label.errors.linkChecked" data-dict-tip="ui.help.errors.linkChecked">最終確認</th>
-                    </tr>
-                  </thead>
-                  <tbody id="errors-warn-rows"></tbody>
-                </table>
-              </details>
-              <details class="table-section section">
-                <summary data-dict-key="ui.label.errors.retryQueue">再送待ち一覧</summary>
-                <table class="table-compact">
-                  <thead>
-                    <tr>
-                      <th data-dict-key="ui.label.errors.queueId" data-dict-tip="ui.help.errors.queueId">キューID</th>
-                      <th data-dict-key="ui.label.errors.lineUserId" data-dict-tip="ui.help.errors.lineUserId">LINEユーザーID</th>
-                      <th data-dict-key="ui.label.errors.template" data-dict-tip="ui.help.errors.template">テンプレ</th>
-                      <th data-dict-key="ui.label.errors.lastError" data-dict-tip="ui.help.errors.lastError">最終エラー</th>
-                      <th data-dict-key="ui.label.errors.updatedAt" data-dict-tip="ui.help.errors.updatedAt">更新日時</th>
-                    </tr>
-                  </thead>
-                  <tbody id="errors-retry-rows"></tbody>
-                </table>
-              </details>
+	              <details class="table-section section">
+	                <summary data-dict-key="ui.label.errors.warnLinks">危険リンク一覧</summary>
+	                <div class="table-scroll">
+	                  <table class="table-compact">
+	                    <thead>
+	                      <tr>
+	                        <th data-dict-key="ui.label.errors.linkId" data-dict-tip="ui.help.errors.linkId">リンクID</th>
+	                        <th data-dict-key="ui.label.errors.linkTitle" data-dict-tip="ui.help.errors.linkTitle">タイトル</th>
+	                        <th data-dict-key="ui.label.errors.linkUrl" data-dict-tip="ui.help.errors.linkUrl">リンク先</th>
+	                        <th data-dict-key="ui.label.errors.linkChecked" data-dict-tip="ui.help.errors.linkChecked">最終確認</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody id="errors-warn-rows"></tbody>
+	                  </table>
+	                </div>
+	              </details>
+	              <details class="table-section section">
+	                <summary data-dict-key="ui.label.errors.retryQueue">再送待ち一覧</summary>
+	                <div class="table-scroll">
+	                  <table class="table-compact">
+	                    <thead>
+	                      <tr>
+	                        <th data-dict-key="ui.label.errors.queueId" data-dict-tip="ui.help.errors.queueId">キューID</th>
+	                        <th data-dict-key="ui.label.errors.lineUserId" data-dict-tip="ui.help.errors.lineUserId">LINEユーザーID</th>
+	                        <th data-dict-key="ui.label.errors.template" data-dict-tip="ui.help.errors.template">テンプレ</th>
+	                        <th data-dict-key="ui.label.errors.lastError" data-dict-tip="ui.help.errors.lastError">最終エラー</th>
+	                        <th data-dict-key="ui.label.errors.updatedAt" data-dict-tip="ui.help.errors.updatedAt">更新日時</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody id="errors-retry-rows"></tbody>
+	                  </table>
+	                </div>
+	              </details>
             </div>
             <div class="pane-detail">
               <div class="panel">
@@ -853,23 +867,25 @@
                   <div class="note" data-dict-key="ui.desc.readModel.definition">直近の通知一覧について、送信結果と反応率をまとめた集計です。</div>
                 </div>
               </div>
-              <details class="table-section section" open>
-                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
-                <table class="table-compact">
-                  <thead>
-                    <tr>
-                      <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
-                      <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
-                      <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
-                      <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
-                      <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
-                      <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
-                      <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
-                    </tr>
-                  </thead>
-                  <tbody id="read-model-rows"></tbody>
-                </table>
-              </details>
+	              <details class="table-section section" open>
+	                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
+	                <div class="table-scroll">
+	                  <table class="table-compact">
+	                    <thead>
+	                      <tr>
+	                        <th data-dict-key="ui.label.readModel.col.title" data-dict-tip="ui.help.readModel.title">タイトル</th>
+	                        <th data-dict-key="ui.label.readModel.col.scenario" data-dict-tip="ui.help.readModel.scenario">シナリオ</th>
+	                        <th data-dict-key="ui.label.readModel.col.step" data-dict-tip="ui.help.readModel.step">ステップ</th>
+	                        <th data-dict-key="ui.label.readModel.col.target" data-dict-tip="ui.help.readModel.target">対象数</th>
+	                        <th data-dict-key="ui.label.readModel.col.last" data-dict-tip="ui.help.readModel.last">最終結果</th>
+	                        <th data-dict-key="ui.label.readModel.col.ctr" data-dict-tip="ui.help.readModel.ctr">反応率</th>
+	                        <th data-dict-key="ui.label.readModel.col.health" data-dict-tip="ui.help.readModel.health">健康度</th>
+	                      </tr>
+	                    </thead>
+	                    <tbody id="read-model-rows"></tbody>
+	                  </table>
+	                </div>
+	              </details>
             </div>
             <div class="pane-detail">
               <div class="panel">
@@ -927,20 +943,22 @@
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="pane-grid">
               <div class="pane-main">
-                <details class="table-section section" open>
-                  <summary data-dict-key="ui.label.vendors.table">Vendor一覧</summary>
-                  <table class="table-compact">
-                    <thead>
-                      <tr>
-                        <th data-dict-key="ui.label.vendors.col.vendor">Vendor</th>
-                        <th data-dict-key="ui.label.vendors.col.state">状態</th>
-                        <th data-dict-key="ui.label.vendors.col.lastChecked">最終確認</th>
-                        <th data-dict-key="ui.label.vendors.col.linkId">リンクID</th>
-                      </tr>
-                    </thead>
-                    <tbody id="vendor-rows"></tbody>
-                  </table>
-                </details>
+	                <details class="table-section section" open>
+	                  <summary data-dict-key="ui.label.vendors.table">Vendor一覧</summary>
+	                  <div class="table-scroll">
+	                    <table class="table-compact">
+	                      <thead>
+	                        <tr>
+	                          <th data-dict-key="ui.label.vendors.col.vendor">Vendor</th>
+	                          <th data-dict-key="ui.label.vendors.col.state">状態</th>
+	                          <th data-dict-key="ui.label.vendors.col.lastChecked">最終確認</th>
+	                          <th data-dict-key="ui.label.vendors.col.linkId">リンクID</th>
+	                        </tr>
+	                      </thead>
+	                      <tbody id="vendor-rows"></tbody>
+	                    </table>
+	                  </div>
+	                </details>
               </div>
               <div class="pane-detail">
                 <div class="panel">

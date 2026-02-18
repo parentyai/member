@@ -14,6 +14,7 @@ const state = {
   monitorInsights: null,
   vendorItems: [],
   selectedVendorLinkId: null,
+  selectedVendorRowIndex: null,
   readModelItems: [],
   errorsSummary: null,
   cityPackRequestItems: [],
@@ -609,8 +610,9 @@ function renderMonitorRows(items) {
       item.ctr != null ? String(item.ctr) : '-',
       withTip(statusLabel(item.notificationHealth), buildTip('ui.help.healthCode', item.notificationHealth))
     ];
-    cols.forEach((value) => {
+    cols.forEach((value, idx) => {
       const td = document.createElement('td');
+      if (idx === 3 || idx === 5) td.classList.add('cell-num');
       if (value instanceof Node) td.appendChild(value);
       else td.textContent = value;
       tr.appendChild(td);
@@ -665,8 +667,9 @@ function renderReadModelRows(items) {
       item.ctr != null ? String(item.ctr) : '-',
       withTip(statusLabel(item.notificationHealth), buildTip('ui.help.healthCode', item.notificationHealth))
     ];
-    cols.forEach((value) => {
+    cols.forEach((value, idx) => {
       const td = document.createElement('td');
+      if (idx === 3 || idx === 5) td.classList.add('cell-num');
       if (value instanceof Node) td.appendChild(value);
       else td.textContent = value;
       tr.appendChild(td);
@@ -792,8 +795,9 @@ function renderVendorCtrRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    [item.vendorLabel || item.vendorKey || '-', String(item.sent || 0), String(item.clicked || 0), item.ctr != null ? `${Math.round(item.ctr * 1000) / 10}%` : '-'].forEach((value) => {
+    [item.vendorLabel || item.vendorKey || '-', String(item.sent || 0), String(item.clicked || 0), item.ctr != null ? `${Math.round(item.ctr * 1000) / 10}%` : '-'].forEach((value, idx) => {
       const td = document.createElement('td');
+      if (idx > 0) td.classList.add('cell-num');
       td.textContent = value;
       tr.appendChild(td);
     });
@@ -816,8 +820,9 @@ function renderFaqReferenceRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    [item.articleId || '-', String(item.count || 0)].forEach((value) => {
+    [item.articleId || '-', String(item.count || 0)].forEach((value, idx) => {
       const td = document.createElement('td');
+      if (idx === 1) td.classList.add('cell-num');
       td.textContent = value;
       tr.appendChild(td);
     });
@@ -866,11 +871,15 @@ function renderVendorRows(items) {
     const raw = document.getElementById('vendor-raw');
     if (raw) raw.textContent = '-';
     state.selectedVendorLinkId = null;
+    state.selectedVendorRowIndex = null;
     return;
   }
-  items.forEach((item) => {
+  items.forEach((item, idx) => {
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
+    tr.tabIndex = 0;
+    tr.dataset.vendorIndex = String(idx);
+    if (item.linkId) tr.dataset.vendorLinkId = String(item.linkId);
     if (item.healthState === 'WARN') tr.classList.add('row-health-warn');
     if (item.healthState === 'OK') tr.classList.add('row-health-ok');
     if (item.healthState === 'DEAD') tr.classList.add('row-health-danger');
@@ -885,22 +894,78 @@ function renderVendorRows(items) {
       td.textContent = value;
       tr.appendChild(td);
     });
-    tr.addEventListener('click', () => {
-      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
-      tr.classList.add('row-active');
-      state.selectedVendorLinkId = item.linkId || null;
-      const detail = document.getElementById('vendor-detail');
-      if (detail) {
-        detail.textContent = [
-          `${t('ui.label.vendors.col.vendor', 'Vendor')}: ${item.vendorLabel || '-'}`,
-          `${t('ui.label.vendors.col.state', '状態')}: ${statusLabel(item.healthState === 'DEAD' ? 'DANGER' : item.healthState)}`,
-          `${t('ui.label.vendors.col.lastChecked', '最終確認')}: ${formatDateLabel(item.checkedAt)}`
-        ].join('\n');
-      }
-      const raw = document.getElementById('vendor-raw');
-      if (raw) raw.textContent = JSON.stringify(item.raw || item, null, 2);
-    });
+    tr.addEventListener('click', () => selectVendorRow(tbody, tr, item, idx, { focusRow: false }));
     tbody.appendChild(tr);
+  });
+
+  // Keep selection stable across reloads if possible.
+  if (state.selectedVendorLinkId) {
+    const foundIndex = items.findIndex((item) => item && item.linkId === state.selectedVendorLinkId);
+    if (foundIndex >= 0) {
+      const row = tbody.querySelector(`tr[data-vendor-index="${foundIndex}"]`);
+      if (row) selectVendorRow(tbody, row, items[foundIndex], foundIndex, { focusRow: false });
+    }
+  }
+}
+
+function selectVendorRow(tbody, rowEl, item, idx, options) {
+  if (!tbody || !rowEl || !item) return;
+  tbody.querySelectorAll('tr').forEach((node) => {
+    node.classList.remove('row-active');
+    node.removeAttribute('aria-selected');
+  });
+  rowEl.classList.add('row-active');
+  rowEl.setAttribute('aria-selected', 'true');
+  state.selectedVendorLinkId = item.linkId || null;
+  state.selectedVendorRowIndex = idx;
+
+  const detail = document.getElementById('vendor-detail');
+  if (detail) {
+    detail.textContent = [
+      `${t('ui.label.vendors.col.vendor', 'Vendor')}: ${item.vendorLabel || '-'}`,
+      `${t('ui.label.vendors.col.state', '状態')}: ${statusLabel(item.healthState === 'DEAD' ? 'DANGER' : item.healthState)}`,
+      `${t('ui.label.vendors.col.lastChecked', '最終確認')}: ${formatDateLabel(item.checkedAt)}`
+    ].join('\n');
+  }
+  const raw = document.getElementById('vendor-raw');
+  if (raw) raw.textContent = JSON.stringify(item.raw || item, null, 2);
+
+  const focusRow = options && options.focusRow;
+  if (focusRow && typeof rowEl.focus === 'function') {
+    rowEl.focus({ preventScroll: true });
+    rowEl.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function setupVendorTableKeyboardNavigation() {
+  const tbody = document.getElementById('vendor-rows');
+  if (!tbody) return;
+  tbody.addEventListener('keydown', (event) => {
+    const key = event.key;
+    if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Enter') return;
+    const rows = Array.from(tbody.querySelectorAll('tr[data-vendor-index]'));
+    if (!rows.length) return;
+    const active = document.activeElement;
+    const currentIndex = active && active.dataset && active.dataset.vendorIndex
+      ? Number(active.dataset.vendorIndex)
+      : (typeof state.selectedVendorRowIndex === 'number' ? state.selectedVendorRowIndex : 0);
+
+    if (!Number.isFinite(currentIndex)) return;
+    event.preventDefault();
+
+    if (key === 'Enter') {
+      const row = rows[currentIndex];
+      const item = state.vendorItems[currentIndex];
+      if (row && item) selectVendorRow(tbody, row, item, currentIndex, { focusRow: false });
+      return;
+    }
+
+    const next = key === 'ArrowDown'
+      ? Math.min(currentIndex + 1, rows.length - 1)
+      : Math.max(currentIndex - 1, 0);
+    const row = rows[next];
+    const item = state.vendorItems[next];
+    if (row && item) selectVendorRow(tbody, row, item, next, { focusRow: true });
   });
 }
 
@@ -2275,6 +2340,8 @@ function setupVendorControls() {
   document.getElementById('vendor-state')?.addEventListener('change', () => {
     void loadVendors({ notify: false });
   });
+
+  setupVendorTableKeyboardNavigation();
 
   document.getElementById('vendors-action-edit')?.addEventListener('click', () => {
     void runVendorAction('edit');
