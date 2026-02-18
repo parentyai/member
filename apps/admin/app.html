@@ -30,6 +30,10 @@
           <span class="nav-icon" aria-hidden="true">R</span>
           <span data-dict-key="ui.label.nav.readModel">通知集計</span>
         </button>
+        <button class="nav-item" data-pane-target="city-pack">
+          <span class="nav-icon" aria-hidden="true">CP</span>
+          <span data-dict-key="ui.label.nav.cityPack">City Pack監査</span>
+        </button>
         <button class="nav-item" data-pane-target="audit">
           <span class="nav-icon" aria-hidden="true">A</span>
           <span data-dict-key="ui.label.nav.audit">証跡</span>
@@ -113,6 +117,9 @@
                   </button>
                   <button type="button" class="task-card-btn" data-open-pane="monitor">
                     <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
+                  </button>
+                  <button type="button" class="task-card-btn" data-open-pane="city-pack">
+                    <span data-dict-key="ui.label.home.task.cityPack">City Pack情報源を監査</span>
                   </button>
                 </div>
               </div>
@@ -473,6 +480,110 @@
                     <div class="skeleton-line w-70"></div>
                     <div class="skeleton-line w-30"></div>
                   </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-city-pack" class="app-pane" data-pane="city-pack">
+          <div class="summary-header is-compact">
+            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.cityPack.focus">期限切れ / 要確認 / 参照中の配信ルール</span></div>
+            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.cityPack.help">Review InboxのConfirm候補から対応</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.cityPack.risk">期限切れ情報源の放置</span></div>
+          </div>
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel today-card">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.kpi">City Pack監査KPI</div>
+                <div class="panel-body">
+                  <div class="today-metrics">
+                    <div><span class="metric-label" data-dict-key="ui.metric.cityPack.expiredZeroRate">expired sourceゼロ率</span><span id="city-pack-kpi-expired-zero-rate" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.cityPack.reviewLag">review滞留時間</span><span id="city-pack-kpi-review-lag" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.cityPack.deadRate">dead検出率</span><span id="city-pack-kpi-dead-rate" class="metric-value">-</span></div>
+                    <div><span class="metric-label" data-dict-key="ui.metric.cityPack.blockRate">source起因ブロック率</span><span id="city-pack-kpi-block-rate" class="metric-value">-</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.reviewInbox">Review Inbox</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.cityPack.reviewInbox">情報源の有効期限と監査結果を確認し、Confirm / Retire / Replace / ManualOnly を実行します。</div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.statusFilter" data-dict-tip="ui.help.cityPack.statusFilter">状態
+                      <select id="city-pack-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.status.all">すべて</option>
+                        <option value="needs_review" data-dict-key="ui.value.cityPack.status.needsReview">要確認</option>
+                        <option value="active" data-dict-key="ui.value.cityPack.status.active">有効</option>
+                        <option value="dead" data-dict-key="ui.value.cityPack.status.dead">停止</option>
+                        <option value="blocked" data-dict-key="ui.value.cityPack.status.blocked">手動対応</option>
+                        <option value="retired" data-dict-key="ui.value.cityPack.status.retired">廃止</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.limit" data-dict-tip="ui.help.cityPack.limit">件数
+                      <input id="city-pack-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-reload" type="button" data-dict-key="ui.label.cityPack.reload">Inbox更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.cityPack.col.source">source</th>
+                        <th data-dict-key="ui.label.cityPack.col.result">result</th>
+                        <th data-dict-key="ui.label.cityPack.col.validUntil">validUntil</th>
+                        <th data-dict-key="ui.label.cityPack.col.usedBy">usedBy</th>
+                        <th data-dict-key="ui.label.cityPack.col.evidence">evidence</th>
+                        <th data-dict-key="ui.label.cityPack.col.actions">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.evidenceViewer">Evidence Viewer</div>
+                <div class="panel-body">
+                  <div id="city-pack-evidence-summary" class="note" data-dict-key="ui.desc.cityPack.evidence.empty">Inboxの行を選択すると証跡を表示します。</div>
+                  <details class="section" open>
+                    <summary data-dict-key="ui.label.cityPack.evidence.compare">スクリーンショット比較</summary>
+                    <pre id="city-pack-evidence-screenshots">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary data-dict-key="ui.label.cityPack.evidence.http">HTTP情報</summary>
+                    <pre id="city-pack-evidence-http">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.evidence.diff">差分要約（LLM補助）</summary>
+                    <pre id="city-pack-evidence-diff">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.evidence.impacted">影響CityPack一覧</summary>
+                    <pre id="city-pack-evidence-impacted">-</pre>
+                  </details>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.cityPack.actions">監査ジョブの実行結果は追跡ID付きで保存されます。</div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.cityPack.runMode" data-dict-tip="ui.help.cityPack.runMode">監査モード</label>
+                    <select id="city-pack-run-mode" class="select-inline">
+                      <option value="scheduled" data-dict-key="ui.value.cityPack.runMode.scheduled">定期監査</option>
+                      <option value="canary" data-dict-key="ui.value.cityPack.runMode.canary">Canary</option>
+                    </select>
+                  </div>
+                  <div class="row row-top">
+                    <button id="city-pack-run-audit" type="button" data-dict-key="ui.label.cityPack.runAudit">監査ジョブ実行</button>
+                  </div>
+                  <div id="city-pack-safe-step" class="safe-next-step" data-dict-key="ui.desc.cityPack.safeStep">次の安全な一手: Confirm候補を確認して期限を更新する</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.runResult">実行結果</summary>
+                    <pre id="city-pack-run-result">-</pre>
+                  </details>
                 </div>
               </div>
             </aside>

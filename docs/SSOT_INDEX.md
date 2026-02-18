@@ -24,6 +24,9 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/ADMIN_UI_DICTIONARY_JA.md`（管理UI辞書 / UI表示SSOT）
 - `docs/SSOT_NOTIFICATION_WAIT_RULES.md`（通知待機方式 SSOT / 値はTBD）
 - `docs/SSOT_NOTIFICATION_PATTERN_REGISTRY.json`（通知テスト pattern registry SSOT）
+- `docs/SSOT_CITY_PACK_SECURITY_RULES.md`（City PackコレクションのSecurity Rules設計）
+- `docs/PHASE_CITY_PACK_REIMPLEMENT_PLAN.md`（City Pack再実装計画）
+- `docs/PHASE_CITY_PACK_REIMPLEMENT_EXECUTION_LOG.md`（City Pack再実装実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）

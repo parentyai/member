@@ -10,6 +10,8 @@ const { validateNotificationPayload } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 const { createTrackToken } = require('../../domain/trackToken');
 const { computeNotificationDeliveryId, computeLineRetryKey } = require('../../domain/deliveryId');
+const { evaluateCityPackSourcePolicy } = require('../../domain/cityPackPolicy');
+const { validateCityPackSources } = require('../cityPack/validateCityPackSources');
 
 function resolveTrackBaseUrl() {
   const value = process.env.TRACK_BASE_URL;
@@ -61,6 +63,18 @@ async function sendNotification(params) {
   if (!linkEntry) throw new Error('link registry entry not found');
 
   validateNotificationPayload(notification, linkEntry, payload.killSwitch);
+
+  if (Array.isArray(notification.sourceRefs) && notification.sourceRefs.length > 0) {
+    const sourceValidation = await validateCityPackSources({ sourceRefs: notification.sourceRefs });
+    const sourcePolicy = evaluateCityPackSourcePolicy(sourceValidation);
+    if (!sourcePolicy.allowed) {
+      const reason = sourcePolicy.blockedReasonCategory || 'SOURCE_BLOCKED';
+      const err = new Error(reason);
+      err.blockedReasonCategory = reason;
+      err.invalidSourceRefs = sourcePolicy.invalidSourceRefs;
+      throw err;
+    }
+  }
 
   if (!notification.scenarioKey || !notification.stepKey) {
     throw new Error('scenarioKey/stepKey required');

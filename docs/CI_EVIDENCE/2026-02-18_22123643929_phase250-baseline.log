@@ -1,0 +1,440 @@
+deploy-webhook	Set up job	﻿2026-02-18T02:08:53.0473870Z Current runner version: '2.331.0'
+deploy-webhook	Set up job	2026-02-18T02:08:53.0497177Z ##[group]Runner Image Provisioner
+deploy-webhook	Set up job	2026-02-18T02:08:53.0498082Z Hosted Compute Agent
+deploy-webhook	Set up job	2026-02-18T02:08:53.0498690Z Version: 20260123.484
+deploy-webhook	Set up job	2026-02-18T02:08:53.0499249Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+deploy-webhook	Set up job	2026-02-18T02:08:53.0500031Z Build Date: 2026-01-23T19:41:17Z
+deploy-webhook	Set up job	2026-02-18T02:08:53.0500664Z Worker ID: {3847741d-6adc-4cb8-91a7-af6ffd119a30}
+deploy-webhook	Set up job	2026-02-18T02:08:53.0501366Z Azure Region: westcentralus
+deploy-webhook	Set up job	2026-02-18T02:08:53.0501940Z ##[endgroup]
+deploy-webhook	Set up job	2026-02-18T02:08:53.0503314Z ##[group]Operating System
+deploy-webhook	Set up job	2026-02-18T02:08:53.0504070Z Ubuntu
+deploy-webhook	Set up job	2026-02-18T02:08:53.0504620Z 24.04.3
+deploy-webhook	Set up job	2026-02-18T02:08:53.0505068Z LTS
+deploy-webhook	Set up job	2026-02-18T02:08:53.0505541Z ##[endgroup]
+deploy-webhook	Set up job	2026-02-18T02:08:53.0506083Z ##[group]Runner Image
+deploy-webhook	Set up job	2026-02-18T02:08:53.0506647Z Image: ubuntu-24.04
+deploy-webhook	Set up job	2026-02-18T02:08:53.0507167Z Version: 20260209.23.1
+deploy-webhook	Set up job	2026-02-18T02:08:53.0508465Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+deploy-webhook	Set up job	2026-02-18T02:08:53.0510219Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+deploy-webhook	Set up job	2026-02-18T02:08:53.0511147Z ##[endgroup]
+deploy-webhook	Set up job	2026-02-18T02:08:53.0512183Z ##[group]GITHUB_TOKEN Permissions
+deploy-webhook	Set up job	2026-02-18T02:08:53.0514106Z Contents: read
+deploy-webhook	Set up job	2026-02-18T02:08:53.0514736Z Metadata: read
+deploy-webhook	Set up job	2026-02-18T02:08:53.0515244Z ##[endgroup]
+deploy-webhook	Set up job	2026-02-18T02:08:53.0517274Z Secret source: Actions
+deploy-webhook	Set up job	2026-02-18T02:08:53.0518110Z Prepare workflow directory
+deploy-webhook	Set up job	2026-02-18T02:08:53.1047413Z Prepare all required actions
+deploy-webhook	Set up job	2026-02-18T02:08:53.1083156Z Getting action download info
+deploy-webhook	Set up job	2026-02-18T02:08:53.4980007Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy-webhook	Set up job	2026-02-18T02:08:53.6786092Z Download action repository 'google-github-actions/auth@v2' (SHA:c200f3691d83b41bf9bbd8638997a462592937ed)
+deploy-webhook	Set up job	2026-02-18T02:08:54.3270412Z Download action repository 'google-github-actions/setup-gcloud@v2' (SHA:e427ad8a34f8676edf47cf7d7925499adf3eb74f)
+deploy-webhook	Set up job	2026-02-18T02:08:55.0756167Z Complete job name: deploy-webhook
+deploy-webhook	Checkout	﻿2026-02-18T02:08:55.1549431Z ##[group]Run actions/checkout@v4
+deploy-webhook	Checkout	2026-02-18T02:08:55.1550696Z with:
+deploy-webhook	Checkout	2026-02-18T02:08:55.1551409Z   repository: parentyai/member
+deploy-webhook	Checkout	2026-02-18T02:08:55.1552555Z   token: ***
+deploy-webhook	Checkout	2026-02-18T02:08:55.1553243Z   ssh-strict: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1554188Z   ssh-user: git
+deploy-webhook	Checkout	2026-02-18T02:08:55.1554926Z   persist-credentials: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1555752Z   clean: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1556495Z   sparse-checkout-cone-mode: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1557422Z   fetch-depth: 1
+deploy-webhook	Checkout	2026-02-18T02:08:55.1558129Z   fetch-tags: false
+deploy-webhook	Checkout	2026-02-18T02:08:55.1558865Z   show-progress: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1559618Z   lfs: false
+deploy-webhook	Checkout	2026-02-18T02:08:55.1560314Z   submodules: false
+deploy-webhook	Checkout	2026-02-18T02:08:55.1561069Z   set-safe-directory: true
+deploy-webhook	Checkout	2026-02-18T02:08:55.1562115Z env:
+deploy-webhook	Checkout	2026-02-18T02:08:55.1562808Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Checkout	2026-02-18T02:08:55.1563890Z   GCP_REGION: us-east1
+deploy-webhook	Checkout	2026-02-18T02:08:55.1564685Z   SERVICE_NAME: member
+deploy-webhook	Checkout	2026-02-18T02:08:55.1566477Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Checkout	2026-02-18T02:08:55.1568905Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Checkout	2026-02-18T02:08:55.1570595Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Checkout	2026-02-18T02:08:55.1571877Z   ENV_NAME: stg
+deploy-webhook	Checkout	2026-02-18T02:08:55.1572638Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Checkout	2026-02-18T02:08:55.1573704Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:55.2664838Z Syncing repository: parentyai/member
+deploy-webhook	Checkout	2026-02-18T02:08:55.2667253Z ##[group]Getting Git version info
+deploy-webhook	Checkout	2026-02-18T02:08:55.2668449Z Working directory is '/home/runner/work/member/member'
+deploy-webhook	Checkout	2026-02-18T02:08:55.2670173Z [command]/usr/bin/git version
+deploy-webhook	Checkout	2026-02-18T02:08:55.2675538Z git version 2.52.0
+deploy-webhook	Checkout	2026-02-18T02:08:55.2701597Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:55.2723000Z Temporarily overriding HOME='/home/runner/work/_temp/b42c1b95-1bd2-49b0-bde2-b93bbdb5d24e' before making global git config changes
+deploy-webhook	Checkout	2026-02-18T02:08:55.2725973Z Adding repository directory to the temporary git global config as a safe directory
+deploy-webhook	Checkout	2026-02-18T02:08:55.2729076Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/member/member
+deploy-webhook	Checkout	2026-02-18T02:08:55.2769060Z Deleting the contents of '/home/runner/work/member/member'
+deploy-webhook	Checkout	2026-02-18T02:08:55.2772815Z ##[group]Initializing the repository
+deploy-webhook	Checkout	2026-02-18T02:08:55.2776938Z [command]/usr/bin/git init /home/runner/work/member/member
+deploy-webhook	Checkout	2026-02-18T02:08:55.2878715Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy-webhook	Checkout	2026-02-18T02:08:55.2880669Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+deploy-webhook	Checkout	2026-02-18T02:08:55.2882765Z hint: to use in all of your new repositories, which will suppress this warning,
+deploy-webhook	Checkout	2026-02-18T02:08:55.2884683Z hint: call:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2885355Z hint:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2886198Z hint: 	git config --global init.defaultBranch <name>
+deploy-webhook	Checkout	2026-02-18T02:08:55.2887300Z hint:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2888874Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy-webhook	Checkout	2026-02-18T02:08:55.2890632Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2892002Z hint:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2892661Z hint: 	git branch -m <name>
+deploy-webhook	Checkout	2026-02-18T02:08:55.2894171Z hint:
+deploy-webhook	Checkout	2026-02-18T02:08:55.2895302Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy-webhook	Checkout	2026-02-18T02:08:55.2897135Z Initialized empty Git repository in /home/runner/work/member/member/.git/
+deploy-webhook	Checkout	2026-02-18T02:08:55.2900159Z [command]/usr/bin/git remote add origin https://github.com/parentyai/member
+deploy-webhook	Checkout	2026-02-18T02:08:55.2930658Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:55.2931944Z ##[group]Disabling automatic garbage collection
+deploy-webhook	Checkout	2026-02-18T02:08:55.2934195Z [command]/usr/bin/git config --local gc.auto 0
+deploy-webhook	Checkout	2026-02-18T02:08:55.2964792Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:55.2966004Z ##[group]Setting up auth
+deploy-webhook	Checkout	2026-02-18T02:08:55.2971100Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy-webhook	Checkout	2026-02-18T02:08:55.3003442Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy-webhook	Checkout	2026-02-18T02:08:55.3332456Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy-webhook	Checkout	2026-02-18T02:08:55.3363073Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy-webhook	Checkout	2026-02-18T02:08:55.3602331Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy-webhook	Checkout	2026-02-18T02:08:55.3638002Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy-webhook	Checkout	2026-02-18T02:08:55.3870913Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy-webhook	Checkout	2026-02-18T02:08:55.3906346Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:55.3907644Z ##[group]Fetching the repository
+deploy-webhook	Checkout	2026-02-18T02:08:55.3915802Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e25d7ac2d75e70143af4a3d1e2d9f85fc6cfa7fd:refs/remotes/origin/main
+deploy-webhook	Checkout	2026-02-18T02:08:56.4587121Z From https://github.com/parentyai/member
+deploy-webhook	Checkout	2026-02-18T02:08:56.4587911Z  * [new ref]         e25d7ac2d75e70143af4a3d1e2d9f85fc6cfa7fd -> origin/main
+deploy-webhook	Checkout	2026-02-18T02:08:56.4623151Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:56.4623870Z ##[group]Determining the checkout info
+deploy-webhook	Checkout	2026-02-18T02:08:56.4625988Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:56.4631299Z [command]/usr/bin/git sparse-checkout disable
+deploy-webhook	Checkout	2026-02-18T02:08:56.4675297Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy-webhook	Checkout	2026-02-18T02:08:56.4705581Z ##[group]Checking out the ref
+deploy-webhook	Checkout	2026-02-18T02:08:56.4710203Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+deploy-webhook	Checkout	2026-02-18T02:08:56.5801684Z Switched to a new branch 'main'
+deploy-webhook	Checkout	2026-02-18T02:08:56.5805383Z branch 'main' set up to track 'origin/main'.
+deploy-webhook	Checkout	2026-02-18T02:08:56.5817517Z ##[endgroup]
+deploy-webhook	Checkout	2026-02-18T02:08:56.5860442Z [command]/usr/bin/git log -1 --format=%H
+deploy-webhook	Checkout	2026-02-18T02:08:56.5885513Z e25d7ac2d75e70143af4a3d1e2d9f85fc6cfa7fd
+deploy-webhook	Validate required deploy variables	﻿2026-02-18T02:08:56.6093481Z ##[group]Run REQUIRED_VARS=(
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6094157Z [36;1mREQUIRED_VARS=([0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6094394Z [36;1m  GCP_PROJECT_ID[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6094612Z [36;1m  GCP_REGION[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6094808Z [36;1m  SERVICE_NAME[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6095006Z [36;1m  GCP_WIF_PROVIDER[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6095220Z [36;1m  RUNTIME_SA_EMAIL[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6095416Z [36;1m  DEPLOY_SA_EMAIL[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6095617Z [36;1m  ENV_NAME[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6095802Z [36;1m  FIRESTORE_PROJECT_ID[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6096027Z [36;1m)[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6096185Z [36;1mMISSING=0[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6096408Z [36;1mfor VAR_NAME in "${REQUIRED_VARS[@]}"; do[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6096708Z [36;1m  if [ -z "${!VAR_NAME}" ]; then[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6097086Z [36;1m    echo "::error title=Missing workflow variable::${VAR_NAME} is empty"[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6097492Z [36;1m    MISSING=1[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6097703Z [36;1m  fi[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6097901Z [36;1mdone[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6098083Z [36;1mif [ "$MISSING" -ne 0 ]; then[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6098307Z [36;1m  exit 1[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6098484Z [36;1mfi[0m
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6149569Z shell: /usr/bin/bash -e {0}
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6149819Z env:
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6150006Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6150241Z   GCP_REGION: us-east1
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6150438Z   SERVICE_NAME: member
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6150927Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6151554Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6152011Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6152346Z   ENV_NAME: stg
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6152538Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Validate required deploy variables	2026-02-18T02:08:56.6152765Z ##[endgroup]
+deploy-webhook	Auth (OIDC)	﻿2026-02-18T02:08:56.6339704Z ##[group]Run google-github-actions/auth@v2
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6340007Z with:
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6340499Z   workload_identity_provider: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6341168Z   service_account: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6341529Z   token_format: access_token
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6404966Z   create_credentials_file: true
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6405239Z   export_environment_variables: true
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6405497Z   universe: googleapis.com
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6405749Z   cleanup_credentials: true
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6405996Z   access_token_lifetime: 3600s
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6406370Z   access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6406767Z   id_token_include_email: false
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6406998Z env:
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6407164Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6407382Z   GCP_REGION: us-east1
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6407616Z   SERVICE_NAME: member
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6408086Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6408701Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6409136Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6409477Z   ENV_NAME: stg
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6409661Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.6409895Z ##[endgroup]
+deploy-webhook	Auth (OIDC)	2026-02-18T02:08:56.9547574Z Created credentials file at "/home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json"
+deploy-webhook	Setup gcloud	﻿2026-02-18T02:08:57.1355822Z ##[group]Run google-github-actions/setup-gcloud@v2
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1356168Z with:
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1356356Z   project_id: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1356739Z   version: latest
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1357052Z   skip_install: false
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1357604Z   skip_tool_cache: false
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1357828Z env:
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1358072Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1358342Z   GCP_REGION: us-east1
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1358541Z   SERVICE_NAME: member
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1359017Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1359647Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1360093Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1360428Z   ENV_NAME: stg
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1360630Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1361088Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1361798Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1362394Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1362810Z   CLOUDSDK_CORE_PROJECT: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1363069Z   CLOUDSDK_PROJECT: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1363308Z   GCLOUD_PROJECT: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1363687Z   GCP_PROJECT: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1363923Z   GOOGLE_CLOUD_PROJECT: member-485303
+deploy-webhook	Setup gcloud	2026-02-18T02:08:57.1364160Z ##[endgroup]
+deploy-webhook	Setup gcloud	2026-02-18T02:08:58.7813833Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/4152ed1a-e01b-4330-95ac-00fe950851d6 -f /home/runner/work/_temp/f0a063a2-7199-4508-bfe6-90e53527a781
+deploy-webhook	Setup gcloud	2026-02-18T02:09:18.5110525Z Successfully authenticated
+deploy-webhook	Setup gcloud	2026-02-18T02:09:20.2179084Z Successfully set default project
+deploy-webhook	Validate required secrets exist	﻿2026-02-18T02:09:20.2338692Z ##[group]Run REQUIRED_SECRETS=(
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2339032Z [36;1mREQUIRED_SECRETS=([0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2339270Z [36;1m  LINE_CHANNEL_SECRET[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2339515Z [36;1m  LINE_CHANNEL_ACCESS_TOKEN[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2339780Z [36;1m  REDAC_MEMBERSHIP_ID_HMAC_SECRET[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2340025Z [36;1m)[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2340182Z [36;1mMISSING=0[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2340378Z [36;1mVISIBILITY_SKIPPED=0[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2340650Z [36;1mfor SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2340939Z [36;1m  DESCRIBE_OUTPUT=""[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2341237Z [36;1m  if DESCRIBE_OUTPUT=$(gcloud secrets describe "$SECRET_NAME" \[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2341598Z [36;1m    --project "$GCP_PROJECT_ID" \[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2341880Z [36;1m    --format='value(name)' 2>&1); then[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2342166Z [36;1m    echo "Secret found: ${SECRET_NAME}"[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2342421Z [36;1m    continue[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2342600Z [36;1m  fi[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2342797Z [36;1m[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2343036Z [36;1m  if echo "$DESCRIBE_OUTPUT" | grep -qi "NOT_FOUND"; then[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2343723Z [36;1m    echo "::error title=Missing Secret Manager secret::${SECRET_NAME} was not found in ${GCP_PROJECT_ID}"[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2344195Z [36;1m    MISSING=1[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2344388Z [36;1m    continue[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2344565Z [36;1m  fi[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2344725Z [36;1m[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2345162Z [36;1m  if echo "$DESCRIBE_OUTPUT" | grep -Eqi "PERMISSION_DENIED|does not have permission|secretmanager.secrets.get"; then[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2345979Z [36;1m    echo "::warning title=Secret visibility skipped::${SECRET_NAME} metadata is not visible to deploy SA; existence check skipped."[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2346525Z [36;1m    VISIBILITY_SKIPPED=1[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2346752Z [36;1m    continue[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2346938Z [36;1m  fi[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2347096Z [36;1m[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2347456Z [36;1m  echo "::error title=Secret preflight failed::${SECRET_NAME} existence check failed unexpectedly"[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2348085Z [36;1m  echo "$DESCRIBE_OUTPUT"[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2348312Z [36;1m  MISSING=1[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2348498Z [36;1mdone[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2348698Z [36;1mif [ "$VISIBILITY_SKIPPED" -ne 0 ]; then[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2349375Z [36;1m  echo "::notice title=Secret preflight mode::Some secrets were not visibility-checked due to deploy SA permissions; deploy/runtime checks remain authoritative."[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2350036Z [36;1mfi[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2350222Z [36;1mif [ "$MISSING" -ne 0 ]; then[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2350454Z [36;1m  exit 1[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2350627Z [36;1mfi[0m
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2400669Z shell: /usr/bin/bash -e {0}
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2400910Z env:
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2401097Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2401336Z   GCP_REGION: us-east1
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2401530Z   SERVICE_NAME: member
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2402017Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2402663Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2403106Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2403424Z   ENV_NAME: stg
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2403730Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2404183Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2404847Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2405434Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2405834Z   CLOUDSDK_CORE_PROJECT: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2406087Z   CLOUDSDK_PROJECT: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2406326Z   GCLOUD_PROJECT: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2406807Z   GCP_PROJECT: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2407042Z   GOOGLE_CLOUD_PROJECT: member-485303
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2407363Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2407712Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:20.2407966Z ##[endgroup]
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:21.0025566Z ##[warning]LINE_CHANNEL_SECRET metadata is not visible to deploy SA; existence check skipped.
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:21.7086008Z ##[warning]LINE_CHANNEL_ACCESS_TOKEN metadata is not visible to deploy SA; existence check skipped.
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:22.3943178Z ##[warning]REDAC_MEMBERSHIP_ID_HMAC_SECRET metadata is not visible to deploy SA; existence check skipped.
+deploy-webhook	Validate required secrets exist	2026-02-18T02:09:22.3948179Z ##[notice]Some secrets were not visibility-checked due to deploy SA permissions; deploy/runtime checks remain authoritative.
+deploy-webhook	Ensure runtime SA can access required secrets	﻿2026-02-18T02:09:22.3985432Z ##[group]Run RUNTIME_MEMBER="serviceAccount:${RUNTIME_SA_EMAIL}"
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3985905Z [36;1mRUNTIME_MEMBER="serviceAccount:${RUNTIME_SA_EMAIL}"[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3986223Z [36;1mfor SECRET_NAME in \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3986443Z [36;1m  LINE_CHANNEL_SECRET \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3986699Z [36;1m  LINE_CHANNEL_ACCESS_TOKEN \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3986961Z [36;1m  REDAC_MEMBERSHIP_ID_HMAC_SECRET[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3987212Z [36;1mdo[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3987577Z [36;1m  echo "Granting roles/secretmanager.secretAccessor on ${SECRET_NAME} to ${RUNTIME_MEMBER}"[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3988118Z [36;1m  if gcloud secrets add-iam-policy-binding "$SECRET_NAME" \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3988465Z [36;1m    --project "$GCP_PROJECT_ID" \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3988736Z [36;1m    --member "$RUNTIME_MEMBER" \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3989036Z [36;1m    --role "roles/secretmanager.secretAccessor" \[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3989343Z [36;1m    --quiet >/dev/null; then[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3989655Z [36;1m    echo "Secret IAM updated: ${SECRET_NAME}"[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3989923Z [36;1m  else[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3990500Z [36;1m    echo "::warning title=Secret IAM update skipped::${SECRET_NAME} secret IAM update failed (insufficient permission or secret not found); continuing deploy."[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3991312Z [36;1m  fi[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.3991479Z [36;1mdone[0m
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4039807Z shell: /usr/bin/bash -e {0}
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4040039Z env:
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4040215Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4040452Z   GCP_REGION: us-east1
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4040649Z   SERVICE_NAME: member
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4041134Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4041782Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4042229Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4042570Z   ENV_NAME: stg
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4042766Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4043224Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4044048Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4044639Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4045055Z   CLOUDSDK_CORE_PROJECT: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4045307Z   CLOUDSDK_PROJECT: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4045536Z   GCLOUD_PROJECT: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4045759Z   GCP_PROJECT: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4045984Z   GOOGLE_CLOUD_PROJECT: member-485303
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4046288Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4046626Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4046878Z ##[endgroup]
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:22.4112523Z Granting roles/secretmanager.secretAccessor on LINE_CHANNEL_SECRET to serviceAccount:member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.0404254Z ERROR: (gcloud.secrets.add-iam-policy-binding) Status code: 403. Permission 'secretmanager.secrets.getIamPolicy' denied for resource 'projects/member-485303/secrets/LINE_CHANNEL_SECRET' (or it may not exist). This command is authenticated as member-deploy@member-485303.iam.gserviceaccount.com using the credentials in /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json, specified by the [auth/credential_file_override] property..
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.1068767Z ##[warning]LINE_CHANNEL_SECRET secret IAM update failed (insufficient permission or secret not found); continuing deploy.
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.1071462Z Granting roles/secretmanager.secretAccessor on LINE_CHANNEL_ACCESS_TOKEN to serviceAccount:member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.7364909Z ERROR: (gcloud.secrets.add-iam-policy-binding) Status code: 403. Permission 'secretmanager.secrets.getIamPolicy' denied for resource 'projects/member-485303/secrets/LINE_CHANNEL_ACCESS_TOKEN' (or it may not exist). This command is authenticated as member-deploy@member-485303.iam.gserviceaccount.com using the credentials in /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json, specified by the [auth/credential_file_override] property..
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.7939007Z ##[warning]LINE_CHANNEL_ACCESS_TOKEN secret IAM update failed (insufficient permission or secret not found); continuing deploy.
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:23.7941594Z Granting roles/secretmanager.secretAccessor on REDAC_MEMBERSHIP_ID_HMAC_SECRET to serviceAccount:member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:24.3401709Z ERROR: (gcloud.secrets.add-iam-policy-binding) Status code: 403. Permission 'secretmanager.secrets.getIamPolicy' denied for resource 'projects/member-485303/secrets/REDAC_MEMBERSHIP_ID_HMAC_SECRET' (or it may not exist). This command is authenticated as member-deploy@member-485303.iam.gserviceaccount.com using the credentials in /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json, specified by the [auth/credential_file_override] property..
+deploy-webhook	Ensure runtime SA can access required secrets	2026-02-18T02:09:24.4048655Z ##[warning]REDAC_MEMBERSHIP_ID_HMAC_SECRET secret IAM update failed (insufficient permission or secret not found); continuing deploy.
+deploy-webhook	Build image (Cloud Build)	﻿2026-02-18T02:09:24.4077247Z ##[group]Run WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4077701Z [36;1mWEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4078263Z [36;1mIMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4078795Z [36;1mBUILD_ID=$(gcloud builds submit \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4079075Z [36;1m  --project "$GCP_PROJECT_ID" \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4079484Z [36;1m  --gcs-source-staging-dir "gs://${GCP_PROJECT_ID}_cloudbuild/source" \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4079896Z [36;1m  --pack "image=${IMAGE}" \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4080131Z [36;1m  --async \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4080338Z [36;1m  --format="value(id)" \[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4080565Z [36;1m  .)[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4080754Z [36;1mecho "Build ID: $BUILD_ID"[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4080978Z [36;1mSTATUS=""[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4081178Z [36;1mfor i in $(seq 1 60); do[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4081608Z [36;1m  STATUS=$(gcloud builds describe "$BUILD_ID" --project "$GCP_PROJECT_ID" --format="value(status)")[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4082092Z [36;1m  echo "Build status: $STATUS"[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4082357Z [36;1m  if [ "$STATUS" = "SUCCESS" ]; then[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4082602Z [36;1m    break[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4082777Z [36;1m  fi[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4083089Z [36;1m  if [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "CANCELLED" ] || [ "$STATUS" = "TIMEOUT" ]; then[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4083479Z [36;1m    exit 1[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4083921Z [36;1m  fi[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4084178Z [36;1m  sleep 5[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4084355Z [36;1mdone[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4084546Z [36;1mif [ "$STATUS" != "SUCCESS" ]; then[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4084819Z [36;1m  echo "Build did not succeed."[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4085056Z [36;1m  exit 1[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4085224Z [36;1mfi[0m
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4133435Z shell: /usr/bin/bash -e {0}
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4133920Z env:
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4134106Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4134342Z   GCP_REGION: us-east1
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4134532Z   SERVICE_NAME: member
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4135011Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4135661Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4136128Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4136463Z   ENV_NAME: stg
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4136656Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4137116Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4137766Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4138344Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4138748Z   CLOUDSDK_CORE_PROJECT: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4139003Z   CLOUDSDK_PROJECT: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4139239Z   GCLOUD_PROJECT: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4139460Z   GCP_PROJECT: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4139681Z   GOOGLE_CLOUD_PROJECT: member-485303
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4139991Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4140356Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:24.4140624Z ##[endgroup]
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:25.3915302Z Creating temporary archive of 1124 file(s) totalling 17.9 MiB before compression.
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1446978Z Some files were not included in the source upload.
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1447462Z 
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1448105Z Check the gcloud log [/home/runner/.config/gcloud/logs/2026.02.18/02.09.24.812475.log] to see which files and the contents of the
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1449220Z default gcloudignore file used (see `$ gcloud topic gcloudignore` to learn
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1449929Z more).
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1450029Z 
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:27.1450632Z Uploading tarball of [.] to [gs://member-485303_cloudbuild/source/1771380565.214371-b5328f85ad8f49048dd635f1092e5820.tgz]
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:28.4864846Z Created [https://cloudbuild.googleapis.com/v1/projects/member-485303/locations/global/builds/1588c173-6d2e-4b5a-8c8c-93057779e78d].
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:28.4866220Z Logs are available at [ https://console.cloud.google.com/cloud-build/builds/1588c173-6d2e-4b5a-8c8c-93057779e78d?project=306972605843 ].
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:28.6280575Z Build ID: 1588c173-6d2e-4b5a-8c8c-93057779e78d
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:29.4029031Z Build status: QUEUED
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:35.2837179Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:41.0167989Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:46.7490170Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:52.5157763Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:09:58.2891422Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:04.0572076Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:09.7992890Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:15.5713316Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:21.3051524Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:27.0535761Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:32.8016848Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:38.5715294Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:44.3310506Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:50.2408286Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:10:56.0266855Z Build status: WORKING
+deploy-webhook	Build image (Cloud Build)	2026-02-18T02:11:01.8216745Z Build status: SUCCESS
+deploy-webhook	Deploy image to Cloud Run (webhook)	﻿2026-02-18T02:11:01.8269193Z ##[group]Run WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8269641Z [36;1mWEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8270220Z [36;1mIMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8270799Z [36;1mgcloud run deploy "$WEBHOOK_SERVICE_NAME" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8271098Z [36;1m  --project "$GCP_PROJECT_ID" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8271369Z [36;1m  --region "$GCP_REGION" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8271604Z [36;1m  --image "$IMAGE" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8271833Z [36;1m  --allow-unauthenticated \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8272100Z [36;1m  --service-account "$RUNTIME_SA_EMAIL" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8272592Z [36;1m  --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook" \[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8274026Z [36;1m  --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest"[0m
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8323155Z shell: /usr/bin/bash -e {0}
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8323383Z env:
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8323810Z   GCP_PROJECT_ID: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8324046Z   GCP_REGION: us-east1
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8324251Z   SERVICE_NAME: member
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8324731Z   GCP_WIF_PROVIDER: projects/306972605843/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8325380Z   RUNTIME_SA_EMAIL: member-runtime@member-485303.iam.gserviceaccount.com
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8325840Z   DEPLOY_SA_EMAIL: member-deploy@member-485303.iam.gserviceaccount.com
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8326176Z   ENV_NAME: stg
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8326372Z   FIRESTORE_PROJECT_ID: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8326827Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8327476Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8328050Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8328453Z   CLOUDSDK_CORE_PROJECT: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8328697Z   CLOUDSDK_PROJECT: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8328929Z   GCLOUD_PROJECT: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8329153Z   GCP_PROJECT: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8329382Z   GOOGLE_CLOUD_PROJECT: member-485303
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8329909Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8330247Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:01.8330495Z ##[endgroup]
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:03.8759704Z Deploying container to Cloud Run service [member-webhook] in project [member-485303] region [us-east1]
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:03.8760516Z Deploying...
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:05.6134440Z Setting IAM Policy.................done
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:14.8154405Z Creating Revision...................................................................................................done
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:14.8155150Z Routing traffic.....done
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:15.3165797Z Done.
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:15.3905941Z Service [member-webhook] revision [member-webhook-00128-lzl] has been deployed and is serving 100 percent of traffic.
+deploy-webhook	Deploy image to Cloud Run (webhook)	2026-02-18T02:11:15.3906878Z Service URL: https://member-webhook-306972605843.us-east1.run.app
+deploy-webhook	Post Auth (OIDC)	﻿2026-02-18T02:11:15.5535905Z Post job cleanup.
+deploy-webhook	Post Auth (OIDC)	2026-02-18T02:11:15.6378410Z Removed exported credentials at "/home/runner/work/member/member/gha-creds-1d5f06fa0cf5a5fb.json".
+deploy-webhook	Post Checkout	﻿2026-02-18T02:11:15.6496051Z Post job cleanup.
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7452267Z [command]/usr/bin/git version
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7502705Z git version 2.52.0
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7568171Z Temporarily overriding HOME='/home/runner/work/_temp/c34c04cf-155a-401d-afc3-dc6d62e3d707' before making global git config changes
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7569454Z Adding repository directory to the temporary git global config as a safe directory
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7585451Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/member/member
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7628549Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7670034Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7948658Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7974339Z http.https://github.com/.extraheader
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.7991994Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.8029876Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.8298209Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy-webhook	Post Checkout	2026-02-18T02:11:15.8338976Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy-webhook	Complete job	﻿2026-02-18T02:11:15.8731143Z Cleaning up orphan processes
