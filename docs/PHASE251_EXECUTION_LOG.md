@@ -29,7 +29,8 @@
 - `docs/SSOT_INDEX.md`
 
 ## CI Evidence
-- Pending (PR CI成功後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase251.log` を追加)
+- PR CI run: `22124692633`（audit）
+- Saved log: `docs/CI_EVIDENCE/2026-02-18_22124692633_phase251.log`
 
 ## Risks
 - GitHub environment 変数/secret 未設定時は workflow が失敗する。
