@@ -1113,6 +1113,36 @@ th {
   background: #fff0f0;
 }
 
+.task-card-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.task-card-btn {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--status-info);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+}
+
+.task-card-btn:hover {
+  background: #edf3ff;
+}
+
+.safe-next-step {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--status-info);
+  border-radius: var(--radius-sm);
+  background: #f3f8ff;
+  font-size: var(--font-12);
+  color: var(--text-base);
+}
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }

@@ -69,7 +69,6 @@ test('security: /admin/* is protected by ADMIN_OS_TOKEN (cookie login)', async (
     path: '/admin/ops',
     headers: { cookie: cookieHeader }
   });
-  assert.strictEqual(authed.status, 200);
-  assert.ok(authed.body.includes('運用判断支援'), 'expected ops_readonly html');
+  assert.strictEqual(authed.status, 302);
+  assert.strictEqual(authed.headers.location, '/admin/app');
 });
-

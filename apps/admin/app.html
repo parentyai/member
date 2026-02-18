@@ -102,6 +102,20 @@
                   </ol>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.home.tasks">今日やること</div>
+                <div class="panel-body task-card-list">
+                  <button type="button" class="task-card-btn" data-open-pane="errors">
+                    <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
+                  </button>
+                  <button type="button" class="task-card-btn" data-open-pane="composer">
+                    <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
+                  </button>
+                  <button type="button" class="task-card-btn" data-open-pane="monitor">
+                    <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="pane-detail">
               <div class="panel">
@@ -116,6 +130,29 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <p class="note" data-dict-key="ui.desc.home.actions">最初に「通知配信」から着手するのが最短です。</p>
+                  <div class="note" data-dict-key="ui.desc.home.safeTest">安全テストを実行すると、追跡ID付きで配信結果へ移動できます。</div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.home.test.notificationId" data-dict-tip="ui.help.home.test.notificationId">通知ID</label>
+                    <input id="home-test-notification-id" class="input-inline input-min-260" />
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.home.test.lineUserId" data-dict-tip="ui.help.home.test.lineUserId">LINEユーザーID</label>
+                    <input id="home-test-line-user-id" class="input-inline input-min-260" />
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.home.test.mode" data-dict-tip="ui.help.home.test.mode">テスト方式</label>
+                    <select id="home-test-mode" class="select-inline">
+                      <option value="dry_run" data-dict-key="ui.value.home.test.mode.dry">検証のみ</option>
+                      <option value="self_send" data-dict-key="ui.value.home.test.mode.self">自己送信</option>
+                    </select>
+                  </div>
+                  <div class="row row-top">
+                    <button id="home-run-test" type="button" data-dict-key="ui.label.home.test.run">テスト実行（安全）</button>
+                  </div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.home.test.result">テスト結果</summary>
+                    <pre id="home-test-result">-</pre>
+                  </details>
                 </div>
               </div>
             </aside>
@@ -224,16 +261,20 @@
             </div>
 
             <div class="pane-detail">
-              <div class="panel status-card status-unknown" id="composer-status-panel">
-                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.composer.compare">シナリオ比較</div>
                 <div class="panel-body">
-                  <span id="composer-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
-                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
-                  <div class="status-meta" data-dict-key="ui.metric.composer.status" data-dict-tip="ui.help.metric.composer.status">直近操作の結果（作成/承認/計画/実行）</div>
-                  <div class="status-focus">
-                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
-                    <span id="composer-action-count" class="action-count">0</span>
-                  </div>
+                  <div class="note" data-dict-key="ui.desc.composer.compare">Read ModelからシナリオA/Cの通知件数と反応率を比較します。</div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.composer.compare.scenario">シナリオ</th>
+                        <th data-dict-key="ui.label.composer.compare.count">通知件数</th>
+                        <th data-dict-key="ui.label.composer.compare.avgCtr">平均反応率</th>
+                      </tr>
+                    </thead>
+                    <tbody id="composer-compare-rows"></tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -288,6 +329,83 @@
                   </div>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.monitor.userTimeline">ユーザー別通知履歴</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.monitor.userTimeline">LINEユーザーIDまたは会員番号で、配信履歴を時系列で確認します。</div>
+                  <div class="row">
+                    <label class="flex-1" data-dict-key="ui.label.monitor.userLineUserId" data-dict-tip="ui.help.monitor.userLineUserId">LINEユーザーID
+                      <input type="text" id="monitor-user-line-user-id" />
+                    </label>
+                    <label class="flex-1" data-dict-key="ui.label.monitor.userMemberNumber" data-dict-tip="ui.help.monitor.userMemberNumber">会員番号
+                      <input type="text" id="monitor-user-member-number" />
+                    </label>
+                    <label data-dict-key="ui.label.monitor.userLimit" data-dict-tip="ui.help.monitor.userLimit">件数
+                      <input type="number" id="monitor-user-limit" class="input-sm" min="1" max="200" value="50" />
+                    </label>
+                  </div>
+                  <div class="row row-top">
+                    <button id="monitor-user-search" type="button" data-dict-key="ui.label.monitor.userSearch">履歴を検索</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.monitor.userCol.sentAt">送信日時</th>
+                        <th data-dict-key="ui.label.monitor.userCol.deliveryAt">到達日時</th>
+                        <th data-dict-key="ui.label.monitor.userCol.user">対象ユーザー</th>
+                        <th data-dict-key="ui.label.monitor.userCol.notification">通知</th>
+                        <th data-dict-key="ui.label.monitor.userCol.status">状態</th>
+                        <th data-dict-key="ui.label.monitor.userCol.failure">送信できなかった理由</th>
+                      </tr>
+                    </thead>
+                    <tbody id="monitor-user-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.monitor.insights">クリック分析（7日/30日）</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.monitor.insights">配信実績からベンダー別反応率、AB状況、FAQ参照Topを表示します。</div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.monitor.windowDays" data-dict-tip="ui.help.monitor.windowDays">集計期間
+                      <select id="monitor-window-days" class="select-inline">
+                        <option value="7" data-dict-key="ui.value.monitor.window.7">直近7日</option>
+                        <option value="30" data-dict-key="ui.value.monitor.window.30">直近30日</option>
+                      </select>
+                    </label>
+                    <button id="monitor-insights-reload" type="button" data-dict-key="ui.label.monitor.insightsReload">分析を更新</button>
+                  </div>
+                  <div class="grid">
+                    <details class="table-section section" open>
+                      <summary data-dict-key="ui.label.monitor.vendorCtr">ベンダー別CTR Top</summary>
+                      <table class="table-compact">
+                        <thead>
+                          <tr>
+                            <th data-dict-key="ui.label.monitor.vendorCol.name">ベンダー</th>
+                            <th data-dict-key="ui.label.monitor.vendorCol.sent">送信</th>
+                            <th data-dict-key="ui.label.monitor.vendorCol.click">クリック</th>
+                            <th data-dict-key="ui.label.monitor.vendorCol.ctr">反応率</th>
+                          </tr>
+                        </thead>
+                        <tbody id="monitor-vendor-rows"></tbody>
+                      </table>
+                    </details>
+                    <details class="table-section section" open>
+                      <summary data-dict-key="ui.label.monitor.abFaq">AB/FAQ状況</summary>
+                      <div id="monitor-ab-summary" class="note">-</div>
+                      <table class="table-compact">
+                        <thead>
+                          <tr>
+                            <th data-dict-key="ui.label.monitor.faqCol.article">FAQ記事</th>
+                            <th data-dict-key="ui.label.monitor.faqCol.count">参照回数</th>
+                          </tr>
+                        </thead>
+                        <tbody id="monitor-faq-rows"></tbody>
+                      </table>
+                    </details>
+                  </div>
+                </div>
+              </div>
 
               <details class="table-section section">
                 <summary data-dict-key="ui.label.monitor.table">配信結果（参照）</summary>
@@ -308,18 +426,11 @@
               </details>
             </div>
             <div class="pane-detail">
-              <div class="panel status-card status-unknown" id="monitor-status-panel">
-                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
-                <div class="panel-body">
-                  <span id="monitor-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
-                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
-                  <div class="status-meta" data-dict-key="ui.metric.monitor.status" data-dict-tip="ui.help.metric.monitor.status">通知単位の健康度集計（一覧表示分）</div>
-                </div>
-              </div>
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.detail">詳細</div>
                 <div class="panel-body">
-                  <pre id="monitor-detail">-</pre>
+                  <div id="monitor-detail" class="note">行を選択すると詳細を表示します。</div>
+                  <div id="monitor-safe-next-step" class="safe-next-step" data-dict-key="ui.desc.monitor.safeNextStep">次の安全な一手: 反応率が低い通知の詳細を確認する</div>
                   <details>
                     <summary data-dict-key="ui.label.monitor.raw">RAW JSON</summary>
                     <pre id="monitor-raw">-</pre>
@@ -332,6 +443,10 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.monitor.actions">配信結果の取得条件を指定します。</div>
+                  <div class="note">
+                    <span data-dict-key="ui.label.monitor.userTraceLink">テスト結果を追跡する場合</span>:
+                    <button id="monitor-open-trace" type="button" data-dict-key="ui.label.monitor.openTrace">追跡IDで証跡を開く</button>
+                  </div>
                   <div class="note">
                     <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
                     <input type="text" id="monitor-trace" class="input-inline input-trace" />
@@ -416,16 +531,10 @@
               </details>
             </div>
             <div class="pane-detail">
-              <div class="panel status-card status-unknown" id="errors-status-panel">
-                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.errors.safeStep">次にやる安全な1手</div>
                 <div class="panel-body">
-                  <span id="errors-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
-                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
-                  <div class="status-meta" data-dict-key="ui.metric.errors.status" data-dict-tip="ui.help.metric.errors.status">危険リンク＋再送待ち件数（summary由来）</div>
-                  <div class="status-focus">
-                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
-                    <span id="errors-action-count" class="action-count">0</span>
-                  </div>
+                  <div id="errors-safe-step" class="safe-next-step" data-dict-key="ui.desc.errors.safeStepDefault">更新を押して、最新の送信できなかった理由を確認する</div>
                 </div>
               </div>
             </div>
@@ -461,6 +570,12 @@
           </div>
           <div class="pane-grid">
             <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.readModel.definition">この集計が示すもの</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.readModel.definition">直近の通知一覧について、送信結果と反応率をまとめた集計です。</div>
+                </div>
+              </div>
               <details class="table-section section" open>
                 <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
                 <table class="table-compact">
@@ -480,16 +595,14 @@
               </details>
             </div>
             <div class="pane-detail">
-              <div class="panel status-card status-unknown" id="read-model-status-panel">
-                <div class="panel-title" data-dict-key="ui.label.status.summary">状態サマリー</div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
                 <div class="panel-body">
-                  <span id="read-model-status-pill" class="status-pill status-unknown" data-dict-key="ui.status.unknown">未取得</span>
-                  <span class="status-legend" data-dict-key="ui.desc.status.legend">赤=要対応 / 黄=注意 / 緑=問題なし / 灰=未設定/不明</span>
-                  <div class="status-meta" data-dict-key="ui.metric.readModel.status" data-dict-tip="ui.help.metric.readModel.status">通知集計の健康度（一覧表示分）</div>
-                  <div class="status-focus">
-                    <span data-dict-key="ui.label.status.todo">今日の要対応</span>
-                    <span id="read-model-action-count" class="action-count">0</span>
-                  </div>
+                  <ul class="flow-list">
+                    <li data-dict-key="ui.desc.readModel.tip1">要対応（反応率が低い通知）</li>
+                    <li data-dict-key="ui.desc.readModel.tip2">反応率</li>
+                    <li data-dict-key="ui.desc.readModel.tip3">最終結果</li>
+                  </ul>
                 </div>
               </div>
             </div>

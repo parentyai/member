@@ -10,9 +10,14 @@ const state = {
   dict: {},
   role: 'operator',
   monitorItems: [],
+  monitorUserItems: [],
+  monitorInsights: null,
   readModelItems: [],
   errorsSummary: null,
-  currentComposerStatus: 'unknown'
+  currentComposerStatus: '未取得',
+  topCauses: '-',
+  topCausesTip: '',
+  topAnomaly: '-'
 };
 
 function showToast(message, tone) {
@@ -144,6 +149,19 @@ function setupNav() {
       if (!target) return;
       activatePane(target);
     });
+  });
+}
+
+function setupHomeControls() {
+  document.querySelectorAll('[data-open-pane]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-open-pane');
+      if (!target) return;
+      activatePane(target);
+    });
+  });
+  document.getElementById('home-run-test')?.addEventListener('click', () => {
+    runHomeSafeTest();
   });
 }
 
@@ -279,38 +297,9 @@ function computeTopAnomaly(items) {
   return `${label} ${formatted}`;
 }
 
-function setStatusPanel(panelId, pillId, actionId, summaryKey, counts) {
-  const panel = document.getElementById(panelId);
-  const pill = document.getElementById(pillId);
-  const action = document.getElementById(actionId);
-  if (!panel || !pill) return;
-  const danger = counts.DANGER || 0;
-  const warn = counts.WARN || 0;
-  const ok = counts.OK || 0;
-  if (!danger && !warn && !ok) {
-    pill.className = 'status-pill status-unknown';
-    pill.textContent = t('ui.status.unknown', '未設定');
-    panel.classList.remove('status-ok', 'status-warn', 'status-danger');
-    panel.classList.add('status-unknown');
-  } else if (danger > 0) {
-    pill.className = 'status-pill status-danger';
-    pill.textContent = statusLabel('DANGER');
-    panel.classList.add('status-danger');
-    panel.classList.remove('status-ok', 'status-warn', 'status-unknown');
-  } else if (warn > 0) {
-    pill.className = 'status-pill status-warn';
-    pill.textContent = statusLabel('WARN');
-    panel.classList.add('status-warn');
-    panel.classList.remove('status-ok', 'status-danger', 'status-unknown');
-  } else {
-    pill.className = 'status-pill status-ok';
-    pill.textContent = statusLabel('OK');
-    panel.classList.add('status-ok');
-    panel.classList.remove('status-warn', 'status-danger', 'status-unknown');
-  }
-  if (action) action.textContent = String(danger);
-  const summaryEl = document.querySelector(`[data-summary="${summaryKey}"]`);
-  if (summaryEl) summaryEl.textContent = `DANGER ${danger} / WARN ${warn} / OK ${ok}`;
+function renderSafeNextStep(el, message) {
+  if (!el) return;
+  el.textContent = message || t('ui.desc.common.safeStepFallback', '次にやる安全な1手: 更新して最新状態を確認');
 }
 
 function renderMonitorRows(items) {
@@ -348,9 +337,22 @@ function renderMonitorRows(items) {
       tr.appendChild(td);
     });
     tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((row) => row.classList.remove('row-active'));
+      tr.classList.add('row-active');
       const detail = document.getElementById('monitor-detail');
       const raw = document.getElementById('monitor-raw');
-      if (detail) detail.textContent = JSON.stringify(item, null, 2);
+      if (detail) {
+        const parts = [
+          `${t('ui.label.monitor.col.title', 'タイトル')}: ${item.title || '-'}`,
+          `${t('ui.label.monitor.col.scenario', 'シナリオ')}: ${scenarioLabel(item.scenarioKey)}`,
+          `${t('ui.label.monitor.col.step', 'ステップ')}: ${stepLabel(item.stepKey)}`,
+          `${t('ui.label.monitor.col.target', '対象数')}: ${item.targetCount != null ? item.targetCount : '-'}`,
+          `${t('ui.label.monitor.col.last', '最終結果')}: ${reasonLabel(item.lastExecuteReason)}`,
+          `${t('ui.label.monitor.col.ctr', '反応率')}: ${item.ctr != null ? item.ctr : '-'}`,
+          `${t('ui.label.monitor.col.health', '健康度')}: ${statusLabel(item.notificationHealth)}`
+        ];
+        detail.textContent = parts.join('\n');
+      }
       if (raw) raw.textContent = JSON.stringify(item, null, 2);
     });
     tbody.appendChild(tr);
@@ -388,6 +390,156 @@ function renderReadModelRows(items) {
       const td = document.createElement('td');
       if (value instanceof Node) td.appendChild(value);
       else td.textContent = value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function formatDateLabel(value) {
+  const ms = toMillis(value);
+  if (!ms) return '-';
+  return new Date(ms).toISOString();
+}
+
+function formatPercent(numerator, denominator) {
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return '-';
+  return `${Math.round((numerator / denominator) * 1000) / 10}%`;
+}
+
+function renderComposerScenarioCompare(items) {
+  const tbody = document.getElementById('composer-compare-rows');
+  if (!tbody) return;
+  const stats = new Map([
+    ['A', { count: 0, sent: 0, clicked: 0 }],
+    ['C', { count: 0, sent: 0, clicked: 0 }]
+  ]);
+  (items || []).forEach((item) => {
+    const key = item && item.scenarioKey ? String(item.scenarioKey) : '';
+    if (!stats.has(key)) return;
+    const current = stats.get(key);
+    current.count += 1;
+    const sent = item && item.reactionSummary && Number.isFinite(item.reactionSummary.sent) ? item.reactionSummary.sent : 0;
+    const clicked = item && item.reactionSummary && Number.isFinite(item.reactionSummary.clicked) ? item.reactionSummary.clicked : 0;
+    current.sent += sent;
+    current.clicked += clicked;
+  });
+  tbody.innerHTML = '';
+  ['A', 'C'].forEach((scenario) => {
+    const row = stats.get(scenario);
+    const tr = document.createElement('tr');
+    const scenarioTd = document.createElement('td');
+    scenarioTd.textContent = scenarioLabel(scenario);
+    tr.appendChild(scenarioTd);
+    const countTd = document.createElement('td');
+    countTd.textContent = String(row.count);
+    tr.appendChild(countTd);
+    const ctrTd = document.createElement('td');
+    ctrTd.textContent = formatPercent(row.clicked, row.sent);
+    tr.appendChild(ctrTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function renderMonitorUserRows(items) {
+  const tbody = document.getElementById('monitor-user-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    if (item.health === 'DANGER') tr.classList.add('row-health-danger');
+    if (item.health === 'WARN') tr.classList.add('row-health-warn');
+    if (item.health === 'OK') tr.classList.add('row-health-ok');
+    const cols = [
+      formatDateLabel(item.sentAt),
+      formatDateLabel(item.deliveredAt),
+      `${item.lineUserId || '-'} / ${item.memberNumber || '-'}`,
+      item.title || item.notificationId || '-',
+      item.statusLabel || '-',
+      item.failureLabel || '-'
+    ];
+    cols.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const detail = document.getElementById('monitor-detail');
+      const raw = document.getElementById('monitor-raw');
+      tbody.querySelectorAll('tr').forEach((row) => row.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      if (detail) {
+        detail.textContent = [
+          `${t('ui.label.monitor.userCol.user', '対象ユーザー')}: ${item.lineUserId || '-'}`,
+          `${t('ui.label.monitor.userCol.notification', '通知')}: ${item.title || item.notificationId || '-'}`,
+          `${t('ui.label.monitor.userCol.status', '状態')}: ${item.statusLabel || '-'}`,
+          `${t('ui.label.traceId', '追跡ID')}: ${item.traceId || '-'}`
+        ].join('\n');
+      }
+      if (raw) raw.textContent = JSON.stringify(item.raw || item, null, 2);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderVendorCtrRows(items) {
+  const tbody = document.getElementById('monitor-vendor-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    [item.vendorLabel || item.vendorKey || '-', String(item.sent || 0), String(item.clicked || 0), item.ctr != null ? `${Math.round(item.ctr * 1000) / 10}%` : '-'].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderFaqReferenceRows(items) {
+  const tbody = document.getElementById('monitor-faq-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 2;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    [item.articleId || '-', String(item.count || 0)].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -456,9 +608,14 @@ function renderErrors(summary) {
     }
   }
 
-  const counts = { OK: 0, WARN: 0, DANGER: total > 0 ? total : 0 };
-  if (total === 0) counts.OK = 1;
-  setStatusPanel('errors-status-panel', 'errors-status-pill', 'errors-action-count', 'errors', counts);
+  const safeStepEl = document.getElementById('errors-safe-step');
+  if (warnLinks.length > 0) {
+    renderSafeNextStep(safeStepEl, t('ui.desc.errors.safeStepWarn', '次にやる安全な1手: 危険リンク一覧を開いてリンク先を確認する'));
+  } else if (retryQueue.length > 0) {
+    renderSafeNextStep(safeStepEl, t('ui.desc.errors.safeStepRetry', '次にやる安全な1手: 再送待ち一覧を開いて最新エラーを確認する'));
+  } else {
+    renderSafeNextStep(safeStepEl, t('ui.desc.errors.safeStepNone', '次にやる安全な1手: 更新を押して異常がないことを再確認する'));
+  }
 }
 
 async function loadMonitorData(options) {
@@ -487,8 +644,10 @@ async function loadMonitorData(options) {
     state.topCausesTip = causes.tip;
     state.topAnomaly = computeTopAnomaly(state.monitorItems);
     const counts = getHealthCounts(state.monitorItems);
-    setStatusPanel('monitor-status-panel', 'monitor-status-pill', 'monitor-todo', 'monitor', counts);
+    const monitorTodo = document.getElementById('monitor-todo');
+    if (monitorTodo) monitorTodo.textContent = String(counts.DANGER || 0);
     updateTopBar();
+    renderComposerScenarioCompare(state.monitorItems);
 
     if (notify) showToast(data && data.ok ? t('ui.toast.monitor.ok', 'monitor OK') : t('ui.toast.monitor.fail', 'monitor 失敗'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
@@ -508,8 +667,7 @@ async function loadReadModelData(options) {
     const data = await res.json();
     state.readModelItems = data && data.items ? data.items : [];
     renderReadModelRows(state.readModelItems);
-    const counts = getHealthCounts(state.readModelItems);
-    setStatusPanel('read-model-status-panel', 'read-model-status-pill', 'read-model-action-count', 'read-model', counts);
+    renderComposerScenarioCompare(state.readModelItems);
     if (notify) showToast(data && data.ok ? t('ui.toast.readModel.ok', 'read model OK') : t('ui.toast.readModel.fail', 'read model 失敗'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.readModel.fail', 'read model 失敗'), 'danger');
@@ -533,6 +691,121 @@ async function loadErrors(options) {
     if (notify) showToast(t('ui.toast.errors.fail', 'errors 失敗'), 'danger');
   } finally {
     if (skeleton) skeleton.classList.add('is-hidden');
+  }
+}
+
+async function loadMonitorUserDeliveries(options) {
+  const notify = options && options.notify;
+  const lineUserId = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
+  const memberNumber = document.getElementById('monitor-user-member-number')?.value?.trim() || '';
+  const limit = document.getElementById('monitor-user-limit')?.value || '50';
+  const traceId = ensureTraceInput('monitor-trace');
+  if (!lineUserId && !memberNumber) {
+    if (notify) showToast(t('ui.toast.monitor.userQueryRequired', 'LINEユーザーIDか会員番号を入力してください'), 'warn');
+    renderMonitorUserRows([]);
+    return;
+  }
+  const params = new URLSearchParams();
+  if (lineUserId) params.set('lineUserId', lineUserId);
+  if (memberNumber) params.set('memberNumber', memberNumber);
+  params.set('limit', limit);
+  params.set('traceId', traceId);
+  try {
+    const res = await fetch(`/api/admin/notification-deliveries?${params.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    const items = Array.isArray(data && data.items) ? data.items : [];
+    state.monitorUserItems = items.map((item) => {
+      const health = item && item.failureCode ? 'DANGER' : (item && item.status === 'delivered' ? 'OK' : 'WARN');
+      return {
+        sentAt: item.sentAt,
+        deliveredAt: item.deliveredAt,
+        lineUserId: item.lineUserId,
+        memberNumber: item.memberNumber,
+        title: item.title,
+        notificationId: item.notificationId,
+        statusLabel: item.statusLabel || item.status || '-',
+        failureLabel: item.failureLabel || '-',
+        traceId: item.traceId || data.traceId || null,
+        health,
+        raw: item
+      };
+    });
+    renderMonitorUserRows(state.monitorUserItems);
+    if (notify) showToast(t('ui.toast.monitor.userLoaded', 'ユーザー履歴を取得しました'), 'ok');
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.monitor.userLoadFail', 'ユーザー履歴の取得に失敗しました'), 'danger');
+  }
+}
+
+async function loadMonitorInsights(options) {
+  const notify = options && options.notify;
+  const windowDays = document.getElementById('monitor-window-days')?.value || '7';
+  const traceId = ensureTraceInput('monitor-trace');
+  const params = new URLSearchParams({ windowDays, limit: '10', traceId });
+  try {
+    const res = await fetch(`/api/admin/monitor-insights?${params.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    state.monitorInsights = data;
+    renderVendorCtrRows(Array.isArray(data && data.vendorCtrTop) ? data.vendorCtrTop : []);
+    renderFaqReferenceRows(Array.isArray(data && data.faqReferenceTop) ? data.faqReferenceTop : []);
+    const abEl = document.getElementById('monitor-ab-summary');
+    if (abEl) {
+      const ab = data && data.abSnapshot ? data.abSnapshot : null;
+      if (!ab) {
+        abEl.textContent = t('ui.desc.monitor.abNone', 'AB比較データはありません。');
+      } else {
+        abEl.textContent = `${ab.ctaA || '-'} ${t('ui.label.monitor.ab.vs', 'vs')} ${ab.ctaB || '-'} / ΔCTR ${typeof ab.deltaCTR === 'number' ? `${Math.round(ab.deltaCTR * 1000) / 10}%` : '-'}`;
+      }
+    }
+    if (notify) showToast(t('ui.toast.monitor.insightsLoaded', 'クリック分析を更新しました'), 'ok');
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.monitor.insightsLoadFail', 'クリック分析の取得に失敗しました'), 'danger');
+  }
+}
+
+function navigateToMonitorWithTrace(traceId, lineUserId) {
+  activatePane('monitor');
+  const monitorTrace = document.getElementById('monitor-trace');
+  if (monitorTrace && traceId) monitorTrace.value = traceId;
+  const userIdInput = document.getElementById('monitor-user-line-user-id');
+  if (userIdInput && lineUserId) userIdInput.value = lineUserId;
+  void loadMonitorData({ notify: false });
+  if (lineUserId) void loadMonitorUserDeliveries({ notify: false });
+}
+
+async function runHomeSafeTest() {
+  const notificationId = document.getElementById('home-test-notification-id')?.value?.trim() || '';
+  const lineUserId = document.getElementById('home-test-line-user-id')?.value?.trim() || '';
+  const mode = document.getElementById('home-test-mode')?.value === 'self_send' ? 'self_send' : 'dry_run';
+  const traceId = ensureTraceInput('monitor-trace');
+  const resultEl = document.getElementById('home-test-result');
+  if (!notificationId) {
+    showToast(t('ui.toast.home.testNeedNotificationId', '通知IDを入力してください'), 'warn');
+    return;
+  }
+  if (mode === 'self_send' && !lineUserId) {
+    showToast(t('ui.toast.home.testNeedLineUserId', '自己送信にはLINEユーザーIDが必要です'), 'warn');
+    return;
+  }
+  if (mode === 'self_send') {
+    const approved = window.confirm(t('ui.confirm.home.testSelfSend', '自己送信テストを実行しますか？'));
+    if (!approved) {
+      showToast(t('ui.toast.home.testCanceled', 'テストを中止しました'), 'warn');
+      return;
+    }
+  }
+  try {
+    const data = await postJson('/api/admin/send-test', { notificationId, lineUserId: lineUserId || null, mode }, traceId);
+    if (resultEl) resultEl.textContent = JSON.stringify(data, null, 2);
+    if (data && data.ok) {
+      showToast(t('ui.toast.home.testOk', '安全テストを実行しました'), 'ok');
+      navigateToMonitorWithTrace(data.traceId || traceId, lineUserId || null);
+    } else {
+      showToast(t('ui.toast.home.testFail', '安全テストに失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    if (resultEl) resultEl.textContent = JSON.stringify({ ok: false, error: 'fetch error' }, null, 2);
+    showToast(t('ui.toast.home.testFail', '安全テストに失敗しました'), 'danger');
   }
 }
 
@@ -569,16 +842,7 @@ function updateComposerSummary() {
 }
 
 function setComposerStatus(tone, label) {
-  const panel = document.getElementById('composer-status-panel');
-  const pill = document.getElementById('composer-status-pill');
-  if (panel) {
-    panel.classList.remove('status-ok', 'status-warn', 'status-danger', 'status-unknown');
-    panel.classList.add(`status-${tone || 'unknown'}`);
-  }
-  if (pill) {
-    pill.className = `status-pill status-${tone || 'unknown'}`;
-    pill.textContent = label || '未取得';
-  }
+  void tone;
   state.currentComposerStatus = label || '-';
   updateComposerSummary();
 }
@@ -799,6 +1063,24 @@ function setupMonitorControls() {
   document.getElementById('monitor-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
   });
+  document.getElementById('monitor-user-search')?.addEventListener('click', () => {
+    loadMonitorUserDeliveries({ notify: true });
+  });
+  document.getElementById('monitor-insights-reload')?.addEventListener('click', () => {
+    loadMonitorInsights({ notify: true });
+  });
+  document.getElementById('monitor-window-days')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-open-trace')?.addEventListener('click', async () => {
+    const trace = ensureTraceInput('monitor-trace');
+    const auditTrace = document.getElementById('audit-trace');
+    if (auditTrace) auditTrace.value = trace;
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
 }
 
@@ -811,7 +1093,7 @@ function setupErrorsControls() {
     loadErrors({ notify: true });
   });
   document.getElementById('errors-to-ops')?.addEventListener('click', () => {
-    window.location.href = '/admin/ops';
+    activatePane('home');
   });
   if (document.getElementById('errors-trace')) document.getElementById('errors-trace').value = newTraceId();
 }
@@ -1135,6 +1417,7 @@ function setupLlmControls() {
   applyDict();
   setupRoleSwitch();
   setupNav();
+  setupHomeControls();
   setupComposerActions();
   setupMonitorControls();
   setupErrorsControls();
@@ -1144,6 +1427,7 @@ function setupLlmControls() {
   setRole(state.role);
 
   loadMonitorData({ notify: false });
+  loadMonitorInsights({ notify: false });
   loadReadModelData({ notify: false });
   loadErrors({ notify: false });
 })();
