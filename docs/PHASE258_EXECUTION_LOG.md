@@ -24,6 +24,8 @@
 
 ## CI Evidence
 - phase257 main push Audit Gate: `22126469599`
+- phase258 main push Audit Gate: `22126570977`
+- Stored log: `docs/CI_EVIDENCE/2026-02-18_22126570977_phase258.log`
 
 ## Risks
 - なし（docs-only）
