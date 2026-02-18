@@ -1095,6 +1095,30 @@ th {
 .table-section summary::-webkit-details-marker { display: none; }
 .table-section summary { list-style: none; }
 
+.table-scroll {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table-compact tbody tr:not(.row-active):hover td {
+  background: rgba(34, 94, 168, 0.06);
+}
+
+.table-compact tbody tr:not(.row-health-ok):not(.row-health-warn):not(.row-health-danger):not(.row-active):nth-child(even) td {
+  background: rgba(16, 24, 40, 0.02);
+}
+
+.cell-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .row-health-ok td {
   background: rgba(46, 125, 79, 0.08);
 }
