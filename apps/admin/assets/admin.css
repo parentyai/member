@@ -1132,6 +1132,22 @@ th {
   background: #edf3ff;
 }
 
+.city-pack-action-btn {
+  margin-right: var(--space-1);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-12);
+  padding: 4px 8px;
+}
+
+.city-pack-action-btn:last-child {
+  margin-right: 0;
+}
+
+.today-metrics .metric-value {
+  display: block;
+  margin-top: var(--space-1);
+}
+
 .safe-next-step {
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);

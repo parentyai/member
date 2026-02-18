@@ -700,6 +700,96 @@ function createServer() {
     return;
   }
 
+  const isCityPackAdminRoute = pathname === '/api/admin/city-packs'
+    || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire)$/.test(pathname)
+    || pathname === '/api/admin/review-inbox'
+    || pathname === '/api/admin/city-pack-kpi'
+    || pathname === '/api/admin/city-pack-source-audit/run'
+    || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)
+    || /^\/api\/admin\/source-evidence\/[^/]+$/.test(pathname);
+  if (isCityPackAdminRoute) {
+    const collectBody = () => new Promise((resolve) => {
+      if (req.method !== 'POST') {
+        resolve('');
+        return;
+      }
+      let bytes = 0;
+      const chunks = [];
+      let tooLarge = false;
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      if (pathname === '/api/admin/city-packs' || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire)$/.test(pathname)) {
+        const { handleCityPacks } = require('./routes/admin/cityPacks');
+        const body = await collectBody();
+        await handleCityPacks(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/review-inbox'
+        || pathname === '/api/admin/city-pack-kpi'
+        || pathname === '/api/admin/city-pack-source-audit/run'
+        || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)) {
+        const { handleCityPackReviewInbox } = require('./routes/admin/cityPackReviewInbox');
+        const body = await collectBody();
+        await handleCityPackReviewInbox(req, res, body);
+        return;
+      }
+      if (/^\/api\/admin\/source-evidence\/[^/]+$/.test(pathname)) {
+        const { handleCityPackEvidence } = require('./routes/admin/cityPackEvidence');
+        await handleCityPackEvidence(req, res);
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/city-pack-source-audit') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleCityPackSourceAuditJob } = require('./routes/internal/cityPackSourceAuditJob');
+      const body = await collectBody();
+      await handleCityPackSourceAuditJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {
     const { handleAdminTraceSearch } = require('./routes/admin/traceSearch');
     handleAdminTraceSearch(req, res);

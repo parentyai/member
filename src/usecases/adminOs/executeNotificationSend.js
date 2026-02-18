@@ -300,6 +300,25 @@ async function executeNotificationSend(params, deps) {
       actor
     });
   } catch (err) {
+    const blockedReasonCategory = err && typeof err.blockedReasonCategory === 'string'
+      ? err.blockedReasonCategory
+      : (err && typeof err.message === 'string' && /^SOURCE_(EXPIRED|DEAD|BLOCKED)$/.test(err.message)
+        ? err.message
+        : null);
+    if (blockedReasonCategory) {
+      await appendExecuteAudit({
+        reason: 'notification_source_blocked',
+        blockedReasonCategory,
+        invalidSourceRefs: err && Array.isArray(err.invalidSourceRefs) ? err.invalidSourceRefs : []
+      });
+      return {
+        ok: false,
+        reason: 'notification_source_blocked',
+        blockedReasonCategory,
+        invalidSourceRefs: err && Array.isArray(err.invalidSourceRefs) ? err.invalidSourceRefs : [],
+        traceId
+      };
+    }
     await appendExecuteAudit({ reason: 'send_failed', errorClass: err && err.name ? String(err.name) : 'Error' });
     throw err;
   }

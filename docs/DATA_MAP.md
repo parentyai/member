@@ -65,6 +65,56 @@ Typical fields:
 - `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
 - `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 
+### `city_packs/{id}`
+Purpose: City Pack の宣言型配信ロジック束。
+
+Typical fields:
+- `name`
+- `status` (`draft`/`active`/`retired`)
+- `sourceRefs[]`
+- `validUntil`
+- `allowedIntents` (固定: `CITY_PACK`)
+- `rules[]`
+
+### `source_refs/{id}`
+Purpose: City Pack が参照する情報源の監査状態管理。
+
+Typical fields:
+- `url`
+- `status` (`active`/`needs_review`/`dead`/`blocked`/`retired`)
+- `validFrom`, `validUntil`
+- `lastResult`, `lastCheckAt`
+- `contentHash`
+- `riskLevel`
+- `evidenceLatestId`
+- `usedByCityPackIds[]`
+
+### `source_evidence/{id}`
+Purpose: 情報源監査の証跡（append-only）。
+
+Typical fields:
+- `sourceRefId`
+- `checkedAt`
+- `result`
+- `statusCode`
+- `finalUrl`
+- `contentHash`
+- `screenshotPaths[]`
+- `diffSummary`
+- `traceId`
+- `llm_used`, `model`, `promptVersion`
+
+### `source_audit_runs/{runId}`
+Purpose: 監査ジョブ実行の run 単位サマリ（冪等管理）。
+
+Typical fields:
+- `runId`, `mode`
+- `startedAt`, `endedAt`
+- `processed`, `succeeded`, `failed`
+- `failureTop3[]`
+- `traceId`
+- `targetSourceRefIds[]`
+
 ## Secrets (Secret Manager)
 Purpose: store secrets used by the system and CI deploy workflows.
 

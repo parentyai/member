@@ -14,6 +14,9 @@ const state = {
   monitorInsights: null,
   readModelItems: [],
   errorsSummary: null,
+  cityPackInboxItems: [],
+  cityPackKpi: null,
+  selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
   topCauses: '-',
   topCausesTip: '',
@@ -546,6 +549,163 @@ function renderFaqReferenceRows(items) {
   });
 }
 
+function formatRatio(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${Math.round(value * 1000) / 10}%`;
+}
+
+function toDateLabel(value) {
+  if (!value) return '-';
+  const ms = toMillis(value);
+  if (!ms) return '-';
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function renderCityPackKpi(metrics) {
+  state.cityPackKpi = metrics || null;
+  const zeroRateEl = document.getElementById('city-pack-kpi-expired-zero-rate');
+  const reviewLagEl = document.getElementById('city-pack-kpi-review-lag');
+  const deadRateEl = document.getElementById('city-pack-kpi-dead-rate');
+  const blockRateEl = document.getElementById('city-pack-kpi-block-rate');
+  if (zeroRateEl) zeroRateEl.textContent = metrics ? formatRatio(metrics.expiredSourceZeroRate) : '-';
+  if (reviewLagEl) reviewLagEl.textContent = metrics && Number.isFinite(metrics.reviewLagHours) ? `${metrics.reviewLagHours}h` : '-';
+  if (deadRateEl) deadRateEl.textContent = metrics ? formatRatio(metrics.deadDetectionRate) : '-';
+  if (blockRateEl) blockRateEl.textContent = metrics ? formatRatio(metrics.sourceBlockedRate) : '-';
+}
+
+function renderCityPackEvidence(payload) {
+  const summaryEl = document.getElementById('city-pack-evidence-summary');
+  const screenshotsEl = document.getElementById('city-pack-evidence-screenshots');
+  const httpEl = document.getElementById('city-pack-evidence-http');
+  const diffEl = document.getElementById('city-pack-evidence-diff');
+  const impactedEl = document.getElementById('city-pack-evidence-impacted');
+  const evidence = payload && payload.evidence ? payload.evidence : null;
+  if (!evidence) {
+    if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.evidence.empty', 'Inboxの行を選択すると証跡を表示します。');
+    if (screenshotsEl) screenshotsEl.textContent = '-';
+    if (httpEl) httpEl.textContent = '-';
+    if (diffEl) diffEl.textContent = '-';
+    if (impactedEl) impactedEl.textContent = '-';
+    return;
+  }
+
+  const previous = payload.previousEvidence || null;
+  const sourceRef = payload.sourceRef || null;
+  const impacted = Array.isArray(payload.impactedCityPacks) ? payload.impactedCityPacks : [];
+
+  if (summaryEl) {
+    summaryEl.textContent = `${sourceRef && sourceRef.url ? sourceRef.url : '-'} / ${evidence.result || '-'}`;
+  }
+  if (screenshotsEl) {
+    const currentShots = Array.isArray(evidence.screenshotPaths) ? evidence.screenshotPaths : [];
+    const previousShots = previous && Array.isArray(previous.screenshotPaths) ? previous.screenshotPaths : [];
+    screenshotsEl.textContent = [
+      `${t('ui.label.cityPack.evidence.current', '今回')}: ${currentShots.join(', ') || '-'}`,
+      `${t('ui.label.cityPack.evidence.previous', '前回')}: ${previousShots.join(', ') || '-'}`
+    ].join('\n');
+  }
+  if (httpEl) {
+    httpEl.textContent = JSON.stringify({
+      result: evidence.result || null,
+      statusCode: evidence.statusCode || null,
+      finalUrl: evidence.finalUrl || null,
+      checkedAt: evidence.checkedAt || null
+    }, null, 2);
+  }
+  if (diffEl) {
+    diffEl.textContent = evidence.diffSummary || t('ui.desc.cityPack.evidence.noDiff', '差分要約なし');
+  }
+  if (impactedEl) {
+    impactedEl.textContent = impacted.length
+      ? impacted.map((item) => `${item.name || item.cityPackId} (${item.status || '-'})`).join('\n')
+      : t('ui.desc.cityPack.evidence.noImpacted', '影響するCity Packはありません');
+  }
+}
+
+function createCityPackActionButton(action, label, row) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn city-pack-action-btn';
+  btn.textContent = label;
+  btn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    void runCityPackSourceAction(action, row);
+  });
+  return btn;
+}
+
+function renderCityPackInboxRows(items) {
+  const tbody = document.getElementById('city-pack-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    renderCityPackEvidence(null);
+    return;
+  }
+
+  items.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    if (row.recommendation === 'Retire') tr.classList.add('row-health-danger');
+    if (row.recommendation === 'Confirm') tr.classList.add('row-health-warn');
+    if (row.recommendation === 'ManualOnly') tr.classList.add('row-health-ok');
+    const sourceTd = document.createElement('td');
+    sourceTd.textContent = row.source || '-';
+    tr.appendChild(sourceTd);
+
+    const resultTd = document.createElement('td');
+    resultTd.textContent = row.result || '-';
+    tr.appendChild(resultTd);
+
+    const validUntilTd = document.createElement('td');
+    validUntilTd.textContent = toDateLabel(row.validUntil);
+    tr.appendChild(validUntilTd);
+
+    const usedByTd = document.createElement('td');
+    usedByTd.textContent = Array.isArray(row.usedBy) && row.usedBy.length ? row.usedBy.join(' / ') : '-';
+    tr.appendChild(usedByTd);
+
+    const evidenceTd = document.createElement('td');
+    evidenceTd.textContent = row.evidenceLatestId || '-';
+    tr.appendChild(evidenceTd);
+
+    const actionTd = document.createElement('td');
+    const actions = [
+      { key: 'confirm', label: t('ui.label.cityPack.action.confirm', 'Confirm') },
+      { key: 'retire', label: t('ui.label.cityPack.action.retire', 'Retire') },
+      { key: 'replace', label: t('ui.label.cityPack.action.replace', 'Replace') },
+      { key: 'manual-only', label: t('ui.label.cityPack.action.manualOnly', 'ManualOnly') }
+    ];
+    actions.forEach((action) => {
+      actionTd.appendChild(createCityPackActionButton(action.key, action.label, row));
+    });
+    tr.appendChild(actionTd);
+
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      state.selectedCityPackSourceRefId = row.sourceRefId || null;
+      if (row.evidenceLatestId) {
+        void loadCityPackEvidence(row.evidenceLatestId);
+      } else {
+        renderCityPackEvidence(null);
+      }
+      const safeStep = document.getElementById('city-pack-safe-step');
+      if (safeStep) {
+        safeStep.textContent = `${t('ui.desc.cityPack.safeStepPrefix', '次にやる安全な一手')}: ${row.recommendation || '-'}`;
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
 function renderErrors(summary) {
   const summaryEl = document.getElementById('errors-summary');
   const problemsEl = document.getElementById('errors-problems');
@@ -760,6 +920,118 @@ async function loadMonitorInsights(options) {
     if (notify) showToast(t('ui.toast.monitor.insightsLoaded', 'クリック分析を更新しました'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.monitor.insightsLoadFail', 'クリック分析の取得に失敗しました'), 'danger');
+  }
+}
+
+async function loadCityPackReviewInbox(options) {
+  const notify = options && options.notify;
+  const status = document.getElementById('city-pack-status-filter')?.value || '';
+  const limit = document.getElementById('city-pack-limit')?.value || '50';
+  const monitorTrace = ensureTraceInput('monitor-trace');
+  const params = new URLSearchParams({ limit, traceId: monitorTrace });
+  if (status) params.set('status', status);
+  try {
+    const res = await fetch(`/api/admin/review-inbox?${params.toString()}`, { headers: buildHeaders({}, monitorTrace) });
+    const data = await res.json();
+    const items = Array.isArray(data && data.items) ? data.items : [];
+    state.cityPackInboxItems = items;
+    renderCityPackInboxRows(items);
+    if (notify) showToast(t('ui.toast.cityPack.inboxLoaded', 'Review Inboxを取得しました'), 'ok');
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'), 'danger');
+    renderCityPackInboxRows([]);
+  }
+}
+
+async function loadCityPackEvidence(evidenceId) {
+  if (!evidenceId) {
+    renderCityPackEvidence(null);
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch(`/api/admin/source-evidence/${encodeURIComponent(evidenceId)}`, { headers: buildHeaders({}, trace) });
+    const data = await res.json();
+    if (!data || !data.ok) {
+      renderCityPackEvidence(null);
+      return;
+    }
+    renderCityPackEvidence(data);
+  } catch (_err) {
+    renderCityPackEvidence(null);
+  }
+}
+
+async function loadCityPackKpi(options) {
+  const notify = options && options.notify;
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/city-pack-kpi', { headers: buildHeaders({}, trace) });
+    const data = await res.json();
+    renderCityPackKpi(data && data.metrics ? data.metrics : null);
+    if (notify) showToast(t('ui.toast.cityPack.kpiLoaded', 'City Pack KPIを更新しました'), 'ok');
+  } catch (_err) {
+    renderCityPackKpi(null);
+    if (notify) showToast(t('ui.toast.cityPack.kpiLoadFail', 'City Pack KPIの取得に失敗しました'), 'danger');
+  }
+}
+
+function shouldRequireReplaceUrl(action) {
+  return action === 'replace';
+}
+
+async function runCityPackSourceAction(action, row) {
+  if (!row || !row.sourceRefId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  const sourceRefId = row.sourceRefId;
+  const actionLabel = t(`ui.label.cityPack.action.${action === 'manual-only' ? 'manualOnly' : action}`, action);
+  const approved = window.confirm(`${actionLabel} を実行しますか？`);
+  if (!approved) return;
+  let body = {};
+  if (shouldRequireReplaceUrl(action)) {
+    const replacementUrl = window.prompt(t('ui.prompt.cityPack.replaceUrl', '置換先URLを入力してください'));
+    if (!replacementUrl) {
+      showToast(t('ui.toast.cityPack.replaceCanceled', '置換を中止しました'), 'warn');
+      return;
+    }
+    body = { replacementUrl };
+  }
+  try {
+    const data = await postJson(`/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/${action}`, body, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.actionOk', '情報源ステータスを更新しました'), 'ok');
+      await loadCityPackReviewInbox({ notify: false });
+      await loadCityPackKpi({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.actionFail', '情報源ステータス更新に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.actionFail', '情報源ステータス更新に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackAuditJob() {
+  const trace = ensureTraceInput('monitor-trace');
+  const mode = document.getElementById('city-pack-run-mode')?.value === 'canary' ? 'canary' : 'scheduled';
+  const resultEl = document.getElementById('city-pack-run-result');
+  const approved = window.confirm(t('ui.confirm.cityPack.runAudit', 'City Pack監査ジョブを実行しますか？'));
+  if (!approved) return;
+  try {
+    const data = await postJson('/api/admin/city-pack-source-audit/run', {
+      mode,
+      runId: `cp_manual_${Date.now()}`
+    }, trace);
+    if (resultEl) resultEl.textContent = JSON.stringify(data || {}, null, 2);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.runOk', '監査ジョブを実行しました'), 'ok');
+      await loadCityPackReviewInbox({ notify: false });
+      await loadCityPackKpi({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.runFail', '監査ジョブの実行に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    if (resultEl) resultEl.textContent = JSON.stringify({ ok: false, error: 'fetch error' }, null, 2);
+    showToast(t('ui.toast.cityPack.runFail', '監査ジョブの実行に失敗しました'), 'danger');
   }
 }
 
@@ -1109,6 +1381,19 @@ function setupReadModelControls() {
   if (document.getElementById('read-model-trace')) document.getElementById('read-model-trace').value = newTraceId();
 }
 
+function setupCityPackControls() {
+  document.getElementById('city-pack-reload')?.addEventListener('click', () => {
+    void loadCityPackReviewInbox({ notify: true });
+    void loadCityPackKpi({ notify: false });
+  });
+  document.getElementById('city-pack-status-filter')?.addEventListener('change', () => {
+    void loadCityPackReviewInbox({ notify: false });
+  });
+  document.getElementById('city-pack-run-audit')?.addEventListener('click', () => {
+    void runCityPackAuditJob();
+  });
+}
+
 function looksLikeDirectUrl(value) {
   return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
 }
@@ -1453,6 +1738,7 @@ function setupLlmControls() {
   setupMonitorControls();
   setupErrorsControls();
   setupReadModelControls();
+  setupCityPackControls();
   setupAudit();
   setupLlmControls();
   setRole(state.role);
@@ -1461,4 +1747,6 @@ function setupLlmControls() {
   loadMonitorInsights({ notify: false });
   loadReadModelData({ notify: false });
   loadErrors({ notify: false });
+  loadCityPackReviewInbox({ notify: false });
+  loadCityPackKpi({ notify: false });
 })();
