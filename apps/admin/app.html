@@ -578,11 +578,29 @@
                   </div>
                   <div class="row row-top">
                     <button id="city-pack-run-audit" type="button" data-dict-key="ui.label.cityPack.runAudit">監査ジョブ実行</button>
+                    <button id="city-pack-runs-reload" type="button" data-dict-key="ui.label.cityPack.runsReload">実行履歴を更新</button>
                   </div>
                   <div id="city-pack-safe-step" class="safe-next-step" data-dict-key="ui.desc.cityPack.safeStep">次の安全な一手: Confirm候補を確認して期限を更新する</div>
+                  <div class="note" id="city-pack-runs-summary" data-dict-key="ui.desc.cityPack.runsSummary">実行履歴: 読み込み待ち</div>
                   <details class="section">
                     <summary data-dict-key="ui.label.cityPack.runResult">実行結果</summary>
                     <pre id="city-pack-run-result">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary data-dict-key="ui.label.cityPack.runs">実行履歴</summary>
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.cityPack.runs.col.runId">runId</th>
+                          <th data-dict-key="ui.label.cityPack.runs.col.mode">mode</th>
+                          <th data-dict-key="ui.label.cityPack.runs.col.startedAt">startedAt</th>
+                          <th data-dict-key="ui.label.cityPack.runs.col.result">result</th>
+                          <th data-dict-key="ui.label.cityPack.runs.col.processed">processed</th>
+                          <th data-dict-key="ui.label.cityPack.runs.col.traceId">traceId</th>
+                        </tr>
+                      </thead>
+                      <tbody id="city-pack-run-rows"></tbody>
+                    </table>
                   </details>
                 </div>
               </div>

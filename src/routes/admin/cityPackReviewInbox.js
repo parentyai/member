@@ -2,6 +2,7 @@
 
 const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const sourceEvidenceRepo = require('../../repos/firestore/sourceEvidenceRepo');
+const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { reviewSourceRefDecision } = require('../../usecases/cityPack/reviewSourceRefDecision');
@@ -17,6 +18,12 @@ function normalizeLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return 50;
   return Math.min(Math.floor(num), 300);
+}
+
+function normalizeRunLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 20;
+  return Math.min(Math.floor(num), 100);
 }
 
 function toMillis(value) {
@@ -183,6 +190,61 @@ async function handleCityPackKpi(req, res, context) {
   });
 }
 
+function mapRunStatus(run) {
+  if (!run || !run.endedAt) return 'RUNNING';
+  if (Number(run.failed) > 0) return 'WARN';
+  return 'OK';
+}
+
+async function handleCityPackAuditRuns(req, res, context) {
+  const url = new URL(req.url, 'http://localhost');
+  const limit = normalizeRunLimit(url.searchParams.get('limit'));
+  const runs = await sourceAuditRunsRepo.listRuns(limit);
+
+  const items = runs.map((run) => {
+    const status = mapRunStatus(run);
+    return {
+      runId: run.runId || run.id,
+      mode: run.mode || 'scheduled',
+      startedAt: run.startedAt || null,
+      endedAt: run.endedAt || null,
+      processed: Number(run.processed) || 0,
+      succeeded: Number(run.succeeded) || 0,
+      failed: Number(run.failed) || 0,
+      failureTop3: Array.isArray(run.failureTop3) ? run.failureTop3 : [],
+      traceId: run.traceId || null,
+      status
+    };
+  });
+
+  const summary = {
+    total: items.length,
+    running: items.filter((item) => item.status === 'RUNNING').length,
+    ok: items.filter((item) => item.status === 'OK').length,
+    warn: items.filter((item) => item.status === 'WARN').length
+  };
+
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.source_audit.runs.view',
+    entityType: 'source_audit_run',
+    entityId: 'list',
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      count: items.length,
+      limit
+    }
+  });
+
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    summary,
+    items
+  });
+}
+
 async function handleCityPackAuditRun(req, res, bodyText, context) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
@@ -213,6 +275,11 @@ async function handleCityPackReviewInbox(req, res, bodyText) {
 
     if (req.method === 'GET' && pathname === '/api/admin/city-pack-kpi') {
       await handleCityPackKpi(req, res, context);
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/admin/city-pack-source-audit/runs') {
+      await handleCityPackAuditRuns(req, res, context);
       return;
     }
 
