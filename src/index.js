@@ -605,20 +605,20 @@ function createServer() {
   }
 
   if (req.method === 'GET' && (pathname === '/admin/composer' || pathname === '/admin/composer/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'composer.html');
-    serveHtml(res, filePath);
+    res.writeHead(302, { location: '/admin/app?pane=composer' });
+    res.end();
     return;
   }
 
   if (req.method === 'GET' && (pathname === '/admin/monitor' || pathname === '/admin/monitor/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'monitor.html');
-    serveHtml(res, filePath);
+    res.writeHead(302, { location: '/admin/app?pane=monitor' });
+    res.end();
     return;
   }
 
   if (req.method === 'GET' && (pathname === '/admin/errors' || pathname === '/admin/errors/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'errors.html');
-    serveHtml(res, filePath);
+    res.writeHead(302, { location: '/admin/app?pane=errors' });
+    res.end();
     return;
   }
 
@@ -697,6 +697,40 @@ function createServer() {
   if (req.method === 'GET' && pathname === '/api/admin/monitor-insights') {
     const { handleMonitorInsights } = require('./routes/admin/monitorInsights');
     handleMonitorInsights(req, res);
+    return;
+  }
+
+  if (pathname === '/api/admin/vendors' || /^\/api\/admin\/vendors\/[^/]+\/(edit|activate|disable)$/.test(pathname)) {
+    const collectBody = () => new Promise((resolve) => {
+      if (req.method !== 'POST') {
+        resolve('');
+        return;
+      }
+      let bytes = 0;
+      const chunks = [];
+      let tooLarge = false;
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleVendors } = require('./routes/admin/vendors');
+      const body = await collectBody();
+      await handleVendors(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
     return;
   }
 
@@ -2137,9 +2171,8 @@ function createServer() {
     const { handleNotificationReadModel } = require('./routes/admin/readModel');
     (async () => {
       if (req.method === 'GET' && (pathname === '/admin/read-model' || pathname === '/admin/read-model/')) {
-        const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'read_model.html');
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        res.end(fs.readFileSync(filePath, 'utf8'));
+        res.writeHead(302, { location: '/admin/app?pane=read-model' });
+        res.end();
         return;
       }
       if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {

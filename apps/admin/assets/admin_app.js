@@ -12,6 +12,8 @@ const state = {
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
+  vendorItems: [],
+  selectedVendorLinkId: null,
   readModelItems: [],
   errorsSummary: null,
   cityPackRequestItems: [],
@@ -24,9 +26,12 @@ const state = {
   selectedCityPackRequestId: null,
   selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
+  composerTone: 'unknown',
+  composerUpdatedAt: null,
   topCauses: '-',
   topCausesTip: '',
-  topAnomaly: '-'
+  topAnomaly: '-',
+  paneUpdatedAt: {}
 };
 
 function showToast(message, tone) {
@@ -52,6 +57,47 @@ function statusLabel(status) {
   if (status === 'WARN') return t('ui.status.warn', '注意');
   if (status === 'OK') return t('ui.status.ok', '問題なし');
   return t('ui.status.unknown', '未設定');
+}
+
+function decisionStateLabel(stateValue) {
+  if (stateValue === 'STOP') return t('ui.label.decision.state.stop', 'STOP');
+  if (stateValue === 'ATTENTION') return t('ui.label.decision.state.attention', 'ATTENTION');
+  return t('ui.label.decision.state.ready', 'READY');
+}
+
+function decisionStateClass(stateValue) {
+  if (stateValue === 'STOP') return 'state-stop';
+  if (stateValue === 'ATTENTION') return 'state-attention';
+  return 'state-ready';
+}
+
+function setPaneUpdatedAt(paneKey) {
+  state.paneUpdatedAt[paneKey] = new Date().toISOString();
+}
+
+function resolvePaneUpdatedAt(paneKey) {
+  return state.paneUpdatedAt[paneKey] || '-';
+}
+
+function renderDecisionCard(paneKey, vm) {
+  if (!paneKey || !vm) return;
+  const stateEl = document.getElementById(`${paneKey}-decision-state`);
+  const reason1El = document.getElementById(`${paneKey}-decision-reason1`);
+  const reason2El = document.getElementById(`${paneKey}-decision-reason2`);
+  const updatedEl = document.getElementById(`${paneKey}-decision-updated`);
+  const detailsEl = document.getElementById(`${paneKey}-pane-details`);
+
+  if (stateEl) {
+    stateEl.classList.remove('state-ready', 'state-attention', 'state-stop');
+    stateEl.classList.add(decisionStateClass(vm.state));
+    stateEl.textContent = decisionStateLabel(vm.state);
+  }
+  if (reason1El) reason1El.textContent = vm.reason1 || '-';
+  if (reason2El) reason2El.textContent = vm.reason2 || '-';
+  if (updatedEl) updatedEl.textContent = vm.updatedAt || resolvePaneUpdatedAt(paneKey);
+  if (detailsEl && (vm.state === 'ATTENTION' || vm.state === 'STOP')) {
+    detailsEl.open = true;
+  }
 }
 
 function reasonLabel(reason) {
@@ -174,13 +220,45 @@ function setupHomeControls() {
   });
 }
 
-function activatePane(target) {
+function normalizePaneTarget(target) {
+  const value = typeof target === 'string' ? target : '';
+  const allowed = new Set([
+    'home',
+    'composer',
+    'monitor',
+    'errors',
+    'read-model',
+    'vendors',
+    'city-pack',
+    'audit',
+    'settings',
+    'llm',
+    'maintenance'
+  ]);
+  if (allowed.has(value)) return value;
+  return 'home';
+}
+
+function activatePane(target, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const normalizedTarget = normalizePaneTarget(target);
   document.querySelectorAll('.nav-item').forEach((el) => {
-    el.classList.toggle('is-active', el.dataset.paneTarget === target);
+    el.classList.toggle('is-active', el.dataset.paneTarget === normalizedTarget);
   });
   document.querySelectorAll('.app-pane').forEach((pane) => {
-    pane.classList.toggle('is-active', pane.dataset.pane === target);
+    pane.classList.toggle('is-active', pane.dataset.pane === normalizedTarget);
   });
+  if (!opts.skipHistory && globalThis.history && typeof globalThis.history.replaceState === 'function') {
+    const nextUrl = new URL(globalThis.location.href);
+    nextUrl.searchParams.set('pane', normalizedTarget);
+    globalThis.history.replaceState({}, '', `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
+  }
+}
+
+function activateInitialPane() {
+  const currentUrl = new URL(globalThis.location.href);
+  const pane = currentUrl.searchParams.get('pane');
+  activatePane(pane || 'home', { skipHistory: true });
 }
 
 function newTraceId() {
@@ -304,6 +382,106 @@ function computeTopAnomaly(items) {
   if (!formatted) return '-';
   const label = t(`ui.metric.delta.${best.key}`, best.label);
   return `${label} ${formatted}`;
+}
+
+function resolveComposerDecisionVm() {
+  const tone = state.composerTone || 'unknown';
+  const decisionState = tone === 'danger'
+    ? 'STOP'
+    : tone === 'warn'
+      ? 'ATTENTION'
+      : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.status', '状態')}: ${state.currentComposerStatus || '-'}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.lastRisk || t('ui.desc.composer.riskDefault', 'Plan未実行')}`,
+    updatedAt: state.composerUpdatedAt || resolvePaneUpdatedAt('composer')
+  };
+}
+
+function resolveMonitorDecisionVm() {
+  const counts = getHealthCounts(state.monitorItems);
+  const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.topCauses || '-'}`,
+    updatedAt: resolvePaneUpdatedAt('monitor')
+  };
+}
+
+function resolveErrorsDecisionVm() {
+  const summary = state.errorsSummary && typeof state.errorsSummary === 'object' ? state.errorsSummary : null;
+  const warnLinks = Array.isArray(summary && summary.warnLinks) ? summary.warnLinks.length : 0;
+  const retryQueue = Array.isArray(summary && summary.retryQueuePending) ? summary.retryQueuePending.length : 0;
+  const decisionState = warnLinks > 0 ? 'STOP' : retryQueue > 0 ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${warnLinks + retryQueue}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${warnLinks > 0 ? t('ui.label.errors.warnLinks', '危険リンク一覧') : retryQueue > 0 ? t('ui.label.errors.retryQueue', '再送待ち一覧') : t('ui.status.ok', '問題なし')}`,
+    updatedAt: resolvePaneUpdatedAt('errors')
+  };
+}
+
+function resolveReadModelDecisionVm() {
+  const counts = getHealthCounts(state.readModelItems);
+  const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${counts.WARN > 0 ? statusLabel('WARN') : statusLabel('OK')}`,
+    updatedAt: resolvePaneUpdatedAt('read-model')
+  };
+}
+
+function resolveCityPackDecisionVm() {
+  const inbox = Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [];
+  const needsReview = inbox.filter((item) => String(item && item.status) === 'needs_review').length;
+  const blocked = inbox.filter((item) => {
+    const status = String(item && item.status);
+    return status === 'dead' || status === 'blocked';
+  }).length;
+  const decisionState = blocked > 0 ? 'STOP' : needsReview > 0 ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${blocked + needsReview}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${blocked > 0 ? t('ui.label.cityPack.col.result', 'result') : needsReview > 0 ? t('ui.value.cityPack.status.needsReview', '要確認') : t('ui.status.ok', '問題なし')}`,
+    updatedAt: resolvePaneUpdatedAt('city-pack')
+  };
+}
+
+function resolveVendorsDecisionVm() {
+  const items = Array.isArray(state.vendorItems) ? state.vendorItems : [];
+  const warnCount = items.filter((item) => String(item && item.healthState) === 'WARN').length;
+  const staleCount = items.filter((item) => !item || !item.checkedAt).length;
+  const decisionState = warnCount >= 3 ? 'STOP' : (warnCount > 0 || staleCount > 0) ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${warnCount + staleCount}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${warnCount > 0 ? t('ui.status.warn', '注意') : staleCount > 0 ? t('ui.label.vendors.state.unknown', '未確認') : t('ui.status.ok', '問題なし')}`,
+    updatedAt: resolvePaneUpdatedAt('vendors')
+  };
+}
+
+function resolveHomeDecisionVm() {
+  const counts = getHealthCounts(state.monitorItems);
+  const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
+  return {
+    state: decisionState,
+    reason1: `${t('ui.label.decision.reason.pending', '要対応')}: ${counts.DANGER || 0}`,
+    reason2: `${t('ui.label.decision.reason.primary', '主因')}: ${state.topCauses || '-'}`,
+    updatedAt: resolvePaneUpdatedAt('monitor')
+  };
+}
+
+function renderAllDecisionCards() {
+  renderDecisionCard('home', resolveHomeDecisionVm());
+  renderDecisionCard('composer', resolveComposerDecisionVm());
+  renderDecisionCard('monitor', resolveMonitorDecisionVm());
+  renderDecisionCard('errors', resolveErrorsDecisionVm());
+  renderDecisionCard('read-model', resolveReadModelDecisionVm());
+  renderDecisionCard('city-pack', resolveCityPackDecisionVm());
+  renderDecisionCard('vendors', resolveVendorsDecisionVm());
 }
 
 function renderSafeNextStep(el, message) {
@@ -550,6 +728,85 @@ function renderFaqReferenceRows(items) {
       const td = document.createElement('td');
       td.textContent = value;
       tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function resolveHost(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    const parsed = new URL(value);
+    return parsed.host || null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function normalizeVendorRow(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const fallbackHost = resolveHost(row.url);
+  const healthState = row.healthState || (row.lastHealth && row.lastHealth.state) || 'UNKNOWN';
+  return {
+    linkId: row.id || row.linkId || '-',
+    vendorLabel: row.vendorLabel || fallbackHost || row.vendorKey || '-',
+    vendorKey: row.vendorKey || fallbackHost || '-',
+    healthState,
+    checkedAt: row.checkedAt || (row.lastHealth && row.lastHealth.checkedAt) || row.updatedAt || null,
+    url: row.url || null,
+    raw: row
+  };
+}
+
+function renderVendorRows(items) {
+  const tbody = document.getElementById('vendor-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    const detail = document.getElementById('vendor-detail');
+    if (detail) detail.textContent = t('ui.desc.vendors.empty', '行を選択すると詳細を表示します。');
+    const raw = document.getElementById('vendor-raw');
+    if (raw) raw.textContent = '-';
+    state.selectedVendorLinkId = null;
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    if (item.healthState === 'WARN') tr.classList.add('row-health-warn');
+    if (item.healthState === 'OK') tr.classList.add('row-health-ok');
+    if (item.healthState === 'DEAD') tr.classList.add('row-health-danger');
+    const cols = [
+      item.vendorLabel || '-',
+      statusLabel(item.healthState === 'DEAD' ? 'DANGER' : item.healthState),
+      formatDateLabel(item.checkedAt),
+      item.linkId || '-'
+    ];
+    cols.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      state.selectedVendorLinkId = item.linkId || null;
+      const detail = document.getElementById('vendor-detail');
+      if (detail) {
+        detail.textContent = [
+          `${t('ui.label.vendors.col.vendor', 'Vendor')}: ${item.vendorLabel || '-'}`,
+          `${t('ui.label.vendors.col.state', '状態')}: ${statusLabel(item.healthState === 'DEAD' ? 'DANGER' : item.healthState)}`,
+          `${t('ui.label.vendors.col.lastChecked', '最終確認')}: ${formatDateLabel(item.checkedAt)}`
+        ].join('\n');
+      }
+      const raw = document.getElementById('vendor-raw');
+      if (raw) raw.textContent = JSON.stringify(item.raw || item, null, 2);
     });
     tbody.appendChild(tr);
   });
@@ -1101,11 +1358,13 @@ async function loadMonitorData(options) {
     state.topCauses = causes.text;
     state.topCausesTip = causes.tip;
     state.topAnomaly = computeTopAnomaly(state.monitorItems);
+    setPaneUpdatedAt('monitor');
     const counts = getHealthCounts(state.monitorItems);
     const monitorTodo = document.getElementById('monitor-todo');
     if (monitorTodo) monitorTodo.textContent = String(counts.DANGER || 0);
     updateTopBar();
     renderComposerScenarioCompare(state.monitorItems);
+    renderAllDecisionCards();
 
     if (notify) showToast(data && data.ok ? t('ui.toast.monitor.ok', 'monitor OK') : t('ui.toast.monitor.fail', 'monitor 失敗'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
@@ -1126,6 +1385,8 @@ async function loadReadModelData(options) {
     state.readModelItems = data && data.items ? data.items : [];
     renderReadModelRows(state.readModelItems);
     renderComposerScenarioCompare(state.readModelItems);
+    setPaneUpdatedAt('read-model');
+    renderAllDecisionCards();
     if (notify) showToast(data && data.ok ? t('ui.toast.readModel.ok', 'read model OK') : t('ui.toast.readModel.fail', 'read model 失敗'), data && data.ok ? 'ok' : 'danger');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.readModel.fail', 'read model 失敗'), 'danger');
@@ -1144,6 +1405,8 @@ async function loadErrors(options) {
     const summary = await res.json();
     state.errorsSummary = summary;
     renderErrors(summary);
+    setPaneUpdatedAt('errors');
+    renderAllDecisionCards();
     if (notify) showToast(summary && summary.ok ? t('ui.toast.errors.ok', 'errors OK') : t('ui.toast.errors.fail', 'errors 失敗'), summary && summary.ok ? 'ok' : 'danger');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.errors.fail', 'errors 失敗'), 'danger');
@@ -1221,6 +1484,79 @@ async function loadMonitorInsights(options) {
   }
 }
 
+async function loadVendors(options) {
+  const notify = options && options.notify;
+  const traceId = ensureTraceInput('vendor-trace') || ensureTraceInput('monitor-trace');
+  const stateFilter = document.getElementById('vendor-state')?.value?.trim() || '';
+  const limit = document.getElementById('vendor-limit')?.value || '50';
+  const params = new URLSearchParams({ limit });
+  if (stateFilter) params.set('state', stateFilter);
+  const skeleton = document.getElementById('vendor-skeleton');
+  if (skeleton) skeleton.classList.remove('is-hidden');
+  try {
+    const res = await fetch(`/api/admin/vendors?${params.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    const items = Array.isArray(data && data.items) ? data.items.map(normalizeVendorRow) : [];
+    state.vendorItems = items;
+    renderVendorRows(items);
+    setPaneUpdatedAt('vendors');
+    renderAllDecisionCards();
+    if (notify) showToast(t('ui.toast.vendors.loaded', 'Vendor一覧を更新しました'), 'ok');
+  } catch (_err) {
+    state.vendorItems = [];
+    renderVendorRows([]);
+    renderAllDecisionCards();
+    if (notify) showToast(t('ui.toast.vendors.loadFail', 'Vendor一覧の取得に失敗しました'), 'danger');
+  } finally {
+    if (skeleton) skeleton.classList.add('is-hidden');
+  }
+}
+
+function resolveSelectedVendor() {
+  if (!state.selectedVendorLinkId) return null;
+  return state.vendorItems.find((item) => item.linkId === state.selectedVendorLinkId) || null;
+}
+
+async function runVendorAction(action) {
+  const selected = resolveSelectedVendor();
+  if (!selected || !selected.linkId) {
+    showToast(t('ui.toast.vendors.needSelection', 'Vendor行を選択してください'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('vendor-trace') || ensureTraceInput('monitor-trace');
+  const linkId = encodeURIComponent(selected.linkId);
+  let endpoint = null;
+  let payload = {};
+  if (action === 'edit') {
+    const nextLabel = window.prompt(t('ui.prompt.vendors.editLabel', '表示名を入力してください'), selected.vendorLabel || '');
+    if (!nextLabel) return;
+    endpoint = `/api/admin/vendors/${linkId}/edit`;
+    payload = { vendorLabel: nextLabel };
+  } else if (action === 'activate') {
+    const ok = window.confirm(t('ui.confirm.vendors.activate', 'このVendorを有効化しますか？'));
+    if (!ok) return;
+    endpoint = `/api/admin/vendors/${linkId}/activate`;
+    payload = {};
+  } else if (action === 'disable') {
+    const ok = window.confirm(t('ui.confirm.vendors.disable', 'このVendorを停止・無効化しますか？'));
+    if (!ok) return;
+    endpoint = `/api/admin/vendors/${linkId}/disable`;
+    payload = {};
+  }
+  if (!endpoint) return;
+  try {
+    const data = await postJson(endpoint, payload, traceId);
+    if (data && data.ok) {
+      showToast(t('ui.toast.vendors.actionOk', 'Vendorを更新しました'), 'ok');
+      await loadVendors({ notify: false });
+    } else {
+      showToast(t('ui.toast.vendors.actionFail', 'Vendor更新に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.vendors.actionFail', 'Vendor更新に失敗しました'), 'danger');
+  }
+}
+
 async function loadCityPackRequests(options) {
   const notify = options && options.notify;
   const status = document.getElementById('city-pack-request-status-filter')?.value || '';
@@ -1236,6 +1572,8 @@ async function loadCityPackRequests(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackRequestItems = items;
     renderCityPackRequestRows(items);
+    setPaneUpdatedAt('city-pack');
+    renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.requestLoaded', 'Request一覧を取得しました'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.cityPack.requestLoadFail', 'Request一覧の取得に失敗しました'), 'danger');
@@ -1275,6 +1613,8 @@ async function loadCityPackReviewInbox(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackInboxItems = items;
     renderCityPackInboxRows(items);
+    setPaneUpdatedAt('city-pack');
+    renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoaded', 'Review Inboxを取得しました'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'), 'danger');
@@ -1308,9 +1648,12 @@ async function loadCityPackKpi(options) {
     const res = await fetch('/api/admin/city-pack-kpi', { headers: buildHeaders({}, trace) });
     const data = await res.json();
     renderCityPackKpi(data && data.metrics ? data.metrics : null);
+    setPaneUpdatedAt('city-pack');
+    renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.kpiLoaded', 'City Pack KPIを更新しました'), 'ok');
   } catch (_err) {
     renderCityPackKpi(null);
+    renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.kpiLoadFail', 'City Pack KPIの取得に失敗しました'), 'danger');
   }
 }
@@ -1505,9 +1848,11 @@ function updateComposerSummary() {
 }
 
 function setComposerStatus(tone, label) {
-  void tone;
+  state.composerTone = tone || 'unknown';
   state.currentComposerStatus = label || '-';
+  state.composerUpdatedAt = new Date().toISOString();
   updateComposerSummary();
+  renderAllDecisionCards();
 }
 
 function updateSafetyBadge(result) {
@@ -1814,6 +2159,104 @@ function setupCityPackControls() {
     await loadAudit().catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
+  });
+}
+
+function setupVendorControls() {
+  if (document.getElementById('vendor-trace')) document.getElementById('vendor-trace').value = newTraceId();
+  document.getElementById('vendor-regen')?.addEventListener('click', () => {
+    const el = document.getElementById('vendor-trace');
+    if (el) el.value = newTraceId();
+  });
+  document.getElementById('vendor-reload')?.addEventListener('click', () => {
+    void loadVendors({ notify: true });
+  });
+  document.getElementById('vendor-edit')?.addEventListener('click', () => {
+    void runVendorAction('edit');
+  });
+  document.getElementById('vendor-activate')?.addEventListener('click', () => {
+    void runVendorAction('activate');
+  });
+  document.getElementById('vendor-disable')?.addEventListener('click', () => {
+    void runVendorAction('disable');
+  });
+  document.getElementById('vendor-state')?.addEventListener('change', () => {
+    void loadVendors({ notify: false });
+  });
+
+  document.getElementById('vendors-action-edit')?.addEventListener('click', () => {
+    void runVendorAction('edit');
+  });
+  document.getElementById('vendors-action-activate')?.addEventListener('click', () => {
+    void runVendorAction('activate');
+  });
+  document.getElementById('vendors-action-disable')?.addEventListener('click', () => {
+    void runVendorAction('disable');
+  });
+}
+
+function setupDecisionActions() {
+  document.getElementById('composer-action-edit')?.addEventListener('click', () => {
+    activatePane('composer');
+    document.getElementById('title')?.focus();
+  });
+  document.getElementById('composer-action-activate')?.addEventListener('click', () => {
+    activatePane('composer');
+    document.getElementById('approve')?.click();
+  });
+  document.getElementById('composer-action-disable')?.addEventListener('click', () => {
+    activatePane('errors');
+  });
+
+  document.getElementById('monitor-action-edit')?.addEventListener('click', () => {
+    activatePane('composer');
+  });
+  document.getElementById('monitor-action-activate')?.addEventListener('click', () => {
+    activatePane('monitor');
+    document.getElementById('monitor-reload')?.click();
+  });
+  document.getElementById('monitor-action-disable')?.addEventListener('click', () => {
+    activatePane('errors');
+  });
+
+  document.getElementById('errors-action-edit')?.addEventListener('click', () => {
+    activatePane('monitor');
+  });
+  document.getElementById('errors-action-activate')?.addEventListener('click', () => {
+    activatePane('errors');
+    document.getElementById('errors-reload')?.click();
+  });
+  document.getElementById('errors-action-disable')?.addEventListener('click', () => {
+    activatePane('maintenance');
+  });
+
+  document.getElementById('read-model-action-edit')?.addEventListener('click', () => {
+    activatePane('composer');
+  });
+  document.getElementById('read-model-action-activate')?.addEventListener('click', () => {
+    activatePane('read-model');
+    document.getElementById('read-model-reload')?.click();
+  });
+  document.getElementById('read-model-action-disable')?.addEventListener('click', () => {
+    activatePane('errors');
+  });
+
+  document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
+    activatePane('city-pack');
+    document.getElementById('city-pack-request-reload')?.click();
+  });
+  document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
+    activatePane('city-pack');
+    const selected = state.cityPackRequestItems.find((item) => item.requestId === state.selectedCityPackRequestId);
+    if (selected) {
+      void runCityPackRequestAction('approve', selected);
+    } else {
+      showToast(t('ui.toast.cityPack.needRequestSelection', 'Request行を選択してください'), 'warn');
+    }
+  });
+  document.getElementById('city-pack-action-disable')?.addEventListener('click', () => {
+    activatePane('city-pack');
+    showToast(t('ui.toast.cityPack.disableHint', '停止操作はReview Inboxで実行してください'), 'warn');
   });
 }
 
@@ -2162,16 +2605,21 @@ function setupLlmControls() {
   setupErrorsControls();
   setupReadModelControls();
   setupCityPackControls();
+  setupVendorControls();
+  setupDecisionActions();
   setupAudit();
   setupLlmControls();
   setRole(state.role);
+  activateInitialPane();
 
   loadMonitorData({ notify: false });
   loadMonitorInsights({ notify: false });
   loadReadModelData({ notify: false });
   loadErrors({ notify: false });
+  loadVendors({ notify: false });
   loadCityPackRequests({ notify: false });
   loadCityPackReviewInbox({ notify: false });
   loadCityPackKpi({ notify: false });
   loadCityPackAuditRuns({ notify: false });
+  renderAllDecisionCards();
 })();
