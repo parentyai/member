@@ -20,4 +20,4 @@
 - `docs/CI_EVIDENCE/2026-02-18_22127324684_phase260.log`
 
 ## Notes
-- CI run id is pending (to be filled after PR CI).
+- CI run id recorded and evidence stored.
