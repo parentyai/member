@@ -18,6 +18,7 @@ const state = {
   cityPackKpi: null,
   cityPackRuns: [],
   selectedCityPackRunTraceId: null,
+  selectedCityPackRunEvidenceId: null,
   selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
   topCauses: '-',
@@ -585,6 +586,8 @@ function renderCityPackRunRows(payload) {
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!items.length) {
+    state.selectedCityPackRunTraceId = null;
+    state.selectedCityPackRunEvidenceId = null;
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 6;
@@ -592,6 +595,7 @@ function renderCityPackRunRows(payload) {
     tr.appendChild(td);
     tbody.appendChild(tr);
     if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.runsEmpty', '実行履歴はありません。');
+    renderCityPackRunDetail(null);
     return;
   }
 
@@ -642,10 +646,101 @@ function renderCityPackRunRows(payload) {
   }
 }
 
+function renderCityPackRunDetail(payload) {
+  const summaryEl = document.getElementById('city-pack-run-detail-summary');
+  const rowsEl = document.getElementById('city-pack-run-detail-rows');
+  const rawEl = document.getElementById('city-pack-run-result');
+  const data = payload && typeof payload === 'object' ? payload : null;
+  const run = data && data.run && typeof data.run === 'object' ? data.run : null;
+  const evidences = Array.isArray(data && data.evidences) ? data.evidences : [];
+
+  if (rawEl) rawEl.textContent = JSON.stringify(data || {}, null, 2);
+
+  if (!run) {
+    state.selectedCityPackRunTraceId = null;
+    state.selectedCityPackRunEvidenceId = null;
+    if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.runDetail.empty', '実行履歴の行を選択すると詳細を表示します。');
+    if (rowsEl) {
+      rowsEl.innerHTML = '';
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.textContent = t('ui.label.common.empty', 'データなし');
+      tr.appendChild(td);
+      rowsEl.appendChild(tr);
+    }
+    return;
+  }
+
+  if (summaryEl) {
+    const statusLabelText = run.status === 'OK'
+      ? t('ui.label.cityPack.runs.status.ok', '正常')
+      : run.status === 'WARN'
+        ? t('ui.label.cityPack.runs.status.warn', '要確認')
+        : t('ui.label.cityPack.runs.status.running', '実行中');
+    summaryEl.textContent = `${run.runId || '-'} / ${statusLabelText} / ${t('ui.label.cityPack.runs.col.traceId', 'traceId')}: ${run.sourceTraceId || '-'}`;
+  }
+
+  if (!rowsEl) return;
+  rowsEl.innerHTML = '';
+  if (!evidences.length) {
+    state.selectedCityPackRunEvidenceId = null;
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = t('ui.desc.cityPack.runDetail.noEvidence', 'この実行には証跡がありません。');
+    tr.appendChild(td);
+    rowsEl.appendChild(tr);
+    return;
+  }
+
+  state.selectedCityPackRunEvidenceId = evidences[0] && evidences[0].evidenceId ? String(evidences[0].evidenceId) : null;
+  evidences.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    if (index === 0) tr.classList.add('row-active');
+    const cells = [
+      item && item.evidenceId ? String(item.evidenceId) : '-',
+      item && item.result ? String(item.result) : '-',
+      item && item.checkedAt ? String(item.checkedAt) : '-',
+      item && item.statusCode != null ? String(item.statusCode) : '-'
+    ];
+    cells.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement('td');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn city-pack-action-btn';
+    button.textContent = t('ui.label.cityPack.runDetail.openEvidence', '証跡を開く');
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const evidenceId = item && item.evidenceId ? String(item.evidenceId) : '';
+      if (!evidenceId) return;
+      state.selectedCityPackRunEvidenceId = evidenceId;
+      rowsEl.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      void loadCityPackEvidence(evidenceId);
+    });
+    actionTd.appendChild(button);
+    tr.appendChild(actionTd);
+    tr.addEventListener('click', () => {
+      const evidenceId = item && item.evidenceId ? String(item.evidenceId) : '';
+      if (!evidenceId) return;
+      state.selectedCityPackRunEvidenceId = evidenceId;
+      rowsEl.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      void loadCityPackEvidence(evidenceId);
+    });
+    rowsEl.appendChild(tr);
+  });
+}
+
 async function loadCityPackAuditRunDetail(runId) {
   if (!runId) return;
   const trace = ensureTraceInput('monitor-trace');
-  const resultEl = document.getElementById('city-pack-run-result');
   try {
     const res = await fetch(`/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}`, {
       headers: buildHeaders({}, trace)
@@ -654,9 +749,16 @@ async function loadCityPackAuditRunDetail(runId) {
     if (data && data.ok && data.run && data.run.sourceTraceId) {
       state.selectedCityPackRunTraceId = data.run.sourceTraceId;
     }
-    if (resultEl) resultEl.textContent = JSON.stringify(data || {}, null, 2);
+    renderCityPackRunDetail(data);
+    if (data && data.ok && Array.isArray(data.evidences) && data.evidences.length) {
+      const firstEvidenceId = data.evidences[0] && data.evidences[0].evidenceId ? String(data.evidences[0].evidenceId) : '';
+      if (firstEvidenceId) {
+        state.selectedCityPackRunEvidenceId = firstEvidenceId;
+        await loadCityPackEvidence(firstEvidenceId);
+      }
+    }
   } catch (_err) {
-    if (resultEl) resultEl.textContent = JSON.stringify({ ok: false, error: 'fetch error' }, null, 2);
+    renderCityPackRunDetail({ ok: false, error: 'fetch error' });
   }
 }
 
@@ -1500,6 +1602,10 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-open-trace')?.addEventListener('click', async () => {
     const trace = state.selectedCityPackRunTraceId || ensureTraceInput('monitor-trace');
+    if (!trace) {
+      showToast(t('ui.toast.cityPack.traceMissing', '追跡IDが未選択です'), 'warn');
+      return;
+    }
     const auditTrace = document.getElementById('audit-trace');
     if (auditTrace && trace) auditTrace.value = trace;
     activatePane('audit');
