@@ -9,8 +9,8 @@
 - `npm run test:docs`: PASS (`[docs] OK`)
 - `node --test tests/phase266/*.test.js`: PASS (`5/5`)
 - `npm test`: PASS (`706/706`)
-- commit: TBD
-- PR: TBD
+- commit: `1639cba`
+- PR: `https://github.com/parentyai/member/pull/512`
 - CI run (main): TBD
 - CI evidence: TBD
 
