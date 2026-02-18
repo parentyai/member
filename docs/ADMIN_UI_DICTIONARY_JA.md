@@ -679,6 +679,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.value.cityPack.runMode.canary": "Canary",
   "ui.label.cityPack.runAudit": "監査ジョブ実行",
   "ui.label.cityPack.runsReload": "実行履歴を更新",
+  "ui.label.cityPack.openTrace": "追跡IDで証跡を開く",
   "ui.desc.cityPack.runsSummary": "実行履歴: 読み込み待ち",
   "ui.label.cityPack.runResult": "実行結果",
   "ui.label.cityPack.runs": "実行履歴",

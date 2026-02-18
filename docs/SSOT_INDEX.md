@@ -31,6 +31,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE251_EXECUTION_LOG.md`（City Pack source audit定期実行ログ）
 - `docs/PHASE252_PLAN.md`（City Pack source audit実行履歴可観測化計画）
 - `docs/PHASE252_EXECUTION_LOG.md`（City Pack source audit実行履歴可観測化ログ）
+- `docs/PHASE253_PLAN.md`（City Pack source audit実行詳細ドリルダウン計画）
+- `docs/PHASE253_EXECUTION_LOG.md`（City Pack source audit実行詳細ドリルダウンログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）

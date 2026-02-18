@@ -17,6 +17,7 @@ const state = {
   cityPackInboxItems: [],
   cityPackKpi: null,
   cityPackRuns: [],
+  selectedCityPackRunTraceId: null,
   selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
   topCauses: '-',
@@ -623,6 +624,14 @@ function renderCityPackRunRows(payload) {
       td.textContent = value;
       tr.appendChild(td);
     });
+    tr.classList.add('clickable-row');
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      state.selectedCityPackRunTraceId = run && run.traceId ? String(run.traceId) : null;
+      const runId = run && run.runId ? String(run.runId) : '';
+      if (runId) void loadCityPackAuditRunDetail(runId);
+    });
     tbody.appendChild(tr);
   });
 
@@ -630,6 +639,24 @@ function renderCityPackRunRows(payload) {
     summaryEl.textContent = `${t('ui.label.cityPack.runs.summary', '実行履歴')}: total ${summary.total || 0}, running ${summary.running || 0}, ok ${summary.ok || 0}, warn ${summary.warn || 0}`;
   } else if (summaryEl) {
     summaryEl.textContent = t('ui.desc.cityPack.runsLoaded', '実行履歴を更新しました。');
+  }
+}
+
+async function loadCityPackAuditRunDetail(runId) {
+  if (!runId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  const resultEl = document.getElementById('city-pack-run-result');
+  try {
+    const res = await fetch(`/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}`, {
+      headers: buildHeaders({}, trace)
+    });
+    const data = await res.json();
+    if (data && data.ok && data.run && data.run.sourceTraceId) {
+      state.selectedCityPackRunTraceId = data.run.sourceTraceId;
+    }
+    if (resultEl) resultEl.textContent = JSON.stringify(data || {}, null, 2);
+  } catch (_err) {
+    if (resultEl) resultEl.textContent = JSON.stringify({ ok: false, error: 'fetch error' }, null, 2);
   }
 }
 
@@ -1470,6 +1497,15 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-runs-reload')?.addEventListener('click', () => {
     void loadCityPackAuditRuns({ notify: true });
+  });
+  document.getElementById('city-pack-open-trace')?.addEventListener('click', async () => {
+    const trace = state.selectedCityPackRunTraceId || ensureTraceInput('monitor-trace');
+    const auditTrace = document.getElementById('audit-trace');
+    if (auditTrace && trace) auditTrace.value = trace;
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
   });
 }
 
