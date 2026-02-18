@@ -9,7 +9,7 @@
 - `npm run test:docs`: PASS (`[docs] OK`)
 - `node --test tests/phase263/*.test.js`: PASS (`2/2`)
 - `npm test`: PASS
-- commit: (TBD)
+- commit: `884be96`
 - PR: (TBD)
 
 ## Diff scope
