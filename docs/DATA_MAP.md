@@ -130,6 +130,28 @@ Typical fields:
 - `traceId`
 - `targetSourceRefIds[]`
 
+### Planned Add-only (City Pack extensions 1-12, inactive until phase enable)
+Purpose: 実装フェーズ分割時の互換契約を固定するための予定スキーマ。実装完了までは必須扱いにしない。
+
+#### Planned fields in `city_packs/{id}`
+- `targetingRules[]`: Rule Pack（targeting宣言）
+- `slots[]`: Slot-based Pack定義
+- `basePackId`: 継承元（1段のみ）
+- `overrides`: 継承上書き
+
+#### Planned fields in `source_refs/{id}`
+- `sourceType`: 情報源種別
+- `requiredLevel`: `required|optional`
+- `confidenceScore`: 信頼度スコア（0..100）
+- `lastAuditStage`: `light|heavy`
+
+#### Planned collections
+- `city_pack_feedback/{id}`: ユーザー誤り報告導線
+- `city_pack_bulletins/{id}`: Change Bulletin（draft/approved/sent）
+- `city_pack_update_proposals/{id}`: 更新提案（適用は人間）
+- `city_pack_metrics_daily/{id}`: pack/slot/sourceRef単位の集計
+- `city_pack_template_library/{id}`: import/export用テンプレライブラリ
+
 ## Secrets (Secret Manager)
 Purpose: store secrets used by the system and CI deploy workflows.
 
