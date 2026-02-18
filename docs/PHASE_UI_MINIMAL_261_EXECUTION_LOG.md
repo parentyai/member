@@ -9,6 +9,8 @@
 - `npm run test:docs`: PASS (`[docs] OK`)
 - `node --test tests/phase261/*.test.js`: PASS (`6/6`)
 - `npm test`: PASS (`695/695`)
+- commit: `8522499`
+- PR: `https://github.com/parentyai/member/pull/506`
 
 ## Diff scope
 - `apps/admin/app.html`
