@@ -30,7 +30,8 @@
 - `docs/PHASE256_EXECUTION_LOG.md`
 
 ## CI Evidence
-- Pending（PR checks 後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase256.log` を保存予定）
+- Main push Audit Gate run: `22126128645`
+- Stored log: `docs/CI_EVIDENCE/2026-02-18_22126128645_phase256.log`
 
 ## Risks
 - limitを小さくしすぎると必要な証跡が初回表示に出ない。
