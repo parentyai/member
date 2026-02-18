@@ -1109,9 +1109,36 @@ function setupReadModelControls() {
   if (document.getElementById('read-model-trace')) document.getElementById('read-model-trace').value = newTraceId();
 }
 
+function looksLikeDirectUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
+}
+
+function normalizeNextActionsForDisplay(payload) {
+  const input = payload && typeof payload === 'object' ? payload : null;
+  if (!input || !input.nextActionCandidates || !Array.isArray(input.nextActionCandidates.candidates)) return payload;
+  const output = JSON.parse(JSON.stringify(input));
+  output.nextActionCandidates.candidates = output.nextActionCandidates.candidates.map((item) => {
+    const normalized = Object.assign({}, item);
+    if (typeof normalized.action === 'string') {
+      normalized.action = normalized.action.toLowerCase();
+    }
+    return normalized;
+  });
+  if (output.nextActionTemplate && output.nextActionTemplate.proposal && Array.isArray(output.nextActionTemplate.proposal.actions)) {
+    output.nextActionTemplate.proposal.actions = output.nextActionTemplate.proposal.actions.map((action) => {
+      return typeof action === 'string' ? action.toLowerCase() : action;
+    });
+  }
+  return output;
+}
+
 function renderLlmResult(targetId, payload) {
   const el = document.getElementById(targetId);
   if (!el) return;
+  if (targetId === 'llm-next-actions-result') {
+    el.textContent = JSON.stringify(normalizeNextActionsForDisplay(payload || {}), null, 2);
+    return;
+  }
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
@@ -1167,10 +1194,14 @@ function renderLlmFaqBlockPanel(payload) {
   } else {
     fallbackActions.forEach((item) => {
       if (!item || typeof item !== 'object') return;
+      if (looksLikeDirectUrl(item.sourceId)) return;
       const label = llmFallbackActionLabel(item);
       const sourceId = typeof item.sourceId === 'string' && item.sourceId.trim() ? item.sourceId.trim() : '-';
       appendListItem(actionsEl, `${label} (${sourceId})`);
     });
+    if (!actionsEl.children.length) {
+      appendListItem(actionsEl, t('ui.desc.llm.block.noActions', '代替アクションは未設定です。'));
+    }
   }
 
   suggestedEl.innerHTML = '';

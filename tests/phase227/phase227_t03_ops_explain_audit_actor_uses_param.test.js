@@ -27,9 +27,10 @@ test('phase227 t03: ops-explain audit actor follows params.actor (no llm)', asyn
 
   assert.equal(result.ok, true);
   assert.equal(result.auditId, 'a1');
-  assert.equal(captured.length, 1);
-  assert.equal(captured[0].actor, 'alice');
-  assert.equal(captured[0].traceId, 't1');
-  assert.equal(captured[0].lineUserId, 'U1');
+  assert.ok(captured.length >= 1);
+  const primary = captured.find((item) => item.action === 'llm_ops_explain_blocked' || item.action === 'llm_ops_explain_generated');
+  assert.ok(primary);
+  assert.equal(primary.actor, 'alice');
+  assert.equal(primary.traceId, 't1');
+  assert.equal(primary.lineUserId, 'U1');
 });
-

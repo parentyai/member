@@ -8,6 +8,8 @@ const { DEFAULT_ALLOW_LISTS } = require('../../llm/allowList');
 const { NEXT_ACTION_CANDIDATES_SCHEMA_ID, ABSTRACT_ACTIONS } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { getDisclaimer } = require('../../llm/disclaimers');
+const { toBlockedReasonCategory } = require('../../llm/blockedReasonCategory');
+const { POLICY_SNAPSHOT_VERSION, buildRegulatoryProfile } = require('../../llm/regulatoryProfile');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
@@ -153,18 +155,6 @@ function buildNextActionTemplate(input, nextActionCandidates) {
   };
 }
 
-function toBlockedReasonCategory(blockedReason) {
-  const reason = String(blockedReason || '').trim();
-  if (!reason || reason === 'disabled') return null;
-  if (reason === 'kb_no_match') return 'NO_KB_MATCH';
-  if (reason === 'low_confidence') return 'LOW_CONFIDENCE';
-  if (reason === 'direct_url_forbidden') return 'DIRECT_URL_DETECTED';
-  if (reason === 'warn_link_blocked') return 'WARN_LINK_BLOCKED';
-  if (reason === 'restricted_field_detected' || reason === 'secret_field_detected') return 'SENSITIVE_QUERY';
-  if (reason === 'consent_missing') return 'CONSENT_MISSING';
-  return 'UNKNOWN';
-}
-
 function resolveLlmPolicySnapshot(policy) {
   const normalized = systemFlagsRepo.normalizeLlmPolicy(policy);
   if (normalized === null) return Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY);
@@ -183,6 +173,31 @@ async function callAdapter(adapter, payload, timeoutMs) {
     setTimeout(() => reject(new Error('llm_timeout')), limit);
   });
   return Promise.race([exec, timeout]);
+}
+
+async function appendDisclaimerRenderedAudit(params, deps) {
+  const payload = params || {};
+  const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  if (!auditFn) return null;
+  const result = await auditFn({
+    actor: payload.actor || 'unknown',
+    action: 'llm_disclaimer_rendered',
+    eventType: 'LLM_DISCLAIMER_RENDERED',
+    entityType: 'llm_disclaimer',
+    entityId: payload.purpose || 'next_actions',
+    lineUserId: payload.lineUserId || null,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    payloadSummary: {
+      purpose: payload.purpose || 'next_actions',
+      surface: payload.surface || 'api',
+      disclaimerVersion: payload.disclaimerVersion || null,
+      disclaimerShown: payload.disclaimerShown !== false,
+      llmStatus: payload.llmStatus || null,
+      inputFieldCategoriesUsed: []
+    }
+  });
+  return result && result.id ? result.id : null;
 }
 
 async function getNextActionCandidates(params, deps) {
@@ -292,6 +307,7 @@ async function getNextActionCandidates(params, deps) {
           llmEnabled,
           envLlmFeatureFlag: envEnabled,
           dbLlmEnabled: dbEnabled,
+          policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
           lawfulBasis: llmPolicy.lawfulBasis,
           consentVerified: llmPolicy.consentVerified,
           crossBorder: llmPolicy.crossBorder,
@@ -299,7 +315,12 @@ async function getNextActionCandidates(params, deps) {
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
           fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
           blockedReason: llmUsed ? null : llmStatus,
-          blockedReasonCategory: llmUsed ? null : toBlockedReasonCategory(llmStatus),
+          blockedReasonCategory: llmUsed ? null : toBlockedReasonCategory(llmStatus, { nullOnDisabled: true }),
+          regulatoryProfile: buildRegulatoryProfile({
+            policy: llmPolicy,
+            fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+            blockedReasonCategory: llmUsed ? null : toBlockedReasonCategory(llmStatus, { nullOnDisabled: true })
+          }),
           inputHash: hashJson(view.ok ? view.data : input),
           outputHash: hashJson(nextActionCandidates)
         }
@@ -309,6 +330,20 @@ async function getNextActionCandidates(params, deps) {
       auditId = null;
     }
   }
+  await appendDisclaimerRenderedAudit(
+    {
+      actor: payload.actor || 'unknown',
+      lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      purpose: 'next_actions',
+      surface: 'api',
+      disclaimerVersion: disclaimer.version,
+      llmStatus,
+      disclaimerShown: true
+    },
+    deps
+  ).catch(() => null);
 
   return {
     ok: true,
@@ -318,6 +353,7 @@ async function getNextActionCandidates(params, deps) {
     llmUsed,
     llmStatus,
     llmModel,
+    policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
     nextActionTemplate,
