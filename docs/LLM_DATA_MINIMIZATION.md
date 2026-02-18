@@ -45,6 +45,8 @@
 - `kbCandidates[].validUntil`
 - `kbCandidates[].allowedIntents`
 - `kbCandidates[].disclaimerVersion`
+- `kbCandidates[].version`
+- `kbCandidates[].versionSemver`（legacy互換）
 - `kbCandidates[].searchScore`
 
 ### FAQ Guide-only Guard (Phase235 add-only)
@@ -55,6 +57,16 @@
 - Block:
   - `guide_only_mode_blocked`（allowed list外 mode）
   - `personalization_not_allowed`（`locale|servicePhase` 以外の personalization キー）
+
+### Phase249 User-facing Guide-only Policy (add-only)
+- 許可用途:
+  - FAQ ナビゲーション
+  - 質問整形
+  - チェックリスト誘導
+- 禁止用途:
+  - 自由相談型チャット
+  - 法務/医療判断
+  - `locale|servicePhase` 以外の属性利用
 
 ### OpsExplanation
 - `readiness.status`
