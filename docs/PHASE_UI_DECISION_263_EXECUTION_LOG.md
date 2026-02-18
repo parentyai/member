@@ -10,7 +10,7 @@
 - `node --test tests/phase263/*.test.js`: PASS (`2/2`)
 - `npm test`: PASS
 - commit: `884be96`
-- PR: (TBD)
+- PR: https://github.com/parentyai/member/pull/508
 
 ## Diff scope
 - `apps/admin/app.html`
