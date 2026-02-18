@@ -30,12 +30,15 @@ LLM 統合機能を advisory-only のまま安全に運用する。
   - `llm_disclaimer_rendered`
 - traceId で追跡する場合は `/api/admin/trace?traceId=...` を使用する。
 - `llm_disclaimer_rendered` の payloadSummary で `purpose` / `disclaimerVersion` / `disclaimerShown` を確認する。
+- `llm_disclaimer_rendered` の payloadSummary で `surface`（`api` / `admin_ui`）を確認する。
 - phase234 以降は以下の policy snapshot 項目も追跡する。
   - `lawfulBasis`
   - `consentVerified`
   - `crossBorder`
   - `blockedReasonCategory`
   - `fieldCategoriesUsed`
+  - `policySnapshotVersion`
+  - `regulatoryProfile`
 
 ## Failure Modes
 - schema mismatch / citation mismatch / allow-list violation => fallback へ退避。
@@ -60,3 +63,15 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 ## Notes
 - killSwitch は LINE 送信停止用。LLM 停止は `llmEnabled` と `LLM_FEATURE_FLAG` の二重ゲートで行う。
 - LLM は read-only / advisory-only。Firestore への自動書き込みや運用確定は禁止。
+
+## Phase248 Add-only Taxonomy
+- `blockedReasonCategory` の共通カテゴリ:
+  - `NO_KB_MATCH`
+  - `LOW_CONFIDENCE`
+  - `DIRECT_URL_DETECTED`
+  - `WARN_LINK_BLOCKED`
+  - `SENSITIVE_QUERY`
+  - `CONSENT_MISSING`
+- 互換カテゴリ:
+  - `GUIDE_MODE_BLOCKED`
+  - `PERSONALIZATION_BLOCKED`
