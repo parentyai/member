@@ -17,6 +17,7 @@ const state = {
   cityPackInboxItems: [],
   cityPackKpi: null,
   cityPackRuns: [],
+  selectedCityPackRunId: null,
   selectedCityPackRunTraceId: null,
   selectedCityPackRunEvidenceId: null,
   selectedCityPackSourceRefId: null,
@@ -564,6 +565,13 @@ function toDateLabel(value) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+function getCityPackRunDetailLimit() {
+  const input = document.getElementById('city-pack-run-detail-limit');
+  const value = Number(input && input.value);
+  if (!Number.isFinite(value) || value <= 0) return 50;
+  return Math.min(Math.max(Math.floor(value), 1), 200);
+}
+
 function renderCityPackKpi(metrics) {
   state.cityPackKpi = metrics || null;
   const zeroRateEl = document.getElementById('city-pack-kpi-expired-zero-rate');
@@ -586,6 +594,7 @@ function renderCityPackRunRows(payload) {
   if (!tbody) return;
   tbody.innerHTML = '';
   if (!items.length) {
+    state.selectedCityPackRunId = null;
     state.selectedCityPackRunTraceId = null;
     state.selectedCityPackRunEvidenceId = null;
     const tr = document.createElement('tr');
@@ -632,6 +641,7 @@ function renderCityPackRunRows(payload) {
     tr.addEventListener('click', () => {
       tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
       tr.classList.add('row-active');
+      state.selectedCityPackRunId = run && run.runId ? String(run.runId) : null;
       state.selectedCityPackRunTraceId = run && run.traceId ? String(run.traceId) : null;
       const runId = run && run.runId ? String(run.runId) : '';
       if (runId) void loadCityPackAuditRunDetail(runId);
@@ -657,6 +667,7 @@ function renderCityPackRunDetail(payload) {
   if (rawEl) rawEl.textContent = JSON.stringify(data || {}, null, 2);
 
   if (!run) {
+    state.selectedCityPackRunId = null;
     state.selectedCityPackRunTraceId = null;
     state.selectedCityPackRunEvidenceId = null;
     if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.runDetail.empty', '実行履歴の行を選択すると詳細を表示します。');
@@ -740,9 +751,12 @@ function renderCityPackRunDetail(payload) {
 
 async function loadCityPackAuditRunDetail(runId) {
   if (!runId) return;
+  state.selectedCityPackRunId = runId;
   const trace = ensureTraceInput('monitor-trace');
+  const limit = getCityPackRunDetailLimit();
   try {
-    const res = await fetch(`/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}`, {
+    const query = new URLSearchParams({ limit: String(limit) });
+    const res = await fetch(`/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}?${query.toString()}`, {
       headers: buildHeaders({}, trace)
     });
     const data = await res.json();
@@ -1599,6 +1613,11 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-runs-reload')?.addEventListener('click', () => {
     void loadCityPackAuditRuns({ notify: true });
+  });
+  document.getElementById('city-pack-run-detail-limit')?.addEventListener('change', () => {
+    if (state.selectedCityPackRunId) {
+      void loadCityPackAuditRunDetail(state.selectedCityPackRunId);
+    }
   });
   document.getElementById('city-pack-open-trace')?.addEventListener('click', async () => {
     const trace = state.selectedCityPackRunTraceId || ensureTraceInput('monitor-trace');

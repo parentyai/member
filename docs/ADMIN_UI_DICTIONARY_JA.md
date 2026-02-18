@@ -682,6 +682,8 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.label.cityPack.openTrace": "追跡IDで証跡を開く",
   "ui.desc.cityPack.runsSummary": "実行履歴: 読み込み待ち",
   "ui.label.cityPack.runResult": "実行結果",
+  "ui.label.cityPack.runDetail.limit": "証跡表示件数",
+  "ui.help.cityPack.runDetail.limit": "run詳細に表示する証跡件数（1〜200）",
   "ui.desc.cityPack.runDetail.empty": "実行履歴の行を選択すると詳細を表示します。",
   "ui.desc.cityPack.runDetail.noEvidence": "この実行には証跡がありません。",
   "ui.label.cityPack.runDetail.raw": "RAW",

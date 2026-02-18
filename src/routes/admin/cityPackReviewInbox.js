@@ -26,6 +26,12 @@ function normalizeRunLimit(value) {
   return Math.min(Math.floor(num), 100);
 }
 
+function normalizeEvidenceLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 50;
+  return Math.min(Math.floor(num), 200);
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -252,6 +258,8 @@ async function handleCityPackAuditRuns(req, res, context) {
 }
 
 async function handleCityPackAuditRunDetail(req, res, context, runId) {
+  const url = new URL(req.url, 'http://localhost');
+  const evidenceLimit = normalizeEvidenceLimit(url.searchParams.get('limit'));
   const run = await sourceAuditRunsRepo.getRun(runId);
   if (!run) {
     writeJson(res, 404, { ok: false, error: 'source audit run not found' });
@@ -260,7 +268,7 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
 
   const traceIdForEvidence = typeof run.traceId === 'string' && run.traceId.trim() ? run.traceId.trim() : null;
   const evidences = traceIdForEvidence
-    ? await sourceEvidenceRepo.listEvidenceByTraceId(traceIdForEvidence, 50)
+    ? await sourceEvidenceRepo.listEvidenceByTraceId(traceIdForEvidence, evidenceLimit)
     : [];
 
   await appendAuditLog({
@@ -272,7 +280,8 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
     requestId: context.requestId,
     payloadSummary: {
       runId,
-      evidenceCount: evidences.length
+      evidenceCount: evidences.length,
+      evidenceLimit
     }
   });
 
@@ -291,6 +300,7 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
       status: mapRunStatus(run),
       sourceTraceId: traceIdForEvidence
     },
+    evidenceLimit,
     evidences: evidences.map((item) => ({
       evidenceId: item.id,
       sourceRefId: item.sourceRefId || null,
