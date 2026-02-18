@@ -95,8 +95,15 @@ function renderDecisionCard(paneKey, vm) {
   if (reason1El) reason1El.textContent = vm.reason1 || '-';
   if (reason2El) reason2El.textContent = vm.reason2 || '-';
   if (updatedEl) updatedEl.textContent = vm.updatedAt || resolvePaneUpdatedAt(paneKey);
-  if (detailsEl && (vm.state === 'ATTENTION' || vm.state === 'STOP')) {
+  if (detailsEl && (vm.state === 'ATTENTION' || vm.state === 'STOP') && !detailsEl.open) {
     detailsEl.open = true;
+    const paneEl = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
+    if (paneEl && paneEl.classList.contains('is-active')) {
+      const summaryEl = detailsEl.querySelector('summary');
+      if (summaryEl && typeof summaryEl.focus === 'function') {
+        summaryEl.focus({ preventScroll: true });
+      }
+    }
   }
 }
 
@@ -259,6 +266,51 @@ function activateInitialPane() {
   const currentUrl = new URL(globalThis.location.href);
   const pane = currentUrl.searchParams.get('pane');
   activatePane(pane || 'home', { skipHistory: true });
+}
+
+const PANE_SHORTCUTS = Object.freeze({
+  '0': 'home',
+  '1': 'composer',
+  '2': 'monitor',
+  '3': 'errors',
+  '4': 'read-model',
+  '5': 'vendors',
+  '6': 'city-pack',
+  '7': 'audit',
+  '8': 'settings',
+  '9': 'maintenance'
+});
+
+function isTextInputTarget(target) {
+  if (!target) return false;
+  const name = String(target.tagName || '').toUpperCase();
+  if (name === 'INPUT' || name === 'TEXTAREA' || name === 'SELECT') return true;
+  return Boolean(target.isContentEditable);
+}
+
+function focusPaneDecisionCard(paneKey) {
+  const decisionCard = document.getElementById(`${paneKey}-decision-card`);
+  if (decisionCard && typeof decisionCard.scrollIntoView === 'function') {
+    decisionCard.scrollIntoView({ block: 'start' });
+  }
+  const primary = decisionCard ? decisionCard.querySelector('button') : null;
+  if (primary && typeof primary.focus === 'function') {
+    primary.focus({ preventScroll: true });
+  }
+}
+
+function setupPaneKeyboardShortcuts() {
+  document.addEventListener('keydown', (event) => {
+    if (!event || !event.altKey) return;
+    if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (isTextInputTarget(event.target)) return;
+    const key = String(event.key || '');
+    const pane = PANE_SHORTCUTS[key];
+    if (!pane) return;
+    event.preventDefault();
+    activatePane(pane);
+    focusPaneDecisionCard(pane);
+  });
 }
 
 function newTraceId() {
@@ -2611,6 +2663,7 @@ function setupLlmControls() {
   setupLlmControls();
   setRole(state.role);
   activateInitialPane();
+  setupPaneKeyboardShortcuts();
 
   loadMonitorData({ notify: false });
   loadMonitorInsights({ notify: false });
