@@ -704,6 +704,7 @@ function createServer() {
     || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire)$/.test(pathname)
     || pathname === '/api/admin/review-inbox'
     || pathname === '/api/admin/city-pack-kpi'
+    || pathname === '/api/admin/city-pack-source-audit/runs'
     || pathname === '/api/admin/city-pack-source-audit/run'
     || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)
     || /^\/api\/admin\/source-evidence\/[^/]+$/.test(pathname);
@@ -739,6 +740,7 @@ function createServer() {
       }
       if (pathname === '/api/admin/review-inbox'
         || pathname === '/api/admin/city-pack-kpi'
+        || pathname === '/api/admin/city-pack-source-audit/runs'
         || pathname === '/api/admin/city-pack-source-audit/run'
         || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)) {
         const { handleCityPackReviewInbox } = require('./routes/admin/cityPackReviewInbox');
