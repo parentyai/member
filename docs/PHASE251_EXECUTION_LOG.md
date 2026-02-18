@@ -29,8 +29,8 @@
 - `docs/SSOT_INDEX.md`
 
 ## CI Evidence
-- PR CI run: `22124692633`（audit）
-- Saved log: `docs/CI_EVIDENCE/2026-02-18_22124692633_phase251.log`
+- PR CI run: `22124736798`（audit）
+- Saved log: `docs/CI_EVIDENCE/2026-02-18_22124736798_phase251.log`
 
 ## Risks
 - GitHub environment 変数/secret 未設定時は workflow が失敗する。
