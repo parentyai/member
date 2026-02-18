@@ -30,6 +30,10 @@
           <span class="nav-icon" aria-hidden="true">R</span>
           <span data-dict-key="ui.label.nav.readModel">通知集計</span>
         </button>
+        <button class="nav-item" data-pane-target="vendors">
+          <span class="nav-icon" aria-hidden="true">V</span>
+          <span data-dict-key="ui.label.nav.vendors">Vendor Hub</span>
+        </button>
         <button class="nav-item" data-pane-target="city-pack">
           <span class="nav-icon" aria-hidden="true">CP</span>
           <span data-dict-key="ui.label.nav.cityPack">City Pack監査</span>
@@ -78,101 +82,111 @@
         <h1 data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.home.focus">要対応 / 最優先通知 / 異常の主因</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.home.help">要対応から開く</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.home.risk">要対応を後回しにする</span></div>
-          </div>
-          <div class="pane-grid">
-            <div class="pane-main">
-              <div class="panel today-card">
-                <div class="panel-title" data-dict-key="ui.label.home.today">今日の要対応</div>
-                <div class="panel-body">
-                  <div class="today-metrics">
-                    <div><span class="metric-label" data-dict-key="ui.metric.todo.count">要対応件数</span><span id="home-todo" class="metric-value">0</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.metric.todo.causes">主因トップ3</span><span id="home-causes" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.metric.todo.anomaly">直近の異常</span><span id="home-anomaly" class="metric-value">-</span></div>
-                  </div>
-                </div>
-              </div>
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.home.flow">今日の流れ</div>
-                <div class="panel-body">
-                  <ol class="flow-list">
-                    <li data-dict-key="ui.desc.home.flow1">通知を作成/承認</li>
-                    <li data-dict-key="ui.desc.home.flow2">対象と上限を確認</li>
-                    <li data-dict-key="ui.desc.home.flow3">送信実行</li>
-                    <li data-dict-key="ui.desc.home.flow4">結果と異常を確認</li>
-                    <li data-dict-key="ui.desc.home.flow5">証跡を残す</li>
-                  </ol>
-                </div>
-              </div>
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.home.tasks">今日やること</div>
-                <div class="panel-body task-card-list">
-                  <button type="button" class="task-card-btn" data-open-pane="errors">
-                    <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
-                  </button>
-                  <button type="button" class="task-card-btn" data-open-pane="composer">
-                    <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
-                  </button>
-                  <button type="button" class="task-card-btn" data-open-pane="monitor">
-                    <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
-                  </button>
-                  <button type="button" class="task-card-btn" data-open-pane="city-pack">
-                    <span data-dict-key="ui.label.home.task.cityPack">City Pack情報源を監査</span>
-                  </button>
-                </div>
-              </div>
+          <div class="decision-card" id="home-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.home.today">今日の要対応</div>
+              <span id="home-decision-state" class="decision-state state-ready">READY</span>
             </div>
-            <div class="pane-detail">
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.home.detail">対象の選択</div>
-                <div class="panel-body">
-                  <p data-dict-key="ui.desc.home.detail">左ナビから配信/結果/異常を切り替え、右の操作パネルで実行します。</p>
-                </div>
-              </div>
+            <div id="home-decision-reason1" class="decision-reason">-</div>
+            <div id="home-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="home-decision-updated">-</span>
             </div>
-            <aside class="pane-actions">
-              <div class="action-panel">
-                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
-                <div class="panel-body">
-                  <p class="note" data-dict-key="ui.desc.home.actions">最初に「通知配信」から着手するのが最短です。</p>
-                  <div class="note" data-dict-key="ui.desc.home.safeTest">安全テストを実行すると、追跡ID付きで配信結果へ移動できます。</div>
-                  <div class="note">
-                    <label data-dict-key="ui.label.home.test.notificationId" data-dict-tip="ui.help.home.test.notificationId">通知ID</label>
-                    <input id="home-test-notification-id" class="input-inline input-min-260" />
+            <div class="decision-actions">
+              <button type="button" class="decision-action-btn" data-open-pane="errors" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button type="button" class="decision-action-btn" data-open-pane="composer" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button type="button" class="decision-action-btn" data-open-pane="monitor" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
+          </div>
+          <details id="home-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
+              <div class="pane-main">
+                <div class="panel">
+                  <div class="panel-title" data-dict-key="ui.label.home.tasks">今日やること</div>
+                  <div class="panel-body task-card-list">
+                    <button type="button" class="task-card-btn" data-open-pane="errors">
+                      <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
+                    </button>
+                    <button type="button" class="task-card-btn" data-open-pane="composer">
+                      <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
+                    </button>
+                    <button type="button" class="task-card-btn" data-open-pane="monitor">
+                      <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
+                    </button>
+                    <button type="button" class="task-card-btn" data-open-pane="city-pack">
+                      <span data-dict-key="ui.label.home.task.cityPack">City Pack情報源を監査</span>
+                    </button>
                   </div>
-                  <div class="note">
-                    <label data-dict-key="ui.label.home.test.lineUserId" data-dict-tip="ui.help.home.test.lineUserId">LINEユーザーID</label>
-                    <input id="home-test-line-user-id" class="input-inline input-min-260" />
-                  </div>
-                  <div class="note">
-                    <label data-dict-key="ui.label.home.test.mode" data-dict-tip="ui.help.home.test.mode">テスト方式</label>
-                    <select id="home-test-mode" class="select-inline">
-                      <option value="dry_run" data-dict-key="ui.value.home.test.mode.dry">検証のみ</option>
-                      <option value="self_send" data-dict-key="ui.value.home.test.mode.self">自己送信</option>
-                    </select>
-                  </div>
-                  <div class="row row-top">
-                    <button id="home-run-test" type="button" data-dict-key="ui.label.home.test.run">テスト実行（安全）</button>
-                  </div>
-                  <details class="section">
-                    <summary data-dict-key="ui.label.home.test.result">テスト結果</summary>
-                    <pre id="home-test-result">-</pre>
-                  </details>
                 </div>
               </div>
-            </aside>
-          </div>
+              <div class="pane-detail">
+                <div class="panel">
+                  <div class="panel-title" data-dict-key="ui.label.home.today">今日の要対応</div>
+                  <div class="panel-body">
+                    <div class="today-metrics">
+                      <div><span class="metric-label" data-dict-key="ui.metric.todo.count">要対応件数</span><span id="home-todo" class="metric-value">0</span></div>
+                      <div><span class="metric-label" data-dict-key="ui.metric.todo.causes">主因トップ3</span><span id="home-causes" class="metric-value">-</span></div>
+                      <div><span class="metric-label" data-dict-key="ui.metric.todo.anomaly">直近の異常</span><span id="home-anomaly" class="metric-value">-</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <aside class="pane-actions">
+                <div class="action-panel">
+                  <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                  <div class="panel-body">
+                    <div class="note">
+                      <label data-dict-key="ui.label.home.test.notificationId" data-dict-tip="ui.help.home.test.notificationId">通知ID</label>
+                      <input id="home-test-notification-id" class="input-inline input-min-260" />
+                    </div>
+                    <div class="note">
+                      <label data-dict-key="ui.label.home.test.lineUserId" data-dict-tip="ui.help.home.test.lineUserId">LINEユーザーID</label>
+                      <input id="home-test-line-user-id" class="input-inline input-min-260" />
+                    </div>
+                    <div class="note">
+                      <label data-dict-key="ui.label.home.test.mode" data-dict-tip="ui.help.home.test.mode">テスト方式</label>
+                      <select id="home-test-mode" class="select-inline">
+                        <option value="dry_run" data-dict-key="ui.value.home.test.mode.dry">検証のみ</option>
+                        <option value="self_send" data-dict-key="ui.value.home.test.mode.self">自己送信</option>
+                      </select>
+                    </div>
+                    <div class="row row-top">
+                      <button id="home-run-test" type="button" data-dict-key="ui.label.home.test.run">テスト実行（安全）</button>
+                    </div>
+                    <details class="section">
+                      <summary data-dict-key="ui.label.home.test.result">テスト結果</summary>
+                      <pre id="home-test-result">-</pre>
+                    </details>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </details>
         </section>
 
         <section id="pane-composer" class="app-pane" data-pane="composer">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.composer.focus">目的 / 対象 / 確認トークン</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.composer.help">Planで対象数を確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.composer.risk">limit未設定でplanが弾かれる</span></div>
+          <div class="decision-card" id="composer-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
+              <span id="composer-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="composer-decision-reason1" class="decision-reason">-</div>
+            <div id="composer-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="composer-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="composer-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="composer-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="composer-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
           </div>
-
-          <div class="pane-grid">
+          <details id="composer-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
@@ -317,14 +331,30 @@
               </div>
             </aside>
           </div>
+          </details>
         </section>
 
         <section id="pane-monitor" class="app-pane" data-pane="monitor">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.monitor.focus">健康度 / 反応率 / 最終結果</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.monitor.help">要対応から開く</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.monitor.risk">状態未指定で全件を見てしまう</span></div>
+          <div class="decision-card" id="monitor-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.nav.monitor">配信結果</div>
+              <span id="monitor-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="monitor-decision-reason1" class="decision-reason">-</div>
+            <div id="monitor-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="monitor-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="monitor-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="monitor-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="monitor-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
           </div>
-          <div class="pane-grid">
+          <details id="monitor-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
             <div class="pane-main">
               <div class="panel today-card">
                 <div class="panel-title" data-dict-key="ui.label.monitor.today">今日の要対応</div>
@@ -484,14 +514,30 @@
               </div>
             </aside>
           </div>
+          </details>
         </section>
 
         <section id="pane-city-pack" class="app-pane" data-pane="city-pack">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.cityPack.focus">期限切れ / 要確認 / 参照中の配信ルール</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.cityPack.help">Review InboxのConfirm候補から対応</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.cityPack.risk">期限切れ情報源の放置</span></div>
+          <div class="decision-card" id="city-pack-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.nav.cityPack">City Pack監査</div>
+              <span id="city-pack-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="city-pack-decision-reason1" class="decision-reason">-</div>
+            <div id="city-pack-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="city-pack-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="city-pack-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="city-pack-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
           </div>
-          <div class="pane-grid">
+          <details id="city-pack-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
             <div class="pane-main">
               <div class="panel today-card">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.kpi">City Pack監査KPI</div>
@@ -499,7 +545,6 @@
                   <div class="today-metrics">
                     <div><span class="metric-label" data-dict-key="ui.metric.cityPack.expiredZeroRate">expired sourceゼロ率</span><span id="city-pack-kpi-expired-zero-rate" class="metric-value">-</span></div>
                     <div><span class="metric-label" data-dict-key="ui.metric.cityPack.reviewLag">review滞留時間</span><span id="city-pack-kpi-review-lag" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.metric.cityPack.deadRate">dead検出率</span><span id="city-pack-kpi-dead-rate" class="metric-value">-</span></div>
                     <div><span class="metric-label" data-dict-key="ui.metric.cityPack.blockRate">source起因ブロック率</span><span id="city-pack-kpi-block-rate" class="metric-value">-</span></div>
                   </div>
                 </div>
@@ -677,14 +722,30 @@
               </div>
             </aside>
           </div>
+          </details>
         </section>
 
         <section id="pane-errors" class="app-pane" data-pane="errors">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.errors.focus">危険リンク / 再送待ち / まとめ</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.errors.help">再送待ちの最新から確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.errors.risk">再送を忘れて放置する</span></div>
+          <div class="decision-card" id="errors-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.nav.errors">異常対応</div>
+              <span id="errors-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="errors-decision-reason1" class="decision-reason">-</div>
+            <div id="errors-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="errors-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="errors-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="errors-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="errors-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
           </div>
-          <div class="pane-grid">
+          <details id="errors-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.errors.recovery">復旧パネル</div>
@@ -761,14 +822,30 @@
               </div>
             </aside>
           </div>
+          </details>
         </section>
 
         <section id="pane-read-model" class="app-pane" data-pane="read-model">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.readModel.focus">要対応 / 反応率 / 最終結果</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.readModel.help">未取得がないか確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.readModel.risk">未取得を正常と誤解する</span></div>
+          <div class="decision-card" id="read-model-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.nav.readModel">通知集計</div>
+              <span id="read-model-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="read-model-decision-reason1" class="decision-reason">-</div>
+            <div id="read-model-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="read-model-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="read-model-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="read-model-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="read-model-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
           </div>
-          <div class="pane-grid">
+          <details id="read-model-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.readModel.definition">この集計が示すもの</div>
@@ -798,11 +875,7 @@
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
                 <div class="panel-body">
-                  <ul class="flow-list">
-                    <li data-dict-key="ui.desc.readModel.tip1">要対応（反応率が低い通知）</li>
-                    <li data-dict-key="ui.desc.readModel.tip2">反応率</li>
-                    <li data-dict-key="ui.desc.readModel.tip3">最終結果</li>
-                  </ul>
+                  <div class="note" data-dict-key="ui.desc.readModel.tip1">要対応（反応率が低い通知）を最初に確認します。</div>
                 </div>
               </div>
             </div>
@@ -829,13 +902,95 @@
               </div>
             </aside>
           </div>
+          </details>
+        </section>
+
+        <section id="pane-vendors" class="app-pane" data-pane="vendors">
+          <div class="decision-card" id="vendors-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.nav.vendors">Vendor Hub</div>
+              <span id="vendors-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="vendors-decision-reason1" class="decision-reason">-</div>
+            <div id="vendors-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="vendors-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="vendors-action-edit" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="vendors-action-activate" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="vendors-action-disable" type="button" class="decision-action-btn" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
+          </div>
+          <details id="vendors-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="pane-grid">
+              <div class="pane-main">
+                <details class="table-section section" open>
+                  <summary data-dict-key="ui.label.vendors.table">Vendor一覧</summary>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.vendors.col.vendor">Vendor</th>
+                        <th data-dict-key="ui.label.vendors.col.state">状態</th>
+                        <th data-dict-key="ui.label.vendors.col.lastChecked">最終確認</th>
+                        <th data-dict-key="ui.label.vendors.col.linkId">リンクID</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vendor-rows"></tbody>
+                  </table>
+                </details>
+              </div>
+              <div class="pane-detail">
+                <div class="panel">
+                  <div class="panel-title" data-dict-key="ui.label.vendors.detail">詳細</div>
+                  <div class="panel-body">
+                    <div id="vendor-detail" class="note">行を選択すると詳細を表示します。</div>
+                    <details>
+                      <summary data-dict-key="ui.label.vendors.raw">RAW JSON</summary>
+                      <pre id="vendor-raw">-</pre>
+                    </details>
+                  </div>
+                </div>
+              </div>
+              <aside class="pane-actions">
+                <div class="action-panel">
+                  <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                  <div class="panel-body">
+                    <div class="note">
+                      <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
+                      <input type="text" id="vendor-trace" class="input-inline input-trace" />
+                      <button id="vendor-regen" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                      <span id="vendor-trace-note"></span>
+                    </div>
+                    <div class="note">
+                      <label data-dict-key="ui.label.vendors.state" data-dict-tip="ui.help.vendors.state">状態</label>
+                      <input id="vendor-state" class="input-inline input-sm" />
+                      <label data-dict-key="ui.label.vendors.limit" data-dict-tip="ui.help.vendors.limit">件数</label>
+                      <input id="vendor-limit" type="number" min="1" max="200" value="50" class="input-inline input-sm" />
+                    </div>
+                    <div class="row row-top">
+                      <button id="vendor-reload" type="button" data-dict-key="ui.label.vendors.reload">更新</button>
+                    </div>
+                    <div class="row row-top">
+                      <button id="vendor-edit" type="button" data-dict-key="ui.label.vendors.edit">作成・編集</button>
+                      <button id="vendor-activate" type="button" data-dict-key="ui.label.vendors.activate">有効化・公開</button>
+                      <button id="vendor-disable" type="button" data-dict-key="ui.label.vendors.disable">停止・無効化</button>
+                    </div>
+                    <div id="vendor-skeleton" class="skeleton-stack is-hidden">
+                      <div class="skeleton-line lg w-50"></div>
+                      <div class="skeleton-line w-70"></div>
+                      <div class="skeleton-line w-30"></div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </details>
         </section>
 
         <section id="pane-audit" class="app-pane" data-pane="audit">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.audit.focus">traceId / 監査ログ / 操作結果</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.audit.help">traceIdを入力して検索</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.audit.risk">traceIdの誤入力</span></div>
-          </div>
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -871,10 +1026,6 @@
         </section>
 
         <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.llm.focus">lineUserId / FAQ質問 / 生成結果</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.llm.help">Ops説明から確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.llm.risk">lineUserId未入力で実行する</span></div>
-          </div>
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -988,10 +1139,6 @@
         </section>
 
         <section id="pane-settings" class="app-pane" data-pane="settings">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.settings.focus">通知テンプレ / リンク / System Config</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.settings.help">Masterへ移動</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.settings.risk">planなしでset</span></div>
-          </div>
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -1014,10 +1161,6 @@
         </section>
 
         <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin">
-          <div class="summary-header is-compact">
-            <div class="summary-items"><span class="summary-label" data-dict-key="ui.label.summary.focus">見るべき3点</span><span data-dict-key="ui.desc.maintenance.focus">回復 / 保守 / 監査</span></div>
-            <div class="summary-inline"><span class="summary-label" data-dict-key="ui.label.summary.help">迷ったら</span><span data-dict-key="ui.desc.maintenance.help">Masterで確認</span><span class="summary-divider">|</span><span class="summary-label" data-dict-key="ui.label.summary.risk">よくある失敗</span><span data-dict-key="ui.desc.maintenance.risk">confirmToken未確認</span></div>
-          </div>
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
