@@ -31,7 +31,8 @@
 - `docs/PHASE254_EXECUTION_LOG.md`
 
 ## CI Evidence
-- Pending（PR checks 後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase254.log` を保存予定）
+- Main push Audit Gate run: `22125914900`
+- Stored log: `docs/CI_EVIDENCE/2026-02-18_22125914900_phase254.log`
 
 ## Risks
 - run 詳細の証跡件数が多い場合、UI描画コストが増える。

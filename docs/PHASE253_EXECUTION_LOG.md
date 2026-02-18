@@ -33,7 +33,8 @@
 - `docs/PHASE253_EXECUTION_LOG.md`
 
 ## CI Evidence
-- Pending（PR checks 後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase253.log` を保存予定）
+- Main push Audit Gate run: `22125768173`
+- Stored log: `docs/CI_EVIDENCE/2026-02-18_22125768173_phase253.log`
 
 ## Risks
 - run detail の evidence 件数が増えるとレスポンスが重くなるため上限管理が必要。
