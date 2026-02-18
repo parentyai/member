@@ -16,8 +16,8 @@
 - `node --test tests/phase260/*.test.js` PASS
 
 ## Evidence
-- CI run: PENDING
-- `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase260.log`
+- CI run: 22127324684
+- `docs/CI_EVIDENCE/2026-02-18_22127324684_phase260.log`
 
 ## Notes
 - CI run id is pending (to be filled after PR CI).
