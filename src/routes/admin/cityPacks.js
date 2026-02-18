@@ -16,13 +16,19 @@ function normalizeLimit(value) {
   return Math.min(Math.floor(num), 200);
 }
 
-function parseCityPackId(pathname) {
-  const activateMatch = pathname.match(/^\/api\/admin\/city-packs\/([^/]+)\/(activate|retire)$/);
+function parseCityPackAction(pathname) {
+  const activateMatch = pathname.match(/^\/api\/admin\/city-packs\/([^/]+)\/(activate|retire|structure)$/);
   if (!activateMatch) return null;
   return {
     cityPackId: decodeURIComponent(activateMatch[1]),
     action: activateMatch[2]
   };
+}
+
+function parseCityPackDetail(pathname) {
+  const match = pathname.match(/^\/api\/admin\/city-packs\/([^/]+)$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
 }
 
 async function handleCreateCityPack(req, res, bodyText, context) {
@@ -37,6 +43,8 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     allowedIntents: payload.allowedIntents,
     status: payload.status,
     rules: payload.rules,
+    targetingRules: payload.targetingRules,
+    slots: payload.slots,
     metadata: payload.metadata
   });
   await appendAuditLog({
@@ -68,6 +76,19 @@ async function handleListCityPacks(req, res, context) {
     ok: true,
     traceId: context.traceId,
     items
+  });
+}
+
+async function handleGetCityPack(req, res, context, cityPackId) {
+  const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+  if (!cityPack) {
+    writeJson(res, 404, { ok: false, error: 'city pack not found' });
+    return;
+  }
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    item: cityPack
   });
 }
 
@@ -106,6 +127,37 @@ async function handleRetireCityPack(req, res, context, cityPackId) {
   });
 }
 
+async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPackId) {
+  const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+  if (!cityPack) {
+    writeJson(res, 404, { ok: false, error: 'city pack not found' });
+    return;
+  }
+  const payload = parseJson(bodyText, res);
+  if (!payload) return;
+  const structurePatch = cityPacksRepo.normalizeCityPackStructurePatch(payload);
+  await cityPacksRepo.updateCityPack(cityPackId, structurePatch);
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.structure.update',
+    entityType: 'city_pack',
+    entityId: cityPackId,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      targetingRuleCount: structurePatch.targetingRules.length,
+      slotCount: structurePatch.slots.length
+    }
+  });
+  writeJson(res, 200, {
+    ok: true,
+    cityPackId,
+    traceId: context.traceId,
+    targetingRuleCount: structurePatch.targetingRules.length,
+    slotCount: structurePatch.slots.length
+  });
+}
+
 async function handleCityPacks(req, res, bodyText) {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   const context = {
@@ -119,6 +171,13 @@ async function handleCityPacks(req, res, bodyText) {
       await handleListCityPacks(req, res, context);
       return;
     }
+    if (req.method === 'GET') {
+      const detailId = parseCityPackDetail(pathname);
+      if (detailId) {
+        await handleGetCityPack(req, res, context, detailId);
+        return;
+      }
+    }
 
     if (req.method === 'POST' && pathname === '/api/admin/city-packs') {
       await handleCreateCityPack(req, res, bodyText, context);
@@ -126,13 +185,17 @@ async function handleCityPacks(req, res, bodyText) {
     }
 
     if (req.method === 'POST') {
-      const parsed = parseCityPackId(pathname);
+      const parsed = parseCityPackAction(pathname);
       if (parsed && parsed.action === 'activate') {
         await handleActivateCityPack(req, res, context, parsed.cityPackId);
         return;
       }
       if (parsed && parsed.action === 'retire') {
         await handleRetireCityPack(req, res, context, parsed.cityPackId);
+        return;
+      }
+      if (parsed && parsed.action === 'structure') {
+        await handleUpdateCityPackStructure(req, res, bodyText, context, parsed.cityPackId);
         return;
       }
     }

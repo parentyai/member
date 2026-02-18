@@ -25,6 +25,7 @@ const state = {
   selectedCityPackRunTraceId: null,
   selectedCityPackRunEvidenceId: null,
   selectedCityPackRequestId: null,
+  selectedCityPackDraftId: null,
   selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
@@ -1403,19 +1404,37 @@ function renderCityPackRequestRows(items) {
 function renderCityPackRequestDetail(payload) {
   const summaryEl = document.getElementById('city-pack-request-summary');
   const rawEl = document.getElementById('city-pack-request-raw');
+  const packIdEl = document.getElementById('city-pack-structure-pack-id');
+  const targetingEl = document.getElementById('city-pack-structure-targeting');
+  const slotsEl = document.getElementById('city-pack-structure-slots');
   const data = payload && typeof payload === 'object' ? payload : null;
   const req = data && data.request ? data.request : null;
+  const draftPack = data && Array.isArray(data.draftCityPacks) ? (data.draftCityPacks[0] || null) : null;
   if (!req) {
     if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.requestDetailEmpty', 'Requestの行を選択すると詳細を表示します。');
     if (rawEl) rawEl.textContent = '-';
+    if (packIdEl) packIdEl.textContent = '-';
+    if (targetingEl) targetingEl.value = '[]';
+    if (slotsEl) slotsEl.value = '[]';
+    state.selectedCityPackDraftId = null;
     return;
   }
   state.selectedCityPackRequestId = req.requestId || req.id || null;
+  state.selectedCityPackDraftId = draftPack && draftPack.id ? draftPack.id : null;
   const region = [req.regionCity, req.regionState].filter(Boolean).join(', ') || req.regionKey || '-';
   const drafts = Array.isArray(req.draftCityPackIds) ? req.draftCityPackIds.length : 0;
   const error = req.error ? ` / ${req.error}` : '';
   if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / region=${region} / drafts=${drafts} / traceId=${req.traceId || '-'}${error}`;
   if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
+  if (packIdEl) packIdEl.textContent = state.selectedCityPackDraftId || '-';
+  if (targetingEl) {
+    const targeting = draftPack && Array.isArray(draftPack.targetingRules) ? draftPack.targetingRules : [];
+    targetingEl.value = JSON.stringify(targeting, null, 2);
+  }
+  if (slotsEl) {
+    const slots = draftPack && Array.isArray(draftPack.slots) ? draftPack.slots : [];
+    slotsEl.value = JSON.stringify(slots, null, 2);
+  }
 }
 
 function renderErrors(summary) {
@@ -1900,6 +1919,56 @@ async function runCityPackRequestAction(action, row) {
   }
 }
 
+function parseStructureJson(id, fallbackLabelKey) {
+  const input = document.getElementById(id);
+  if (!input) return [];
+  const raw = String(input.value || '').trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_err) {
+    showToast(t(fallbackLabelKey, 'JSON形式が不正です'), 'danger');
+    throw new Error('invalid_json');
+  }
+}
+
+async function runCityPackSaveStructure() {
+  const cityPackId = state.selectedCityPackDraftId;
+  if (!cityPackId) {
+    showToast(t('ui.toast.cityPack.structureNeedDraft', 'Draft City Packを先に選択してください'), 'warn');
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  let targetingRules;
+  let slots;
+  try {
+    targetingRules = parseStructureJson('city-pack-structure-targeting', 'ui.toast.cityPack.structureInvalidTargeting');
+    slots = parseStructureJson('city-pack-structure-slots', 'ui.toast.cityPack.structureInvalidSlots');
+  } catch (_err) {
+    return;
+  }
+  const approved = window.confirm(t('ui.confirm.cityPack.structureSave', 'Rule Pack / Slots を保存しますか？'));
+  if (!approved) return;
+  try {
+    const data = await postJson(`/api/admin/city-packs/${encodeURIComponent(cityPackId)}/structure`, {
+      targetingRules,
+      slots
+    }, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.structureSaved', 'Rule Pack / Slots を保存しました'), 'ok');
+      if (state.selectedCityPackRequestId) {
+        await loadCityPackRequestDetail(state.selectedCityPackRequestId);
+      }
+      await loadCityPackRequests({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.structureSaveFail', 'Rule Pack / Slots の保存に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.structureSaveFail', 'Rule Pack / Slots の保存に失敗しました'), 'danger');
+  }
+}
+
 async function runCityPackAuditJob() {
   const trace = ensureTraceInput('monitor-trace');
   const mode = document.getElementById('city-pack-run-mode')?.value === 'canary' ? 'canary' : 'scheduled';
@@ -2316,6 +2385,9 @@ function setupCityPackControls() {
     await loadAudit().catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
+  });
+  document.getElementById('city-pack-structure-save')?.addEventListener('click', () => {
+    void runCityPackSaveStructure();
   });
 }
 

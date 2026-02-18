@@ -7,6 +7,8 @@ const { isMissingIndexError, sortByTimestampDesc, toMillis } = require('./queryF
 const COLLECTION = 'city_packs';
 const VALIDITY_DAYS = 120;
 const ALLOWED_STATUS = new Set(['draft', 'active', 'retired']);
+const ALLOWED_SLOT_STATUS = new Set(['active', 'inactive']);
+const ALLOWED_TARGET_EFFECT = new Set(['include', 'exclude']);
 
 function toDate(value) {
   if (!value) return null;
@@ -44,6 +46,74 @@ function normalizeRules(values) {
   return values.filter((value) => value && typeof value === 'object').map((value) => Object.assign({}, value));
 }
 
+function normalizeSlotStatus(value) {
+  const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_SLOT_STATUS.has(status) ? status : 'active';
+}
+
+function normalizeTargetEffect(value) {
+  const effect = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_TARGET_EFFECT.has(effect) ? effect : 'include';
+}
+
+function normalizeTargetValue(value) {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (typeof item === 'number' || typeof item === 'boolean') return item;
+        return null;
+      })
+      .filter((item) => item !== null && item !== '');
+  }
+  return null;
+}
+
+function normalizeTargetingRules(values) {
+  if (!Array.isArray(values)) return [];
+  const unique = new Set();
+  const rules = [];
+  values.forEach((value) => {
+    if (!value || typeof value !== 'object') return;
+    const field = typeof value.field === 'string' ? value.field.trim() : '';
+    const op = typeof value.op === 'string' ? value.op.trim().toLowerCase() : '';
+    const targetValue = normalizeTargetValue(value.value);
+    if (!field || !op) return;
+    if (targetValue === null || (Array.isArray(targetValue) && targetValue.length === 0)) return;
+    const effect = normalizeTargetEffect(value.effect);
+    const normalized = { field, op, value: targetValue, effect };
+    const signature = JSON.stringify(normalized);
+    if (unique.has(signature)) return;
+    unique.add(signature);
+    rules.push(normalized);
+  });
+  return rules;
+}
+
+function normalizeSlots(values) {
+  if (!Array.isArray(values)) return [];
+  const usedSlotIds = new Set();
+  const slots = [];
+  values.forEach((value, index) => {
+    if (!value || typeof value !== 'object') return;
+    const slotId = typeof value.slotId === 'string' ? value.slotId.trim() : '';
+    if (!slotId || usedSlotIds.has(slotId)) return;
+    usedSlotIds.add(slotId);
+    const order = Number.isFinite(Number(value.order)) ? Math.max(Math.floor(Number(value.order)), 1) : (index + 1);
+    slots.push({
+      slotId,
+      status: normalizeSlotStatus(value.status),
+      templateRefId: typeof value.templateRefId === 'string' && value.templateRefId.trim() ? value.templateRefId.trim() : null,
+      fallbackLinkRegistryId: typeof value.fallbackLinkRegistryId === 'string' && value.fallbackLinkRegistryId.trim() ? value.fallbackLinkRegistryId.trim() : null,
+      fallbackCtaText: typeof value.fallbackCtaText === 'string' && value.fallbackCtaText.trim() ? value.fallbackCtaText.trim() : null,
+      order
+    });
+  });
+  return slots.sort((a, b) => a.order - b.order);
+}
+
 function normalizeAllowedIntents(value) {
   const list = normalizeStringArray(Array.isArray(value) ? value : ['CITY_PACK']);
   return list.length ? list : ['CITY_PACK'];
@@ -68,9 +138,19 @@ function normalizePayload(data) {
     validUntil: resolveValidUntil(payload),
     allowedIntents: normalizeAllowedIntents(payload.allowedIntents),
     rules: normalizeRules(payload.rules),
+    targetingRules: normalizeTargetingRules(payload.targetingRules),
+    slots: normalizeSlots(payload.slots),
     description: typeof payload.description === 'string' ? payload.description.trim() : '',
     metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {},
     requestId: normalizeString(payload.requestId)
+  };
+}
+
+function normalizeCityPackStructurePatch(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  return {
+    targetingRules: normalizeTargetingRules(payload.targetingRules),
+    slots: normalizeSlots(payload.slots)
   };
 }
 
@@ -87,6 +167,8 @@ async function createCityPack(data) {
     validUntil: payload.validUntil,
     allowedIntents: payload.allowedIntents,
     rules: payload.rules,
+    targetingRules: payload.targetingRules,
+    slots: payload.slots,
     description: payload.description,
     metadata: payload.metadata,
     requestId: payload.requestId,
@@ -139,5 +221,6 @@ module.exports = {
   createCityPack,
   getCityPack,
   listCityPacks,
+  normalizeCityPackStructurePatch,
   updateCityPack
 };
