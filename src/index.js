@@ -593,8 +593,8 @@ function createServer() {
   }
 
   if (req.method === 'GET' && (pathname === '/admin/ops' || pathname === '/admin/ops/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'ops_readonly.html');
-    serveHtml(res, filePath);
+    res.writeHead(302, { location: '/admin/app' });
+    res.end();
     return;
   }
 
@@ -685,6 +685,18 @@ function createServer() {
   if (req.method === 'GET' && pathname === '/api/admin/user-timeline') {
     const { handleUserTimeline } = require('./routes/admin/userTimeline');
     handleUserTimeline(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/admin/notification-deliveries') {
+    const { handleNotificationDeliveries } = require('./routes/admin/notificationDeliveries');
+    handleNotificationDeliveries(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/admin/monitor-insights') {
+    const { handleMonitorInsights } = require('./routes/admin/monitorInsights');
+    handleMonitorInsights(req, res);
     return;
   }
 

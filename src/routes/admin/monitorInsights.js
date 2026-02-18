@@ -1,0 +1,195 @@
+'use strict';
+
+const { listAllNotificationDeliveries } = require('../../repos/firestore/phase2ReadRepo');
+const notificationsRepo = require('../../repos/firestore/notificationsRepo');
+const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const { listSnapshots } = require('../../repos/firestore/phase22KpiSnapshotsReadRepo');
+const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function normalizeWindowDays(value) {
+  if (String(value) === '30') return 30;
+  return 7;
+}
+
+function normalizeLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 10;
+  return Math.min(Math.floor(num), 100);
+}
+
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function resolveHost(url) {
+  if (typeof url !== 'string' || !url.trim()) return null;
+  try {
+    return new URL(url).host || null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function pickVendor(link) {
+  if (!link) return { vendorKey: 'unknown', vendorLabel: '未分類' };
+  const host = resolveHost(link.url);
+  const vendorKey = link.vendorKey || host || 'unknown';
+  const vendorLabel = link.vendorLabel || host || vendorKey;
+  return { vendorKey, vendorLabel };
+}
+
+function sortByCtr(a, b) {
+  const ctrA = Number.isFinite(a.ctr) ? a.ctr : -1;
+  const ctrB = Number.isFinite(b.ctr) ? b.ctr : -1;
+  if (ctrA !== ctrB) return ctrB - ctrA;
+  return (b.sent || 0) - (a.sent || 0);
+}
+
+async function handleMonitorInsights(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const windowDays = normalizeWindowDays(url.searchParams.get('windowDays'));
+  const limit = normalizeLimit(url.searchParams.get('limit'));
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const actor = resolveActor(req);
+  const nowMs = Date.now();
+  const sinceMs = nowMs - (windowDays * MS_PER_DAY);
+
+  try {
+    const all = await listAllNotificationDeliveries();
+    const deliveries = all
+      .map((item) => Object.assign({ id: item.id }, item.data || {}))
+      .filter((item) => {
+        const sentMs = toMillis(item.sentAt || item.deliveredAt);
+        return sentMs >= sinceMs;
+      });
+
+    const notificationIds = Array.from(new Set(deliveries.map((item) => item.notificationId).filter(Boolean)));
+    const notificationMap = new Map();
+    for (const notificationId of notificationIds) {
+      const notification = await notificationsRepo.getNotification(notificationId);
+      if (notification) notificationMap.set(notificationId, notification);
+    }
+
+    const linkIds = Array.from(new Set(Array.from(notificationMap.values()).map((item) => item.linkRegistryId).filter(Boolean)));
+    const linkMap = new Map();
+    for (const linkId of linkIds) {
+      const link = await linkRegistryRepo.getLink(linkId);
+      if (link) linkMap.set(linkId, link);
+    }
+
+    const vendorAgg = new Map();
+    const notificationAgg = new Map();
+    for (const delivery of deliveries) {
+      const notification = delivery.notificationId ? notificationMap.get(delivery.notificationId) || null : null;
+      const link = notification && notification.linkRegistryId ? linkMap.get(notification.linkRegistryId) || null : null;
+      const vendor = pickVendor(link);
+
+      const vendorKey = `${vendor.vendorKey}::${vendor.vendorLabel}`;
+      const vendorEntry = vendorAgg.get(vendorKey) || { vendorKey: vendor.vendorKey, vendorLabel: vendor.vendorLabel, sent: 0, clicked: 0, ctr: 0 };
+      vendorEntry.sent += 1;
+      if (delivery.clickAt) vendorEntry.clicked += 1;
+      vendorAgg.set(vendorKey, vendorEntry);
+
+      const notifKey = delivery.notificationId || 'unknown';
+      const notifEntry = notificationAgg.get(notifKey) || {
+        notificationId: delivery.notificationId || null,
+        title: notification && notification.title ? notification.title : null,
+        scenarioKey: notification && notification.scenarioKey ? notification.scenarioKey : null,
+        stepKey: notification && notification.stepKey ? notification.stepKey : null,
+        sent: 0,
+        clicked: 0,
+        ctr: 0
+      };
+      notifEntry.sent += 1;
+      if (delivery.clickAt) notifEntry.clicked += 1;
+      notificationAgg.set(notifKey, notifEntry);
+    }
+
+    const vendorCtrTop = Array.from(vendorAgg.values())
+      .map((item) => Object.assign({}, item, { ctr: item.sent > 0 ? item.clicked / item.sent : 0 }))
+      .sort(sortByCtr)
+      .slice(0, limit);
+
+    const ctrTop = Array.from(notificationAgg.values())
+      .map((item) => Object.assign({}, item, { ctr: item.sent > 0 ? item.clicked / item.sent : 0 }))
+      .sort(sortByCtr)
+      .slice(0, limit);
+
+    const snapshots = await listSnapshots({ order: 'desc', limit: 50 });
+    const abSnapshotRaw = snapshots.find((row) => toMillis(row.createdAt) >= sinceMs) || null;
+    const abSnapshot = abSnapshotRaw ? {
+      ctaA: abSnapshotRaw.ctaA || null,
+      ctaB: abSnapshotRaw.ctaB || null,
+      sentA: Number.isFinite(abSnapshotRaw.sentA) ? abSnapshotRaw.sentA : 0,
+      clickA: Number.isFinite(abSnapshotRaw.clickA) ? abSnapshotRaw.clickA : 0,
+      ctrA: Number.isFinite(abSnapshotRaw.ctrA) ? abSnapshotRaw.ctrA : 0,
+      sentB: Number.isFinite(abSnapshotRaw.sentB) ? abSnapshotRaw.sentB : 0,
+      clickB: Number.isFinite(abSnapshotRaw.clickB) ? abSnapshotRaw.clickB : 0,
+      ctrB: Number.isFinite(abSnapshotRaw.ctrB) ? abSnapshotRaw.ctrB : 0,
+      deltaCTR: Number.isFinite(abSnapshotRaw.deltaCTR) ? abSnapshotRaw.deltaCTR : 0,
+      createdAt: abSnapshotRaw.createdAt || null
+    } : null;
+
+    const faqLogs = await faqAnswerLogsRepo.listFaqAnswerLogs({ limit: 300, sinceAt: new Date(sinceMs).toISOString() });
+    const faqCounts = new Map();
+    faqLogs.forEach((item) => {
+      const ids = Array.isArray(item && item.matchedArticleIds) ? item.matchedArticleIds : [];
+      ids.forEach((articleId) => {
+        if (!articleId) return;
+        faqCounts.set(articleId, (faqCounts.get(articleId) || 0) + 1);
+      });
+    });
+    const faqReferenceTop = Array.from(faqCounts.entries())
+      .map(([articleId, count]) => ({ articleId, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+
+    try {
+      await appendAuditLog({
+        actor,
+        action: 'monitor.insights.view',
+        entityType: 'monitor',
+        entityId: 'insights',
+        traceId,
+        requestId,
+        payloadSummary: {
+          windowDays,
+          limit,
+          deliveries: deliveries.length,
+          vendorCount: vendorCtrTop.length
+        }
+      });
+    } catch (_err) {
+      // best effort only
+    }
+
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: true,
+      serverTime: new Date().toISOString(),
+      traceId,
+      windowDays,
+      vendorCtrTop,
+      ctrTop,
+      abSnapshot,
+      faqReferenceTop
+    }));
+  } catch (err) {
+    const message = err && err.message ? err.message : 'error';
+    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: message }));
+  }
+}
+
+module.exports = {
+  handleMonitorInsights
+};
