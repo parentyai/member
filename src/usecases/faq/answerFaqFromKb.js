@@ -8,6 +8,8 @@ const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { FAQ_ANSWER_SCHEMA_ID } = require('../../llm/schemas');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { getDisclaimer } = require('../../llm/disclaimers');
+const { toBlockedReasonCategory } = require('../../llm/blockedReasonCategory');
+const { POLICY_SNAPSHOT_VERSION, buildRegulatoryProfile } = require('../../llm/regulatoryProfile');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
@@ -50,6 +52,8 @@ const FAQ_FIELD_CATEGORIES = Object.freeze({
   'kbCandidates.validUntil': 'Public',
   'kbCandidates.allowedIntents': 'Public',
   'kbCandidates.disclaimerVersion': 'Public',
+  'kbCandidates.version': 'Public',
+  'kbCandidates.versionSemver': 'Public',
   'kbCandidates.searchScore': 'Public'
 });
 
@@ -146,26 +150,14 @@ function buildBlocked(params) {
     schemaErrors: payload.schemaErrors || null,
     fallbackActions: Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [],
     suggestedFaqs: Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [],
+    kbMeta: payload.kbMeta || null,
+    policySnapshotVersion: payload.policySnapshotVersion || POLICY_SNAPSHOT_VERSION,
     faqAnswer: null,
     disclaimerVersion: payload.disclaimerVersion || null,
     disclaimer: payload.disclaimer || null,
     serverTime: payload.serverTime || new Date().toISOString(),
     deprecated: false
   };
-}
-
-function toBlockedReasonCategory(blockedReason) {
-  const reason = String(blockedReason || '').trim();
-  if (!reason) return 'UNKNOWN';
-  if (reason === 'kb_no_match') return 'NO_KB_MATCH';
-  if (reason === 'low_confidence') return 'LOW_CONFIDENCE';
-  if (reason === 'direct_url_forbidden') return 'DIRECT_URL_DETECTED';
-  if (reason === 'warn_link_blocked') return 'WARN_LINK_BLOCKED';
-  if (reason === 'restricted_field_detected' || reason === 'secret_field_detected') return 'SENSITIVE_QUERY';
-  if (reason === 'consent_missing') return 'CONSENT_MISSING';
-  if (reason === 'guide_only_mode_blocked') return 'GUIDE_MODE_BLOCKED';
-  if (reason === 'personalization_not_allowed') return 'PERSONALIZATION_BLOCKED';
-  return 'UNKNOWN';
 }
 
 function looksLikeDirectUrl(value) {
@@ -293,6 +285,7 @@ function buildAuditSummaryBase(params) {
     llmEnabled: payload.llmEnabled,
     envLlmFeatureFlag: payload.envEnabled,
     dbLlmEnabled: payload.dbEnabled,
+    policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
     schemaId: FAQ_ANSWER_SCHEMA_ID,
     disclaimerVersion: payload.disclaimerVersion,
     lawfulBasis: payload.llmPolicy.lawfulBasis,
@@ -361,6 +354,16 @@ function evaluateConfidence(candidates) {
   };
 }
 
+function buildKbMeta(candidates, confidence) {
+  const safe = confidence || {};
+  return {
+    matchedCount: Array.isArray(candidates) ? candidates.length : 0,
+    top1Score: safe.top1Score === undefined ? null : safe.top1Score,
+    top2Score: safe.top2Score === undefined ? null : safe.top2Score,
+    top1Top2Ratio: safe.top1Top2Ratio === undefined ? null : safe.top1Top2Ratio
+  };
+}
+
 async function appendAudit(data, deps) {
   const auditFn = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
   if (!auditFn) return null;
@@ -385,11 +388,12 @@ async function appendDisclaimerRenderedAudit(params, deps) {
     entityId: payload.purpose || 'faq',
     traceId: payload.traceId || null,
     requestId: payload.requestId || null,
-    payloadSummary: {
-      purpose: payload.purpose || 'faq',
-      disclaimerVersion: payload.disclaimerVersion || null,
-      disclaimerShown: payload.disclaimerShown !== false,
-      llmStatus: payload.llmStatus || null,
+      payloadSummary: {
+        purpose: payload.purpose || 'faq',
+        surface: payload.surface || 'api',
+        disclaimerVersion: payload.disclaimerVersion || null,
+        disclaimerShown: payload.disclaimerShown !== false,
+        llmStatus: payload.llmStatus || null,
       inputFieldCategoriesUsed: []
     }
   }, deps);
@@ -437,6 +441,7 @@ async function answerFaqFromKb(params, deps) {
   const fallbackActions = buildFallbackActions(allowedSourceIds, requiredContactSourceIds);
   const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
+  const kbMeta = buildKbMeta(candidates, confidence);
   const normalizedPersonalization = personalizationCheck.isAllowed
     ? {
       locale: personalizationCheck.keys.includes('locale') && personalization ? personalization.locale : undefined,
@@ -463,6 +468,8 @@ async function answerFaqFromKb(params, deps) {
       validUntil: toIsoOrNull(item.validUntil),
       allowedIntents: Array.isArray(item.allowedIntents) ? item.allowedIntents : [],
       disclaimerVersion: item.disclaimerVersion || null,
+      version: item.version || null,
+      versionSemver: item.versionSemver || null,
       searchScore: toNumberOrNull(item.searchScore)
     }))
   };
@@ -488,6 +495,8 @@ async function answerFaqFromKb(params, deps) {
       'kbCandidates.validUntil',
       'kbCandidates.allowedIntents',
       'kbCandidates.disclaimerVersion',
+      'kbCandidates.version',
+      'kbCandidates.versionSemver',
       'kbCandidates.searchScore'
     ],
     fieldCategories: FAQ_FIELD_CATEGORIES,
@@ -501,6 +510,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory(view.blockedReason),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: view.blockedReason,
       serverTime
@@ -511,6 +522,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory('guide_only_mode_blocked'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: 'guide_only_mode_blocked',
       serverTime
@@ -521,6 +534,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory('personalization_not_allowed'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: 'personalization_not_allowed',
       serverTime
@@ -531,6 +546,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory('llm_disabled'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: 'llm_disabled',
       serverTime
@@ -541,6 +558,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory('consent_missing'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: 'consent_missing',
       serverTime
@@ -551,6 +570,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory(confidence.blockedReason || 'low_confidence'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: confidence.blockedReason || 'low_confidence',
       serverTime
@@ -561,6 +582,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory('contact_source_required'),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: 'contact_source_required',
       serverTime
@@ -594,7 +617,13 @@ async function answerFaqFromKb(params, deps) {
         {
           blockedReasonCategory: toBlockedReasonCategory(blocked.blockedReason),
           blockedReason: blocked.blockedReason,
-          inputHash: hashJson(view.data || llmInput)
+          inputHash: hashJson(view.data || llmInput),
+          kbMeta,
+          regulatoryProfile: buildRegulatoryProfile({
+            policy: llmPolicy,
+            fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+            blockedReasonCategory: toBlockedReasonCategory(blocked.blockedReason)
+          })
         }
       )
     }, deps).catch(() => null);
@@ -612,6 +641,7 @@ async function answerFaqFromKb(params, deps) {
         traceId,
         requestId,
         purpose: 'faq',
+        surface: 'api',
         disclaimerVersion: disclaimer.version,
         llmStatus: blocked.llmStatus,
         disclaimerShown: true
@@ -665,6 +695,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory(blockedReason),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: blockedReason,
       schemaErrors: guardResult && guardResult.schemaErrors ? guardResult.schemaErrors : null,
@@ -697,7 +729,13 @@ async function answerFaqFromKb(params, deps) {
           blockedReasonCategory: toBlockedReasonCategory(blockedReason),
           blockedReason,
           inputHash: hashJson(view.data),
-          outputHash: answer ? hashJson(answer) : null
+          outputHash: answer ? hashJson(answer) : null,
+          kbMeta,
+          regulatoryProfile: buildRegulatoryProfile({
+            policy: llmPolicy,
+            fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+            blockedReasonCategory: toBlockedReasonCategory(blockedReason)
+          })
         }
       )
     }, deps).catch(() => null);
@@ -715,6 +753,7 @@ async function answerFaqFromKb(params, deps) {
         traceId,
         requestId,
         purpose: 'faq',
+        surface: 'api',
         disclaimerVersion: disclaimer.version,
         llmStatus: blockedReason,
         disclaimerShown: true
@@ -732,6 +771,8 @@ async function answerFaqFromKb(params, deps) {
       blockedReasonCategory: toBlockedReasonCategory(blockedReason),
       fallbackActions,
       suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
       traceId,
       llmStatus: blockedReason,
       schemaErrors: null,
@@ -764,7 +805,13 @@ async function answerFaqFromKb(params, deps) {
           blockedReasonCategory: toBlockedReasonCategory(blockedReason),
           blockedReason,
           inputHash: hashJson(view.data),
-          outputHash: hashJson(answer)
+          outputHash: hashJson(answer),
+          kbMeta,
+          regulatoryProfile: buildRegulatoryProfile({
+            policy: llmPolicy,
+            fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+            blockedReasonCategory: toBlockedReasonCategory(blockedReason)
+          })
         }
       )
     }, deps).catch(() => null);
@@ -781,6 +828,7 @@ async function answerFaqFromKb(params, deps) {
         traceId,
         requestId,
         purpose: 'faq',
+        surface: 'api',
         disclaimerVersion: disclaimer.version,
         llmStatus: blockedReason,
         disclaimerShown: true
@@ -811,13 +859,19 @@ async function answerFaqFromKb(params, deps) {
         personalizationKeys: personalizationCheck.keys,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
       }),
-      {
-        blockedReasonCategory: null,
-        blockedReason: null,
-        inputHash: hashJson(view.data),
-        outputHash: hashJson(answer)
-      }
-    )
+        {
+          blockedReasonCategory: null,
+          blockedReason: null,
+          inputHash: hashJson(view.data),
+          outputHash: hashJson(answer),
+          kbMeta,
+          regulatoryProfile: buildRegulatoryProfile({
+            policy: llmPolicy,
+            fieldCategoriesUsed: view.inputFieldCategoriesUsed || [],
+            blockedReasonCategory: null
+          })
+        }
+      )
   }, deps).catch(() => null);
 
   await appendFaqAnswerLog({
@@ -833,6 +887,7 @@ async function answerFaqFromKb(params, deps) {
       traceId,
       requestId,
       purpose: 'faq',
+      surface: 'api',
       disclaimerVersion: disclaimer.version,
       llmStatus: 'ok',
       disclaimerShown: true
@@ -856,6 +911,8 @@ async function answerFaqFromKb(params, deps) {
     blockedReasonCategory: null,
     fallbackActions: [],
     suggestedFaqs,
+    kbMeta,
+    policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
     inputFieldCategoriesUsed: view.inputFieldCategoriesUsed,
