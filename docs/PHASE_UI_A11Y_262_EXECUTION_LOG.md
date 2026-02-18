@@ -6,9 +6,11 @@
 - `npm test`
 
 ## Results
-- `npm run test:docs`: (pending)
-- `node --test tests/phase262/*.test.js`: (pending)
-- `npm test`: (pending)
+- `npm run test:docs`: PASS (`[docs] OK`)
+- `node --test tests/phase262/*.test.js`: PASS (`2/2`)
+- `npm test`: PASS
+- commit: `ad73250`
+- PR: `https://github.com/parentyai/member/pull/507`
 
 ## Diff scope
 - `apps/admin/assets/admin.css`
@@ -21,4 +23,3 @@
 - `Alt+0..9` のpaneショートカットを追加（入力中は無効）。
 - `ATTENTION/STOP` の自動展開時、アクティブpaneのsummaryへフォーカス移動。
 - `prefers-reduced-motion` でトースト/スケルトンの動きを抑制。
-
