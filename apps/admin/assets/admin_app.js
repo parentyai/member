@@ -1254,6 +1254,21 @@ function createCityPackActionButton(action, label, row) {
   return btn;
 }
 
+function renderCityPackSourcePolicy(row) {
+  const sourceRefIdEl = document.getElementById('city-pack-source-policy-source-ref-id');
+  const sourceTypeEl = document.getElementById('city-pack-source-type');
+  const requiredLevelEl = document.getElementById('city-pack-required-level');
+  if (sourceRefIdEl) {
+    sourceRefIdEl.textContent = row && row.sourceRefId ? String(row.sourceRefId) : '-';
+  }
+  if (sourceTypeEl) {
+    sourceTypeEl.value = row && row.sourceType ? String(row.sourceType) : 'other';
+  }
+  if (requiredLevelEl) {
+    requiredLevelEl.value = row && row.requiredLevel ? String(row.requiredLevel) : 'required';
+  }
+}
+
 function renderCityPackInboxRows(items) {
   const tbody = document.getElementById('city-pack-rows');
   if (!tbody) return;
@@ -1261,11 +1276,12 @@ function renderCityPackInboxRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 6;
+    td.colSpan = 8;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderCityPackEvidence(null);
+    renderCityPackSourcePolicy(null);
     return;
   }
 
@@ -1278,6 +1294,14 @@ function renderCityPackInboxRows(items) {
     const sourceTd = document.createElement('td');
     sourceTd.textContent = row.source || '-';
     tr.appendChild(sourceTd);
+
+    const sourceTypeTd = document.createElement('td');
+    sourceTypeTd.textContent = row.sourceType || '-';
+    tr.appendChild(sourceTypeTd);
+
+    const requiredLevelTd = document.createElement('td');
+    requiredLevelTd.textContent = row.requiredLevel || '-';
+    tr.appendChild(requiredLevelTd);
 
     const resultTd = document.createElement('td');
     resultTd.textContent = row.result || '-';
@@ -1311,6 +1335,7 @@ function renderCityPackInboxRows(items) {
       tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
       tr.classList.add('row-active');
       state.selectedCityPackSourceRefId = row.sourceRefId || null;
+      renderCityPackSourcePolicy(row);
       if (row.evidenceLatestId) {
         void loadCityPackEvidence(row.evidenceLatestId);
       } else {
@@ -1882,6 +1907,34 @@ async function runCityPackSourceAction(action, row) {
   }
 }
 
+async function runCityPackSaveSourcePolicy() {
+  const sourceRefId = state.selectedCityPackSourceRefId;
+  if (!sourceRefId) {
+    showToast(t('ui.toast.cityPack.policyNeedSelection', 'Review Inboxの行を選択してください'), 'warn');
+    return;
+  }
+  const sourceType = document.getElementById('city-pack-source-type')?.value || 'other';
+  const requiredLevel = document.getElementById('city-pack-required-level')?.value || 'required';
+  const trace = ensureTraceInput('monitor-trace');
+  const approved = window.confirm(t('ui.confirm.cityPack.sourcePolicySave', '情報源ポリシーを保存しますか？'));
+  if (!approved) return;
+  try {
+    const data = await postJson(`/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/policy`, {
+      sourceType,
+      requiredLevel
+    }, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.policySaved', '情報源ポリシーを保存しました'), 'ok');
+      await loadCityPackReviewInbox({ notify: false });
+      await loadCityPackKpi({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.policySaveFail', '情報源ポリシーの保存に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.policySaveFail', '情報源ポリシーの保存に失敗しました'), 'danger');
+  }
+}
+
 async function runCityPackRequestAction(action, row) {
   if (!row || !row.requestId) return;
   const trace = ensureTraceInput('monitor-trace');
@@ -2389,6 +2442,10 @@ function setupCityPackControls() {
   document.getElementById('city-pack-structure-save')?.addEventListener('click', () => {
     void runCityPackSaveStructure();
   });
+  document.getElementById('city-pack-source-policy-save')?.addEventListener('click', () => {
+    void runCityPackSaveSourcePolicy();
+  });
+  renderCityPackSourcePolicy(null);
 }
 
 function setupVendorControls() {

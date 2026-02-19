@@ -103,6 +103,8 @@ Typical fields:
 - `lastResult`, `lastCheckAt`
 - `contentHash`
 - `riskLevel`
+- `sourceType` (`official`/`semi_official`/`community`/`other`)
+- `requiredLevel` (`required`/`optional`)
 - `evidenceLatestId`
 - `usedByCityPackIds[]`
 

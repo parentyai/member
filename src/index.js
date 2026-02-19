@@ -745,6 +745,7 @@ function createServer() {
     || /^\/api\/admin\/city-pack-source-audit\/runs\/[^/]+$/.test(pathname)
     || pathname === '/api/admin/city-pack-source-audit/run'
     || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)
+    || /^\/api\/admin\/source-refs\/[^/]+\/policy$/.test(pathname)
     || /^\/api\/admin\/source-evidence\/[^/]+$/.test(pathname);
   if (isCityPackAdminRoute) {
     const collectBody = () => new Promise((resolve) => {
@@ -789,7 +790,8 @@ function createServer() {
         || pathname === '/api/admin/city-pack-source-audit/runs'
         || /^\/api\/admin\/city-pack-source-audit\/runs\/[^/]+$/.test(pathname)
         || pathname === '/api/admin/city-pack-source-audit/run'
-        || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)) {
+        || /^\/api\/admin\/source-refs\/[^/]+\/(confirm|retire|replace|manual-only)$/.test(pathname)
+        || /^\/api\/admin\/source-refs\/[^/]+\/policy$/.test(pathname)) {
         const { handleCityPackReviewInbox } = require('./routes/admin/cityPackReviewInbox');
         const body = await collectBody();
         await handleCityPackReviewInbox(req, res, body);

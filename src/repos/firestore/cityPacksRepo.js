@@ -102,12 +102,19 @@ function normalizeSlots(values) {
     if (!slotId || usedSlotIds.has(slotId)) return;
     usedSlotIds.add(slotId);
     const order = Number.isFinite(Number(value.order)) ? Math.max(Math.floor(Number(value.order)), 1) : (index + 1);
+    const fallbackLinkRegistryId = typeof value.fallbackLinkRegistryId === 'string' && value.fallbackLinkRegistryId.trim()
+      ? value.fallbackLinkRegistryId.trim()
+      : null;
+    const fallbackCtaText = typeof value.fallbackCtaText === 'string' && value.fallbackCtaText.trim()
+      ? value.fallbackCtaText.trim()
+      : null;
+    const hasCompleteFallback = Boolean(fallbackLinkRegistryId && fallbackCtaText);
     slots.push({
       slotId,
       status: normalizeSlotStatus(value.status),
       templateRefId: typeof value.templateRefId === 'string' && value.templateRefId.trim() ? value.templateRefId.trim() : null,
-      fallbackLinkRegistryId: typeof value.fallbackLinkRegistryId === 'string' && value.fallbackLinkRegistryId.trim() ? value.fallbackLinkRegistryId.trim() : null,
-      fallbackCtaText: typeof value.fallbackCtaText === 'string' && value.fallbackCtaText.trim() ? value.fallbackCtaText.trim() : null,
+      fallbackLinkRegistryId: hasCompleteFallback ? fallbackLinkRegistryId : null,
+      fallbackCtaText: hasCompleteFallback ? fallbackCtaText : null,
       order
     });
   });

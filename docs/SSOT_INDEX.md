@@ -52,6 +52,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE265_EXECUTION_LOG.md`（City Pack拡張1〜12 PR0実行ログ）
 - `docs/PHASE266_PLAN.md`（City Pack拡張 PR1 targeting/slots 計画）
 - `docs/PHASE266_EXECUTION_LOG.md`（City Pack拡張 PR1 targeting/slots 実行ログ）
+- `docs/PHASE267_PLAN.md`（City Pack拡張 PR2 source policy + fallback CTA 計画）
+- `docs/PHASE267_EXECUTION_LOG.md`（City Pack拡張 PR2 source policy + fallback CTA 実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）

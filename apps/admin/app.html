@@ -619,6 +619,8 @@
                     <thead>
                       <tr>
                         <th data-dict-key="ui.label.cityPack.col.source">source</th>
+                        <th data-dict-key="ui.label.cityPack.col.sourceType">sourceType</th>
+                        <th data-dict-key="ui.label.cityPack.col.requiredLevel">requiredLevel</th>
                         <th data-dict-key="ui.label.cityPack.col.result">result</th>
                         <th data-dict-key="ui.label.cityPack.col.validUntil">validUntil</th>
                         <th data-dict-key="ui.label.cityPack.col.usedBy">usedBy</th>
@@ -703,6 +705,30 @@
                     <button id="city-pack-open-trace" type="button" data-dict-key="ui.label.cityPack.openTrace">追跡IDで証跡を開く</button>
                   </div>
                   <div id="city-pack-safe-step" class="safe-next-step" data-dict-key="ui.desc.cityPack.safeStep">次の安全な一手: Confirm候補を確認して期限を更新する</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.sourcePolicy">情報源ポリシー</summary>
+                    <div class="note row row-top">
+                      <span data-dict-key="ui.label.cityPack.sourcePolicy.sourceRefId">対象sourceRef</span>
+                      <span id="city-pack-source-policy-source-ref-id">-</span>
+                    </div>
+                    <div class="row">
+                      <label data-dict-key="ui.label.cityPack.sourceType" data-dict-tip="ui.help.cityPack.sourceType">sourceType
+                        <select id="city-pack-source-type" class="select-inline">
+                          <option value="official" data-dict-key="ui.value.cityPack.sourceType.official">official</option>
+                          <option value="semi_official" data-dict-key="ui.value.cityPack.sourceType.semiOfficial">semi_official</option>
+                          <option value="community" data-dict-key="ui.value.cityPack.sourceType.community">community</option>
+                          <option value="other" data-dict-key="ui.value.cityPack.sourceType.other">other</option>
+                        </select>
+                      </label>
+                      <label data-dict-key="ui.label.cityPack.requiredLevel" data-dict-tip="ui.help.cityPack.requiredLevel">requiredLevel
+                        <select id="city-pack-required-level" class="select-inline">
+                          <option value="required" data-dict-key="ui.value.cityPack.requiredLevel.required">required</option>
+                          <option value="optional" data-dict-key="ui.value.cityPack.requiredLevel.optional">optional</option>
+                        </select>
+                      </label>
+                      <button id="city-pack-source-policy-save" type="button" data-dict-key="ui.label.cityPack.sourcePolicy.save">ポリシー保存</button>
+                    </div>
+                  </details>
                   <div class="note" id="city-pack-runs-summary" data-dict-key="ui.desc.cityPack.runsSummary">実行履歴: 読み込み待ち</div>
                   <details class="section" open>
                     <summary data-dict-key="ui.label.cityPack.runResult">実行結果</summary>
