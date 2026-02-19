@@ -982,6 +982,76 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.templateLibrary">Template Library</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.templateLibrary.status" data-dict-tip="ui.help.cityPack.templateLibrary.status">状態
+                      <select id="city-pack-template-library-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.templateLibrary.status.all">すべて</option>
+                        <option value="draft" data-dict-key="ui.value.cityPack.templateLibrary.status.draft">下書き</option>
+                        <option value="active" data-dict-key="ui.value.cityPack.templateLibrary.status.active">有効</option>
+                        <option value="retired" data-dict-key="ui.value.cityPack.templateLibrary.status.retired">廃止</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.templateLibrary.limit" data-dict-tip="ui.help.cityPack.templateLibrary.limit">件数
+                      <input id="city-pack-template-library-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-template-library-reload" type="button" data-dict-key="ui.label.cityPack.templateLibrary.reload">Template一覧を更新</button>
+                  </div>
+                  <div id="city-pack-template-library-summary" class="note" data-dict-key="ui.desc.cityPack.templateLibrarySummary">Template一覧: 読み込み待ち</div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.status">status</th>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.name">name</th>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.schemaVersion">schemaVersion</th>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.source">source</th>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.traceId">traceId</th>
+                          <th data-dict-key="ui.label.cityPack.templateLibrary.col.actions">actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="city-pack-template-library-rows"></tbody>
+                    </table>
+                  </div>
+                  <div id="city-pack-template-library-detail-summary" class="note" data-dict-key="ui.desc.cityPack.templateLibraryDetailEmpty">Templateの行を選択すると詳細を表示します。</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.templateLibrary.detailRaw">RAW</summary>
+                    <pre id="city-pack-template-library-raw">-</pre>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.templateImportExport">Import / Export</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.templateExport.cityPackId" data-dict-tip="ui.help.cityPack.templateExport.cityPackId">cityPackId
+                      <input id="city-pack-template-export-pack-id" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.templateExport.cityPackId" placeholder="cp_xxx" />
+                    </label>
+                    <button id="city-pack-template-export-run" type="button" data-role="admin" data-dict-key="ui.label.cityPack.templateExport.run">Templateを出力</button>
+                    <button id="city-pack-template-library-create" type="button" data-role="admin" data-dict-key="ui.label.cityPack.templateLibrary.create">Templateとして保存</button>
+                  </div>
+                  <div class="row">
+                    <button id="city-pack-template-import-dry-run" type="button" data-role="admin" data-dict-key="ui.label.cityPack.templateImport.dryRun">Import Dry Run</button>
+                    <button id="city-pack-template-import-apply" type="button" data-role="admin" data-dict-key="ui.label.cityPack.templateImport.apply">Import Apply</button>
+                  </div>
+                  <div class="input-grid row-top">
+                    <div class="note">
+                      <label data-dict-key="ui.label.cityPack.templateImport.planHash">planHash</label>
+                      <input id="city-pack-template-import-plan-hash" class="input-sm" readonly />
+                    </div>
+                    <div class="note">
+                      <label data-dict-key="ui.label.cityPack.templateImport.confirmToken">confirmToken</label>
+                      <input id="city-pack-template-import-confirm-token" class="input-sm" readonly />
+                    </div>
+                  </div>
+                  <div id="city-pack-template-import-summary" class="note" data-dict-key="ui.desc.cityPack.templateImportSummary">Template import/export: 操作待ち</div>
+                  <label class="note" data-dict-key="ui.label.cityPack.templateImport.templateJson" data-dict-tip="ui.help.cityPack.templateImport.templateJson">template(JSON)
+                    <textarea id="city-pack-template-json" class="textarea-code" data-dict-placeholder="ui.placeholder.cityPack.templateImport.templateJson" placeholder="{ }"></textarea>
+                  </label>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.evidenceViewer">Evidence Viewer</div>
                 <div class="panel-body">
                   <div id="city-pack-evidence-summary" class="note" data-dict-key="ui.desc.cityPack.evidence.empty">Inboxの行を選択すると証跡を表示します。</div>

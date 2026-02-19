@@ -21,6 +21,7 @@ const state = {
   cityPackFeedbackItems: [],
   cityPackBulletinItems: [],
   cityPackProposalItems: [],
+  cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
   cityPackKpi: null,
   cityPackMetrics: null,
@@ -32,8 +33,11 @@ const state = {
   selectedCityPackFeedbackId: null,
   selectedCityPackBulletinId: null,
   selectedCityPackProposalId: null,
+  selectedCityPackTemplateLibraryId: null,
   selectedCityPackDraftId: null,
   selectedCityPackSourceRefId: null,
+  cityPackTemplateImportPlanHash: null,
+  cityPackTemplateImportConfirmToken: null,
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
   composerUpdatedAt: null,
@@ -1666,6 +1670,94 @@ function renderCityPackProposalDetail(item) {
   if (rawEl) rawEl.textContent = JSON.stringify(item, null, 2);
 }
 
+function renderCityPackTemplateLibraryDetail(item) {
+  const summaryEl = document.getElementById('city-pack-template-library-detail-summary');
+  const rawEl = document.getElementById('city-pack-template-library-raw');
+  if (!item) {
+    if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.templateLibraryDetailEmpty', 'Templateの行を選択すると詳細を表示します。');
+    if (rawEl) rawEl.textContent = '-';
+    state.selectedCityPackTemplateLibraryId = null;
+    return;
+  }
+  if (summaryEl) {
+    summaryEl.textContent = `status=${item.status || '-'} / name=${item.name || '-'} / traceId=${item.traceId || '-'} / source=${item.source || '-'}`;
+  }
+  if (rawEl) rawEl.textContent = JSON.stringify(item, null, 2);
+}
+
+function createCityPackTemplateLibraryActionButton(action, label, row) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn city-pack-action-btn';
+  btn.textContent = label;
+  btn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    void runCityPackTemplateLibraryAction(action, row);
+  });
+  return btn;
+}
+
+function renderCityPackTemplateLibraryRows(items) {
+  const tbody = document.getElementById('city-pack-template-library-rows');
+  const summaryEl = document.getElementById('city-pack-template-library-summary');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (summaryEl) {
+    summaryEl.textContent = rows.length
+      ? `${t('ui.label.cityPack.templateLibrary.summary', 'Template件数')}: ${rows.length}`
+      : t('ui.desc.cityPack.templateLibrarySummaryEmpty', 'Templateがありません。');
+  }
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    renderCityPackTemplateLibraryDetail(null);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    const cells = [
+      row.status || '-',
+      row.name || '-',
+      row.schemaVersion || '-',
+      row.source || '-',
+      row.traceId || '-'
+    ];
+    cells.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement('td');
+    const actions = [
+      { key: 'activate', label: t('ui.label.cityPack.templateLibrary.action.activate', '有効化') },
+      { key: 'retire', label: t('ui.label.cityPack.templateLibrary.action.retire', '廃止') }
+    ];
+    actions.forEach((action) => {
+      actionTd.appendChild(createCityPackTemplateLibraryActionButton(action.key, action.label, row));
+    });
+    tr.appendChild(actionTd);
+
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      state.selectedCityPackTemplateLibraryId = row.id || null;
+      renderCityPackTemplateLibraryDetail(row);
+      const templateInput = document.getElementById('city-pack-template-json');
+      if (templateInput) {
+        const template = row.template && typeof row.template === 'object' ? row.template : {};
+        templateInput.value = JSON.stringify(template, null, 2);
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
 function createCityPackBulletinActionButton(action, label, row) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -2182,6 +2274,30 @@ async function loadCityPackProposals(options) {
   }
 }
 
+async function loadCityPackTemplateLibrary(options) {
+  const notify = options && options.notify;
+  const status = document.getElementById('city-pack-template-library-status-filter')?.value || '';
+  const limit = document.getElementById('city-pack-template-library-limit')?.value || '50';
+  const traceId = ensureTraceInput('monitor-trace');
+  const params = new URLSearchParams({ limit, traceId });
+  if (status) params.set('status', status);
+  try {
+    const data = await getJson(`/api/admin/city-pack-template-library?${params.toString()}`, traceId);
+    if (data && data.ok) {
+      const items = Array.isArray(data.items) ? data.items : [];
+      state.cityPackTemplateLibraryItems = items;
+      renderCityPackTemplateLibraryRows(items);
+      if (!state.selectedCityPackTemplateLibraryId) renderCityPackTemplateLibraryDetail(null);
+      if (notify) showToast(t('ui.toast.cityPack.templateLibraryLoaded', 'Template一覧を取得しました'), 'ok');
+    } else if (notify) {
+      showToast(t('ui.toast.cityPack.templateLibraryLoadFail', 'Template一覧の取得に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.cityPack.templateLibraryLoadFail', 'Template一覧の取得に失敗しました'), 'danger');
+    renderCityPackTemplateLibraryRows([]);
+  }
+}
+
 async function loadCityPackRequestDetail(requestId) {
   if (!requestId) {
     renderCityPackRequestDetail(null);
@@ -2528,6 +2644,170 @@ async function createCityPackProposalDraft() {
     }
   } catch (_err) {
     showToast(t('ui.toast.cityPack.proposalCreateFail', 'Proposalの作成に失敗しました'), 'danger');
+  }
+}
+
+function parseCityPackTemplateJson(inputId, errorKey) {
+  const input = document.getElementById(inputId);
+  if (!input) return null;
+  const raw = String(input.value || '').trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid_template');
+    return parsed;
+  } catch (_err) {
+    showToast(t(errorKey, 'template JSONが不正です'), 'danger');
+    throw new Error('invalid_json');
+  }
+}
+
+async function runCityPackTemplateLibraryAction(action, row) {
+  const templateId = row && row.id ? row.id : null;
+  if (!templateId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  const label = t(`ui.label.cityPack.templateLibrary.action.${action}`, action);
+  const approved = window.confirm(t(`ui.confirm.cityPack.templateLibrary.${action}`, `${label} を実行しますか？`));
+  if (!approved) return;
+  try {
+    const data = await postJson(`/api/admin/city-pack-template-library/${encodeURIComponent(templateId)}/${action}`, {}, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.templateLibraryActionOk', 'Template状態を更新しました'), 'ok');
+      await loadCityPackTemplateLibrary({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.templateLibraryActionFail', 'Template状態の更新に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.templateLibraryActionFail', 'Template状態の更新に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackTemplateExport() {
+  const cityPackId = document.getElementById('city-pack-template-export-pack-id')?.value?.trim() || '';
+  if (!cityPackId) {
+    showToast(t('ui.toast.cityPack.templateExportNeedPackId', 'cityPackId を入力してください'), 'warn');
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const data = await getJson(`/api/admin/city-packs/${encodeURIComponent(cityPackId)}/export`, trace);
+    if (data && data.ok && data.template) {
+      const templateText = JSON.stringify(data.template, null, 2);
+      const templateInput = document.getElementById('city-pack-template-json');
+      if (templateInput) templateInput.value = templateText;
+      const summary = document.getElementById('city-pack-template-import-summary');
+      if (summary) summary.textContent = `${t('ui.desc.cityPack.templateExportSummary', 'Templateを出力しました')}: ${cityPackId}`;
+      showToast(t('ui.toast.cityPack.templateExportOk', 'Templateを出力しました'), 'ok');
+    } else {
+      showToast(t('ui.toast.cityPack.templateExportFail', 'Templateの出力に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.templateExportFail', 'Templateの出力に失敗しました'), 'danger');
+  }
+}
+
+async function createCityPackTemplateLibraryEntry() {
+  let template = null;
+  try {
+    template = parseCityPackTemplateJson('city-pack-template-json', 'ui.toast.cityPack.templateJsonInvalid');
+  } catch (_err) {
+    return;
+  }
+  if (!template) {
+    showToast(t('ui.toast.cityPack.templateNeedJson', 'template JSON を入力してください'), 'warn');
+    return;
+  }
+  const name = template.name ? String(template.name).trim() : '';
+  if (!name) {
+    showToast(t('ui.toast.cityPack.templateNeedName', 'template.name が必要です'), 'warn');
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/city-pack-template-library', { name, template, source: 'manual' }, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.templateLibraryCreateOk', 'Templateを保存しました'), 'ok');
+      await loadCityPackTemplateLibrary({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.templateLibraryCreateFail', 'Templateの保存に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.templateLibraryCreateFail', 'Templateの保存に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackTemplateImportDryRun() {
+  let template = null;
+  try {
+    template = parseCityPackTemplateJson('city-pack-template-json', 'ui.toast.cityPack.templateJsonInvalid');
+  } catch (_err) {
+    return;
+  }
+  if (!template) {
+    showToast(t('ui.toast.cityPack.templateNeedJson', 'template JSON を入力してください'), 'warn');
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/city-packs/import/dry-run', { template }, trace);
+    if (data && data.ok) {
+      state.cityPackTemplateImportPlanHash = data.planHash || null;
+      state.cityPackTemplateImportConfirmToken = data.confirmToken || null;
+      const planHashEl = document.getElementById('city-pack-template-import-plan-hash');
+      const tokenEl = document.getElementById('city-pack-template-import-confirm-token');
+      const summary = document.getElementById('city-pack-template-import-summary');
+      if (planHashEl) planHashEl.value = data.planHash || '';
+      if (tokenEl) tokenEl.value = data.confirmToken || '';
+      if (summary) summary.textContent = t('ui.desc.cityPack.templateImportDryRunOk', 'Import dry-run を実行しました。');
+      showToast(t('ui.toast.cityPack.templateImportDryRunOk', 'Import dry-run を実行しました'), 'ok');
+    } else {
+      showToast(t('ui.toast.cityPack.templateImportDryRunFail', 'Import dry-run に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.templateImportDryRunFail', 'Import dry-run に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackTemplateImportApply() {
+  let template = null;
+  try {
+    template = parseCityPackTemplateJson('city-pack-template-json', 'ui.toast.cityPack.templateJsonInvalid');
+  } catch (_err) {
+    return;
+  }
+  if (!template) {
+    showToast(t('ui.toast.cityPack.templateNeedJson', 'template JSON を入力してください'), 'warn');
+    return;
+  }
+  const planHashEl = document.getElementById('city-pack-template-import-plan-hash');
+  const tokenEl = document.getElementById('city-pack-template-import-confirm-token');
+  const planHash = (planHashEl?.value || state.cityPackTemplateImportPlanHash || '').trim();
+  const confirmToken = (tokenEl?.value || state.cityPackTemplateImportConfirmToken || '').trim();
+  if (!planHash || !confirmToken) {
+    showToast(t('ui.toast.cityPack.templateImportNeedDryRun', '先に dry-run を実行してください'), 'warn');
+    return;
+  }
+  const approved = window.confirm(t('ui.confirm.cityPack.templateImportApply', 'Import apply を実行しますか？'));
+  if (!approved) return;
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/city-packs/import/apply', {
+      template,
+      planHash,
+      confirmToken
+    }, trace);
+    if (data && data.ok) {
+      const summary = document.getElementById('city-pack-template-import-summary');
+      if (summary) {
+        summary.textContent = `${t('ui.desc.cityPack.templateImportApplyOk', 'Import apply を実行しました')}: ${data.cityPackId || '-'}`;
+      }
+      showToast(t('ui.toast.cityPack.templateImportApplyOk', 'Import apply を実行しました'), 'ok');
+      await loadCityPackRequests({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.templateImportApplyFail', 'Import apply に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.templateImportApplyFail', 'Import apply に失敗しました'), 'danger');
   }
 }
 
@@ -3333,6 +3613,12 @@ function setupCityPackControls() {
   document.getElementById('city-pack-proposal-status-filter')?.addEventListener('change', () => {
     void loadCityPackProposals({ notify: false });
   });
+  document.getElementById('city-pack-template-library-reload')?.addEventListener('click', () => {
+    void loadCityPackTemplateLibrary({ notify: true });
+  });
+  document.getElementById('city-pack-template-library-status-filter')?.addEventListener('change', () => {
+    void loadCityPackTemplateLibrary({ notify: false });
+  });
   document.getElementById('city-pack-metrics-reload')?.addEventListener('click', () => {
     void loadCityPackMetrics({ notify: true });
   });
@@ -3344,6 +3630,7 @@ function setupCityPackControls() {
     void loadCityPackFeedback({ notify: false });
     void loadCityPackBulletins({ notify: false });
     void loadCityPackProposals({ notify: false });
+    void loadCityPackTemplateLibrary({ notify: false });
     void loadCityPackReviewInbox({ notify: true });
     void loadCityPackKpi({ notify: false });
     void loadCityPackMetrics({ notify: false });
@@ -3387,6 +3674,18 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-proposal-create')?.addEventListener('click', () => {
     void createCityPackProposalDraft();
+  });
+  document.getElementById('city-pack-template-export-run')?.addEventListener('click', () => {
+    void runCityPackTemplateExport();
+  });
+  document.getElementById('city-pack-template-library-create')?.addEventListener('click', () => {
+    void createCityPackTemplateLibraryEntry();
+  });
+  document.getElementById('city-pack-template-import-dry-run')?.addEventListener('click', () => {
+    void runCityPackTemplateImportDryRun();
+  });
+  document.getElementById('city-pack-template-import-apply')?.addEventListener('click', () => {
+    void runCityPackTemplateImportApply();
   });
   renderCityPackSourcePolicy(null);
 }
@@ -3475,6 +3774,7 @@ function setupDecisionActions() {
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
     activatePane('city-pack');
     document.getElementById('city-pack-request-reload')?.click();
+    document.getElementById('city-pack-template-library-reload')?.click();
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');
@@ -3853,6 +4153,7 @@ function setupLlmControls() {
   loadCityPackFeedback({ notify: false });
   loadCityPackBulletins({ notify: false });
   loadCityPackProposals({ notify: false });
+  loadCityPackTemplateLibrary({ notify: false });
   loadCityPackReviewInbox({ notify: false });
   loadCityPackKpi({ notify: false });
   loadCityPackMetrics({ notify: false });
