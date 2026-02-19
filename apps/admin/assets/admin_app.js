@@ -36,6 +36,14 @@ const state = {
   currentComposerStatus: '未取得',
   composerTone: 'unknown',
   composerUpdatedAt: null,
+  composerSavedItems: [],
+  composerSavedFilteredItems: [],
+  composerSelectedNotificationId: null,
+  composerListLoadedAt: null,
+  composerLinkPreview: null,
+  composerCurrentNotificationId: null,
+  composerCurrentPlanHash: null,
+  composerCurrentConfirmToken: null,
   topCauses: '-',
   topCausesTip: '',
   topAnomaly: '-',
@@ -2583,27 +2591,122 @@ async function loadAudit() {
   if (result) result.textContent = JSON.stringify(data || {}, null, 2);
 }
 
-function updateComposerSummary() {
+function normalizeComposerType(value) {
+  const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (raw === 'GENERAL' || raw === 'ANNOUNCEMENT' || raw === 'VENDOR' || raw === 'AB' || raw === 'STEP') return raw;
+  return 'STEP';
+}
+
+function selectedComposerType() {
+  const typeEl = document.getElementById('notificationType');
+  return normalizeComposerType(typeEl ? typeEl.value : '');
+}
+
+function applyComposerTypeFields() {
+  const selected = selectedComposerType();
+  document.querySelectorAll('#composer-type-fields .type-fields').forEach((el) => {
+    const type = normalizeComposerType(el.getAttribute('data-type-fields') || '');
+    if (type === selected) el.classList.add('is-active');
+    else el.classList.remove('is-active');
+  });
+  if (selected !== 'STEP') {
+    const scenarioEl = document.getElementById('scenarioKey');
+    const stepEl = document.getElementById('stepKey');
+    const targetLimitEl = document.getElementById('targetLimit');
+    const targetRegionEl = document.getElementById('targetRegion');
+    const membersOnlyEl = document.getElementById('membersOnly');
+    if (scenarioEl) scenarioEl.value = 'A';
+    if (stepEl) stepEl.value = 'week';
+    if (targetLimitEl) targetLimitEl.value = '50';
+    if (targetRegionEl) targetRegionEl.value = '';
+    if (membersOnlyEl) membersOnlyEl.checked = false;
+  }
+}
+
+function mapComposerStatusLabel(statusLabelValue) {
+  const raw = typeof statusLabelValue === 'string' ? statusLabelValue.toUpperCase() : '';
+  if (raw === 'ACTIVE') return 'approved';
+  if (raw === 'SENT') return 'executed';
+  return 'draft';
+}
+
+function updateComposerStatusPill() {
+  const pill = document.getElementById('composer-status-pill');
+  if (!pill) return;
+  const mapped = mapComposerStatusLabel(state.currentComposerStatus);
+  pill.textContent = mapped;
+  pill.className = 'badge badge-info';
+  if (mapped === 'approved') pill.className = 'badge badge-warn';
+  if (mapped === 'executed') pill.className = 'badge badge-ok';
+}
+
+function buildComposerNotificationMeta(type) {
+  if (type === 'ANNOUNCEMENT') {
+    const expiry = document.getElementById('metaAnnouncementExpiry')?.value?.trim() || '';
+    const priority = document.getElementById('metaAnnouncementPriority')?.value?.trim() || '';
+    const meta = {};
+    if (expiry) meta.expiry = expiry;
+    if (priority) meta.priority = priority;
+    return Object.keys(meta).length ? meta : null;
+  }
+  if (type === 'VENDOR') {
+    const vendorId = document.getElementById('metaVendorId')?.value?.trim() || '';
+    const targeting = document.getElementById('metaVendorTargeting')?.value?.trim() || '';
+    const meta = {};
+    if (vendorId) meta.vendorId = vendorId;
+    if (targeting) meta.targeting = targeting;
+    return Object.keys(meta).length ? meta : null;
+  }
+  if (type === 'AB') {
+    const variants = document.getElementById('metaAbVariants')?.value?.trim() || '';
+    const ratio = document.getElementById('metaAbRatio')?.value?.trim() || '';
+    const metric = document.getElementById('metaAbMetric')?.value?.trim() || '';
+    const meta = {};
+    if (variants) meta.variants = variants;
+    if (ratio) meta.ratio = ratio;
+    if (metric) meta.metric = metric;
+    return Object.keys(meta).length ? meta : null;
+  }
+  if (type === 'STEP') {
+    const region = document.getElementById('targetRegion')?.value?.trim() || '';
+    const membersOnly = Boolean(document.getElementById('membersOnly')?.checked);
+    const targetLimit = document.getElementById('targetLimit')?.value?.trim() || '';
+    const meta = {};
+    if (region) meta.region = region;
+    if (membersOnly) meta.membersOnly = true;
+    if (targetLimit) meta.cap = Number(targetLimit) || 50;
+    return Object.keys(meta).length ? meta : null;
+  }
+  return null;
+}
+
+function renderComposerLivePreview() {
   const title = document.getElementById('title')?.value?.trim() || '-';
-  const category = document.getElementById('notificationCategory')?.value || '-';
-  const scenario = document.getElementById('scenarioKey')?.value || '-';
-  const step = document.getElementById('stepKey')?.value || '-';
-  const targetRegion = document.getElementById('targetRegion')?.value?.trim();
-  const limit = document.getElementById('targetLimit')?.value || '-';
-  const membersOnly = document.getElementById('membersOnly')?.checked ? t('ui.label.composer.membersOnly', '会員のみ') : t('ui.label.composer.membersAll', '全員');
-  const target = `${scenario}/${step} ${targetRegion ? `(${targetRegion})` : ''} limit:${limit} ${membersOnly}`;
+  const body = document.getElementById('body')?.value || '-';
+  const cta = document.getElementById('ctaText')?.value?.trim() || '-';
+  const previewTitle = document.getElementById('composer-preview-title');
+  const previewBody = document.getElementById('composer-preview-body');
+  const previewCta = document.getElementById('composer-preview-cta');
+  const previewLink = document.getElementById('composer-preview-link');
+  if (previewTitle) previewTitle.textContent = title;
+  if (previewBody) previewBody.textContent = body;
+  if (previewCta) previewCta.textContent = cta;
+  if (previewLink) {
+    const link = state.composerLinkPreview;
+    if (link && link.id) {
+      const label = link.label || link.title || link.id;
+      previewLink.textContent = `${label}${link.url ? ` (${link.url})` : ''}`;
+    } else {
+      const linkId = document.getElementById('linkRegistryId')?.value?.trim() || '';
+      previewLink.textContent = linkId ? linkId : '-';
+    }
+  }
+}
 
-  const purposeEl = document.getElementById('composer-summary-purpose');
-  const targetEl = document.getElementById('composer-summary-target');
-  const timingEl = document.getElementById('composer-summary-timing');
-  const riskEl = document.getElementById('composer-summary-risk');
-  const statusEl = document.getElementById('composer-summary-status');
-
-  if (purposeEl) purposeEl.textContent = `${title} / ${category}`;
-  if (targetEl) targetEl.textContent = target;
-  if (timingEl) timingEl.textContent = step;
-  if (riskEl) riskEl.textContent = state.lastRisk || t('ui.desc.composer.riskDefault', 'Plan未実行');
-  if (statusEl) statusEl.textContent = state.currentComposerStatus || '-';
+function updateComposerSummary() {
+  applyComposerTypeFields();
+  updateComposerStatusPill();
+  renderComposerLivePreview();
 }
 
 function setComposerStatus(tone, label) {
@@ -2636,28 +2739,223 @@ function updateSafetyBadge(result) {
 }
 
 function buildDraftPayload() {
+  const notificationType = selectedComposerType();
+  const scenarioKey = notificationType === 'STEP'
+    ? (document.getElementById('scenarioKey')?.value || 'A')
+    : 'A';
+  const stepKey = notificationType === 'STEP'
+    ? (document.getElementById('stepKey')?.value || 'week')
+    : 'week';
+  const notificationMeta = buildComposerNotificationMeta(notificationType);
   return {
-    title: document.getElementById('title').value.trim(),
-    body: document.getElementById('body').value,
-    ctaText: document.getElementById('ctaText').value.trim(),
-    linkRegistryId: document.getElementById('linkRegistryId').value.trim(),
-    scenarioKey: document.getElementById('scenarioKey').value,
-    stepKey: document.getElementById('stepKey').value,
-    notificationCategory: document.getElementById('notificationCategory').value,
-    target: buildTarget()
+    title: document.getElementById('title')?.value?.trim() || '',
+    body: document.getElementById('body')?.value || '',
+    ctaText: document.getElementById('ctaText')?.value?.trim() || '',
+    linkRegistryId: document.getElementById('linkRegistryId')?.value?.trim() || '',
+    scenarioKey,
+    stepKey,
+    notificationCategory: document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE',
+    notificationType,
+    notificationMeta,
+    target: buildTarget(notificationType)
   };
 }
 
-function buildTarget() {
-  const region = document.getElementById('targetRegion').value.trim();
-  const limitValue = document.getElementById('targetLimit').value;
+function buildTarget(notificationType) {
+  const type = normalizeComposerType(notificationType);
+  if (type !== 'STEP') {
+    return { limit: 50 };
+  }
+  const region = document.getElementById('targetRegion')?.value?.trim() || '';
+  const limitValue = document.getElementById('targetLimit')?.value || '';
   const limit = limitValue ? Number(limitValue) : null;
-  const membersOnly = document.getElementById('membersOnly').checked;
+  const membersOnly = Boolean(document.getElementById('membersOnly')?.checked);
   const target = {};
   if (region) target.region = region;
   if (membersOnly) target.membersOnly = true;
-  if (limit) target.limit = limit;
+  target.limit = limit && Number.isFinite(limit) && limit > 0 ? limit : 50;
   return target;
+}
+
+function normalizeComposerSavedStatus(status) {
+  const raw = typeof status === 'string' ? status.toLowerCase() : '';
+  if (raw === 'active') return 'approved';
+  if (raw === 'sent') return 'executed';
+  return raw || 'draft';
+}
+
+function formatTimestampForList(value) {
+  if (!value) return '-';
+  if (typeof value === 'string') return value;
+  if (value && typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (value && Number.isFinite(value._seconds)) return new Date(value._seconds * 1000).toISOString();
+  return String(value);
+}
+
+function applyComposerSavedFilters() {
+  const keyword = (document.getElementById('composer-saved-search')?.value || '').trim().toLowerCase();
+  const status = (document.getElementById('composer-saved-status')?.value || '').trim().toLowerCase();
+  const type = (document.getElementById('composer-saved-type')?.value || '').trim().toUpperCase();
+  const category = (document.getElementById('composer-saved-category')?.value || '').trim().toLowerCase();
+  const scenarioKey = (document.getElementById('composer-saved-scenario')?.value || '').trim().toLowerCase();
+  const stepKey = (document.getElementById('composer-saved-step')?.value || '').trim().toLowerCase();
+  state.composerSavedFilteredItems = state.composerSavedItems.filter((item) => {
+    if (keyword && !String(item.title || '').toLowerCase().includes(keyword)) return false;
+    if (status && normalizeComposerSavedStatus(item.status) !== status) return false;
+    if (type && normalizeComposerType(item.notificationType || 'STEP') !== type) return false;
+    if (category && !String(item.notificationCategory || '').toLowerCase().includes(category)) return false;
+    if (scenarioKey && String(item.scenarioKey || '').toLowerCase() !== scenarioKey) return false;
+    if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
+    return true;
+  });
+}
+
+function loadComposerFormFromRow(row, duplicateMode) {
+  if (!row) return;
+  document.getElementById('title').value = row.title || '';
+  document.getElementById('body').value = row.body || '';
+  document.getElementById('ctaText').value = row.ctaText || '';
+  document.getElementById('linkRegistryId').value = row.linkRegistryId || '';
+  document.getElementById('notificationCategory').value = row.notificationCategory || 'SEQUENCE_GUIDANCE';
+  document.getElementById('notificationType').value = normalizeComposerType(row.notificationType || 'STEP');
+  document.getElementById('scenarioKey').value = row.scenarioKey || 'A';
+  document.getElementById('stepKey').value = row.stepKey || 'week';
+  document.getElementById('targetRegion').value = row.target && row.target.region ? row.target.region : '';
+  document.getElementById('targetLimit').value = row.target && Number.isFinite(row.target.limit) ? String(row.target.limit) : '50';
+  document.getElementById('membersOnly').checked = Boolean(row.target && row.target.membersOnly);
+
+  const meta = row.notificationMeta && typeof row.notificationMeta === 'object' ? row.notificationMeta : {};
+  document.getElementById('metaAnnouncementExpiry').value = meta.expiry || '';
+  document.getElementById('metaAnnouncementPriority').value = meta.priority || '';
+  document.getElementById('metaVendorId').value = meta.vendorId || '';
+  document.getElementById('metaVendorTargeting').value = meta.targeting || '';
+  document.getElementById('metaAbVariants').value = meta.variants || '';
+  document.getElementById('metaAbRatio').value = meta.ratio || '';
+  document.getElementById('metaAbMetric').value = meta.metric || '';
+
+  if (duplicateMode) {
+    document.getElementById('notificationId').textContent = '-';
+    state.currentComposerStatus = 'DRAFT';
+    state.composerSelectedNotificationId = null;
+    state.composerCurrentNotificationId = null;
+    state.composerCurrentPlanHash = null;
+    state.composerCurrentConfirmToken = null;
+    if (document.getElementById('planHash')) document.getElementById('planHash').textContent = '-';
+    if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = '-';
+    showToast(t('ui.toast.composer.duplicated', '複製して新規に読み込みました'), 'ok');
+  } else {
+    document.getElementById('notificationId').textContent = row.id || '-';
+    state.currentComposerStatus = String(row.status || 'draft').toUpperCase();
+    state.composerSelectedNotificationId = row.id || null;
+    state.composerCurrentNotificationId = row.id || null;
+    state.composerCurrentPlanHash = null;
+    state.composerCurrentConfirmToken = null;
+    if (document.getElementById('planHash')) document.getElementById('planHash').textContent = '-';
+    if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = '-';
+  }
+  updateComposerSummary();
+  void loadComposerLinkPreview();
+}
+
+function renderComposerSavedRows() {
+  const tbody = document.getElementById('composer-saved-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  applyComposerSavedFilters();
+  const items = state.composerSavedFilteredItems;
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    if (state.composerSelectedNotificationId && state.composerSelectedNotificationId === item.id) tr.classList.add('row-active');
+    const cells = [
+      item.title || '-',
+      normalizeComposerType(item.notificationType || 'STEP'),
+      normalizeComposerSavedStatus(item.status),
+      item.notificationCategory || '-',
+      item.scenarioKey || '-',
+      item.stepKey || '-',
+      formatTimestampForList(item.createdAt)
+    ];
+    cells.forEach((value, idx) => {
+      const td = document.createElement('td');
+      if (idx === 6) td.classList.add('cell-muted');
+      td.textContent = String(value);
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement('td');
+    const cloneBtn = document.createElement('button');
+    cloneBtn.type = 'button';
+    cloneBtn.className = 'button-subtle';
+    cloneBtn.textContent = t('ui.label.composer.saved.duplicate', '複製して新規');
+    cloneBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      loadComposerFormFromRow(item, true);
+    });
+    actionTd.appendChild(cloneBtn);
+    tr.appendChild(actionTd);
+    tr.addEventListener('click', () => {
+      loadComposerFormFromRow(item, false);
+      renderComposerSavedRows();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadComposerSavedNotifications(options) {
+  const notify = !options || options.notify !== false;
+  const traceId = ensureTraceInput('traceId');
+  try {
+    const limit = 200;
+    const query = new URLSearchParams({ limit: String(limit) });
+    const res = await fetch(`/api/admin/os/notifications/list?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'list failed');
+    state.composerSavedItems = Array.isArray(data.items) ? data.items : [];
+    state.composerListLoadedAt = new Date().toISOString();
+    renderComposerSavedRows();
+    if (notify) showToast(t('ui.toast.composer.listOk', '保存済み通知を更新しました'), 'ok');
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.composer.listFail', '保存済み通知の取得に失敗しました'), 'danger');
+  }
+}
+
+async function loadComposerLinkPreview() {
+  const linkId = document.getElementById('linkRegistryId')?.value?.trim() || '';
+  state.composerLinkPreview = null;
+  if (!linkId) {
+    renderComposerLivePreview();
+    return;
+  }
+  const traceId = ensureTraceInput('traceId');
+  try {
+    const res = await fetch(`/api/admin/os/link-registry/${encodeURIComponent(linkId)}`, { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    if (data && data.ok && data.item) {
+      state.composerLinkPreview = data.item;
+    }
+  } catch (_err) {
+    state.composerLinkPreview = null;
+  }
+  renderComposerLivePreview();
+}
+
+function validateComposerPayload(payload) {
+  if (!payload.title || !payload.body || !payload.ctaText || !payload.linkRegistryId) {
+    return t('ui.toast.composer.needRequired', '必須項目を入力してください');
+  }
+  if (payload.notificationType === 'VENDOR') {
+    const vendorId = payload.notificationMeta && payload.notificationMeta.vendorId ? String(payload.notificationMeta.vendorId).trim() : '';
+    if (!vendorId) return t('ui.toast.composer.needVendorId', 'VENDORタイプにはベンダーIDが必要です');
+  }
+  return '';
 }
 
 async function postJson(url, payload, traceId) {
@@ -2683,33 +2981,51 @@ function setupComposerActions() {
   if (document.getElementById('traceId')) {
     document.getElementById('traceId').value = newTraceId();
   }
-
-  let currentNotificationId = null;
-  let currentPlanHash = null;
-  let currentConfirmToken = null;
+  state.composerCurrentNotificationId = null;
+  state.composerCurrentPlanHash = null;
+  state.composerCurrentConfirmToken = null;
+  state.composerSelectedNotificationId = null;
 
   document.getElementById('create-draft')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('draft-result');
     const traceId = ensureTraceInput('traceId');
     const payload = buildDraftPayload();
+    const validationError = validateComposerPayload(payload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      return;
+    }
     const result = await postJson('/api/admin/os/notifications/draft', payload, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     if (result && result.ok) {
-      currentNotificationId = result.notificationId || null;
-      if (document.getElementById('notificationId')) document.getElementById('notificationId').textContent = currentNotificationId || '-';
+      state.composerCurrentNotificationId = result.notificationId || null;
+      state.composerSelectedNotificationId = result.notificationId || null;
+      state.composerCurrentPlanHash = null;
+      state.composerCurrentConfirmToken = null;
+      if (document.getElementById('notificationId')) document.getElementById('notificationId').textContent = state.composerCurrentNotificationId || '-';
+      if (document.getElementById('planHash')) document.getElementById('planHash').textContent = '-';
+      if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = '-';
       showToast(t('ui.toast.composer.draftOk', 'draft OK'), 'ok');
       setComposerStatus('ok', 'DRAFT');
+      await loadComposerSavedNotifications({ notify: false });
+      renderComposerSavedRows();
     } else {
       showToast(t('ui.toast.composer.draftFail', 'draft 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
     }
-    updateComposerSummary();
   });
 
   document.getElementById('preview')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('draft-result');
     const traceId = ensureTraceInput('traceId');
     const payload = buildDraftPayload();
+    const validationError = validateComposerPayload(payload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      return;
+    }
     const result = await postJson('/api/admin/os/notifications/preview', payload, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     if (result && result.ok) {
@@ -2719,27 +3035,32 @@ function setupComposerActions() {
       showToast(t('ui.toast.composer.previewFail', 'preview 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
     }
-    updateComposerSummary();
   });
 
   document.getElementById('approve')?.addEventListener('click', async () => {
-    if (!currentNotificationId) {
+    if (!state.composerCurrentNotificationId) {
       showToast(t('ui.toast.composer.needId', '通知IDが必要です'), 'warn');
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const confirmed = window.confirm(t('ui.confirm.composer.approve', '承認（有効化）を実行しますか？'));
+    if (!confirmed) {
+      showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
+      return;
+    }
     const resultEl = document.getElementById('draft-result');
     const traceId = ensureTraceInput('traceId');
-    const result = await postJson('/api/admin/os/notifications/approve', { notificationId: currentNotificationId }, traceId);
+    const result = await postJson('/api/admin/os/notifications/approve', { notificationId: state.composerCurrentNotificationId }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     if (result && result.ok) {
       showToast(t('ui.toast.composer.approveOk', 'approve OK'), 'ok');
       setComposerStatus('ok', 'ACTIVE');
+      await loadComposerSavedNotifications({ notify: false });
+      renderComposerSavedRows();
     } else {
       showToast(t('ui.toast.composer.approveFail', 'approve 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
     }
-    updateComposerSummary();
   });
 
   document.getElementById('plan')?.addEventListener('click', async () => {
@@ -2748,20 +3069,20 @@ function setupComposerActions() {
     const resultEl = document.getElementById('plan-result');
     if (planTargetCountEl) planTargetCountEl.textContent = '-';
     if (planCapBlockedEl) planCapBlockedEl.textContent = '-';
-    if (!currentNotificationId) {
+    if (!state.composerCurrentNotificationId) {
       if (resultEl) resultEl.textContent = t('ui.toast.composer.needId', '通知IDが必要です');
       showToast(t('ui.toast.composer.needId', '通知IDが必要です'), 'warn');
       setComposerStatus('warn', 'WARN');
       return;
     }
     const traceId = ensureTraceInput('traceId');
-    const result = await postJson('/api/admin/os/notifications/send/plan', { notificationId: currentNotificationId }, traceId);
+    const result = await postJson('/api/admin/os/notifications/send/plan', { notificationId: state.composerCurrentNotificationId }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     if (result && result.ok) {
-      currentPlanHash = result.planHash || null;
-      currentConfirmToken = result.confirmToken || null;
-      if (document.getElementById('planHash')) document.getElementById('planHash').textContent = currentPlanHash || '-';
-      if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = currentConfirmToken ? 'set' : '-';
+      state.composerCurrentPlanHash = result.planHash || null;
+      state.composerCurrentConfirmToken = result.confirmToken || null;
+      if (document.getElementById('planHash')) document.getElementById('planHash').textContent = state.composerCurrentPlanHash || '-';
+      if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = state.composerCurrentConfirmToken ? 'set' : '-';
       if (planTargetCountEl) planTargetCountEl.textContent = typeof result.count === 'number' ? String(result.count) : '-';
       if (planCapBlockedEl) planCapBlockedEl.textContent = typeof result.capBlockedCount === 'number' ? String(result.capBlockedCount) : '-';
       showToast(t('ui.toast.composer.planOk', 'plan OK'), 'ok');
@@ -2771,22 +3092,26 @@ function setupComposerActions() {
       setComposerStatus('danger', 'ERROR');
     }
     updateSafetyBadge(result);
-    updateComposerSummary();
   });
 
   document.getElementById('execute')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('execute-result');
-    if (!currentNotificationId || !currentPlanHash || !currentConfirmToken) {
+    if (!state.composerCurrentNotificationId || !state.composerCurrentPlanHash || !state.composerCurrentConfirmToken) {
       if (resultEl) resultEl.textContent = t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です');
       showToast(t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です'), 'warn');
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const confirmed = window.confirm(t('ui.confirm.composer.execute', '送信実行を実行しますか？'));
+    if (!confirmed) {
+      showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
+      return;
+    }
     const traceId = ensureTraceInput('traceId');
     const result = await postJson('/api/admin/os/notifications/send/execute', {
-      notificationId: currentNotificationId,
-      planHash: currentPlanHash,
-      confirmToken: currentConfirmToken
+      notificationId: state.composerCurrentNotificationId,
+      planHash: state.composerCurrentPlanHash,
+      confirmToken: state.composerCurrentConfirmToken
     }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     const metaEl = document.getElementById('execute-cap-meta');
@@ -2797,21 +3122,50 @@ function setupComposerActions() {
     if (result && result.ok) {
       showToast(t('ui.toast.composer.executeOk', 'execute OK'), 'ok');
       setComposerStatus('ok', 'SENT');
+      await loadComposerSavedNotifications({ notify: false });
+      renderComposerSavedRows();
     } else {
       showToast(t('ui.toast.composer.executeFail', 'execute 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
     }
-    updateComposerSummary();
   });
 
-  ['title', 'body', 'ctaText', 'linkRegistryId', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit'].forEach((id) => {
+  let linkLookupTimer = null;
+  ['title', 'body', 'ctaText', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'notificationType', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateComposerSummary);
+    if (!el) return;
+    if (el.tagName === 'SELECT') {
+      el.addEventListener('change', updateComposerSummary);
+      return;
+    }
+    el.addEventListener('input', updateComposerSummary);
   });
+  const linkRegistryInput = document.getElementById('linkRegistryId');
+  if (linkRegistryInput) {
+    linkRegistryInput.addEventListener('input', () => {
+      updateComposerSummary();
+      if (linkLookupTimer) clearTimeout(linkLookupTimer);
+      linkLookupTimer = setTimeout(() => {
+        void loadComposerLinkPreview();
+      }, 220);
+    });
+  }
   const membersOnly = document.getElementById('membersOnly');
   if (membersOnly) membersOnly.addEventListener('change', updateComposerSummary);
 
+  ['composer-saved-search', 'composer-saved-status', 'composer-saved-type', 'composer-saved-category', 'composer-saved-scenario', 'composer-saved-step'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(eventName, () => {
+      renderComposerSavedRows();
+    });
+  });
+
+  applyComposerTypeFields();
   updateComposerSummary();
+  void loadComposerSavedNotifications({ notify: false });
+  void loadComposerLinkPreview();
 }
 
 function setupAudit() {

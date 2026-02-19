@@ -52,6 +52,14 @@ Purpose: operations decisions, readiness, and state tracking.
 ### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
 Purpose: product events, notification metadata, and checklist progress.
 
+Typical fields for `notifications/{id}` (add-only excerpts):
+- `title`, `body`, `ctaText`, `linkRegistryId`
+- `scenarioKey`, `stepKey`, `notificationCategory`
+- `target` (`limit` required in send path)
+- `status` (`draft`/`active`/`sent`)
+- `notificationType` (`GENERAL`/`ANNOUNCEMENT`/`VENDOR`/`AB`/`STEP`)
+- `notificationMeta` (type-specific UI metadata; optional)
+
 ### `notification_deliveries/{id}`
 Purpose: delivery idempotency / reaction tracking / cap evaluation source-of-truth.
 

@@ -176,6 +176,70 @@ async function handleStatus(req, res) {
   }
 }
 
+function parseListLimit(url) {
+  const limitRaw = Number(url.searchParams.get('limit'));
+  if (!Number.isFinite(limitRaw) || limitRaw <= 0) return 100;
+  return Math.min(Math.floor(limitRaw), 500);
+}
+
+async function handleList(req, res) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const url = new URL(req.url, 'http://localhost');
+  const limit = parseListLimit(url);
+  try {
+    const rows = await notificationsRepo.listNotifications({
+      limit,
+      status: url.searchParams.get('status') || undefined,
+      scenarioKey: url.searchParams.get('scenarioKey') || undefined,
+      stepKey: url.searchParams.get('stepKey') || undefined
+    });
+    const category = url.searchParams.get('notificationCategory') || '';
+    const notificationType = (url.searchParams.get('notificationType') || '').trim().toUpperCase();
+    const filtered = rows.filter((row) => {
+      if (category && (row.notificationCategory || '') !== category) return false;
+      if (notificationType && (row.notificationType || 'STEP') !== notificationType) return false;
+      return true;
+    });
+    const items = filtered.map((row) => ({
+      id: row.id,
+      title: row.title || '',
+      body: row.body || '',
+      ctaText: row.ctaText || '',
+      linkRegistryId: row.linkRegistryId || '',
+      status: row.status || null,
+      notificationCategory: row.notificationCategory || null,
+      notificationType: row.notificationType || 'STEP',
+      notificationMeta: row.notificationMeta || null,
+      scenarioKey: row.scenarioKey || null,
+      stepKey: row.stepKey || null,
+      target: row.target || null,
+      createdAt: row.createdAt || null,
+      scheduledAt: row.scheduledAt || null
+    }));
+    await appendAuditLog({
+      actor,
+      action: 'notifications.list',
+      entityType: 'notification',
+      entityId: 'list',
+      traceId,
+      requestId,
+      payloadSummary: {
+        limit,
+        status: url.searchParams.get('status') || null,
+        scenarioKey: url.searchParams.get('scenarioKey') || null,
+        stepKey: url.searchParams.get('stepKey') || null
+      }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, traceId, requestId, items }));
+  } catch (err) {
+    handleError(res, err, { traceId, requestId, actor });
+  }
+}
+
 async function handleSendExecute(req, res, body, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -205,5 +269,6 @@ module.exports = {
   handleApprove,
   handleSendPlan,
   handleStatus,
+  handleList,
   handleSendExecute
 };

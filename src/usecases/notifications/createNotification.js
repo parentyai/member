@@ -31,6 +31,55 @@ function normalizeStringArray(values) {
   return Array.from(new Set(values.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())));
 }
 
+function normalizeNotificationType(value) {
+  const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (!raw) return 'STEP';
+  const allowed = new Set(['GENERAL', 'ANNOUNCEMENT', 'VENDOR', 'AB', 'STEP']);
+  if (!allowed.has(raw)) {
+    throw new Error('notificationType invalid');
+  }
+  return raw;
+}
+
+function normalizeNotificationMeta(meta) {
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return null;
+  const out = {};
+  Object.keys(meta).forEach((key) => {
+    const value = meta[key];
+    if (value === undefined) return;
+    if (value === null) {
+      out[key] = null;
+      return;
+    }
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      out[key] = value;
+      return;
+    }
+    if (Array.isArray(value)) {
+      out[key] = value
+        .filter((item) => item === null || typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')
+        .slice(0, 50);
+      return;
+    }
+    if (typeof value === 'object') {
+      const nested = {};
+      Object.keys(value).forEach((nestedKey) => {
+        const nestedValue = value[nestedKey];
+        if (
+          nestedValue === null
+          || typeof nestedValue === 'string'
+          || typeof nestedValue === 'number'
+          || typeof nestedValue === 'boolean'
+        ) {
+          nested[nestedKey] = nestedValue;
+        }
+      });
+      out[key] = nested;
+    }
+  });
+  return Object.keys(out).length ? out : null;
+}
+
 function normalizeCityPackFallback(payload) {
   const raw = payload && payload.cityPackFallback && typeof payload.cityPackFallback === 'object'
     ? payload.cityPackFallback
@@ -74,6 +123,8 @@ async function createNotification(data) {
   }
   const notificationCategory = normalizeNotificationCategory(payload.notificationCategory);
   const sourceRefs = normalizeStringArray(payload.sourceRefs);
+  const notificationType = normalizeNotificationType(payload.notificationType);
+  const notificationMeta = normalizeNotificationMeta(payload.notificationMeta);
 
   const record = {
     title: payload.title,
@@ -85,6 +136,8 @@ async function createNotification(data) {
     target: payload.target || null,
     sourceRefs,
     notificationCategory,
+    notificationType,
+    notificationMeta,
     cityPackFallback,
     status: payload.status || 'draft',
     scheduledAt: payload.scheduledAt || null,
