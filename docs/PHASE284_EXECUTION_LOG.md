@@ -16,3 +16,9 @@
 - linked run: `Audit Gate / 22170953086` (merge commit `#532`)
 - `npm test`: PASS (752/752)
 - `npm run test:docs`: PASS (`[docs] OK`)
+
+## Main Merge CI Evidence
+- merge PR: `#533`
+- merge commit: `a0afc1d2166fa38224fb6a9e6791f6ee9676698f`
+- main run: `Audit Gate / 22171069458` (success)
+- saved log: `/Users/parentyai.com/Projects/Member/docs/CI_EVIDENCE/2026-02-19_22171069458_phase284.log`
