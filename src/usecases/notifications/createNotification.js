@@ -26,6 +26,25 @@ function requireInList(name, value, allowed) {
   }
 }
 
+function normalizeStringArray(values) {
+  if (!Array.isArray(values)) return [];
+  return Array.from(new Set(values.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())));
+}
+
+function normalizeCityPackFallback(payload) {
+  const raw = payload && payload.cityPackFallback && typeof payload.cityPackFallback === 'object'
+    ? payload.cityPackFallback
+    : null;
+  if (!raw) return null;
+  const fallbackLinkRegistryId = typeof raw.fallbackLinkRegistryId === 'string' ? raw.fallbackLinkRegistryId.trim() : '';
+  const fallbackCtaText = typeof raw.fallbackCtaText === 'string' ? raw.fallbackCtaText.trim() : '';
+  if (!fallbackLinkRegistryId && !fallbackCtaText) return null;
+  if (!fallbackLinkRegistryId || !fallbackCtaText) {
+    throw new Error('cityPackFallback requires linkRegistryId and ctaText');
+  }
+  return { fallbackLinkRegistryId, fallbackCtaText };
+}
+
 async function createNotification(data) {
   const payload = data || {};
 
@@ -47,7 +66,14 @@ async function createNotification(data) {
   validateSingleCta(payload);
   validateLinkRequired(payload);
   validateWarnLinkBlock(linkEntry);
+  const cityPackFallback = normalizeCityPackFallback(payload);
+  if (cityPackFallback) {
+    const fallbackLink = await linkRegistryRepo.getLink(cityPackFallback.fallbackLinkRegistryId);
+    if (!fallbackLink) throw new Error('cityPackFallback link registry entry not found');
+    validateWarnLinkBlock(fallbackLink);
+  }
   const notificationCategory = normalizeNotificationCategory(payload.notificationCategory);
+  const sourceRefs = normalizeStringArray(payload.sourceRefs);
 
   const record = {
     title: payload.title,
@@ -57,7 +83,9 @@ async function createNotification(data) {
     scenarioKey: payload.scenarioKey,
     stepKey: payload.stepKey,
     target: payload.target || null,
+    sourceRefs,
     notificationCategory,
+    cityPackFallback,
     status: payload.status || 'draft',
     scheduledAt: payload.scheduledAt || null,
     sentAt: payload.sentAt || null,

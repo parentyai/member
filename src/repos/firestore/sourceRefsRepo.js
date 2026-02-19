@@ -8,6 +8,8 @@ const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
 const ALLOWED_STATUS = new Set(['active', 'needs_review', 'dead', 'blocked', 'retired']);
 const ALLOWED_RISK_LEVEL = new Set(['low', 'medium', 'high']);
+const ALLOWED_SOURCE_TYPE = new Set(['official', 'semi_official', 'community', 'other']);
+const ALLOWED_REQUIRED_LEVEL = new Set(['required', 'optional']);
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -17,6 +19,16 @@ function normalizeStatus(value) {
 function normalizeRiskLevel(value) {
   const risk = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_RISK_LEVEL.has(risk) ? risk : 'medium';
+}
+
+function normalizeSourceType(value) {
+  const sourceType = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_SOURCE_TYPE.has(sourceType) ? sourceType : 'other';
+}
+
+function normalizeRequiredLevel(value) {
+  const requiredLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_REQUIRED_LEVEL.has(requiredLevel) ? requiredLevel : 'required';
 }
 
 function toDate(value) {
@@ -65,8 +77,18 @@ function normalizeSourceRefData(data) {
     lastCheckAt: toDate(payload.lastCheckAt),
     contentHash: typeof payload.contentHash === 'string' ? payload.contentHash.trim() : null,
     riskLevel: normalizeRiskLevel(payload.riskLevel),
+    sourceType: normalizeSourceType(payload.sourceType),
+    requiredLevel: normalizeRequiredLevel(payload.requiredLevel),
     evidenceLatestId: typeof payload.evidenceLatestId === 'string' ? payload.evidenceLatestId.trim() : null,
     usedByCityPackIds: normalizeArray(payload.usedByCityPackIds)
+  };
+}
+
+function normalizeSourcePolicyPatch(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  return {
+    sourceType: normalizeSourceType(payload.sourceType),
+    requiredLevel: normalizeRequiredLevel(payload.requiredLevel)
   };
 }
 
@@ -100,6 +122,8 @@ async function createSourceRef(data) {
     lastCheckAt: normalized.lastCheckAt,
     contentHash: normalized.contentHash,
     riskLevel: normalized.riskLevel,
+    sourceType: normalized.sourceType,
+    requiredLevel: normalized.requiredLevel,
     evidenceLatestId: normalized.evidenceLatestId,
     usedByCityPackIds: normalized.usedByCityPackIds,
     createdAt: serverTimestamp(),
@@ -184,6 +208,8 @@ async function linkCityPack(sourceRefId, cityPackId) {
 
 module.exports = {
   VALIDITY_DAYS,
+  normalizeRequiredLevel,
+  normalizeSourcePolicyPatch,
   createSourceRef,
   getSourceRef,
   listSourceRefs,

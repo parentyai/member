@@ -51,6 +51,14 @@ function normalizeLineUserIds(ids) {
   return Array.from(new Set(normalized)).sort();
 }
 
+function normalizeCityPackFallbackConfig(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  const linkRegistryId = typeof payload.fallbackLinkRegistryId === 'string' ? payload.fallbackLinkRegistryId.trim() : '';
+  const ctaText = typeof payload.fallbackCtaText === 'string' ? payload.fallbackCtaText.trim() : '';
+  if (!linkRegistryId || !ctaText) return null;
+  return { linkRegistryId, ctaText };
+}
+
 async function sendNotification(params) {
   const payload = params || {};
   const notificationId = payload.notificationId;
@@ -58,11 +66,8 @@ async function sendNotification(params) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
-
-  const linkEntry = await linkRegistryRepo.getLink(notification.linkRegistryId);
-  if (!linkEntry) throw new Error('link registry entry not found');
-
-  validateNotificationPayload(notification, linkEntry, payload.killSwitch);
+  const fallbackConfig = normalizeCityPackFallbackConfig(payload.cityPackFallback || notification.cityPackFallback);
+  let optionalSourceFailures = [];
 
   if (Array.isArray(notification.sourceRefs) && notification.sourceRefs.length > 0) {
     const sourceValidation = await validateCityPackSources({ sourceRefs: notification.sourceRefs });
@@ -74,20 +79,36 @@ async function sendNotification(params) {
       err.invalidSourceRefs = sourcePolicy.invalidSourceRefs;
       throw err;
     }
+    optionalSourceFailures = Array.isArray(sourcePolicy.optionalInvalidSourceRefs)
+      ? sourcePolicy.optionalInvalidSourceRefs
+      : [];
   }
 
-  if (!notification.scenarioKey || !notification.stepKey) {
+  const useFallback = optionalSourceFailures.length > 0 && Boolean(fallbackConfig);
+  const effectiveNotification = useFallback
+    ? Object.assign({}, notification, {
+      ctaText: fallbackConfig.ctaText,
+      linkRegistryId: fallbackConfig.linkRegistryId
+    })
+    : notification;
+
+  const effectiveLinkEntry = await linkRegistryRepo.getLink(effectiveNotification.linkRegistryId);
+  if (!effectiveLinkEntry) throw new Error('link registry entry not found');
+
+  validateNotificationPayload(effectiveNotification, effectiveLinkEntry, payload.killSwitch);
+
+  if (!effectiveNotification.scenarioKey || !effectiveNotification.stepKey) {
     throw new Error('scenarioKey/stepKey required');
   }
 
-  const target = notification.target || {};
+  const target = effectiveNotification.target || {};
   if (!target || typeof target !== 'object') {
     throw new Error('target required');
   }
 
   const users = await usersRepo.listUsers({
-    scenarioKey: notification.scenarioKey,
-    stepKey: notification.stepKey,
+    scenarioKey: effectiveNotification.scenarioKey,
+    stepKey: effectiveNotification.stepKey,
     region: target.region,
     membersOnly: target.membersOnly,
     limit: target.limit
@@ -125,7 +146,7 @@ async function sendNotification(params) {
     const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
       lineUserId: user.id,
-      notificationCategory: notification.notificationCategory || null
+      notificationCategory: effectiveNotification.notificationCategory || null
     });
     const existing = reserved && reserved.existing ? reserved.existing : null;
     if (existing && existing.sealed === true) {
@@ -155,14 +176,14 @@ async function sendNotification(params) {
         trackUrl = null;
       }
     }
-    const message = buildTextMessage(notification, linkEntry.url, trackUrl);
+    const message = buildTextMessage(effectiveNotification, effectiveLinkEntry.url, trackUrl);
     try {
       await pushFn(user.id, message, { retryKey: computeLineRetryKey({ deliveryId }) });
       deliveredCount += 1;
       await deliveriesRepo.createDeliveryWithId(deliveryId, {
         notificationId,
         lineUserId: user.id,
-        notificationCategory: notification.notificationCategory || null,
+        notificationCategory: effectiveNotification.notificationCategory || null,
         sentAt,
         delivered: true,
         state: 'delivered',
@@ -208,8 +229,8 @@ async function sendNotification(params) {
     try {
       await recordSent({
         notificationId,
-        ctaText: notification.ctaText || null,
-        linkRegistryId: notification.linkRegistryId || null
+        ctaText: effectiveNotification.ctaText || null,
+        linkRegistryId: effectiveNotification.linkRegistryId || null
       });
     } catch (err) {
       // WIP: Phase18 CTA stats should not block delivery
@@ -223,7 +244,13 @@ async function sendNotification(params) {
     });
   }
 
-  return { notificationId, deliveredCount, skippedCount };
+  return {
+    notificationId,
+    deliveredCount,
+    skippedCount,
+    fallbackUsed: useFallback,
+    optionalSourceFailureCount: optionalSourceFailures.length
+  };
 }
 
 module.exports = {

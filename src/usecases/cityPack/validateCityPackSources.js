@@ -8,6 +8,11 @@ const SOURCE_BLOCK_REASONS = Object.freeze({
   SOURCE_BLOCKED: 'SOURCE_BLOCKED'
 });
 
+function normalizeRequiredLevel(value) {
+  const requiredLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return requiredLevel === 'optional' ? 'optional' : 'required';
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -49,27 +54,36 @@ async function validateCityPackSources(params, deps) {
 
   const sources = [];
   const failures = [];
+  const blockingFailures = [];
+  const optionalFailures = [];
   for (const sourceRefId of sourceRefIds) {
     const ref = await getSourceRef(sourceRefId);
+    const requiredLevel = normalizeRequiredLevel(ref && ref.requiredLevel);
     sources.push({ sourceRefId, ref: ref || null });
     const failure = resolveFailure(ref, nowMs);
     if (!failure) continue;
-    failures.push({
+    const failureItem = {
       sourceRefId,
+      requiredLevel,
       category: failure.category,
       reason: failure.reason,
       status: ref && ref.status ? ref.status : null,
       validUntil: ref && ref.validUntil ? ref.validUntil : null
-    });
+    };
+    failures.push(failureItem);
+    if (requiredLevel === 'optional') optionalFailures.push(failureItem);
+    else blockingFailures.push(failureItem);
   }
 
-  const blockedReasonCategory = pickBlockedCategory(failures);
+  const blockedReasonCategory = pickBlockedCategory(blockingFailures);
   return {
-    ok: failures.length === 0,
+    ok: blockingFailures.length === 0,
     sourceRefs: sources,
     invalidSourceRefs: failures,
+    blockingInvalidSourceRefs: blockingFailures,
+    optionalInvalidSourceRefs: optionalFailures,
     blockedReasonCategory,
-    blocked: failures.length > 0
+    blocked: blockingFailures.length > 0
   };
 }
 

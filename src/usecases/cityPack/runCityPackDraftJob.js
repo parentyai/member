@@ -135,7 +135,9 @@ async function runCityPackDraftJob(params) {
     const created = await sourceRefsRepo.createSourceRef({
       url,
       status: 'needs_review',
-      riskLevel: 'medium'
+      riskLevel: 'medium',
+      sourceType: 'official',
+      requiredLevel: 'required'
     });
     sourceRefIds.push(created.id);
   }

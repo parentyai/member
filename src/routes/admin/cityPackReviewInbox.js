@@ -55,6 +55,12 @@ function parseRunPath(pathname) {
   return decodeURIComponent(match[1]);
 }
 
+function parsePolicyPath(pathname) {
+  const match = pathname.match(/^\/api\/admin\/source-refs\/([^/]+)\/policy$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
+}
+
 function resolveResultLabel(sourceRef) {
   const result = sourceRef && sourceRef.lastResult ? String(sourceRef.lastResult) : '';
   if (result === 'ok') return '正常';
@@ -109,6 +115,8 @@ async function handleReviewInbox(req, res, context) {
       evidenceLatestId: sourceRef.evidenceLatestId || null,
       recommendation: resolveRecommendation(sourceRef, nowMs),
       riskLevel: sourceRef.riskLevel || null,
+      sourceType: sourceRef.sourceType || 'other',
+      requiredLevel: sourceRef.requiredLevel || 'required',
       traceId: context.traceId
     });
   }
@@ -149,6 +157,37 @@ async function handleSourceRefDecision(req, res, bodyText, context, sourceRefId,
     return;
   }
   writeJson(res, 200, result);
+}
+
+async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
+  const sourceRef = await sourceRefsRepo.getSourceRef(sourceRefId);
+  if (!sourceRef) {
+    writeJson(res, 404, { ok: false, error: 'source ref not found' });
+    return;
+  }
+  const payload = parseJson(bodyText, res);
+  if (!payload) return;
+  const policyPatch = sourceRefsRepo.normalizeSourcePolicyPatch(payload);
+  await sourceRefsRepo.updateSourceRef(sourceRefId, policyPatch);
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.source_policy.update',
+    entityType: 'source_ref',
+    entityId: sourceRefId,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      sourceType: policyPatch.sourceType,
+      requiredLevel: policyPatch.requiredLevel
+    }
+  });
+  writeJson(res, 200, {
+    ok: true,
+    sourceRefId,
+    traceId: context.traceId,
+    sourceType: policyPatch.sourceType,
+    requiredLevel: policyPatch.requiredLevel
+  });
 }
 
 async function handleCityPackKpi(req, res, context) {
@@ -364,6 +403,11 @@ async function handleCityPackReviewInbox(req, res, bodyText) {
     }
 
     if (req.method === 'POST') {
+      const sourceRefId = parsePolicyPath(pathname);
+      if (sourceRefId) {
+        await handleSourceRefPolicy(req, res, bodyText, context, sourceRefId);
+        return;
+      }
       const parsed = parseActionPath(pathname);
       if (parsed) {
         await handleSourceRefDecision(req, res, bodyText, context, parsed.sourceRefId, parsed.decision);
