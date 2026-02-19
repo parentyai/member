@@ -629,6 +629,71 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.bulletinInbox">Bulletin Inbox</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.bulletinStatus" data-dict-tip="ui.help.cityPack.bulletinStatus">状態
+                      <select id="city-pack-bulletin-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.bulletinStatus.all">すべて</option>
+                        <option value="draft" data-dict-key="ui.value.cityPack.bulletinStatus.draft">下書き</option>
+                        <option value="approved" data-dict-key="ui.value.cityPack.bulletinStatus.approved">承認済み</option>
+                        <option value="sent" data-dict-key="ui.value.cityPack.bulletinStatus.sent">送信済み</option>
+                        <option value="rejected" data-dict-key="ui.value.cityPack.bulletinStatus.rejected">却下</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.bulletinLimit" data-dict-tip="ui.help.cityPack.bulletinLimit">件数
+                      <input id="city-pack-bulletin-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-bulletin-reload" type="button" data-dict-key="ui.label.cityPack.bulletinReload">Bulletin更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.status">status</th>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.cityPackId">cityPackId</th>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.notificationId">notificationId</th>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.summary">summary</th>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.traceId">traceId</th>
+                        <th data-dict-key="ui.label.cityPack.bulletin.col.actions">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-bulletin-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.proposalInbox">Proposal Inbox</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.proposalStatus" data-dict-tip="ui.help.cityPack.proposalStatus">状態
+                      <select id="city-pack-proposal-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.proposalStatus.all">すべて</option>
+                        <option value="draft" data-dict-key="ui.value.cityPack.proposalStatus.draft">下書き</option>
+                        <option value="approved" data-dict-key="ui.value.cityPack.proposalStatus.approved">承認済み</option>
+                        <option value="applied" data-dict-key="ui.value.cityPack.proposalStatus.applied">適用済み</option>
+                        <option value="rejected" data-dict-key="ui.value.cityPack.proposalStatus.rejected">却下</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.proposalLimit" data-dict-tip="ui.help.cityPack.proposalLimit">件数
+                      <input id="city-pack-proposal-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-proposal-reload" type="button" data-dict-key="ui.label.cityPack.proposalReload">Proposal更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.cityPack.proposal.col.status">status</th>
+                        <th data-dict-key="ui.label.cityPack.proposal.col.cityPackId">cityPackId</th>
+                        <th data-dict-key="ui.label.cityPack.proposal.col.summary">summary</th>
+                        <th data-dict-key="ui.label.cityPack.proposal.col.traceId">traceId</th>
+                        <th data-dict-key="ui.label.cityPack.proposal.col.actions">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-proposal-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.reviewInbox">Review Inbox</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.cityPack.reviewInbox">情報源の有効期限と監査結果を確認し、Confirm / Retire / Replace / ManualOnly を実行します。</div>
@@ -711,6 +776,68 @@
                   <details class="section">
                     <summary data-dict-key="ui.label.cityPack.feedbackDetail.raw">RAW</summary>
                     <pre id="city-pack-feedback-raw">-</pre>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.bulletinDraft">Change Bulletin Draft</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.bulletinDraft.cityPackId" data-dict-tip="ui.help.cityPack.bulletinDraft.cityPackId">cityPackId
+                      <input id="city-pack-bulletin-city-pack-id" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.bulletinCityPackId" placeholder="cp_xxx" />
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.bulletinDraft.notificationId" data-dict-tip="ui.help.cityPack.bulletinDraft.notificationId">notificationId
+                      <input id="city-pack-bulletin-notification-id" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.bulletinNotificationId" placeholder="n_xxx" />
+                    </label>
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.cityPack.bulletinDraft.summary" data-dict-tip="ui.help.cityPack.bulletinDraft.summary">summary
+                      <input id="city-pack-bulletin-summary" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.bulletinSummary" placeholder="短い変更要約" />
+                    </label>
+                  </div>
+                  <div class="row row-top">
+                    <button id="city-pack-bulletin-create" type="button" data-role="admin" data-dict-key="ui.label.cityPack.bulletinDraft.create">Bulletin作成</button>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.proposalDraft">Update Proposal Draft</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.proposalDraft.cityPackId" data-dict-tip="ui.help.cityPack.proposalDraft.cityPackId">cityPackId
+                      <input id="city-pack-proposal-city-pack-id" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.proposalCityPackId" placeholder="cp_xxx" />
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.proposalDraft.summary" data-dict-tip="ui.help.cityPack.proposalDraft.summary">summary
+                      <input id="city-pack-proposal-summary" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.proposalSummary" placeholder="変更要約" />
+                    </label>
+                  </div>
+                  <div class="note">
+                    <label data-dict-key="ui.label.cityPack.proposalDraft.patch" data-dict-tip="ui.help.cityPack.proposalDraft.patch">proposalPatch(JSON)
+                      <textarea id="city-pack-proposal-patch" class="textarea-code" data-dict-placeholder="ui.placeholder.cityPack.proposalPatch" placeholder="{ }"></textarea>
+                    </label>
+                  </div>
+                  <div class="row row-top">
+                    <button id="city-pack-proposal-create" type="button" data-role="admin" data-dict-key="ui.label.cityPack.proposalDraft.create">Proposal作成</button>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.bulletinDetail">Bulletin Detail</div>
+                <div class="panel-body">
+                  <div id="city-pack-bulletin-detail-summary" class="note" data-dict-key="ui.desc.cityPack.bulletinDetailEmpty">Bulletinの行を選択すると詳細を表示します。</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.bulletinDetail.raw">RAW</summary>
+                    <pre id="city-pack-bulletin-raw">-</pre>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.proposalDetail">Proposal Detail</div>
+                <div class="panel-body">
+                  <div id="city-pack-proposal-detail-summary" class="note" data-dict-key="ui.desc.cityPack.proposalDetailEmpty">Proposalの行を選択すると詳細を表示します。</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.proposalDetail.raw">RAW</summary>
+                    <pre id="city-pack-proposal-raw">-</pre>
                   </details>
                 </div>
               </div>

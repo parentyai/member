@@ -741,6 +741,10 @@ function createServer() {
     || /^\/api\/admin\/city-pack-requests\/[^/]+(\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-feedback'
     || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|reject|propose))?$/.test(pathname)
+    || pathname === '/api/admin/city-pack-bulletins'
+    || /^\/api\/admin\/city-pack-bulletins\/[^/]+(\/(approve|reject|send))?$/.test(pathname)
+    || pathname === '/api/admin/city-pack-update-proposals'
+    || /^\/api\/admin\/city-pack-update-proposals\/[^/]+(\/(approve|reject|apply))?$/.test(pathname)
     || pathname === '/api/admin/review-inbox'
     || pathname === '/api/admin/city-pack-kpi'
     || pathname === '/api/admin/city-pack-source-audit/runs'
@@ -792,6 +796,20 @@ function createServer() {
         const { handleCityPackFeedback } = require('./routes/admin/cityPackFeedback');
         const body = await collectBody();
         await handleCityPackFeedback(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/city-pack-bulletins'
+        || /^\/api\/admin\/city-pack-bulletins\/[^/]+(\/(approve|reject|send))?$/.test(pathname)) {
+        const { handleCityPackBulletins } = require('./routes/admin/cityPackBulletins');
+        const body = await collectBody();
+        await handleCityPackBulletins(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/city-pack-update-proposals'
+        || /^\/api\/admin\/city-pack-update-proposals\/[^/]+(\/(approve|reject|apply))?$/.test(pathname)) {
+        const { handleCityPackUpdateProposals } = require('./routes/admin/cityPackUpdateProposals');
+        const body = await collectBody();
+        await handleCityPackUpdateProposals(req, res, body);
         return;
       }
       if (pathname === '/api/admin/review-inbox'

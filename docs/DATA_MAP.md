@@ -173,6 +173,27 @@ Purpose: 実装フェーズ分割時の互換契約を固定するための予�
 - `city_pack_metrics_daily/{id}`: pack/slot/sourceRef単位の集計
 - `city_pack_template_library/{id}`: import/export用テンプレライブラリ
 
+#### Planned fields in `city_pack_bulletins/{id}`
+- `status`: `draft|approved|sent|rejected`
+- `cityPackId` (required)
+- `notificationId` (required)
+- `summary` (required)
+- `traceId` (required)
+- `requestId` (optional)
+- `approvedAt` / `sentAt`
+- `deliveredCount`
+- `llm_used` / `model` / `promptVersion` (optional)
+
+#### Planned fields in `city_pack_update_proposals/{id}`
+- `status`: `draft|approved|rejected|applied`
+- `cityPackId` (required)
+- `summary` (required)
+- `proposalPatch` (allowlist apply)
+- `traceId` (required)
+- `requestId` (optional)
+- `approvedAt` / `appliedAt`
+- `llm_used` / `model` / `promptVersion` (optional)
+
 ## Secrets (Secret Manager)
 Purpose: store secrets used by the system and CI deploy workflows.
 
