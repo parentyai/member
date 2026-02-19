@@ -18,6 +18,7 @@ const state = {
   readModelItems: [],
   errorsSummary: null,
   cityPackRequestItems: [],
+  cityPackFeedbackItems: [],
   cityPackInboxItems: [],
   cityPackKpi: null,
   cityPackRuns: [],
@@ -25,6 +26,7 @@ const state = {
   selectedCityPackRunTraceId: null,
   selectedCityPackRunEvidenceId: null,
   selectedCityPackRequestId: null,
+  selectedCityPackFeedbackId: null,
   selectedCityPackDraftId: null,
   selectedCityPackSourceRefId: null,
   currentComposerStatus: '未取得',
@@ -1457,6 +1459,56 @@ function renderCityPackRequestRows(items) {
   });
 }
 
+function renderCityPackFeedbackRows(items) {
+  const tbody = document.getElementById('city-pack-feedback-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const regionLabel = [row.regionCity, row.regionState].filter(Boolean).join(', ') || row.regionKey || '-';
+    const feedbackText = row.feedbackText || '-';
+    const cells = [
+      row.status || '-',
+      regionLabel,
+      feedbackText,
+      row.traceId || '-'
+    ];
+    cells.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    const actionTd = document.createElement('td');
+    const actions = [
+      { key: 'ack', label: t('ui.label.cityPack.feedback.action.ack', 'Ack') },
+      { key: 'reject', label: t('ui.label.cityPack.feedback.action.reject', 'Reject') },
+      { key: 'propose', label: t('ui.label.cityPack.feedback.action.propose', 'Propose') }
+    ];
+    actions.forEach((action) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = action.label;
+      btn.addEventListener('click', (evt) => {
+        evt.stopPropagation();
+        void runCityPackFeedbackAction(action.key, row);
+      });
+      actionTd.appendChild(btn);
+    });
+    tr.appendChild(actionTd);
+
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      state.selectedCityPackFeedbackId = row.feedbackId || null;
+      renderCityPackFeedbackDetail(row);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
 function renderCityPackRequestDetail(payload) {
   const summaryEl = document.getElementById('city-pack-request-summary');
   const rawEl = document.getElementById('city-pack-request-raw');
@@ -1497,6 +1549,22 @@ function renderCityPackRequestDetail(payload) {
     const slots = draftPack && Array.isArray(draftPack.slots) ? draftPack.slots : [];
     slotsEl.value = JSON.stringify(slots, null, 2);
   }
+}
+
+function renderCityPackFeedbackDetail(item) {
+  const summaryEl = document.getElementById('city-pack-feedback-summary');
+  const rawEl = document.getElementById('city-pack-feedback-raw');
+  if (!item) {
+    if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.feedbackDetailEmpty', 'Feedbackの行を選択すると詳細を表示します。');
+    if (rawEl) rawEl.textContent = '-';
+    state.selectedCityPackFeedbackId = null;
+    return;
+  }
+  const region = [item.regionCity, item.regionState].filter(Boolean).join(', ') || item.regionKey || '-';
+  if (summaryEl) {
+    summaryEl.textContent = `status=${item.status || '-'} / region=${region} / traceId=${item.traceId || '-'}`;
+  }
+  if (rawEl) rawEl.textContent = JSON.stringify(item, null, 2);
 }
 
 function renderErrors(summary) {
@@ -1819,6 +1887,31 @@ async function loadCityPackRequests(options) {
   }
 }
 
+async function loadCityPackFeedback(options) {
+  const notify = options && options.notify;
+  const status = document.getElementById('city-pack-feedback-status-filter')?.value || '';
+  const limitRaw = document.getElementById('city-pack-feedback-limit')?.value || '';
+  const limit = Number(limitRaw) || 50;
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (limit) params.set('limit', String(limit));
+    const data = await getJson(`/api/admin/city-pack-feedback?${params.toString()}`, trace);
+    if (data && data.ok) {
+      const items = Array.isArray(data.items) ? data.items : [];
+      state.cityPackFeedbackItems = items;
+      renderCityPackFeedbackRows(items);
+      if (!state.selectedCityPackFeedbackId) renderCityPackFeedbackDetail(null);
+      if (notify) showToast(t('ui.toast.cityPack.feedbackLoaded', 'Feedback一覧を取得しました'), 'ok');
+    } else if (notify) {
+      showToast(t('ui.toast.cityPack.feedbackLoadFail', 'Feedback一覧の取得に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    if (notify) showToast(t('ui.toast.cityPack.feedbackLoadFail', 'Feedback一覧の取得に失敗しました'), 'danger');
+  }
+}
+
 async function loadCityPackRequestDetail(requestId) {
   if (!requestId) {
     renderCityPackRequestDetail(null);
@@ -2006,6 +2099,23 @@ async function runCityPackRequestAction(action, row) {
     }
   } catch (_err) {
     showToast(t('ui.toast.cityPack.requestActionFail', 'Request操作に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackFeedbackAction(action, row) {
+  const feedbackId = row && (row.feedbackId || row.id);
+  if (!feedbackId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson(`/api/admin/city-pack-feedback/${encodeURIComponent(feedbackId)}/${action}`, {}, trace);
+    if (data && data.ok !== false) {
+      showToast(t('ui.toast.cityPack.feedbackActionOk', 'Feedback操作を実行しました'), 'ok');
+      await loadCityPackFeedback({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.feedbackActionFail', 'Feedback操作に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.feedbackActionFail', 'Feedback操作に失敗しました'), 'danger');
   }
 }
 
@@ -2447,8 +2557,15 @@ function setupCityPackControls() {
   document.getElementById('city-pack-request-region')?.addEventListener('change', () => {
     void loadCityPackRequests({ notify: false });
   });
+  document.getElementById('city-pack-feedback-reload')?.addEventListener('click', () => {
+    void loadCityPackFeedback({ notify: true });
+  });
+  document.getElementById('city-pack-feedback-status-filter')?.addEventListener('change', () => {
+    void loadCityPackFeedback({ notify: false });
+  });
   document.getElementById('city-pack-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: false });
+    void loadCityPackFeedback({ notify: false });
     void loadCityPackReviewInbox({ notify: true });
     void loadCityPackKpi({ notify: false });
     void loadCityPackAuditRuns({ notify: false });
@@ -2948,6 +3065,7 @@ function setupLlmControls() {
   loadErrors({ notify: false });
   loadVendors({ notify: false });
   loadCityPackRequests({ notify: false });
+  loadCityPackFeedback({ notify: false });
   loadCityPackReviewInbox({ notify: false });
   loadCityPackKpi({ notify: false });
   loadCityPackAuditRuns({ notify: false });

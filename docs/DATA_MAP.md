@@ -95,6 +95,17 @@ Typical fields:
 - `draftSourceRefIds[]`
 - `error`
 
+### `city_pack_feedback/{id}`
+Purpose: City Packの誤り報告（LINE→admin review）。
+
+Typical fields:
+- `status` (`queued`/`reviewed`/`rejected`/`proposed`)
+- `lineUserId`
+- `regionCity`, `regionState`, `regionKey`
+- `feedbackText`
+- `traceId`
+- `requestId`
+
 ### `source_refs/{id}`
 Purpose: City Pack が参照する情報源の監査状態管理。
 

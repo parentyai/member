@@ -8,12 +8,17 @@ const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareR
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
 const { replyMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
+const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const {
   regionPrompt,
   regionDeclared,
   regionInvalid,
   regionAlreadySet
 } = require('../domain/regionLineMessages');
+const {
+  feedbackReceived,
+  feedbackUsage
+} = require('../domain/cityPackFeedbackMessages');
 const {
   statusDeclared,
   statusUnlinked,
@@ -172,6 +177,16 @@ async function handleLineWebhook(options) {
             continue;
           } else if (result.status === 'server_misconfigured') {
             await replyFn(replyToken, { type: 'text', text: declareServerMisconfigured() });
+            continue;
+          }
+
+          const feedback = await declareCityPackFeedbackFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
+          if (feedback.status === 'received') {
+            await replyFn(replyToken, { type: 'text', text: feedbackReceived() });
+            continue;
+          }
+          if (feedback.status === 'usage') {
+            await replyFn(replyToken, { type: 'text', text: feedbackUsage() });
             continue;
           }
 
