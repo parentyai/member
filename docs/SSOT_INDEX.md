@@ -81,6 +81,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE293_PLAN.md`（phase292 merge後 CI証跡固定計画）
 - `docs/PHASE294_PLAN.md`（phase293 merge後 CI証跡固定計画）
 - `docs/PHASE295_PLAN.md`（phase294 merge後 CI証跡固定計画）
+- `docs/PHASE296_PLAN.md`（phase295 merge後 CI証跡固定計画）
 - `docs/PHASE268_EXECUTION_LOG.md`（City Pack拡張 PR3 二段監査 + 信頼度スコア + Inbox優先度 実行ログ）
 - `docs/PHASE271_EXECUTION_LOG.md`（City Pack拡張 PR6 Change Bulletin + 更新提案 実行ログ）
 - `docs/PHASE273_EXECUTION_LOG.md`（City Pack拡張 PR7 最小効果測定 実行ログ）
@@ -106,6 +107,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE293_EXECUTION_LOG.md`（phase292 merge後 CI証跡固定ログ）
 - `docs/PHASE294_EXECUTION_LOG.md`（phase293 merge後 CI証跡固定ログ）
 - `docs/PHASE295_EXECUTION_LOG.md`（phase294 merge後 CI証跡固定ログ）
+- `docs/PHASE296_EXECUTION_LOG.md`（phase295 merge後 CI証跡固定ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
