@@ -186,151 +186,256 @@
           </div>
           <details id="composer-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="pane-grid">
-            <div class="pane-main">
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.composer.summary">通知サマリー</div>
+            <div class="composer-workspace">
+              <div class="panel composer-header">
                 <div class="panel-body">
-                  <div class="summary-metrics">
-                    <div><span class="metric-label" data-dict-key="ui.label.composer.purpose">目的</span><span id="composer-summary-purpose" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.label.composer.target">対象</span><span id="composer-summary-target" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.label.composer.timing">タイミング</span><span id="composer-summary-timing" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.label.composer.risk">リスク</span><span id="composer-summary-risk" class="metric-value">-</span></div>
-                    <div><span class="metric-label" data-dict-key="ui.label.composer.status">状態</span><span id="composer-summary-status" class="metric-value">-</span></div>
-                  </div>
-                  <div class="summary-badge">
-                    <span id="composer-safety" class="badge badge-ok" data-dict-key="ui.status.ok">問題なし</span>
-                    <span data-dict-key="ui.label.composer.safety">送信前安全チェック</span>
+                  <div class="composer-header-row">
+                    <div class="composer-trace">
+                      <label for="traceId" data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</label>
+                      <input type="text" id="traceId" class="input-inline input-trace" />
+                      <button id="regen-trace" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
+                    </div>
+                    <div class="composer-status-wrap">
+                      <span class="metric-label" data-dict-key="ui.label.composer.statusSimple">状態</span>
+                      <span id="composer-status-pill" class="badge badge-info">draft</span>
+                    </div>
+                    <div class="composer-primary-actions">
+                      <button id="create-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
+                      <button id="approve" type="button" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                      <button id="execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知入力</div>
+              <div class="composer-layout">
+                <div class="panel composer-form-panel">
+                  <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知入力</div>
+                  <div class="panel-body">
+                    <div class="input-grid">
+                      <div>
+                        <label for="notificationType" data-dict-key="ui.label.composer.type" data-dict-tip="ui.help.composer.type">通知タイプ</label>
+                        <select id="notificationType">
+                          <option value="GENERAL">GENERAL</option>
+                          <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
+                          <option value="VENDOR">VENDOR</option>
+                          <option value="AB">AB</option>
+                          <option value="STEP" selected>STEP</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label for="title" data-dict-key="ui.label.composer.title" data-dict-tip="ui.help.composer.title">タイトル</label>
+                        <input id="title" data-dict-placeholder="ui.desc.composer.titlePlaceholder" placeholder="" />
+                      </div>
+                      <div>
+                        <label for="body" data-dict-key="ui.label.composer.body" data-dict-tip="ui.help.composer.body">本文</label>
+                        <textarea id="body" data-dict-placeholder="ui.desc.composer.bodyPlaceholder" placeholder=""></textarea>
+                      </div>
+                      <div>
+                        <label for="ctaText" data-dict-key="ui.label.composer.cta" data-dict-tip="ui.help.composer.cta">ボタン文言</label>
+                        <input id="ctaText" data-dict-placeholder="ui.desc.composer.ctaPlaceholder" placeholder="" />
+                      </div>
+                      <div>
+                        <label for="linkRegistryId" data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
+                        <input id="linkRegistryId" data-dict-placeholder="ui.desc.composer.linkPlaceholder" placeholder="" />
+                      </div>
+                      <div>
+                        <label for="notificationCategory" data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
+                        <select id="notificationCategory">
+                          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
+                          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
+                          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
+                          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
+                          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div id="composer-type-fields" class="composer-type-fields">
+                      <div class="input-grid type-fields" data-type-fields="ANNOUNCEMENT">
+                        <div class="row">
+                          <div class="flex-1">
+                            <label for="metaAnnouncementExpiry" data-dict-key="ui.label.composer.announcement.expiry">公開期限（任意）</label>
+                            <input id="metaAnnouncementExpiry" />
+                          </div>
+                          <div class="flex-1">
+                            <label for="metaAnnouncementPriority" data-dict-key="ui.label.composer.announcement.priority">優先度（任意）</label>
+                            <select id="metaAnnouncementPriority">
+                              <option value="">-</option>
+                              <option value="low">low</option>
+                              <option value="medium">medium</option>
+                              <option value="high">high</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="input-grid type-fields" data-type-fields="VENDOR">
+                        <div class="row">
+                          <div class="flex-1">
+                            <label for="metaVendorId" data-dict-key="ui.label.composer.vendor.vendorId">ベンダーID</label>
+                            <input id="metaVendorId" />
+                          </div>
+                          <div class="flex-1">
+                            <label for="metaVendorTargeting" data-dict-key="ui.label.composer.vendor.targeting">対象条件（任意）</label>
+                            <input id="metaVendorTargeting" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="input-grid type-fields" data-type-fields="AB">
+                        <div class="row">
+                          <div class="flex-1">
+                            <label for="metaAbVariants" data-dict-key="ui.label.composer.ab.variants">バリエーション</label>
+                            <input id="metaAbVariants" data-dict-placeholder="ui.desc.composer.ab.variantsPlaceholder" placeholder="" />
+                          </div>
+                          <div class="flex-1">
+                            <label for="metaAbRatio" data-dict-key="ui.label.composer.ab.ratio">比率</label>
+                            <input id="metaAbRatio" data-dict-placeholder="ui.desc.composer.ab.ratioPlaceholder" placeholder="" />
+                          </div>
+                          <div class="flex-1">
+                            <label for="metaAbMetric" data-dict-key="ui.label.composer.ab.metric">指標</label>
+                            <input id="metaAbMetric" />
+                          </div>
+                        </div>
+                      </div>
+                      <div class="input-grid type-fields" data-type-fields="STEP">
+                        <div class="row">
+                          <div class="flex-1">
+                            <label for="scenarioKey" data-dict-key="ui.label.composer.scenario" data-dict-tip="ui.help.composer.scenario">シナリオ</label>
+                            <select id="scenarioKey">
+                              <option value="A">A</option>
+                              <option value="C">C</option>
+                            </select>
+                          </div>
+                          <div class="flex-1">
+                            <label for="stepKey" data-dict-key="ui.label.composer.step" data-dict-tip="ui.help.composer.step">ステップ</label>
+                            <select id="stepKey">
+                              <option value="3mo">3mo</option>
+                              <option value="2mo">2mo</option>
+                              <option value="1mo">1mo</option>
+                              <option value="week" selected>week</option>
+                              <option value="after1w">after1w</option>
+                              <option value="after1mo">after1mo</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="flex-1">
+                            <label for="targetRegion" data-dict-key="ui.label.composer.region" data-dict-tip="ui.help.composer.region">地域（任意）</label>
+                            <input id="targetRegion" />
+                          </div>
+                          <div class="flex-1">
+                            <label for="targetLimit" data-dict-key="ui.label.composer.limit" data-dict-tip="ui.help.composer.limit">上限件数（必須）</label>
+                            <input id="targetLimit" type="number" min="1" max="500" value="50" />
+                          </div>
+                        </div>
+                        <label class="checkbox" data-dict-tip="ui.help.composer.membersOnly"><input id="membersOnly" type="checkbox" /> <span data-dict-key="ui.label.composer.membersOnly">会員のみ</span></label>
+                      </div>
+                    </div>
+                    <div class="row row-top">
+                      <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                      <button id="plan" type="button" data-role="admin" data-dict-key="ui.label.composer.plan">送信計画</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="panel composer-preview-panel">
+                  <div class="panel-title" data-dict-key="ui.label.composer.livePreview">ライブプレビュー</div>
+                  <div class="panel-body">
+                    <div class="line-preview-phone">
+                      <div class="line-preview-header">LINE</div>
+                      <div class="line-preview-body">
+                        <div class="line-preview-title" id="composer-preview-title">-</div>
+                        <div class="line-preview-text" id="composer-preview-body">-</div>
+                        <button type="button" class="line-preview-cta" id="composer-preview-cta">-</button>
+                        <div class="line-preview-link" id="composer-preview-link">-</div>
+                      </div>
+                    </div>
+                    <div class="summary-badge">
+                      <span id="composer-safety" class="badge badge-ok" data-dict-key="ui.status.ok">問題なし</span>
+                      <span data-dict-key="ui.label.composer.safety">送信前安全チェック</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel composer-saved-panel">
+                <div class="panel-title" data-dict-key="ui.label.composer.saved">保存済み通知</div>
                 <div class="panel-body">
                   <div class="input-grid">
-                    <div>
-                      <label data-dict-key="ui.label.composer.title" data-dict-tip="ui.help.composer.title">タイトル</label>
-                      <input id="title" data-dict-placeholder="ui.desc.composer.titlePlaceholder" placeholder="" />
-                    </div>
-                    <div>
-                      <label data-dict-key="ui.label.composer.body" data-dict-tip="ui.help.composer.body">本文</label>
-                      <textarea id="body" data-dict-placeholder="ui.desc.composer.bodyPlaceholder" placeholder=""></textarea>
-                    </div>
-                    <div>
-                      <label data-dict-key="ui.label.composer.cta" data-dict-tip="ui.help.composer.cta">ボタン文言</label>
-                      <input id="ctaText" data-dict-placeholder="ui.desc.composer.ctaPlaceholder" placeholder="" />
-                    </div>
-                    <div>
-                      <label data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
-                      <input id="linkRegistryId" data-dict-placeholder="ui.desc.composer.linkPlaceholder" placeholder="" />
-                    </div>
                     <div class="row">
                       <div class="flex-1">
-                        <label data-dict-key="ui.label.composer.scenario" data-dict-tip="ui.help.composer.scenario">シナリオ</label>
-                        <select id="scenarioKey">
-                          <option value="A">A</option>
-                          <option value="C">C</option>
+                        <label for="composer-saved-search" data-dict-key="ui.label.composer.saved.search">検索</label>
+                        <input id="composer-saved-search" />
+                      </div>
+                      <div class="flex-1">
+                        <label for="composer-saved-status" data-dict-key="ui.label.composer.saved.status">状態</label>
+                        <select id="composer-saved-status">
+                          <option value="">all</option>
+                          <option value="draft">draft</option>
+                          <option value="approved">approved</option>
+                          <option value="active">active</option>
+                          <option value="sent">sent</option>
                         </select>
                       </div>
                       <div class="flex-1">
-                        <label data-dict-key="ui.label.composer.step" data-dict-tip="ui.help.composer.step">ステップ</label>
-                        <select id="stepKey">
-                          <option value="3mo">3mo</option>
-                          <option value="1mo">1mo</option>
-                          <option value="week">week</option>
-                          <option value="after1w">after1w</option>
+                        <label for="composer-saved-type" data-dict-key="ui.label.composer.saved.type">タイプ</label>
+                        <select id="composer-saved-type">
+                          <option value="">all</option>
+                          <option value="GENERAL">GENERAL</option>
+                          <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
+                          <option value="VENDOR">VENDOR</option>
+                          <option value="AB">AB</option>
+                          <option value="STEP">STEP</option>
                         </select>
                       </div>
                     </div>
-                    <div>
-                      <label data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
-                      <select id="notificationCategory">
-                        <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
-                        <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
-                        <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
-                        <option value="TARGETED_ONLY">TARGETED_ONLY</option>
-                        <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
-                      </select>
-                    </div>
                     <div class="row">
                       <div class="flex-1">
-                        <label data-dict-key="ui.label.composer.region" data-dict-tip="ui.help.composer.region">地域（任意）</label>
-                        <input id="targetRegion" />
+                        <label for="composer-saved-category" data-dict-key="ui.label.composer.saved.category">カテゴリ</label>
+                        <input id="composer-saved-category" />
                       </div>
                       <div class="flex-1">
-                        <label data-dict-key="ui.label.composer.limit" data-dict-tip="ui.help.composer.limit">上限件数（必須）</label>
-                        <input id="targetLimit" type="number" min="1" max="500" value="50" />
+                        <label for="composer-saved-scenario" data-dict-key="ui.label.composer.saved.scenario">シナリオ</label>
+                        <input id="composer-saved-scenario" />
+                      </div>
+                      <div class="flex-1">
+                        <label for="composer-saved-step" data-dict-key="ui.label.composer.saved.step">ステップ</label>
+                        <input id="composer-saved-step" />
                       </div>
                     </div>
-                    <label class="checkbox" data-dict-tip="ui.help.composer.membersOnly"><input id="membersOnly" type="checkbox" /> <span data-dict-key="ui.label.composer.membersOnly">会員のみ</span></label>
                   </div>
+                  <table class="table-compact composer-saved-table">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.composer.saved.col.title">タイトル</th>
+                        <th data-dict-key="ui.label.composer.saved.col.type">タイプ</th>
+                        <th data-dict-key="ui.label.composer.saved.col.status">状態</th>
+                        <th data-dict-key="ui.label.composer.saved.col.category">カテゴリ</th>
+                        <th data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</th>
+                        <th data-dict-key="ui.label.composer.saved.col.step">ステップ</th>
+                        <th data-dict-key="ui.label.composer.saved.col.createdAt">作成日</th>
+                        <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="composer-saved-rows"></tbody>
+                  </table>
                 </div>
               </div>
 
-              <details class="panel" open>
+              <details class="panel">
                 <summary data-dict-key="ui.label.composer.details">詳細（内部キー）</summary>
                 <div class="panel-body">
                   <div class="note"><span data-dict-key="ui.label.composer.notificationId">通知ID</span>: <span id="notificationId">-</span></div>
                   <div class="note"><span data-dict-key="ui.label.composer.planHash">計画ハッシュ</span>: <span id="planHash">-</span></div>
                   <div class="note"><span data-dict-key="ui.label.composer.confirmToken">確認トークン</span>: <span id="confirmToken">-</span></div>
+                  <div class="note"><span data-dict-key="ui.label.composer.planTarget">対象人数（plan）</span>: <span id="planTargetCount">-</span></div>
+                  <div class="note"><span data-dict-key="ui.label.composer.planBlocked">抑制数（plan）</span>: <span id="planCapBlockedCount">-</span></div>
+                  <div class="note" id="execute-cap-meta" data-dict-key="ui.desc.composer.executeMeta">計数方式: - / 計数元: - / 計数戦略: - / 最終理由: -</div>
                   <pre id="draft-result">-</pre>
                   <pre id="plan-result">-</pre>
                   <pre id="execute-result">-</pre>
                 </div>
               </details>
             </div>
-
-            <div class="pane-detail">
-              <div class="panel">
-                <div class="panel-title" data-dict-key="ui.label.composer.compare">シナリオ比較</div>
-                <div class="panel-body">
-                  <div class="note" data-dict-key="ui.desc.composer.compare">Read ModelからシナリオA/Cの通知件数と反応率を比較します。</div>
-                  <table class="table-compact">
-                    <thead>
-                      <tr>
-                        <th data-dict-key="ui.label.composer.compare.scenario">シナリオ</th>
-                        <th data-dict-key="ui.label.composer.compare.count">通知件数</th>
-                        <th data-dict-key="ui.label.composer.compare.avgCtr">平均反応率</th>
-                      </tr>
-                    </thead>
-                    <tbody id="composer-compare-rows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <aside class="pane-actions">
-              <div class="action-panel">
-                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
-                <div class="panel-body">
-                  <div class="note" data-dict-key="ui.desc.composer.actions">下書き → 承認 → 計画 → 実行の順です。</div>
-                  <div class="note">
-                    <span data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</span>:
-                    <input type="text" id="traceId" class="input-inline input-trace" />
-                    <button id="regen-trace" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
-                    <span id="trace-note"></span>
-                  </div>
-                  <div class="row row-top">
-                    <button id="create-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
-                    <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
-                    <button id="approve" type="button" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
-                  </div>
-                  <div class="row row-top" data-role="admin">
-                    <button id="plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
-                    <button id="execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
-                  </div>
-                  <div class="note">
-                    <span data-dict-key="ui.label.composer.planTarget">対象人数（plan）</span>: <span id="planTargetCount">-</span>
-                  </div>
-                  <div class="note">
-                    <span data-dict-key="ui.label.composer.planBlocked">抑制数（plan）</span>: <span id="planCapBlockedCount">-</span>
-                  </div>
-                  <div class="note" id="execute-cap-meta" data-dict-key="ui.desc.composer.executeMeta">計数方式: - / 計数元: - / 計数戦略: - / 最終理由: -</div>
-                </div>
-              </div>
-            </aside>
-          </div>
           </details>
         </section>
 

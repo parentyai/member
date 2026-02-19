@@ -976,9 +976,11 @@ function createServer() {
       handlePreview,
       handleApprove,
       handleStatus: handleNotificationStatus,
+      handleList: handleNotificationList,
       handleSendPlan,
       handleSendExecute
     } = require('./routes/admin/osNotifications');
+    const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
     let bytes = 0;
     const chunks = [];
@@ -1102,6 +1104,10 @@ function createServer() {
         await handleNotificationStatus(req, res);
         return;
       }
+      if (req.method === 'GET' && pathname === '/api/admin/os/notifications/list') {
+        await handleNotificationList(req, res);
+        return;
+      }
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/plan') {
         const body = await collectBody();
         await handleSendPlan(req, res, body);
@@ -1110,6 +1116,10 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/execute') {
         const body = await collectBody();
         await handleSendExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {
+        await handleOsLinkRegistryLookup(req, res);
         return;
       }
 
