@@ -38,4 +38,6 @@
   - `deploy` skipped (PR想定どおり)
 
 ## CI Evidence
-- merge後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase274.log` を保存する。
+- merge後 main run:
+  - `Audit Gate` PASS (`run: 22169501083`)
+  - saved: `/Users/parentyai.com/Projects/Member/docs/CI_EVIDENCE/2026-02-19_22169501083_phase274.log`
