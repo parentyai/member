@@ -811,7 +811,12 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'POST' && pathname === '/internal/jobs/city-pack-source-audit') {
+  const isCityPackAuditInternalRoute = req.method === 'POST' && (
+    pathname === '/internal/jobs/city-pack-source-audit'
+    || pathname === '/internal/jobs/city-pack-audit-light'
+    || pathname === '/internal/jobs/city-pack-audit-heavy'
+  );
+  if (isCityPackAuditInternalRoute) {
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -833,7 +838,15 @@ function createServer() {
     (async () => {
       const { handleCityPackSourceAuditJob } = require('./routes/internal/cityPackSourceAuditJob');
       const body = await collectBody();
-      await handleCityPackSourceAuditJob(req, res, body);
+      if (pathname === '/internal/jobs/city-pack-audit-light') {
+        await handleCityPackSourceAuditJob(req, res, body, { stage: 'light', mode: 'scheduled' });
+        return;
+      }
+      if (pathname === '/internal/jobs/city-pack-audit-heavy') {
+        await handleCityPackSourceAuditJob(req, res, body, { stage: 'heavy', mode: 'canary' });
+        return;
+      }
+      await handleCityPackSourceAuditJob(req, res, body, { stage: null, mode: null });
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

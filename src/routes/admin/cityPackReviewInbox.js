@@ -82,6 +82,45 @@ function resolveRecommendation(sourceRef, nowMs) {
   return 'ManualOnly';
 }
 
+function resolveAuditStage(sourceRef) {
+  const stage = sourceRef && typeof sourceRef.lastAuditStage === 'string' ? sourceRef.lastAuditStage.trim().toLowerCase() : '';
+  return stage === 'light' || stage === 'heavy' ? stage : '-';
+}
+
+function resolveConfidenceScore(sourceRef) {
+  const value = Number(sourceRef && sourceRef.confidenceScore);
+  if (!Number.isFinite(value)) return null;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function computePriorityScore(sourceRef, nowMs) {
+  const status = sourceRef && sourceRef.status ? String(sourceRef.status) : '';
+  const validUntilMs = toMillis(sourceRef && sourceRef.validUntil);
+  const requiredLevel = sourceRef && typeof sourceRef.requiredLevel === 'string' ? sourceRef.requiredLevel.trim().toLowerCase() : 'required';
+  const riskLevel = sourceRef && typeof sourceRef.riskLevel === 'string' ? sourceRef.riskLevel.trim().toLowerCase() : '';
+  const confidenceScore = resolveConfidenceScore(sourceRef);
+
+  let score = 0;
+  if (!validUntilMs || validUntilMs <= nowMs) score += 70;
+  const nearExpiryMs = nowMs + (14 * 24 * 60 * 60 * 1000);
+  if (validUntilMs > nowMs && validUntilMs <= nearExpiryMs) score += 25;
+  if (status === 'dead') score += 60;
+  if (status === 'blocked') score += 55;
+  if (status === 'needs_review') score += 40;
+  if (requiredLevel === 'required') score += 10;
+  if (riskLevel === 'high') score += 12;
+  if (riskLevel === 'medium') score += 6;
+  if (confidenceScore == null) score += 15;
+  else score += Math.round((100 - confidenceScore) / 5);
+  return Math.max(0, score);
+}
+
+function resolvePriorityLevel(score) {
+  if (score >= 90) return 'HIGH';
+  if (score >= 45) return 'MEDIUM';
+  return 'LOW';
+}
+
 async function resolveUsedByNames(sourceRef) {
   const ids = Array.isArray(sourceRef && sourceRef.usedByCityPackIds) ? sourceRef.usedByCityPackIds : [];
   if (!ids.length) return [];
@@ -104,6 +143,7 @@ async function handleReviewInbox(req, res, context) {
   const items = [];
   for (const sourceRef of refs) {
     const usedBy = await resolveUsedByNames(sourceRef);
+    const priorityScore = computePriorityScore(sourceRef, nowMs);
     items.push({
       sourceRefId: sourceRef.id,
       source: sourceRef.url,
@@ -117,9 +157,17 @@ async function handleReviewInbox(req, res, context) {
       riskLevel: sourceRef.riskLevel || null,
       sourceType: sourceRef.sourceType || 'other',
       requiredLevel: sourceRef.requiredLevel || 'required',
+      confidenceScore: resolveConfidenceScore(sourceRef),
+      lastAuditStage: resolveAuditStage(sourceRef),
+      priorityScore,
+      priorityLevel: resolvePriorityLevel(priorityScore),
       traceId: context.traceId
     });
   }
+  items.sort((a, b) => {
+    if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
+    return toMillis(b.validUntil) - toMillis(a.validUntil);
+  });
 
   await appendAuditLog({
     actor: context.actor,
@@ -257,12 +305,14 @@ async function handleCityPackAuditRuns(req, res, context) {
     return {
       runId: run.runId || run.id,
       mode: run.mode || 'scheduled',
+      stage: run.stage || 'heavy',
       startedAt: run.startedAt || null,
       endedAt: run.endedAt || null,
       processed: Number(run.processed) || 0,
       succeeded: Number(run.succeeded) || 0,
       failed: Number(run.failed) || 0,
       failureTop3: Array.isArray(run.failureTop3) ? run.failureTop3 : [],
+      confidenceSummary: run.confidenceSummary || null,
       traceId: run.traceId || null,
       status
     };
@@ -330,12 +380,14 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
     run: {
       runId: run.runId || run.id,
       mode: run.mode || 'scheduled',
+      stage: run.stage || 'heavy',
       startedAt: run.startedAt || null,
       endedAt: run.endedAt || null,
       processed: Number(run.processed) || 0,
       succeeded: Number(run.succeeded) || 0,
       failed: Number(run.failed) || 0,
       failureTop3: Array.isArray(run.failureTop3) ? run.failureTop3 : [],
+      confidenceSummary: run.confidenceSummary || null,
       status: mapRunStatus(run),
       sourceTraceId: traceIdForEvidence
     },
@@ -354,9 +406,11 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
 async function handleCityPackAuditRun(req, res, bodyText, context) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
+  const stage = typeof payload.stage === 'string' ? payload.stage : null;
   const result = await runCityPackSourceAuditJob({
     runId: payload.runId,
     mode: payload.mode,
+    stage,
     targetSourceRefIds: payload.targetSourceRefIds,
     traceId: context.traceId,
     actor: context.actor,

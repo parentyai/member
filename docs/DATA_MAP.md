@@ -105,6 +105,8 @@ Typical fields:
 - `riskLevel`
 - `sourceType` (`official`/`semi_official`/`community`/`other`)
 - `requiredLevel` (`required`/`optional`)
+- `confidenceScore`（0..100）
+- `lastAuditStage` (`light`/`heavy`)
 - `evidenceLatestId`
 - `usedByCityPackIds[]`
 
@@ -128,9 +130,11 @@ Purpose: 監査ジョブ実行の run 単位サマリ（冪等管理）。
 
 Typical fields:
 - `runId`, `mode`
+- `stage` (`light`/`heavy`)
 - `startedAt`, `endedAt`
 - `processed`, `succeeded`, `failed`
 - `failureTop3[]`
+- `confidenceSummary` (`average`/`min`/`max`)
 - `traceId`
 - `targetSourceRefIds[]`
 
