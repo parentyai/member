@@ -159,6 +159,19 @@ Typical fields:
 - `traceId`
 - `targetSourceRefIds[]`
 
+### `city_pack_metrics_daily/{id}`
+Purpose: City Pack効果測定（pack/slot/sourceRef単位の日次集計）。
+
+Typical fields:
+- `dateKey` (`YYYY-MM-DD`)
+- `cityPackId`
+- `slotId`
+- `sourceRefId`
+- `sentCount`, `deliveredCount`, `clickCount`, `readCount`, `failedCount`
+- `ctr`
+- `traceId`
+- `lastComputedAt`, `updatedAt`
+
 ### Planned Add-only (City Pack extensions 1-12, inactive until phase enable)
 Purpose: 実装フェーズ分割時の互換契約を固定するための予定スキーマ。実装完了までは必須扱いにしない。
 

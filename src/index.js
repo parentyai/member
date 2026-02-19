@@ -747,6 +747,7 @@ function createServer() {
     || /^\/api\/admin\/city-pack-update-proposals\/[^/]+(\/(approve|reject|apply))?$/.test(pathname)
     || pathname === '/api/admin/review-inbox'
     || pathname === '/api/admin/city-pack-kpi'
+    || pathname === '/api/admin/city-pack-metrics'
     || pathname === '/api/admin/city-pack-source-audit/runs'
     || /^\/api\/admin\/city-pack-source-audit\/runs\/[^/]+$/.test(pathname)
     || pathname === '/api/admin/city-pack-source-audit/run'
@@ -814,6 +815,7 @@ function createServer() {
       }
       if (pathname === '/api/admin/review-inbox'
         || pathname === '/api/admin/city-pack-kpi'
+        || pathname === '/api/admin/city-pack-metrics'
         || pathname === '/api/admin/city-pack-source-audit/runs'
         || /^\/api\/admin\/city-pack-source-audit\/runs\/[^/]+$/.test(pathname)
         || pathname === '/api/admin/city-pack-source-audit/run'
