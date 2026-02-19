@@ -739,6 +739,8 @@ function createServer() {
     || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure)$/.test(pathname)
     || pathname === '/api/admin/city-pack-requests'
     || /^\/api\/admin\/city-pack-requests\/[^/]+(\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)
+    || pathname === '/api/admin/city-pack-feedback'
+    || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|reject|propose))?$/.test(pathname)
     || pathname === '/api/admin/review-inbox'
     || pathname === '/api/admin/city-pack-kpi'
     || pathname === '/api/admin/city-pack-source-audit/runs'
@@ -783,6 +785,13 @@ function createServer() {
         const { handleCityPackRequests } = require('./routes/admin/cityPackRequests');
         const body = await collectBody();
         await handleCityPackRequests(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/city-pack-feedback'
+        || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|reject|propose))?$/.test(pathname)) {
+        const { handleCityPackFeedback } = require('./routes/admin/cityPackFeedback');
+        const body = await collectBody();
+        await handleCityPackFeedback(req, res, body);
         return;
       }
       if (pathname === '/api/admin/review-inbox'

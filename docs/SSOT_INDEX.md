@@ -56,6 +56,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE267_EXECUTION_LOG.md`（City Pack拡張 PR2 source policy + fallback CTA 実行ログ）
 - `docs/PHASE268_PLAN.md`（City Pack拡張 PR3 二段監査 + 信頼度スコア + Inbox優先度 計画）
 - `docs/PHASE269_PLAN.md`（City Pack拡張 PR4 base→override継承 1段制限 計画）
+- `docs/PHASE270_PLAN.md`（City Pack拡張 PR5 feedback導線 計画）
 - `docs/PHASE268_EXECUTION_LOG.md`（City Pack拡張 PR3 二段監査 + 信頼度スコア + Inbox優先度 実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）

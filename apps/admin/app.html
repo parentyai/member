@@ -596,6 +596,39 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.feedbackInbox">Feedback Inbox</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.cityPack.feedbackInbox">City Packの誤り報告を確認し、対応を記録します。</div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.feedbackStatus" data-dict-tip="ui.help.cityPack.feedbackStatus">状態
+                      <select id="city-pack-feedback-status-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.feedbackStatus.all">すべて</option>
+                        <option value="queued" data-dict-key="ui.value.cityPack.feedbackStatus.queued">待機</option>
+                        <option value="reviewed" data-dict-key="ui.value.cityPack.feedbackStatus.reviewed">確認済み</option>
+                        <option value="rejected" data-dict-key="ui.value.cityPack.feedbackStatus.rejected">却下</option>
+                        <option value="proposed" data-dict-key="ui.value.cityPack.feedbackStatus.proposed">提案</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.feedbackLimit" data-dict-tip="ui.help.cityPack.feedbackLimit">件数
+                      <input id="city-pack-feedback-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-feedback-reload" type="button" data-dict-key="ui.label.cityPack.feedbackReload">Feedback更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.status">status</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.region">region</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.feedback">feedback</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.traceId">traceId</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.actions">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-feedback-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.reviewInbox">Review Inbox</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.cityPack.reviewInbox">情報源の有効期限と監査結果を確認し、Confirm / Retire / Replace / ManualOnly を実行します。</div>
@@ -668,6 +701,16 @@
                   <details class="section">
                     <summary data-dict-key="ui.label.cityPack.requestDetail.raw">RAW</summary>
                     <pre id="city-pack-request-raw">-</pre>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.feedbackDetail">Feedback Detail</div>
+                <div class="panel-body">
+                  <div id="city-pack-feedback-summary" class="note" data-dict-key="ui.desc.cityPack.feedbackDetailEmpty">Feedbackの行を選択すると詳細を表示します。</div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.cityPack.feedbackDetail.raw">RAW</summary>
+                    <pre id="city-pack-feedback-raw">-</pre>
                   </details>
                 </div>
               </div>
