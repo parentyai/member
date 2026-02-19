@@ -13,8 +13,8 @@
 - commit: `8ae4774`
 - PR: `https://github.com/parentyai/member/pull/520`
 - CI run (PR): `22168440020` (`audit/docs`), `22168440012` (`dry-run`)
-- CI run (main): pending
-- CI evidence: pending
+- CI run (main): `22168606094`
+- CI evidence: `docs/CI_EVIDENCE/2026-02-19_22168606094_phase272.log`
 
 ## Diff scope
 - `/Users/parentyai.com/Projects/Member/apps/admin/app.html`
