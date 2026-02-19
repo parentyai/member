@@ -10,9 +10,9 @@
 - `node --test tests/phase268/*.test.js`: PASS (`5/5`)
 - `npm test`: PASS (`719/719`)
 - branch: `codex/phase268-city-pack-audit-priority`
-- commit: pending
-- PR: pending
-- CI run (PR): pending
+- commit: `6ad15d0`
+- PR: `https://github.com/parentyai/member/pull/514`
+- CI run (PR): pending (`22165535757`, `22165535752`)
 - CI run (main): pending
 - CI evidence: pending
 
