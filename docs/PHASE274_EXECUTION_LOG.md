@@ -29,5 +29,13 @@
   - `docs/PHASE274_PLAN.md` (new)
   - `docs/PHASE274_EXECUTION_LOG.md` (new)
 
+## PR / Checks
+- PR: `https://github.com/parentyai/member/pull/523`
+- checks:
+  - `audit` PASS (`run: 22169311402`)
+  - `docs` PASS (`run: 22169311402`)
+  - `dry-run` PASS (`run: 22169311408`)
+  - `deploy` skipped (PR想定どおり)
+
 ## CI Evidence
 - merge後に `docs/CI_EVIDENCE/YYYY-MM-DD_<runid>_phase274.log` を保存する。
