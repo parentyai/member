@@ -9,8 +9,9 @@
 - `npm run test:docs`: PASS (`[docs] OK`)
 - `node --test tests/phase267/*.test.js`: PASS (`8/8`)
 - `npm test`: PASS (`714/714`)
-- commit: TBD
-- PR: TBD
+- commit: `9bbdb66`
+- PR: `https://github.com/parentyai/member/pull/513`
+- CI run (PR): `22165255904` (`audit/docs`) + `22165255907` (`dry-run/deploy skip`)
 - CI run (main): TBD
 - CI evidence: TBD
 
