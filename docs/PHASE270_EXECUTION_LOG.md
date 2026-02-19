@@ -11,7 +11,7 @@
 - `npm test`: PASS (`727/727`)
 - branch: `codex/phase270-city-pack-feedback`
 - commit: `173ee10`
-- PR: pending
+- PR: `https://github.com/parentyai/member/pull/516`
 - CI run (PR): pending
 - CI run (main): pending
 - CI evidence: pending
