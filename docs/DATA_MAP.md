@@ -77,6 +77,8 @@ Typical fields:
 - `rules[]`
 - `targetingRules[]`（Rule Pack）
 - `slots[]`（Slot-based Pack）
+- `basePackId`（1段のみ継承）
+- `overrides`（継承上書き）
 
 ### `city_pack_requests/{requestId}`
 Purpose: City Pack 生成リクエストの状態機械（LINE申告→草案→承認→有効化）。

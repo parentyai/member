@@ -41,6 +41,10 @@ function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function normalizeBasePackId(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 function normalizeRules(values) {
   if (!Array.isArray(values)) return [];
   return values.filter((value) => value && typeof value === 'object').map((value) => Object.assign({}, value));
@@ -126,6 +130,25 @@ function normalizeAllowedIntents(value) {
   return list.length ? list : ['CITY_PACK'];
 }
 
+function normalizeOverrides(value) {
+  const payload = value && typeof value === 'object' ? value : null;
+  if (!payload) return null;
+  const targetingRules = normalizeTargetingRules(payload.targetingRules);
+  const slots = normalizeSlots(payload.slots);
+  const sourceRefs = normalizeStringArray(payload.sourceRefs);
+  const templateRefs = normalizeStringArray(payload.templateRefs);
+  const rules = normalizeRules(payload.rules);
+  const overridePayload = {
+    targetingRules,
+    slots,
+    sourceRefs,
+    templateRefs,
+    rules
+  };
+  const hasAny = targetingRules.length || slots.length || sourceRefs.length || templateRefs.length || rules.length;
+  return hasAny ? overridePayload : null;
+}
+
 function resolveValidUntil(payload) {
   const validUntil = toDate(payload.validUntil);
   if (validUntil) return validUntil;
@@ -136,6 +159,8 @@ function resolveValidUntil(payload) {
 function normalizePayload(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+  const basePackId = normalizeBasePackId(payload.basePackId);
+  const overrides = normalizeOverrides(payload.overrides);
   return {
     id: typeof payload.id === 'string' && payload.id.trim() ? payload.id.trim() : `cp_${crypto.randomUUID()}`,
     name,
@@ -149,16 +174,33 @@ function normalizePayload(data) {
     slots: normalizeSlots(payload.slots),
     description: typeof payload.description === 'string' ? payload.description.trim() : '',
     metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {},
-    requestId: normalizeString(payload.requestId)
+    requestId: normalizeString(payload.requestId),
+    basePackId,
+    overrides
   };
 }
 
 function normalizeCityPackStructurePatch(data) {
   const payload = data && typeof data === 'object' ? data : {};
+  const basePackId = normalizeBasePackId(payload.basePackId);
+  const targetingRules = normalizeTargetingRules(payload.targetingRules);
+  const slots = normalizeSlots(payload.slots);
+  const overrides = basePackId ? normalizeOverrides({ targetingRules, slots }) : null;
   return {
-    targetingRules: normalizeTargetingRules(payload.targetingRules),
-    slots: normalizeSlots(payload.slots)
+    basePackId,
+    overrides,
+    targetingRules: basePackId ? [] : targetingRules,
+    slots: basePackId ? [] : slots
   };
+}
+
+
+function validateBasePackDepth(basePack) {
+  if (!basePack) return { ok: false, reason: 'base_pack_not_found' };
+  if (basePack.basePackId) {
+    return { ok: false, reason: 'base_pack_inheritance_not_allowed' };
+  }
+  return { ok: true };
 }
 
 async function createCityPack(data) {
@@ -179,6 +221,8 @@ async function createCityPack(data) {
     description: payload.description,
     metadata: payload.metadata,
     requestId: payload.requestId,
+    basePackId: payload.basePackId,
+    overrides: payload.overrides,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -229,5 +273,8 @@ module.exports = {
   getCityPack,
   listCityPacks,
   normalizeCityPackStructurePatch,
+  normalizeBasePackId,
+  normalizeOverrides,
+  validateBasePackDepth,
   updateCityPack
 };
