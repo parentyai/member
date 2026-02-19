@@ -32,9 +32,9 @@
 ## PR / Checks
 - PR: `https://github.com/parentyai/member/pull/523`
 - checks:
-  - `audit` PASS (`run: 22169311402`)
-  - `docs` PASS (`run: 22169311402`)
-  - `dry-run` PASS (`run: 22169311408`)
+  - `audit` PASS (`run: 22169353122`)
+  - `docs` PASS (`run: 22169353122`)
+  - `dry-run` PASS (`run: 22169353118`)
   - `deploy` skipped (PR想定どおり)
 
 ## CI Evidence
