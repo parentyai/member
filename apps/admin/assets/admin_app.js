@@ -1461,6 +1461,7 @@ function renderCityPackRequestDetail(payload) {
   const summaryEl = document.getElementById('city-pack-request-summary');
   const rawEl = document.getElementById('city-pack-request-raw');
   const packIdEl = document.getElementById('city-pack-structure-pack-id');
+  const basePackEl = document.getElementById('city-pack-structure-base-pack-id');
   const targetingEl = document.getElementById('city-pack-structure-targeting');
   const slotsEl = document.getElementById('city-pack-structure-slots');
   const data = payload && typeof payload === 'object' ? payload : null;
@@ -1470,6 +1471,7 @@ function renderCityPackRequestDetail(payload) {
     if (summaryEl) summaryEl.textContent = t('ui.desc.cityPack.requestDetailEmpty', 'Requestの行を選択すると詳細を表示します。');
     if (rawEl) rawEl.textContent = '-';
     if (packIdEl) packIdEl.textContent = '-';
+    if (basePackEl) basePackEl.value = '';
     if (targetingEl) targetingEl.value = '[]';
     if (slotsEl) slotsEl.value = '[]';
     state.selectedCityPackDraftId = null;
@@ -1483,6 +1485,10 @@ function renderCityPackRequestDetail(payload) {
   if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / region=${region} / drafts=${drafts} / traceId=${req.traceId || '-'}${error}`;
   if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
   if (packIdEl) packIdEl.textContent = state.selectedCityPackDraftId || '-';
+  if (basePackEl) {
+    const basePackId = draftPack && typeof draftPack.basePackId === 'string' ? draftPack.basePackId : '';
+    basePackEl.value = basePackId;
+  }
   if (targetingEl) {
     const targeting = draftPack && Array.isArray(draftPack.targetingRules) ? draftPack.targetingRules : [];
     targetingEl.value = JSON.stringify(targeting, null, 2);
@@ -2024,6 +2030,7 @@ async function runCityPackSaveStructure() {
     return;
   }
   const trace = ensureTraceInput('monitor-trace');
+  const basePackId = document.getElementById('city-pack-structure-base-pack-id')?.value?.trim() || '';
   let targetingRules;
   let slots;
   try {
@@ -2036,6 +2043,7 @@ async function runCityPackSaveStructure() {
   if (!approved) return;
   try {
     const data = await postJson(`/api/admin/city-packs/${encodeURIComponent(cityPackId)}/structure`, {
+      basePackId: basePackId || null,
       targetingRules,
       slots
     }, trace);

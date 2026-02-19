@@ -136,6 +136,18 @@ async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPa
   const payload = parseJson(bodyText, res);
   if (!payload) return;
   const structurePatch = cityPacksRepo.normalizeCityPackStructurePatch(payload);
+  if (structurePatch.basePackId) {
+    if (structurePatch.basePackId === cityPackId) {
+      writeJson(res, 409, { ok: false, error: 'base_pack_self_reference' });
+      return;
+    }
+    const basePack = await cityPacksRepo.getCityPack(structurePatch.basePackId);
+    const baseValidation = cityPacksRepo.validateBasePackDepth(basePack);
+    if (!baseValidation.ok) {
+      writeJson(res, 409, { ok: false, error: baseValidation.reason });
+      return;
+    }
+  }
   await cityPacksRepo.updateCityPack(cityPackId, structurePatch);
   await appendAuditLog({
     actor: context.actor,
@@ -146,7 +158,8 @@ async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPa
     requestId: context.requestId,
     payloadSummary: {
       targetingRuleCount: structurePatch.targetingRules.length,
-      slotCount: structurePatch.slots.length
+      slotCount: structurePatch.slots.length,
+      basePackId: structurePatch.basePackId || null
     }
   });
   writeJson(res, 200, {
@@ -154,7 +167,8 @@ async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPa
     cityPackId,
     traceId: context.traceId,
     targetingRuleCount: structurePatch.targetingRules.length,
-    slotCount: structurePatch.slots.length
+    slotCount: structurePatch.slots.length,
+    basePackId: structurePatch.basePackId || null
   });
 }
 
