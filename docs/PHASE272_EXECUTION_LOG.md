@@ -10,9 +10,9 @@
 - `node --test tests/phase272/*.test.js`: PASS (`7/7`)
 - `npm test`: PASS (`740/740`)
 - branch: `codex/phase272-composer-ui`
-- commit: `52736a4`
+- commit: `8ae4774`
 - PR: `https://github.com/parentyai/member/pull/520`
-- CI run (PR): `22168398358` (`audit/docs`), `22168398347` (`dry-run`)
+- CI run (PR): `22168440020` (`audit/docs`), `22168440012` (`dry-run`)
 - CI run (main): pending
 - CI evidence: pending
 
