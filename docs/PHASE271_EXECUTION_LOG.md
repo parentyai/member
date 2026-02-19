@@ -10,11 +10,11 @@
 - `node --test tests/phase271/*.test.js`: PASS (`6/6`)
 - `npm test`: PASS (`733/733`)
 - branch: `codex/phase271-city-pack-bulletin`
-- commit: pending
-- PR: pending
-- CI run (PR): pending
-- CI run (main): pending
-- CI evidence: pending
+- commit: `664ef01`
+- PR: `https://github.com/parentyai/member/pull/518`
+- CI run (PR): `22167447459` / `22167447466`
+- CI run (main): `22167480925`
+- CI evidence: `docs/CI_EVIDENCE/2026-02-19_22167480925_phase271.log`
 
 ## Diff scope
 - `/Users/parentyai.com/Projects/Member/apps/admin/app.html`
