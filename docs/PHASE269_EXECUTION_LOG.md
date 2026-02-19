@@ -11,7 +11,7 @@
 - `npm test`: PASS (`723/723`)
 - branch: `codex/phase269-city-pack-inheritance`
 - commit: `6e1f79f`
-- PR: pending
+- PR: `https://github.com/parentyai/member/pull/515`
 - CI run (PR): pending
 - CI run (main): pending
 - CI evidence: pending
