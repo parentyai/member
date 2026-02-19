@@ -618,9 +618,12 @@
                   <table class="table-compact">
                     <thead>
                       <tr>
+                        <th data-dict-key="ui.label.cityPack.col.priority">priority</th>
                         <th data-dict-key="ui.label.cityPack.col.source">source</th>
                         <th data-dict-key="ui.label.cityPack.col.sourceType">sourceType</th>
                         <th data-dict-key="ui.label.cityPack.col.requiredLevel">requiredLevel</th>
+                        <th data-dict-key="ui.label.cityPack.col.confidence">confidence</th>
+                        <th data-dict-key="ui.label.cityPack.col.auditStage">auditStage</th>
                         <th data-dict-key="ui.label.cityPack.col.result">result</th>
                         <th data-dict-key="ui.label.cityPack.col.validUntil">validUntil</th>
                         <th data-dict-key="ui.label.cityPack.col.usedBy">usedBy</th>
@@ -695,8 +698,8 @@
                   <div class="note">
                     <label data-dict-key="ui.label.cityPack.runMode" data-dict-tip="ui.help.cityPack.runMode">監査モード</label>
                     <select id="city-pack-run-mode" class="select-inline">
-                      <option value="scheduled" data-dict-key="ui.value.cityPack.runMode.scheduled">定期監査</option>
-                      <option value="canary" data-dict-key="ui.value.cityPack.runMode.canary">Canary</option>
+                      <option value="light" data-dict-key="ui.value.cityPack.runMode.light">軽監査</option>
+                      <option value="heavy" data-dict-key="ui.value.cityPack.runMode.heavy">重監査</option>
                     </select>
                   </div>
                   <div class="row row-top">
@@ -761,14 +764,16 @@
 	                    <div class="table-scroll">
 	                      <table class="table-compact">
 	                        <thead>
-	                          <tr>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.runId">runId</th>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.mode">mode</th>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.startedAt">startedAt</th>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.result">result</th>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.processed">processed</th>
-	                            <th data-dict-key="ui.label.cityPack.runs.col.traceId">traceId</th>
-	                          </tr>
+                          <tr>
+                            <th data-dict-key="ui.label.cityPack.runs.col.runId">runId</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.mode">mode</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.stage">stage</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.startedAt">startedAt</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.result">result</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.processed">processed</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.confidence">confidence</th>
+                            <th data-dict-key="ui.label.cityPack.runs.col.traceId">traceId</th>
+                          </tr>
 	                        </thead>
 	                        <tbody id="city-pack-run-rows"></tbody>
 	                      </table>

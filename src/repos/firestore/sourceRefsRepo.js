@@ -10,6 +10,7 @@ const ALLOWED_STATUS = new Set(['active', 'needs_review', 'dead', 'blocked', 're
 const ALLOWED_RISK_LEVEL = new Set(['low', 'medium', 'high']);
 const ALLOWED_SOURCE_TYPE = new Set(['official', 'semi_official', 'community', 'other']);
 const ALLOWED_REQUIRED_LEVEL = new Set(['required', 'optional']);
+const ALLOWED_AUDIT_STAGE = new Set(['light', 'heavy']);
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -29,6 +30,17 @@ function normalizeSourceType(value) {
 function normalizeRequiredLevel(value) {
   const requiredLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_REQUIRED_LEVEL.has(requiredLevel) ? requiredLevel : 'required';
+}
+
+function normalizeAuditStage(value) {
+  const stage = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_AUDIT_STAGE.has(stage) ? stage : null;
+}
+
+function normalizeConfidenceScore(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.min(100, Math.max(0, Math.round(num)));
 }
 
 function toDate(value) {
@@ -79,6 +91,8 @@ function normalizeSourceRefData(data) {
     riskLevel: normalizeRiskLevel(payload.riskLevel),
     sourceType: normalizeSourceType(payload.sourceType),
     requiredLevel: normalizeRequiredLevel(payload.requiredLevel),
+    confidenceScore: normalizeConfidenceScore(payload.confidenceScore),
+    lastAuditStage: normalizeAuditStage(payload.lastAuditStage),
     evidenceLatestId: typeof payload.evidenceLatestId === 'string' ? payload.evidenceLatestId.trim() : null,
     usedByCityPackIds: normalizeArray(payload.usedByCityPackIds)
   };
@@ -124,6 +138,8 @@ async function createSourceRef(data) {
     riskLevel: normalized.riskLevel,
     sourceType: normalized.sourceType,
     requiredLevel: normalized.requiredLevel,
+    confidenceScore: normalized.confidenceScore,
+    lastAuditStage: normalized.lastAuditStage,
     evidenceLatestId: normalized.evidenceLatestId,
     usedByCityPackIds: normalized.usedByCityPackIds,
     createdAt: serverTimestamp(),
@@ -208,6 +224,8 @@ async function linkCityPack(sourceRefId, cityPackId) {
 
 module.exports = {
   VALIDITY_DAYS,
+  normalizeAuditStage,
+  normalizeConfidenceScore,
   normalizeRequiredLevel,
   normalizeSourcePolicyPatch,
   createSourceRef,

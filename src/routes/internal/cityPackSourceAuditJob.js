@@ -37,7 +37,7 @@ function requireInternalJobToken(req, res) {
   return true;
 }
 
-async function handleCityPackSourceAuditJob(req, res, bodyText) {
+async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
   if (req.method !== 'POST') {
     writeJson(res, 404, { ok: false, error: 'not found' });
     return;
@@ -51,9 +51,13 @@ async function handleCityPackSourceAuditJob(req, res, bodyText) {
   }
 
   const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string' ? req.headers['x-trace-id'].trim() : null;
+  const opts = options && typeof options === 'object' ? options : {};
+  const forcedStage = typeof opts.stage === 'string' ? opts.stage : null;
+  const forcedMode = typeof opts.mode === 'string' ? opts.mode : null;
   const result = await runCityPackSourceAuditJob({
     runId: payload.runId,
-    mode: payload.mode,
+    mode: forcedMode || payload.mode,
+    stage: forcedStage || payload.stage,
     targetSourceRefIds: payload.targetSourceRefIds,
     traceId: traceIdHeader || payload.traceId || null,
     actor: 'city_pack_source_audit_job',

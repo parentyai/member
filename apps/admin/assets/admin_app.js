@@ -975,6 +975,11 @@ function formatRatio(value) {
   return `${Math.round(value * 1000) / 10}%`;
 }
 
+function formatScore(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${Math.round(value)}`;
+}
+
 function toDateLabel(value) {
   if (!value) return '-';
   const ms = toMillis(value);
@@ -1016,7 +1021,7 @@ function renderCityPackRunRows(payload) {
     state.selectedCityPackRunEvidenceId = null;
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 6;
+    td.colSpan = 8;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -1040,13 +1045,22 @@ function renderCityPackRunRows(payload) {
 
     const processed = Number.isFinite(Number(run && run.processed)) ? Number(run.processed) : 0;
     const failed = Number.isFinite(Number(run && run.failed)) ? Number(run.failed) : 0;
+    const stage = run && run.stage ? String(run.stage) : '-';
+    const confidenceSummary = run && run.confidenceSummary && typeof run.confidenceSummary === 'object'
+      ? run.confidenceSummary
+      : null;
+    const confidenceText = confidenceSummary && Number.isFinite(Number(confidenceSummary.average))
+      ? `${formatScore(Number(confidenceSummary.average))}/100`
+      : '-';
 
     const cells = [
       run && run.runId ? String(run.runId) : '-',
       run && run.mode ? String(run.mode) : '-',
+      stage,
       run && run.startedAt ? String(run.startedAt) : '-',
       resultLabel,
       `${processed}/${failed}`,
+      confidenceText,
       run && run.traceId ? String(run.traceId) : '-'
     ];
     cells.forEach((value) => {
@@ -1106,7 +1120,8 @@ function renderCityPackRunDetail(payload) {
       : run.status === 'WARN'
         ? t('ui.label.cityPack.runs.status.warn', '要確認')
         : t('ui.label.cityPack.runs.status.running', '実行中');
-    summaryEl.textContent = `${run.runId || '-'} / ${statusLabelText} / ${t('ui.label.cityPack.runs.col.traceId', 'traceId')}: ${run.sourceTraceId || '-'}`;
+    const stageText = run.stage || '-';
+    summaryEl.textContent = `${run.runId || '-'} / ${statusLabelText} / ${stageText} / ${t('ui.label.cityPack.runs.col.traceId', 'traceId')}: ${run.sourceTraceId || '-'}`;
   }
 
   if (!rowsEl) return;
@@ -1276,7 +1291,7 @@ function renderCityPackInboxRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = 11;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -1288,9 +1303,17 @@ function renderCityPackInboxRows(items) {
   items.forEach((row) => {
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
+    const priorityLevel = row && row.priorityLevel ? String(row.priorityLevel) : 'LOW';
     if (row.recommendation === 'Retire') tr.classList.add('row-health-danger');
     if (row.recommendation === 'Confirm') tr.classList.add('row-health-warn');
     if (row.recommendation === 'ManualOnly') tr.classList.add('row-health-ok');
+    if (priorityLevel === 'HIGH') tr.classList.add('row-health-danger');
+    else if (priorityLevel === 'MEDIUM') tr.classList.add('row-health-warn');
+    else tr.classList.add('row-health-ok');
+    const priorityTd = document.createElement('td');
+    priorityTd.textContent = `${row.priorityLevel || '-'}(${Number.isFinite(Number(row.priorityScore)) ? Number(row.priorityScore) : '-'})`;
+    tr.appendChild(priorityTd);
+
     const sourceTd = document.createElement('td');
     sourceTd.textContent = row.source || '-';
     tr.appendChild(sourceTd);
@@ -1302,6 +1325,14 @@ function renderCityPackInboxRows(items) {
     const requiredLevelTd = document.createElement('td');
     requiredLevelTd.textContent = row.requiredLevel || '-';
     tr.appendChild(requiredLevelTd);
+
+    const confidenceTd = document.createElement('td');
+    confidenceTd.textContent = Number.isFinite(Number(row.confidenceScore)) ? `${Number(row.confidenceScore)}/100` : '-';
+    tr.appendChild(confidenceTd);
+
+    const stageTd = document.createElement('td');
+    stageTd.textContent = row.lastAuditStage || '-';
+    tr.appendChild(stageTd);
 
     const resultTd = document.createElement('td');
     resultTd.textContent = row.result || '-';
@@ -2024,13 +2055,15 @@ async function runCityPackSaveStructure() {
 
 async function runCityPackAuditJob() {
   const trace = ensureTraceInput('monitor-trace');
-  const mode = document.getElementById('city-pack-run-mode')?.value === 'canary' ? 'canary' : 'scheduled';
+  const stage = document.getElementById('city-pack-run-mode')?.value === 'heavy' ? 'heavy' : 'light';
+  const mode = stage === 'heavy' ? 'canary' : 'scheduled';
   const resultEl = document.getElementById('city-pack-run-result');
   const approved = window.confirm(t('ui.confirm.cityPack.runAudit', 'City Pack監査ジョブを実行しますか？'));
   if (!approved) return;
   try {
     const data = await postJson('/api/admin/city-pack-source-audit/run', {
       mode,
+      stage,
       runId: `cp_manual_${Date.now()}`
     }, trace);
     if (resultEl) resultEl.textContent = JSON.stringify(data || {}, null, 2);

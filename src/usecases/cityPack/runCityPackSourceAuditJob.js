@@ -35,6 +35,12 @@ function normalizeMode(value) {
   return mode === 'canary' ? 'canary' : 'scheduled';
 }
 
+function normalizeStage(value, mode) {
+  const stage = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (stage === 'light' || stage === 'heavy') return stage;
+  return mode === 'canary' ? 'heavy' : 'heavy';
+}
+
 function normalizeTargetSourceRefIds(value) {
   if (!Array.isArray(value)) return [];
   return Array.from(new Set(value.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim())));
@@ -158,11 +164,58 @@ function resolveNextStatus(sourceRef, result, diffDetected, nowMs) {
   return 'active';
 }
 
+function clampScore(score) {
+  const num = Number(score);
+  if (!Number.isFinite(num)) return 0;
+  return Math.min(100, Math.max(0, Math.round(num)));
+}
+
+function resolveBaseConfidence(result) {
+  if (result === 'ok') return 92;
+  if (result === 'redirect') return 84;
+  if (result === 'diff_detected') return 45;
+  if (result === 'http_error') return 22;
+  if (result === 'timeout') return 18;
+  return 8;
+}
+
+function resolveRiskPenalty(sourceRef) {
+  const risk = sourceRef && typeof sourceRef.riskLevel === 'string' ? sourceRef.riskLevel.trim().toLowerCase() : '';
+  if (risk === 'high') return 22;
+  if (risk === 'medium') return 10;
+  return 0;
+}
+
+function resolveConfidenceScore(sourceRef, result, stage, nowMs) {
+  if (toMillis(sourceRef && sourceRef.validUntil) <= nowMs) return 0;
+  let score = resolveBaseConfidence(result) - resolveRiskPenalty(sourceRef);
+  if (stage === 'light') score -= 8;
+  const requiredLevel = sourceRef && typeof sourceRef.requiredLevel === 'string' ? sourceRef.requiredLevel.trim().toLowerCase() : 'required';
+  if (requiredLevel === 'required' && score > 0) score += 3;
+  return clampScore(score);
+}
+
+function summarizeConfidence(scores) {
+  if (!Array.isArray(scores) || !scores.length) {
+    return { average: null, min: null, max: null };
+  }
+  const valid = scores.filter((item) => Number.isFinite(Number(item))).map((item) => Number(item));
+  if (!valid.length) return { average: null, min: null, max: null };
+  const total = valid.reduce((sum, item) => sum + item, 0);
+  return {
+    average: clampScore(total / valid.length),
+    min: clampScore(Math.min(...valid)),
+    max: clampScore(Math.max(...valid))
+  };
+}
+
 async function runCityPackSourceAuditJob(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const now = payload.now instanceof Date ? payload.now : new Date();
   const nowMs = now.getTime();
   const mode = normalizeMode(payload.mode);
+  const stage = normalizeStage(payload.stage, mode);
+  const useHeavyStage = stage === 'heavy';
   const targetSourceRefIds = normalizeTargetSourceRefIds(payload.targetSourceRefIds);
   const actor = payload.actor || 'city_pack_audit_job';
   const traceId = payload.traceId || `trace-city-pack-${now.getTime()}`;
@@ -182,12 +235,14 @@ async function runCityPackSourceAuditJob(params, deps) {
       ok: true,
       runId,
       mode: existingRun.mode || mode,
+      stage: existingRun.stage || stage,
       startedAt: existingRun.startedAt || null,
       endedAt: existingRun.endedAt || null,
       processed: Number(existingRun.processed) || 0,
       succeeded: Number(existingRun.succeeded) || 0,
       failed: Number(existingRun.failed) || 0,
       failureTop3: Array.isArray(existingRun.failureTop3) ? existingRun.failureTop3 : [],
+      confidenceSummary: existingRun.confidenceSummary || null,
       traceId,
       idempotent: true
     };
@@ -196,6 +251,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   await saveRun(runId, {
     runId,
     mode,
+    stage,
     traceId,
     startedAt: now.toISOString(),
     endedAt: null,
@@ -220,6 +276,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   }
 
   const failureCounts = new Map();
+  const confidenceScores = [];
   let succeeded = 0;
   let failed = 0;
 
@@ -229,25 +286,31 @@ async function runCityPackSourceAuditJob(params, deps) {
       const result = classifyHttpResult(httpResult);
       const contentHash = hashContent(httpResult.bodyText);
       const previousHash = typeof sourceRef.contentHash === 'string' ? sourceRef.contentHash : null;
-      const diffDetected = Boolean(contentHash && previousHash && contentHash !== previousHash);
+      const diffDetected = useHeavyStage && Boolean(contentHash && previousHash && contentHash !== previousHash);
       const resolvedResult = diffDetected ? 'diff_detected' : result;
+      const confidenceScore = resolveConfidenceScore(sourceRef, resolvedResult, stage, nowMs);
 
-      const screenshotPaths = await captureScreenshots({
+      const screenshotPaths = useHeavyStage ? await captureScreenshots({
         sourceRefId: sourceRef.id,
         url: httpResult.finalUrl || sourceRef.url,
         runId,
         traceId,
         checkedAt: now.toISOString()
-      }, deps);
+      }, deps) : [];
 
-      const llmSummary = await buildDiffSummary({
+      const llmSummary = useHeavyStage ? await buildDiffSummary({
         sourceRef,
         previousHash,
         nextHash: contentHash,
         result: resolvedResult,
         finalUrl: httpResult.finalUrl || sourceRef.url,
         traceId
-      }, deps);
+      }, deps) : {
+        llm_used: false,
+        model: null,
+        promptVersion: null,
+        diffSummary: null
+      };
 
       const evidence = await createEvidence({
         sourceRefId: sourceRef.id,
@@ -270,9 +333,12 @@ async function runCityPackSourceAuditJob(params, deps) {
         lastResult: resolvedResult,
         lastCheckAt: now.toISOString(),
         contentHash,
+        confidenceScore,
+        lastAuditStage: stage,
         evidenceLatestId: evidence.id
       });
 
+      confidenceScores.push(confidenceScore);
       succeeded += 1;
     } catch (err) {
       failed += 1;
@@ -281,6 +347,8 @@ async function runCityPackSourceAuditJob(params, deps) {
       await updateSourceRef(sourceRef.id, {
         status: 'needs_review',
         lastResult: 'error',
+        confidenceScore: 0,
+        lastAuditStage: stage,
         lastCheckAt: now.toISOString()
       });
       await createEvidence({
@@ -302,13 +370,17 @@ async function runCityPackSourceAuditJob(params, deps) {
 
   const finishedAt = new Date().toISOString();
   const failureTop3 = summarizeFailures(failureCounts);
+  const confidenceSummary = summarizeConfidence(confidenceScores);
 
   await saveRun(runId, {
+    mode,
+    stage,
     endedAt: finishedAt,
     processed: candidates.length,
     succeeded,
     failed,
-    failureTop3
+    failureTop3,
+    confidenceSummary
   });
 
   await audit({
@@ -320,10 +392,12 @@ async function runCityPackSourceAuditJob(params, deps) {
     requestId: payload.requestId || null,
     payloadSummary: {
       mode,
+      stage,
       processed: candidates.length,
       succeeded,
       failed,
-      failureTop3
+      failureTop3,
+      confidenceSummary
     }
   });
 
@@ -331,12 +405,14 @@ async function runCityPackSourceAuditJob(params, deps) {
     ok: true,
     runId,
     mode,
+    stage,
     startedAt: now.toISOString(),
     endedAt: finishedAt,
     processed: candidates.length,
     succeeded,
     failed,
     failureTop3,
+    confidenceSummary,
     traceId,
     idempotent: false
   };
