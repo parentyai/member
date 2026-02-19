@@ -40,6 +40,27 @@ function buildDraftName(request) {
   return regionKey || 'City Pack Draft';
 }
 
+function buildDefaultSlots() {
+  return [{
+    slotId: 'core',
+    status: 'active',
+    templateRefId: null,
+    fallbackLinkRegistryId: null,
+    fallbackCtaText: null,
+    order: 1
+  }];
+}
+
+function buildDefaultTargetingRules(request) {
+  if (!request || !request.regionKey) return [];
+  return [{
+    field: 'regionKey',
+    op: 'eq',
+    value: String(request.regionKey),
+    effect: 'include'
+  }];
+}
+
 async function runCityPackDraftJob(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const requestId = typeof payload.requestId === 'string' ? payload.requestId.trim() : '';
@@ -126,6 +147,8 @@ async function runCityPackDraftJob(params) {
     sourceRefs: sourceRefIds,
     allowedIntents: ['CITY_PACK'],
     rules: [],
+    targetingRules: buildDefaultTargetingRules(request),
+    slots: buildDefaultSlots(),
     description: request && request.regionKey ? `Draft for ${request.regionKey}` : 'Draft',
     requestId,
     templateRefs: []

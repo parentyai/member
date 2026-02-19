@@ -93,7 +93,9 @@ async function handleDetail(req, res, context, requestId) {
         id: pack.id,
         name: pack.name || null,
         status: pack.status || null,
-        sourceRefs: Array.isArray(pack.sourceRefs) ? pack.sourceRefs : []
+        sourceRefs: Array.isArray(pack.sourceRefs) ? pack.sourceRefs : [],
+        slots: Array.isArray(pack.slots) ? pack.slots : [],
+        targetingRules: Array.isArray(pack.targetingRules) ? pack.targetingRules : []
       });
     }
   }

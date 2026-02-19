@@ -75,6 +75,8 @@ Typical fields:
 - `validUntil`
 - `allowedIntents` (固定: `CITY_PACK`)
 - `rules[]`
+- `targetingRules[]`（Rule Pack）
+- `slots[]`（Slot-based Pack）
 
 ### `city_pack_requests/{requestId}`
 Purpose: City Pack 生成リクエストの状態機械（LINE申告→草案→承認→有効化）。
