@@ -661,6 +661,41 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.metrics">City Pack効果測定</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.metricsWindowDays" data-dict-tip="ui.help.cityPack.metricsWindowDays">期間
+                      <select id="city-pack-metrics-window-days" class="select-inline">
+                        <option value="7" data-dict-key="ui.value.cityPack.metricsWindowDays.7">7日</option>
+                        <option value="30" data-dict-key="ui.value.cityPack.metricsWindowDays.30">30日</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.metricsLimit" data-dict-tip="ui.help.cityPack.metricsLimit">件数
+                      <input id="city-pack-metrics-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-metrics-reload" type="button" data-dict-key="ui.label.cityPack.metricsReload">効果測定を更新</button>
+                  </div>
+                  <div id="city-pack-metrics-summary" class="note" data-dict-key="ui.desc.cityPack.metricsSummary">効果測定: 読み込み待ち</div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.cityPackId">cityPackId</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.slotId">slotId</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.sourceRefId">sourceRefId</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.sent">sent</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.delivered">delivered</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.clicked">clicked</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.ctr">ctr</th>
+                          <th data-dict-key="ui.label.cityPack.metrics.col.lastDate">lastDate</th>
+                        </tr>
+                      </thead>
+                      <tbody id="city-pack-metrics-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.requestInbox">Request Inbox</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.cityPack.requestInbox">LINE申告から生成されたCity Pack草案を確認し、Approve/Reject/Retryを実行します。</div>

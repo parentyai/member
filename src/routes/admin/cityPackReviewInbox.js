@@ -3,10 +3,12 @@
 const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const sourceEvidenceRepo = require('../../repos/firestore/sourceEvidenceRepo');
 const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo');
+const cityPackMetricsDailyRepo = require('../../repos/firestore/cityPackMetricsDailyRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { reviewSourceRefDecision } = require('../../usecases/cityPack/reviewSourceRefDecision');
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
+const { computeCityPackMetrics, normalizeWindowDays, normalizeLimit: normalizeMetricsLimit } = require('../../usecases/cityPack/computeCityPackMetrics');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
 function writeJson(res, status, payload) {
@@ -289,6 +291,36 @@ async function handleCityPackKpi(req, res, context) {
   });
 }
 
+async function handleCityPackMetrics(req, res, context) {
+  const url = new URL(req.url, 'http://localhost');
+  const windowDays = normalizeWindowDays(url.searchParams.get('windowDays'));
+  const limit = normalizeMetricsLimit(url.searchParams.get('limit'));
+  const metrics = await computeCityPackMetrics({
+    windowDays,
+    limit,
+    traceId: context.traceId
+  });
+  if (Array.isArray(metrics.dailyRows) && metrics.dailyRows.length) {
+    await cityPackMetricsDailyRepo.upsertMetricRows(metrics.dailyRows);
+  }
+
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.metrics.view',
+    entityType: 'city_pack',
+    entityId: 'metrics',
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      windowDays,
+      rowCount: Array.isArray(metrics.items) ? metrics.items.length : 0,
+      totalSent: metrics.summary && Number(metrics.summary.totalSent) || 0
+    }
+  });
+
+  writeJson(res, 200, metrics);
+}
+
 function mapRunStatus(run) {
   if (!run || !run.endedAt) return 'RUNNING';
   if (Number(run.failed) > 0) return 'WARN';
@@ -435,6 +467,11 @@ async function handleCityPackReviewInbox(req, res, bodyText) {
 
     if (req.method === 'GET' && pathname === '/api/admin/city-pack-kpi') {
       await handleCityPackKpi(req, res, context);
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/admin/city-pack-metrics') {
+      await handleCityPackMetrics(req, res, context);
       return;
     }
 
