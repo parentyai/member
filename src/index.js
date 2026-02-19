@@ -736,7 +736,11 @@ function createServer() {
 
   const isCityPackAdminRoute = pathname === '/api/admin/city-packs'
     || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
+    || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
+    || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)
     || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure)$/.test(pathname)
+    || pathname === '/api/admin/city-pack-template-library'
+    || /^\/api\/admin\/city-pack-template-library\/[^/]+(\/(activate|retire))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-requests'
     || /^\/api\/admin\/city-pack-requests\/[^/]+(\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-feedback'
@@ -780,10 +784,19 @@ function createServer() {
     (async () => {
       if (pathname === '/api/admin/city-packs'
         || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
+        || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
+        || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)
         || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure)$/.test(pathname)) {
         const { handleCityPacks } = require('./routes/admin/cityPacks');
         const body = await collectBody();
         await handleCityPacks(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/city-pack-template-library'
+        || /^\/api\/admin\/city-pack-template-library\/[^/]+(\/(activate|retire))?$/.test(pathname)) {
+        const { handleCityPackTemplateLibrary } = require('./routes/admin/cityPackTemplateLibrary');
+        const body = await collectBody();
+        await handleCityPackTemplateLibrary(req, res, body);
         return;
       }
       if (pathname === '/api/admin/city-pack-requests' || /^\/api\/admin\/city-pack-requests\/[^/]+(\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)) {

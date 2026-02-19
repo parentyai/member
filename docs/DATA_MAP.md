@@ -172,6 +172,18 @@ Typical fields:
 - `traceId`
 - `lastComputedAt`, `updatedAt`
 
+### `city_pack_template_library/{id}`
+Purpose: City Pack import/exportで再利用するテンプレライブラリ。
+
+Typical fields:
+- `status` (`draft`/`active`/`retired`)
+- `name`
+- `schemaVersion`
+- `template`（`city_pack_template_v1` のJSON）
+- `source` (`manual` など)
+- `traceId`, `requestId`
+- `createdAt`, `updatedAt`, `activatedAt`, `retiredAt`
+
 ### Planned Add-only (City Pack extensions 1-12, inactive until phase enable)
 Purpose: 実装フェーズ分割時の互換契約を固定するための予定スキーマ。実装完了までは必須扱いにしない。
 
