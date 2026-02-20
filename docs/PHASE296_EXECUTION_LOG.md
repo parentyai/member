@@ -20,3 +20,11 @@
 - linked run: `Audit Gate / 22191428601` (merge commit `#544`)
 - `npm test`: PASS (752/752)
 - `npm run test:docs`: PASS (`[docs] OK`)
+
+## Main Merge Commands
+- `gh run list --branch main --limit 10`
+- `gh run view 22191659360 --log > docs/CI_EVIDENCE/2026-02-19_22191659360_phase296.log`
+
+## Main Merge Result
+- saved log: `/Users/parentyai.com/Projects/Member/docs/CI_EVIDENCE/2026-02-19_22191659360_phase296.log`
+- linked run: `Audit Gate / 22191659360` (merge commit `#545` / `ce0dd3a`)
