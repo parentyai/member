@@ -5,6 +5,23 @@ const systemFlagsRepo = require('../repos/firestore/systemFlagsRepo');
 
 const LINE_API_HOST = 'api.line.me';
 
+// Kill-switch cache: one Firestore read per TTL window rather than once per message.
+// TTL is short (5 s) so kill-switch activation takes effect quickly.
+const KILL_SWITCH_CACHE_TTL_MS = 5000;
+let _killSwitchCache = null;
+let _killSwitchCachedAt = 0;
+
+async function resolveKillSwitch() {
+  const now = Date.now();
+  if (_killSwitchCache !== null && (now - _killSwitchCachedAt) < KILL_SWITCH_CACHE_TTL_MS) {
+    return _killSwitchCache;
+  }
+  const value = await systemFlagsRepo.getKillSwitch();
+  _killSwitchCache = value;
+  _killSwitchCachedAt = now;
+  return value;
+}
+
 function buildHeaders(token, extraOptions) {
   if (!token) throw new Error('LINE_CHANNEL_ACCESS_TOKEN required');
   const headers = {
@@ -52,7 +69,7 @@ function requestJson(path, method, token, payload, extraOptions) {
 
 async function pushMessage(lineUserId, message, options) {
   if (!lineUserId) throw new Error('lineUserId required');
-  const killSwitch = await systemFlagsRepo.getKillSwitch();
+  const killSwitch = await resolveKillSwitch();
   if (killSwitch) {
     throw new Error('kill switch is ON');
   }
@@ -66,7 +83,7 @@ async function pushMessage(lineUserId, message, options) {
 
 async function replyMessage(replyToken, message, options) {
   if (!replyToken) throw new Error('replyToken required');
-  const killSwitch = await systemFlagsRepo.getKillSwitch();
+  const killSwitch = await resolveKillSwitch();
   if (killSwitch) {
     throw new Error('kill switch is ON');
   }

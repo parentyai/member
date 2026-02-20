@@ -1,0 +1,265 @@
+rules_version = '2';
+// ============================================================
+// Firestore Security Rules
+// SSOT: docs/SSOT_CITY_PACK_SECURITY_RULES.md
+//
+// Design principle: fail-closed.
+// All public/unauthorized access is denied by default.
+// Admin-only access is granted via Firebase Auth custom claims
+// or service account. Application-layer auth (ADMIN_OS_TOKEN)
+// provides defence-in-depth at the Cloud Run layer.
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------------
+    // Helpers
+    // --------------------------------------------------------
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function isServiceAccount() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'google';
+    }
+
+    function hasRequiredField(data, field) {
+      return field in data && data[field] != null;
+    }
+
+    function isAllowedStatus(data, allowed) {
+      return hasRequiredField(data, 'status') && data.status in allowed;
+    }
+
+    // --------------------------------------------------------
+    // Default: deny all
+    // --------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --------------------------------------------------------
+    // UX collections — read/write restricted to admin/service accounts
+    // --------------------------------------------------------
+    match /users/{userId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notification_deliveries/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notifications/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notification_templates/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /events/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /decision_timeline/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /decision_logs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /decision_drifts/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /link_registry/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /checklists/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /user_checklists/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /faq_articles/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /faq_answer_logs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notices/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /redac_membership_links/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    // --------------------------------------------------------
+    // Ops/Admin collections
+    // --------------------------------------------------------
+    match /system_flags/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /audit_logs/{docId} {
+      // Audit logs are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /automation_config/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /automation_runs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /ops_state/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /ops_states/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /ops_assist_cache/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /ops_segments/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /send_retry_queue/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /templates_v/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notification_test_runs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /notification_test_run_items/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    // --------------------------------------------------------
+    // Phase2 automation collections
+    // --------------------------------------------------------
+    match /phase2_runs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /phase2_reports_daily_events/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /phase2_reports_weekly_events/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /phase2_reports_checklist_pending/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /phase22_kpi_snapshots/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /phase18_cta_stats/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    // --------------------------------------------------------
+    // City Pack collections — SSOT: docs/SSOT_CITY_PACK_SECURITY_RULES.md
+    // --------------------------------------------------------
+    match /city_packs/{docId} {
+      allow read: if isAdmin() || isServiceAccount();
+      // Activating a pack requires: non-empty sourceRefs, CITY_PACK allowedIntent, validUntil.
+      allow create: if isAdmin() || isServiceAccount();
+      allow update: if (isAdmin() || isServiceAccount())
+        && (
+          // Activating to 'active' enforces guard fields.
+          !(request.resource.data.status == 'active') ||
+          (
+            hasRequiredField(request.resource.data, 'sourceRefs') &&
+            request.resource.data.sourceRefs.size() > 0 &&
+            request.resource.data.get('allowedIntents', []).hasAny(['CITY_PACK']) &&
+            hasRequiredField(request.resource.data, 'validUntil')
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /city_pack_requests/{docId} {
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if (isAdmin() || isServiceAccount())
+        && hasRequiredField(request.resource.data, 'lineUserId')
+        && hasRequiredField(request.resource.data, 'regionKey')
+        && hasRequiredField(request.resource.data, 'traceId');
+      allow update: if (isAdmin() || isServiceAccount())
+        && isAllowedStatus(request.resource.data,
+          ['pending', 'approved', 'rejected', 'changes_requested', 'active']);
+      allow delete: if false;
+    }
+
+    match /source_refs/{docId} {
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      // Updates restricted to allow-listed fields and valid status values.
+      allow update: if (isAdmin() || isServiceAccount())
+        && isAllowedStatus(request.resource.data,
+          ['active', 'expired', 'dead', 'blocked'])
+        && hasRequiredField(request.resource.data, 'validUntil');
+      allow delete: if false;
+    }
+
+    match /source_evidence/{docId} {
+      // Append-only: create is permitted; update/delete are not.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if (isAdmin() || isServiceAccount())
+        && hasRequiredField(request.resource.data, 'traceId');
+      allow update, delete: if false;
+    }
+
+    match /source_audit_runs/{docId} {
+      allow read: if isAdmin() || isServiceAccount();
+      // create/update by admin only; idempotent by runId.
+      allow create, update: if isAdmin() || isServiceAccount();
+      allow delete: if false;
+    }
+
+    match /city_pack_template_library/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /city_pack_feedback/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /city_pack_bulletins/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /city_pack_update_proposals/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /city_pack_metrics_daily/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+  }
+}

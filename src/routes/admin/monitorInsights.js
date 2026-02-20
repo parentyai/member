@@ -1,9 +1,9 @@
 'use strict';
 
-const { listAllNotificationDeliveries } = require('../../repos/firestore/phase2ReadRepo');
+const { listAllNotificationDeliveries } = require('../../repos/firestore/analyticsReadRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
-const { listSnapshots } = require('../../repos/firestore/phase22KpiSnapshotsReadRepo');
+const { listSnapshots } = require('../../repos/firestore/kpiSnapshotsReadRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');

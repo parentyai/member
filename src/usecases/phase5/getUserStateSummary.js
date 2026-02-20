@@ -6,7 +6,7 @@ const {
   listAllChecklists,
   listAllUserChecklists,
   listAllNotificationDeliveries
-} = require('../../repos/firestore/phase2ReadRepo');
+} = require('../../repos/firestore/analyticsReadRepo');
 const { getNotificationReadModel } = require('../admin/getNotificationReadModel');
 const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
 const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');

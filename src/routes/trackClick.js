@@ -22,7 +22,7 @@ function logObs(action, result, fields) {
   if (fields && fields.requestId) parts.push(`requestId=${fields.requestId}`);
   if (fields && fields.deliveryId) parts.push(`deliveryId=${fields.deliveryId}`);
   if (fields && fields.linkRegistryId) parts.push(`linkRegistryId=${fields.linkRegistryId}`);
-  console.log(parts.join(' ')); // WIP: Phase16-T01-OBS
+  console.log(parts.join(' '));
 }
 
 function parseJson(body, res) {

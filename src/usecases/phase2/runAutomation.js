@@ -5,13 +5,13 @@ const {
   listAllUsers,
   listAllChecklists,
   listAllUserChecklists
-} = require('../../repos/firestore/phase2ReadRepo');
+} = require('../../repos/firestore/analyticsReadRepo');
 const {
   upsertDailyEventReport,
   upsertWeeklyEventReport,
   upsertChecklistPendingReport
-} = require('../../repos/firestore/phase2ReportsRepo');
-const { upsertRun } = require('../../repos/firestore/phase2RunsRepo');
+} = require('../../repos/firestore/scenarioReportsRepo');
+const { upsertRun } = require('../../repos/firestore/scenarioRunsRepo');
 
 function isEnabled() {
   return String(process.env.PHASE2_AUTOMATION_ENABLED || '').toLowerCase() === 'true';

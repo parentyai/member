@@ -4,8 +4,10 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const usersPhase1Repo = require('../../repos/firestore/usersPhase1Repo');
+const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const { validateNotificationPayload } = require('../../domain/validators');
+const { computeNotificationDeliveryId } = require('../../domain/deliveryId');
 
 function buildTextMessage(notification) {
   const message = notification.message || {};
@@ -46,14 +48,54 @@ async function sendNotificationPhase1(params) {
   const pushFn = payload.pushFn || pushMessage;
   const sentAt = payload.sentAt;
   const eventLogger = payload.eventLogger;
+  const traceId = payload.traceId || null;
+  const requestId = payload.requestId || null;
+  const actor = payload.actor || 'system';
+
+  let deliveredCount = 0;
 
   for (const user of users) {
-    await pushFn(user.id, buildTextMessage(notification));
-    await deliveriesRepo.createDelivery({
+    const deliveryId = computeNotificationDeliveryId({
+      notificationId,
+      lineUserId: user.id
+    });
+
+    // Reserve delivery slot in a transaction to prevent duplicate sends across retries.
+    const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
       lineUserId: user.id,
-      sentAt
+      sentAt: sentAt || null
     });
+
+    // Skip users already delivered to.
+    if (reserved.existing && reserved.existing.delivered === true) {
+      continue;
+    }
+
+    await pushFn(user.id, buildTextMessage(notification));
+
+    await deliveriesRepo.createDeliveryWithId(deliveryId, {
+      notificationId,
+      lineUserId: user.id,
+      delivered: true,
+      deliveredAt: sentAt || new Date().toISOString(),
+      sentAt: sentAt || null
+    });
+
+    deliveredCount += 1;
+
+    // Best-effort timeline entry — failure must not block delivery.
+    void decisionTimelineRepo.appendTimelineEntry({
+      lineUserId: user.id,
+      source: 'phase1',
+      action: 'notification.sent',
+      notificationId,
+      deliveryId,
+      traceId,
+      requestId,
+      actor
+    }).catch(() => {});
+
     if (eventLogger) {
       try {
         await eventLogger({ lineUserId: user.id, notificationId });
@@ -67,7 +109,7 @@ async function sendNotificationPhase1(params) {
     sentAt: sentAt || null
   });
 
-  return { notificationId, deliveredCount: users.length };
+  return { notificationId, deliveredCount };
 }
 
 module.exports = {

@@ -6,7 +6,7 @@ const {
   listAllChecklists,
   listAllUserChecklists,
   listAllNotificationDeliveries
-} = require('../../repos/firestore/phase2ReadRepo');
+} = require('../../repos/firestore/analyticsReadRepo');
 
 function toMillis(value) {
   if (!value) return null;

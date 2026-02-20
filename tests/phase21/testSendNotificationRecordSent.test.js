@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
 const notificationsRepo = require('../../src/repos/firestore/notificationsRepo');
-const phase18StatsRepo = require('../../src/repos/firestore/phase18StatsRepo');
+const ctaStatsRepo = require('../../src/repos/firestore/ctaStatsRepo');
 const { testSendNotification } = require('../../src/usecases/notifications/testSendNotification');
 const { createDbStub } = require('../phase0/firestoreStub');
 const {
@@ -40,7 +40,7 @@ test('testSendNotification: member mode records sent stats when PHASE18_CTA_EXPE
       ctaText: 'openA',
       linkRegistryId: 'l1'
     })),
-    withPatched(phase18StatsRepo, 'incrementSent', async (args) => {
+    withPatched(ctaStatsRepo, 'incrementSent', async (args) => {
       incrementSentCalls += 1;
       incrementSentArgs = args;
       return { id: 'n1' };
@@ -83,7 +83,7 @@ test('testSendNotification: member mode records sent stats when PHASE18_CTA_EXPE
       ctaText: 'openA',
       linkRegistryId: 'l1'
     })),
-    withPatched(phase18StatsRepo, 'incrementSent', async (args) => {
+    withPatched(ctaStatsRepo, 'incrementSent', async (args) => {
       incrementSentArgs = args;
       return { id: 'n1' };
     })
@@ -127,7 +127,7 @@ test('testSendNotification: member mode records sent stats when ENV_NAME=stg eve
       ctaText: 'openA',
       linkRegistryId: 'l1'
     })),
-    withPatched(phase18StatsRepo, 'incrementSent', async (args) => {
+    withPatched(ctaStatsRepo, 'incrementSent', async (args) => {
       incrementSentCalls += 1;
       incrementSentArgs = args;
       return { id: 'n1' };
@@ -173,7 +173,7 @@ test('testSendNotification: track mode records sent stats without experiment fla
       ctaText: 'openA',
       linkRegistryId: 'l1'
     })),
-    withPatched(phase18StatsRepo, 'incrementSent', async (args) => {
+    withPatched(ctaStatsRepo, 'incrementSent', async (args) => {
       incrementSentCalls += 1;
       incrementSentArgs = args;
       return { id: 'n1' };
@@ -201,7 +201,7 @@ test('testSendNotification: track mode records sent stats without experiment fla
   }
 });
 
-test('phase18StatsRepo: incrementSent writes sentCount field', async () => {
+test('ctaStatsRepo: incrementSent writes sentCount field', async () => {
   const db = createDbStub();
   setDbForTest(db);
   setServerTimestampForTest('SERVER_TIMESTAMP');
@@ -220,7 +220,7 @@ test('phase18StatsRepo: incrementSent writes sentCount field', async () => {
   };
 
   try {
-    await phase18StatsRepo.incrementSent({
+    await ctaStatsRepo.incrementSent({
       notificationId: 'n1',
       ctaText: 'openA',
       linkRegistryId: 'l1'

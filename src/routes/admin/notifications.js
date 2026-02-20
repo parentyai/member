@@ -28,7 +28,7 @@ function logObs(action, result, fields) {
   if (fields && fields.lineUserId) parts.push(`lineUserId=${fields.lineUserId}`);
   if (fields && fields.notificationId) parts.push(`notificationId=${fields.notificationId}`);
   if (fields && fields.deliveryId) parts.push(`deliveryId=${fields.deliveryId}`);
-  console.log(parts.join(' ')); // WIP: Phase16-T01-OBS
+  console.log(parts.join(' '));
 }
 
 function isKillSwitchError(err) {

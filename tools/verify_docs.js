@@ -266,6 +266,37 @@ if (security) {
   });
 }
 
+// 8) SSOT_INDEX: all file references must resolve to existing files
+const ssotIndexPath = path.join(DOCS_DIR, 'SSOT_INDEX.md');
+if (fs.existsSync(ssotIndexPath)) {
+  const ssotText = fs.readFileSync(ssotIndexPath, 'utf8');
+  // Extract all docs/... references from the SSOT index (markdown links and bare paths).
+  const docRefRegex = /\bdocs\/[^\s)\]`'"]+\.md\b/g;
+  const ssotRefs = Array.from(new Set(ssotText.match(docRefRegex) || []));
+  for (const ref of ssotRefs) {
+    const refPath = path.join(ROOT, ref);
+    if (!fs.existsSync(refPath)) {
+      fail(`SSOT_INDEX が参照するファイルが存在しません: ${ref}`);
+    }
+  }
+
+  // Required SSOT documents must appear in the index.
+  const requiredInIndex = [
+    'SSOT_ADMIN_UI_OS.md',
+    'SSOT_CITY_PACK_SECURITY_RULES.md',
+    'SECURITY_MODEL_JA.md',
+    'RUNBOOK_JA.md',
+    'LLM_GUARDRAILS.md'
+  ];
+  for (const required of requiredInIndex) {
+    if (!ssotText.includes(required)) {
+      fail(`SSOT_INDEX に必須ドキュメントが未収録です: docs/${required}`);
+    }
+  }
+} else {
+  fail('docs/SSOT_INDEX.md が存在しません');
+}
+
 if (errors.length) {
   console.error('[docs] NG');
   for (const err of errors) {

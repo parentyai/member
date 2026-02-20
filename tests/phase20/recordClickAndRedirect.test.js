@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
 const linkRegistryRepo = require('../../src/repos/firestore/linkRegistryRepo');
 const notificationsRepo = require('../../src/repos/firestore/notificationsRepo');
-const phase18StatsRepo = require('../../src/repos/firestore/phase18StatsRepo');
+const ctaStatsRepo = require('../../src/repos/firestore/ctaStatsRepo');
 const { recordClickAndRedirect } = require('../../src/usecases/track/recordClickAndRedirect');
 
 function withPatched(obj, key, value) {
@@ -34,7 +34,7 @@ test('recordClickAndRedirect: track mode records stats (best-effort) and returns
     }),
     withPatched(deliveriesRepo, 'getDelivery', async () => ({ id: 'd1', notificationId: 'n1' })),
     withPatched(notificationsRepo, 'getNotification', async () => ({ id: 'n1', ctaText: 'openA' })),
-    withPatched(phase18StatsRepo, 'incrementClick', async () => {
+    withPatched(ctaStatsRepo, 'incrementClick', async () => {
       incrementClickCalled = true;
       return { id: 'n1' };
     })
@@ -65,7 +65,7 @@ test('recordClickAndRedirect: member mode does not record stats unless explicitl
     withPatched(deliveriesRepo, 'markClick', async () => ({ id: 'd1' })),
     withPatched(deliveriesRepo, 'getDelivery', async () => ({ id: 'd1', notificationId: 'n1' })),
     withPatched(notificationsRepo, 'getNotification', async () => ({ id: 'n1', ctaText: 'openA' })),
-    withPatched(phase18StatsRepo, 'incrementClick', async () => {
+    withPatched(ctaStatsRepo, 'incrementClick', async () => {
       throw new Error('incrementClick should not be called');
     })
   ];

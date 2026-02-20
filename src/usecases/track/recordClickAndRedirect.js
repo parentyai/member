@@ -36,7 +36,7 @@ async function recordClickAndRedirect(params) {
       }
     }
   } catch (err) {
-    // WIP: Phase18 CTA stats should not block click tracking
+    // CTA stats failure must not block click tracking — best-effort only.
     if (process.env.SERVICE_MODE === 'track') {
       const message = err && err.message ? err.message : 'error';
       const parts = ['[OBS] action=click-write', 'result=error', `deliveryId=${payload.deliveryId}`];
