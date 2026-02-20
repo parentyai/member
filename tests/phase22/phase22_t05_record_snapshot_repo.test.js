@@ -11,7 +11,7 @@ const {
   clearServerTimestampForTest
 } = require('../../src/infra/firestore');
 
-const repo = require('../../src/repos/firestore/phase22KpiSnapshotsRepo');
+const repo = require('../../src/repos/firestore/kpiSnapshotsRepo');
 
 let db;
 

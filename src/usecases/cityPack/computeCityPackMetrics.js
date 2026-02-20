@@ -2,7 +2,7 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
-const { listAllNotificationDeliveries } = require('../../repos/firestore/phase2ReadRepo');
+const { listAllNotificationDeliveries } = require('../../repos/firestore/analyticsReadRepo');
 
 function toMillis(value) {
   if (!value) return 0;

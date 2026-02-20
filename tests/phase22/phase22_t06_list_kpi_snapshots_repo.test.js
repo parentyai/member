@@ -5,7 +5,7 @@ const { test, beforeEach, afterEach } = require('node:test');
 
 const { createDbStub } = require('../phase0/firestoreStub');
 const { setDbForTest, clearDbForTest } = require('../../src/infra/firestore');
-const repo = require('../../src/repos/firestore/phase22KpiSnapshotsReadRepo');
+const repo = require('../../src/repos/firestore/kpiSnapshotsReadRepo');
 
 let db;
 

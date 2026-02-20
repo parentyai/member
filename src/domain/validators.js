@@ -1,42 +1,50 @@
 'use strict';
 
+const { FAILURE_CODES } = require('./notificationFailureTaxonomy');
+
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function throwWithCode(message, failureCode) {
+  const err = new Error(message);
+  err.failureCode = failureCode;
+  throw err;
+}
+
 function validateSingleCta(notification) {
   if (!notification || typeof notification !== 'object') {
-    throw new Error('notification required');
+    throwWithCode('notification required', FAILURE_CODES.INVALID_CTA);
   }
   if (Array.isArray(notification.ctas) && notification.ctas.length !== 1) {
-    throw new Error('CTA must be exactly 1');
+    throwWithCode('CTA must be exactly 1', FAILURE_CODES.INVALID_CTA);
   }
   if (!isNonEmptyString(notification.ctaText)) {
-    throw new Error('CTA text required');
+    throwWithCode('CTA text required', FAILURE_CODES.INVALID_CTA);
   }
   return true;
 }
 
 function validateLinkRequired(notification) {
   if (!notification || typeof notification !== 'object') {
-    throw new Error('notification required');
+    throwWithCode('notification required', FAILURE_CODES.MISSING_LINK_REGISTRY_ID);
   }
   if (!isNonEmptyString(notification.linkRegistryId)) {
-    throw new Error('linkRegistryId required');
+    throwWithCode('linkRegistryId required', FAILURE_CODES.MISSING_LINK_REGISTRY_ID);
   }
   if (isNonEmptyString(notification.url) || isNonEmptyString(notification.linkUrl)) {
-    throw new Error('direct URL is forbidden');
+    throwWithCode('direct URL is forbidden', FAILURE_CODES.DIRECT_URL_FORBIDDEN);
   }
   return true;
 }
 
 function validateWarnLinkBlock(linkRegistryEntry) {
   if (!linkRegistryEntry || typeof linkRegistryEntry !== 'object') {
-    throw new Error('link registry entry required');
+    throwWithCode('link registry entry required', FAILURE_CODES.MISSING_LINK_REGISTRY_ID);
   }
   const state = linkRegistryEntry.lastHealth && linkRegistryEntry.lastHealth.state;
   if (state === 'WARN') {
-    throw new Error('link health WARN');
+    throwWithCode('link health WARN', FAILURE_CODES.GUARD_BLOCK_WARN_LINK);
   }
   return true;
 }
@@ -46,7 +54,7 @@ function validateKillSwitch(killSwitchState) {
     ? killSwitchState
     : Boolean(killSwitchState && killSwitchState.killSwitch);
   if (isOn) {
-    throw new Error('kill switch is ON');
+    throwWithCode('kill switch is ON', FAILURE_CODES.GUARD_BLOCK_KILL_SWITCH);
   }
   return true;
 }

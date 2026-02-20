@@ -94,6 +94,9 @@ function isProtectedOpsPath(pathname) {
     if (parts.some((p) => typeof p === 'string' && p.startsWith('ops-'))) return true;
     // Phase5 state summary is ops-only data used by admin UI.
     if (pathname.startsWith('/api/phase5/state/')) return true;
+
+    // Phase1 event ingestion endpoint — must be protected to prevent unauthenticated writes.
+    if (pathname === '/api/phase1/events') return true;
   }
 
   return false;
@@ -221,7 +224,7 @@ function handleWebhook(req, res) {
     if (bytes > MAX_BODY_BYTES) {
       tooLarge = true;
       console.log(`[webhook] requestId=${requestId} reject=payload-too-large`);
-      console.log(`[OBS] action=webhook result=reject requestId=${requestId}`); // WIP: Phase16-T01-OBS
+      console.log(`[OBS] action=webhook result=reject requestId=${requestId}`);
       res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('payload too large');
       req.destroy();
@@ -245,12 +248,12 @@ function handleWebhook(req, res) {
         `[OBS] action=webhook result=${obsResult} requestId=${requestId}`
       ];
       if (result.firstUserId) obsParts.push(`lineUserId=${result.firstUserId}`);
-      console.log(obsParts.join(' ')); // WIP: Phase16-T01-OBS
+      console.log(obsParts.join(' '));
       res.writeHead(result.status, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(result.body);
     } catch (err) {
       console.log(`[webhook] requestId=${requestId} reject=exception`);
-      console.log(`[OBS] action=webhook result=error requestId=${requestId}`); // WIP: Phase16-T01-OBS
+      console.log(`[OBS] action=webhook result=error requestId=${requestId}`);
       res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('server error');
     }
@@ -2459,33 +2462,15 @@ function createServer() {
     return;
   }
 
+  // Legacy kill-switch endpoint retired: lacked confirm-token protection required for
+  // dangerous operations. Use POST /api/admin/os/kill-switch/set (plan → confirm → set).
   if (req.method === 'POST' && pathname === '/admin/kill-switch') {
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    req.on('data', (chunk) => {
-      if (tooLarge) return;
-      bytes += chunk.length;
-      if (bytes > MAX_BODY_BYTES) {
-        tooLarge = true;
-        res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('payload too large');
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', async () => {
-      if (tooLarge) return;
-      const body = Buffer.concat(chunks).toString('utf8');
-      try {
-        const { handleSetKillSwitch } = require('./routes/admin/killSwitch');
-        await handleSetKillSwitch(req, res, body);
-      } catch (err) {
-        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('error');
-      }
-    });
+    res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: false,
+      error: 'endpoint retired',
+      replacement: 'POST /api/admin/os/kill-switch/set'
+    }));
     return;
   }
 

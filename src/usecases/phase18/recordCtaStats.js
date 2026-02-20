@@ -1,6 +1,6 @@
 'use strict';
 
-const phase18StatsRepo = require('../../repos/firestore/phase18StatsRepo');
+const ctaStatsRepo = require('../../repos/firestore/ctaStatsRepo');
 
 function isEnabled() {
   // Phase20: member-track service must record CTA stats for unauth click flow.
@@ -15,13 +15,13 @@ function isEnabled() {
 
 async function recordSent(params) {
   if (!isEnabled()) return false;
-  await phase18StatsRepo.incrementSent(params);
+  await ctaStatsRepo.incrementSent(params);
   return true;
 }
 
 async function recordClick(params) {
   if (!isEnabled()) return false;
-  await phase18StatsRepo.incrementClick(params);
+  await ctaStatsRepo.incrementClick(params);
   return true;
 }
 

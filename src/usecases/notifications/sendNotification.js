@@ -233,7 +233,7 @@ async function sendNotification(params) {
         linkRegistryId: effectiveNotification.linkRegistryId || null
       });
     } catch (err) {
-      // WIP: Phase18 CTA stats should not block delivery
+      // CTA stats failure must not block delivery — best-effort only.
     }
   }
 

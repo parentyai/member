@@ -1,7 +1,7 @@
 'use strict';
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
-const { listAllEvents } = require('../../repos/firestore/phase2ReadRepo');
+const { listAllEvents } = require('../../repos/firestore/analyticsReadRepo');
 
 function toMillis(value) {
   if (!value) return null;
