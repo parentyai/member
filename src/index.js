@@ -1150,6 +1150,63 @@ function createServer() {
     return;
   }
 
+  if (pathname.startsWith('/api/admin/kb/')) {
+    const {
+      handleList: handleKbList,
+      handleCreate: handleKbCreate,
+      handleUpdate: handleKbUpdate,
+      handleDelete: handleKbDelete
+    } = require('./routes/admin/kbArticles');
+    let kbBytes = 0;
+    const kbChunks = [];
+    let kbTooLarge = false;
+    const collectKbBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (kbTooLarge) return;
+        kbBytes += chunk.length;
+        if (kbBytes > MAX_BODY_BYTES) {
+          kbTooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        kbChunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(kbChunks).toString('utf8')));
+    });
+    (async () => {
+      if (req.method === 'GET' && pathname === '/api/admin/kb/articles') {
+        await handleKbList(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/kb/articles') {
+        const body = await collectKbBody();
+        await handleKbCreate(req, res, body);
+        return;
+      }
+      const articlePathMatch = pathname.match(/^\/api\/admin\/kb\/articles\/([^/]+)$/);
+      if (articlePathMatch) {
+        const articleId = articlePathMatch[1];
+        if (req.method === 'PATCH') {
+          const body = await collectKbBody();
+          await handleKbUpdate(req, res, body, articleId);
+          return;
+        }
+        if (req.method === 'DELETE') {
+          await handleKbDelete(req, res, articleId);
+          return;
+        }
+      }
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'not found' }));
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (pathname.startsWith('/api/admin/llm/')) {
     const {
       handleStatus: handleLlmConfigStatus,
@@ -1157,6 +1214,7 @@ function createServer() {
       handleSet: handleLlmConfigSet
     } = require('./routes/admin/llmConfig');
     const { handleAdminLlmFaqAnswer } = require('./routes/admin/llmFaq');
+    const llmClient = require('./infra/llmClient');
     const {
       handleAdminLlmOpsExplain,
       handleAdminLlmNextActions
@@ -1196,7 +1254,7 @@ function createServer() {
       }
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {
         const body = await collectBody();
-        await handleAdminLlmFaqAnswer(req, res, body);
+        await handleAdminLlmFaqAnswer(req, res, body, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/ops-explain') {

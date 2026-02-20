@@ -9,7 +9,12 @@ const BLOCKED_REASON_CATEGORY_MAP = Object.freeze({
   secret_field_detected: 'SENSITIVE_QUERY',
   guide_only_mode_blocked: 'GUIDE_MODE_BLOCKED',
   personalization_not_allowed: 'PERSONALIZATION_BLOCKED',
-  consent_missing: 'CONSENT_MISSING'
+  consent_missing: 'CONSENT_MISSING',
+  contact_source_required: 'CONTACT_SOURCE_REQUIRED',
+  kb_schema_invalid: 'KB_SCHEMA_INVALID',
+  llm_api_error: 'LLM_API_ERROR',
+  llm_timeout: 'LLM_API_ERROR',
+  adapter_missing: 'LLM_API_ERROR'
 });
 
 function toBlockedReasonCategory(blockedReason, options) {
