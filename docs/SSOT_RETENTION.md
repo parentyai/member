@@ -46,11 +46,15 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
   - `RETENTION_APPLY_ENABLED=1` が必須
   - `ENV_NAME in {stg,stage,staging}` のみ実行可
 - Behavior:
+  - `dryRunTraceId`（任意）指定時は `retention.dry_run.execute` の監査存在を照合
+  - `maxDeletes`（任意）で削除件数の上限を制御
+  - `cursor`（任意）でコレクション単位の段階実行を許可
   - `deletable=NO` は常に除外
   - `recomputable=true` のみ削除候補
   - policy 未定義コレクションが含まれる場合は `422 retention_policy_undefined`
+  - `dryRunTraceId` 不一致時は `422 retention_apply_dry_run_trace_not_found`
   - 実行可能対象が0件の場合は `409 retention_apply_no_eligible_collections`
-  - 実行結果を `audit_logs` の `retention.apply.execute|blocked` に追記
+  - 実行結果を `audit_logs` の `retention.apply.execute|blocked` に追記（`deletedCount`, `sampleDeletedIds`, `traceId` を含む）
 
 ## Policy Source (Add-only)
 - 実行時ポリシー定義: `src/domain/retention/retentionPolicy.js`

@@ -2,6 +2,7 @@
 
 const { getDb } = require('../../infra/firestore');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { listAuditLogsByTraceId } = require('../../repos/firestore/auditLogsRepo');
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
 const { getRetentionPolicy } = require('../../domain/retention/retentionPolicy');
 
@@ -31,6 +32,12 @@ function normalizeCollections(value) {
 function normalizeLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return DEFAULT_LIMIT;
+  return Math.min(Math.floor(num), MAX_LIMIT);
+}
+
+function normalizeMaxDeletes(value, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return normalizeLimit(fallback);
   return Math.min(Math.floor(num), MAX_LIMIT);
 }
 
@@ -77,6 +84,29 @@ function parseCutoff(payload) {
   return ms;
 }
 
+function parseOptionalTraceId(payload, fieldName) {
+  const value = payload && typeof payload[fieldName] === 'string' ? payload[fieldName].trim() : '';
+  return value || null;
+}
+
+function normalizeCursorMap(value, collections) {
+  const map = {};
+  if (typeof value === 'string' && value.trim()) {
+    const cursor = value.trim();
+    (collections || []).forEach((collection) => {
+      map[collection] = cursor;
+    });
+    return map;
+  }
+  if (!value || typeof value !== 'object') return map;
+  (collections || []).forEach((collection) => {
+    if (typeof value[collection] === 'string' && value[collection].trim()) {
+      map[collection] = value[collection].trim();
+    }
+  });
+  return map;
+}
+
 function isCollectionApplyEligible(policy) {
   if (!policy || policy.defined !== true) return false;
   if (policy.deletable === 'NO') return false;
@@ -84,23 +114,41 @@ function isCollectionApplyEligible(policy) {
   return true;
 }
 
-async function applyCollection(db, collection, cutoffMs, limit) {
+async function applyCollection(db, collection, cutoffMs, limit, maxDeletes, cursor) {
   const snap = await db.collection(collection).limit(limit).get();
-  const docs = snap.docs || [];
-  const candidates = docs.filter((doc) => {
+  const docs = (snap.docs || []).slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const cursorValue = typeof cursor === 'string' && cursor.trim() ? cursor.trim() : null;
+  const docsAfterCursor = cursorValue
+    ? docs.filter((doc) => String(doc.id) > cursorValue)
+    : docs;
+  const candidates = docsAfterCursor.filter((doc) => {
     const data = doc.data() || {};
     const createdAtMs = toMillis(data.createdAt);
     return createdAtMs > 0 && createdAtMs < cutoffMs;
   });
-  for (const doc of candidates) {
+  const bounded = candidates.slice(0, Math.max(0, maxDeletes));
+  for (const doc of bounded) {
     await db.collection(collection).doc(doc.id).delete();
   }
+  const nextCursor = bounded.length
+    ? bounded[bounded.length - 1].id
+    : (docsAfterCursor.length ? docsAfterCursor[docsAfterCursor.length - 1].id : cursorValue);
   return {
     collection,
-    sampledDocs: docs.length,
+    sampledDocs: docsAfterCursor.length,
     deleteCandidates: candidates.length,
-    deletedIds: candidates.map((doc) => doc.id)
+    deletedIds: bounded.map((doc) => doc.id),
+    hasMore: candidates.length > bounded.length,
+    nextCursor: nextCursor || null
   };
+}
+
+async function verifyDryRunTrace(traceId) {
+  if (!traceId) return { ok: true, reason: null };
+  const rows = await listAuditLogsByTraceId(traceId, 200);
+  const found = rows.some((row) => row && row.action === 'retention.dry_run.execute');
+  if (found) return { ok: true, reason: null };
+  return { ok: false, reason: 'retention_apply_dry_run_trace_not_found' };
 }
 
 async function handleRetentionApplyJob(req, res, bodyText) {
@@ -136,6 +184,13 @@ async function handleRetentionApplyJob(req, res, bodyText) {
     return;
   }
 
+  const dryRunTraceId = parseOptionalTraceId(payload, 'dryRunTraceId');
+  const dryRunTraceCheck = await verifyDryRunTrace(dryRunTraceId);
+  if (!dryRunTraceCheck.ok) {
+    writeJson(res, 422, { ok: false, error: dryRunTraceCheck.reason, traceId, dryRunTraceId });
+    return;
+  }
+
   const undefinedCollections = [];
   const blockedCollections = [];
   const targets = [];
@@ -158,14 +213,28 @@ async function handleRetentionApplyJob(req, res, bodyText) {
 
   const db = getDb();
   const limit = normalizeLimit(payload.limit);
+  const maxDeletes = normalizeMaxDeletes(payload.maxDeletes, limit);
+  const cursorMap = normalizeCursorMap(payload.cursor, collections);
   const items = [];
+  const nextCursor = {};
+  let remainingDeletes = maxDeletes;
   for (const target of targets) {
-    const row = await applyCollection(db, target.collection, cutoffMs, limit);
+    if (remainingDeletes <= 0) break;
+    const row = await applyCollection(
+      db,
+      target.collection,
+      cutoffMs,
+      limit,
+      remainingDeletes,
+      cursorMap[target.collection]
+    );
     items.push(Object.assign({}, row, {
       policy: target.policy,
       deletedCount: row.deletedIds.length,
       sampleDeletedIds: row.deletedIds.slice(0, 20)
     }));
+    nextCursor[target.collection] = row.nextCursor;
+    remainingDeletes -= row.deletedIds.length;
   }
 
   const summary = {
@@ -175,6 +244,8 @@ async function handleRetentionApplyJob(req, res, bodyText) {
     blockedCollections,
     deletedCount: items.reduce((sum, row) => sum + row.deletedCount, 0),
     limit,
+    maxDeletes,
+    remainingDeletes,
     cutoffIso: new Date(cutoffMs).toISOString()
   };
 
@@ -190,6 +261,7 @@ async function handleRetentionApplyJob(req, res, bodyText) {
       traceId: traceId || undefined,
       payloadSummary: {
         collections,
+        dryRunTraceId,
         summary,
         deletedSamples: items.map((row) => ({ collection: row.collection, ids: row.sampleDeletedIds }))
       }
@@ -223,8 +295,11 @@ async function handleRetentionApplyJob(req, res, bodyText) {
   writeJson(res, 200, {
     ok: true,
     traceId,
+    dryRunTraceId,
     summary,
-    items
+    items,
+    nextCursor,
+    hasMore: items.some((row) => row.hasMore === true)
   });
 }
 
