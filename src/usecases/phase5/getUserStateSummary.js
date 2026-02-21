@@ -16,6 +16,12 @@ const { evaluateOpsDecisionCompleteness } = require('../phase24/opsDecisionCompl
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const {
+  resolveSnapshotReadMode,
+  isSnapshotReadEnabled,
+  isSnapshotRequired,
+  isFallbackAllowed
+} = require('../../domain/readModel/snapshotReadPolicy');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -27,13 +33,6 @@ function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
-}
-
-function useSnapshotRead(value) {
-  if (value === false) return false;
-  const env = process.env.OPS_SNAPSHOT_READ_ENABLED;
-  if (env === '0' || env === 'false') return false;
-  return true;
 }
 
 function toMillis(value) {
@@ -161,11 +160,26 @@ async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
-  if (useSnapshotRead(payload.useSnapshot)) {
+  const snapshotMode = resolveSnapshotReadMode({ useSnapshot: payload.useSnapshot, snapshotMode: payload.snapshotMode });
+  if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, payload.lineUserId);
     if (snapshot && snapshot.data && typeof snapshot.data === 'object') {
       return snapshot.data;
     }
+    if (isSnapshotRequired(snapshotMode)) {
+      return {
+        lineUserId: payload.lineUserId,
+        notAvailable: true,
+        notAvailableReason: 'snapshot_required_not_available'
+      };
+    }
+  }
+  if (!isFallbackAllowed(snapshotMode)) {
+    return {
+      lineUserId: payload.lineUserId,
+      notAvailable: true,
+      notAvailableReason: 'snapshot_fallback_disabled'
+    };
   }
   const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
 

@@ -4,6 +4,12 @@ const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const {
+  resolveSnapshotReadMode,
+  isSnapshotReadEnabled,
+  isSnapshotRequired,
+  isFallbackAllowed
+} = require('../../domain/readModel/snapshotReadPolicy');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12]);
@@ -100,12 +106,6 @@ function resolveSnapshotFreshnessMinutes() {
   const value = Number(process.env.OPS_SNAPSHOT_FRESHNESS_MINUTES);
   if (!Number.isFinite(value) || value <= 0) return DEFAULT_SNAPSHOT_FRESHNESS_MINUTES;
   return Math.min(Math.floor(value), 1440);
-}
-
-function resolveSnapshotReadEnabled() {
-  const value = process.env.OPS_SNAPSHOT_READ_ENABLED;
-  if (value === '0' || value === 'false') return false;
-  return true;
 }
 
 function isSnapshotFresh(snapshot, freshnessMinutes) {
@@ -205,6 +205,18 @@ async function computeDashboardKpis(windowMonths, scanLimit) {
   };
 }
 
+function buildNotAvailableKpis(note) {
+  const message = note || 'NOT AVAILABLE';
+  return {
+    registrations: notAvailable(message),
+    membership: notAvailable(message),
+    stepStates: notAvailable(message),
+    churnRate: notAvailable(message),
+    ctrTrend: notAvailable(message),
+    cityPackUsage: notAvailable(message)
+  };
+}
+
 async function handleDashboardKpi(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -213,7 +225,8 @@ async function handleDashboardKpi(req, res) {
   const windowMonths = parseWindowMonths(req);
   const scanLimit = parseScanLimit(req);
   const freshnessMinutes = resolveSnapshotFreshnessMinutes();
-  const snapshotReadEnabled = resolveSnapshotReadEnabled();
+  const snapshotMode = resolveSnapshotReadMode();
+  const snapshotReadEnabled = isSnapshotReadEnabled(snapshotMode);
   const snapshotKey = String(windowMonths);
   try {
     if (snapshotReadEnabled) {
@@ -226,6 +239,7 @@ async function handleDashboardKpi(req, res) {
           requestId,
           windowMonths,
           scanLimit,
+          dataSource: 'snapshot',
           source: 'snapshot',
           asOf: snapshot.asOf || null,
           freshnessMinutes: snapshot.freshnessMinutes || freshnessMinutes,
@@ -233,6 +247,58 @@ async function handleDashboardKpi(req, res) {
         }));
         return;
       }
+
+      if (isSnapshotRequired(snapshotMode)) {
+        const kpis = buildNotAvailableKpis('NOT AVAILABLE');
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          ok: true,
+          traceId,
+          requestId,
+          windowMonths,
+          scanLimit,
+          dataSource: 'not_available',
+          source: 'not_available',
+          asOf: null,
+          freshnessMinutes,
+          kpis
+        }));
+        return;
+      }
+    } else if (isSnapshotRequired(snapshotMode)) {
+      const kpis = buildNotAvailableKpis('NOT AVAILABLE');
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({
+        ok: true,
+        traceId,
+        requestId,
+        windowMonths,
+        scanLimit,
+        dataSource: 'not_available',
+        source: 'not_available',
+        asOf: null,
+        freshnessMinutes,
+        kpis
+      }));
+      return;
+    }
+
+    if (!isFallbackAllowed(snapshotMode)) {
+      const kpis = buildNotAvailableKpis('NOT AVAILABLE');
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({
+        ok: true,
+        traceId,
+        requestId,
+        windowMonths,
+        scanLimit,
+        dataSource: 'not_available',
+        source: 'not_available',
+        asOf: null,
+        freshnessMinutes,
+        kpis
+      }));
+      return;
     }
 
     const computed = await computeDashboardKpis(windowMonths, scanLimit);
@@ -255,6 +321,7 @@ async function handleDashboardKpi(req, res) {
       requestId,
       windowMonths,
       scanLimit,
+      dataSource: 'computed',
       source: 'computed',
       asOf: computed.asOf,
       freshnessMinutes,
