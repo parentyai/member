@@ -84,8 +84,23 @@ function listTestFiles(dir) {
   return count;
 }
 
+function resolveStableSourceCommit() {
+  try {
+    const rawParents = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
+    const parts = rawParents.split(/\s+/).filter(Boolean);
+    // In GitHub PR checks, checkout can be a synthetic merge commit.
+    // Prefer the PR head (2nd parent) to keep generated artifacts stable.
+    if (parts.length >= 3) return parts[2];
+    if (parts.length >= 1) return parts[0];
+  } catch (_err) {
+    // best effort fallback
+  }
+  return 'HEAD';
+}
+
 function getLastCommit() {
-  const raw = execFileSync('git', ['log', '-1', '--pretty=format:%H|%cI|%s'], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const sourceCommit = resolveStableSourceCommit();
+  const raw = execFileSync('git', ['show', '-s', '--format=%H|%cI|%s', sourceCommit], { cwd: ROOT, encoding: 'utf8' }).trim();
   const parts = raw.split('|');
   return {
     hash: parts[0] || '',
