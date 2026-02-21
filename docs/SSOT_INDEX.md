@@ -140,3 +140,4 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_KB_SPEC_PHASE_NEXT1.md`（Phase Next-1: KB必須属性強制・llmClient・Admin KB CRUD・blockedReason拡張）
 - `docs/LLM_KB_SPEC_PHASE_NEXT2.md`（Phase Next-2: Ops系llmClient接続・llmAdapterインターフェース・Opsテンプレ3種完備）
 - `docs/LLM_KB_SPEC_PHASE_NEXT3.md`（Phase Next-3: guide-only解禁・consent UI・lawfulBasis整備・consent verify/revoke API）
+- `docs/LLM_KB_SPEC_PHASE_NEXT4.md`（Phase Next-4: ユーザー向け同意フロー・LINE Webhook経由 AI同意/拒否コマンド・user_consents コレクション）

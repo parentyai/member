@@ -55,6 +55,16 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
   - 全 consent 操作が `llm_consent.*` action で audit_logs に記録される
   - `blockedReasonCategory=CONSENT_MISSING` が audit payloadSummary に含まれることをテスト固定
 
+## Phase Next-4 (User-facing Consent Flow via LINE Webhook)
+- Close:
+  - `AI同意` / `LLM同意` コマンドで `user_consents/{lineUserId}.llmConsentStatus = 'accepted'` が設定される
+  - `AI拒否` / `LLM拒否` コマンドで `user_consents/{lineUserId}.llmConsentStatus = 'revoked'` が設定される
+  - consent コマンドは `continue` で後続ハンドラへ fall-through しない（優先度最高）
+  - 全ユーザー同意操作が `user_llm_consent.accept` / `.revoke` action で audit_logs に記録される
+  - `user_consents` コレクションが `{ merge: true }` でアップサート（既存フィールド保護）
+  - 監査失敗でも Webhook は 200 を返す（ベストエフォート）
+  - 864 テスト全グリーン
+
 ## Phase243-249 (Safety hardening and guide-only expansion)
 - Phase243:
   - KB schema hardening (`version` add-only + `versionSemver` compatibility)
