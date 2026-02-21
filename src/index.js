@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { handleLineWebhook } = require('./routes/webhookLine');
+const { resolvePathProtection } = require('./domain/security/protectionMatrix');
 
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
@@ -66,40 +67,6 @@ function resolveAdminTokenFromRequest(req) {
     return { token: cookies.admin_token.trim(), source: 'cookie' };
   }
   return { token: null, source: null };
-}
-
-function isProtectedOpsPath(pathname) {
-  if (!pathname || typeof pathname !== 'string') return false;
-
-  // Always protect admin UI + admin APIs.
-  if (pathname.startsWith('/admin/')) return true;
-  if (pathname.startsWith('/api/admin/')) return true;
-
-  // Protect ops/admin APIs that are reachable from admin UI.
-  if (pathname.startsWith('/api/phase')) {
-    if (pathname.startsWith('/api/phaseLLM')) return true; // llm endpoints are admin-only
-    // Ops-only phase endpoints that intentionally omit "ops" in their path.
-    // These must still be protected at the app layer to stay safe even if IAM/network is misconfigured.
-    if (pathname.startsWith('/api/phase67/')) return true; // segment send plan
-    if (pathname.startsWith('/api/phase68/')) return true; // segment send execute
-    if (pathname.startsWith('/api/phase73/retry-queue')) return true; // retry queue view/plan/execute
-    if (pathname.startsWith('/api/phase77/segments')) return true; // ops segments CRUD
-    if (pathname.startsWith('/api/phase81/segment-send')) return true; // segment send dry-run
-
-    // Segment-based match: /api/phaseXX/(ops|admin|ops-console)/...
-    const parts = pathname.split('/').filter(Boolean);
-    if (parts.includes('admin')) return true;
-    if (parts.includes('ops')) return true;
-    // Covers ops-console, ops-assist, ops-decision, etc.
-    if (parts.some((p) => typeof p === 'string' && p.startsWith('ops-'))) return true;
-    // Phase5 state summary is ops-only data used by admin UI.
-    if (pathname.startsWith('/api/phase5/state/')) return true;
-
-    // Phase1 event ingestion endpoint — must be protected to prevent unauthenticated writes.
-    if (pathname === '/api/phase1/events') return true;
-  }
-
-  return false;
 }
 
 function resolveRequestProto(req) {
@@ -330,7 +297,8 @@ function createServer() {
   }
 
   // Member service: protect admin/ops surfaces at the app layer to remain safe even if IAM/network is misconfigured.
-  if (isProtectedOpsPath(pathname)) {
+  const protection = resolvePathProtection(pathname);
+  if (protection && protection.auth === 'adminToken') {
     // Allow reaching the login/logout endpoints without prior auth.
     if (pathname !== '/admin/login' && pathname !== '/admin/login/' && pathname !== '/admin/logout' && pathname !== '/admin/logout/') {
       if (!requireAdminToken(req, res, pathname)) return;
@@ -922,6 +890,36 @@ function createServer() {
       const { handleCityPackDraftGeneratorJob } = require('./routes/internal/cityPackDraftGeneratorJob');
       const body = await collectBody();
       await handleCityPackDraftGeneratorJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/retention-dry-run') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleRetentionDryRunJob } = require('./routes/internal/retentionDryRunJob');
+      const body = await collectBody();
+      await handleRetentionDryRunJob(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

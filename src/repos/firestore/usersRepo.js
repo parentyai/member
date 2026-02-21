@@ -2,6 +2,8 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'users';
 
@@ -83,8 +85,12 @@ function hasMemberNumber(user) {
 async function listUsers(params) {
   const db = getDb();
   const opts = params || {};
+  const normalizedScenarioKey = normalizeScenarioKey({
+    scenarioKey: opts.scenarioKey,
+    scenario: opts.scenario
+  });
   let baseQuery = db.collection(COLLECTION);
-  if (opts.scenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', opts.scenarioKey);
+  if (normalizedScenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', normalizedScenarioKey);
   if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
   if (opts.region) baseQuery = baseQuery.where('region', '==', opts.region);
   let query = baseQuery.orderBy('createdAt', 'desc');
@@ -96,6 +102,12 @@ async function listUsers(params) {
     users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'usersRepo',
+      query: 'listUsers',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     // Fallback for environments without composite indexes.
     const snap = await baseQuery.get();
     users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
