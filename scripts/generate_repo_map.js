@@ -12,6 +12,7 @@ const ADMIN_MANUAL_PATH = path.join(ROOT, 'docs', 'ADMIN_MANUAL_JA.md');
 const RUNBOOK_JA_PATH = path.join(ROOT, 'docs', 'RUNBOOK_JA.md');
 const PHASE24_PLAN_PATH = path.join(ROOT, 'docs', 'PHASE24_PLAN.md');
 const PACKAGE_JSON_PATH = path.join(ROOT, 'package.json');
+const DISPLAY_ROOT = (process.env.REPO_MAP_DISPLAY_ROOT || '/Users/parentyai.com/Projects/Member').replace(/\\/g, '/');
 const COMMIT_SOURCE_FILES = Object.freeze([
   path.join('docs', 'REPO_AUDIT_INPUTS', 'feature_map.json'),
   path.join('docs', 'REPO_AUDIT_INPUTS', 'dependency_graph.json'),
@@ -78,6 +79,14 @@ function readJson(fileName) {
   const filePath = path.join(INPUT_DIR, fileName);
   const text = fs.readFileSync(filePath, 'utf8');
   return JSON.parse(text);
+}
+
+function toDisplayPath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return '';
+  const absolute = path.resolve(filePath);
+  const rel = path.relative(ROOT, absolute);
+  if (!rel || rel.startsWith('..')) return absolute.replace(/\\/g, '/');
+  return path.join(DISPLAY_ROOT, rel).replace(/\\/g, '/');
 }
 
 function listTestFiles(dir) {
@@ -196,7 +205,7 @@ function collectCollectionLinks(collections) {
     if (!collection || !dataMapText) return;
     const re = new RegExp('^\\s*-\\s*`' + escapeRegExp(collection) + '`', 'm');
     if (re.test(dataMapText)) {
-      links.push(path.resolve(DATA_MAP_PATH));
+      links.push(toDisplayPath(DATA_MAP_PATH));
     }
   });
   return links;
@@ -283,7 +292,7 @@ function buildNextActions(feature) {
 function resolveRepoPath(repoName) {
   if (!repoName || typeof repoName !== 'string') return null;
   const candidate = path.join(ROOT, 'src', 'repos', 'firestore', `${repoName}.js`);
-  if (fs.existsSync(candidate)) return candidate;
+  if (fs.existsSync(candidate)) return toDisplayPath(candidate);
   return null;
 }
 
@@ -292,7 +301,7 @@ function buildRouteIndex(routeToUsecase) {
   Object.entries(routeToUsecase || {}).forEach(([routePath, usecases]) => {
     (usecases || []).forEach((usecase) => {
       if (!map.has(usecase)) map.set(usecase, new Set());
-      map.get(usecase).add(path.resolve(ROOT, routePath));
+      map.get(usecase).add(toDisplayPath(path.resolve(ROOT, routePath)));
     });
   });
   return map;
@@ -414,7 +423,13 @@ function buildDeveloperLayer(features, dependencyGraph, options) {
       const routeSet = routeIndex.get(usecase);
       if (!routeSet) return;
       for (const routePath of routeSet.values()) {
-        entrySet.add(routePath.replace(ROOT + path.sep, ''));
+        const normalized = routePath.replace(/\\/g, '/');
+        const prefix = `${DISPLAY_ROOT}/`;
+        if (normalized.startsWith(prefix)) {
+          entrySet.add(normalized.slice(prefix.length));
+        } else {
+          entrySet.add(normalized);
+        }
       }
     });
 
@@ -517,10 +532,10 @@ function buildCommunicationLayer(summaryCounts) {
       ]
     },
     sourceDocs: [
-      path.resolve(ADMIN_MANUAL_PATH),
-      path.resolve(DATA_MAP_PATH),
-      path.resolve(RUNBOOK_JA_PATH),
-      path.resolve(PHASE24_PLAN_PATH)
+      toDisplayPath(ADMIN_MANUAL_PATH),
+      toDisplayPath(DATA_MAP_PATH),
+      toDisplayPath(RUNBOOK_JA_PATH),
+      toDisplayPath(PHASE24_PLAN_PATH)
     ]
   };
 }
