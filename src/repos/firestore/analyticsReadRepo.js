@@ -52,10 +52,19 @@ async function listAllNotificationDeliveries(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listAllNotifications(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const snap = await db.collection('notifications').orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 module.exports = {
   listAllEvents,
   listAllUsers,
   listAllChecklists,
   listAllUserChecklists,
-  listAllNotificationDeliveries
+  listAllNotificationDeliveries,
+  listAllNotifications
 };

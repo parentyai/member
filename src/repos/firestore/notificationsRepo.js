@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'notifications';
 
@@ -41,6 +42,12 @@ async function listNotifications(params) {
     return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'notificationsRepo',
+      query: 'listNotifications',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     // Fallback for environments without composite indexes.
     const snap = await baseQuery.get();
     const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));

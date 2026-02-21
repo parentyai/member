@@ -35,3 +35,10 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
   - `dryRun=true` 固定
   - delete 実行なし
   - `audit_logs` に `retention.dry_run.execute` を追記
+  - retention policy 未定義コレクションを受け取った場合は `422 retention_policy_undefined` で fail-closed
+  - fail-closed時は `audit_logs` に `retention.dry_run.blocked` を追記
+
+## Policy Source (Add-only)
+- 実行時ポリシー定義: `src/domain/retention/retentionPolicy.js`
+- 監査入力との突合基準: `docs/REPO_AUDIT_INPUTS/data_lifecycle.json`
+- coverage: 44 collections（2026-02-21 時点）

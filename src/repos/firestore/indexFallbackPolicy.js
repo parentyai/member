@@ -1,8 +1,20 @@
 'use strict';
 
+function resolveEnvName() {
+  const value = process.env.ENV_NAME;
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
 function shouldFailOnMissingIndex() {
   const value = process.env.FIRESTORE_FAIL_ON_MISSING_INDEX;
-  return value === '1' || value === 'true';
+  if (value === '1' || value === 'true') return true;
+  if (value === '0' || value === 'false') return false;
+  const envName = resolveEnvName();
+  if (envName === 'stg' || envName === 'stage' || envName === 'staging' || envName === 'prod' || envName === 'production') {
+    return true;
+  }
+  return false;
 }
 
 function recordMissingIndexFallback(context) {

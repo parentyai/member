@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'city_pack_requests';
 const ALLOWED_STATUS = new Set([
@@ -116,6 +117,12 @@ async function listRequests(params) {
     rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'cityPackRequestsRepo',
+      query: 'listRequests',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     const snap = await baseQuery.get();
     rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
     sortByTimestampDesc(rows, 'updatedAt');

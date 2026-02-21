@@ -129,6 +129,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE306_EXECUTION_LOG.md`（City Pack最深化体験 add-only 補完実行ログ）
 - `docs/PHASE307_PLAN.md`（StructShield: 構造崩壊耐性強化計画）
 - `docs/PHASE307_EXECUTION_LOG.md`（StructShield: 構造崩壊耐性強化実行ログ）
+- `docs/PHASE308_PLAN.md`（StructShield follow-up: canonical/fallback/retention 補強計画）
+- `docs/PHASE308_EXECUTION_LOG.md`（StructShield follow-up: canonical/fallback/retention 補強実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）

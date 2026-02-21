@@ -18,6 +18,14 @@ const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
+const DEFAULT_ANALYTICS_LIMIT = 1200;
+const MAX_ANALYTICS_LIMIT = 2000;
+
+function resolveAnalyticsLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
+  return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
 
 function toMillis(value) {
   if (!value) return null;
@@ -144,13 +152,14 @@ async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
+  const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
 
   const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
-    listAllUsers(),
-    listAllEvents(),
-    listAllChecklists(),
-    listAllUserChecklists(),
-    listAllNotificationDeliveries()
+    listAllUsers({ limit: analyticsLimit }),
+    listAllEvents({ limit: analyticsLimit }),
+    listAllChecklists({ limit: analyticsLimit }),
+    listAllUserChecklists({ limit: analyticsLimit }),
+    listAllNotificationDeliveries({ limit: analyticsLimit })
   ]);
 
   const user = users.find((entry) => entry.id === payload.lineUserId);

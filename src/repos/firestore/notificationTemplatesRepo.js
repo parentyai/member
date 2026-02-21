@@ -3,6 +3,7 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'notification_templates';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -59,6 +60,12 @@ async function listTemplates(options) {
     return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'notificationTemplatesRepo',
+      query: 'listTemplates',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     // Fallback for environments without composite indexes.
     const snap = await baseQuery.get();
     const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
