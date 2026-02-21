@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "name": "unused-code-detector"
+    },
+    {
+      "name": "ssot-index-registration"
+    },
+    {
+      "name": "endpoint-protection-matrix"
+    },
+    {
+      "name": "field-name-drift"
+    },
+    {
+      "name": "fullscan-detector"
+    },
+    {
+      "name": "phase-naming-lint"
+    }
+  ]
+}

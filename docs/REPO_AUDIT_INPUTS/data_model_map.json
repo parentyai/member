@@ -1,0 +1,743 @@
+{
+  "collections": [
+    {
+      "collection": "audit_logs",
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/auditLogsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/auditLogsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "automation_config",
+      "repos": [
+        "automationConfigRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/automationConfigRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/automationConfigRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "automation_runs",
+      "repos": [
+        "automationRunsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/automationRunsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/automationRunsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "checklists",
+      "repos": [
+        "analyticsReadRepo",
+        "checklistsRepo",
+        "phase2ReadRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/checklistsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/analyticsReadRepo.js",
+        "src/repos/firestore/checklistsRepo.js",
+        "src/repos/firestore/phase2ReadRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "HIGH"
+    },
+    {
+      "collection": "city_pack_bulletins",
+      "repos": [
+        "cityPackBulletinsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackBulletinsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackBulletinsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_pack_feedback",
+      "repos": [
+        "cityPackFeedbackRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackFeedbackRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackFeedbackRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_pack_metrics_daily",
+      "repos": [
+        "cityPackMetricsDailyRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackMetricsDailyRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackMetricsDailyRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_pack_requests",
+      "repos": [
+        "cityPackRequestsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackRequestsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackRequestsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_pack_template_library",
+      "repos": [
+        "cityPackTemplateLibraryRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackTemplateLibraryRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackTemplateLibraryRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_pack_update_proposals",
+      "repos": [
+        "cityPackUpdateProposalsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPackUpdateProposalsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPackUpdateProposalsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "city_packs",
+      "repos": [
+        "cityPacksRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/cityPacksRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/cityPacksRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "decision_drifts",
+      "repos": [
+        "decisionDriftsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/decisionDriftsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/decisionDriftsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "decision_logs",
+      "repos": [
+        "decisionLogsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/decisionLogsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/decisionLogsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "decision_timeline",
+      "repos": [
+        "decisionTimelineRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/decisionTimelineRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/decisionTimelineRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "events",
+      "repos": [
+        "analyticsReadRepo",
+        "eventsRepo",
+        "phase2ReadRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/eventsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/analyticsReadRepo.js",
+        "src/repos/firestore/eventsRepo.js",
+        "src/repos/firestore/phase2ReadRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "HIGH"
+    },
+    {
+      "collection": "faq_answer_logs",
+      "repos": [
+        "faqAnswerLogsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/faqAnswerLogsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/faqAnswerLogsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "faq_articles",
+      "repos": [
+        "faqArticlesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/faqArticlesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/faqArticlesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "link_registry",
+      "repos": [
+        "linkRegistryRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/linkRegistryRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/linkRegistryRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "notices",
+      "repos": [
+        "noticesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/noticesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/noticesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "notification_deliveries",
+      "repos": [
+        "analyticsReadRepo",
+        "deliveriesRepo",
+        "phase2ReadRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/deliveriesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/analyticsReadRepo.js",
+        "src/repos/firestore/deliveriesRepo.js",
+        "src/repos/firestore/phase2ReadRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "HIGH"
+    },
+    {
+      "collection": "notification_templates",
+      "repos": [
+        "notificationTemplatesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/notificationTemplatesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/notificationTemplatesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "notification_test_run_items",
+      "repos": [
+        "notificationTestRunsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/notificationTestRunsRepo.js"
+      ],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "notification_test_runs",
+      "repos": [
+        "notificationTestRunsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/notificationTestRunsRepo.js"
+      ],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "notifications",
+      "repos": [
+        "ctaStatsRepo",
+        "notificationsRepo",
+        "phase18StatsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/ctaStatsRepo.js",
+        "src/repos/firestore/notificationsRepo.js",
+        "src/repos/firestore/phase18StatsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/ctaStatsRepo.js",
+        "src/repos/firestore/notificationsRepo.js",
+        "src/repos/firestore/phase18StatsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "ops_assist_cache",
+      "repos": [
+        "opsAssistCacheRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/opsAssistCacheRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/opsAssistCacheRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "ops_segments",
+      "repos": [
+        "opsSegmentsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/opsSegmentsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/opsSegmentsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "ops_state",
+      "repos": [
+        "opsStateRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/opsStateRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/opsStateRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "ops_states",
+      "repos": [
+        "opsStatesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/opsStatesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/opsStatesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase18_cta_stats",
+      "repos": [
+        "ctaStatsRepo",
+        "phase18StatsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/ctaStatsRepo.js",
+        "src/repos/firestore/phase18StatsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/ctaStatsRepo.js",
+        "src/repos/firestore/phase18StatsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase22_kpi_snapshots",
+      "repos": [
+        "kpiSnapshotsReadRepo",
+        "kpiSnapshotsRepo",
+        "phase22KpiSnapshotsReadRepo",
+        "phase22KpiSnapshotsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/kpiSnapshotsRepo.js",
+        "src/repos/firestore/phase22KpiSnapshotsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/kpiSnapshotsReadRepo.js",
+        "src/repos/firestore/phase22KpiSnapshotsReadRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase2_reports_checklist_pending",
+      "repos": [
+        "phase2ReportsRepo",
+        "scenarioReportsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/phase2ReportsRepo.js",
+        "src/repos/firestore/scenarioReportsRepo.js"
+      ],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase2_reports_daily_events",
+      "repos": [
+        "phase2ReportsRepo",
+        "scenarioReportsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/phase2ReportsRepo.js",
+        "src/repos/firestore/scenarioReportsRepo.js"
+      ],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase2_reports_weekly_events",
+      "repos": [
+        "phase2ReportsRepo",
+        "scenarioReportsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/phase2ReportsRepo.js",
+        "src/repos/firestore/scenarioReportsRepo.js"
+      ],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "phase2_runs",
+      "repos": [
+        "phase2RunsRepo",
+        "scenarioRunsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/phase2RunsRepo.js",
+        "src/repos/firestore/scenarioRunsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/phase2RunsRepo.js",
+        "src/repos/firestore/scenarioRunsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "redac_membership_links",
+      "repos": [
+        "redacMembershipLinksRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/redacMembershipLinksRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/redacMembershipLinksRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "send_retry_queue",
+      "repos": [
+        "sendRetryQueueRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/sendRetryQueueRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/sendRetryQueueRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "source_audit_runs",
+      "repos": [
+        "sourceAuditRunsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/sourceAuditRunsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/sourceAuditRunsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "source_evidence",
+      "repos": [
+        "sourceEvidenceRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/sourceEvidenceRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/sourceEvidenceRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "source_refs",
+      "repos": [
+        "sourceRefsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/sourceRefsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/sourceRefsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "system_flags",
+      "repos": [
+        "systemFlagsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/systemFlagsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/systemFlagsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "templates_v",
+      "repos": [
+        "templatesVRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/templatesVRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/templatesVRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "user_checklists",
+      "repos": [
+        "analyticsReadRepo",
+        "phase2ReadRepo",
+        "userChecklistsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/userChecklistsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/analyticsReadRepo.js",
+        "src/repos/firestore/phase2ReadRepo.js",
+        "src/repos/firestore/userChecklistsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "HIGH"
+    },
+    {
+      "collection": "user_consents",
+      "repos": [
+        "userConsentsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/userConsentsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/userConsentsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "users",
+      "repos": [
+        "analyticsReadRepo",
+        "phase2ReadRepo",
+        "usersPhase1Repo",
+        "usersRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/usersRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/analyticsReadRepo.js",
+        "src/repos/firestore/phase2ReadRepo.js",
+        "src/repos/firestore/usersPhase1Repo.js",
+        "src/repos/firestore/usersRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "HIGH"
+    }
+  ]
+}

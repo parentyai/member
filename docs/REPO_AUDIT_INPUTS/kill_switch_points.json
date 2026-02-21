@@ -1,0 +1,304 @@
+{
+  "kill_switch_points": [
+    {
+      "file": "src/repos/firestore/systemFlagsRepo.js",
+      "line": 80,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/repos/firestore/systemFlagsRepo.js",
+      "line": 221,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/infra/lineClient.js",
+      "line": 19,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/infra/lineClient.js",
+      "line": 74,
+      "symbol": "kill switch is ON"
+    },
+    {
+      "file": "src/infra/lineClient.js",
+      "line": 88,
+      "symbol": "kill switch is ON"
+    },
+    {
+      "file": "src/domain/validators.js",
+      "line": 52,
+      "symbol": "validateKillSwitch"
+    },
+    {
+      "file": "src/domain/validators.js",
+      "line": 57,
+      "symbol": "kill switch is ON"
+    },
+    {
+      "file": "src/domain/validators.js",
+      "line": 63,
+      "symbol": "validateKillSwitch"
+    },
+    {
+      "file": "src/domain/validators.js",
+      "line": 74,
+      "symbol": "validateKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackFeedback.js",
+      "line": 4,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackFeedback.js",
+      "line": 107,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackBulletins.js",
+      "line": 6,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackBulletins.js",
+      "line": 160,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackReviewInbox.js",
+      "line": 8,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackReviewInbox.js",
+      "line": 100,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/osDashboardKpi.js",
+      "line": 104,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/phase1Notifications.js",
+      "line": 5,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/phase1Notifications.js",
+      "line": 53,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackRequests.js",
+      "line": 5,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/cityPackRequests.js",
+      "line": 63,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/osKillSwitch.js",
+      "line": 5,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/osKillSwitch.js",
+      "line": 26,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/notifications.js",
+      "line": 7,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/notifications.js",
+      "line": 120,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/admin/notifications.js",
+      "line": 172,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackSourceAuditJob.js",
+      "line": 4,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackSourceAuditJob.js",
+      "line": 47,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
+      "line": 5,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
+      "line": 26,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/adminOs/executeNotificationSend.js",
+      "line": 203,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/adminOs/executeNotificationSend.js",
+      "line": 203,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/adminOs/executeNotificationSend.js",
+      "line": 203,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase121/sendOpsNotice.js",
+      "line": 47,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase121/sendOpsNotice.js",
+      "line": 47,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase121/sendOpsNotice.js",
+      "line": 47,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase40/getOpsAssistSuggestion.js",
+      "line": 121,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase40/getOpsAssistSuggestion.js",
+      "line": 121,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase40/getOpsAssistSuggestion.js",
+      "line": 121,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase73/retryQueuedSend.js",
+      "line": 35,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase73/retryQueuedSend.js",
+      "line": 35,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase73/retryQueuedSend.js",
+      "line": 35,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase43/executeAutomationDecision.js",
+      "line": 96,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase43/executeAutomationDecision.js",
+      "line": 96,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase43/executeAutomationDecision.js",
+      "line": 96,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/killSwitch/setKillSwitch.js",
+      "line": 9,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/killSwitch/setKillSwitch.js",
+      "line": 10,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/killSwitch/setKillSwitch.js",
+      "line": 15,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase68/executeSegmentSend.js",
+      "line": 148,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase68/executeSegmentSend.js",
+      "line": 148,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase68/executeSegmentSend.js",
+      "line": 148,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/testSendNotification.js",
+      "line": 8,
+      "symbol": "validateKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/testSendNotification.js",
+      "line": 78,
+      "symbol": "validateKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/runNotificationTest.js",
+      "line": 80,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/runNotificationTest.js",
+      "line": 80,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/runNotificationTest.js",
+      "line": 80,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/runNotificationTest.js",
+      "line": 80,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/notifications/runNotificationTest.js",
+      "line": 81,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase33/executeOpsNextAction.js",
+      "line": 176,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase33/executeOpsNextAction.js",
+      "line": 176,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/phase33/executeOpsNextAction.js",
+      "line": 176,
+      "symbol": "getKillSwitch"
+    }
+  ]
+}

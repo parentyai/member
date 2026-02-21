@@ -1,0 +1,516 @@
+[
+  {
+    "collection": "audit_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/auditLogsRepo.js:13",
+      "src/repos/firestore/auditLogsRepo.js:27",
+      "src/repos/firestore/auditLogsRepo.js:45"
+    ]
+  },
+  {
+    "collection": "automation_config",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/automationConfigRepo.js:15",
+      "src/repos/firestore/automationConfigRepo.js:23",
+      "src/repos/firestore/automationConfigRepo.js:37"
+    ]
+  },
+  {
+    "collection": "automation_runs",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/automationRunsRepo.js:13",
+      "src/repos/firestore/automationRunsRepo.js:25",
+      "src/repos/firestore/automationRunsRepo.js:34"
+    ]
+  },
+  {
+    "collection": "checklists",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/phase2ReadRepo.js:35",
+      "src/repos/firestore/analyticsReadRepo.js:35",
+      "src/repos/firestore/checklistsRepo.js:9"
+    ]
+  },
+  {
+    "collection": "city_pack_bulletins",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPackBulletinsRepo.js:44",
+      "src/repos/firestore/cityPackBulletinsRepo.js:66",
+      "src/repos/firestore/cityPackBulletinsRepo.js:76"
+    ]
+  },
+  {
+    "collection": "city_pack_feedback",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPackFeedbackRepo.js:61",
+      "src/repos/firestore/cityPackFeedbackRepo.js:83",
+      "src/repos/firestore/cityPackFeedbackRepo.js:93"
+    ]
+  },
+  {
+    "collection": "city_pack_metrics_daily",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/cityPackMetricsDailyRepo.js:75",
+      "src/repos/firestore/cityPackMetricsDailyRepo.js:102"
+    ]
+  },
+  {
+    "collection": "city_pack_requests",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPackRequestsRepo.js:67",
+      "src/repos/firestore/cityPackRequestsRepo.js:93",
+      "src/repos/firestore/cityPackRequestsRepo.js:103"
+    ]
+  },
+  {
+    "collection": "city_pack_template_library",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPackTemplateLibraryRepo.js:49",
+      "src/repos/firestore/cityPackTemplateLibraryRepo.js:68",
+      "src/repos/firestore/cityPackTemplateLibraryRepo.js:78"
+    ]
+  },
+  {
+    "collection": "city_pack_update_proposals",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPackUpdateProposalsRepo.js:44",
+      "src/repos/firestore/cityPackUpdateProposalsRepo.js:65",
+      "src/repos/firestore/cityPackUpdateProposalsRepo.js:75"
+    ]
+  },
+  {
+    "collection": "city_packs",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/cityPacksRepo.js:253",
+      "src/repos/firestore/cityPacksRepo.js:279",
+      "src/repos/firestore/cityPacksRepo.js:287"
+    ]
+  },
+  {
+    "collection": "decision_drifts",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/decisionDriftsRepo.js:17",
+      "src/repos/firestore/decisionDriftsRepo.js:26"
+    ]
+  },
+  {
+    "collection": "decision_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/decisionLogsRepo.js:14",
+      "src/repos/firestore/decisionLogsRepo.js:27",
+      "src/repos/firestore/decisionLogsRepo.js:48"
+    ]
+  },
+  {
+    "collection": "decision_timeline",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/decisionTimelineRepo.js:17",
+      "src/repos/firestore/decisionTimelineRepo.js:26",
+      "src/repos/firestore/decisionTimelineRepo.js:38"
+    ]
+  },
+  {
+    "collection": "events",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/phase2ReadRepo.js:19",
+      "src/repos/firestore/analyticsReadRepo.js:19",
+      "src/repos/firestore/eventsRepo.js:20"
+    ]
+  },
+  {
+    "collection": "faq_answer_logs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/faqAnswerLogsRepo.js:13",
+      "src/repos/firestore/faqAnswerLogsRepo.js:32"
+    ]
+  },
+  {
+    "collection": "faq_articles",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/faqArticlesRepo.js:184",
+      "src/repos/firestore/faqArticlesRepo.js:202",
+      "src/repos/firestore/faqArticlesRepo.js:208"
+    ]
+  },
+  {
+    "collection": "link_registry",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/linkRegistryRepo.js:14",
+      "src/repos/firestore/linkRegistryRepo.js:23",
+      "src/repos/firestore/linkRegistryRepo.js:31"
+    ]
+  },
+  {
+    "collection": "notices",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/noticesRepo.js:32",
+      "src/repos/firestore/noticesRepo.js:47",
+      "src/repos/firestore/noticesRepo.js:57"
+    ]
+  },
+  {
+    "collection": "notification_deliveries",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/deliveriesRepo.js:67",
+      "src/repos/firestore/deliveriesRepo.js:171",
+      "src/repos/firestore/deliveriesRepo.js:180"
+    ]
+  },
+  {
+    "collection": "notification_templates",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/notificationTemplatesRepo.js:37",
+      "src/repos/firestore/notificationTemplatesRepo.js:52",
+      "src/repos/firestore/notificationTemplatesRepo.js:73"
+    ]
+  },
+  {
+    "collection": "notification_test_run_items",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/notificationTestRunsRepo.js:24"
+    ]
+  },
+  {
+    "collection": "notification_test_runs",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/notificationTestRunsRepo.js:15"
+    ]
+  },
+  {
+    "collection": "notifications",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/notificationsRepo.js:14",
+      "src/repos/firestore/notificationsRepo.js:23",
+      "src/repos/firestore/notificationsRepo.js:32"
+    ]
+  },
+  {
+    "collection": "ops_assist_cache",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/opsAssistCacheRepo.js:15",
+      "src/repos/firestore/opsAssistCacheRepo.js:24"
+    ]
+  },
+  {
+    "collection": "ops_segments",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/opsSegmentsRepo.js:30",
+      "src/repos/firestore/opsSegmentsRepo.js:46",
+      "src/repos/firestore/opsSegmentsRepo.js:61"
+    ]
+  },
+  {
+    "collection": "ops_state",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/opsStateRepo.js:21",
+      "src/repos/firestore/opsStateRepo.js:32"
+    ]
+  },
+  {
+    "collection": "ops_states",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/opsStatesRepo.js:10",
+      "src/repos/firestore/opsStatesRepo.js:19"
+    ]
+  },
+  {
+    "collection": "phase18_cta_stats",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/ctaStatsRepo.js:30",
+      "src/repos/firestore/ctaStatsRepo.js:48",
+      "src/repos/firestore/phase18StatsRepo.js:30"
+    ]
+  },
+  {
+    "collection": "phase22_kpi_snapshots",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/phase22KpiSnapshotsRepo.js:10",
+      "src/repos/firestore/phase22KpiSnapshotsReadRepo.js:45",
+      "src/repos/firestore/kpiSnapshotsReadRepo.js:45"
+    ]
+  },
+  {
+    "collection": "phase2_reports_checklist_pending",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/scenarioReportsRepo.js:49",
+      "src/repos/firestore/phase2ReportsRepo.js:49"
+    ]
+  },
+  {
+    "collection": "phase2_reports_daily_events",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/scenarioReportsRepo.js:23",
+      "src/repos/firestore/phase2ReportsRepo.js:23"
+    ]
+  },
+  {
+    "collection": "phase2_reports_weekly_events",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/scenarioReportsRepo.js:36",
+      "src/repos/firestore/phase2ReportsRepo.js:36"
+    ]
+  },
+  {
+    "collection": "phase2_runs",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/scenarioRunsRepo.js:9",
+      "src/repos/firestore/scenarioRunsRepo.js:17",
+      "src/repos/firestore/phase2RunsRepo.js:9"
+    ]
+  },
+  {
+    "collection": "redac_membership_links",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/redacMembershipLinksRepo.js:11",
+      "src/repos/firestore/redacMembershipLinksRepo.js:22",
+      "src/repos/firestore/redacMembershipLinksRepo.js:36"
+    ]
+  },
+  {
+    "collection": "send_retry_queue",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/sendRetryQueueRepo.js:25",
+      "src/repos/firestore/sendRetryQueueRepo.js:38",
+      "src/repos/firestore/sendRetryQueueRepo.js:46"
+    ]
+  },
+  {
+    "collection": "source_audit_runs",
+    "kind": "transient",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/sourceAuditRunsRepo.js:11",
+      "src/repos/firestore/sourceAuditRunsRepo.js:21",
+      "src/repos/firestore/sourceAuditRunsRepo.js:28"
+    ]
+  },
+  {
+    "collection": "source_evidence",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/sourceEvidenceRepo.js:44",
+      "src/repos/firestore/sourceEvidenceRepo.js:51",
+      "src/repos/firestore/sourceEvidenceRepo.js:60"
+    ]
+  },
+  {
+    "collection": "source_refs",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/sourceRefsRepo.js:130",
+      "src/repos/firestore/sourceRefsRepo.js:154",
+      "src/repos/firestore/sourceRefsRepo.js:164"
+    ]
+  },
+  {
+    "collection": "system_flags",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/systemFlagsRepo.js:82",
+      "src/repos/firestore/systemFlagsRepo.js:91",
+      "src/repos/firestore/systemFlagsRepo.js:98"
+    ]
+  },
+  {
+    "collection": "templates_v",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/templatesVRepo.js:46",
+      "src/repos/firestore/templatesVRepo.js:69",
+      "src/repos/firestore/templatesVRepo.js:86"
+    ]
+  },
+  {
+    "collection": "user_checklists",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/phase2ReadRepo.js:43",
+      "src/repos/firestore/analyticsReadRepo.js:43",
+      "src/repos/firestore/userChecklistsRepo.js:19"
+    ]
+  },
+  {
+    "collection": "user_consents",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userConsentsRepo.js:26",
+      "src/repos/firestore/userConsentsRepo.js:43"
+    ]
+  },
+  {
+    "collection": "users",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/phase2ReadRepo.js:27",
+      "src/repos/firestore/analyticsReadRepo.js:27",
+      "src/repos/firestore/usersPhase1Repo.js:10"
+    ]
+  }
+]

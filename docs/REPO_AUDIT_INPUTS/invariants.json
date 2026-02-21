@@ -1,0 +1,163 @@
+{
+  "notification": [
+    {
+      "id": "notification.single_cta_required",
+      "rule": "Notification payload must have exactly one CTA and ctaText must be non-empty.",
+      "implementation": [
+        "src/domain/validators.js:15-25"
+      ],
+      "tests": [
+        "tests/phase0/validators.test.js:21-34"
+      ],
+      "impact_if_broken": "Multiple/empty CTA can bypass UX contract and break click tracking."
+    },
+    {
+      "id": "notification.link_registry_required_no_direct_url",
+      "rule": "linkRegistryId is required and direct URL fields are forbidden.",
+      "implementation": [
+        "src/domain/validators.js:28-38"
+      ],
+      "tests": [
+        "tests/phase0/validators.test.js:36-45"
+      ],
+      "impact_if_broken": "Direct URL leakage bypasses link health governance and tracking."
+    },
+    {
+      "id": "notification.warn_link_block",
+      "rule": "WARN link health must block send path.",
+      "implementation": [
+        "src/domain/validators.js:41-49",
+        "src/usecases/notifications/sendNotification.js:95-99"
+      ],
+      "tests": [
+        "tests/phase0/validators.test.js:47-52"
+      ],
+      "impact_if_broken": "Unsafe links can be delivered to users."
+    },
+    {
+      "id": "notification.kill_switch_fail_closed",
+      "rule": "Kill switch ON must stop message push and validator path.",
+      "implementation": [
+        "src/domain/validators.js:52-58",
+        "src/infra/lineClient.js:72-75"
+      ],
+      "tests": [
+        "tests/phase0/validators.test.js:54-57",
+        "tests/phase0/testSendNotification.test.js:27-50"
+      ],
+      "impact_if_broken": "Emergency stop becomes ineffective."
+    },
+    {
+      "id": "notification.delivery_idempotency",
+      "rule": "Delivery must be reserved before push and duplicate/sealed deliveries must be skipped.",
+      "implementation": [
+        "src/usecases/notifications/sendNotification.js:145-165",
+        "src/repos/firestore/deliveriesRepo.js:213-233"
+      ],
+      "tests": [
+        "tests/phase72/phase72_delivery_id_idempotency.test.js:136-167",
+        "tests/phase161/phase161_composer_execute_audit_on_failure.test.js:96"
+      ],
+      "impact_if_broken": "Duplicate sends and inconsistent delivery state."
+    },
+    {
+      "id": "notification.execute_confirm_token",
+      "rule": "Execute send requires planHash + confirmToken.",
+      "implementation": [
+        "src/usecases/adminOs/executeNotificationSend.js:94-97",
+        "src/usecases/adminOs/executeNotificationSend.js:142-146"
+      ],
+      "tests": [
+        "tests/phase272/phase272_t05_danger_action_confirm_and_trace_contract.test.js",
+        "tests/security/admin_config_confirm_token_required.test.js:75-123"
+      ],
+      "impact_if_broken": "Unsafe execution without operator confirmation."
+    },
+    {
+      "id": "notification_source_policy_fail_closed",
+      "rule": "Invalid city pack sources must block send with SOURCE_* reason; optional source can fallback only when configured.",
+      "implementation": [
+        "src/usecases/notifications/sendNotification.js:72-85",
+        "src/usecases/notifications/sendNotification.js:87-93"
+      ],
+      "tests": [
+        "tests/phase250/phase250_t04_send_notification_blocks_expired_source.test.js:55-70",
+        "tests/phase267/phase267_t04_send_notification_optional_source_fallback.test.js:77-128"
+      ],
+      "impact_if_broken": "Expired/dead source links can still trigger sends."
+    }
+  ],
+  "city_pack": [
+    {
+      "id": "city_pack_source_validity_120_days",
+      "rule": "source_refs validUntil defaults to validFrom + 120 days.",
+      "implementation": [
+        "src/repos/firestore/sourceRefsRepo.js:8",
+        "src/repos/firestore/sourceRefsRepo.js:69-74"
+      ],
+      "tests": [
+        "tests/phase250/phase250_t02_review_confirm_extends_valid_until.test.js:8-43"
+      ],
+      "impact_if_broken": "Source freshness guarantee lost."
+    },
+    {
+      "id": "city_pack_admin_write_blocked_by_killswitch",
+      "rule": "City pack write actions must stop when kill switch is ON.",
+      "implementation": [
+        "src/routes/admin/cityPackRequests.js:62-77",
+        "src/routes/internal/cityPackSourceAuditJob.js:47-50",
+        "src/routes/internal/cityPackDraftGeneratorJob.js:26-29"
+      ],
+      "tests": [
+        "tests/phase260/phase260_t04_admin_city_pack_requests_killswitch_block.test.js",
+        "tests/phase260/phase260_t05_internal_city_pack_draft_job_killswitch_block.test.js"
+      ],
+      "impact_if_broken": "Operational freeze cannot halt city pack mutations/jobs."
+    }
+  ],
+  "ops": [
+    {
+      "id": "ops_admin_token_and_csrf_guard",
+      "rule": "Admin paths require ADMIN_OS_TOKEN and state-changing cookie requests must be same-origin.",
+      "implementation": [
+        "src/index.js:71-103",
+        "src/index.js:150-184"
+      ],
+      "tests": [
+        "tests/security/admin_os_token_required.test.js:26-74",
+        "tests/security/admin_csrf_guard.test.js:26-84"
+      ],
+      "impact_if_broken": "Unauthorized or CSRF state changes possible."
+    },
+    {
+      "id": "ops_internal_job_token_guard",
+      "rule": "Internal city pack jobs require CITY_PACK_JOB_TOKEN.",
+      "implementation": [
+        "src/routes/internal/cityPackSourceAuditJob.js:27-39",
+        "src/routes/internal/cityPackDraftGeneratorJob.js:25"
+      ],
+      "tests": [
+        "tests/phase250/phase250_t08_internal_job_token_guard.test.js"
+      ],
+      "impact_if_broken": "Internal job execution exposed publicly."
+    },
+    {
+      "id": "ops_critical_set_execute_confirm_token",
+      "rule": "Critical set/execute admin operations require confirmToken after planHash planning.",
+      "implementation": [
+        "src/routes/admin/osKillSwitch.js:80-93",
+        "src/routes/admin/osConfig.js:469-520",
+        "src/routes/admin/osAutomationConfig.js:182-216",
+        "src/routes/admin/osDeliveryBackfill.js:186-220",
+        "src/routes/admin/osDeliveryRecovery.js:240-264"
+      ],
+      "tests": [
+        "tests/security/admin_automation_config_confirm_token_required.test.js:84-140",
+        "tests/security/admin_config_confirm_token_required.test.js:75-123",
+        "tests/security/admin_deliveries_backfill_confirm_token_required.test.js:107-146",
+        "tests/security/admin_delivery_recovery_confirm_token_required.test.js:106-147"
+      ],
+      "impact_if_broken": "Unsafe config or recovery operations without operator confirmation."
+    }
+  ]
+}
