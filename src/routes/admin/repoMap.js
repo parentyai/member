@@ -28,18 +28,23 @@ async function handleRepoMap(req, res) {
     const text = fs.readFileSync(REPO_MAP_PATH, 'utf8');
     const payload = JSON.parse(text);
 
-    await appendAuditLog({
-      actor,
-      action: 'repo_map.view',
-      entityType: 'repo_map',
-      entityId: 'repo_map_ui',
-      traceId,
-      requestId,
-      payloadSummary: {
-        generatedAt: payload && payload.meta ? payload.meta.generatedAt || null : null,
-        version: payload && payload.meta ? payload.meta.version || null : null
-      }
-    });
+    try {
+      await appendAuditLog({
+        actor,
+        action: 'repo_map.view',
+        entityType: 'repo_map',
+        entityId: 'repo_map_ui',
+        traceId,
+        requestId,
+        payloadSummary: {
+          generatedAt: payload && payload.meta ? payload.meta.generatedAt || null : null,
+          version: payload && payload.meta ? payload.meta.version || null : null
+        }
+      });
+    } catch (auditErr) {
+      // Audit write is best-effort for map view; do not block read response.
+      logRouteError('admin.repo_map.audit', auditErr, { actor, traceId, requestId });
+    }
 
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
