@@ -75,3 +75,35 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 - 互換カテゴリ:
   - `GUIDE_MODE_BLOCKED`
   - `PERSONALIZATION_BLOCKED`
+  - `CONTACT_SOURCE_REQUIRED`
+  - `KB_SCHEMA_INVALID`
+  - `LLM_API_ERROR`
+
+---
+
+## Phase Next-1 Ops
+
+### LLM を有効化する手順
+1. OPENAI_API_KEY を Secret Manager にセット（コードに書かない）
+2. `LLM_FEATURE_FLAG=true` を App Engine / Cloud Run 環境変数にセット
+3. `POST /api/admin/llm/config/set` `{ llmEnabled: true, lawfulBasis: '...', consentVerified: true, crossBorder: true }`
+4. `GET /api/admin/llm/config/status` で `effectiveEnabled: true` を確認
+5. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認
+
+### LLM を停止する手順（緊急時）
+1. `POST /api/admin/llm/config/set` `{ llmEnabled: false }`
+   → 即座に FAQ 回答が fallback に切り替わる
+2. **注意**: `killSwitch` は LINE 送信停止専用。LLM 停止には使わない
+3. `audit_logs` で `blockedReason='llm_disabled'` が記録されることを確認
+
+### KB 記事管理
+- `POST /api/admin/kb/articles` で記事作成（全必須フィールド要: status/riskLevel/version/validUntil/allowedIntents）
+- `PATCH /api/admin/kb/articles/:id` でパッチ更新
+- `DELETE /api/admin/kb/articles/:id` でソフトデリート（status='disabled'）
+- `validUntil` は必ず設定すること（無期限は推奨しない）
+- 既存記事の必須フィールド補完: `node tools/db_migrate_kb_required_fields.js --dry-run && node tools/db_migrate_kb_required_fields.js --apply`
+
+### ロールバック手順
+1. `POST /api/admin/llm/config/set` `{ llmEnabled: false }` で LLM を無効化
+2. `LLM_FEATURE_FLAG` 環境変数を削除
+3. `audit_logs` で `blockedReason='llm_disabled'` が記録されることを確認

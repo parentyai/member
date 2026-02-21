@@ -33,7 +33,9 @@ test('phase229: faqArticlesRepo excludes expired validUntil and FAQ-disallowed i
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
     allowedIntents: ['FAQ'],
+    version: '1.0.0',
     validUntil: iso('2026-02-20T00:00:00Z'),
     updatedAt: iso('2026-02-16T00:00:00Z')
   });
@@ -45,7 +47,9 @@ test('phase229: faqArticlesRepo excludes expired validUntil and FAQ-disallowed i
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
     allowedIntents: ['FAQ'],
+    version: '1.0.0',
     validUntil: iso('2026-02-10T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });
@@ -57,7 +61,9 @@ test('phase229: faqArticlesRepo excludes expired validUntil and FAQ-disallowed i
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
     allowedIntents: ['BILLING'],
+    version: '1.0.0',
     validUntil: iso('2026-02-20T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });
@@ -69,6 +75,9 @@ test('phase229: faqArticlesRepo excludes expired validUntil and FAQ-disallowed i
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
     validUntil: iso('2026-02-20T00:00:00Z'),
     updatedAt: iso('2026-02-15T00:00:00Z')
   });
@@ -82,4 +91,3 @@ test('phase229: faqArticlesRepo excludes expired validUntil and FAQ-disallowed i
   const ids = rows.map((row) => row.id);
   assert.deepStrictEqual(ids, ['a1', 'a4']);
 });
-

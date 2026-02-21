@@ -51,6 +51,10 @@ test('phaseLLM6: faqArticlesRepo returns active locale-matched top scored rows',
     tags: ['account'],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
+    validUntil: iso('2099-12-31T00:00:00Z'),
     updatedAt: iso('2026-02-16T00:00:00Z')
   });
   await db.collection('faq_articles').doc('a2').set({
@@ -61,6 +65,10 @@ test('phaseLLM6: faqArticlesRepo returns active locale-matched top scored rows',
     tags: ['billing'],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
+    validUntil: iso('2099-12-31T00:00:00Z'),
     updatedAt: iso('2026-02-15T00:00:00Z')
   });
   await db.collection('faq_articles').doc('a3').set({
@@ -71,6 +79,10 @@ test('phaseLLM6: faqArticlesRepo returns active locale-matched top scored rows',
     tags: [],
     status: 'archived',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
+    validUntil: iso('2099-12-31T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });
 

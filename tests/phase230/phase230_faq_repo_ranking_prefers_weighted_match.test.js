@@ -33,6 +33,9 @@ test('phase230: faq repo ranking prefers keyword > synonym > tag matches', async
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
     validUntil: iso('2026-03-01T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });
@@ -45,6 +48,9 @@ test('phase230: faq repo ranking prefers keyword > synonym > tag matches', async
     tags: [],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
     validUntil: iso('2026-03-01T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });
@@ -57,6 +63,9 @@ test('phase230: faq repo ranking prefers keyword > synonym > tag matches', async
     tags: ['会員番号'],
     status: 'active',
     locale: 'ja',
+    riskLevel: 'low',
+    allowedIntents: [],
+    version: '1.0.0',
     validUntil: iso('2026-03-01T00:00:00Z'),
     updatedAt: iso('2026-02-17T00:00:00Z')
   });

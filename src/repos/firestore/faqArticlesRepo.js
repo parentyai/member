@@ -44,7 +44,7 @@ function normalizeStatus(value) {
 }
 
 function normalizeRiskLevel(value) {
-  if (value === null || value === undefined) return 'low';
+  if (value === null || value === undefined) return null;
   if (typeof value !== 'string') return null;
   const normalized = value.trim().toLowerCase();
   if (!ALLOWED_RISK_LEVELS.has(normalized)) return null;
@@ -52,7 +52,7 @@ function normalizeRiskLevel(value) {
 }
 
 function normalizeAllowedIntents(value) {
-  if (value === null || value === undefined) return [];
+  if (value === null || value === undefined) return null;
   if (!Array.isArray(value)) return null;
   const normalized = value
     .filter((item) => typeof item === 'string' && item.trim().length > 0)
@@ -238,7 +238,76 @@ async function searchActiveArticles(params) {
   return scored;
 }
 
+function validateKbArticle(data) {
+  const errors = [];
+  const payload = data || {};
+
+  const status = normalizeStatus(payload.status);
+  if (status === null) errors.push('status: must be one of active|draft|disabled');
+
+  const riskLevel = normalizeRiskLevel(payload.riskLevel);
+  if (riskLevel === null) errors.push('riskLevel: must be one of low|medium|high');
+
+  const version = normalizeVersionValue(payload.version);
+  const versionSemver = normalizeVersionValue(payload.versionSemver);
+  if (version === null && versionSemver === null) {
+    errors.push('version: must be a semver string (e.g. "1.0.0"); at least one of version/versionSemver required');
+  }
+
+  if (payload.validUntil === null || payload.validUntil === undefined) {
+    errors.push('validUntil: required (use a future ISO date or Firestore Timestamp)');
+  }
+
+  const allowedIntents = normalizeAllowedIntents(payload.allowedIntents);
+  if (allowedIntents === null) {
+    errors.push('allowedIntents: must be an array (use [] to allow all intents)');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+async function createArticle(data) {
+  const { valid, errors } = validateKbArticle(data);
+  if (!valid) {
+    const err = new Error('kb_schema_invalid');
+    err.failureCode = 'kb_schema_invalid';
+    err.errors = errors;
+    throw err;
+  }
+  const db = getDb();
+  const now = new Date().toISOString();
+  const docRef = db.collection(COLLECTION).doc();
+  await docRef.set(Object.assign({}, data, { createdAt: now, updatedAt: now }));
+  return { id: docRef.id };
+}
+
+async function updateArticle(id, patch) {
+  if (!id) throw new Error('article id required');
+  const db = getDb();
+  const now = new Date().toISOString();
+  await db.collection(COLLECTION).doc(id).set(
+    Object.assign({}, patch, { updatedAt: now }),
+    { merge: true }
+  );
+  return { id };
+}
+
+async function deleteArticle(id) {
+  if (!id) throw new Error('article id required');
+  const db = getDb();
+  const now = new Date().toISOString();
+  await db.collection(COLLECTION).doc(id).set(
+    { status: 'disabled', deletedAt: now, updatedAt: now },
+    { merge: true }
+  );
+  return { id };
+}
+
 module.exports = {
   getArticle,
-  searchActiveArticles
+  searchActiveArticles,
+  validateKbArticle,
+  createArticle,
+  updateArticle,
+  deleteArticle
 };

@@ -36,6 +36,15 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
   - `guide_only_mode_blocked` / `personalization_not_allowed` を 422 BLOCK で返す
   - 監査 payloadSummary に `guideMode` / `personalizationKeys` が残る
 
+## Phase Next-2 (Ops LLM Client Connection)
+- Close:
+  - `getOpsExplanation` が `deps.llmAdapter.explainOps` 経由で llmClient に接続済み
+  - `getNextActionCandidates` が `deps.llmAdapter.suggestNextActionCandidates` 経由で llmClient に接続済み
+  - `index.js` で `/api/admin/llm/ops-explain` と `/api/admin/llm/next-actions` に `{ llmAdapter: llmClient }` が注入済み
+  - Ops テンプレ 3種完備: `ops_template_v1` / `ops_health_template_v1` / `next_actions_template_v1`
+  - adapter_missing / llm_timeout / llm_api_error でフォールバック動作をテスト固定
+  - `llmClient.explainOps` / `llmClient.suggestNextActionCandidates` がアダプタインターフェースを満たす
+
 ## Phase243-249 (Safety hardening and guide-only expansion)
 - Phase243:
   - KB schema hardening (`version` add-only + `versionSemver` compatibility)
