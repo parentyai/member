@@ -119,6 +119,17 @@
               <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.admin">管理者</button>
             </div>
           </div>
+          <div class="top-developer" data-role="admin">
+            <span class="role-label" data-dict-key="ui.label.developer.menu">開発者</span>
+            <div class="top-developer-actions">
+              <button id="developer-open-map" type="button" class="secondary-btn" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</button>
+              <button id="developer-open-system" type="button" class="secondary-btn" data-dict-key="ui.label.developer.systemState">システム状態</button>
+              <button id="developer-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.developer.audit">監査ログ</button>
+              <button id="developer-open-implementation" type="button" class="secondary-btn" data-dict-key="ui.label.developer.implementation">実装状況</button>
+              <button id="developer-open-manual-redac" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
+              <button id="developer-open-manual-user" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
+            </div>
+          </div>
         </header>
 
         <section class="page-header">
@@ -1589,6 +1600,191 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <p class="note" data-dict-key="ui.desc.audit.actions">traceIdで証跡を確認します。</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-developer-map" class="app-pane" data-pane="developer-map" data-role="admin">
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</div>
+                <div class="panel-body repo-map-overview">
+                  <div class="repo-map-heading" data-dict-key="ui.label.developer.systemOverview">システム全体像</div>
+                  <p id="repo-map-overview-line1" class="repo-map-line">-</p>
+                  <p id="repo-map-overview-line2" class="repo-map-line">-</p>
+                  <p id="repo-map-overview-line3" class="repo-map-line">-</p>
+                  <div class="repo-map-meta">
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.version">バージョン</span>
+                      <span id="repo-map-version" class="metric-value">-</span>
+                    </div>
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.updatedAt">最終更新日</span>
+                      <span id="repo-map-generated-at" class="metric-value">-</span>
+                    </div>
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.testCount">テスト件数</span>
+                      <span id="repo-map-test-count" class="metric-value">-</span>
+                    </div>
+                  </div>
+                  <div class="row row-top">
+                    <button id="repo-map-reload" type="button" data-dict-key="ui.label.developer.reload">Repo Map更新</button>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.developer.categories">機能カード一覧</div>
+                <div id="repo-map-categories" class="repo-map-categories"></div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div id="developer-map-implementation" class="panel">
+                <div class="panel-title" data-dict-key="ui.label.developer.implementation">実装状況</div>
+                <div class="panel-body">
+                  <div class="repo-map-meta">
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.completed">実装済み</span>
+                      <span id="repo-map-implemented-count" class="metric-value">-</span>
+                    </div>
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.legacy">非推奨</span>
+                      <span id="repo-map-legacy-count" class="metric-value">-</span>
+                    </div>
+                    <div>
+                      <span class="metric-label" data-dict-key="ui.label.developer.lastCommit">直近コミット</span>
+                      <span id="repo-map-last-commit" class="metric-value metric-truncate">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.developer.matrix">ステップ通知マップ</div>
+                <div class="panel-body">
+                  <div class="table-wrap">
+                    <table class="table table-compact repo-map-matrix-table">
+                      <thead id="repo-map-matrix-head"></thead>
+                      <tbody id="repo-map-matrix-rows"></tbody>
+                    </table>
+                  </div>
+                  <div id="repo-map-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため NOT AVAILABLE を表示します。</div>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <button id="repo-map-open-settings" type="button" data-dict-key="ui.label.developer.systemState">システム状態</button>
+                  <button id="repo-map-open-audit" type="button" data-dict-key="ui.label.developer.audit">監査ログ</button>
+                  <button id="repo-map-open-manual-redac" type="button" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
+                  <button id="repo-map-open-manual-user" type="button" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-developer-manual-redac" class="app-pane" data-pane="developer-manual-redac" data-role="admin">
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.manual.redac.title">取説（Redac向け）</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.manual.redac.lead">現場説明で使う要点を、技術語を避けて表示します。</p>
+                  <div class="manual-grid">
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.redac.canDo">いま何ができるか</h3>
+                      <ul id="manual-redac-can-do" class="repo-map-list"></ul>
+                    </section>
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.redac.safety">安全設計</h3>
+                      <ul id="manual-redac-safety" class="repo-map-list"></ul>
+                    </section>
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.redac.flow">運用フロー</h3>
+                      <ul id="manual-redac-flow" class="repo-map-list"></ul>
+                    </section>
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.redac.roadmap">拡張予定</h3>
+                      <ul id="manual-redac-roadmap" class="repo-map-list"></ul>
+                    </section>
+                  </div>
+                  <section class="manual-card">
+                    <h3 data-dict-key="ui.label.manual.redac.faq">FAQ</h3>
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.manual.faq.q">質問</th>
+                          <th data-dict-key="ui.label.manual.faq.a">回答</th>
+                        </tr>
+                      </thead>
+                      <tbody id="manual-redac-faq-rows"></tbody>
+                    </table>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.manual.evidence">根拠ファイル</div>
+                <div class="panel-body">
+                  <ul id="manual-redac-evidence" class="repo-map-list mono-list"></ul>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <button id="manual-redac-open-map" type="button" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</button>
+                  <button id="manual-redac-open-user" type="button" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="pane-developer-manual-user" class="app-pane" data-pane="developer-manual-user" data-role="admin">
+          <div class="pane-grid">
+            <div class="pane-main">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.manual.user.title">取説（ユーザー向け）</div>
+                <div class="panel-body">
+                  <p class="note" data-dict-key="ui.desc.manual.user.lead">サービス説明と個人情報保護の要点を表示します。</p>
+                  <div class="manual-grid">
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.user.overview">サービスでできること</h3>
+                      <ul id="manual-user-overview" class="repo-map-list"></ul>
+                    </section>
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.user.privacy">個人情報保護</h3>
+                      <ul id="manual-user-privacy" class="repo-map-list"></ul>
+                    </section>
+                    <section class="manual-card">
+                      <h3 data-dict-key="ui.label.manual.user.consultation">相談方法</h3>
+                      <ul id="manual-user-consultation" class="repo-map-list"></ul>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pane-detail">
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.manual.evidence">根拠ファイル</div>
+                <div class="panel-body">
+                  <ul id="manual-user-evidence" class="repo-map-list mono-list"></ul>
+                </div>
+              </div>
+            </div>
+            <aside class="pane-actions">
+              <div class="action-panel">
+                <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
+                <div class="panel-body">
+                  <button id="manual-user-open-map" type="button" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</button>
+                  <button id="manual-user-open-redac" type="button" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
                 </div>
               </div>
             </aside>

@@ -19,6 +19,8 @@
     "start:webhook": "SERVICE_MODE=webhook node src/index.js",
     "preflight": "node -e \"const fs=require('fs'); const pkg=require('./package.json'); if(!pkg.scripts||!pkg.scripts.start) throw new Error('missing scripts.start'); if(!fs.existsSync('src/index.js')) throw new Error('missing src/index.js'); console.log('preflight ok');\"",
     "verify:day": "node scripts/phase21_verify_day_window.js",
-    "verify:phase21": "node scripts/phase21_verify_day_window.js --track-base-url \"$TRACK_BASE_URL\" --linkRegistryId \"$LINK_REGISTRY_ID\""
+    "verify:phase21": "node scripts/phase21_verify_day_window.js --track-base-url \"$TRACK_BASE_URL\" --linkRegistryId \"$LINK_REGISTRY_ID\"",
+    "repo-map:generate": "node scripts/generate_repo_map.js",
+    "repo-map:check": "node scripts/generate_repo_map.js --check"
   }
 }

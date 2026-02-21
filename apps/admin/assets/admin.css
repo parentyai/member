@@ -1512,7 +1512,7 @@ body.app-body {
   height: 64px;
   margin-bottom: 0;
   padding: 0 var(--space-5);
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   z-index: 20;
@@ -1552,6 +1552,24 @@ body.app-body {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+}
+
+.top-developer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-end;
+}
+
+.top-developer-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.top-developer-actions .secondary-btn {
+  padding: 4px 10px;
 }
 
 .secondary-btn {
@@ -1660,6 +1678,114 @@ details:not([open]) > *:not(summary) {
   display: block;
 }
 
+.repo-map-overview {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.repo-map-heading {
+  font-size: var(--font-16);
+  font-weight: 700;
+}
+
+.repo-map-line {
+  margin: 0;
+  font-size: var(--font-14);
+}
+
+.repo-map-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+}
+
+.repo-map-categories {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.repo-map-category {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.repo-map-category-title {
+  margin: 0;
+  font-size: var(--font-16);
+}
+
+.repo-map-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.repo-map-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.repo-map-card-title {
+  font-weight: 700;
+}
+
+.repo-map-card-subtitle {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.repo-map-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.mono-list {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: var(--font-12);
+}
+
+.repo-map-matrix-table th,
+.repo-map-matrix-table td {
+  vertical-align: top;
+  min-width: 120px;
+}
+
+.manual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.manual-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3);
+}
+
+.manual-card h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-14);
+}
+
+.metric-truncate {
+  display: inline-block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1100px) {
   .app-nav {
     position: static;
@@ -1675,9 +1801,23 @@ details:not([open]) > *:not(summary) {
   .app-topbar {
     left: 0;
     padding: 0 var(--space-3);
+    height: auto;
+    min-height: 64px;
   }
 
   .page-header {
+    grid-template-columns: 1fr;
+  }
+
+  .top-developer {
+    align-items: stretch;
+  }
+
+  .top-developer-actions {
+    justify-content: flex-start;
+  }
+
+  .manual-grid {
     grid-template-columns: 1fr;
   }
 }

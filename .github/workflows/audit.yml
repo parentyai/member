@@ -26,6 +26,9 @@ jobs:
       - name: Verify docs
         run: npm run test:docs
 
+      - name: Verify repo map inputs are generated
+        run: npm run repo-map:check
+
   audit:
     runs-on: ubuntu-latest
     steps:
