@@ -10,65 +10,107 @@
     <div id="app-shell" class="app-shell" data-role="operator">
       <aside class="app-nav">
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
-        <button class="nav-item is-active" data-pane-target="home">
-          <span class="nav-icon" aria-hidden="true">H</span>
-          <span data-dict-key="ui.label.nav.home">ホーム</span>
-        </button>
-        <button class="nav-item" data-pane-target="composer">
-          <span class="nav-icon" aria-hidden="true">C</span>
-          <span data-dict-key="ui.label.nav.compose">通知配信</span>
-        </button>
-        <button class="nav-item" data-pane-target="monitor">
-          <span class="nav-icon" aria-hidden="true">M</span>
-          <span data-dict-key="ui.label.nav.monitor">配信結果</span>
-        </button>
-        <button class="nav-item" data-pane-target="errors">
-          <span class="nav-icon" aria-hidden="true">E</span>
-          <span data-dict-key="ui.label.nav.errors">異常対応</span>
-        </button>
-        <button class="nav-item" data-pane-target="read-model">
-          <span class="nav-icon" aria-hidden="true">R</span>
-          <span data-dict-key="ui.label.nav.readModel">通知集計</span>
-        </button>
-        <button class="nav-item" data-pane-target="vendors">
-          <span class="nav-icon" aria-hidden="true">V</span>
-          <span data-dict-key="ui.label.nav.vendors">Vendor Hub</span>
-        </button>
-        <button class="nav-item" data-pane-target="city-pack">
-          <span class="nav-icon" aria-hidden="true">CP</span>
-          <span data-dict-key="ui.label.nav.cityPack">City Pack監査</span>
-        </button>
-        <button class="nav-item" data-pane-target="audit">
-          <span class="nav-icon" aria-hidden="true">A</span>
-          <span data-dict-key="ui.label.nav.audit">証跡</span>
-        </button>
-        <button class="nav-item" data-pane-target="settings">
-          <span class="nav-icon" aria-hidden="true">S</span>
-          <span data-dict-key="ui.label.nav.settings">設定</span>
-        </button>
-        <button class="nav-item" data-pane-target="llm" data-role="admin">
-          <span class="nav-icon" aria-hidden="true">L</span>
-          <span data-dict-key="ui.label.nav.llm">LLM支援</span>
-        </button>
-        <button class="nav-item" data-pane-target="maintenance" data-role="admin">
-          <span class="nav-icon" aria-hidden="true">M</span>
-          <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
-        </button>
+
+        <div class="nav-group">
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.dashboard">ダッシュボード</div>
+          <button class="nav-item is-active" data-pane-target="home">
+            <span class="nav-icon" aria-hidden="true">D</span>
+            <span data-dict-key="ui.label.nav.dashboard">ダッシュボード</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.notifications">通知</div>
+          <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-inputs">
+            <span class="nav-icon" aria-hidden="true">N</span>
+            <span data-dict-key="ui.label.nav.notifyCreate">作成</span>
+          </button>
+          <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-saved-panel">
+            <span class="nav-icon" aria-hidden="true">L</span>
+            <span data-dict-key="ui.label.nav.notifyList">一覧</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.users">ユーザー</div>
+          <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-user-search">
+            <span class="nav-icon" aria-hidden="true">U</span>
+            <span data-dict-key="ui.label.nav.usersSearch">検索</span>
+          </button>
+          <button class="nav-item" data-pane-target="read-model">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span data-dict-key="ui.label.nav.usersStatus">状態一覧</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.communication">コミュニケーション</div>
+          <button class="nav-item" data-pane-target="audit">
+            <span class="nav-icon" aria-hidden="true">F</span>
+            <span data-dict-key="ui.label.nav.faqHistory">FAQ履歴</span>
+          </button>
+          <button class="nav-item" data-pane-target="llm" data-role="admin">
+            <span class="nav-icon" aria-hidden="true">K</span>
+            <span data-dict-key="ui.label.nav.faqKnowledge">FAQナレッジ管理</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-item" data-pane-target="city-pack">
+            <span class="nav-icon" aria-hidden="true">CP</span>
+            <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
+          </button>
+          <button class="nav-item" data-pane-target="vendors">
+            <span class="nav-icon" aria-hidden="true">V</span>
+            <span data-dict-key="ui.label.nav.vendorManage">ベンダー管理</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
+          <button class="nav-item" data-pane-target="errors">
+            <span class="nav-icon" aria-hidden="true">O</span>
+            <span data-dict-key="ui.label.nav.opsStatus">状態確認</span>
+          </button>
+          <button class="nav-item" data-pane-target="audit">
+            <span class="nav-icon" aria-hidden="true">A</span>
+            <span data-dict-key="ui.label.nav.opsDecision">判断ログ</span>
+          </button>
+          <button class="nav-item" data-pane-target="settings">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span data-dict-key="ui.label.nav.settings">設定</span>
+          </button>
+          <button class="nav-item" data-pane-target="maintenance" data-role="admin">
+            <span class="nav-icon" aria-hidden="true">M</span>
+            <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
+          </button>
+        </div>
+
+        <div class="legacy-nav" aria-hidden="true">
+          <button class="nav-item" data-pane-target="monitor">
+            <span class="nav-icon" aria-hidden="true">M</span>
+            <span data-dict-key="ui.label.nav.monitor">配信結果</span>
+          </button>
+          <button class="nav-item" data-pane-target="errors">
+            <span class="nav-icon" aria-hidden="true">E</span>
+            <span data-dict-key="ui.label.nav.errors">異常対応</span>
+          </button>
+          <button class="nav-item" data-pane-target="read-model">
+            <span class="nav-icon" aria-hidden="true">R</span>
+            <span data-dict-key="ui.label.nav.readModel">通知集計</span>
+          </button>
+          <button class="nav-item" data-pane-target="llm" data-role="admin">
+            <span class="nav-icon" aria-hidden="true">L</span>
+            <span data-dict-key="ui.label.nav.llm">LLM支援</span>
+          </button>
+        </div>
       </aside>
 
       <main class="app-content">
         <header class="app-topbar">
-          <div class="top-metric">
-            <div class="top-label" data-dict-key="ui.label.top.todo">今日の要対応</div>
-            <div id="top-todo" class="top-value">0</div>
-          </div>
-          <div class="top-metric">
-            <div class="top-label" data-dict-key="ui.label.top.health">状態内訳</div>
-            <div id="top-health" class="top-sub" data-dict-key="ui.desc.top.healthDefault">要対応 0 / 注意 0 / 問題なし 0 / 未設定 0</div>
-          </div>
-          <div class="top-metric">
-            <div class="top-label" data-dict-key="ui.label.top.anomaly">直近の異常</div>
-            <div id="top-anomaly" class="top-sub">-</div>
+          <div class="top-metric top-metric-wide">
+            <div class="top-label" data-dict-key="ui.label.nav.home">ダッシュボード</div>
+            <div class="top-sub" data-dict-key="ui.desc.home.dashboardLead">通知配信の判断指標を期間別に確認します。</div>
           </div>
           <div class="top-role">
             <span class="role-label" data-dict-key="ui.label.role">Role</span>
@@ -79,12 +121,22 @@
           </div>
         </header>
 
-        <h1 data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
+        <section class="page-header">
+          <div>
+            <h1 id="page-title" data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
+            <p id="page-subtitle" class="page-subtitle" data-dict-key="ui.desc.page.home">通知配信の判断指標を期間別に確認します。</p>
+          </div>
+          <div class="page-header-actions">
+            <button id="page-action-primary" type="button" class="secondary-btn hidden"></button>
+            <button id="page-action-secondary" type="button" class="secondary-btn hidden"></button>
+            <button id="header-consult-link" type="button" class="secondary-btn" data-dict-key="ui.label.header.consult">相談窓口</button>
+          </div>
+        </section>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">
           <div class="decision-card" id="home-decision-card">
             <div class="decision-card-header">
-              <div class="decision-title" data-dict-key="ui.label.home.today">今日の要対応</div>
+              <div class="decision-title" data-dict-key="ui.label.nav.dashboard">ダッシュボード</div>
               <span id="home-decision-state" class="decision-state state-ready">READY</span>
             </div>
             <div id="home-decision-reason1" class="decision-reason">-</div>
@@ -94,76 +146,78 @@
               <span id="home-decision-updated">-</span>
             </div>
             <div class="decision-actions">
-              <button type="button" class="decision-action-btn" data-open-pane="errors" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
-              <button type="button" class="decision-action-btn" data-open-pane="composer" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
-              <button type="button" class="decision-action-btn" data-open-pane="monitor" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+              <button id="home-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-open-pane="composer">作成・編集</button>
+              <button id="home-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-open-pane="monitor">有効化・公開</button>
+              <button id="home-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-open-pane="errors">停止・無効化</button>
             </div>
           </div>
-          <details id="home-pane-details" class="decision-details section">
+          <details id="home-pane-details" class="decision-details section" open>
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="pane-grid">
-              <div class="pane-main">
-                <div class="panel">
-                  <div class="panel-title" data-dict-key="ui.label.home.tasks">今日やること</div>
-                  <div class="panel-body task-card-list">
-                    <button type="button" class="task-card-btn" data-open-pane="errors">
-                      <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
-                    </button>
-                    <button type="button" class="task-card-btn" data-open-pane="composer">
-                      <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
-                    </button>
-                    <button type="button" class="task-card-btn" data-open-pane="monitor">
-                      <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
-                    </button>
-                    <button type="button" class="task-card-btn" data-open-pane="city-pack">
-                      <span data-dict-key="ui.label.home.task.cityPack">City Pack情報源を監査</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="pane-detail">
-                <div class="panel">
-                  <div class="panel-title" data-dict-key="ui.label.home.today">今日の要対応</div>
-                  <div class="panel-body">
-                    <div class="today-metrics">
-                      <div><span class="metric-label" data-dict-key="ui.metric.todo.count">要対応件数</span><span id="home-todo" class="metric-value">0</span></div>
-                      <div><span class="metric-label" data-dict-key="ui.metric.todo.causes">主因トップ3</span><span id="home-causes" class="metric-value">-</span></div>
-                      <div><span class="metric-label" data-dict-key="ui.metric.todo.anomaly">直近の異常</span><span id="home-anomaly" class="metric-value">-</span></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <aside class="pane-actions">
-                <div class="action-panel">
-                  <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
-                  <div class="panel-body">
-                    <div class="note">
-                      <label data-dict-key="ui.label.home.test.notificationId" data-dict-tip="ui.help.home.test.notificationId">通知ID</label>
-                      <input id="home-test-notification-id" class="input-inline input-min-260" />
-                    </div>
-                    <div class="note">
-                      <label data-dict-key="ui.label.home.test.lineUserId" data-dict-tip="ui.help.home.test.lineUserId">LINEユーザーID</label>
-                      <input id="home-test-line-user-id" class="input-inline input-min-260" />
-                    </div>
-                    <div class="note">
-                      <label data-dict-key="ui.label.home.test.mode" data-dict-tip="ui.help.home.test.mode">テスト方式</label>
-                      <select id="home-test-mode" class="select-inline">
-                        <option value="dry_run" data-dict-key="ui.value.home.test.mode.dry">検証のみ</option>
-                        <option value="self_send" data-dict-key="ui.value.home.test.mode.self">自己送信</option>
-                      </select>
-                    </div>
-                    <div class="row row-top">
-                      <button id="home-run-test" type="button" data-dict-key="ui.label.home.test.run">テスト実行（安全）</button>
-                    </div>
-                    <details class="section">
-                      <summary data-dict-key="ui.label.home.test.result">テスト結果</summary>
-                      <pre id="home-test-result">-</pre>
-                    </details>
-                  </div>
-                </div>
-              </aside>
-            </div>
           </details>
+          <div class="panel dashboard-panel">
+            <div class="panel-title" data-dict-key="ui.label.home.dashboard">ダッシュボード</div>
+            <div class="panel-body">
+              <div class="row dashboard-controls">
+                <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
+                <select id="dashboard-window-months" class="select-inline">
+                  <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                  <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                  <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                  <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                </select>
+                <button id="dashboard-reload" type="button" data-dict-key="ui.label.home.reload">指標を更新</button>
+              </div>
+              <div class="dashboard-kpi-grid">
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.lineRegistered">LINE登録者数推移</div>
+                  <div id="dashboard-kpi-registrations-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-registrations-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-registrations-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.redacMatch">リダックIDマッチ率</div>
+                  <div id="dashboard-kpi-membership-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-membership-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-membership-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数推移</div>
+                  <div id="dashboard-kpi-step-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-step-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-step-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.reactionRate">通知反応率推移</div>
+                  <div id="dashboard-kpi-churn-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-churn-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-churn-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.consultClicks">相談クリック件数推移</div>
+                  <div id="dashboard-kpi-ctr-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-ctr-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-ctr-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card">
+                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.killWarn">KillSwitch/WARN推移</div>
+                  <div id="dashboard-kpi-citypack-value" class="dashboard-kpi-value">-</div>
+                  <div id="dashboard-kpi-citypack-spark" class="kpi-sparkline"></div>
+                  <div id="dashboard-kpi-citypack-note" class="dashboard-kpi-note">-</div>
+                </div>
+              </div>
+              <div class="task-card-list dashboard-shortcuts">
+                <button type="button" class="task-card-btn" data-open-pane="composer">
+                  <span data-dict-key="ui.label.home.task.compose">通知を作成・承認</span>
+                </button>
+                <button type="button" class="task-card-btn" data-open-pane="monitor">
+                  <span data-dict-key="ui.label.home.task.monitor">結果と証跡を確認</span>
+                </button>
+                <button type="button" class="task-card-btn" data-open-pane="errors">
+                  <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="pane-composer" class="app-pane" data-pane="composer">
@@ -189,12 +243,9 @@
             <div class="composer-workspace">
               <div class="panel composer-header">
                 <div class="panel-body">
+                  <input type="hidden" id="traceId" />
+                  <div id="composer-killswitch-banner" class="alert-banner"></div>
                   <div class="composer-header-row">
-                    <div class="composer-trace">
-                      <label for="traceId" data-dict-key="ui.label.traceId" data-dict-tip="ui.help.traceId">追跡ID</label>
-                      <input type="text" id="traceId" class="input-inline input-trace" />
-                      <button id="regen-trace" type="button" data-dict-key="ui.label.trace.regen">再生成</button>
-                    </div>
                     <div class="composer-status-wrap">
                       <span class="metric-label" data-dict-key="ui.label.composer.statusSimple">状態</span>
                       <span id="composer-status-pill" class="badge badge-info">draft</span>
@@ -209,18 +260,18 @@
               </div>
 
               <div class="composer-layout">
-                <div class="panel composer-form-panel">
+                <div id="composer-inputs" class="panel composer-form-panel">
                   <div class="panel-title" data-dict-key="ui.label.composer.inputs">通知入力</div>
                   <div class="panel-body">
                     <div class="input-grid">
                       <div>
                         <label for="notificationType" data-dict-key="ui.label.composer.type" data-dict-tip="ui.help.composer.type">通知タイプ</label>
                         <select id="notificationType">
-                          <option value="GENERAL">GENERAL</option>
-                          <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
-                          <option value="VENDOR">VENDOR</option>
-                          <option value="AB">AB</option>
-                          <option value="STEP" selected>STEP</option>
+                          <option value="GENERAL" data-dict-key="ui.value.composer.type.general">一般</option>
+                          <option value="ANNOUNCEMENT" data-dict-key="ui.value.composer.type.announcement">お知らせ</option>
+                          <option value="VENDOR" data-dict-key="ui.value.composer.type.vendor">ベンダー</option>
+                          <option value="AB" data-dict-key="ui.value.composer.type.ab">ABテスト</option>
+                          <option value="STEP" selected data-dict-key="ui.value.composer.type.step">ステップ</option>
                         </select>
                       </div>
                       <div>
@@ -232,8 +283,12 @@
                         <textarea id="body" data-dict-placeholder="ui.desc.composer.bodyPlaceholder" placeholder=""></textarea>
                       </div>
                       <div>
-                        <label for="ctaText" data-dict-key="ui.label.composer.cta" data-dict-tip="ui.help.composer.cta">ボタン文言</label>
+                        <label for="ctaText" data-dict-key="ui.label.composer.cta1" data-dict-tip="ui.help.composer.cta">ボタン文言1</label>
                         <input id="ctaText" data-dict-placeholder="ui.desc.composer.ctaPlaceholder" placeholder="" />
+                      </div>
+                      <div>
+                        <label for="ctaText2" data-dict-key="ui.label.composer.cta2" data-dict-tip="ui.help.composer.cta2">ボタン文言2</label>
+                        <input id="ctaText2" data-dict-placeholder="ui.desc.composer.cta2Placeholder" placeholder="" />
                       </div>
                       <div>
                         <label for="linkRegistryId" data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
@@ -242,14 +297,15 @@
                       <div>
                         <label for="notificationCategory" data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
                         <select id="notificationCategory">
-                          <option value="DEADLINE_REQUIRED">DEADLINE_REQUIRED</option>
-                          <option value="IMMEDIATE_ACTION">IMMEDIATE_ACTION</option>
-                          <option value="SEQUENCE_GUIDANCE" selected>SEQUENCE_GUIDANCE</option>
-                          <option value="TARGETED_ONLY">TARGETED_ONLY</option>
-                          <option value="COMPLETION_CONFIRMATION">COMPLETION_CONFIRMATION</option>
+                          <option value="DEADLINE_REQUIRED" data-dict-key="ui.value.composer.category.deadline">期限必須</option>
+                          <option value="IMMEDIATE_ACTION" data-dict-key="ui.value.composer.category.immediate">即時対応</option>
+                          <option value="SEQUENCE_GUIDANCE" selected data-dict-key="ui.value.composer.category.sequence">順次案内</option>
+                          <option value="TARGETED_ONLY" data-dict-key="ui.value.composer.category.targeted">対象限定</option>
+                          <option value="COMPLETION_CONFIRMATION" data-dict-key="ui.value.composer.category.completion">完了確認</option>
                         </select>
                       </div>
                     </div>
+                    <div id="composer-type-hint" class="note" data-dict-key="ui.desc.composer.typeHint.step">ステップ通知: シナリオとステップを指定して対象を絞り込みます。</div>
                     <div id="composer-type-fields" class="composer-type-fields">
                       <div class="input-grid type-fields" data-type-fields="ANNOUNCEMENT">
                         <div class="row">
@@ -301,23 +357,23 @@
                           <div class="flex-1">
                             <label for="scenarioKey" data-dict-key="ui.label.composer.scenario" data-dict-tip="ui.help.composer.scenario">シナリオ</label>
                             <select id="scenarioKey">
-                              <option value="A">A</option>
-                              <option value="C">C</option>
+                              <option value="A" data-dict-key="ui.value.scenario.A">A単身</option>
+                              <option value="B" data-dict-key="ui.value.scenario.B" disabled>B夫婦（未対応）</option>
+                              <option value="C" data-dict-key="ui.value.scenario.C">C帯同前</option>
+                              <option value="D" data-dict-key="ui.value.scenario.D" disabled>D帯同後（未対応）</option>
                             </select>
                           </div>
                           <div class="flex-1">
                             <label for="stepKey" data-dict-key="ui.label.composer.step" data-dict-tip="ui.help.composer.step">ステップ</label>
                             <select id="stepKey">
-                              <option value="3mo">3mo</option>
-                              <option value="2mo">2mo</option>
-                              <option value="1mo">1mo</option>
-                              <option value="week" selected>week</option>
-                              <option value="after1w">after1w</option>
-                              <option value="after1mo">after1mo</option>
+                              <option value="3mo" data-dict-key="ui.value.step.3mo">Day-90</option>
+                              <option value="1mo" data-dict-key="ui.value.step.1mo">Day-30</option>
+                              <option value="week" selected data-dict-key="ui.value.step.week">Day-7</option>
+                              <option value="after1w" data-dict-key="ui.value.step.after1w">赴任後1週</option>
                             </select>
                           </div>
                         </div>
-                        <div class="row">
+                        <div class="row composer-hidden-input">
                           <div class="flex-1">
                             <label for="targetRegion" data-dict-key="ui.label.composer.region" data-dict-tip="ui.help.composer.region">地域（任意）</label>
                             <input id="targetRegion" />
@@ -346,18 +402,20 @@
                         <div class="line-preview-title" id="composer-preview-title">-</div>
                         <div class="line-preview-text" id="composer-preview-body">-</div>
                         <button type="button" class="line-preview-cta" id="composer-preview-cta">-</button>
+                        <button type="button" class="line-preview-cta line-preview-cta-secondary" id="composer-preview-cta2">-</button>
                         <div class="line-preview-link" id="composer-preview-link">-</div>
                       </div>
                     </div>
                     <div class="summary-badge">
-                      <span id="composer-safety" class="badge badge-ok" data-dict-key="ui.status.ok">問題なし</span>
+                      <span id="composer-safety" class="badge badge-ok">OK</span>
                       <span data-dict-key="ui.label.composer.safety">送信前安全チェック</span>
                     </div>
+                    <ul id="composer-safety-reasons" class="composer-safety-reasons"></ul>
                   </div>
                 </div>
               </div>
 
-              <div class="panel composer-saved-panel">
+              <div id="composer-saved-panel" class="panel composer-saved-panel">
                 <div class="panel-title" data-dict-key="ui.label.composer.saved">保存済み通知</div>
                 <div class="panel-body">
                   <div class="input-grid">
@@ -369,50 +427,67 @@
                       <div class="flex-1">
                         <label for="composer-saved-status" data-dict-key="ui.label.composer.saved.status">状態</label>
                         <select id="composer-saved-status">
-                          <option value="">all</option>
-                          <option value="draft">draft</option>
-                          <option value="approved">approved</option>
-                          <option value="active">active</option>
-                          <option value="sent">sent</option>
+                          <option value="" data-dict-key="ui.value.common.all">すべて</option>
+                          <option value="draft" data-dict-key="ui.value.composer.status.draft">下書き</option>
+                          <option value="approved" data-dict-key="ui.value.composer.status.approved">承認済み</option>
+                          <option value="active" data-dict-key="ui.value.composer.status.approved">承認済み</option>
+                          <option value="sent" data-dict-key="ui.value.composer.status.executed">実行済み</option>
                         </select>
                       </div>
                       <div class="flex-1">
                         <label for="composer-saved-type" data-dict-key="ui.label.composer.saved.type">タイプ</label>
                         <select id="composer-saved-type">
-                          <option value="">all</option>
-                          <option value="GENERAL">GENERAL</option>
-                          <option value="ANNOUNCEMENT">ANNOUNCEMENT</option>
-                          <option value="VENDOR">VENDOR</option>
-                          <option value="AB">AB</option>
-                          <option value="STEP">STEP</option>
+                          <option value="" data-dict-key="ui.value.common.all">すべて</option>
+                          <option value="GENERAL" data-dict-key="ui.value.composer.type.general">一般</option>
+                          <option value="ANNOUNCEMENT" data-dict-key="ui.value.composer.type.announcement">お知らせ</option>
+                          <option value="VENDOR" data-dict-key="ui.value.composer.type.vendor">ベンダー</option>
+                          <option value="AB" data-dict-key="ui.value.composer.type.ab">ABテスト</option>
+                          <option value="STEP" data-dict-key="ui.value.composer.type.step">ステップ</option>
                         </select>
                       </div>
                     </div>
                     <div class="row">
                       <div class="flex-1">
                         <label for="composer-saved-category" data-dict-key="ui.label.composer.saved.category">カテゴリ</label>
-                        <input id="composer-saved-category" />
+                        <select id="composer-saved-category">
+                          <option value="" data-dict-key="ui.value.common.all">すべて</option>
+                          <option value="DEADLINE_REQUIRED" data-dict-key="ui.value.composer.category.deadline">期限必須</option>
+                          <option value="IMMEDIATE_ACTION" data-dict-key="ui.value.composer.category.immediate">即時対応</option>
+                          <option value="SEQUENCE_GUIDANCE" data-dict-key="ui.value.composer.category.sequence">順次案内</option>
+                          <option value="TARGETED_ONLY" data-dict-key="ui.value.composer.category.targeted">対象限定</option>
+                          <option value="COMPLETION_CONFIRMATION" data-dict-key="ui.value.composer.category.completion">完了確認</option>
+                        </select>
                       </div>
                       <div class="flex-1">
                         <label for="composer-saved-scenario" data-dict-key="ui.label.composer.saved.scenario">シナリオ</label>
-                        <input id="composer-saved-scenario" />
+                        <select id="composer-saved-scenario">
+                          <option value="" data-dict-key="ui.value.common.all">すべて</option>
+                          <option value="A" data-dict-key="ui.value.scenario.A">A単身</option>
+                          <option value="B" data-dict-key="ui.value.scenario.B" disabled>B夫婦（未対応）</option>
+                          <option value="C" data-dict-key="ui.value.scenario.C">C帯同前</option>
+                          <option value="D" data-dict-key="ui.value.scenario.D" disabled>D帯同後（未対応）</option>
+                        </select>
                       </div>
                       <div class="flex-1">
                         <label for="composer-saved-step" data-dict-key="ui.label.composer.saved.step">ステップ</label>
-                        <input id="composer-saved-step" />
+                        <select id="composer-saved-step">
+                          <option value="" data-dict-key="ui.value.common.all">すべて</option>
+                          <option value="3mo" data-dict-key="ui.value.step.3mo">Day-90</option>
+                          <option value="1mo" data-dict-key="ui.value.step.1mo">Day-30</option>
+                          <option value="week" data-dict-key="ui.value.step.week">Day-7</option>
+                          <option value="after1w" data-dict-key="ui.value.step.after1w">赴任後1週</option>
+                        </select>
                       </div>
                     </div>
                   </div>
                   <table class="table-compact composer-saved-table">
                     <thead>
                       <tr>
-                        <th data-dict-key="ui.label.composer.saved.col.title">タイトル</th>
-                        <th data-dict-key="ui.label.composer.saved.col.type">タイプ</th>
-                        <th data-dict-key="ui.label.composer.saved.col.status">状態</th>
-                        <th data-dict-key="ui.label.composer.saved.col.category">カテゴリ</th>
-                        <th data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</th>
-                        <th data-dict-key="ui.label.composer.saved.col.step">ステップ</th>
                         <th data-dict-key="ui.label.composer.saved.col.createdAt">作成日</th>
+                        <th data-dict-key="ui.label.composer.saved.col.title">タイトル</th>
+                        <th data-dict-key="ui.label.composer.saved.col.status">状態</th>
+                        <th data-dict-key="ui.label.composer.saved.col.targetCount">送信対象数</th>
+                        <th data-dict-key="ui.label.composer.saved.col.ctr">CTR</th>
                         <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
                       </tr>
                     </thead>
