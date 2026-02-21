@@ -51,21 +51,12 @@ module.exports = {
   async listTimelineEntriesByTraceId(traceId, limit) {
     if (!traceId) throw new Error('traceId required');
     const db = getDb();
-    // Avoid composite-index dependency (traceId + createdAt) by not using orderBy.
-    // Sort in-memory by createdAt desc.
-    let query = db.collection(COLLECTION).where('traceId', '==', traceId);
     const cap = typeof limit === 'number' ? limit : 50;
+    let query = db.collection(COLLECTION)
+      .where('traceId', '==', traceId)
+      .orderBy('createdAt', 'desc');
     if (cap) query = query.limit(cap);
     const snap = await query.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    rows.sort((a, b) => {
-      const atA = a && a.createdAt;
-      const atB = b && b.createdAt;
-      const msA = atA && typeof atA.toMillis === 'function' ? atA.toMillis() : Date.parse(String(atA || '')) || 0;
-      const msB = atB && typeof atB.toMillis === 'function' ? atB.toMillis() : Date.parse(String(atB || '')) || 0;
-      if (msA !== msB) return msB - msA;
-      return String(b && b.id || '').localeCompare(String(a && a.id || ''));
-    });
-    return rows;
+    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   }
 };

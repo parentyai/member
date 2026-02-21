@@ -54,6 +54,8 @@ const state = {
   topCauses: '-',
   topCausesTip: '',
   topAnomaly: '-',
+  structDriftRuns: [],
+  structDriftLastResult: null,
   paneUpdatedAt: {}
 };
 
@@ -3115,7 +3117,145 @@ async function loadAudit() {
   const res = await fetch(`/api/admin/trace?traceId=${encodeURIComponent(traceId)}`, { headers: buildHeaders({}, traceId) });
   const data = await res.json();
   const result = document.getElementById('audit-result');
+  const detail = document.getElementById('audit-detail');
   if (result) result.textContent = JSON.stringify(data || {}, null, 2);
+  if (detail) detail.textContent = JSON.stringify(data || {}, null, 2);
+}
+
+function parseStructDriftScanLimit() {
+  const el = document.getElementById('struct-drift-scan-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 500;
+  return Math.min(Math.floor(value), 5000);
+}
+
+function readStructDriftResumeAfterUserId() {
+  const el = document.getElementById('struct-drift-resume-after');
+  const value = el && typeof el.value === 'string' ? el.value.trim() : '';
+  return value || null;
+}
+
+function renderStructDriftRuns(items) {
+  const tbody = document.getElementById('struct-drift-runs-rows');
+  const summaryEl = document.getElementById('struct-drift-summary');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (summaryEl) summaryEl.textContent = t('ui.desc.structDrift.summaryEmpty', '実行履歴はありません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      formatDateLabel(item.createdAt),
+      item.mode || '-',
+      Number.isFinite(Number(item.changedCount)) ? String(item.changedCount) : '-',
+      item.traceId || '-'
+    ];
+    cols.forEach((value, index) => {
+      const td = document.createElement('td');
+      if (index === 2) td.classList.add('cell-num');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const trace = item && item.traceId ? String(item.traceId) : '';
+      if (!trace) return;
+      const traceInput = document.getElementById('audit-trace');
+      if (traceInput) traceInput.value = trace;
+      void loadAudit().catch(() => {
+        showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+      });
+    });
+    tbody.appendChild(tr);
+  });
+  if (summaryEl) {
+    const latest = rows[0];
+    summaryEl.textContent = `${t('ui.label.structDrift.summary', '最新')}: ${formatDateLabel(latest.createdAt)} / ${latest.mode || '-'} / changed=${Number.isFinite(Number(latest.changedCount)) ? latest.changedCount : '-'}`;
+  }
+}
+
+function renderStructDriftResult(result) {
+  const pre = document.getElementById('struct-drift-result');
+  if (!pre) return;
+  pre.textContent = JSON.stringify(result || {}, null, 2);
+}
+
+async function loadStructDriftRuns(options) {
+  const opts = options || {};
+  const traceId = ensureTraceInput('audit-trace');
+  try {
+    const res = await fetch('/api/admin/struct-drift/backfill-runs?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.structDriftRuns = Array.isArray(data.items) ? data.items : [];
+    renderStructDriftRuns(state.structDriftRuns);
+    if (opts.notify) showToast(t('ui.toast.structDrift.runsLoaded', '構造ドリフト補正の実行履歴を更新しました'), 'ok');
+  } catch (_err) {
+    renderStructDriftRuns([]);
+    if (opts.notify) showToast(t('ui.toast.structDrift.runsLoadFail', '構造ドリフト補正の実行履歴取得に失敗しました'), 'danger');
+  }
+}
+
+async function runStructDriftBackfill(mode) {
+  const apply = mode === 'apply';
+  const traceId = ensureTraceInput('audit-trace');
+  const payload = {
+    scanLimit: parseStructDriftScanLimit(),
+    resumeAfterUserId: readStructDriftResumeAfterUserId(),
+    dryRun: !apply,
+    apply
+  };
+  if (apply) {
+    const approved = window.confirm(t('ui.confirm.structDrift.apply', '構造ドリフト補正を適用しますか？'));
+    if (!approved) {
+      showToast(t('ui.toast.structDrift.canceled', '構造ドリフト補正を中止しました'), 'warn');
+      return;
+    }
+    payload.confirmApply = true;
+  }
+  try {
+    const data = await postJson('/api/admin/struct-drift/backfill', payload, traceId);
+    state.structDriftLastResult = data || null;
+    renderStructDriftResult(data);
+    if (data && data.ok) {
+      const summary = data.summary || {};
+      const nextResume = summary && summary.nextResumeAfterUserId ? String(summary.nextResumeAfterUserId) : '';
+      if (nextResume) {
+        const resumeEl = document.getElementById('struct-drift-resume-after');
+        if (resumeEl) resumeEl.value = nextResume;
+      }
+      showToast(
+        apply
+          ? t('ui.toast.structDrift.applyOk', '構造ドリフト補正を適用しました')
+          : t('ui.toast.structDrift.dryOk', '構造ドリフト補正をdry-runで実行しました'),
+        'ok'
+      );
+      await loadStructDriftRuns({ notify: false });
+    } else {
+      showToast(
+        apply
+          ? t('ui.toast.structDrift.applyFail', '構造ドリフト補正の適用に失敗しました')
+          : t('ui.toast.structDrift.dryFail', '構造ドリフト補正dry-runに失敗しました'),
+        'danger'
+      );
+    }
+  } catch (_err) {
+    showToast(
+      apply
+        ? t('ui.toast.structDrift.applyFail', '構造ドリフト補正の適用に失敗しました')
+        : t('ui.toast.structDrift.dryFail', '構造ドリフト補正dry-runに失敗しました'),
+      'danger'
+    );
+  }
 }
 
 function normalizeComposerType(value) {
@@ -3803,6 +3943,16 @@ function setupAudit() {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
+  document.getElementById('struct-drift-runs-reload')?.addEventListener('click', () => {
+    void loadStructDriftRuns({ notify: true });
+  });
+  document.getElementById('struct-drift-run-dry')?.addEventListener('click', () => {
+    void runStructDriftBackfill('dry');
+  });
+  document.getElementById('struct-drift-run-apply')?.addEventListener('click', () => {
+    void runStructDriftBackfill('apply');
+  });
+  void loadStructDriftRuns({ notify: false });
 }
 
 function setupMonitorControls() {

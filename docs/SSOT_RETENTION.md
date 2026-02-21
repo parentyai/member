@@ -26,6 +26,7 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
 | city_pack_update_proposals | event | UNDEFINED | CONDITIONAL | YES |
 | ops_states | config | UNDEFINED | NO | NO |
 | ops_state (legacy) | config | UNDEFINED | NO | NO |
+| ops_read_model_snapshots | aggregate | UNDEFINED | CONDITIONAL | YES |
 | system_flags | config | UNDEFINED | NO | NO |
 
 ## Dry-run Job Contract
@@ -37,6 +38,19 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
   - `audit_logs` に `retention.dry_run.execute` を追記
   - retention policy 未定義コレクションを受け取った場合は `422 retention_policy_undefined` で fail-closed
   - fail-closed時は `audit_logs` に `retention.dry_run.blocked` を追記
+
+## Apply Job Contract (stg only / add-only)
+- Endpoint: `POST /internal/jobs/retention-apply`
+- Guard:
+  - internal token required
+  - `RETENTION_APPLY_ENABLED=1` が必須
+  - `ENV_NAME in {stg,stage,staging}` のみ実行可
+- Behavior:
+  - `deletable=NO` は常に除外
+  - `recomputable=true` のみ削除候補
+  - policy 未定義コレクションが含まれる場合は `422 retention_policy_undefined`
+  - 実行可能対象が0件の場合は `409 retention_apply_no_eligible_collections`
+  - 実行結果を `audit_logs` の `retention.apply.execute|blocked` に追記
 
 ## Policy Source (Add-only)
 - 実行時ポリシー定義: `src/domain/retention/retentionPolicy.js`

@@ -3,11 +3,13 @@
 const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12]);
 const MAX_SCAN_LIMIT = 3000;
 const DEFAULT_SCAN_LIMIT = 2000;
+const DEFAULT_SNAPSHOT_FRESHNESS_MINUTES = 60;
 
 function parseWindowMonths(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -94,6 +96,115 @@ function notAvailable(note) {
   };
 }
 
+function resolveSnapshotFreshnessMinutes() {
+  const value = Number(process.env.OPS_SNAPSHOT_FRESHNESS_MINUTES);
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_SNAPSHOT_FRESHNESS_MINUTES;
+  return Math.min(Math.floor(value), 1440);
+}
+
+function resolveSnapshotReadEnabled() {
+  const value = process.env.OPS_SNAPSHOT_READ_ENABLED;
+  if (value === '0' || value === 'false') return false;
+  return true;
+}
+
+function isSnapshotFresh(snapshot, freshnessMinutes) {
+  if (!snapshot || typeof snapshot !== 'object') return false;
+  const asOf = snapshot.asOf;
+  const asOfMs = typeof asOf === 'string' ? Date.parse(asOf) : NaN;
+  if (!Number.isFinite(asOfMs)) return false;
+  const nowMs = Date.now();
+  return nowMs - asOfMs <= freshnessMinutes * 60 * 1000;
+}
+
+async function computeDashboardKpis(windowMonths, scanLimit) {
+  const buckets = monthBuckets(windowMonths);
+  const [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
+    analyticsReadRepo.listAllUsers({ limit: scanLimit }),
+    analyticsReadRepo.listAllNotifications({ limit: scanLimit }),
+    analyticsReadRepo.listAllNotificationDeliveries({ limit: scanLimit }),
+    analyticsReadRepo.listAllEvents({ limit: scanLimit }),
+    linkRegistryRepo.listLinks({ limit: 500 }),
+    systemFlagsRepo.getKillSwitch()
+  ]);
+
+  const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
+  const normalizedNotifications = notifications.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
+
+  const registrationsSeries = countByBuckets(normalizedUsers, (row) => toMillis(row && row.createdAt), buckets);
+  const registrationTotal = registrationsSeries.reduce((sum, value) => sum + value, 0);
+
+  const membershipSeries = buckets.map((bucket) => {
+    let total = 0;
+    let matched = 0;
+    normalizedUsers.forEach((row) => {
+      const createdAt = toMillis(row && row.createdAt);
+      if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
+      total += 1;
+      if (row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()) matched += 1;
+    });
+    if (!total) return 0;
+    return Math.round((matched / total) * 1000) / 10;
+  });
+  const membershipMatched = normalizedUsers.filter((row) => row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()).length;
+
+  const notificationSeries = countByBuckets(normalizedNotifications, (row) => toMillis(row && row.createdAt), buckets);
+  const notificationTotal = notificationSeries.reduce((sum, value) => sum + value, 0);
+
+  const reactionSeries = buckets.map((bucket) => {
+    let delivered = 0;
+    let clicked = 0;
+    deliveries.forEach((row) => {
+      const payload = row && row.data ? row.data : row;
+      const sentAt = toMillis(payload && payload.sentAt);
+      if (!Number.isFinite(sentAt) || sentAt < bucket.start || sentAt >= bucket.end) return;
+      if (payload && payload.delivered === true) delivered += 1;
+      if (payload && payload.clickAt) clicked += 1;
+    });
+    if (!delivered) return 0;
+    return Math.round((clicked / delivered) * 1000) / 10;
+  });
+
+  const consultSeries = buckets.map((bucket) => {
+    let count = 0;
+    events.forEach((row) => {
+      const payload = row && row.data ? row.data : row;
+      const createdAt = toMillis(payload && payload.createdAt);
+      if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
+      const type = String(payload && payload.type ? payload.type : '').toUpperCase();
+      if (type.includes('CONSULT') || type.includes('FAQ') || type.includes('CONTACT')) count += 1;
+    });
+    return count;
+  });
+
+  const warnCount = links.filter((row) => row && row.lastHealth && row.lastHealth.state === 'WARN').length;
+  const killSwitchWarnSeries = buckets.map(() => warnCount + (killSwitch ? 1 : 0));
+
+  const kpis = {
+    registrations: simpleMetric(String(registrationTotal), registrationsSeries, `${windowMonths}ヶ月のLINE登録件数`),
+    membership: simpleMetric(ratioLabel(membershipMatched, normalizedUsers.length), membershipSeries, 'リダックくらぶID一致率'),
+    stepStates: simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`),
+    churnRate: simpleMetric(
+      reactionSeries.length ? `${reactionSeries[reactionSeries.length - 1]}%` : '0%',
+      reactionSeries,
+      '通知反応率（クリック / 配信）'
+    ),
+    ctrTrend: simpleMetric(
+      String(consultSeries.reduce((sum, value) => sum + value, 0)),
+      consultSeries,
+      '相談クリック件数（events集計）'
+    ),
+    cityPackUsage: links.length
+      ? simpleMetric(`${warnCount}${killSwitch ? ' + KillSwitch ON' : ''}`, killSwitchWarnSeries, 'WARNリンク数 + KillSwitch状態')
+      : notAvailable('link_registryが未設定のため取得できません')
+  };
+
+  return {
+    kpis,
+    asOf: new Date().toISOString()
+  };
+}
+
 async function handleDashboardKpi(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -101,87 +212,41 @@ async function handleDashboardKpi(req, res) {
   const requestId = resolveRequestId(req);
   const windowMonths = parseWindowMonths(req);
   const scanLimit = parseScanLimit(req);
-  const buckets = monthBuckets(windowMonths);
+  const freshnessMinutes = resolveSnapshotFreshnessMinutes();
+  const snapshotReadEnabled = resolveSnapshotReadEnabled();
+  const snapshotKey = String(windowMonths);
   try {
-    const [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
-      analyticsReadRepo.listAllUsers({ limit: scanLimit }),
-      analyticsReadRepo.listAllNotifications({ limit: scanLimit }),
-      analyticsReadRepo.listAllNotificationDeliveries({ limit: scanLimit }),
-      analyticsReadRepo.listAllEvents({ limit: scanLimit }),
-      linkRegistryRepo.listLinks({ limit: 500 }),
-      systemFlagsRepo.getKillSwitch()
-    ]);
+    if (snapshotReadEnabled) {
+      const snapshot = await opsSnapshotsRepo.getSnapshot('dashboard_kpi', snapshotKey);
+      if (isSnapshotFresh(snapshot, freshnessMinutes) && snapshot && snapshot.data && snapshot.data.kpis) {
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          ok: true,
+          traceId,
+          requestId,
+          windowMonths,
+          scanLimit,
+          source: 'snapshot',
+          asOf: snapshot.asOf || null,
+          freshnessMinutes: snapshot.freshnessMinutes || freshnessMinutes,
+          kpis: snapshot.data.kpis
+        }));
+        return;
+      }
+    }
 
-    const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
-    const normalizedNotifications = notifications.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
-
-    const registrationsSeries = countByBuckets(normalizedUsers, (row) => toMillis(row && row.createdAt), buckets);
-    const registrationTotal = registrationsSeries.reduce((sum, value) => sum + value, 0);
-
-    const membershipSeries = buckets.map((bucket) => {
-      let total = 0;
-      let matched = 0;
-      normalizedUsers.forEach((row) => {
-        const createdAt = toMillis(row && row.createdAt);
-        if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
-        total += 1;
-        if (row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()) matched += 1;
+    const computed = await computeDashboardKpis(windowMonths, scanLimit);
+    const kpis = computed.kpis;
+    if (snapshotReadEnabled) {
+      await opsSnapshotsRepo.saveSnapshot({
+        snapshotType: 'dashboard_kpi',
+        snapshotKey,
+        asOf: computed.asOf,
+        freshnessMinutes,
+        sourceTraceId: traceId,
+        data: { kpis, windowMonths, scanLimit }
       });
-      if (!total) return 0;
-      return Math.round((matched / total) * 1000) / 10;
-    });
-    const membershipMatched = normalizedUsers.filter((row) => row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()).length;
-
-    const notificationSeries = countByBuckets(normalizedNotifications, (row) => toMillis(row && row.createdAt), buckets);
-    const notificationTotal = notificationSeries.reduce((sum, value) => sum + value, 0);
-
-    const reactionSeries = buckets.map((bucket) => {
-      let delivered = 0;
-      let clicked = 0;
-      deliveries.forEach((row) => {
-        const payload = row && row.data ? row.data : row;
-        const sentAt = toMillis(payload && payload.sentAt);
-        if (!Number.isFinite(sentAt) || sentAt < bucket.start || sentAt >= bucket.end) return;
-        if (payload && payload.delivered === true) delivered += 1;
-        if (payload && payload.clickAt) clicked += 1;
-      });
-      if (!delivered) return 0;
-      return Math.round((clicked / delivered) * 1000) / 10;
-    });
-
-    const consultSeries = buckets.map((bucket) => {
-      let count = 0;
-      events.forEach((row) => {
-        const payload = row && row.data ? row.data : row;
-        const createdAt = toMillis(payload && payload.createdAt);
-        if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
-        const type = String(payload && payload.type ? payload.type : '').toUpperCase();
-        if (type.includes('CONSULT') || type.includes('FAQ') || type.includes('CONTACT')) count += 1;
-      });
-      return count;
-    });
-
-    const warnCount = links.filter((row) => row && row.lastHealth && row.lastHealth.state === 'WARN').length;
-    const killSwitchWarnSeries = buckets.map(() => warnCount + (killSwitch ? 1 : 0));
-
-    const kpis = {
-      registrations: simpleMetric(String(registrationTotal), registrationsSeries, `${windowMonths}ヶ月のLINE登録件数`),
-      membership: simpleMetric(ratioLabel(membershipMatched, normalizedUsers.length), membershipSeries, 'リダックくらぶID一致率'),
-      stepStates: simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`),
-      churnRate: simpleMetric(
-        reactionSeries.length ? `${reactionSeries[reactionSeries.length - 1]}%` : '0%',
-        reactionSeries,
-        '通知反応率（クリック / 配信）'
-      ),
-      ctrTrend: simpleMetric(
-        String(consultSeries.reduce((sum, value) => sum + value, 0)),
-        consultSeries,
-        '相談クリック件数（events集計）'
-      ),
-      cityPackUsage: links.length
-        ? simpleMetric(`${warnCount}${killSwitch ? ' + KillSwitch ON' : ''}`, killSwitchWarnSeries, 'WARNリンク数 + KillSwitch状態')
-        : notAvailable('link_registryが未設定のため取得できません')
-    };
+    }
 
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
@@ -190,6 +255,9 @@ async function handleDashboardKpi(req, res) {
       requestId,
       windowMonths,
       scanLimit,
+      source: 'computed',
+      asOf: computed.asOf,
+      freshnessMinutes,
       kpis
     }));
   } catch (err) {
@@ -200,5 +268,6 @@ async function handleDashboardKpi(req, res) {
 }
 
 module.exports = {
-  handleDashboardKpi
+  handleDashboardKpi,
+  computeDashboardKpis
 };

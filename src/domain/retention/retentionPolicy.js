@@ -29,6 +29,7 @@ const RETENTION_POLICY = Object.freeze({
   'notifications': Object.freeze({ kind: 'config', retentionDays: null, deletable: 'NO', recomputable: false }),
   'ops_assist_cache': Object.freeze({ kind: 'config', retentionDays: null, deletable: 'NO', recomputable: false }),
   'ops_segments': Object.freeze({ kind: 'config', retentionDays: null, deletable: 'NO', recomputable: false }),
+  'ops_read_model_snapshots': Object.freeze({ kind: 'aggregate', retentionDays: null, deletable: 'CONDITIONAL', recomputable: true }),
   'ops_state': Object.freeze({ kind: 'config', retentionDays: null, deletable: 'NO', recomputable: false }),
   'ops_states': Object.freeze({ kind: 'config', retentionDays: null, deletable: 'NO', recomputable: false }),
   'phase18_cta_stats': Object.freeze({ kind: 'aggregate', retentionDays: null, deletable: 'CONDITIONAL', recomputable: true }),

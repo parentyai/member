@@ -705,6 +705,41 @@ function createServer() {
     return;
   }
 
+  if ((req.method === 'GET' && pathname === '/api/admin/struct-drift/backfill-runs')
+    || (req.method === 'POST' && pathname === '/api/admin/struct-drift/backfill')) {
+    const collectBody = () => new Promise((resolve) => {
+      if (req.method !== 'POST') {
+        resolve('');
+        return;
+      }
+      let bytes = 0;
+      const chunks = [];
+      let tooLarge = false;
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleStructDriftBackfillAdmin } = require('./routes/admin/structDriftBackfill');
+      const body = await collectBody();
+      await handleStructDriftBackfillAdmin(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   const isCityPackAdminRoute = pathname === '/api/admin/city-packs'
     || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
     || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
@@ -950,6 +985,66 @@ function createServer() {
       const { handleRetentionDryRunJob } = require('./routes/internal/retentionDryRunJob');
       const body = await collectBody();
       await handleRetentionDryRunJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/retention-apply') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleRetentionApplyJob } = require('./routes/internal/retentionApplyJob');
+      const body = await collectBody();
+      await handleRetentionApplyJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/ops-snapshot-build') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleOpsSnapshotJob } = require('./routes/internal/opsSnapshotJob');
+      const body = await collectBody();
+      await handleOpsSnapshotJob(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));
