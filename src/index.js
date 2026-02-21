@@ -1219,6 +1219,11 @@ function createServer() {
       handleAdminLlmOpsExplain,
       handleAdminLlmNextActions
     } = require('./routes/admin/llmOps');
+    const {
+      handleConsentStatus,
+      handleConsentVerify,
+      handleConsentRevoke
+    } = require('./routes/admin/llmConsent');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -1263,6 +1268,18 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/next-actions') {
         await handleAdminLlmNextActions(req, res, { llmAdapter: llmClient });
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/llm/consent/status') {
+        await handleConsentStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/consent/verify') {
+        await handleConsentVerify(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/consent/revoke') {
+        await handleConsentRevoke(req, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
