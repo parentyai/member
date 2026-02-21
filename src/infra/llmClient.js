@@ -81,8 +81,23 @@ async function callNextActionCandidates(payload, env) {
   return callOpenAi(payload, env);
 }
 
+// Adapter interface methods — used when llmClient is injected as deps.llmAdapter.
+// These match the method names the usecases expect and return the envelope format
+// the usecases unpack (adapterResult.explanation / adapterResult.nextActionCandidates).
+async function explainOps(payload) {
+  const result = await callOpenAi(payload, process.env);
+  return { explanation: result.answer, model: result.model };
+}
+
+async function suggestNextActionCandidates(payload) {
+  const result = await callOpenAi(payload, process.env);
+  return { nextActionCandidates: result.answer, model: result.model };
+}
+
 module.exports = {
   answerFaq,
   callOpsExplain,
-  callNextActionCandidates
+  callNextActionCandidates,
+  explainOps,
+  suggestNextActionCandidates
 };

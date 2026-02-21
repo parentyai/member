@@ -222,6 +222,25 @@ function buildOpsTemplate(input) {
   };
 }
 
+function buildOpsHealthTemplate(input) {
+  const data = input || {};
+  const notifHealth = data.notificationHealthSummary || {};
+  const danger = data.dangerFlags || {};
+  return {
+    templateVersion: 'ops_health_template_v1',
+    notificationHealth: {
+      totalNotifications: notifHealth.totalNotifications != null ? notifHealth.totalNotifications : null,
+      unhealthyCount: notifHealth.unhealthyCount != null ? notifHealth.unhealthyCount : null,
+      countsByHealth: notifHealth.countsByHealth != null ? notifHealth.countsByHealth : null
+    },
+    dangerFlags: {
+      notReady: Boolean(danger.notReady),
+      staleMemberNumber: Boolean(danger.staleMemberNumber)
+    },
+    mitigationSuggestion: data.mitigationSuggestion ? String(data.mitigationSuggestion) : null
+  };
+}
+
 function resolveLlmPolicySnapshot(policy) {
   const normalized = systemFlagsRepo.normalizeLlmPolicy(policy);
   if (normalized === null) return Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY);
@@ -292,6 +311,7 @@ async function getOpsExplanation(params, deps) {
 
   const input = buildInputFromConsole(consoleResult || {});
   const opsTemplate = buildOpsTemplate(input);
+  const opsHealthTemplate = buildOpsHealthTemplate(input);
   const view = buildLlmInputView({
     input,
     allowList: DEFAULT_ALLOW_LISTS.opsExplanation,
@@ -415,6 +435,7 @@ async function getOpsExplanation(params, deps) {
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,
     opsTemplate,
+    opsHealthTemplate,
     schemaErrors: schemaErrors.length ? schemaErrors : null,
     auditId
   };

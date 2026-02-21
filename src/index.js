@@ -1258,11 +1258,11 @@ function createServer() {
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/ops-explain') {
-        await handleAdminLlmOpsExplain(req, res);
+        await handleAdminLlmOpsExplain(req, res, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/next-actions') {
-        await handleAdminLlmNextActions(req, res);
+        await handleAdminLlmNextActions(req, res, { llmAdapter: llmClient });
         return;
       }
       res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });

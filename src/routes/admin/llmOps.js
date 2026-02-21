@@ -25,7 +25,7 @@ function sendServerError(res) {
   res.end(JSON.stringify({ ok: false, error: 'error' }));
 }
 
-async function handleAdminLlmOpsExplain(req, res) {
+async function handleAdminLlmOpsExplain(req, res, deps) {
   try {
     const lineUserId = readLineUserId(req);
     if (!lineUserId) {
@@ -34,7 +34,7 @@ async function handleAdminLlmOpsExplain(req, res) {
     }
     const traceId = resolveTraceId(req);
     const actor = resolveActor(req, 'admin_llm_ops_explain');
-    const result = await getOpsExplanation({ lineUserId, traceId, actor });
+    const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
@@ -47,7 +47,7 @@ async function handleAdminLlmOpsExplain(req, res) {
   }
 }
 
-async function handleAdminLlmNextActions(req, res) {
+async function handleAdminLlmNextActions(req, res, deps) {
   try {
     const lineUserId = readLineUserId(req);
     if (!lineUserId) {
@@ -56,7 +56,7 @@ async function handleAdminLlmNextActions(req, res) {
     }
     const traceId = resolveTraceId(req);
     const actor = resolveActor(req, 'admin_llm_next_actions');
-    const result = await getNextActionCandidates({ lineUserId, traceId, actor });
+    const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
