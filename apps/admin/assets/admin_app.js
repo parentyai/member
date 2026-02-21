@@ -51,6 +51,7 @@ const state = {
   composerCurrentConfirmToken: null,
   composerKillSwitch: false,
   dashboardKpis: null,
+  repoMap: null,
   topCauses: '-',
   topCausesTip: '',
   topAnomaly: '-',
@@ -70,6 +71,9 @@ const PANE_HEADER_MAP = Object.freeze({
   vendors: { titleKey: 'ui.label.page.vendors', subtitleKey: 'ui.desc.page.vendors' },
   'city-pack': { titleKey: 'ui.label.page.cityPack', subtitleKey: 'ui.desc.page.cityPack' },
   audit: { titleKey: 'ui.label.page.audit', subtitleKey: 'ui.desc.page.audit' },
+  'developer-map': { titleKey: 'ui.label.page.developerMap', subtitleKey: 'ui.desc.page.developerMap' },
+  'developer-manual-redac': { titleKey: 'ui.label.page.developerManualRedac', subtitleKey: 'ui.desc.page.developerManualRedac' },
+  'developer-manual-user': { titleKey: 'ui.label.page.developerManualUser', subtitleKey: 'ui.desc.page.developerManualUser' },
   llm: { titleKey: 'ui.label.page.faq', subtitleKey: 'ui.desc.page.faq' },
   settings: { titleKey: 'ui.label.page.settings', subtitleKey: 'ui.desc.page.settings' },
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
@@ -355,6 +359,388 @@ function setupHeaderActions() {
   });
 }
 
+function clearElementChildren(el) {
+  if (!el) return;
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function renderStringList(elementId, values, fallbackValue) {
+  const root = document.getElementById(elementId);
+  if (!root) return;
+  clearElementChildren(root);
+  const rows = Array.isArray(values) ? values.filter((value) => typeof value === 'string' && value.trim().length > 0) : [];
+  if (!rows.length) {
+    const li = document.createElement('li');
+    li.textContent = fallbackValue || t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    root.appendChild(li);
+    return;
+  }
+  rows.forEach((row) => {
+    const li = document.createElement('li');
+    li.textContent = row;
+    root.appendChild(li);
+  });
+}
+
+function asText(value, fallback) {
+  if (typeof value === 'string' && value.trim().length > 0) return value;
+  if (Number.isFinite(value)) return String(value);
+  return fallback || '-';
+}
+
+function renderRepoMapFaqRows(rows) {
+  const body = document.getElementById('manual-redac-faq-rows');
+  if (!body) return;
+  clearElementChildren(body);
+  const items = Array.isArray(rows) ? rows : [];
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 2;
+    td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    tr.appendChild(td);
+    body.appendChild(tr);
+    return;
+  }
+  items.forEach((row) => {
+    const tr = document.createElement('tr');
+    const q = document.createElement('td');
+    q.textContent = asText(row && row.q, '-');
+    const a = document.createElement('td');
+    a.textContent = asText(row && row.a, '-');
+    tr.appendChild(q);
+    tr.appendChild(a);
+    body.appendChild(tr);
+  });
+}
+
+function renderRepoMapCategories(categories) {
+  const root = document.getElementById('repo-map-categories');
+  if (!root) return;
+  clearElementChildren(root);
+  const groups = Array.isArray(categories) ? categories : [];
+  if (!groups.length) {
+    const empty = document.createElement('div');
+    empty.className = 'cell-muted';
+    empty.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    root.appendChild(empty);
+    return;
+  }
+
+  groups.forEach((group) => {
+    const section = document.createElement('section');
+    section.className = 'repo-map-category';
+
+    const heading = document.createElement('h3');
+    heading.className = 'repo-map-category-title';
+    heading.textContent = asText(group && group.labelJa, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+    section.appendChild(heading);
+
+    const items = Array.isArray(group && group.items) ? group.items : [];
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'cell-muted';
+      empty.textContent = t('ui.label.common.empty', 'データなし');
+      section.appendChild(empty);
+      root.appendChild(section);
+      return;
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement('article');
+      card.className = 'repo-map-card';
+
+      const cardHeader = document.createElement('div');
+      cardHeader.className = 'repo-map-card-header';
+      const title = document.createElement('div');
+      title.className = 'repo-map-card-title';
+      title.textContent = asText(item && item.nameJa, '-');
+      const status = document.createElement('span');
+      status.className = 'status-pill';
+      status.textContent = asText(item && item.status, '-');
+      cardHeader.appendChild(title);
+      cardHeader.appendChild(status);
+      card.appendChild(cardHeader);
+
+      const sections = [
+        { label: t('ui.label.repoMap.canDo', '今できること'), values: item && item.canDo },
+        { label: t('ui.label.repoMap.cannotDo', 'まだできないこと'), values: item && item.cannotDo },
+        { label: t('ui.label.repoMap.risks', 'リスク'), values: item && item.risks },
+        { label: t('ui.label.repoMap.nextActions', '次にやるべきこと'), values: item && item.nextActions }
+      ];
+      sections.forEach((entry) => {
+        const values = Array.isArray(entry.values) ? entry.values.filter((v) => typeof v === 'string' && v.trim().length > 0) : [];
+        if (!values.length) return;
+        const label = document.createElement('div');
+        label.className = 'repo-map-card-subtitle';
+        label.textContent = entry.label;
+        card.appendChild(label);
+        const list = document.createElement('ul');
+        list.className = 'repo-map-list';
+        values.slice(0, 3).forEach((value) => {
+          const li = document.createElement('li');
+          li.textContent = value;
+          list.appendChild(li);
+        });
+        card.appendChild(list);
+      });
+
+      const related = Array.isArray(item && item.relatedFiles) ? item.relatedFiles : [];
+      const relatedLabel = document.createElement('div');
+      relatedLabel.className = 'repo-map-card-subtitle';
+      relatedLabel.textContent = t('ui.label.repoMap.relatedFiles', '関連ファイル');
+      card.appendChild(relatedLabel);
+      const relatedList = document.createElement('ul');
+      relatedList.className = 'repo-map-list mono-list';
+      if (!related.length) {
+        const li = document.createElement('li');
+        li.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+        relatedList.appendChild(li);
+      } else {
+        related.slice(0, 8).forEach((filePath) => {
+          const li = document.createElement('li');
+          li.textContent = filePath;
+          relatedList.appendChild(li);
+        });
+      }
+      card.appendChild(relatedList);
+      section.appendChild(card);
+    });
+    root.appendChild(section);
+  });
+}
+
+function renderRepoMapMatrix(matrix) {
+  const head = document.getElementById('repo-map-matrix-head');
+  const body = document.getElementById('repo-map-matrix-rows');
+  if (!head || !body) return;
+  clearElementChildren(head);
+  clearElementChildren(body);
+
+  const scenarios = Array.isArray(matrix && matrix.scenarios) ? matrix.scenarios : [];
+  const steps = Array.isArray(matrix && matrix.steps) ? matrix.steps : [];
+  const cells = Array.isArray(matrix && matrix.cells) ? matrix.cells : [];
+  if (!scenarios.length || !steps.length || !cells.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    tr.appendChild(td);
+    body.appendChild(tr);
+    return;
+  }
+
+  const headRow = document.createElement('tr');
+  const corner = document.createElement('th');
+  corner.textContent = t('ui.label.repoMap.matrix.scenario', 'シナリオ');
+  headRow.appendChild(corner);
+  steps.forEach((stepKey) => {
+    const th = document.createElement('th');
+    th.textContent = stepLabel(stepKey);
+    headRow.appendChild(th);
+  });
+  head.appendChild(headRow);
+
+  scenarios.forEach((scenarioKey) => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = scenarioLabel(scenarioKey);
+    tr.appendChild(th);
+    steps.forEach((stepKey) => {
+      const td = document.createElement('td');
+      const cell = cells.find((row) => row && row.scenarioKey === scenarioKey && row.stepKey === stepKey);
+      if (!cell) {
+        td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+      } else {
+        const count = Number.isFinite(Number(cell.notificationCount)) ? Number(cell.notificationCount) : 0;
+        const states = cell.states && typeof cell.states === 'object' ? cell.states : {};
+        td.textContent = `${t('ui.label.repoMap.matrix.notifications', '通知数')}: ${count} / ${t('ui.label.repoMap.matrix.states', '状態')}: ${Number(states.draft || 0)}/${Number(states.active || 0)}/${Number(states.sent || 0)}`;
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+
+function mergeNotificationMatrixFromItems(baseMatrix, items) {
+  const matrix = baseMatrix && typeof baseMatrix === 'object' ? JSON.parse(JSON.stringify(baseMatrix)) : { scenarios: [], steps: [], cells: [] };
+  const cells = Array.isArray(matrix.cells) ? matrix.cells : [];
+  const index = new Map();
+  cells.forEach((cell) => {
+    const key = `${cell.scenarioKey || ''}::${cell.stepKey || ''}`;
+    index.set(key, cell);
+  });
+  (items || []).forEach((item) => {
+    const scenarioKey = item && typeof item.scenarioKey === 'string' ? item.scenarioKey : null;
+    const stepKey = item && typeof item.stepKey === 'string' ? item.stepKey : null;
+    if (!scenarioKey || !stepKey) return;
+    const key = `${scenarioKey}::${stepKey}`;
+    if (!index.has(key)) {
+      const next = {
+        scenarioKey,
+        stepKey,
+        notificationCount: 0,
+        states: { draft: 0, active: 0, sent: 0 },
+        note: 'OK'
+      };
+      cells.push(next);
+      index.set(key, next);
+      if (!matrix.scenarios.includes(scenarioKey)) matrix.scenarios.push(scenarioKey);
+      if (!matrix.steps.includes(stepKey)) matrix.steps.push(stepKey);
+    }
+    const target = index.get(key);
+    target.notificationCount = Number(target.notificationCount || 0) + 1;
+    const status = typeof item.status === 'string' ? item.status : '';
+    if (status === 'draft') target.states.draft = Number(target.states.draft || 0) + 1;
+    else if (status === 'active') target.states.active = Number(target.states.active || 0) + 1;
+    else if (status === 'sent') target.states.sent = Number(target.states.sent || 0) + 1;
+    target.note = 'OK';
+  });
+  matrix.cells = cells;
+  return matrix;
+}
+
+async function loadNotificationMatrixOverlay() {
+  const traceId = newTraceId();
+  const res = await fetch('/api/admin/os/notifications/list?limit=500', {
+    headers: buildHeaders({}, traceId)
+  });
+  const data = await readJsonResponse(res);
+  if (!data || data.ok !== true) throw new Error((data && data.error) || 'notification matrix load failed');
+  const items = Array.isArray(data.items) ? data.items : [];
+  return mergeNotificationMatrixFromItems(state.repoMap && state.repoMap.scenarioStepMatrix, items);
+}
+
+function renderRepoMapCommunication(layers) {
+  const communication = layers && layers.communication && typeof layers.communication === 'object' ? layers.communication : {};
+  const redac = communication.redacGuide && typeof communication.redacGuide === 'object' ? communication.redacGuide : {};
+  const user = communication.userGuide && typeof communication.userGuide === 'object' ? communication.userGuide : {};
+  renderStringList('manual-redac-can-do', redac.whatCanDo, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-redac-safety', redac.safetyDesign, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-redac-flow', redac.operationFlow, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-redac-roadmap', redac.roadmap, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderRepoMapFaqRows(redac.faq);
+  renderStringList('manual-redac-evidence', redac.evidence, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+
+  renderStringList('manual-user-overview', user.serviceOverview, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-user-privacy', user.privacy, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-user-consultation', user.consultation, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  renderStringList('manual-user-evidence', user.evidence, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+}
+
+function renderRepoMap(payload) {
+  const data = payload && payload.repoMap ? payload.repoMap : null;
+  state.repoMap = data;
+  const overview = data && data.systemOverview ? data.systemOverview : {};
+  const lines = Array.isArray(overview.what) ? overview.what : [];
+  const meta = data && data.meta ? data.meta : {};
+  const summary = overview && overview.statusSummary && typeof overview.statusSummary === 'object' ? overview.statusSummary : {};
+  const commit = meta && meta.lastCommit && typeof meta.lastCommit === 'object' ? meta.lastCommit : {};
+
+  const setText = (id, value, fallback) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = asText(value, fallback);
+  };
+
+  setText('repo-map-overview-line1', lines[0], t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-overview-line2', lines[1], t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-overview-line3', lines[2], t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-version', meta.version, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-generated-at', formatDateLabel(meta.generatedAt), t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-test-count', Number.isFinite(Number(meta.testCount)) ? Number(meta.testCount) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-implemented-count', Number.isFinite(Number(summary.implemented)) ? Number(summary.implemented) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+  setText('repo-map-legacy-count', Number.isFinite(Number(summary.legacy)) ? Number(summary.legacy) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+
+  const commitText = commit && commit.hash
+    ? `${String(commit.hash).slice(0, 8)} ${asText(commit.subject, '')}`.trim()
+    : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  setText('repo-map-last-commit', commitText, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
+
+  renderRepoMapCategories(data && data.categories);
+  renderRepoMapMatrix(data && data.scenarioStepMatrix);
+  renderRepoMapCommunication(data && data.layers);
+}
+
+async function loadRepoMap(options) {
+  const notify = !options || options.notify !== false;
+  const traceId = newTraceId();
+  try {
+    const res = await fetch('/api/admin/repo-map', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'repo map load failed');
+    renderRepoMap(data);
+    await loadNotificationMatrixOverlay().then((matrix) => {
+      renderRepoMapMatrix(matrix);
+    }).catch(() => {
+      // keep fallback matrix
+    });
+    if (notify) showToast(t('ui.toast.repoMap.reloadOk', 'Repo Mapを更新しました'), 'ok');
+  } catch (_err) {
+    renderRepoMap({
+      repoMap: {
+        meta: {},
+        systemOverview: { what: [t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE')], statusSummary: {} },
+        categories: [],
+        scenarioStepMatrix: { scenarios: [], steps: [], cells: [] },
+        layers: {}
+      }
+    });
+    if (notify) showToast(t('ui.toast.repoMap.reloadFail', 'Repo Mapの取得に失敗しました'), 'danger');
+  }
+}
+
+function setupDeveloperMenu() {
+  const openMap = document.getElementById('developer-open-map');
+  const openSystem = document.getElementById('developer-open-system');
+  const openAudit = document.getElementById('developer-open-audit');
+  const openImplementation = document.getElementById('developer-open-implementation');
+  const openManualRedac = document.getElementById('developer-open-manual-redac');
+  const openManualUser = document.getElementById('developer-open-manual-user');
+  const reload = document.getElementById('repo-map-reload');
+  const paneSystem = document.getElementById('repo-map-open-settings');
+  const paneAudit = document.getElementById('repo-map-open-audit');
+  const paneManualRedac = document.getElementById('repo-map-open-manual-redac');
+  const paneManualUser = document.getElementById('repo-map-open-manual-user');
+  const redacOpenMap = document.getElementById('manual-redac-open-map');
+  const redacOpenUser = document.getElementById('manual-redac-open-user');
+  const userOpenMap = document.getElementById('manual-user-open-map');
+  const userOpenRedac = document.getElementById('manual-user-open-redac');
+
+  openMap?.addEventListener('click', () => activatePane('developer-map'));
+  openSystem?.addEventListener('click', () => activatePane('settings'));
+  openAudit?.addEventListener('click', async () => {
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
+  openImplementation?.addEventListener('click', () => {
+    activatePane('developer-map', { scrollTarget: 'developer-map-implementation' });
+  });
+  openManualRedac?.addEventListener('click', () => {
+    activatePane('developer-manual-redac');
+  });
+  openManualUser?.addEventListener('click', () => {
+    activatePane('developer-manual-user');
+  });
+  reload?.addEventListener('click', () => {
+    void loadRepoMap({ notify: true });
+  });
+  paneSystem?.addEventListener('click', () => activatePane('settings'));
+  paneAudit?.addEventListener('click', async () => {
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
+  paneManualRedac?.addEventListener('click', () => activatePane('developer-manual-redac'));
+  paneManualUser?.addEventListener('click', () => activatePane('developer-manual-user'));
+  redacOpenMap?.addEventListener('click', () => activatePane('developer-map'));
+  redacOpenUser?.addEventListener('click', () => activatePane('developer-manual-user'));
+  userOpenMap?.addEventListener('click', () => activatePane('developer-map'));
+  userOpenRedac?.addEventListener('click', () => activatePane('developer-manual-redac'));
+}
+
 function normalizePaneTarget(target) {
   const value = typeof target === 'string' ? target : '';
   const allowed = new Set([
@@ -366,6 +752,9 @@ function normalizePaneTarget(target) {
     'vendors',
     'city-pack',
     'audit',
+    'developer-map',
+    'developer-manual-redac',
+    'developer-manual-user',
     'settings',
     'llm',
     'maintenance'
@@ -4555,6 +4944,7 @@ function setupLlmControls() {
   setupRoleSwitch();
   setupNav();
   setupHeaderActions();
+  setupDeveloperMenu();
   setupHomeControls();
   setupComposerActions();
   setupMonitorControls();
@@ -4585,5 +4975,6 @@ function setupLlmControls() {
   loadCityPackMetrics({ notify: false });
   loadCityPackAuditRuns({ notify: false });
   loadDashboardKpis({ notify: false });
+  loadRepoMap({ notify: false });
   renderAllDecisionCards();
 })();

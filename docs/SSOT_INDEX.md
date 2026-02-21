@@ -133,6 +133,10 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE308_EXECUTION_LOG.md`（StructShield follow-up: canonical/fallback/retention 補強実行ログ）
 - `docs/PHASE309_PLAN.md`（Phase Next P1-P5 補強計画）
 - `docs/PHASE309_EXECUTION_LOG.md`（Phase Next P1-P5 補強実行ログ）
+- `docs/PHASE310_PLAN.md`（管理UI 一本道 + グランドマップ再構築計画）
+- `docs/PHASE310_EXECUTION_LOG.md`（管理UI 一本道 + グランドマップ再構築実行ログ）
+- `docs/PHASE311_PLAN.md`（三層UI再設計: 運用一本道 + 開発者Repo Map + 取説統合計画）
+- `docs/PHASE311_EXECUTION_LOG.md`（三層UI再設計: 運用一本道 + 開発者Repo Map + 取説統合実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
