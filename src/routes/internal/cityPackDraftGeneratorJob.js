@@ -2,6 +2,7 @@
 
 const { runCityPackDraftJob } = require('../../usecases/cityPack/runCityPackDraftJob');
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
+const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 
 function writeJson(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -22,6 +23,11 @@ async function handleCityPackDraftGeneratorJob(req, res, bodyText) {
     return;
   }
   if (!requireInternalJobToken(req, res)) return;
+  const killSwitch = await getKillSwitch();
+  if (killSwitch) {
+    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    return;
+  }
 
   const payload = parseJson(bodyText);
   if (!payload) {
@@ -35,8 +41,7 @@ async function handleCityPackDraftGeneratorJob(req, res, bodyText) {
     runId: payload.runId,
     sourceUrls: payload.sourceUrls,
     traceId: traceIdHeader || payload.traceId || null,
-    actor: 'city_pack_draft_job',
-    requestId: payload.requestId
+    actor: 'city_pack_draft_job'
   });
   writeJson(res, 200, result);
 }

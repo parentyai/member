@@ -85,6 +85,8 @@ Typical fields:
 - `rules[]`
 - `targetingRules[]`（Rule Pack）
 - `slots[]`（Slot-based Pack）
+- `slotContents`（固定8スロット体験マップ）
+- `slotSchemaVersion`（例: `v1_fixed_8_slots`）
 - `basePackId`（1段のみ継承）
 - `overrides`（継承上書き）
 
@@ -101,16 +103,23 @@ Typical fields:
 - `draftCityPackIds[]`
 - `draftTemplateIds[]`
 - `draftSourceRefIds[]`
+- `draftLinkRegistryIds[]`
+- `experienceStage`
+- `lastReviewAt`
 - `error`
 
 ### `city_pack_feedback/{id}`
 Purpose: City Packの誤り報告（LINE→admin review）。
 
 Typical fields:
-- `status` (`queued`/`reviewed`/`rejected`/`proposed`)
+- `status` (`queued`/`reviewed`/`rejected`/`proposed`/`new`/`triaged`/`resolved`)
 - `lineUserId`
 - `regionCity`, `regionState`, `regionKey`
 - `feedbackText`
+- `message`
+- `slotKey`
+- `resolution`
+- `resolvedAt`
 - `traceId`
 - `requestId`
 

@@ -801,7 +801,10 @@
                         <th data-dict-key="ui.label.cityPack.request.col.status">status</th>
                         <th data-dict-key="ui.label.cityPack.request.col.region">region</th>
                         <th data-dict-key="ui.label.cityPack.request.col.requestId">requestId</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.stage">stage</th>
                         <th data-dict-key="ui.label.cityPack.request.col.draft">draft</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.warningCount">warning</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.agingHours">aging(h)</th>
                         <th data-dict-key="ui.label.cityPack.request.col.traceId">traceId</th>
                         <th data-dict-key="ui.label.cityPack.request.col.actions">actions</th>
                       </tr>
@@ -818,6 +821,9 @@
                     <label data-dict-key="ui.label.cityPack.feedbackStatus" data-dict-tip="ui.help.cityPack.feedbackStatus">状態
                       <select id="city-pack-feedback-status-filter" class="select-inline">
                         <option value="" data-dict-key="ui.value.cityPack.feedbackStatus.all">すべて</option>
+                        <option value="new" data-dict-key="ui.value.cityPack.feedbackStatus.new">新規</option>
+                        <option value="triaged" data-dict-key="ui.value.cityPack.feedbackStatus.triaged">対応中</option>
+                        <option value="resolved" data-dict-key="ui.value.cityPack.feedbackStatus.resolved">解決済み</option>
                         <option value="queued" data-dict-key="ui.value.cityPack.feedbackStatus.queued">待機</option>
                         <option value="reviewed" data-dict-key="ui.value.cityPack.feedbackStatus.reviewed">確認済み</option>
                         <option value="rejected" data-dict-key="ui.value.cityPack.feedbackStatus.rejected">却下</option>
@@ -834,7 +840,9 @@
                       <tr>
                         <th data-dict-key="ui.label.cityPack.feedback.col.status">status</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.region">region</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.slot">slot</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.feedback">feedback</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.resolution">resolution</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.traceId">traceId</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.actions">actions</th>
                       </tr>

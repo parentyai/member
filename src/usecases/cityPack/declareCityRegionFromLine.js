@@ -53,9 +53,12 @@ async function declareCityRegionFromLine(params) {
     regionKey,
     requestedAt: new Date().toISOString(),
     traceId,
+    experienceStage: 'queued',
     draftCityPackIds: [],
     draftTemplateIds: [],
-    draftSourceRefIds: []
+    draftSourceRefIds: [],
+    draftLinkRegistryIds: [],
+    lastReviewAt: null
   });
 
   try {

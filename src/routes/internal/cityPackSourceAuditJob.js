@@ -1,6 +1,7 @@
 'use strict';
 
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
+const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 
 function writeJson(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -43,6 +44,11 @@ async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
     return;
   }
   if (!requireInternalJobToken(req, res)) return;
+  const killSwitch = await getKillSwitch();
+  if (killSwitch) {
+    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    return;
+  }
 
   const payload = parseJson(bodyText);
   if (!payload) {

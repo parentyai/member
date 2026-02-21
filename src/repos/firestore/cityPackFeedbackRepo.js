@@ -2,10 +2,18 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc, toMillis } = require('./queryFallback');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'city_pack_feedback';
-const ALLOWED_STATUS = new Set(['queued', 'reviewed', 'rejected', 'proposed']);
+const ALLOWED_STATUS = new Set([
+  'queued',
+  'reviewed',
+  'rejected',
+  'proposed',
+  'new',
+  'triaged',
+  'resolved'
+]);
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -23,6 +31,10 @@ function resolveId(payload) {
 
 function normalizePayload(data) {
   const payload = data && typeof data === 'object' ? data : {};
+  const feedbackText = normalizeString(payload.feedbackText);
+  const message = normalizeString(payload.message);
+  const slotKey = normalizeString(payload.slotKey);
+  const resolution = normalizeString(payload.resolution);
   return {
     id: resolveId(payload),
     status: normalizeStatus(payload.status),
@@ -30,7 +42,11 @@ function normalizePayload(data) {
     regionCity: normalizeString(payload.regionCity),
     regionState: normalizeString(payload.regionState),
     regionKey: normalizeString(payload.regionKey),
-    feedbackText: normalizeString(payload.feedbackText),
+    slotKey,
+    feedbackText: feedbackText || message,
+    message: message || feedbackText,
+    resolution,
+    resolvedAt: payload.resolvedAt || null,
     traceId: normalizeString(payload.traceId),
     requestId: normalizeString(payload.requestId)
   };
@@ -48,7 +64,11 @@ async function createFeedback(data) {
     regionCity: payload.regionCity,
     regionState: payload.regionState,
     regionKey: payload.regionKey,
+    slotKey: payload.slotKey,
     feedbackText: payload.feedbackText,
+    message: payload.message,
+    resolution: payload.resolution,
+    resolvedAt: payload.resolvedAt,
     traceId: payload.traceId,
     requestId: payload.requestId,
     createdAt: serverTimestamp(),

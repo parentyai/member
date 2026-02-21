@@ -1623,7 +1623,7 @@ function renderCityPackRequestRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 6;
+    td.colSpan = 9;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -1645,7 +1645,10 @@ function renderCityPackRequestRows(items) {
       row.status || '-',
       regionLabel,
       row.requestId || '-',
+      row.experienceStage || '-',
       draftCount ? String(draftCount) : '-',
+      Number.isFinite(Number(row.warningCount)) ? String(Number(row.warningCount)) : '-',
+      Number.isFinite(Number(row.agingHours)) ? String(Number(row.agingHours)) : '-',
       row.traceId || '-'
     ];
     cells.forEach((value) => {
@@ -1683,14 +1686,26 @@ function renderCityPackFeedbackRows(items) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    renderCityPackFeedbackDetail(null);
+    return;
+  }
   rows.forEach((row) => {
     const tr = document.createElement('tr');
     const regionLabel = [row.regionCity, row.regionState].filter(Boolean).join(', ') || row.regionKey || '-';
-    const feedbackText = row.feedbackText || '-';
+    const feedbackText = row.message || row.feedbackText || '-';
     const cells = [
       row.status || '-',
       regionLabel,
+      row.slotKey || '-',
       feedbackText,
+      row.resolution || '-',
       row.traceId || '-'
     ];
     cells.forEach((value) => {
@@ -1701,7 +1716,8 @@ function renderCityPackFeedbackRows(items) {
 
     const actionTd = document.createElement('td');
     const actions = [
-      { key: 'ack', label: t('ui.label.cityPack.feedback.action.ack', 'Ack') },
+      { key: 'triage', label: t('ui.label.cityPack.feedback.action.triage', 'Triage') },
+      { key: 'resolve', label: t('ui.label.cityPack.feedback.action.resolve', 'Resolve') },
       { key: 'reject', label: t('ui.label.cityPack.feedback.action.reject', 'Reject') },
       { key: 'propose', label: t('ui.label.cityPack.feedback.action.propose', 'Propose') }
     ];
@@ -1752,8 +1768,10 @@ function renderCityPackRequestDetail(payload) {
   state.selectedCityPackDraftId = draftPack && draftPack.id ? draftPack.id : null;
   const region = [req.regionCity, req.regionState].filter(Boolean).join(', ') || req.regionKey || '-';
   const drafts = Array.isArray(req.draftCityPackIds) ? req.draftCityPackIds.length : 0;
+  const linkDrafts = Array.isArray(req.draftLinkRegistryIds) ? req.draftLinkRegistryIds.length : 0;
+  const stage = req.experienceStage || '-';
   const error = req.error ? ` / ${req.error}` : '';
-  if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / region=${region} / drafts=${drafts} / traceId=${req.traceId || '-'}${error}`;
+  if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / stage=${stage} / region=${region} / drafts=${drafts} / links=${linkDrafts} / traceId=${req.traceId || '-'}${error}`;
   if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
   if (packIdEl) packIdEl.textContent = state.selectedCityPackDraftId || '-';
   if (basePackEl) {
@@ -1780,9 +1798,9 @@ function renderCityPackFeedbackDetail(item) {
     return;
   }
   const region = [item.regionCity, item.regionState].filter(Boolean).join(', ') || item.regionKey || '-';
-  if (summaryEl) {
-    summaryEl.textContent = `status=${item.status || '-'} / region=${region} / traceId=${item.traceId || '-'}`;
-  }
+  const slotKey = item.slotKey || '-';
+  const resolution = item.resolution || '-';
+  if (summaryEl) summaryEl.textContent = `status=${item.status || '-'} / region=${region} / slot=${slotKey} / resolution=${resolution} / traceId=${item.traceId || '-'}`;
   if (rawEl) rawEl.textContent = JSON.stringify(item, null, 2);
 }
 
@@ -2660,8 +2678,14 @@ async function runCityPackFeedbackAction(action, row) {
   const feedbackId = row && (row.feedbackId || row.id);
   if (!feedbackId) return;
   const trace = ensureTraceInput('monitor-trace');
+  let body = {};
+  if (action === 'resolve' || action === 'propose') {
+    const resolution = window.prompt(t('ui.prompt.cityPack.feedbackResolution', '対応内容を入力してください'), row && row.resolution ? String(row.resolution) : '');
+    if (!resolution) return;
+    body = { resolution };
+  }
   try {
-    const data = await postJson(`/api/admin/city-pack-feedback/${encodeURIComponent(feedbackId)}/${action}`, {}, trace);
+    const data = await postJson(`/api/admin/city-pack-feedback/${encodeURIComponent(feedbackId)}/${action}`, body, trace);
     if (data && data.ok !== false) {
       showToast(t('ui.toast.cityPack.feedbackActionOk', 'Feedback操作を実行しました'), 'ok');
       await loadCityPackFeedback({ notify: false });

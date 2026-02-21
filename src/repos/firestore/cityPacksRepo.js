@@ -9,6 +9,16 @@ const VALIDITY_DAYS = 120;
 const ALLOWED_STATUS = new Set(['draft', 'active', 'retired']);
 const ALLOWED_SLOT_STATUS = new Set(['active', 'inactive']);
 const ALLOWED_TARGET_EFFECT = new Set(['include', 'exclude']);
+const FIXED_SLOT_KEYS = Object.freeze([
+  'emergency',
+  'admin',
+  'utilities',
+  'school',
+  'transport',
+  'health_entry',
+  'helpdesk',
+  'culture'
+]);
 
 function toDate(value) {
   if (!value) return null;
@@ -149,6 +159,36 @@ function normalizeOverrides(value) {
   return hasAny ? overridePayload : null;
 }
 
+function normalizeSlotContentItem(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const description = typeof value.description === 'string' ? value.description.trim() : '';
+  const ctaText = typeof value.ctaText === 'string' ? value.ctaText.trim() : '';
+  const linkRegistryId = typeof value.linkRegistryId === 'string' ? value.linkRegistryId.trim() : '';
+  if (!description || !ctaText || !linkRegistryId) return null;
+  const sourceRefs = normalizeStringArray(value.sourceRefs);
+  return {
+    description,
+    ctaText,
+    linkRegistryId,
+    sourceRefs
+  };
+}
+
+function normalizeSlotContents(value) {
+  const payload = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const output = {};
+  FIXED_SLOT_KEYS.forEach((slotKey) => {
+    const normalized = normalizeSlotContentItem(payload[slotKey]);
+    if (normalized) output[slotKey] = normalized;
+  });
+  return output;
+}
+
+function normalizeSlotSchemaVersion(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  return value.trim();
+}
+
 function resolveValidUntil(payload) {
   const validUntil = toDate(payload.validUntil);
   if (validUntil) return validUntil;
@@ -176,7 +216,9 @@ function normalizePayload(data) {
     metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {},
     requestId: normalizeString(payload.requestId),
     basePackId,
-    overrides
+    overrides,
+    slotContents: normalizeSlotContents(payload.slotContents),
+    slotSchemaVersion: normalizeSlotSchemaVersion(payload.slotSchemaVersion)
   };
 }
 
@@ -223,6 +265,8 @@ async function createCityPack(data) {
     requestId: payload.requestId,
     basePackId: payload.basePackId,
     overrides: payload.overrides,
+    slotContents: payload.slotContents,
+    slotSchemaVersion: payload.slotSchemaVersion,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -269,6 +313,7 @@ async function updateCityPack(cityPackId, patch) {
 
 module.exports = {
   VALIDITY_DAYS,
+  FIXED_SLOT_KEYS,
   createCityPack,
   getCityPack,
   listCityPacks,
