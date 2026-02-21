@@ -193,6 +193,18 @@ Typical fields:
 - `traceId`, `requestId`
 - `createdAt`, `updatedAt`, `activatedAt`, `retiredAt`
 
+### `ops_read_model_snapshots/{snapshotType__snapshotKey}`
+Purpose: Ops KPI/summary の snapshot read-model（full scanの常用回避）。
+
+Typical fields:
+- `snapshotType`（`dashboard_kpi` / `user_operational_summary` / `user_state_summary`）
+- `snapshotKey`（`1|3|6|12` や `latest` / `lineUserId`）
+- `asOf`
+- `freshnessMinutes`
+- `sourceTraceId`
+- `data`
+- `createdAt`, `updatedAt`
+
 ### Planned Add-only (City Pack extensions 1-12, inactive until phase enable)
 Purpose: 実装フェーズ分割時の互換契約を固定するための予定スキーマ。実装完了までは必須扱いにしない。
 

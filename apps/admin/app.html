@@ -1549,6 +1549,40 @@
                   <pre id="audit-detail">-</pre>
                 </div>
               </div>
+              <div class="panel" data-role="admin">
+                <div class="panel-title" data-dict-key="ui.label.structDrift.title">構造ドリフト補正</div>
+                <div class="panel-body">
+                  <div class="note">
+                    <label data-dict-key="ui.label.structDrift.scanLimit">scan limit</label>
+                    <input id="struct-drift-scan-limit" type="number" min="1" max="5000" value="500" class="input-inline input-sm" />
+                    <label data-dict-key="ui.label.structDrift.resumeAfter">resume user id</label>
+                    <input id="struct-drift-resume-after" class="input-inline input-sm" />
+                  </div>
+                  <div class="row row-top">
+                    <button id="struct-drift-run-dry" type="button" data-dict-key="ui.label.structDrift.runDry">Dry Run</button>
+                    <button id="struct-drift-run-apply" type="button" data-dict-key="ui.label.structDrift.runApply">Apply</button>
+                    <button id="struct-drift-runs-reload" type="button" data-dict-key="ui.label.structDrift.runsReload">実行履歴更新</button>
+                  </div>
+                  <div id="struct-drift-summary" class="note" data-dict-key="ui.desc.structDrift.summary">実行履歴: 読み込み待ち</div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.structDrift.table.createdAt">実行時刻</th>
+                          <th data-dict-key="ui.label.structDrift.table.mode">モード</th>
+                          <th data-dict-key="ui.label.structDrift.table.changed">更新件数</th>
+                          <th data-dict-key="ui.label.structDrift.table.trace">追跡ID</th>
+                        </tr>
+                      </thead>
+                      <tbody id="struct-drift-runs-rows"></tbody>
+                    </table>
+                  </div>
+                  <details class="section">
+                    <summary data-dict-key="ui.label.structDrift.result">実行結果</summary>
+                    <pre id="struct-drift-result">-</pre>
+                  </details>
+                </div>
+              </div>
             </div>
             <aside class="pane-actions">
               <div class="action-panel">

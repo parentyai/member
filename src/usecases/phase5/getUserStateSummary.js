@@ -15,16 +15,25 @@ const { evaluateOpsStateCompleteness } = require('../phase24/opsStateCompletenes
 const { evaluateOpsDecisionCompleteness } = require('../phase24/opsDecisionCompleteness');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
+const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
+const SNAPSHOT_TYPE = 'user_state_summary';
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
+
+function useSnapshotRead(value) {
+  if (value === false) return false;
+  const env = process.env.OPS_SNAPSHOT_READ_ENABLED;
+  if (env === '0' || env === 'false') return false;
+  return true;
 }
 
 function toMillis(value) {
@@ -152,6 +161,12 @@ async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
+  if (useSnapshotRead(payload.useSnapshot)) {
+    const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, payload.lineUserId);
+    if (snapshot && snapshot.data && typeof snapshot.data === 'object') {
+      return snapshot.data;
+    }
+  }
   const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
 
   const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
