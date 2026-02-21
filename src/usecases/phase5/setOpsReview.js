@@ -1,6 +1,7 @@
 'use strict';
 
 const { setOpsReview } = require('../../repos/firestore/opsStateRepo');
+const { normalizeOpsStateRecord } = require('../../domain/normalizers/opsStateNormalizer');
 
 function parseReviewedAt(value) {
   if (!value) return null;
@@ -18,7 +19,14 @@ async function recordOpsReview(params) {
     throw new Error('reviewedBy required');
   }
   const reviewedAt = parseReviewedAt(payload.reviewedAt);
-  await setOpsReview({ reviewedBy: payload.reviewedBy, reviewedAt: reviewedAt || undefined });
+  const normalized = normalizeOpsStateRecord({
+    lastReviewedAt: reviewedAt || undefined,
+    lastReviewedBy: payload.reviewedBy
+  });
+  await setOpsReview({
+    reviewedBy: normalized.lastReviewedBy,
+    reviewedAt: normalized.lastReviewedAt || undefined
+  });
   return { reviewedBy: payload.reviewedBy };
 }
 

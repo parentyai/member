@@ -1,8 +1,14 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { normalizeOpsStateRecord, resolveOpsStateReadOrder } = require('../../domain/normalizers/opsStateNormalizer');
 
-const COLLECTION = 'ops_state';
+// DEPRECATED:
+// - legacy collection: ops_state
+// - canonical collection: ops_states
+// This repo is kept only as a compatibility bridge.
+const LEGACY_COLLECTION = 'ops_state';
+const CANONICAL_COLLECTION = 'ops_states';
 const DOC_ID = 'global';
 
 function resolveTimestamp(at) {
@@ -18,10 +24,15 @@ function resolveTimestamp(at) {
 
 async function getOpsState() {
   const db = getDb();
-  const docRef = db.collection(COLLECTION).doc(DOC_ID);
-  const snap = await docRef.get();
-  if (!snap.exists) return null;
-  return Object.assign({ id: snap.id }, snap.data());
+  const readOrder = resolveOpsStateReadOrder();
+  for (const collection of readOrder) {
+    const docRef = db.collection(collection).doc(DOC_ID);
+    const snap = await docRef.get();
+    if (!snap.exists) continue;
+    const normalized = normalizeOpsStateRecord(snap.data());
+    return Object.assign({ id: snap.id, collection }, normalized);
+  }
+  return null;
 }
 
 async function setOpsReview(params) {
@@ -29,7 +40,7 @@ async function setOpsReview(params) {
   const reviewedBy = payload.reviewedBy;
   if (!reviewedBy) throw new Error('reviewedBy required');
   const db = getDb();
-  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const docRef = db.collection(CANONICAL_COLLECTION).doc(DOC_ID);
   await docRef.set({
     lastReviewedAt: resolveTimestamp(payload.reviewedAt),
     lastReviewedBy: reviewedBy

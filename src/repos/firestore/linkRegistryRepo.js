@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'link_registry';
 
@@ -47,6 +48,12 @@ async function listLinks(params) {
     return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'linkRegistryRepo',
+      query: 'listLinks',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     const snap = await baseQuery.get();
     const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
     sortByTimestampDesc(rows, 'createdAt');

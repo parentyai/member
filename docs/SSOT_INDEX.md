@@ -127,6 +127,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE304_EXECUTION_LOG.md`（phase304 実装ログ）
 - `docs/PHASE305_EXECUTION_LOG.md`（phase304 merge後 CI証跡固定ログ）
 - `docs/PHASE306_EXECUTION_LOG.md`（City Pack最深化体験 add-only 補完実行ログ）
+- `docs/PHASE307_PLAN.md`（StructShield: 構造崩壊耐性強化計画）
+- `docs/PHASE307_EXECUTION_LOG.md`（StructShield: 構造崩壊耐性強化実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
@@ -146,3 +148,5 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_KB_SPEC_PHASE_NEXT2.md`（Phase Next-2: Ops系llmClient接続・llmAdapterインターフェース・Opsテンプレ3種完備）
 - `docs/LLM_KB_SPEC_PHASE_NEXT3.md`（Phase Next-3: guide-only解禁・consent UI・lawfulBasis整備・consent verify/revoke API）
 - `docs/LLM_KB_SPEC_PHASE_NEXT4.md`（Phase Next-4: ユーザー向け同意フロー・LINE Webhook経由 AI同意/拒否コマンド・user_consents コレクション）
+- `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
+- `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）

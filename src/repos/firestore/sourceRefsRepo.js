@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc, toMillis } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -173,6 +174,12 @@ async function listSourceRefs(params) {
     rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'sourceRefsRepo',
+      query: 'listSourceRefs',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     const snap = await baseQuery.get();
     rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
     sortByTimestampDesc(rows, 'updatedAt');
