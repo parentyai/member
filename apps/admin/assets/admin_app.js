@@ -52,6 +52,7 @@ const state = {
   composerKillSwitch: false,
   dashboardKpis: null,
   repoMap: null,
+  legacyStatusItems: [],
   topCauses: '-',
   topCausesTip: '',
   topAnomaly: '-',
@@ -561,6 +562,64 @@ function renderRepoMapMatrix(matrix) {
   });
 }
 
+function renderLegacyStatus(payload) {
+  const rowsEl = document.getElementById('repo-map-legacy-status-rows');
+  const noteEl = document.getElementById('repo-map-legacy-status-note');
+  if (!rowsEl) return;
+  clearElementChildren(rowsEl);
+
+  const items = Array.isArray(payload && payload.items) ? payload.items : [];
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    tr.appendChild(td);
+    rowsEl.appendChild(tr);
+    if (noteEl) noteEl.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    return;
+  }
+
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    const pathTd = document.createElement('td');
+    pathTd.textContent = asText(item && item.path, '-');
+    const modeTd = document.createElement('td');
+    modeTd.textContent = asText(item && item.mode, '-');
+    const targetTd = document.createElement('td');
+    targetTd.textContent = asText(item && item.target, '-');
+    tr.appendChild(pathTd);
+    tr.appendChild(modeTd);
+    tr.appendChild(targetTd);
+    rowsEl.appendChild(tr);
+  });
+
+  const summary = payload && payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+  if (noteEl) {
+    const legacyHtml = Number.isFinite(Number(summary.legacyHtmlCount)) ? Number(summary.legacyHtmlCount) : 0;
+    const redirectCount = Number.isFinite(Number(summary.redirectCount)) ? Number(summary.redirectCount) : 0;
+    noteEl.textContent = `${t('ui.label.developer.legacy.summary', 'legacy HTML / redirect')}: ${legacyHtml} / ${redirectCount}`;
+  }
+}
+
+async function loadLegacyStatus(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = newTraceId();
+  try {
+    const res = await fetch('/api/admin/legacy-status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'legacy status load failed');
+    state.legacyStatusItems = Array.isArray(data.items) ? data.items : [];
+    renderLegacyStatus(data);
+    if (notify) showToast(t('ui.toast.legacyStatus.reloadOk', 'LEGACY導線を更新しました'), 'ok');
+  } catch (_err) {
+    state.legacyStatusItems = [];
+    renderLegacyStatus({ items: [] });
+    if (notify) showToast(t('ui.toast.legacyStatus.reloadFail', 'LEGACY導線の取得に失敗しました'), 'danger');
+  }
+}
+
 function mergeNotificationMatrixFromItems(baseMatrix, items) {
   const matrix = baseMatrix && typeof baseMatrix === 'object' ? JSON.parse(JSON.stringify(baseMatrix)) : { scenarios: [], steps: [], cells: [] };
   const cells = Array.isArray(matrix.cells) ? matrix.cells : [];
@@ -674,6 +733,7 @@ async function loadRepoMap(options) {
     }).catch(() => {
       // keep fallback matrix
     });
+    await loadLegacyStatus({ notify: false });
     if (notify) showToast(t('ui.toast.repoMap.reloadOk', 'Repo Mapを更新しました'), 'ok');
   } catch (_err) {
     renderRepoMap({
@@ -685,6 +745,7 @@ async function loadRepoMap(options) {
         layers: {}
       }
     });
+    renderLegacyStatus({ items: [] });
     if (notify) showToast(t('ui.toast.repoMap.reloadFail', 'Repo Mapの取得に失敗しました'), 'danger');
   }
 }
@@ -694,11 +755,14 @@ function setupDeveloperMenu() {
   const openSystem = document.getElementById('developer-open-system');
   const openAudit = document.getElementById('developer-open-audit');
   const openImplementation = document.getElementById('developer-open-implementation');
+  const openLegacy = document.getElementById('developer-open-legacy');
   const openManualRedac = document.getElementById('developer-open-manual-redac');
   const openManualUser = document.getElementById('developer-open-manual-user');
   const reload = document.getElementById('repo-map-reload');
+  const reloadLegacy = document.getElementById('repo-map-load-legacy');
   const paneSystem = document.getElementById('repo-map-open-settings');
   const paneAudit = document.getElementById('repo-map-open-audit');
+  const paneLegacyReview = document.getElementById('repo-map-open-legacy-review');
   const paneManualRedac = document.getElementById('repo-map-open-manual-redac');
   const paneManualUser = document.getElementById('repo-map-open-manual-user');
   const redacOpenMap = document.getElementById('manual-redac-open-map');
@@ -717,6 +781,10 @@ function setupDeveloperMenu() {
   openImplementation?.addEventListener('click', () => {
     activatePane('developer-map', { scrollTarget: 'developer-map-implementation' });
   });
+  openLegacy?.addEventListener('click', () => {
+    activatePane('developer-map', { scrollTarget: 'developer-map-legacy' });
+    void loadLegacyStatus({ notify: false });
+  });
   openManualRedac?.addEventListener('click', () => {
     activatePane('developer-manual-redac');
   });
@@ -726,12 +794,18 @@ function setupDeveloperMenu() {
   reload?.addEventListener('click', () => {
     void loadRepoMap({ notify: true });
   });
+  reloadLegacy?.addEventListener('click', () => {
+    void loadLegacyStatus({ notify: true });
+  });
   paneSystem?.addEventListener('click', () => activatePane('settings'));
   paneAudit?.addEventListener('click', async () => {
     activatePane('audit');
     await loadAudit().catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
+  });
+  paneLegacyReview?.addEventListener('click', () => {
+    globalThis.location.href = '/admin/review';
   });
   paneManualRedac?.addEventListener('click', () => activatePane('developer-manual-redac'));
   paneManualUser?.addEventListener('click', () => activatePane('developer-manual-user'));

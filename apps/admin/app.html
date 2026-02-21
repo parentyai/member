@@ -126,6 +126,7 @@
               <button id="developer-open-system" type="button" class="secondary-btn" data-dict-key="ui.label.developer.systemState">システム状態</button>
               <button id="developer-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.developer.audit">監査ログ</button>
               <button id="developer-open-implementation" type="button" class="secondary-btn" data-dict-key="ui.label.developer.implementation">実装状況</button>
+              <button id="developer-open-legacy" type="button" class="secondary-btn" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</button>
               <button id="developer-open-manual-redac" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
               <button id="developer-open-manual-user" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
             </div>
@@ -1672,6 +1673,27 @@
                   <div id="repo-map-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため NOT AVAILABLE を表示します。</div>
                 </div>
               </div>
+              <div id="developer-map-legacy" class="panel">
+                <div class="panel-title" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <button id="repo-map-load-legacy" type="button" data-dict-key="ui.label.developer.loadLegacyStatus">LEGACY導線を再読込</button>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.developer.legacy.path">旧URL</th>
+                          <th data-dict-key="ui.label.developer.legacy.mode">動作</th>
+                          <th data-dict-key="ui.label.developer.legacy.target">推奨遷移</th>
+                        </tr>
+                      </thead>
+                      <tbody id="repo-map-legacy-status-rows"></tbody>
+                    </table>
+                  </div>
+                  <div id="repo-map-legacy-status-note" class="cell-muted">-</div>
+                </div>
+              </div>
             </div>
             <aside class="pane-actions">
               <div class="action-panel">
@@ -1679,6 +1701,7 @@
                 <div class="panel-body">
                   <button id="repo-map-open-settings" type="button" data-dict-key="ui.label.developer.systemState">システム状態</button>
                   <button id="repo-map-open-audit" type="button" data-dict-key="ui.label.developer.audit">監査ログ</button>
+                  <button id="repo-map-open-legacy-review" type="button" data-dict-key="ui.label.developer.openLegacyReview">/admin/review を開く</button>
                   <button id="repo-map-open-manual-redac" type="button" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
                   <button id="repo-map-open-manual-user" type="button" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
                 </div>
