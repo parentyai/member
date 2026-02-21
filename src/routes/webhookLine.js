@@ -9,6 +9,7 @@ const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacM
 const { replyMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
+const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
 const {
   regionPrompt,
   regionDeclared,
@@ -78,6 +79,16 @@ function isRedacStatusCommand(text) {
   return /^\s*会員\s*[IiＩｉ][DdＤｄ]\s*確認\s*$/.test(raw);
 }
 
+function isLlmConsentAcceptCommand(text) {
+  const raw = typeof text === 'string' ? text.trim() : '';
+  return raw === 'AI同意' || raw === 'LLM同意';
+}
+
+function isLlmConsentRevokeCommand(text) {
+  const raw = typeof text === 'string' ? text.trim() : '';
+  return raw === 'AI拒否' || raw === 'LLM拒否';
+}
+
 async function handleLineWebhook(options) {
   const secret = process.env.LINE_CHANNEL_SECRET || '';
   const signature = options && options.signature;
@@ -135,6 +146,17 @@ async function handleLineWebhook(options) {
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
+          if (isLlmConsentAcceptCommand(text)) {
+            await recordUserLlmConsent({ lineUserId: userId, accepted: true, traceId: requestId, actor: userId });
+            await replyFn(replyToken, { type: 'text', text: 'AI機能の利用に同意しました。' });
+            continue;
+          }
+          if (isLlmConsentRevokeCommand(text)) {
+            await recordUserLlmConsent({ lineUserId: userId, accepted: false, traceId: requestId, actor: userId });
+            await replyFn(replyToken, { type: 'text', text: 'AI機能の利用への同意を取り消しました。' });
+            continue;
+          }
+
           if (isRedacStatusCommand(text)) {
             const status = await getRedacMembershipStatusForLine({ lineUserId: userId, requestId });
             if (status.status === 'DECLARED' && status.last4) {
