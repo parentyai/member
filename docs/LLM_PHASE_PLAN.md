@@ -65,6 +65,18 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
   - 監査失敗でも Webhook は 200 を返す（ベストエフォート）
   - 864 テスト全グリーン
 
+## Phase Next-5 (Per-User FAQ LLM Routing via LINE Webhook)
+- Close:
+  - `answerFaqForLine` が `getUserLlmConsent` で per-user consent を最初にチェックする
+  - `llmConsentStatus !== 'accepted'` → `user_consent_not_accepted` ブロック + 「AI同意」案内
+  - consent 済みユーザーの質問が `answerFaqFromKb` に委譲され、global policy も二重チェックされる
+  - `answerFaqFromKb` のブロック応答が LINE 向け日本語メッセージにマップされる
+  - FAQ 回答は 1900文字でトランケートされる（LINE 2000文字制限対応）
+  - LINE Webhook の最終フォールバックとして `answerFaqFn` が region=already_set 後に呼ばれる
+  - consent コマンド（AI同意等）は `continue` で FAQ フォールバックをスキップする
+  - FAQ エラーは catch されて Webhook は 200 を返す（ベストエフォート）
+  - 890 テスト全グリーン
+
 ## Phase243-249 (Safety hardening and guide-only expansion)
 - Phase243:
   - KB schema hardening (`version` add-only + `versionSemver` compatibility)

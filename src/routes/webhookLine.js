@@ -10,6 +10,7 @@ const { replyMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
+const { answerFaqForLine } = require('../usecases/faq/answerFaqForLine');
 const {
   regionPrompt,
   regionDeclared,
@@ -227,6 +228,13 @@ async function handleLineWebhook(options) {
               await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
               continue;
             }
+          }
+
+          // FAQ LLM fallback: route unmatched messages to FAQ answering (best-effort, per-user consent gated)
+          const answerFaqFn = (options && options.answerFaqFn) || answerFaqForLine;
+          const faqResult = await answerFaqFn({ lineUserId: userId, question: text, locale: 'ja', traceId: requestId, requestId });
+          if (faqResult && faqResult.lineMessage) {
+            await replyFn(replyToken, { type: 'text', text: faqResult.lineMessage });
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';
