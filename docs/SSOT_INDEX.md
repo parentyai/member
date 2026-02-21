@@ -143,6 +143,16 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE313_EXECUTION_LOG.md`（Admin導線一本化: LEGACY導線可視化実行ログ）
 - `docs/PHASE314_PLAN.md`（Retention apply運用化: dry-run照合 + 段階適用計画）
 - `docs/PHASE314_EXECUTION_LOG.md`（Retention apply運用化: dry-run照合 + 段階適用実行ログ）
+- `docs/PHASE315_PLAN.md`（Struct Cleanup: Canonical/Legacy明確化 + 構造整流計画）
+- `docs/PHASE315_EXECUTION_LOG.md`（Struct Cleanup: Canonical/Legacy明確化 + 構造整流実行ログ）
+- `docs/CLEANUP_PLAN.md`（Struct Cleanup実施計画）
+- `docs/CLEANUP_DIFF_SUMMARY.md`（Struct Cleanup差分要約）
+- `docs/STRUCTURAL_RISK_BEFORE_AFTER.md`（構造リスクの前後比較）
+- `docs/CI_STRUCTURAL_CHECKLIST.md`（構造衛生CIチェック項目）
+- `docs/FULL_SCAN_BOUNDING_PLAN.md`（full-scan hotspotのbounded query移行計画）
+- `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`（scenario vs scenarioKey 命名ドリフト収束計画）
+- `docs/SSOT_RETENTION_ADDENDUM.md`（Retention方針補遺）
+- `docs/KILLSWITCH_DEPENDENCY_MAP.md`（killSwitch依存経路マップ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）

@@ -292,6 +292,17 @@
     ]
   },
   {
+    "collection": "ops_read_model_snapshots",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/opsSnapshotsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:32"
+    ]
+  },
+  {
     "collection": "ops_segments",
     "kind": "config",
     "recomputable": false,
@@ -338,18 +349,6 @@
     ]
   },
   {
-    "collection": "phase22_kpi_snapshots",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/phase22KpiSnapshotsRepo.js:10",
-      "src/repos/firestore/phase22KpiSnapshotsReadRepo.js:45",
-      "src/repos/firestore/kpiSnapshotsReadRepo.js:45"
-    ]
-  },
-  {
     "collection": "phase2_reports_checklist_pending",
     "kind": "aggregate",
     "recomputable": true,
@@ -392,6 +391,18 @@
       "src/repos/firestore/scenarioRunsRepo.js:9",
       "src/repos/firestore/scenarioRunsRepo.js:17",
       "src/repos/firestore/phase2RunsRepo.js:9"
+    ]
+  },
+  {
+    "collection": "phase22_kpi_snapshots",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "UNDEFINED_IN_CODE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/phase22KpiSnapshotsRepo.js:10",
+      "src/repos/firestore/phase22KpiSnapshotsReadRepo.js:45",
+      "src/repos/firestore/kpiSnapshotsReadRepo.js:45"
     ]
   },
   {

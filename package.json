@@ -21,6 +21,8 @@
     "verify:day": "node scripts/phase21_verify_day_window.js",
     "verify:phase21": "node scripts/phase21_verify_day_window.js --track-base-url \"$TRACK_BASE_URL\" --linkRegistryId \"$LINK_REGISTRY_ID\"",
     "repo-map:generate": "node scripts/generate_repo_map.js",
-    "repo-map:check": "node scripts/generate_repo_map.js --check"
+    "repo-map:check": "node scripts/generate_repo_map.js --check",
+    "cleanup:generate": "node scripts/generate_cleanup_reports.js",
+    "cleanup:check": "node scripts/check_structural_cleanup.js"
   }
 }
