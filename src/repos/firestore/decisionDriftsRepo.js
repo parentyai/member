@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
+const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'decision_drifts';
 
@@ -31,6 +32,12 @@ async function getLatestDecisionDrift(lineUserId) {
     return Object.assign({ id: doc.id }, doc.data());
   } catch (err) {
     if (!isMissingIndexError(err)) throw err;
+    recordMissingIndexFallback({
+      repo: 'decisionDriftsRepo',
+      query: 'getLatestDecisionDrift',
+      err
+    });
+    if (shouldFailOnMissingIndex()) throw err;
     const snap = await baseQuery.get();
     const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
     sortByTimestampDesc(rows, 'createdAt');

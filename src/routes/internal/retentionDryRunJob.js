@@ -3,6 +3,7 @@
 const { getDb } = require('../../infra/firestore');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireInternalJobToken } = require('./cityPackSourceAuditJob');
+const { getRetentionPolicy } = require('../../domain/retention/retentionPolicy');
 
 const DEFAULT_SAMPLE_LIMIT = 200;
 
@@ -33,9 +34,11 @@ function normalizeSampleLimit(value) {
 }
 
 async function countCandidates(db, collection, sampleLimit) {
+  const policy = getRetentionPolicy(collection);
   const snap = await db.collection(collection).limit(sampleLimit).get();
   return {
     collection,
+    policy,
     sampleLimit,
     sampledDocs: snap.docs.length,
     deleteCandidates: 0
@@ -76,13 +79,15 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
     collections: results.length,
     sampledDocs: results.reduce((acc, row) => acc + row.sampledDocs, 0),
     deleteCandidates: 0,
-    dryRun: true
+    dryRun: true,
+    undefinedCollections: results.filter((row) => !row.policy || row.policy.defined === false).map((row) => row.collection)
   };
+  const hasUndefinedCollections = summary.undefinedCollections.length > 0;
 
   try {
     await appendAuditLog({
       actor: 'retention_dry_run_job',
-      action: 'retention.dry_run.execute',
+      action: hasUndefinedCollections ? 'retention.dry_run.blocked' : 'retention.dry_run.execute',
       entityType: 'retention_policy',
       entityId: 'global',
       traceId: traceId || undefined,
@@ -95,6 +100,18 @@ async function handleRetentionDryRunJob(req, res, bodyText) {
     });
   } catch (_err) {
     // best-effort
+  }
+
+  if (hasUndefinedCollections) {
+    writeJson(res, 422, {
+      ok: false,
+      error: 'retention_policy_undefined',
+      dryRun: true,
+      traceId,
+      summary,
+      items: results
+    });
+    return;
   }
 
   writeJson(res, 200, {

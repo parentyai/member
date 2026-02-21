@@ -58,7 +58,7 @@ async function runList(argv, deps) {
     return { exitCode: 1, output: null };
   }
 
-  const repo = deps && deps.repo ? deps.repo : require('../src/repos/firestore/phase22KpiSnapshotsReadRepo');
+  const repo = deps && deps.repo ? deps.repo : require('../src/repos/firestore/kpiSnapshotsReadRepo');
   const logger = deps && deps.logger ? deps.logger : console;
   const nowIso = deps && deps.nowIso ? deps.nowIso : () => new Date().toISOString();
 

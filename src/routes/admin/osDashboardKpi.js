@@ -1,13 +1,13 @@
 'use strict';
 
-const usersRepo = require('../../repos/firestore/usersRepo');
-const notificationsRepo = require('../../repos/firestore/notificationsRepo');
+const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
-const phase2ReadRepo = require('../../repos/firestore/phase2ReadRepo');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12]);
+const MAX_SCAN_LIMIT = 3000;
+const DEFAULT_SCAN_LIMIT = 2000;
 
 function parseWindowMonths(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -16,6 +16,13 @@ function parseWindowMonths(req) {
   const normalized = Math.max(1, Math.min(12, Math.floor(raw)));
   if (!MONTHS_ALLOWED.has(normalized)) return 1;
   return normalized;
+}
+
+function parseScanLimit(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const raw = Number(url.searchParams.get('scanLimit'));
+  if (!Number.isFinite(raw)) return DEFAULT_SCAN_LIMIT;
+  return Math.max(100, Math.min(MAX_SCAN_LIMIT, Math.floor(raw)));
 }
 
 function toMillis(value) {
@@ -93,24 +100,28 @@ async function handleDashboardKpi(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const windowMonths = parseWindowMonths(req);
+  const scanLimit = parseScanLimit(req);
   const buckets = monthBuckets(windowMonths);
   try {
     const [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
-      usersRepo.listUsers({ limit: 5000 }),
-      notificationsRepo.listNotifications({ limit: 5000 }),
-      phase2ReadRepo.listAllNotificationDeliveries({ limit: 5000 }),
-      phase2ReadRepo.listAllEvents({ limit: 5000 }),
+      analyticsReadRepo.listAllUsers({ limit: scanLimit }),
+      analyticsReadRepo.listAllNotifications({ limit: scanLimit }),
+      analyticsReadRepo.listAllNotificationDeliveries({ limit: scanLimit }),
+      analyticsReadRepo.listAllEvents({ limit: scanLimit }),
       linkRegistryRepo.listLinks({ limit: 500 }),
       systemFlagsRepo.getKillSwitch()
     ]);
 
-    const registrationsSeries = countByBuckets(users, (row) => toMillis(row && row.createdAt), buckets);
+    const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
+    const normalizedNotifications = notifications.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
+
+    const registrationsSeries = countByBuckets(normalizedUsers, (row) => toMillis(row && row.createdAt), buckets);
     const registrationTotal = registrationsSeries.reduce((sum, value) => sum + value, 0);
 
     const membershipSeries = buckets.map((bucket) => {
       let total = 0;
       let matched = 0;
-      users.forEach((row) => {
+      normalizedUsers.forEach((row) => {
         const createdAt = toMillis(row && row.createdAt);
         if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
         total += 1;
@@ -119,9 +130,9 @@ async function handleDashboardKpi(req, res) {
       if (!total) return 0;
       return Math.round((matched / total) * 1000) / 10;
     });
-    const membershipMatched = users.filter((row) => row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()).length;
+    const membershipMatched = normalizedUsers.filter((row) => row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()).length;
 
-    const notificationSeries = countByBuckets(notifications, (row) => toMillis(row && row.createdAt), buckets);
+    const notificationSeries = countByBuckets(normalizedNotifications, (row) => toMillis(row && row.createdAt), buckets);
     const notificationTotal = notificationSeries.reduce((sum, value) => sum + value, 0);
 
     const reactionSeries = buckets.map((bucket) => {
@@ -155,7 +166,7 @@ async function handleDashboardKpi(req, res) {
 
     const kpis = {
       registrations: simpleMetric(String(registrationTotal), registrationsSeries, `${windowMonths}ヶ月のLINE登録件数`),
-      membership: simpleMetric(ratioLabel(membershipMatched, users.length), membershipSeries, 'リダックくらぶID一致率'),
+      membership: simpleMetric(ratioLabel(membershipMatched, normalizedUsers.length), membershipSeries, 'リダックくらぶID一致率'),
       stepStates: simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`),
       churnRate: simpleMetric(
         reactionSeries.length ? `${reactionSeries[reactionSeries.length - 1]}%` : '0%',
@@ -178,6 +189,7 @@ async function handleDashboardKpi(req, res) {
       traceId,
       requestId,
       windowMonths,
+      scanLimit,
       kpis
     }));
   } catch (err) {

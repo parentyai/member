@@ -2,6 +2,14 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { listAllEvents } = require('../../repos/firestore/analyticsReadRepo');
+const DEFAULT_EVENTS_LIMIT = 1200;
+const MAX_EVENTS_LIMIT = 3000;
+
+function resolveEventsLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return DEFAULT_EVENTS_LIMIT;
+  return Math.min(Math.floor(num), MAX_EVENTS_LIMIT);
+}
 
 function toMillis(value) {
   if (!value) return null;
@@ -27,13 +35,14 @@ function formatTimestamp(value) {
 
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
+  const eventsLimit = resolveEventsLimit(opts.eventsLimit);
   const notifications = await notificationsRepo.listNotifications({
     limit: opts.limit,
     status: opts.status,
     scenarioKey: opts.scenarioKey,
     stepKey: opts.stepKey
   });
-  const events = await listAllEvents();
+  const events = await listAllEvents({ limit: eventsLimit });
 
   const counts = new Map();
   for (const event of events) {

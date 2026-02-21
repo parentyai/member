@@ -6,6 +6,9 @@ Firestore missing-index fallback を段階的に無効化するための最小�
 - 現時点の挙動は維持する（fallback は継続）。
 - fallback 発生時は WARN ログを必ず記録する。
 - `FIRESTORE_FAIL_ON_MISSING_INDEX=1` で fail-closed 化できる設計を維持する（既定は `0`）。
+- 構造収束方針（Phase308 add-only）:
+  - `ENV_NAME in {stg,stage,staging,prod,production}` のときは `FIRESTORE_FAIL_ON_MISSING_INDEX` 未指定でも fail-closed。
+  - ローカル/テストは従来どおり env var 明示で fail-closed を切替。
 
 ## High Priority Queries
 
