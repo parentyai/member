@@ -998,6 +998,7 @@ function createServer() {
       handleSendPlan,
       handleSendExecute
     } = require('./routes/admin/osNotifications');
+    const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
     let bytes = 0;
@@ -1096,6 +1097,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {
         await handleErrorsSummary(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/dashboard/kpi') {
+        await handleDashboardKpi(req, res);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/view') {

@@ -49,11 +49,29 @@ const state = {
   composerCurrentNotificationId: null,
   composerCurrentPlanHash: null,
   composerCurrentConfirmToken: null,
+  composerKillSwitch: false,
+  dashboardKpis: null,
   topCauses: '-',
   topCausesTip: '',
   topAnomaly: '-',
   paneUpdatedAt: {}
 };
+
+const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
+const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
+const PANE_HEADER_MAP = Object.freeze({
+  home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
+  composer: { titleKey: 'ui.label.page.composer', subtitleKey: 'ui.desc.page.composer' },
+  monitor: { titleKey: 'ui.label.page.monitor', subtitleKey: 'ui.desc.page.monitor' },
+  errors: { titleKey: 'ui.label.page.errors', subtitleKey: 'ui.desc.page.errors' },
+  'read-model': { titleKey: 'ui.label.page.readModel', subtitleKey: 'ui.desc.page.readModel' },
+  vendors: { titleKey: 'ui.label.page.vendors', subtitleKey: 'ui.desc.page.vendors' },
+  'city-pack': { titleKey: 'ui.label.page.cityPack', subtitleKey: 'ui.desc.page.cityPack' },
+  audit: { titleKey: 'ui.label.page.audit', subtitleKey: 'ui.desc.page.audit' },
+  llm: { titleKey: 'ui.label.page.faq', subtitleKey: 'ui.desc.page.faq' },
+  settings: { titleKey: 'ui.label.page.settings', subtitleKey: 'ui.desc.page.settings' },
+  maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
+});
 
 function showToast(message, tone) {
   if (!toastEl) return;
@@ -253,9 +271,44 @@ function setupNav() {
     btn.addEventListener('click', () => {
       const target = btn.dataset.paneTarget;
       if (!target) return;
-      activatePane(target);
+      const scrollTarget = btn.dataset.scrollTarget || null;
+      activatePane(target, { scrollTarget, clickedButton: btn });
     });
   });
+}
+
+function updatePageHeader(paneKey) {
+  const meta = PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
+  const titleEl = document.getElementById('page-title');
+  const subtitleEl = document.getElementById('page-subtitle');
+  const primaryAction = document.getElementById('page-action-primary');
+  const secondaryAction = document.getElementById('page-action-secondary');
+  if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
+  if (subtitleEl) subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
+  if (primaryAction) primaryAction.classList.add('hidden');
+  if (secondaryAction) secondaryAction.classList.add('hidden');
+}
+
+function expandPaneDetails(paneKey) {
+  if (!paneKey) return;
+  const paneEl = document.querySelector(`.app-pane[data-pane="${paneKey}"]`);
+  if (!paneEl) return;
+  paneEl.querySelectorAll('details').forEach((el) => {
+    el.open = true;
+  });
+}
+
+function expandAllDetails() {
+  document.querySelectorAll('details').forEach((el) => {
+    el.open = true;
+  });
+}
+
+function scrollToPaneAnchor(targetId) {
+  if (!targetId) return;
+  const target = document.getElementById(targetId);
+  if (!target || typeof target.scrollIntoView !== 'function') return;
+  target.scrollIntoView({ block: 'start' });
 }
 
 function setupHomeControls() {
@@ -268,6 +321,35 @@ function setupHomeControls() {
   });
   document.getElementById('home-run-test')?.addEventListener('click', () => {
     runHomeSafeTest();
+  });
+  document.getElementById('dashboard-reload')?.addEventListener('click', () => {
+    void loadDashboardKpis({ notify: true });
+  });
+  document.getElementById('dashboard-window-months')?.addEventListener('change', () => {
+    void loadDashboardKpis({ notify: false });
+  });
+}
+
+function setupHeaderActions() {
+  const consultBtn = document.getElementById('header-consult-link');
+  if (!consultBtn) return;
+  consultBtn.addEventListener('click', async () => {
+    const traceId = ensureTraceInput('traceId') || newTraceId();
+    try {
+      await fetch('/api/phase1/events', {
+        method: 'POST',
+        headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, buildHeaders({}, traceId)),
+        body: JSON.stringify({
+          lineUserId: `admin:${state.role}`,
+          type: 'ADMIN_CONSULT_CLICKED',
+          ref: 'admin_composer'
+        })
+      });
+    } catch (_err) {
+      // best effort only
+    }
+    activatePane('llm');
+    showToast(t('ui.toast.header.consult', '相談導線を開きました'), 'ok');
   });
 }
 
@@ -293,9 +375,18 @@ function normalizePaneTarget(target) {
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const normalizedTarget = normalizePaneTarget(target);
-  document.querySelectorAll('.nav-item').forEach((el) => {
-    el.classList.toggle('is-active', el.dataset.paneTarget === normalizedTarget);
-  });
+  if (opts.clickedButton) {
+    document.querySelectorAll('.nav-item').forEach((el) => {
+      el.classList.toggle('is-active', el === opts.clickedButton);
+    });
+  } else {
+    let activated = false;
+    document.querySelectorAll('.nav-item').forEach((el) => {
+      const shouldActivate = !activated && el.dataset.paneTarget === normalizedTarget;
+      el.classList.toggle('is-active', shouldActivate);
+      if (shouldActivate) activated = true;
+    });
+  }
   document.querySelectorAll('.app-pane').forEach((pane) => {
     pane.classList.toggle('is-active', pane.dataset.pane === normalizedTarget);
   });
@@ -303,6 +394,11 @@ function activatePane(target, options) {
     const nextUrl = new URL(globalThis.location.href);
     nextUrl.searchParams.set('pane', normalizedTarget);
     globalThis.history.replaceState({}, '', `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
+  }
+  updatePageHeader(normalizedTarget);
+  expandPaneDetails(normalizedTarget);
+  if (opts.scrollTarget) {
+    scrollToPaneAnchor(opts.scrollTarget);
   }
 }
 
@@ -414,20 +510,6 @@ function updateTopBar() {
   const anomaly = document.getElementById('top-anomaly');
   if (anomaly) anomaly.textContent = state.topAnomaly || '-';
 
-  const homeTodo = document.getElementById('home-todo');
-  if (homeTodo) homeTodo.textContent = String(todo);
-  const homeCauses = document.getElementById('home-causes');
-  if (homeCauses) {
-    homeCauses.textContent = state.topCauses || '-';
-    const tip = state.topCausesTip || '';
-    if (tip) {
-      homeCauses.setAttribute('data-tip', tip);
-      homeCauses.setAttribute('tabindex', '0');
-    }
-  }
-  const homeAnomaly = document.getElementById('home-anomaly');
-  if (homeAnomaly) homeAnomaly.textContent = state.topAnomaly || '-';
-
   const monitorCauses = document.getElementById('monitor-causes');
   if (monitorCauses) {
     monitorCauses.textContent = state.topCauses || '-';
@@ -439,6 +521,72 @@ function updateTopBar() {
   }
   const monitorAnomaly = document.getElementById('monitor-anomaly');
   if (monitorAnomaly) monitorAnomaly.textContent = state.topAnomaly || '-';
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(Number(value))) return '-';
+  return `${Math.round(Number(value) * 1000) / 10}%`;
+}
+
+function createSparklineBars(containerEl, series) {
+  if (!containerEl) return;
+  containerEl.innerHTML = '';
+  if (!Array.isArray(series) || !series.length) return;
+  const numeric = series.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value));
+  if (!numeric.length) return;
+  const max = Math.max(...numeric, 1);
+  series.forEach((value) => {
+    const bar = document.createElement('span');
+    bar.className = 'kpi-spark-bar';
+    const safe = Number.isFinite(Number(value)) ? Number(value) : 0;
+    const ratio = max > 0 ? safe / max : 0;
+    bar.style.height = `${Math.max(8, Math.round(ratio * 36))}px`;
+    containerEl.appendChild(bar);
+  });
+}
+
+function renderDashboardMetricCard(metricKey, metric) {
+  const valueEl = document.getElementById(`dashboard-kpi-${metricKey}-value`);
+  const sparkEl = document.getElementById(`dashboard-kpi-${metricKey}-spark`);
+  const noteEl = document.getElementById(`dashboard-kpi-${metricKey}-note`);
+  if (!valueEl || !sparkEl || !noteEl) return;
+
+  if (!metric || metric.available !== true) {
+    valueEl.textContent = t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
+    noteEl.textContent = t('ui.desc.dashboard.notAvailable', '現行データから算出できません');
+    createSparklineBars(sparkEl, []);
+    return;
+  }
+  valueEl.textContent = metric.valueLabel || '-';
+  noteEl.textContent = metric.note || '-';
+  createSparklineBars(sparkEl, metric.series || []);
+}
+
+function renderDashboardKpis(payload) {
+  const kpis = payload && payload.kpis && typeof payload.kpis === 'object' ? payload.kpis : {};
+  renderDashboardMetricCard('registrations', kpis.registrations);
+  renderDashboardMetricCard('membership', kpis.membership);
+  renderDashboardMetricCard('step', kpis.stepStates);
+  renderDashboardMetricCard('churn', kpis.churnRate);
+  renderDashboardMetricCard('ctr', kpis.ctrTrend);
+  renderDashboardMetricCard('citypack', kpis.cityPackUsage);
+}
+
+async function loadDashboardKpis(options) {
+  const notify = !options || options.notify !== false;
+  const months = document.getElementById('dashboard-window-months')?.value || '1';
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  try {
+    const res = await fetch(`/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(months)}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'kpi load failed');
+    state.dashboardKpis = data.kpis || null;
+    renderDashboardKpis(data);
+    if (notify) showToast(t('ui.toast.dashboard.reloadOk', 'ダッシュボード指標を更新しました'), 'ok');
+  } catch (_err) {
+    renderDashboardKpis({ kpis: {} });
+    if (notify) showToast(t('ui.toast.dashboard.reloadFail', 'ダッシュボード指標の取得に失敗しました'), 'danger');
+  }
 }
 
 function computeTopCauses(items) {
@@ -2957,6 +3105,14 @@ function selectedComposerType() {
   return normalizeComposerType(typeEl ? typeEl.value : '');
 }
 
+function composerTypeHint(type) {
+  if (type === 'GENERAL') return t('ui.desc.composer.typeHint.general', '一般通知: 重要な連絡を簡潔に送ります。');
+  if (type === 'ANNOUNCEMENT') return t('ui.desc.composer.typeHint.announcement', 'お知らせ: 公開期限と優先度を必要な場合のみ指定します。');
+  if (type === 'VENDOR') return t('ui.desc.composer.typeHint.vendor', 'ベンダー通知: ベンダーIDを必須入力してください。');
+  if (type === 'AB') return t('ui.desc.composer.typeHint.ab', 'ABテスト: 比率と指標を設定して比較します。');
+  return t('ui.desc.composer.typeHint.step', 'ステップ通知: シナリオとステップを指定して対象を絞り込みます。');
+}
+
 function applyComposerTypeFields() {
   const selected = selectedComposerType();
   document.querySelectorAll('#composer-type-fields .type-fields').forEach((el) => {
@@ -2976,6 +3132,8 @@ function applyComposerTypeFields() {
     if (targetRegionEl) targetRegionEl.value = '';
     if (membersOnlyEl) membersOnlyEl.checked = false;
   }
+  const hintEl = document.getElementById('composer-type-hint');
+  if (hintEl) hintEl.textContent = composerTypeHint(selected);
 }
 
 function mapComposerStatusLabel(statusLabelValue) {
@@ -3023,13 +3181,9 @@ function buildComposerNotificationMeta(type) {
     return Object.keys(meta).length ? meta : null;
   }
   if (type === 'STEP') {
-    const region = document.getElementById('targetRegion')?.value?.trim() || '';
     const membersOnly = Boolean(document.getElementById('membersOnly')?.checked);
-    const targetLimit = document.getElementById('targetLimit')?.value?.trim() || '';
     const meta = {};
-    if (region) meta.region = region;
     if (membersOnly) meta.membersOnly = true;
-    if (targetLimit) meta.cap = Number(targetLimit) || 50;
     return Object.keys(meta).length ? meta : null;
   }
   return null;
@@ -3039,13 +3193,19 @@ function renderComposerLivePreview() {
   const title = document.getElementById('title')?.value?.trim() || '-';
   const body = document.getElementById('body')?.value || '-';
   const cta = document.getElementById('ctaText')?.value?.trim() || '-';
+  const cta2 = document.getElementById('ctaText2')?.value?.trim() || '';
   const previewTitle = document.getElementById('composer-preview-title');
   const previewBody = document.getElementById('composer-preview-body');
   const previewCta = document.getElementById('composer-preview-cta');
+  const previewCta2 = document.getElementById('composer-preview-cta2');
   const previewLink = document.getElementById('composer-preview-link');
   if (previewTitle) previewTitle.textContent = title;
   if (previewBody) previewBody.textContent = body;
   if (previewCta) previewCta.textContent = cta;
+  if (previewCta2) {
+    previewCta2.textContent = cta2 || '-';
+    previewCta2.classList.toggle('is-hidden', !cta2);
+  }
   if (previewLink) {
     const link = state.composerLinkPreview;
     if (link && link.id) {
@@ -3058,10 +3218,75 @@ function renderComposerLivePreview() {
   }
 }
 
+function buildComposerLocalSafetyIssues(payload) {
+  const issues = [];
+  if (state.composerKillSwitch) {
+    issues.push(t('ui.desc.composer.safety.killSwitch', 'KillSwitchがONです。送信を停止してから再実行してください。'));
+  }
+  if (!payload.title || !payload.body || !payload.ctaText || !payload.linkRegistryId) {
+    issues.push(t('ui.desc.composer.safety.required', '必須項目が未入力です。タイトル・本文・ボタン文言1・リンクIDを入力してください。'));
+  }
+  if (looksLikeDirectUrl(payload.linkRegistryId || '')) {
+    issues.push(t('ui.desc.composer.safety.directUrl', 'リンクIDにはURLを直接入力できません。リンク管理IDを指定してください。'));
+  }
+  if (payload.notificationType === 'STEP') {
+    if (!COMPOSER_ALLOWED_SCENARIOS.has(String(payload.scenarioKey || ''))) {
+      issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。AまたはCを選択してください。'));
+    }
+    if (!COMPOSER_ALLOWED_STEPS.has(String(payload.stepKey || ''))) {
+      issues.push(t('ui.desc.composer.safety.step', 'ステップが不正です。定義済みステップを選択してください。'));
+    }
+  }
+  if (payload.notificationType === 'AB') {
+    const cta2 = document.getElementById('ctaText2')?.value?.trim() || '';
+    if (cta2) {
+      issues.push(t('ui.desc.composer.safety.cta2PreviewOnly', 'CTA2はプレビュー専用です。送信ではCTA1のみ使用されます。'));
+    }
+  }
+  if (!payload.target || !Number.isFinite(Number(payload.target.limit)) || Number(payload.target.limit) <= 0) {
+    issues.push(t('ui.desc.composer.safety.target', '対象件数が0です。1以上の上限件数を指定してください。'));
+  }
+  if (state.composerLinkPreview && state.composerLinkPreview.state === 'WARN') {
+    issues.push(t('ui.desc.composer.safety.linkWarn', 'リンク状態がWARNです。リンク管理の状態を解消してください。'));
+  }
+  return issues;
+}
+
+function renderComposerSafety(issues) {
+  const badge = document.getElementById('composer-safety');
+  const listEl = document.getElementById('composer-safety-reasons');
+  const banner = document.getElementById('composer-killswitch-banner');
+  if (banner) {
+    banner.classList.toggle('is-visible', state.composerKillSwitch);
+    banner.textContent = state.composerKillSwitch
+      ? t('ui.desc.composer.killSwitchBanner', 'KillSwitchがONです。通知送信は停止中です。')
+      : '';
+  }
+  if (badge) {
+    const hasIssue = Array.isArray(issues) && issues.length > 0;
+    badge.className = hasIssue ? 'badge badge-danger' : 'badge badge-ok';
+    badge.textContent = hasIssue ? 'NG' : 'OK';
+    state.lastRisk = hasIssue
+      ? t('ui.desc.composer.riskNeedsAction', '運用で解消できる要対応があります')
+      : t('ui.desc.composer.riskOk', '問題なし');
+  }
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  const values = Array.isArray(issues) && issues.length ? issues : [t('ui.desc.composer.safety.ok', '修正が必要な項目はありません。')];
+  values.forEach((reason) => {
+    const li = document.createElement('li');
+    li.textContent = reason;
+    listEl.appendChild(li);
+  });
+}
+
 function updateComposerSummary() {
   applyComposerTypeFields();
   updateComposerStatusPill();
   renderComposerLivePreview();
+  const payload = buildDraftPayload();
+  const issues = buildComposerLocalSafetyIssues(payload);
+  renderComposerSafety(issues);
 }
 
 function setComposerStatus(tone, label) {
@@ -3073,24 +3298,19 @@ function setComposerStatus(tone, label) {
 }
 
 function updateSafetyBadge(result) {
-  const badge = document.getElementById('composer-safety');
-  if (!badge) return;
+  const payload = buildDraftPayload();
+  const issues = buildComposerLocalSafetyIssues(payload);
   if (!result || !result.ok) {
-    badge.className = 'badge badge-danger';
-    badge.textContent = statusLabel('DANGER');
-    state.lastRisk = t('ui.desc.composer.riskFail', 'Plan失敗');
-    return;
-  }
-  const blocked = typeof result.capBlockedCount === 'number' ? result.capBlockedCount : 0;
-  if (blocked > 0) {
-    badge.className = 'badge badge-warn';
-    badge.textContent = statusLabel('WARN');
-    state.lastRisk = t('ui.desc.composer.riskBlocked', '抑制対象あり');
+    issues.push(t('ui.desc.composer.safety.planFail', '送信計画の作成に失敗しました。入力とリンク状態を確認してください。'));
   } else {
-    badge.className = 'badge badge-ok';
-    badge.textContent = statusLabel('OK');
-    state.lastRisk = t('ui.desc.composer.riskOk', '問題なし');
+    if (Number(result.count || 0) <= 0) {
+      issues.push(t('ui.desc.composer.safety.planZero', '対象数が0のため送信できません。対象条件を見直してください。'));
+    }
+    if (Number(result.capBlockedCount || 0) > 0) {
+      issues.push(t('ui.desc.composer.safety.planBlocked', '抑制対象が含まれています。上限設定または対象条件を調整してください。'));
+    }
   }
+  renderComposerSafety(issues);
 }
 
 function buildDraftPayload() {
@@ -3118,17 +3338,13 @@ function buildDraftPayload() {
 
 function buildTarget(notificationType) {
   const type = normalizeComposerType(notificationType);
+  const membersOnly = Boolean(document.getElementById('membersOnly')?.checked);
   if (type !== 'STEP') {
     return { limit: 50 };
   }
-  const region = document.getElementById('targetRegion')?.value?.trim() || '';
-  const limitValue = document.getElementById('targetLimit')?.value || '';
-  const limit = limitValue ? Number(limitValue) : null;
-  const membersOnly = Boolean(document.getElementById('membersOnly')?.checked);
   const target = {};
-  if (region) target.region = region;
   if (membersOnly) target.membersOnly = true;
-  target.limit = limit && Number.isFinite(limit) && limit > 0 ? limit : 50;
+  target.limit = 50;
   return target;
 }
 
@@ -3151,15 +3367,16 @@ function applyComposerSavedFilters() {
   const keyword = (document.getElementById('composer-saved-search')?.value || '').trim().toLowerCase();
   const status = (document.getElementById('composer-saved-status')?.value || '').trim().toLowerCase();
   const type = (document.getElementById('composer-saved-type')?.value || '').trim().toUpperCase();
-  const category = (document.getElementById('composer-saved-category')?.value || '').trim().toLowerCase();
-  const scenarioKey = (document.getElementById('composer-saved-scenario')?.value || '').trim().toLowerCase();
+  const category = (document.getElementById('composer-saved-category')?.value || '').trim().toUpperCase();
+  const scenarioKey = (document.getElementById('composer-saved-scenario')?.value || '').trim().toUpperCase();
   const stepKey = (document.getElementById('composer-saved-step')?.value || '').trim().toLowerCase();
   state.composerSavedFilteredItems = state.composerSavedItems.filter((item) => {
-    if (keyword && !String(item.title || '').toLowerCase().includes(keyword)) return false;
+    const searchable = [item.title, item.body, item.ctaText].map((value) => String(value || '').toLowerCase()).join('\n');
+    if (keyword && !searchable.includes(keyword)) return false;
     if (status && normalizeComposerSavedStatus(item.status) !== status) return false;
     if (type && normalizeComposerType(item.notificationType || 'STEP') !== type) return false;
-    if (category && !String(item.notificationCategory || '').toLowerCase().includes(category)) return false;
-    if (scenarioKey && String(item.scenarioKey || '').toLowerCase() !== scenarioKey) return false;
+    if (category && String(item.notificationCategory || '').toUpperCase() !== category) return false;
+    if (scenarioKey && String(item.scenarioKey || '').toUpperCase() !== scenarioKey) return false;
     if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
     return true;
   });
@@ -3170,16 +3387,18 @@ function loadComposerFormFromRow(row, duplicateMode) {
   document.getElementById('title').value = row.title || '';
   document.getElementById('body').value = row.body || '';
   document.getElementById('ctaText').value = row.ctaText || '';
+  document.getElementById('ctaText2').value = '';
   document.getElementById('linkRegistryId').value = row.linkRegistryId || '';
   document.getElementById('notificationCategory').value = row.notificationCategory || 'SEQUENCE_GUIDANCE';
   document.getElementById('notificationType').value = normalizeComposerType(row.notificationType || 'STEP');
   document.getElementById('scenarioKey').value = row.scenarioKey || 'A';
   document.getElementById('stepKey').value = row.stepKey || 'week';
-  document.getElementById('targetRegion').value = row.target && row.target.region ? row.target.region : '';
-  document.getElementById('targetLimit').value = row.target && Number.isFinite(row.target.limit) ? String(row.target.limit) : '50';
+  document.getElementById('targetRegion').value = '';
+  document.getElementById('targetLimit').value = '50';
   document.getElementById('membersOnly').checked = Boolean(row.target && row.target.membersOnly);
 
   const meta = row.notificationMeta && typeof row.notificationMeta === 'object' ? row.notificationMeta : {};
+  document.getElementById('ctaText2').value = '';
   document.getElementById('metaAnnouncementExpiry').value = meta.expiry || '';
   document.getElementById('metaAnnouncementPriority').value = meta.priority || '';
   document.getElementById('metaVendorId').value = meta.vendorId || '';
@@ -3221,7 +3440,7 @@ function renderComposerSavedRows() {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = 6;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -3230,18 +3449,17 @@ function renderComposerSavedRows() {
   items.forEach((item) => {
     const tr = document.createElement('tr');
     if (state.composerSelectedNotificationId && state.composerSelectedNotificationId === item.id) tr.classList.add('row-active');
+    const targetCount = item && item.target && Number.isFinite(Number(item.target.limit)) ? Number(item.target.limit) : null;
     const cells = [
+      formatTimestampForList(item.createdAt),
       item.title || '-',
-      normalizeComposerType(item.notificationType || 'STEP'),
-      normalizeComposerSavedStatus(item.status),
-      item.notificationCategory || '-',
-      item.scenarioKey || '-',
-      item.stepKey || '-',
-      formatTimestampForList(item.createdAt)
+      composerStatusLabel(item.status),
+      targetCount === null ? '-' : String(targetCount),
+      t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE')
     ];
     cells.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 6) td.classList.add('cell-muted');
+      if (idx >= 2) td.classList.add('cell-muted');
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -3302,6 +3520,19 @@ async function loadComposerLinkPreview() {
   renderComposerLivePreview();
 }
 
+async function loadComposerSafetyContext() {
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  try {
+    const res = await fetch('/api/admin/os/kill-switch/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    state.composerKillSwitch = Boolean(data && data.ok && data.killSwitch);
+  } catch (_err) {
+    state.composerKillSwitch = false;
+  }
+  state.paneUpdatedAt.composer = new Date().toISOString();
+  updateComposerSummary();
+}
+
 function validateComposerPayload(payload) {
   if (!payload.title || !payload.body || !payload.ctaText || !payload.linkRegistryId) {
     return t('ui.toast.composer.needRequired', '必須項目を入力してください');
@@ -3311,6 +3542,32 @@ function validateComposerPayload(payload) {
     if (!vendorId) return t('ui.toast.composer.needVendorId', 'VENDORタイプにはベンダーIDが必要です');
   }
   return '';
+}
+
+function composerTypeLabel(value) {
+  const type = normalizeComposerType(value || 'STEP');
+  if (type === 'GENERAL') return t('ui.value.composer.type.general', '一般');
+  if (type === 'ANNOUNCEMENT') return t('ui.value.composer.type.announcement', 'お知らせ');
+  if (type === 'VENDOR') return t('ui.value.composer.type.vendor', 'ベンダー');
+  if (type === 'AB') return t('ui.value.composer.type.ab', 'ABテスト');
+  return t('ui.value.composer.type.step', 'ステップ');
+}
+
+function composerCategoryLabel(value) {
+  const raw = String(value || '').toUpperCase();
+  if (raw === 'DEADLINE_REQUIRED') return t('ui.value.composer.category.deadline', '期限必須');
+  if (raw === 'IMMEDIATE_ACTION') return t('ui.value.composer.category.immediate', '即時対応');
+  if (raw === 'SEQUENCE_GUIDANCE') return t('ui.value.composer.category.sequence', '順次案内');
+  if (raw === 'TARGETED_ONLY') return t('ui.value.composer.category.targeted', '対象限定');
+  if (raw === 'COMPLETION_CONFIRMATION') return t('ui.value.composer.category.completion', '完了確認');
+  return raw || '-';
+}
+
+function composerStatusLabel(value) {
+  const raw = normalizeComposerSavedStatus(value);
+  if (raw === 'approved' || raw === 'active') return t('ui.value.composer.status.approved', '承認済み');
+  if (raw === 'executed' || raw === 'sent') return t('ui.value.composer.status.executed', '実行済み');
+  return t('ui.value.composer.status.draft', '下書き');
 }
 
 async function postJson(url, payload, traceId) {
@@ -3325,14 +3582,6 @@ async function postJson(url, payload, traceId) {
 }
 
 function setupComposerActions() {
-  const regen = document.getElementById('regen-trace');
-  if (regen) regen.addEventListener('click', () => {
-    const trace = newTraceId();
-    const el = document.getElementById('traceId');
-    if (el) el.value = trace;
-    const note = document.getElementById('trace-note');
-    if (note) note.textContent = '';
-  });
   if (document.getElementById('traceId')) {
     document.getElementById('traceId').value = newTraceId();
   }
@@ -3486,7 +3735,7 @@ function setupComposerActions() {
   });
 
   let linkLookupTimer = null;
-  ['title', 'body', 'ctaText', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'notificationType', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
+  ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'notificationType', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') {
@@ -3521,6 +3770,7 @@ function setupComposerActions() {
   updateComposerSummary();
   void loadComposerSavedNotifications({ notify: false });
   void loadComposerLinkPreview();
+  void loadComposerSafetyContext();
 }
 
 function setupAudit() {
@@ -4130,6 +4380,7 @@ function setupLlmControls() {
   applyDict();
   setupRoleSwitch();
   setupNav();
+  setupHeaderActions();
   setupHomeControls();
   setupComposerActions();
   setupMonitorControls();
@@ -4141,6 +4392,7 @@ function setupLlmControls() {
   setupAudit();
   setupLlmControls();
   setRole(state.role);
+  expandAllDetails();
   activateInitialPane();
   setupPaneKeyboardShortcuts();
 
@@ -4158,5 +4410,6 @@ function setupLlmControls() {
   loadCityPackKpi({ notify: false });
   loadCityPackMetrics({ notify: false });
   loadCityPackAuditRuns({ notify: false });
+  loadDashboardKpis({ notify: false });
   renderAllDecisionCards();
 })();
