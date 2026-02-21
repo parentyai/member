@@ -139,6 +139,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE311_EXECUTION_LOG.md`（三層UI再設計: 運用一本道 + 開発者Repo Map + 取説統合実行ログ）
 - `docs/PHASE314_PLAN.md`（Retention apply運用化: dry-run照合 + 段階適用計画）
 - `docs/PHASE314_EXECUTION_LOG.md`（Retention apply運用化: dry-run照合 + 段階適用実行ログ）
+- `docs/PHASE313_PLAN.md`（Admin導線一本化: LEGACY導線可視化計画）
+- `docs/PHASE313_EXECUTION_LOG.md`（Admin導線一本化: LEGACY導線可視化実行ログ）
 - `docs/LLM_INTEGRATION_OVERVIEW.md`（LLM統合の責務境界）
 - `docs/LLM_DB_INTEGRATION_SPEC.md`（LLM × DB統合仕様）
 - `docs/LLM_GUARDRAILS.md`（LLMガードレール）
