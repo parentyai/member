@@ -1058,6 +1058,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/legacy-status' || pathname === '/api/admin/legacy-status/')) {
+    const { handleLegacyStatus } = require('./routes/admin/legacyStatus');
+    handleLegacyStatus(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
     const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;
