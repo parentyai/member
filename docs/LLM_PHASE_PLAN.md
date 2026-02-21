@@ -45,6 +45,16 @@ LLM 統合は Phase1-5 で段階導入し、advisory-only と fail-closed を維
   - adapter_missing / llm_timeout / llm_api_error でフォールバック動作をテスト固定
   - `llmClient.explainOps` / `llmClient.suggestNextActionCandidates` がアダプタインターフェースを満たす
 
+## Phase Next-3 (Guide-only Unlock — Consent UI + lawfulBasis)
+- Close:
+  - `GET /api/admin/llm/consent/status` が consent 状態と guideModeLocked を返す
+  - `POST /api/admin/llm/consent/verify` が `lawfulBasis === 'consent'` のみ `consentVerified=true` に設定
+  - `POST /api/admin/llm/consent/revoke` が `consentVerified=false` に設定
+  - `lawfulBasis !== 'consent'` での verify が HTTP 409 を返す（fail-closed）
+  - `consent_missing` ブロックが verify 後に解除されることをテスト固定
+  - 全 consent 操作が `llm_consent.*` action で audit_logs に記録される
+  - `blockedReasonCategory=CONSENT_MISSING` が audit payloadSummary に含まれることをテスト固定
+
 ## Phase243-249 (Safety hardening and guide-only expansion)
 - Phase243:
   - KB schema hardening (`version` add-only + `versionSemver` compatibility)
