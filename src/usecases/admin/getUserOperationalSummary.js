@@ -8,6 +8,12 @@ const {
   listAllNotificationDeliveries
 } = require('../../repos/firestore/analyticsReadRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const {
+  resolveSnapshotReadMode,
+  isSnapshotReadEnabled,
+  isSnapshotRequired,
+  isFallbackAllowed
+} = require('../../domain/readModel/snapshotReadPolicy');
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_operational_summary';
@@ -17,13 +23,6 @@ function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
-}
-
-function useSnapshotRead(value) {
-  if (value === false) return false;
-  const env = process.env.OPS_SNAPSHOT_READ_ENABLED;
-  if (env === '0' || env === 'false') return false;
-  return true;
 }
 
 function toMillis(value) {
@@ -118,11 +117,18 @@ function buildLatestReactionByUser(deliveries) {
 
 async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
-  if (useSnapshotRead(opts.useSnapshot)) {
+  const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
+  if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
     if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
       return snapshot.data.items;
     }
+    if (isSnapshotRequired(snapshotMode)) {
+      return [];
+    }
+  }
+  if (!isFallbackAllowed(snapshotMode)) {
+    return [];
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
   const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
