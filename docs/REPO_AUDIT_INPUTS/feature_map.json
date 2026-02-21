@@ -1,0 +1,2077 @@
+{
+  "features": [
+    {
+      "feature": "cityPackBulletins",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "sendNotification"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPackBulletinsRepo",
+        "decisionTimelineRepo",
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "systemFlagsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_pack_bulletins",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 2,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackEvidence",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPacksRepo",
+        "sourceEvidenceRepo",
+        "sourceRefsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_packs",
+        "source_evidence",
+        "source_refs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackFeedback",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPackFeedbackRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_pack_feedback",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 3,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackRequests",
+      "entrypoints": [],
+      "usecases": [
+        "activateCityPack",
+        "appendAuditLog",
+        "runCityPackDraftJob"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPackRequestsRepo",
+        "cityPacksRepo",
+        "sourceRefsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_pack_requests",
+        "city_packs",
+        "source_refs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 8,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackReviewInbox",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "computeCityPackMetrics",
+        "normalizeLimit",
+        "normalizeWindowDays",
+        "reviewSourceRefDecision",
+        "runCityPackSourceAuditJob"
+      ],
+      "repos": [
+        "analyticsReadRepo",
+        "auditLogsRepo",
+        "cityPackMetricsDailyRepo",
+        "cityPacksRepo",
+        "notificationsRepo",
+        "sourceAuditRunsRepo",
+        "sourceEvidenceRepo",
+        "sourceRefsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "checklists",
+        "city_pack_metrics_daily",
+        "city_packs",
+        "events",
+        "notification_deliveries",
+        "notifications",
+        "source_audit_runs",
+        "source_evidence",
+        "source_refs",
+        "system_flags",
+        "user_checklists",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackTemplateLibrary",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPackTemplateLibraryRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_pack_template_library"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackUpdateProposals",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPackUpdateProposalsRepo",
+        "cityPacksRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_pack_update_proposals",
+        "city_packs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPacks",
+      "entrypoints": [],
+      "usecases": [
+        "activateCityPack",
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "cityPacksRepo",
+        "sourceRefsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 9,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "implementationTargets",
+      "entrypoints": [],
+      "usecases": [],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 3,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "kbArticles",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "faqArticlesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "faq_articles"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "killSwitch",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "setKillSwitch"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 13,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "linkRegistry",
+      "entrypoints": [
+        "GET /admin/link-registry",
+        "POST /admin/link-registry"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "checkLinkHealth",
+        "createLink",
+        "deleteLink",
+        "listLinks",
+        "updateLink"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "linkRegistryRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 73,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "llmConfig",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "llmConsent",
+      "entrypoints": [
+        "GET /api/admin/llm/ops-explain",
+        "GET /api/admin/llm/next-actions",
+        "GET /api/admin/llm/consent/status",
+        "POST /api/admin/llm/consent/verify",
+        "POST /api/admin/llm/consent/revoke"
+      ],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 4,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "llmFaq",
+      "entrypoints": [
+        "POST /api/admin/llm/config/plan",
+        "POST /api/admin/llm/config/set",
+        "POST /api/admin/llm/faq/answer"
+      ],
+      "usecases": [
+        "answerFaqFromKb"
+      ],
+      "repos": [
+        "faqAnswerLogsRepo",
+        "faqArticlesRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "llmOps",
+      "entrypoints": [
+        "POST /api/admin/llm/config/set",
+        "POST /api/admin/llm/faq/answer",
+        "GET /api/admin/llm/ops-explain",
+        "GET /api/admin/llm/next-actions"
+      ],
+      "usecases": [
+        "getNextActionCandidates",
+        "getOpsExplanation"
+      ],
+      "repos": [
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "system_flags"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 2,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "monitorInsights",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "analyticsReadRepo",
+        "auditLogsRepo",
+        "faqAnswerLogsRepo",
+        "kpiSnapshotsReadRepo",
+        "linkRegistryRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "checklists",
+        "events",
+        "faq_answer_logs",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "phase22_kpi_snapshots",
+        "user_checklists",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "notificationDeliveries",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "notificationTest",
+      "entrypoints": [
+        "POST /api/admin/send-test",
+        "POST /api/admin/test-runs"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "runNotificationTest"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "linkRegistryRepo",
+        "notificationTestRunsRepo",
+        "notificationsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry",
+        "notification_test_run_items",
+        "notification_test_runs",
+        "notifications",
+        "system_flags"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "notifications",
+      "entrypoints": [
+        "GET /admin/notifications",
+        "POST /admin/notifications"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "createNotification",
+        "listNotifications",
+        "sendNotification",
+        "testSendNotification"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "decisionTimelineRepo",
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "systemFlagsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 47,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "opsOverview",
+      "entrypoints": [
+        "GET /api/phase4/admin/users-summary",
+        "GET /api/phase4/admin/notifications-summary"
+      ],
+      "usecases": [
+        "getNotificationOperationalSummary",
+        "getUserOperationalSummary"
+      ],
+      "repos": [
+        "analyticsReadRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "checklists",
+        "events",
+        "notification_deliveries",
+        "notifications",
+        "user_checklists",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osAutomationConfig",
+      "entrypoints": [
+        "GET /api/admin/os/kill-switch/status",
+        "POST /api/admin/os/kill-switch/plan",
+        "POST /api/admin/os/kill-switch/set"
+      ],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "automationConfigRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "automation_config"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osConfig",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo",
+        "systemFlagsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries",
+        "system_flags",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osContext",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osDashboardKpi",
+      "entrypoints": [
+        "GET /api/admin/os/redac/status",
+        "GET /api/admin/os/errors/summary",
+        "GET /api/admin/os/dashboard/kpi"
+      ],
+      "usecases": [],
+      "repos": [
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "phase2ReadRepo",
+        "systemFlagsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "checklists",
+        "events",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "user_checklists",
+        "users"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osDeliveryBackfill",
+      "entrypoints": [
+        "GET /api/admin/os/kill-switch/status",
+        "POST /api/admin/os/kill-switch/plan"
+      ],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osDeliveryRecovery",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osErrors",
+      "entrypoints": [
+        "POST /api/admin/os/delivery-backfill/execute",
+        "GET /api/admin/os/redac/status",
+        "GET /api/admin/os/errors/summary"
+      ],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "linkRegistryRepo",
+        "sendRetryQueueRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry",
+        "send_retry_queue"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osKillSwitch",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "getKillSwitch",
+        "setKillSwitch"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osLinkRegistryLookup",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "linkRegistryRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osNotifications",
+      "entrypoints": [
+        "GET /api/admin/os/kill-switch/status",
+        "GET /api/admin/os/dashboard/kpi",
+        "POST /api/admin/os/view",
+        "POST /api/admin/os/notifications/draft",
+        "POST /api/admin/os/notifications/preview",
+        "POST /api/admin/os/notifications/approve",
+        "GET /api/admin/os/notifications/status",
+        "GET /api/admin/os/notifications/list",
+        "POST /api/admin/os/notifications/send/plan",
+        "POST /api/admin/os/notifications/send/execute"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "approveNotification",
+        "createNotification",
+        "executeNotificationSend",
+        "planNotificationSend",
+        "previewNotification"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "decisionLogsRepo",
+        "decisionTimelineRepo",
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "systemFlagsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osRedacStatus",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "osView",
+      "entrypoints": [
+        "GET /api/admin/os/errors/summary",
+        "GET /api/admin/os/dashboard/kpi",
+        "POST /api/admin/os/view"
+      ],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase1Notifications",
+      "entrypoints": [
+        "POST /admin/phase1/notifications"
+      ],
+      "usecases": [
+        "createNotificationPhase1",
+        "sendNotificationPhase1"
+      ],
+      "repos": [
+        "decisionTimelineRepo",
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo",
+        "systemFlagsRepo",
+        "usersPhase1Repo"
+      ],
+      "collections": [
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": true,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "legacy"
+    },
+    {
+      "feature": "phase2Automation",
+      "entrypoints": [
+        "POST /admin/phase2/automation/run"
+      ],
+      "usecases": [
+        "runPhase2Automation"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "readModel",
+      "entrypoints": [
+        "GET /admin/read-model/notifications"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "getNotificationReadModel"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries",
+        "notifications"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 4,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "redacMembershipUnlink",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "eventsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "events"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 4,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "traceSearch",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "getTraceBundle"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "decisionLogsRepo",
+        "decisionTimelineRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "userTimeline",
+      "entrypoints": [],
+      "usecases": [
+        "buildTemplateKey"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "decisionTimelineRepo",
+        "deliveriesRepo",
+        "eventsRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "decision_timeline",
+        "events",
+        "notification_deliveries",
+        "notifications"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "vendors",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "checkLinkHealth",
+        "updateLink"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "linkRegistryRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 5,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackDraftGeneratorJob",
+      "entrypoints": [],
+      "usecases": [
+        "runCityPackDraftJob"
+      ],
+      "repos": [
+        "cityPackRequestsRepo",
+        "cityPacksRepo",
+        "sourceRefsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "city_pack_requests",
+        "city_packs",
+        "source_refs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "cityPackSourceAuditJob",
+      "entrypoints": [],
+      "usecases": [
+        "runCityPackSourceAuditJob"
+      ],
+      "repos": [
+        "sourceAuditRunsRepo",
+        "sourceEvidenceRepo",
+        "sourceRefsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "source_audit_runs",
+        "source_evidence",
+        "source_refs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase105OpsAssistAdopt",
+      "entrypoints": [
+        "POST /api/phase105/ops-assist/adopt"
+      ],
+      "usecases": [
+        "appendLlmAdoptAudit"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "legacy"
+    },
+    {
+      "feature": "phase121OpsNoticeSend",
+      "entrypoints": [
+        "POST /api/phase121/ops/notice/send"
+      ],
+      "usecases": [
+        "sendOpsNotice"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo",
+        "notificationsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries",
+        "notifications",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "legacy"
+    },
+    {
+      "feature": "phase1Events",
+      "entrypoints": [],
+      "usecases": [
+        "logEventBestEffort"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "legacy"
+    },
+    {
+      "feature": "phase24DecisionLogs",
+      "entrypoints": [
+        "POST /api/phase24/ops/decision-logs",
+        "GET /api/phase24/ops/decision-logs/latest",
+        "GET /api/phase24/ops/decision-logs"
+      ],
+      "usecases": [
+        "appendDecision",
+        "getLatestDecision",
+        "listDecisions"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase24OpsState",
+      "entrypoints": [
+        "POST /api/phase24/ops-state",
+        "GET /api/phase24/ops-state"
+      ],
+      "usecases": [
+        "recordOpsNextAction"
+      ],
+      "repos": [
+        "decisionLogsRepo",
+        "opsStatesRepo"
+      ],
+      "collections": [
+        "decision_logs",
+        "ops_states"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase25OpsConsole",
+      "entrypoints": [
+        "GET /api/phase25/ops/console"
+      ],
+      "usecases": [
+        "getOpsConsole"
+      ],
+      "repos": [
+        "decisionDriftsRepo",
+        "decisionLogsRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "decision_drifts",
+        "decision_logs",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase25OpsDecision",
+      "entrypoints": [
+        "POST /api/phase25/ops/decision"
+      ],
+      "usecases": [
+        "submitOpsDecision"
+      ],
+      "repos": [
+        "decisionLogsRepo",
+        "decisionTimelineRepo"
+      ],
+      "collections": [
+        "decision_logs",
+        "decision_timeline"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase26OpsConsoleList",
+      "entrypoints": [
+        "GET /api/phase26/ops-console/list"
+      ],
+      "usecases": [
+        "listOpsConsole"
+      ],
+      "repos": [
+        "usersRepo"
+      ],
+      "collections": [
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase32OpsDecisionSuggest",
+      "entrypoints": [
+        "GET /api/phase32/ops-decision/suggest"
+      ],
+      "usecases": [
+        "suggestOpsDecision"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase33OpsDecisionExecute",
+      "entrypoints": [
+        "POST /api/phase33/ops-decision/execute"
+      ],
+      "usecases": [
+        "executeOpsNextAction"
+      ],
+      "repos": [
+        "decisionDriftsRepo",
+        "decisionLogsRepo",
+        "decisionTimelineRepo",
+        "opsStatesRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "decision_drifts",
+        "decision_logs",
+        "decision_timeline",
+        "ops_states",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase36NoticeSend",
+      "entrypoints": [
+        "POST /api/phase36/notice/send"
+      ],
+      "usecases": [
+        "sendNotice"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo",
+        "noticesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notices",
+        "notification_deliveries"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase37DeliveryReactions",
+      "entrypoints": [
+        "POST /api/phase37/deliveries/mark-read",
+        "POST /api/phase37/deliveries/mark-click"
+      ],
+      "usecases": [
+        "markDeliveryReaction"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase38OpsDashboard",
+      "entrypoints": [
+        "GET /api/phase38/ops/dashboard"
+      ],
+      "usecases": [
+        "getOpsDashboard"
+      ],
+      "repos": [
+        "decisionLogsRepo",
+        "deliveriesRepo",
+        "noticesRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "decision_logs",
+        "notices",
+        "notification_deliveries",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase39OpsAssistSuggestion",
+      "entrypoints": [
+        "GET /api/phase39/ops-assist/suggestion"
+      ],
+      "usecases": [
+        "getOpsAssistSuggestion"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "deliveriesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase42OpsConsoleView",
+      "entrypoints": [
+        "GET /api/phase42/ops-console/view"
+      ],
+      "usecases": [
+        "getOpsAssistForConsole",
+        "getOpsConsoleView"
+      ],
+      "repos": [
+        "opsAssistCacheRepo"
+      ],
+      "collections": [
+        "ops_assist_cache"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase47AutomationDryRun",
+      "entrypoints": [
+        "POST /api/phase47/automation/dry-run"
+      ],
+      "usecases": [
+        "dryRunAutomationDecision"
+      ],
+      "repos": [
+        "automationConfigRepo"
+      ],
+      "collections": [
+        "automation_config"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase48AutomationConfig",
+      "entrypoints": [
+        "GET /api/phase48/automation/config"
+      ],
+      "usecases": [
+        "getAutomationConfig"
+      ],
+      "repos": [
+        "automationConfigRepo"
+      ],
+      "collections": [
+        "automation_config"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase52OpsBatch",
+      "entrypoints": [
+        "POST /api/phase52/ops/batch/run"
+      ],
+      "usecases": [
+        "runOpsBatch"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase5AdminUsers",
+      "entrypoints": [
+        "POST /api/phase5/admin/users/review"
+      ],
+      "usecases": [],
+      "repos": [
+        "usersRepo"
+      ],
+      "collections": [
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase5Ops",
+      "entrypoints": [
+        "GET /api/phase5/ops/users-summary",
+        "GET /api/phase5/ops/notifications-summary",
+        "GET /api/phase5/ops/member-number-stale"
+      ],
+      "usecases": [
+        "getNotificationsSummaryFiltered",
+        "getStaleMemberNumberUsers",
+        "getUsersSummaryFiltered"
+      ],
+      "repos": [
+        "opsStateRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "ops_state",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase5Review",
+      "entrypoints": [
+        "POST /api/phase5/admin/ops/review"
+      ],
+      "usecases": [
+        "appendAuditLog",
+        "recordOpsReview"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase5State",
+      "entrypoints": [
+        "GET /api/phase5/state/summary"
+      ],
+      "usecases": [
+        "getUserStateSummary"
+      ],
+      "repos": [
+        "analyticsReadRepo",
+        "opsStatesRepo"
+      ],
+      "collections": [
+        "checklists",
+        "events",
+        "notification_deliveries",
+        "ops_states",
+        "user_checklists",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase61Templates",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "notificationTemplatesRepo",
+        "templatesRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "notification_templates"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase62OpsDailyReport",
+      "entrypoints": [
+        "POST /api/phase62/ops/report/daily"
+      ],
+      "usecases": [
+        "generateOpsDailyReport"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase65OpsDailyJob",
+      "entrypoints": [
+        "POST /api/phase65/ops/jobs/daily-report"
+      ],
+      "usecases": [
+        "generateOpsDailyReport"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 2,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase66Segments",
+      "entrypoints": [
+        "GET /api/phase66/segments/send-targets"
+      ],
+      "usecases": [
+        "buildSendSegment"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase67PlanSend",
+      "entrypoints": [
+        "POST /api/phase67/send/plan"
+      ],
+      "usecases": [
+        "planSegmentSend"
+      ],
+      "repos": [
+        "notificationTemplatesRepo",
+        "templatesVRepo"
+      ],
+      "collections": [
+        "notification_templates",
+        "templates_v"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase68ExecuteSend",
+      "entrypoints": [
+        "POST /api/phase68/send/execute"
+      ],
+      "usecases": [
+        "executeSegmentSend"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "automationConfigRepo",
+        "automationRunsRepo",
+        "decisionLogsRepo",
+        "decisionTimelineRepo",
+        "notificationTemplatesRepo",
+        "opsStatesRepo",
+        "sendRetryQueueRepo",
+        "systemFlagsRepo",
+        "templatesVRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "automation_config",
+        "automation_runs",
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "ops_states",
+        "send_retry_queue",
+        "system_flags",
+        "templates_v"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase6MemberSummary",
+      "entrypoints": [
+        "GET /api/phase6/member/summary"
+      ],
+      "usecases": [
+        "getMemberSummary"
+      ],
+      "repos": [
+        "opsStatesRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "ops_states",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase73RetryQueue",
+      "entrypoints": [
+        "GET /api/phase73/retry-queue",
+        "POST /api/phase73/retry-queue/plan",
+        "POST /api/phase73/retry-queue/retry"
+      ],
+      "usecases": [
+        "listRetryQueue",
+        "planRetryQueuedSend",
+        "retryQueuedSend"
+      ],
+      "repos": [
+        "decisionLogsRepo",
+        "decisionTimelineRepo",
+        "notificationTemplatesRepo",
+        "sendRetryQueueRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "send_retry_queue",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase77Segments",
+      "entrypoints": [
+        "GET /api/phase77/segments",
+        "POST /api/phase77/segments",
+        "GET /api/phase77/segments/"
+      ],
+      "usecases": [
+        "createOpsSegment",
+        "getOpsSegment",
+        "listOpsSegments"
+      ],
+      "repos": [
+        "opsSegmentsRepo"
+      ],
+      "collections": [
+        "ops_segments"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase81DryRun",
+      "entrypoints": [
+        "POST /api/phase81/segment-send/dry-run"
+      ],
+      "usecases": [
+        "dryRunSegmentSend"
+      ],
+      "repos": [],
+      "collections": [],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phase90RunStatus",
+      "entrypoints": [],
+      "usecases": [],
+      "repos": [
+        "automationRunsRepo"
+      ],
+      "collections": [
+        "automation_runs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phaseLLM2OpsExplain",
+      "entrypoints": [
+        "GET /api/phaseLLM2/ops-explain"
+      ],
+      "usecases": [
+        "getOpsExplanation"
+      ],
+      "repos": [
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phaseLLM3OpsNextActions",
+      "entrypoints": [
+        "GET /api/phaseLLM3/ops-next-actions"
+      ],
+      "usecases": [
+        "getNextActionCandidates"
+      ],
+      "repos": [
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "phaseLLM4FaqAnswer",
+      "entrypoints": [
+        "POST /api/phaseLLM4/faq/answer"
+      ],
+      "usecases": [
+        "answerFaqFromKb"
+      ],
+      "repos": [
+        "faqAnswerLogsRepo",
+        "faqArticlesRepo",
+        "systemFlagsRepo"
+      ],
+      "collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 1,
+      "ssot_refs": [],
+      "completion": "legacy"
+    },
+    {
+      "feature": "trackClick",
+      "entrypoints": [],
+      "usecases": [
+        "recordClickAndRedirect"
+      ],
+      "repos": [
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "link_registry",
+        "notification_deliveries",
+        "notifications"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "trackClickGet",
+      "entrypoints": [],
+      "usecases": [
+        "recordClickAndRedirect"
+      ],
+      "repos": [
+        "deliveriesRepo",
+        "linkRegistryRepo",
+        "notificationsRepo"
+      ],
+      "collections": [
+        "link_registry",
+        "notification_deliveries",
+        "notifications"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": false,
+      "audit_linked": false,
+      "tests_count": 0,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "webhookLine",
+      "entrypoints": [],
+      "usecases": [
+        "declareCityPackFeedbackFromLine",
+        "declareCityRegionFromLine",
+        "declareRedacMembershipIdFromLine",
+        "ensureUserFromWebhook",
+        "getRedacMembershipStatusForLine",
+        "logLineWebhookEventsBestEffort",
+        "recordUserLlmConsent",
+        "sendWelcomeMessage"
+      ],
+      "repos": [
+        "cityPackFeedbackRepo",
+        "cityPackRequestsRepo",
+        "deliveriesRepo",
+        "eventsRepo",
+        "userConsentsRepo",
+        "usersRepo"
+      ],
+      "collections": [
+        "city_pack_feedback",
+        "city_pack_requests",
+        "events",
+        "notification_deliveries",
+        "user_consents",
+        "users"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": false,
+      "tests_count": 5,
+      "ssot_refs": [],
+      "completion": "completed"
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-02-21T16:46:04Z",
+  "gitCommit": "a1bb63e5bf775d26a3ffafdabfbf3fc3198569ca",
+  "branch": "codex/phase306",
+  "counts": {
+    "endpoints": 105,
+    "routes": 0,
+    "usecases": 116,
+    "repos": 51,
+    "collections": 51
+  },
+  "files": [
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/auth_flow.json",
+      "sha256": "7b4e113b1e23cb56ddc1527994ae25089466e8162c17fef27141e416de488a92",
+      "bytes": 595
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/baseline_step0.json",
+      "sha256": "ef28b761896fa393dc200b4d47a3c4379d1e22e46b51c1b6a72bde30d6e9c431",
+      "bytes": 49586
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/ci_guard_proposal.json",
+      "sha256": "c9113750abef3f1dd2884ff187887bc2b4e7ce96457e08967d225685900704a6",
+      "bytes": 319
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
+      "sha256": "7f99016c49db0f7e4e5293d9955c6fab118782e6dd44fd93df20814ab22915d8",
+      "bytes": 14410
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
+      "sha256": "bb50e8a3c832dc6e957abc58feee8090b194bfbaa4df8520759de0a38af9259c",
+      "bytes": 21528
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/decision_timeline_map.json",
+      "sha256": "6e8a6c191ee5d3b06d055f779684465b526407a7ba1db8d58e056b6fc50a8c45",
+      "bytes": 1053
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
+      "sha256": "e36286e2f5c109c2ae16b5c4e86623dcb0e81cef3b66347cf09aad26c0f76527",
+      "bytes": 18244
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
+      "sha256": "edcff4c333c033c9bc65b7fc9d243d31b9de79f963c2ea3d241e577074ad0709",
+      "bytes": 3132
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
+      "sha256": "4a6cb8ae0109fac02d2963da75caaaa42d53d6fa8a57940f90b4e3eea4138575",
+      "bytes": 48596
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
+      "sha256": "d90cdb3977a2fa214d6888b00c2d61acd745411d6b64c7f86fa97c77a2bc3d44",
+      "bytes": 80512
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/invariants.json",
+      "sha256": "a0f415adec1fc092184c5308c4db1835000da2617bc7c9b6eb3b26c1ee82bff8",
+      "bytes": 6489
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
+      "sha256": "d9753287a85db090b3eb1dd7e7eef816283a7d6d33165493d27031f4420c3634",
+      "bytes": 7315
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json",
+      "sha256": "d7f0ded380f46846039fb83d7d53da285624711d8dd30ffec7c42c16d5132018",
+      "bytes": 540
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
+      "sha256": "4f67128c75fa18270b6c5cd7c7ec3fd4c060d7a936c6945e2e54dbdd6511194c",
+      "bytes": 17964
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
+      "sha256": "1cc23135d15e32731d0cec577467de74d1113db97f01e7309349d361590a7552",
+      "bytes": 8269
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/notification_flow.json",
+      "sha256": "2825c9ce3b3af91821001e01f432d5e6693e6ff381c614ea59658d9dbe7128d5",
+      "bytes": 537
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
+      "sha256": "8b8de52b6dfb486c3c8d1943d05aa912eca653fbe545a8be8144c2dd77384f5f",
+      "bytes": 77287
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
+      "sha256": "4766505f3337b9e70306cc30ac036f5e6e8e7be0830f972d045e3472c7a5e249",
+      "bytes": 163
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
+      "sha256": "aef84a98d6c89d62c744257f41a73505f351c652ebc8f78d961a439e0bb83307",
+      "bytes": 3810
+    }
+  ],
+  "diff_detection_rules": [
+    "If endpoint count changes, regenerate protection_matrix and impact_radius.",
+    "If usecase/repo count changes, regenerate dependency_graph and design_ai_meta.",
+    "If any JSON hash changes, require report refresh and PR note update.",
+    "If new docs JSON is added under docs/REPO_AUDIT_INPUTS, include in manifest files list."
+  ],
+  "previous_manifest": "NONE",
+  "manifest_version": 1
+}

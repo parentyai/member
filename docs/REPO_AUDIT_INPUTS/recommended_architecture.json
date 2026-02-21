@@ -1,0 +1,7 @@
+{
+  "layers": [
+    "route -> usecase -> repo -> firestore",
+    "route -> usecase -> infra adapters"
+  ],
+  "migration": "DEPRECATE -> reference stop -> remove"
+}

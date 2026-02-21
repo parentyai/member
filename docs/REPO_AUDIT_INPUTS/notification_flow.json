@@ -1,0 +1,25 @@
+{
+  "entry": "src/routes/admin/osNotifications.js",
+  "usecases": [
+    "createNotification",
+    "approveNotification",
+    "planNotificationSend",
+    "executeNotificationSend",
+    "sendNotification"
+  ],
+  "guards": [
+    "validateNotificationPayload",
+    "validateSingleCta",
+    "validateLinkRequired",
+    "validateWarnLinkBlock",
+    "validateKillSwitch",
+    "validateCityPackSources"
+  ],
+  "writes": [
+    "notifications",
+    "notification_deliveries",
+    "decision_timeline",
+    "audit_logs",
+    "send_retry_queue"
+  ]
+}

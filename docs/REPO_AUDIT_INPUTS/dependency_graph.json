@@ -1,0 +1,806 @@
+{
+  "usecase_to_repo": {
+    "getOpsAssistForConsole": [
+      "opsAssistCacheRepo"
+    ],
+    "previewNotification": [
+      "linkRegistryRepo",
+      "notificationsRepo"
+    ],
+    "executeNotificationSend": [
+      "auditLogsRepo",
+      "decisionLogsRepo",
+      "decisionTimelineRepo",
+      "notificationsRepo",
+      "systemFlagsRepo",
+      "usersRepo"
+    ],
+    "planNotificationSend": [
+      "auditLogsRepo",
+      "notificationsRepo",
+      "systemFlagsRepo",
+      "usersRepo"
+    ],
+    "approveNotification": [
+      "notificationsRepo"
+    ],
+    "listAutomationConfigs": [
+      "automationConfigRepo"
+    ],
+    "getAutomationConfig": [
+      "automationConfigRepo"
+    ],
+    "getOpsSegment": [
+      "opsSegmentsRepo"
+    ],
+    "createOpsSegment": [
+      "opsSegmentsRepo"
+    ],
+    "listOpsSegments": [
+      "opsSegmentsRepo"
+    ],
+    "decisionLogs": [
+      "decisionLogsRepo"
+    ],
+    "opsDecisionCompleteness": [
+      "decisionLogsRepo"
+    ],
+    "recordOpsNextAction": [
+      "decisionLogsRepo",
+      "opsStatesRepo"
+    ],
+    "registrationCompleteness": [
+      "usersRepo"
+    ],
+    "sendOpsNotice": [
+      "auditLogsRepo",
+      "deliveriesRepo",
+      "notificationsRepo",
+      "systemFlagsRepo"
+    ],
+    "resolveAutomationTargets": [
+      "automationConfigRepo"
+    ],
+    "dryRunAutomationDecision": [
+      "automationConfigRepo"
+    ],
+    "getOpsAssistSuggestion": [
+      "auditLogsRepo",
+      "deliveriesRepo"
+    ],
+    "opsDecisionConsistency": [
+      "decisionLogsRepo",
+      "opsStatesRepo"
+    ],
+    "submitOpsDecision": [
+      "decisionLogsRepo",
+      "decisionTimelineRepo"
+    ],
+    "getOpsConsole": [
+      "decisionDriftsRepo",
+      "decisionLogsRepo"
+    ],
+    "recordUserLlmConsent": [
+      "userConsentsRepo"
+    ],
+    "guardLlmOutput": [
+      "defaultLinkRegistryRepo",
+      "linkRegistryRepo"
+    ],
+    "recordClickAndRedirect": [
+      "deliveriesRepo",
+      "linkRegistryRepo",
+      "notificationsRepo"
+    ],
+    "checkLinkHealth": [
+      "linkRegistryRepo"
+    ],
+    "deleteLink": [
+      "linkRegistryRepo"
+    ],
+    "updateLink": [
+      "linkRegistryRepo"
+    ],
+    "createLink": [
+      "linkRegistryRepo"
+    ],
+    "listLinks": [
+      "linkRegistryRepo"
+    ],
+    "answerFaqFromKb": [
+      "faqAnswerLogsRepo",
+      "faqArticlesRepo",
+      "systemFlagsRepo"
+    ],
+    "toggleChecklistItem": [
+      "userChecklistsRepo"
+    ],
+    "getChecklistForUser": [
+      "checklistsRepo",
+      "usersRepo"
+    ],
+    "getChecklistWithStatus": [
+      "userChecklistsRepo",
+      "usersRepo"
+    ],
+    "setChecklistItemDone": [
+      "usersRepo"
+    ],
+    "runAutomation": [
+      "analyticsReadRepo",
+      "scenarioReportsRepo",
+      "scenarioRunsRepo"
+    ],
+    "getStaleMemberNumberUsers": [
+      "usersRepo"
+    ],
+    "getUserStateSummary": [
+      "analyticsReadRepo",
+      "opsStatesRepo"
+    ],
+    "setOpsReview": [
+      "opsStateRepo"
+    ],
+    "getUserOperationalSummary": [
+      "analyticsReadRepo"
+    ],
+    "getNotificationReadModel": [
+      "auditLogsRepo",
+      "deliveriesRepo",
+      "notificationsRepo"
+    ],
+    "getNotificationOperationalSummary": [
+      "analyticsReadRepo",
+      "notificationsRepo"
+    ],
+    "getTraceBundle": [
+      "auditLogsRepo",
+      "decisionLogsRepo",
+      "decisionTimelineRepo"
+    ],
+    "getOpsDashboard": [
+      "decisionLogsRepo",
+      "deliveriesRepo",
+      "noticesRepo",
+      "usersRepo"
+    ],
+    "getOpsAssistContext": [
+      "decisionTimelineRepo"
+    ],
+    "sendNotice": [
+      "auditLogsRepo",
+      "deliveriesRepo",
+      "noticesRepo"
+    ],
+    "appendLlmSuggestionAudit": [
+      "auditLogsRepo"
+    ],
+    "getNotificationDecisionTrace": [
+      "decisionLogsRepo"
+    ],
+    "markDeliveryReaction": [
+      "auditLogsRepo",
+      "deliveriesRepo"
+    ],
+    "appendLlmAdoptAudit": [
+      "auditLogsRepo"
+    ],
+    "activateCityPack": [
+      "cityPacksRepo",
+      "sourceRefsRepo"
+    ],
+    "declareCityPackFeedbackFromLine": [
+      "cityPackFeedbackRepo",
+      "eventsRepo",
+      "usersRepo"
+    ],
+    "runCityPackSourceAuditJob": [
+      "sourceAuditRunsRepo",
+      "sourceEvidenceRepo",
+      "sourceRefsRepo"
+    ],
+    "validateCityPackSources": [
+      "sourceRefsRepo"
+    ],
+    "computeCityPackMetrics": [
+      "analyticsReadRepo",
+      "notificationsRepo",
+      "sourceRefsRepo"
+    ],
+    "declareCityRegionFromLine": [
+      "cityPackRequestsRepo",
+      "eventsRepo",
+      "usersRepo"
+    ],
+    "runCityPackDraftJob": [
+      "cityPackRequestsRepo",
+      "cityPacksRepo",
+      "sourceRefsRepo"
+    ],
+    "reviewSourceRefDecision": [
+      "sourceRefsRepo"
+    ],
+    "recordCtaStats": [
+      "ctaStatsRepo"
+    ],
+    "planRetryQueuedSend": [
+      "sendRetryQueueRepo"
+    ],
+    "listRetryQueue": [
+      "sendRetryQueueRepo"
+    ],
+    "retryQueuedSend": [
+      "decisionLogsRepo",
+      "decisionTimelineRepo",
+      "notificationTemplatesRepo",
+      "sendRetryQueueRepo",
+      "systemFlagsRepo"
+    ],
+    "listOpsConsole": [
+      "usersRepo"
+    ],
+    "appendAuditLog": [
+      "auditLogsRepo"
+    ],
+    "executeAutomationDecision": [
+      "automationConfigRepo",
+      "decisionTimelineRepo",
+      "systemFlagsRepo"
+    ],
+    "logLineWebhookEvents": [
+      "eventsRepo"
+    ],
+    "ensureUser": [
+      "usersRepo"
+    ],
+    "declareRedacMembershipIdFromLine": [
+      "eventsRepo"
+    ],
+    "setMemberNumber": [
+      "usersRepo"
+    ],
+    "getRedacMembershipStatusForLine": [
+      "usersRepo"
+    ],
+    "getMemberProfile": [
+      "usersRepo"
+    ],
+    "setKillSwitch": [
+      "systemFlagsRepo"
+    ],
+    "getNextActionCandidates": [
+      "systemFlagsRepo"
+    ],
+    "getMemberSummary": [
+      "opsStatesRepo",
+      "usersRepo"
+    ],
+    "logEvent": [
+      "decisionTimelineRepo",
+      "eventsRepo"
+    ],
+    "getOpsExplanation": [
+      "systemFlagsRepo"
+    ],
+    "executeSegmentSend": [
+      "auditLogsRepo",
+      "automationConfigRepo",
+      "automationRunsRepo",
+      "decisionLogsRepo",
+      "decisionTimelineRepo",
+      "notificationTemplatesRepo",
+      "opsStatesRepo",
+      "sendRetryQueueRepo",
+      "systemFlagsRepo",
+      "templatesVRepo"
+    ],
+    "sendWelcomeMessage": [
+      "deliveriesRepo"
+    ],
+    "testSendNotification": [
+      "decisionTimelineRepo",
+      "deliveriesRepo",
+      "notificationsRepo"
+    ],
+    "runNotificationTest": [
+      "linkRegistryRepo",
+      "notificationTestRunsRepo",
+      "notificationsRepo",
+      "systemFlagsRepo"
+    ],
+    "sendNotificationPhase1": [
+      "decisionTimelineRepo",
+      "deliveriesRepo",
+      "linkRegistryRepo",
+      "notificationsRepo",
+      "usersPhase1Repo"
+    ],
+    "createNotification": [
+      "linkRegistryRepo",
+      "notificationsRepo"
+    ],
+    "sendNotification": [
+      "decisionTimelineRepo",
+      "deliveriesRepo",
+      "linkRegistryRepo",
+      "notificationsRepo",
+      "usersRepo"
+    ],
+    "createNotificationPhase1": [
+      "linkRegistryRepo",
+      "notificationsRepo"
+    ],
+    "listNotifications": [
+      "notificationsRepo"
+    ],
+    "checkNotificationCap": [
+      "deliveriesRepo"
+    ],
+    "planSegmentSend": [
+      "notificationTemplatesRepo",
+      "templatesVRepo"
+    ],
+    "getNotificationReactionSummary": [
+      "deliveriesRepo"
+    ],
+    "executeOpsNextAction": [
+      "decisionDriftsRepo",
+      "decisionLogsRepo",
+      "decisionTimelineRepo",
+      "opsStatesRepo",
+      "systemFlagsRepo"
+    ]
+  },
+  "repo_to_collection": {
+    "scenarioReportsRepo": [
+      "phase2_reports_checklist_pending",
+      "phase2_reports_daily_events",
+      "phase2_reports_weekly_events"
+    ],
+    "notificationsRepo": [
+      "notifications"
+    ],
+    "sourceEvidenceRepo": [
+      "source_evidence"
+    ],
+    "systemFlagsRepo": [
+      "system_flags"
+    ],
+    "noticesRepo": [
+      "notices"
+    ],
+    "deliveriesRepo": [
+      "notification_deliveries"
+    ],
+    "automationRunsRepo": [
+      "automation_runs"
+    ],
+    "phase2ReadRepo": [
+      "checklists",
+      "events",
+      "notification_deliveries",
+      "user_checklists",
+      "users"
+    ],
+    "auditLogsRepo": [
+      "audit_logs"
+    ],
+    "redacMembershipLinksRepo": [
+      "redac_membership_links"
+    ],
+    "scenarioRunsRepo": [
+      "phase2_runs"
+    ],
+    "cityPackBulletinsRepo": [
+      "city_pack_bulletins"
+    ],
+    "sourceAuditRunsRepo": [
+      "source_audit_runs"
+    ],
+    "ctaStatsRepo": [
+      "notifications",
+      "phase18_cta_stats"
+    ],
+    "analyticsReadRepo": [
+      "checklists",
+      "events",
+      "notification_deliveries",
+      "user_checklists",
+      "users"
+    ],
+    "templatesVRepo": [
+      "templates_v"
+    ],
+    "phase2ReportsRepo": [
+      "phase2_reports_checklist_pending",
+      "phase2_reports_daily_events",
+      "phase2_reports_weekly_events"
+    ],
+    "sendRetryQueueRepo": [
+      "send_retry_queue"
+    ],
+    "opsStateRepo": [
+      "ops_state"
+    ],
+    "cityPackRequestsRepo": [
+      "city_pack_requests"
+    ],
+    "cityPackUpdateProposalsRepo": [
+      "city_pack_update_proposals"
+    ],
+    "phase22KpiSnapshotsRepo": [
+      "phase22_kpi_snapshots"
+    ],
+    "decisionTimelineRepo": [
+      "decision_timeline"
+    ],
+    "userChecklistsRepo": [
+      "user_checklists"
+    ],
+    "notificationTemplatesRepo": [
+      "notification_templates"
+    ],
+    "decisionDriftsRepo": [
+      "decision_drifts"
+    ],
+    "opsAssistCacheRepo": [
+      "ops_assist_cache"
+    ],
+    "phase22KpiSnapshotsReadRepo": [
+      "phase22_kpi_snapshots"
+    ],
+    "cityPackFeedbackRepo": [
+      "city_pack_feedback"
+    ],
+    "eventsRepo": [
+      "events"
+    ],
+    "sourceRefsRepo": [
+      "source_refs"
+    ],
+    "kpiSnapshotsReadRepo": [
+      "phase22_kpi_snapshots"
+    ],
+    "userConsentsRepo": [
+      "user_consents"
+    ],
+    "opsStatesRepo": [
+      "ops_states"
+    ],
+    "phase2RunsRepo": [
+      "phase2_runs"
+    ],
+    "notificationTestRunsRepo": [
+      "notification_test_run_items",
+      "notification_test_runs"
+    ],
+    "kpiSnapshotsRepo": [
+      "phase22_kpi_snapshots"
+    ],
+    "cityPacksRepo": [
+      "city_packs"
+    ],
+    "phase18StatsRepo": [
+      "notifications",
+      "phase18_cta_stats"
+    ],
+    "usersPhase1Repo": [
+      "users"
+    ],
+    "linkRegistryRepo": [
+      "link_registry"
+    ],
+    "automationConfigRepo": [
+      "automation_config"
+    ],
+    "faqAnswerLogsRepo": [
+      "faq_answer_logs"
+    ],
+    "cityPackTemplateLibraryRepo": [
+      "city_pack_template_library"
+    ],
+    "opsSegmentsRepo": [
+      "ops_segments"
+    ],
+    "cityPackMetricsDailyRepo": [
+      "city_pack_metrics_daily"
+    ],
+    "usersRepo": [
+      "users"
+    ],
+    "decisionLogsRepo": [
+      "decision_logs"
+    ],
+    "faqArticlesRepo": [
+      "faq_articles"
+    ],
+    "checklistsRepo": [
+      "checklists"
+    ]
+  },
+  "route_to_usecase": {
+    "src/routes/phase73RetryQueue.js": [
+      "listRetryQueue",
+      "planRetryQueuedSend",
+      "retryQueuedSend"
+    ],
+    "src/routes/phase39OpsAssistSuggestion.js": [
+      "getOpsAssistSuggestion"
+    ],
+    "src/routes/phase25OpsDecision.js": [
+      "submitOpsDecision"
+    ],
+    "src/routes/trackClickGet.js": [
+      "recordClickAndRedirect"
+    ],
+    "src/routes/phase5State.js": [
+      "getUserStateSummary"
+    ],
+    "src/routes/phase61Templates.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/phase24OpsState.js": [
+      "recordOpsNextAction"
+    ],
+    "src/routes/phase68ExecuteSend.js": [
+      "executeSegmentSend"
+    ],
+    "src/routes/phase25OpsConsole.js": [
+      "getOpsConsole"
+    ],
+    "src/routes/phase33OpsDecisionExecute.js": [
+      "executeOpsNextAction"
+    ],
+    "src/routes/phase36NoticeSend.js": [
+      "sendNotice"
+    ],
+    "src/routes/phase5Review.js": [
+      "appendAuditLog",
+      "recordOpsReview"
+    ],
+    "src/routes/trackClick.js": [
+      "recordClickAndRedirect"
+    ],
+    "src/routes/phaseLLM3OpsNextActions.js": [
+      "getNextActionCandidates"
+    ],
+    "src/routes/phase66Segments.js": [
+      "buildSendSegment"
+    ],
+    "src/routes/phase42OpsConsoleView.js": [
+      "getOpsAssistForConsole",
+      "getOpsConsoleView"
+    ],
+    "src/routes/phase77Segments.js": [
+      "createOpsSegment",
+      "getOpsSegment",
+      "listOpsSegments"
+    ],
+    "src/routes/phase32OpsDecisionSuggest.js": [
+      "suggestOpsDecision"
+    ],
+    "src/routes/phase24DecisionLogs.js": [
+      "appendDecision",
+      "getLatestDecision",
+      "listDecisions"
+    ],
+    "src/routes/phase6MemberSummary.js": [
+      "getMemberSummary"
+    ],
+    "src/routes/phase65OpsDailyJob.js": [
+      "generateOpsDailyReport"
+    ],
+    "src/routes/phase26OpsConsoleList.js": [
+      "listOpsConsole"
+    ],
+    "src/routes/phaseLLM2OpsExplain.js": [
+      "getOpsExplanation"
+    ],
+    "src/routes/phase48AutomationConfig.js": [
+      "getAutomationConfig"
+    ],
+    "src/routes/phase105OpsAssistAdopt.js": [
+      "appendLlmAdoptAudit"
+    ],
+    "src/routes/phase47AutomationDryRun.js": [
+      "dryRunAutomationDecision"
+    ],
+    "src/routes/phase121OpsNoticeSend.js": [
+      "sendOpsNotice"
+    ],
+    "src/routes/phase52OpsBatch.js": [
+      "runOpsBatch"
+    ],
+    "src/routes/phase1Events.js": [
+      "logEventBestEffort"
+    ],
+    "src/routes/phase37DeliveryReactions.js": [
+      "markDeliveryReaction"
+    ],
+    "src/routes/phase62OpsDailyReport.js": [
+      "generateOpsDailyReport"
+    ],
+    "src/routes/phase5Ops.js": [
+      "getNotificationsSummaryFiltered",
+      "getStaleMemberNumberUsers",
+      "getUsersSummaryFiltered"
+    ],
+    "src/routes/phase67PlanSend.js": [
+      "planSegmentSend"
+    ],
+    "src/routes/webhookLine.js": [
+      "declareCityPackFeedbackFromLine",
+      "declareCityRegionFromLine",
+      "declareRedacMembershipIdFromLine",
+      "ensureUserFromWebhook",
+      "getRedacMembershipStatusForLine",
+      "logLineWebhookEventsBestEffort",
+      "recordUserLlmConsent",
+      "sendWelcomeMessage"
+    ],
+    "src/routes/phase81DryRun.js": [
+      "dryRunSegmentSend"
+    ],
+    "src/routes/phaseLLM4FaqAnswer.js": [
+      "answerFaqFromKb"
+    ],
+    "src/routes/phase38OpsDashboard.js": [
+      "getOpsDashboard"
+    ],
+    "src/routes/admin/cityPacks.js": [
+      "activateCityPack",
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osNotifications.js": [
+      "appendAuditLog",
+      "approveNotification",
+      "createNotification",
+      "executeNotificationSend",
+      "planNotificationSend",
+      "previewNotification"
+    ],
+    "src/routes/admin/cityPackFeedback.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/llmConfig.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osView.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/linkRegistry.js": [
+      "appendAuditLog",
+      "checkLinkHealth",
+      "createLink",
+      "deleteLink",
+      "listLinks",
+      "updateLink"
+    ],
+    "src/routes/admin/vendors.js": [
+      "appendAuditLog",
+      "checkLinkHealth",
+      "updateLink"
+    ],
+    "src/routes/admin/osRedacStatus.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/cityPackTemplateLibrary.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/kbArticles.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/killSwitch.js": [
+      "appendAuditLog",
+      "setKillSwitch"
+    ],
+    "src/routes/admin/cityPackBulletins.js": [
+      "appendAuditLog",
+      "sendNotification"
+    ],
+    "src/routes/admin/traceSearch.js": [
+      "appendAuditLog",
+      "getTraceBundle"
+    ],
+    "src/routes/admin/cityPackReviewInbox.js": [
+      "appendAuditLog",
+      "computeCityPackMetrics",
+      "normalizeLimit",
+      "normalizeWindowDays",
+      "reviewSourceRefDecision",
+      "runCityPackSourceAuditJob"
+    ],
+    "src/routes/admin/osDeliveryRecovery.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/monitorInsights.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/readModel.js": [
+      "appendAuditLog",
+      "getNotificationReadModel"
+    ],
+    "src/routes/admin/phase1Notifications.js": [
+      "createNotificationPhase1",
+      "sendNotificationPhase1"
+    ],
+    "src/routes/admin/osErrors.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/cityPackRequests.js": [
+      "activateCityPack",
+      "appendAuditLog",
+      "runCityPackDraftJob"
+    ],
+    "src/routes/admin/osConfig.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/cityPackUpdateProposals.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/llmConsent.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/cityPackEvidence.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/llmFaq.js": [
+      "answerFaqFromKb"
+    ],
+    "src/routes/admin/osLinkRegistryLookup.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/userTimeline.js": [
+      "buildTemplateKey"
+    ],
+    "src/routes/admin/osContext.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/notificationDeliveries.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/redacMembershipUnlink.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osKillSwitch.js": [
+      "appendAuditLog",
+      "getKillSwitch",
+      "setKillSwitch"
+    ],
+    "src/routes/admin/phase2Automation.js": [
+      "runPhase2Automation"
+    ],
+    "src/routes/admin/opsOverview.js": [
+      "getNotificationOperationalSummary",
+      "getUserOperationalSummary"
+    ],
+    "src/routes/admin/notificationTest.js": [
+      "appendAuditLog",
+      "runNotificationTest"
+    ],
+    "src/routes/admin/notifications.js": [
+      "appendAuditLog",
+      "createNotification",
+      "listNotifications",
+      "sendNotification",
+      "testSendNotification"
+    ],
+    "src/routes/admin/osDeliveryBackfill.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osAutomationConfig.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/llmOps.js": [
+      "getNextActionCandidates",
+      "getOpsExplanation"
+    ],
+    "src/routes/internal/cityPackSourceAuditJob.js": [
+      "runCityPackSourceAuditJob"
+    ],
+    "src/routes/internal/cityPackDraftGeneratorJob.js": [
+      "runCityPackDraftJob"
+    ]
+  },
+  "unresolved_dynamic_dep": []
+}

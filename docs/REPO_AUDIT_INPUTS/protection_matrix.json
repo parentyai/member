@@ -1,0 +1,2650 @@
+{
+  "generatedAt": "2026-02-21T16:46:04Z",
+  "source": "static_analysis",
+  "counts": {
+    "endpoints": 105
+  },
+  "rules": {
+    "admin_paths_must_admin_token": true,
+    "internal_paths_must_internal_token": true,
+    "dangerous_ops_confirm_token_required_paths": [
+      "/api/admin/os/automation-config/set",
+      "/api/admin/os/config/set",
+      "/api/admin/os/delivery-backfill/execute",
+      "/api/admin/os/delivery-recovery/execute",
+      "/api/admin/os/kill-switch/set",
+      "/api/admin/os/notifications/send/execute",
+      "/api/phase68/send/execute",
+      "/api/phase73/retry-queue/retry"
+    ]
+  },
+  "global_evidence": [
+    "src/index.js:71-103",
+    "src/index.js:150-184",
+    "src/routes/internal/cityPackSourceAuditJob.js:27-39",
+    "src/routes/internal/cityPackDraftGeneratorJob.js:25-29"
+  ],
+  "protection_matrix": [
+    {
+      "method": "GET",
+      "path": "/t/",
+      "match": "prefix",
+      "line": 304,
+      "route_files": [],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/track/click",
+      "match": "exact",
+      "line": 313,
+      "route_files": [],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/admin/assets/admin.css",
+      "match": "exact",
+      "line": 553,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/admin/assets/admin_app.js",
+      "match": "exact",
+      "line": 566,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/admin/ui-dict",
+      "match": "exact",
+      "line": 579,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/admin/implementation-targets",
+      "match": "exact",
+      "line": 640,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/send-test",
+      "match": "exact",
+      "line": 669,
+      "route_files": [
+        "src/routes/admin/notificationTest.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry",
+        "notification_test_run_items",
+        "notification_test_runs",
+        "notifications",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/notificationTest.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/notifications/runNotificationTest.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/test-runs",
+      "match": "exact",
+      "line": 674,
+      "route_files": [
+        "src/routes/admin/notificationTest.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry",
+        "notification_test_run_items",
+        "notification_test_runs",
+        "notifications",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/notificationTest.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/notifications/runNotificationTest.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/user-timeline",
+      "match": "exact",
+      "line": 688,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/notification-deliveries",
+      "match": "exact",
+      "line": 694,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/monitor-insights",
+      "match": "exact",
+      "line": 700,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/internal/jobs/city-pack-draft-generator",
+      "match": "exact",
+      "line": 902,
+      "route_files": [],
+      "auth_required": "internalToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/kill-switch/status",
+      "match": "exact",
+      "line": 1024,
+      "route_files": [
+        "src/routes/admin/osAutomationConfig.js",
+        "src/routes/admin/osDeliveryBackfill.js",
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "automation_config",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osAutomationConfig.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/osDeliveryBackfill.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/kill-switch/plan",
+      "match": "exact",
+      "line": 1028,
+      "route_files": [
+        "src/routes/admin/osAutomationConfig.js",
+        "src/routes/admin/osDeliveryBackfill.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "automation_config",
+        "notification_deliveries"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osAutomationConfig.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/osDeliveryBackfill.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/kill-switch/set",
+      "match": "exact",
+      "line": 1033,
+      "route_files": [
+        "src/routes/admin/osAutomationConfig.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "automation_config"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osAutomationConfig.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/config/status",
+      "match": "exact",
+      "line": 1038,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/config/plan",
+      "match": "exact",
+      "line": 1042,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/config/set",
+      "match": "exact",
+      "line": 1047,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/automation-config/status",
+      "match": "exact",
+      "line": 1052,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/automation-config/plan",
+      "match": "exact",
+      "line": 1056,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/automation-config/set",
+      "match": "exact",
+      "line": 1061,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/delivery-recovery/status",
+      "match": "exact",
+      "line": 1066,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/delivery-recovery/plan",
+      "match": "exact",
+      "line": 1070,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/delivery-recovery/execute",
+      "match": "exact",
+      "line": 1075,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/delivery-backfill/status",
+      "match": "exact",
+      "line": 1080,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/delivery-backfill/plan",
+      "match": "exact",
+      "line": 1084,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/delivery-backfill/execute",
+      "match": "exact",
+      "line": 1089,
+      "route_files": [
+        "src/routes/admin/osErrors.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry",
+        "send_retry_queue"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osErrors.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/redac/status",
+      "match": "exact",
+      "line": 1094,
+      "route_files": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osErrors.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "checklists",
+        "events",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "send_retry_queue",
+        "system_flags",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osErrors.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/errors/summary",
+      "match": "exact",
+      "line": 1098,
+      "route_files": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osErrors.js",
+        "src/routes/admin/osView.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "checklists",
+        "events",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "send_retry_queue",
+        "system_flags",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osErrors.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/osView.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/dashboard/kpi",
+      "match": "exact",
+      "line": 1102,
+      "route_files": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osNotifications.js",
+        "src/routes/admin/osView.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "checklists",
+        "decision_logs",
+        "decision_timeline",
+        "events",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osDashboardKpi.js",
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/view",
+      "match": "exact",
+      "line": 1106,
+      "route_files": [
+        "src/routes/admin/osNotifications.js",
+        "src/routes/admin/osView.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js",
+        "src/routes/admin/osView.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/notifications/draft",
+      "match": "exact",
+      "line": 1111,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/notifications/preview",
+      "match": "exact",
+      "line": 1116,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/notifications/approve",
+      "match": "exact",
+      "line": 1121,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/notifications/status",
+      "match": "exact",
+      "line": 1126,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/notifications/list",
+      "match": "exact",
+      "line": 1130,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/notifications/send/plan",
+      "match": "exact",
+      "line": 1134,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/os/notifications/send/execute",
+      "match": "exact",
+      "line": 1139,
+      "route_files": [
+        "src/routes/admin/osNotifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_logs",
+        "decision_timeline",
+        "link_registry",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/osNotifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/adminOs/approveNotification.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/adminOs/executeNotificationSend.js",
+        "src/usecases/adminOs/planNotificationSend.js",
+        "src/usecases/adminOs/previewNotification.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/os/link-registry/",
+      "match": "prefix",
+      "line": 1144,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/kb/articles",
+      "match": "exact",
+      "line": 1184,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/kb/articles",
+      "match": "exact",
+      "line": 1188,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/config/status",
+      "match": "exact",
+      "line": 1251,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/config/plan",
+      "match": "exact",
+      "line": 1255,
+      "route_files": [
+        "src/routes/admin/llmFaq.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmFaq.js",
+        "src/usecases/faq/answerFaqFromKb.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/config/set",
+      "match": "exact",
+      "line": 1260,
+      "route_files": [
+        "src/routes/admin/llmFaq.js",
+        "src/routes/admin/llmOps.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmFaq.js",
+        "src/usecases/faq/answerFaqFromKb.js",
+        "src/routes/admin/llmOps.js",
+        "src/usecases/phaseLLM3/getNextActionCandidates.js",
+        "src/usecases/phaseLLM2/getOpsExplanation.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/faq/answer",
+      "match": "exact",
+      "line": 1265,
+      "route_files": [
+        "src/routes/admin/llmFaq.js",
+        "src/routes/admin/llmOps.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmFaq.js",
+        "src/usecases/faq/answerFaqFromKb.js",
+        "src/routes/admin/llmOps.js",
+        "src/usecases/phaseLLM3/getNextActionCandidates.js",
+        "src/usecases/phaseLLM2/getOpsExplanation.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/ops-explain",
+      "match": "exact",
+      "line": 1270,
+      "route_files": [
+        "src/routes/admin/llmConsent.js",
+        "src/routes/admin/llmOps.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmConsent.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/llmOps.js",
+        "src/usecases/phaseLLM3/getNextActionCandidates.js",
+        "src/usecases/phaseLLM2/getOpsExplanation.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/next-actions",
+      "match": "exact",
+      "line": 1274,
+      "route_files": [
+        "src/routes/admin/llmConsent.js",
+        "src/routes/admin/llmOps.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmConsent.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/routes/admin/llmOps.js",
+        "src/usecases/phaseLLM3/getNextActionCandidates.js",
+        "src/usecases/phaseLLM2/getOpsExplanation.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/consent/status",
+      "match": "exact",
+      "line": 1278,
+      "route_files": [
+        "src/routes/admin/llmConsent.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmConsent.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/consent/verify",
+      "match": "exact",
+      "line": 1282,
+      "route_files": [
+        "src/routes/admin/llmConsent.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmConsent.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/consent/revoke",
+      "match": "exact",
+      "line": 1286,
+      "route_files": [
+        "src/routes/admin/llmConsent.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/llmConsent.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase4/admin/users-summary",
+      "match": "exact",
+      "line": 1302,
+      "route_files": [
+        "src/routes/admin/opsOverview.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "checklists",
+        "events",
+        "notification_deliveries",
+        "notifications",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/admin/opsOverview.js",
+        "src/usecases/admin/getNotificationOperationalSummary.js",
+        "src/usecases/admin/getUserOperationalSummary.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase4/admin/notifications-summary",
+      "match": "exact",
+      "line": 1306,
+      "route_files": [
+        "src/routes/admin/opsOverview.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "checklists",
+        "events",
+        "notification_deliveries",
+        "notifications",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/admin/opsOverview.js",
+        "src/usecases/admin/getNotificationOperationalSummary.js",
+        "src/usecases/admin/getUserOperationalSummary.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase5/admin/ops/review",
+      "match": "exact",
+      "line": 1342,
+      "route_files": [
+        "src/routes/phase5Review.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase5Review.js",
+        "src/usecases/audit/appendAuditLog.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase5/admin/users/review",
+      "match": "exact",
+      "line": 1379,
+      "route_files": [
+        "src/routes/phase5AdminUsers.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase5AdminUsers.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase5/state/summary",
+      "match": "exact",
+      "line": 1396,
+      "route_files": [
+        "src/routes/phase5State.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "checklists",
+        "events",
+        "notification_deliveries",
+        "ops_states",
+        "user_checklists",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase5State.js",
+        "src/usecases/phase5/getUserStateSummary.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase5/ops/users-summary",
+      "match": "exact",
+      "line": 1416,
+      "route_files": [
+        "src/routes/phase5Ops.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_state",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase5Ops.js",
+        "src/usecases/phase5/getNotificationsSummaryFiltered.js",
+        "src/usecases/phase5/getStaleMemberNumberUsers.js",
+        "src/usecases/phase5/getUsersSummaryFiltered.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase5/ops/notifications-summary",
+      "match": "exact",
+      "line": 1420,
+      "route_files": [
+        "src/routes/phase5Ops.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_state",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase5Ops.js",
+        "src/usecases/phase5/getNotificationsSummaryFiltered.js",
+        "src/usecases/phase5/getStaleMemberNumberUsers.js",
+        "src/usecases/phase5/getUsersSummaryFiltered.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase5/ops/member-number-stale",
+      "match": "exact",
+      "line": 1424,
+      "route_files": [
+        "src/routes/phase5Ops.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_state",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase5Ops.js",
+        "src/usecases/phase5/getNotificationsSummaryFiltered.js",
+        "src/usecases/phase5/getStaleMemberNumberUsers.js",
+        "src/usecases/phase5/getUsersSummaryFiltered.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase24/ops/decision-logs",
+      "match": "exact",
+      "line": 1464,
+      "route_files": [
+        "src/routes/phase24DecisionLogs.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase24DecisionLogs.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase24/ops/decision-logs/latest",
+      "match": "exact",
+      "line": 1469,
+      "route_files": [
+        "src/routes/phase24DecisionLogs.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase24DecisionLogs.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase24/ops/decision-logs",
+      "match": "exact",
+      "line": 1473,
+      "route_files": [
+        "src/routes/phase24DecisionLogs.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase24DecisionLogs.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase24/ops-state",
+      "match": "exact",
+      "line": 1509,
+      "route_files": [
+        "src/routes/phase24OpsState.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "decision_logs",
+        "ops_states"
+      ],
+      "audit_required": false,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase24OpsState.js",
+        "src/usecases/phase24/recordOpsNextAction.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase24/ops-state",
+      "match": "exact",
+      "line": 1514,
+      "route_files": [
+        "src/routes/phase24OpsState.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "decision_logs",
+        "ops_states"
+      ],
+      "audit_required": false,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase24OpsState.js",
+        "src/usecases/phase24/recordOpsNextAction.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase25/ops/console",
+      "match": "exact",
+      "line": 1530,
+      "route_files": [
+        "src/routes/phase25OpsConsole.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "decision_drifts",
+        "decision_logs",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase25OpsConsole.js",
+        "src/usecases/phase25/getOpsConsole.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase25/ops/decision",
+      "match": "exact",
+      "line": 1566,
+      "route_files": [
+        "src/routes/phase25OpsDecision.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "decision_logs",
+        "decision_timeline"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase25OpsDecision.js",
+        "src/usecases/phase25/submitOpsDecision.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase26/ops-console/list",
+      "match": "exact",
+      "line": 1583,
+      "route_files": [
+        "src/routes/phase26OpsConsoleList.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase26OpsConsoleList.js",
+        "src/usecases/phase26/listOpsConsole.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase42/ops-console/view",
+      "match": "exact",
+      "line": 1599,
+      "route_files": [
+        "src/routes/phase42OpsConsoleView.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_assist_cache"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase42OpsConsoleView.js",
+        "src/usecases/phase46/getOpsAssistForConsole.js",
+        "src/usecases/phase42/getOpsConsoleView.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phaseLLM2/ops-explain",
+      "match": "exact",
+      "line": 1615,
+      "route_files": [
+        "src/routes/phaseLLM2OpsExplain.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phaseLLM2OpsExplain.js",
+        "src/usecases/phaseLLM2/getOpsExplanation.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phaseLLM3/ops-next-actions",
+      "match": "exact",
+      "line": 1631,
+      "route_files": [
+        "src/routes/phaseLLM3OpsNextActions.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phaseLLM3OpsNextActions.js",
+        "src/usecases/phaseLLM3/getNextActionCandidates.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phaseLLM4/faq/answer",
+      "match": "exact",
+      "line": 1667,
+      "route_files": [
+        "src/routes/phaseLLM4FaqAnswer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "faq_answer_logs",
+        "faq_articles",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phaseLLM4FaqAnswer.js",
+        "src/usecases/faq/answerFaqFromKb.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase105/ops-assist/adopt",
+      "match": "exact",
+      "line": 1704,
+      "route_files": [
+        "src/routes/phase105OpsAssistAdopt.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase105OpsAssistAdopt.js",
+        "src/usecases/phase105/appendLlmAdoptAudit.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase121/ops/notice/send",
+      "match": "exact",
+      "line": 1741,
+      "route_files": [
+        "src/routes/phase121OpsNoticeSend.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "notification_deliveries",
+        "notifications",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase121OpsNoticeSend.js",
+        "src/usecases/phase121/sendOpsNotice.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase36/notice/send",
+      "match": "exact",
+      "line": 1778,
+      "route_files": [
+        "src/routes/phase36NoticeSend.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "notices",
+        "notification_deliveries"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase36NoticeSend.js",
+        "src/usecases/phase36/sendNotice.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase37/deliveries/mark-read",
+      "match": "exact",
+      "line": 1815,
+      "route_files": [
+        "src/routes/phase37DeliveryReactions.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase37DeliveryReactions.js",
+        "src/usecases/phase37/markDeliveryReaction.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase37/deliveries/mark-click",
+      "match": "exact",
+      "line": 1820,
+      "route_files": [
+        "src/routes/phase37DeliveryReactions.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase37DeliveryReactions.js",
+        "src/usecases/phase37/markDeliveryReaction.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase38/ops/dashboard",
+      "match": "exact",
+      "line": 1837,
+      "route_files": [
+        "src/routes/phase38OpsDashboard.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "decision_logs",
+        "notices",
+        "notification_deliveries",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase38OpsDashboard.js",
+        "src/usecases/phase38/getOpsDashboard.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase39/ops-assist/suggestion",
+      "match": "exact",
+      "line": 1853,
+      "route_files": [
+        "src/routes/phase39OpsAssistSuggestion.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "notification_deliveries"
+      ],
+      "audit_required": true,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase39OpsAssistSuggestion.js",
+        "src/usecases/phase40/getOpsAssistSuggestion.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase32/ops-decision/suggest",
+      "match": "exact",
+      "line": 1869,
+      "route_files": [
+        "src/routes/phase32OpsDecisionSuggest.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase32OpsDecisionSuggest.js",
+        "src/usecases/phase32/suggestOpsDecision.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase33/ops-decision/execute",
+      "match": "exact",
+      "line": 1905,
+      "route_files": [
+        "src/routes/phase33OpsDecisionExecute.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "decision_drifts",
+        "decision_logs",
+        "decision_timeline",
+        "ops_states",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase33OpsDecisionExecute.js",
+        "src/usecases/phase33/executeOpsNextAction.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase47/automation/dry-run",
+      "match": "exact",
+      "line": 1942,
+      "route_files": [
+        "src/routes/phase47AutomationDryRun.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "automation_config"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase47AutomationDryRun.js",
+        "src/usecases/phase47/dryRunAutomationDecision.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase48/automation/config",
+      "match": "exact",
+      "line": 1959,
+      "route_files": [
+        "src/routes/phase48AutomationConfig.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "automation_config"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase48AutomationConfig.js",
+        "src/usecases/phase48/getAutomationConfig.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase52/ops/batch/run",
+      "match": "exact",
+      "line": 1995,
+      "route_files": [
+        "src/routes/phase52OpsBatch.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase52OpsBatch.js",
+        "src/usecases/phase52/runOpsBatch.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase62/ops/report/daily",
+      "match": "exact",
+      "line": 2053,
+      "route_files": [
+        "src/routes/phase62OpsDailyReport.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase62OpsDailyReport.js",
+        "src/usecases/phase62/generateOpsDailyReport.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase65/ops/jobs/daily-report",
+      "match": "exact",
+      "line": 2069,
+      "route_files": [
+        "src/routes/phase65OpsDailyJob.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase65OpsDailyJob.js",
+        "src/usecases/phase62/generateOpsDailyReport.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase66/segments/send-targets",
+      "match": "exact",
+      "line": 2085,
+      "route_files": [
+        "src/routes/phase66Segments.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase66Segments.js",
+        "src/usecases/phase66/buildSendSegment.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase67/send/plan",
+      "match": "exact",
+      "line": 2121,
+      "route_files": [
+        "src/routes/phase67PlanSend.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "notification_templates",
+        "templates_v"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase67PlanSend.js",
+        "src/usecases/phase67/planSegmentSend.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase68/send/execute",
+      "match": "exact",
+      "line": 2158,
+      "route_files": [
+        "src/routes/phase68ExecuteSend.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "automation_config",
+        "automation_runs",
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "ops_states",
+        "send_retry_queue",
+        "system_flags",
+        "templates_v"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase68ExecuteSend.js",
+        "src/usecases/phase68/executeSegmentSend.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase81/segment-send/dry-run",
+      "match": "exact",
+      "line": 2195,
+      "route_files": [
+        "src/routes/phase81DryRun.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase81DryRun.js",
+        "src/usecases/phase81/dryRunSegmentSend.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase90/automation-runs/",
+      "match": "prefix",
+      "line": 2209,
+      "route_files": [],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase77/segments",
+      "match": "exact",
+      "line": 2239,
+      "route_files": [
+        "src/routes/phase77Segments.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_segments"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase77Segments.js",
+        "src/usecases/phase77/createOpsSegment.js",
+        "src/usecases/phase77/getOpsSegment.js",
+        "src/usecases/phase77/listOpsSegments.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase77/segments",
+      "match": "exact",
+      "line": 2243,
+      "route_files": [
+        "src/routes/phase77Segments.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_segments"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase77Segments.js",
+        "src/usecases/phase77/createOpsSegment.js",
+        "src/usecases/phase77/getOpsSegment.js",
+        "src/usecases/phase77/listOpsSegments.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase77/segments/",
+      "match": "prefix",
+      "line": 2248,
+      "route_files": [
+        "src/routes/phase77Segments.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_segments"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase77Segments.js",
+        "src/usecases/phase77/createOpsSegment.js",
+        "src/usecases/phase77/getOpsSegment.js",
+        "src/usecases/phase77/listOpsSegments.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase73/retry-queue",
+      "match": "exact",
+      "line": 2284,
+      "route_files": [
+        "src/routes/phase73RetryQueue.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "send_retry_queue",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase73RetryQueue.js",
+        "src/usecases/phase73/listRetryQueue.js",
+        "src/usecases/phase73/planRetryQueuedSend.js",
+        "src/usecases/phase73/retryQueuedSend.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase73/retry-queue/plan",
+      "match": "exact",
+      "line": 2288,
+      "route_files": [
+        "src/routes/phase73RetryQueue.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "send_retry_queue",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase73RetryQueue.js",
+        "src/usecases/phase73/listRetryQueue.js",
+        "src/usecases/phase73/planRetryQueuedSend.js",
+        "src/usecases/phase73/retryQueuedSend.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/phase73/retry-queue/retry",
+      "match": "exact",
+      "line": 2293,
+      "route_files": [
+        "src/routes/phase73RetryQueue.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": true,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "decision_logs",
+        "decision_timeline",
+        "notification_templates",
+        "send_retry_queue",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/phase73RetryQueue.js",
+        "src/usecases/phase73/listRetryQueue.js",
+        "src/usecases/phase73/planRetryQueuedSend.js",
+        "src/usecases/phase73/retryQueuedSend.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/phase6/member/summary",
+      "match": "exact",
+      "line": 2310,
+      "route_files": [
+        "src/routes/phase6MemberSummary.js"
+      ],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "ops_states",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/phase6MemberSummary.js",
+        "src/usecases/phase6/getMemberSummary.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/admin/read-model/notifications",
+      "match": "exact",
+      "line": 2331,
+      "route_files": [
+        "src/routes/admin/readModel.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "notification_deliveries",
+        "notifications"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/readModel.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/admin/getNotificationReadModel.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/admin/phase2/automation/run",
+      "match": "exact",
+      "line": 2369,
+      "route_files": [
+        "src/routes/admin/phase2Automation.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": [
+        "src/routes/admin/phase2Automation.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/admin/phase1/notifications",
+      "match": "exact",
+      "line": 2411,
+      "route_files": [
+        "src/routes/admin/phase1Notifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": false,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/phase1Notifications.js",
+        "src/usecases/notifications/createNotificationPhase1.js",
+        "src/usecases/notifications/sendNotificationPhase1.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/admin/notifications",
+      "match": "exact",
+      "line": 2458,
+      "route_files": [
+        "src/routes/admin/notifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/notifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/notifications/listNotifications.js",
+        "src/usecases/notifications/sendNotification.js",
+        "src/usecases/notifications/testSendNotification.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/admin/notifications",
+      "match": "exact",
+      "line": 2462,
+      "route_files": [
+        "src/routes/admin/notifications.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "system_flags",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/notifications.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/notifications/createNotification.js",
+        "src/usecases/notifications/listNotifications.js",
+        "src/usecases/notifications/sendNotification.js",
+        "src/usecases/notifications/testSendNotification.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/admin/link-registry",
+      "match": "exact",
+      "line": 2513,
+      "route_files": [
+        "src/routes/admin/linkRegistry.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/linkRegistry.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/linkRegistry/checkLinkHealth.js",
+        "src/usecases/linkRegistry/createLink.js",
+        "src/usecases/linkRegistry/deleteLink.js",
+        "src/usecases/linkRegistry/listLinks.js",
+        "src/usecases/linkRegistry/updateLink.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/admin/link-registry",
+      "match": "exact",
+      "line": 2517,
+      "route_files": [
+        "src/routes/admin/linkRegistry.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/routes/admin/linkRegistry.js",
+        "src/usecases/audit/appendAuditLog.js",
+        "src/usecases/linkRegistry/checkLinkHealth.js",
+        "src/usecases/linkRegistry/createLink.js",
+        "src/usecases/linkRegistry/deleteLink.js",
+        "src/usecases/linkRegistry/listLinks.js",
+        "src/usecases/linkRegistry/updateLink.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/admin/kill-switch",
+      "match": "exact",
+      "line": 2547,
+      "route_files": [],
+      "auth_required": "adminToken",
+      "csrf_required": true,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "match": "exact",
+      "line": 2562,
+      "route_files": [],
+      "auth_required": "none",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "medium",
+      "writes_collections": [],
+      "audit_required": false,
+      "trace_required": false,
+      "evidence": []
+    }
+  ],
+  "violations": []
+}

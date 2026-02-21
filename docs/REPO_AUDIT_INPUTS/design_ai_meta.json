@@ -1,0 +1,108 @@
+{
+  "canonical_repos": [
+    "analyticsReadRepo",
+    "auditLogsRepo",
+    "automationConfigRepo",
+    "cityPackRequestsRepo",
+    "cityPacksRepo",
+    "decisionDriftsRepo",
+    "decisionLogsRepo",
+    "decisionTimelineRepo",
+    "deliveriesRepo",
+    "eventsRepo",
+    "linkRegistryRepo",
+    "noticesRepo",
+    "notificationTemplatesRepo",
+    "notificationsRepo",
+    "opsSegmentsRepo",
+    "opsStatesRepo",
+    "sendRetryQueueRepo",
+    "sourceRefsRepo",
+    "systemFlagsRepo",
+    "templatesVRepo",
+    "userChecklistsRepo",
+    "usersRepo"
+  ],
+  "legacy_repos": [
+    "phase18StatsRepo",
+    "phase22KpiSnapshotsReadRepo",
+    "phase22KpiSnapshotsRepo",
+    "phase2ReadRepo",
+    "phase2ReportsRepo",
+    "phase2RunsRepo"
+  ],
+  "merge_candidates": [
+    [
+      "scenarioReportsRepo",
+      "phase2ReportsRepo"
+    ],
+    [
+      "analyticsReadRepo",
+      "phase2ReadRepo"
+    ],
+    [
+      "scenarioRunsRepo",
+      "phase2RunsRepo"
+    ],
+    [
+      "ctaStatsRepo",
+      "phase18StatsRepo"
+    ],
+    [
+      "kpiSnapshotsRepo",
+      "phase22KpiSnapshotsRepo"
+    ],
+    [
+      "kpiSnapshotsReadRepo",
+      "phase22KpiSnapshotsReadRepo"
+    ]
+  ],
+  "naming_drift": {
+    "scenario": [
+      "src/repos/firestore/checklistsRepo.js",
+      "src/repos/firestore/phase2ReportsRepo.js",
+      "src/repos/firestore/scenarioReportsRepo.js",
+      "src/repos/firestore/usersPhase1Repo.js",
+      "src/usecases/checklists/getChecklistForUser.js",
+      "src/usecases/checklists/getChecklistWithStatus.js",
+      "src/usecases/notifications/createNotificationPhase1.js",
+      "src/usecases/notifications/sendNotificationPhase1.js",
+      "src/usecases/phase2/runAutomation.js"
+    ],
+    "scenarioKey": [
+      "src/repos/firestore/notificationsRepo.js",
+      "src/repos/firestore/usersRepo.js",
+      "src/routes/admin/monitorInsights.js",
+      "src/routes/admin/notificationDeliveries.js",
+      "src/routes/admin/notifications.js",
+      "src/routes/admin/opsOverview.js",
+      "src/routes/admin/osNotifications.js",
+      "src/routes/admin/readModel.js",
+      "src/routes/admin/userTimeline.js",
+      "src/usecases/admin/getNotificationOperationalSummary.js",
+      "src/usecases/admin/getNotificationReadModel.js",
+      "src/usecases/admin/getUserOperationalSummary.js",
+      "src/usecases/adminOs/executeNotificationSend.js",
+      "src/usecases/adminOs/planNotificationSend.js",
+      "src/usecases/notifications/createNotification.js",
+      "src/usecases/notifications/sendNotification.js",
+      "src/usecases/phase117/resolveAutomationTargets.js",
+      "src/usecases/phase140/getNotificationHealthSummary.js",
+      "src/usecases/phase33/executeOpsNextAction.js",
+      "src/usecases/phase5/getUserStateSummary.js",
+      "src/usecases/users/declareRedacMembershipIdFromLine.js",
+      "src/usecases/users/ensureUser.js"
+    ]
+  },
+  "critical_guards": [
+    "validateSingleCta",
+    "validateLinkRequired",
+    "validateWarnLinkBlock",
+    "validateKillSwitch",
+    "requireAdminToken",
+    "requireInternalJobToken",
+    "killSwitch",
+    "validateCityPackSources"
+  ],
+  "unresolved_dynamic_dep": []
+}

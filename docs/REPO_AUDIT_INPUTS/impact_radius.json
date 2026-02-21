@@ -1,0 +1,2317 @@
+{
+  "impact_radius": {
+    "activateCityPack": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 2,
+      "tests": 0,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/activateCityPack.js",
+        "route_files": [
+          "src/routes/admin/cityPackRequests.js",
+          "src/routes/admin/cityPacks.js"
+        ],
+        "test_files": []
+      }
+    },
+    "answerFaqFromKb": {
+      "endpoints": 4,
+      "repos": 3,
+      "collections": 3,
+      "tests": 19,
+      "risk_score": "HIGH",
+      "score": 13,
+      "evidence": {
+        "usecase_file": "src/usecases/faq/answerFaqFromKb.js",
+        "route_files": [
+          "src/routes/admin/llmFaq.js",
+          "src/routes/phaseLLM4FaqAnswer.js"
+        ],
+        "test_files": [
+          "tests/phase219/phase219_phaseLLM4_compat_route_contract.test.js",
+          "tests/phase229/phase229_faq_high_risk_contact_source_required.test.js",
+          "tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_faq_response_and_audit.test.js",
+          "tests/phase232/phase232_faq_block_payload_contract.test.js",
+          "tests/phase234/phase234_faq_consent_missing_blocks.test.js",
+          "tests/phase235/phase235_guide_mode_checklist_guidance_allowed.test.js",
+          "tests/phase235/phase235_guide_only_mode_blocks_free_chat.test.js",
+          "tests/phase235/phase235_personalization_beyond_locale_blocked.test.js",
+          "tests/phase244/phase244_faq_kb_meta_contract.test.js",
+          "tests/phase245/phase245_disclaimer_surface_audit.test.js",
+          "tests/phase246/phase246_block_ux_contract.test.js",
+          "tests/phase248/phase248_regulatory_profile_and_taxonomy.test.js",
+          "tests/phase249/phase249_guide_only_release_contract.test.js",
+          "tests/phaseLLM6/phaseLLM6_audit_trace_required.test.js",
+          "tests/phaseLLM6/phaseLLM6_dual_gate.test.js",
+          "tests/phaseLLM6/phaseLLM6_faq_blocks_kb_no_match.test.js",
+          "tests/phaseLLM6/phaseLLM6_faq_blocks_without_citations.test.js",
+          "tests/phaseLLM6/phaseLLM6_faq_link_safety.test.js"
+        ]
+      }
+    },
+    "appendAuditLog": {
+      "endpoints": 28,
+      "repos": 1,
+      "collections": 1,
+      "tests": 55,
+      "risk_score": "HIGH",
+      "score": 33,
+      "evidence": {
+        "usecase_file": "src/usecases/audit/appendAuditLog.js",
+        "route_files": [
+          "src/routes/admin/cityPackBulletins.js",
+          "src/routes/admin/cityPackEvidence.js",
+          "src/routes/admin/cityPackFeedback.js",
+          "src/routes/admin/cityPackRequests.js",
+          "src/routes/admin/cityPackReviewInbox.js",
+          "src/routes/admin/cityPackTemplateLibrary.js",
+          "src/routes/admin/cityPackUpdateProposals.js",
+          "src/routes/admin/cityPacks.js",
+          "src/routes/admin/kbArticles.js",
+          "src/routes/admin/killSwitch.js",
+          "src/routes/admin/linkRegistry.js",
+          "src/routes/admin/llmConfig.js",
+          "src/routes/admin/llmConsent.js",
+          "src/routes/admin/monitorInsights.js",
+          "src/routes/admin/notificationDeliveries.js",
+          "src/routes/admin/notificationTest.js",
+          "src/routes/admin/notifications.js",
+          "src/routes/admin/osAutomationConfig.js",
+          "src/routes/admin/osConfig.js",
+          "src/routes/admin/osContext.js",
+          "src/routes/admin/osDeliveryBackfill.js",
+          "src/routes/admin/osDeliveryRecovery.js",
+          "src/routes/admin/osErrors.js",
+          "src/routes/admin/osKillSwitch.js",
+          "src/routes/admin/osLinkRegistryLookup.js",
+          "src/routes/admin/osNotifications.js",
+          "src/routes/admin/osRedacStatus.js",
+          "src/routes/admin/osView.js",
+          "src/routes/admin/readModel.js",
+          "src/routes/admin/redacMembershipUnlink.js",
+          "src/routes/admin/traceSearch.js",
+          "src/routes/admin/vendors.js",
+          "src/routes/phase5Review.js",
+          "src/routes/phase61Templates.js"
+        ],
+        "test_files": [
+          "tests/phase0/audit.test.js",
+          "tests/phase104/phase104_audit_written_for_ok_and_block.test.js",
+          "tests/phase105/phase105_ui_flow_simulated.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js",
+          "tests/phase121/phase121_ops_notice_send_flow.test.js",
+          "tests/phase133/phase133_trace_search_returns_related_logs.test.js",
+          "tests/phase189/phase189_t01_target_count_source_read_model.test.js",
+          "tests/phase190/phase190_t01_cap_count_labels.test.js",
+          "tests/phase206/phase206_user_timeline_api.test.js",
+          "tests/phase227/phase227_t03_ops_explain_audit_actor_uses_param.test.js",
+          "tests/phase227/phase227_t04_next_actions_audit_actor_uses_param.test.js",
+          "tests/phase229/phase229_faq_high_risk_contact_source_required.test.js",
+          "tests/phase230/phase230_faq_confidence_blocks_low_confidence.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_faq_response_and_audit.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_ops_next_actions.test.js",
+          "tests/phase232/phase232_faq_block_payload_contract.test.js",
+          "tests/phase233/phase233_next_actions_max3_abstract_only.test.js",
+          "tests/phase233/phase233_ops_template_sections_present.test.js",
+          "tests/phase234/phase234_faq_consent_missing_blocks.test.js",
+          "tests/phase234/phase234_ops_next_actions_audit_policy_fields.test.js"
+        ]
+      }
+    },
+    "appendLlmAdoptAudit": {
+      "endpoints": 1,
+      "repos": 1,
+      "collections": 1,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase105/appendLlmAdoptAudit.js",
+        "route_files": [
+          "src/routes/phase105OpsAssistAdopt.js"
+        ],
+        "test_files": [
+          "tests/phase105/phase105_ui_flow_simulated.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js"
+        ]
+      }
+    },
+    "appendLlmSuggestionAudit": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 6,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase104/appendLlmSuggestionAudit.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase101/phase101_ops_console_view_includes_suggestion.test.js",
+          "tests/phase104/phase104_audit_written_for_ok_and_block.test.js",
+          "tests/phase106/phase106_llm_disabled_default_fallback.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js",
+          "tests/phase118/phase118_suggestion_schema.test.js",
+          "tests/phase119/phase119_audit_append_on_suggestion.test.js"
+        ]
+      }
+    },
+    "approveNotification": {
+      "endpoints": 10,
+      "repos": 1,
+      "collections": 1,
+      "tests": 5,
+      "risk_score": "HIGH",
+      "score": 15,
+      "evidence": {
+        "usecase_file": "src/usecases/adminOs/approveNotification.js",
+        "route_files": [
+          "src/routes/admin/osNotifications.js"
+        ],
+        "test_files": [
+          "tests/phase161/phase161_composer_blocked_by_notification_cap.test.js",
+          "tests/phase161/phase161_composer_execute_audit_on_failure.test.js",
+          "tests/phase161/phase161_composer_flow_draft_approve_plan_execute.test.js",
+          "tests/phase161/phase161_composer_partial_failure_idempotent.test.js",
+          "tests/phase161/phase161_composer_policy_blocked_by_phase_preset.test.js"
+        ]
+      }
+    },
+    "buildLlmInputView": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/llm/buildLlmInputView.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phaseLLM6/phaseLLM6_allowlist_prevents_secret.test.js"
+        ]
+      }
+    },
+    "buildOpsAssistInput": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase102/buildOpsAssistInput.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase102/phase102_ops_assist_input_shape_stable.test.js",
+          "tests/phase51/phase51_cache_hit_no_llm_call.test.js"
+        ]
+      }
+    },
+    "buildOpsAssistPrompt": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase45/buildOpsAssistPrompt.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase45/phase45_prompt_shape_fixed.test.js",
+          "tests/phase51/phase51_cache_hit_no_llm_call.test.js"
+        ]
+      }
+    },
+    "buildSendSegment": {
+      "endpoints": 1,
+      "repos": 0,
+      "collections": 0,
+      "tests": 26,
+      "risk_score": "MEDIUM",
+      "score": 4,
+      "evidence": {
+        "usecase_file": "src/usecases/phase66/buildSendSegment.js",
+        "route_files": [
+          "src/routes/phase66Segments.js"
+        ],
+        "test_files": [
+          "tests/phase66/phase66_segment_line_user_ids_override.test.js",
+          "tests/phase66/phase66_segment_needs_attention.test.js",
+          "tests/phase66/phase66_segment_ready_only.test.js",
+          "tests/phase66/phase66_segment_redac_member_filters.test.js",
+          "tests/phase67/phase67_plan_appends_audit.test.js",
+          "tests/phase67/phase67_plan_does_not_send.test.js",
+          "tests/phase68/phase68_blocked_by_notification_cap.test.js",
+          "tests/phase68/phase68_blocked_by_notification_policy.test.js",
+          "tests/phase68/phase68_exec_appends_audit_and_sends.test.js",
+          "tests/phase68/phase68_reject_when_mode_dry_run_only.test.js",
+          "tests/phase68/phase68_reject_without_matching_plan.test.js",
+          "tests/phase71/phase71_execute_requires_matching_planHash.test.js",
+          "tests/phase71/phase71_plan_returns_planHash.test.js",
+          "tests/phase72/phase72_enqueue_on_failure.test.js",
+          "tests/phase72/phase72_no_enqueue_on_success.test.js",
+          "tests/phase76/phase76_execute_requires_templateVersion_match.test.js",
+          "tests/phase76/phase76_plan_returns_templateVersion.test.js",
+          "tests/phase79/phase79_audit_contains_snapshots.test.js",
+          "tests/phase79/phase79_execute_returns_runId.test.js",
+          "tests/phase81/phase81_dryrun_audit_appended.test.js"
+        ]
+      }
+    },
+    "checkLinkHealth": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/linkRegistry/checkLinkHealth.js",
+        "route_files": [
+          "src/routes/admin/linkRegistry.js",
+          "src/routes/admin/vendors.js"
+        ],
+        "test_files": []
+      }
+    },
+    "checkNotificationCap": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/checkNotificationCap.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase160/phase160_check_notification_cap_delivery_count_mode.test.js"
+        ]
+      }
+    },
+    "checklistCompleteness": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 3,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/checklistCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase102/phase102_ops_assist_input_shape_stable.test.js",
+          "tests/phase24/phase24_t05_checklist_completeness.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js"
+        ]
+      }
+    },
+    "closeDecision": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 15,
+      "risk_score": "LOW",
+      "score": 3,
+      "evidence": {
+        "usecase_file": "src/usecases/phase25/closeDecision.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase142/phase142_trace_bundle_includes_mitigation_decision.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase23/phase23_t09_close_decision_table_complete.test.js",
+          "tests/phase23/phase23_t09_close_log_matches_runbook.test.js",
+          "tests/phase25/phase25_t03_ops_console_view.test.js",
+          "tests/phase25/phase25_t08_close_decision_console.test.js",
+          "tests/phase25/phase25_t09_submit_close_audit.test.js",
+          "tests/phase25/phase25_t10_close_guard.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase50/phase50_obs_emitted_on_submit_and_execute.test.js",
+          "tests/phaseLLM2/phaseLLM2_ops_explanation_usecase.test.js",
+          "tests/phaseLLMNext2/phaseLLMNext2_ops_explain_adapter.test.js",
+          "tests/phaseLLMNext3/phaseLLMNext3_guide_mode_consent_gate.test.js"
+        ]
+      }
+    },
+    "computeCityPackMetrics": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 7,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 15,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/computeCityPackMetrics.js",
+        "route_files": [
+          "src/routes/admin/cityPackReviewInbox.js"
+        ],
+        "test_files": [
+          "tests/phase273/phase273_t02_compute_city_pack_metrics_usecase.test.js"
+        ]
+      }
+    },
+    "createLink": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 23,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/linkRegistry/createLink.js",
+        "route_files": [
+          "src/routes/admin/linkRegistry.js"
+        ],
+        "test_files": [
+          "tests/phase0/click.test.js",
+          "tests/phase0/linkRegistry.test.js",
+          "tests/phase0/notifications.test.js",
+          "tests/phase1/admin-notifications.test.js",
+          "tests/phase1/smoke.test.js",
+          "tests/phase161/phase161_composer_blocked_by_notification_cap.test.js",
+          "tests/phase161/phase161_composer_execute_audit_on_failure.test.js",
+          "tests/phase161/phase161_composer_flow_draft_approve_plan_execute.test.js",
+          "tests/phase161/phase161_composer_partial_failure_idempotent.test.js",
+          "tests/phase161/phase161_composer_policy_blocked_by_phase_preset.test.js",
+          "tests/phase206/phase206_notification_test_dry_run.test.js",
+          "tests/phase206/phase206_notification_test_self_send.test.js",
+          "tests/phase206/phase206_user_timeline_api.test.js",
+          "tests/phase21/phase21_t06_click_b_day_window.test.js",
+          "tests/phase241/phase241_t02_notification_deliveries_api.test.js",
+          "tests/phase241/phase241_t03_monitor_insights_api.test.js",
+          "tests/phase250/phase250_t04_send_notification_blocks_expired_source.test.js",
+          "tests/phase261/phase261_t03_vendor_facade_contract.test.js",
+          "tests/phase261/phase261_t04_trace_required_actions.test.js",
+          "tests/phase267/phase267_t04_send_notification_optional_source_fallback.test.js"
+        ]
+      }
+    },
+    "createNotification": {
+      "endpoints": 12,
+      "repos": 2,
+      "collections": 2,
+      "tests": 32,
+      "risk_score": "HIGH",
+      "score": 16,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/createNotification.js",
+        "route_files": [
+          "src/routes/admin/notifications.js",
+          "src/routes/admin/osNotifications.js"
+        ],
+        "test_files": [
+          "tests/phase0/notifications.test.js",
+          "tests/phase0/notificationsRepo.test.js",
+          "tests/phase138/phase138_read_model_includes_reaction_summary.test.js",
+          "tests/phase161/phase161_composer_blocked_by_notification_cap.test.js",
+          "tests/phase161/phase161_composer_execute_audit_on_failure.test.js",
+          "tests/phase161/phase161_composer_flow_draft_approve_plan_execute.test.js",
+          "tests/phase161/phase161_composer_partial_failure_idempotent.test.js",
+          "tests/phase161/phase161_composer_policy_blocked_by_phase_preset.test.js",
+          "tests/phase187/phase187_t01_read_model_contract.test.js",
+          "tests/phase188/phase188_t01_wait_rule_values_next_wait_days.test.js",
+          "tests/phase189/phase189_t01_target_count_source_read_model.test.js",
+          "tests/phase190/phase190_t01_cap_count_labels.test.js",
+          "tests/phase191/phase191_t01_closed_loop_read_model_keys.test.js",
+          "tests/phase204/phase204_t01_week_over_week_delta.test.js",
+          "tests/phase205/phase205_t01_plan_cap_blocked_count.test.js",
+          "tests/phase206/phase206_notification_test_dry_run.test.js",
+          "tests/phase206/phase206_notification_test_self_send.test.js",
+          "tests/phase206/phase206_user_timeline_api.test.js",
+          "tests/phase21/phase21_t06_click_b_day_window.test.js",
+          "tests/phase21/phase21_t18_verify_invalid_rapt_exitcode.test.js"
+        ]
+      }
+    },
+    "createNotificationPhase1": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/createNotificationPhase1.js",
+        "route_files": [
+          "src/routes/admin/phase1Notifications.js"
+        ],
+        "test_files": [
+          "tests/phase1/admin-notifications.test.js",
+          "tests/phase1/smoke.test.js"
+        ]
+      }
+    },
+    "createOpsSegment": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phase77/createOpsSegment.js",
+        "route_files": [
+          "src/routes/phase77Segments.js"
+        ],
+        "test_files": []
+      }
+    },
+    "decisionLogs": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/decisionLogs.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase24/phase24_t02_decision_logs_usecase.test.js"
+        ]
+      }
+    },
+    "declareCityPackFeedbackFromLine": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/declareCityPackFeedbackFromLine.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": [
+          "tests/phase270/phase270_t01_feedback_command_creates_feedback.test.js"
+        ]
+      }
+    },
+    "declareCityRegionFromLine": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/declareCityRegionFromLine.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": [
+          "tests/phase260/phase260_t01_region_declare_creates_request.test.js"
+        ]
+      }
+    },
+    "declareRedacMembershipIdFromLine": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 3,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/users/declareRedacMembershipIdFromLine.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": [
+          "tests/phase162/redac_membership_declare.test.js",
+          "tests/phase163/redac_membership_unlink_admin.test.js",
+          "tests/security/redac_membership_not_stored_in_plaintext.test.js"
+        ]
+      }
+    },
+    "deleteLink": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/linkRegistry/deleteLink.js",
+        "route_files": [
+          "src/routes/admin/linkRegistry.js"
+        ],
+        "test_files": [
+          "tests/phase0/linkRegistry.test.js"
+        ]
+      }
+    },
+    "detectDecisionDrift": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 4,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase34/detectDecisionDrift.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase34/phase34_t01_suggestion_drift.test.js",
+          "tests/phase34/phase34_t02_execution_drift.test.js",
+          "tests/phase34/phase34_t03_policy_drift.test.js",
+          "tests/phase34/phase34_t04_no_drift.test.js"
+        ]
+      }
+    },
+    "dryRunAutomationDecision": {
+      "endpoints": 1,
+      "repos": 1,
+      "collections": 1,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase47/dryRunAutomationDecision.js",
+        "route_files": [
+          "src/routes/phase47AutomationDryRun.js"
+        ],
+        "test_files": [
+          "tests/phase47/phase47_dry_run_no_writes.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js"
+        ]
+      }
+    },
+    "dryRunSegmentSend": {
+      "endpoints": 1,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/phase81/dryRunSegmentSend.js",
+        "route_files": [
+          "src/routes/phase81DryRun.js"
+        ],
+        "test_files": [
+          "tests/phase81/phase81_dryrun_audit_appended.test.js",
+          "tests/phase81/phase81_dryrun_no_side_effects.test.js"
+        ]
+      }
+    },
+    "ensureUser": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 3,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/users/ensureUser.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase162/redac_membership_declare.test.js",
+          "tests/phase163/redac_membership_unlink_admin.test.js",
+          "tests/security/redac_membership_not_stored_in_plaintext.test.js"
+        ]
+      }
+    },
+    "evaluateNotificationHealth": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase139/evaluateNotificationHealth.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase139/phase139_notification_health_evaluation.test.js"
+        ]
+      }
+    },
+    "executeAutomationDecision": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 9,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/phase43/executeAutomationDecision.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase40_44/phase40_44_full_flow.test.js",
+          "tests/phase40_44/phase43_automation_disabled_by_default.test.js",
+          "tests/phase40_44/phase44_automation_safety_guard.test.js",
+          "tests/phase47/phase47_audit_and_decisionlog_linked.test.js",
+          "tests/phase47/phase47_execute_requires_flag_and_ready.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase50/phase50_obs_emitted_on_submit_and_execute.test.js",
+          "tests/phase63/phase63_mode_dryrun_only_blocks_execute.test.js",
+          "tests/phase63/phase63_mode_execute_allows_with_guards.test.js"
+        ]
+      }
+    },
+    "executeNotificationSend": {
+      "endpoints": 10,
+      "repos": 6,
+      "collections": 6,
+      "tests": 5,
+      "risk_score": "HIGH",
+      "score": 22,
+      "evidence": {
+        "usecase_file": "src/usecases/adminOs/executeNotificationSend.js",
+        "route_files": [
+          "src/routes/admin/osNotifications.js"
+        ],
+        "test_files": [
+          "tests/phase161/phase161_composer_blocked_by_notification_cap.test.js",
+          "tests/phase161/phase161_composer_execute_audit_on_failure.test.js",
+          "tests/phase161/phase161_composer_flow_draft_approve_plan_execute.test.js",
+          "tests/phase161/phase161_composer_partial_failure_idempotent.test.js",
+          "tests/phase161/phase161_composer_policy_blocked_by_phase_preset.test.js"
+        ]
+      }
+    },
+    "executeOpsNextAction": {
+      "endpoints": 1,
+      "repos": 5,
+      "collections": 5,
+      "tests": 14,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/phase33/executeOpsNextAction.js",
+        "route_files": [
+          "src/routes/phase33OpsDecisionExecute.js"
+        ],
+        "test_files": [
+          "tests/phase132/phase132_kill_switch_blocks_stop_and_escalate.test.js",
+          "tests/phase132/phase132_traceid_fallback_from_decision_audit.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase33/phase33_t01_execute_actions.test.js",
+          "tests/phase33/phase33_t02_execute_guards.test.js",
+          "tests/phase34/phase34_t05_phase32_33_34_integration.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase36_decision_timeline_append.test.js",
+          "tests/phase40_44/phase40_44_full_flow.test.js",
+          "tests/phase47/phase47_audit_and_decisionlog_linked.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase50/phase50_obs_emitted_on_submit_and_execute.test.js",
+          "tests/phase63/phase63_mode_execute_allows_with_guards.test.js"
+        ]
+      }
+    },
+    "executeSegmentSend": {
+      "endpoints": 1,
+      "repos": 10,
+      "collections": 10,
+      "tests": 16,
+      "risk_score": "HIGH",
+      "score": 21,
+      "evidence": {
+        "usecase_file": "src/usecases/phase68/executeSegmentSend.js",
+        "route_files": [
+          "src/routes/phase68ExecuteSend.js"
+        ],
+        "test_files": [
+          "tests/phase68/phase68_blocked_by_notification_cap.test.js",
+          "tests/phase68/phase68_blocked_by_notification_policy.test.js",
+          "tests/phase68/phase68_exec_appends_audit_and_sends.test.js",
+          "tests/phase68/phase68_reject_when_mode_dry_run_only.test.js",
+          "tests/phase68/phase68_reject_without_matching_plan.test.js",
+          "tests/phase71/phase71_execute_requires_matching_planHash.test.js",
+          "tests/phase72/phase72_enqueue_on_failure.test.js",
+          "tests/phase72/phase72_no_enqueue_on_success.test.js",
+          "tests/phase76/phase76_execute_requires_templateVersion_match.test.js",
+          "tests/phase79/phase79_audit_contains_snapshots.test.js",
+          "tests/phase79/phase79_execute_returns_runId.test.js",
+          "tests/phase86/phase86_batching_updates_progress.test.js",
+          "tests/phase88/phase88_partial_failure_done_with_errors.test.js",
+          "tests/phase89/phase89_aborted_records_ops_state.test.js",
+          "tests/phase89/phase89_breaker_aborts_on_429_storm.test.js",
+          "tests/phase91/phase91_audit_appended_on_start_done_abort.test.js"
+        ]
+      }
+    },
+    "generateOpsDailyReport": {
+      "endpoints": 2,
+      "repos": 0,
+      "collections": 0,
+      "tests": 4,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase62/generateOpsDailyReport.js",
+        "route_files": [
+          "src/routes/phase62OpsDailyReport.js",
+          "src/routes/phase65OpsDailyJob.js"
+        ],
+        "test_files": [
+          "tests/phase62/phase62_generate_report_idempotent.test.js",
+          "tests/phase62/phase62_generate_report_persists.test.js",
+          "tests/phase65/phase65_job_idempotent.test.js",
+          "tests/phase65/phase65_job_token_required.test.js"
+        ]
+      }
+    },
+    "getAutomationConfig": {
+      "endpoints": 1,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase48/getAutomationConfig.js",
+        "route_files": [
+          "src/routes/phase48AutomationConfig.js"
+        ],
+        "test_files": [
+          "tests/phase48/phase48_config_default_disabled.test.js"
+        ]
+      }
+    },
+    "getChecklistForUser": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 2,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/checklists/getChecklistForUser.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase1/getChecklistForUser.test.js"
+        ]
+      }
+    },
+    "getChecklistWithStatus": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 2,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/checklists/getChecklistWithStatus.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase1/smoke.test.js",
+          "tests/phase4/checklistToggle.test.js"
+        ]
+      }
+    },
+    "getFaqAnswer": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phaseLLM4/getFaqAnswer.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phaseLLM4/phaseLLM4_faq_usecase.test.js"
+        ]
+      }
+    },
+    "getMemberProfile": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/users/getMemberProfile.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase4/memberNumber.test.js"
+        ]
+      }
+    },
+    "getMemberSummary": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 10,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase6/getMemberSummary.js",
+        "route_files": [
+          "src/routes/phase6MemberSummary.js"
+        ],
+        "test_files": [
+          "tests/phase129_131/phase131_ops_console_detail_fields.test.js",
+          "tests/phase140/phase140_ops_console_includes_notification_health.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t07_console_contract.test.js",
+          "tests/phase25/phase25_t08_close_decision_console.test.js",
+          "tests/phase35/phase35_t01_console_execution_status.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase38_llm_context_payload.test.js"
+        ]
+      }
+    },
+    "getNextActionCandidates": {
+      "endpoints": 5,
+      "repos": 1,
+      "collections": 1,
+      "tests": 11,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phaseLLM3/getNextActionCandidates.js",
+        "route_files": [
+          "src/routes/admin/llmOps.js",
+          "src/routes/phaseLLM3OpsNextActions.js"
+        ],
+        "test_files": [
+          "tests/phase227/phase227_t02_llm_next_actions_route_passes_x_actor.test.js",
+          "tests/phase227/phase227_t04_next_actions_audit_actor_uses_param.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_ops_next_actions.test.js",
+          "tests/phase233/phase233_next_actions_max3_abstract_only.test.js",
+          "tests/phase234/phase234_ops_next_actions_audit_policy_fields.test.js",
+          "tests/phase245/phase245_disclaimer_surface_audit.test.js",
+          "tests/phase247/phase247_ops_template_and_nextaction_display.test.js",
+          "tests/phase248/phase248_regulatory_profile_and_taxonomy.test.js",
+          "tests/phaseLLM3/phaseLLM3_next_action_candidates_usecase.test.js",
+          "tests/phaseLLMNext2/phaseLLMNext2_next_actions_adapter.test.js",
+          "tests/phaseLLMNext3/phaseLLMNext3_guide_mode_consent_gate.test.js"
+        ]
+      }
+    },
+    "getNotificationDecisionTrace": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase37/getNotificationDecisionTrace.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase36_39/phase38_llm_context_payload.test.js"
+        ]
+      }
+    },
+    "getNotificationHealthSummary": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 0,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase140/getNotificationHealthSummary.js",
+        "route_files": [],
+        "test_files": []
+      }
+    },
+    "getNotificationOperationalSummary": {
+      "endpoints": 2,
+      "repos": 2,
+      "collections": 6,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 15,
+      "evidence": {
+        "usecase_file": "src/usecases/admin/getNotificationOperationalSummary.js",
+        "route_files": [
+          "src/routes/admin/opsOverview.js"
+        ],
+        "test_files": [
+          "tests/phase4/adminOpsSummary.test.js"
+        ]
+      }
+    },
+    "getNotificationReactionSummary": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase137/getNotificationReactionSummary.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase137/phase137_notification_reaction_summary.test.js"
+        ]
+      }
+    },
+    "getNotificationReadModel": {
+      "endpoints": 1,
+      "repos": 3,
+      "collections": 3,
+      "tests": 11,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/admin/getNotificationReadModel.js",
+        "route_files": [
+          "src/routes/admin/readModel.js"
+        ],
+        "test_files": [
+          "tests/phase138/phase138_read_model_includes_reaction_summary.test.js",
+          "tests/phase140/phase140_ops_console_includes_notification_health.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase187/phase187_t01_read_model_contract.test.js",
+          "tests/phase188/phase188_t01_wait_rule_values_next_wait_days.test.js",
+          "tests/phase189/phase189_t01_target_count_source_read_model.test.js",
+          "tests/phase190/phase190_t01_cap_count_labels.test.js",
+          "tests/phase191/phase191_t01_closed_loop_read_model_keys.test.js",
+          "tests/phase204/phase204_t01_week_over_week_delta.test.js",
+          "tests/phase36_39/phase37_notification_trace.test.js",
+          "tests/phase4/adminReadModel.test.js"
+        ]
+      }
+    },
+    "getNotificationsSummaryFiltered": {
+      "endpoints": 3,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/getNotificationsSummaryFiltered.js",
+        "route_files": [
+          "src/routes/phase5Ops.js"
+        ],
+        "test_files": [
+          "tests/phase5/opsFilter.test.js"
+        ]
+      }
+    },
+    "getOpsAssistContext": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 17,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase38/getOpsAssistContext.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase101/phase101_ops_console_view_includes_suggestion.test.js",
+          "tests/phase106/phase106_llm_disabled_default_fallback.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js",
+          "tests/phase118/phase118_suggestion_schema.test.js",
+          "tests/phase119/phase119_audit_append_on_suggestion.test.js",
+          "tests/phase122/phase122_ops_console_view_includes_suggestion.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase38_llm_context_payload.test.js",
+          "tests/phase40_44/phase40_44_full_flow.test.js",
+          "tests/phase40_44/phase40_llm_suggestion_no_action.test.js",
+          "tests/phase40_44/phase41_llm_audit_append.test.js",
+          "tests/phase40_44/phase42_ops_console_view_readonly.test.js",
+          "tests/phase45/phase45_llm_suggestion_fallback.test.js",
+          "tests/phase46/phase46_ops_console_view_includes_assist_when_requested.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase51/phase51_cache_hit_no_llm_call.test.js",
+          "tests/phase51/phase51_inputhash_change_refreshes.test.js"
+        ]
+      }
+    },
+    "getOpsAssistForConsole": {
+      "endpoints": 1,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase46/getOpsAssistForConsole.js",
+        "route_files": [
+          "src/routes/phase42OpsConsoleView.js"
+        ],
+        "test_files": [
+          "tests/phase49/phase49_full_ops_flow.test.js"
+        ]
+      }
+    },
+    "getOpsAssistSuggestion": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 17,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase39/getOpsAssistSuggestion.js",
+        "route_files": [
+          "src/routes/phase39OpsAssistSuggestion.js"
+        ],
+        "test_files": [
+          "tests/phase101/phase101_ops_console_view_includes_suggestion.test.js",
+          "tests/phase106/phase106_llm_disabled_default_fallback.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js",
+          "tests/phase118/phase118_suggestion_schema.test.js",
+          "tests/phase119/phase119_audit_append_on_suggestion.test.js",
+          "tests/phase122/phase122_ops_console_view_includes_suggestion.test.js",
+          "tests/phase123/phase123_killswitch_blocks_ops_assist.test.js",
+          "tests/phase39/phase39_suggestion_schema_and_audit.test.js",
+          "tests/phase40_44/phase40_44_full_flow.test.js",
+          "tests/phase40_44/phase40_llm_suggestion_no_action.test.js",
+          "tests/phase40_44/phase41_llm_audit_append.test.js",
+          "tests/phase40_44/phase42_ops_console_view_readonly.test.js",
+          "tests/phase45/phase45_llm_suggestion_fallback.test.js",
+          "tests/phase46/phase46_ops_console_view_includes_assist_when_requested.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase51/phase51_cache_hit_no_llm_call.test.js",
+          "tests/phase51/phase51_inputhash_change_refreshes.test.js"
+        ]
+      }
+    },
+    "getOpsConsole": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 64,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase25/getOpsConsole.js",
+        "route_files": [
+          "src/routes/phase25OpsConsole.js"
+        ],
+        "test_files": [
+          "tests/phase122/phase122_ops_console_view_includes_suggestion.test.js",
+          "tests/phase129_131/phase129_ops_console_view_audit.test.js",
+          "tests/phase129_131/phase130_no_action_decision_is_logged.test.js",
+          "tests/phase129_131/phase131_ops_console_detail_fields.test.js",
+          "tests/phase132/phase132_kill_switch_blocks_stop_and_escalate.test.js",
+          "tests/phase132/phase132_traceid_fallback_from_decision_audit.test.js",
+          "tests/phase140/phase140_ops_console_includes_notification_health.test.js",
+          "tests/phase142/phase142_trace_bundle_includes_mitigation_decision.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_ops_next_actions.test.js",
+          "tests/phase234/phase234_ops_next_actions_audit_policy_fields.test.js",
+          "tests/phase25/phase25_t02_submit_ops_decision.test.js",
+          "tests/phase25/phase25_t03_ops_console_view.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t05_submit_audit_snapshot.test.js",
+          "tests/phase25/phase25_t06_decision_consistency_guard.test.js",
+          "tests/phase25/phase25_t07_console_contract.test.js",
+          "tests/phase25/phase25_t08_close_decision_console.test.js",
+          "tests/phase25/phase25_t09_submit_close_audit.test.js",
+          "tests/phase25/phase25_t10_close_guard.test.js"
+        ]
+      }
+    },
+    "getOpsConsoleView": {
+      "endpoints": 1,
+      "repos": 0,
+      "collections": 0,
+      "tests": 5,
+      "risk_score": "MEDIUM",
+      "score": 4,
+      "evidence": {
+        "usecase_file": "src/usecases/phase42/getOpsConsoleView.js",
+        "route_files": [
+          "src/routes/phase42OpsConsoleView.js"
+        ],
+        "test_files": [
+          "tests/phase122/phase122_ops_console_view_includes_suggestion.test.js",
+          "tests/phase40_44/phase40_44_full_flow.test.js",
+          "tests/phase40_44/phase42_ops_console_view_readonly.test.js",
+          "tests/phase46/phase46_ops_console_view_includes_assist_when_requested.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js"
+        ]
+      }
+    },
+    "getOpsDashboard": {
+      "endpoints": 1,
+      "repos": 4,
+      "collections": 4,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 14,
+      "evidence": {
+        "usecase_file": "src/usecases/phase38/getOpsDashboard.js",
+        "route_files": [
+          "src/routes/phase38OpsDashboard.js"
+        ],
+        "test_files": [
+          "tests/phase38/phase38_ops_dashboard.test.js"
+        ]
+      }
+    },
+    "getOpsExplanation": {
+      "endpoints": 5,
+      "repos": 1,
+      "collections": 1,
+      "tests": 11,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phaseLLM2/getOpsExplanation.js",
+        "route_files": [
+          "src/routes/admin/llmOps.js",
+          "src/routes/phaseLLM2OpsExplain.js"
+        ],
+        "test_files": [
+          "tests/phase227/phase227_t01_llm_ops_explain_route_passes_x_actor.test.js",
+          "tests/phase227/phase227_t03_ops_explain_audit_actor_uses_param.test.js",
+          "tests/phase231/phase231_disclaimer_version_in_ops_next_actions.test.js",
+          "tests/phase233/phase233_ops_template_sections_present.test.js",
+          "tests/phase234/phase234_ops_next_actions_audit_policy_fields.test.js",
+          "tests/phase245/phase245_disclaimer_surface_audit.test.js",
+          "tests/phase247/phase247_ops_template_and_nextaction_display.test.js",
+          "tests/phase248/phase248_regulatory_profile_and_taxonomy.test.js",
+          "tests/phaseLLM2/phaseLLM2_ops_explanation_usecase.test.js",
+          "tests/phaseLLMNext2/phaseLLMNext2_ops_explain_adapter.test.js",
+          "tests/phaseLLMNext3/phaseLLMNext3_guide_mode_consent_gate.test.js"
+        ]
+      }
+    },
+    "getOpsSegment": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phase77/getOpsSegment.js",
+        "route_files": [
+          "src/routes/phase77Segments.js"
+        ],
+        "test_files": []
+      }
+    },
+    "getRedacMembershipStatusForLine": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/users/getRedacMembershipStatusForLine.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": []
+      }
+    },
+    "getStaleMemberNumberUsers": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/getStaleMemberNumberUsers.js",
+        "route_files": [
+          "src/routes/phase5Ops.js"
+        ],
+        "test_files": [
+          "tests/phase5/memberNumberStale.test.js"
+        ]
+      }
+    },
+    "getTraceBundle": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/admin/getTraceBundle.js",
+        "route_files": [
+          "src/routes/admin/traceSearch.js"
+        ],
+        "test_files": [
+          "tests/phase142/phase142_trace_bundle_includes_mitigation_decision.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js"
+        ]
+      }
+    },
+    "getUserOperationalSummary": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 5,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 13,
+      "evidence": {
+        "usecase_file": "src/usecases/admin/getUserOperationalSummary.js",
+        "route_files": [
+          "src/routes/admin/opsOverview.js"
+        ],
+        "test_files": [
+          "tests/phase4/adminOpsSummary.test.js"
+        ]
+      }
+    },
+    "getUserStateSummary": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 6,
+      "tests": 13,
+      "risk_score": "HIGH",
+      "score": 12,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/getUserStateSummary.js",
+        "route_files": [
+          "src/routes/phase5State.js"
+        ],
+        "test_files": [
+          "tests/phase127/phase127_last_reaction_at.test.js",
+          "tests/phase129_131/phase131_ops_console_detail_fields.test.js",
+          "tests/phase140/phase140_ops_console_includes_notification_health.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase24/phase24_t08_ops_state_in_summary.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t07_console_contract.test.js",
+          "tests/phase25/phase25_t08_close_decision_console.test.js",
+          "tests/phase35/phase35_t01_console_execution_status.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase38_llm_context_payload.test.js",
+          "tests/phase5/stateSummary.test.js"
+        ]
+      }
+    },
+    "getUsersSummaryFiltered": {
+      "endpoints": 3,
+      "repos": 0,
+      "collections": 0,
+      "tests": 3,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/getUsersSummaryFiltered.js",
+        "route_files": [
+          "src/routes/phase5Ops.js"
+        ],
+        "test_files": [
+          "tests/phase5/opsAttention.test.js",
+          "tests/phase5/opsFilter.test.js",
+          "tests/phase5/opsFlags.test.js"
+        ]
+      }
+    },
+    "guardLlmOutput": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/llm/guardLlmOutput.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phaseLLM6/phaseLLM6_guard_rules.test.js"
+        ]
+      }
+    },
+    "guardOpsAssistSuggestion": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase103/guardOpsAssistSuggestion.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase103/phase103_guard_blocks_invalid_suggestion.test.js",
+          "tests/phase103/phase103_not_ready_forces_stop.test.js"
+        ]
+      }
+    },
+    "listAutomationConfigs": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase48/listAutomationConfigs.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase48/phase48_config_list_shape_fixed.test.js"
+        ]
+      }
+    },
+    "listLinks": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/linkRegistry/listLinks.js",
+        "route_files": [
+          "src/routes/admin/linkRegistry.js"
+        ],
+        "test_files": [
+          "tests/phase0/linkRegistry.test.js"
+        ]
+      }
+    },
+    "listNotifications": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 3,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/listNotifications.js",
+        "route_files": [
+          "src/routes/admin/notifications.js"
+        ],
+        "test_files": [
+          "tests/phase0/notifications.test.js",
+          "tests/phase0/notificationsRepo.test.js",
+          "tests/phase117/phase117_resolve_targets.test.js"
+        ]
+      }
+    },
+    "listOpsConsole": {
+      "endpoints": 1,
+      "repos": 1,
+      "collections": 1,
+      "tests": 25,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/phase26/listOpsConsole.js",
+        "route_files": [
+          "src/routes/phase26OpsConsoleList.js"
+        ],
+        "test_files": [
+          "tests/phase26/phase26_ops_console_list_member_flags.test.js",
+          "tests/phase26/phase26_t01_ops_console_list.test.js",
+          "tests/phase26/phase26_t04_ops_console_pagination_placeholder.test.js",
+          "tests/phase27/phase27_t02_ops_console_list_sort_ssot.test.js",
+          "tests/phase27/phase27_t03_ops_console_list_required_keys_guard.test.js",
+          "tests/phase27/phase27_t04_ops_console_list_pagination_compat.test.js",
+          "tests/phase28/phase28_t02_ops_console_pagination_pages.test.js",
+          "tests/phase28/phase28_t03_ops_console_cursor_validation.test.js",
+          "tests/phase28/phase28_t04_ready_priority_across_pages.test.js",
+          "tests/phase28/phase28_t05_required_keys_across_pages.test.js",
+          "tests/phase29/phase29_t01_nextpagetoken_cursor_compat.test.js",
+          "tests/phase29/phase29_t02_signed_cursor_happy_path.test.js",
+          "tests/phase29/phase29_t03_signed_cursor_validation.test.js",
+          "tests/phase30/phase30_t01_cursor_info_default.test.js",
+          "tests/phase30/phase30_t02_cursor_info_signed.test.js",
+          "tests/phase35/phase35_t02_list_execution_status.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase62/phase62_generate_report_idempotent.test.js",
+          "tests/phase62/phase62_generate_report_persists.test.js",
+          "tests/phase65/phase65_job_idempotent.test.js"
+        ]
+      }
+    },
+    "listOpsSegments": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phase77/listOpsSegments.js",
+        "route_files": [
+          "src/routes/phase77Segments.js"
+        ],
+        "test_files": [
+          "tests/phase77/phase77_list_active_segments.test.js"
+        ]
+      }
+    },
+    "listRetryQueue": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 10,
+      "evidence": {
+        "usecase_file": "src/usecases/phase73/listRetryQueue.js",
+        "route_files": [
+          "src/routes/phase73RetryQueue.js"
+        ],
+        "test_files": [
+          "tests/phase73/phase73_retry_queue_list.test.js"
+        ]
+      }
+    },
+    "logEvent": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 2,
+      "tests": 3,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/events/logEvent.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase1/events-integration.test.js",
+          "tests/phase1/logEvent.test.js",
+          "tests/phase1/smoke.test.js"
+        ]
+      }
+    },
+    "logLineWebhookEvents": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/line/logLineWebhookEvents.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase125/phase125_webhook_edge_events.test.js"
+        ]
+      }
+    },
+    "markDeliveryReaction": {
+      "endpoints": 2,
+      "repos": 2,
+      "collections": 2,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/phase37/markDeliveryReaction.js",
+        "route_files": [
+          "src/routes/phase37DeliveryReactions.js"
+        ],
+        "test_files": [
+          "tests/phase37/phase37_mark_read_click.test.js"
+        ]
+      }
+    },
+    "notificationSummaryCompleteness": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/notificationSummaryCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase24/phase24_t04_notification_summary_completeness.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js"
+        ]
+      }
+    },
+    "opsDecisionCompleteness": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 4,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/opsDecisionCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase24/phase24_t09_ops_decision_completeness.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js",
+          "tests/phase5/stateSummary.test.js",
+          "tests/phase6/memberSummary.test.js"
+        ]
+      }
+    },
+    "opsDecisionConsistency": {
+      "endpoints": 0,
+      "repos": 2,
+      "collections": 2,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/phase25/opsDecisionConsistency.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase25/phase25_t06_decision_consistency_guard.test.js"
+        ]
+      }
+    },
+    "opsStateCompleteness": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 5,
+      "risk_score": "LOW",
+      "score": 3,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/opsStateCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase24/phase24_t08_ops_state_completeness.test.js",
+          "tests/phase24/phase24_t08_ops_state_in_summary.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js",
+          "tests/phase5/stateSummary.test.js",
+          "tests/phase6/memberSummary.test.js"
+        ]
+      }
+    },
+    "overallDecisionReadiness": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 12,
+      "risk_score": "LOW",
+      "score": 3,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/overallDecisionReadiness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase140/phase140_ops_console_includes_notification_health.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t07_console_contract.test.js",
+          "tests/phase25/phase25_t08_close_decision_console.test.js",
+          "tests/phase35/phase35_t01_console_execution_status.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase38_llm_context_payload.test.js",
+          "tests/phase5/stateSummary.test.js",
+          "tests/phase6/memberSummary.test.js"
+        ]
+      }
+    },
+    "planNotificationSend": {
+      "endpoints": 10,
+      "repos": 4,
+      "collections": 4,
+      "tests": 6,
+      "risk_score": "HIGH",
+      "score": 21,
+      "evidence": {
+        "usecase_file": "src/usecases/adminOs/planNotificationSend.js",
+        "route_files": [
+          "src/routes/admin/osNotifications.js"
+        ],
+        "test_files": [
+          "tests/phase161/phase161_composer_blocked_by_notification_cap.test.js",
+          "tests/phase161/phase161_composer_execute_audit_on_failure.test.js",
+          "tests/phase161/phase161_composer_flow_draft_approve_plan_execute.test.js",
+          "tests/phase161/phase161_composer_partial_failure_idempotent.test.js",
+          "tests/phase161/phase161_composer_policy_blocked_by_phase_preset.test.js",
+          "tests/phase205/phase205_t01_plan_cap_blocked_count.test.js"
+        ]
+      }
+    },
+    "planRetryQueuedSend": {
+      "endpoints": 3,
+      "repos": 1,
+      "collections": 1,
+      "tests": 5,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase73/planRetryQueuedSend.js",
+        "route_files": [
+          "src/routes/phase73RetryQueue.js"
+        ],
+        "test_files": [
+          "tests/phase72/phase72_delivery_id_idempotency.test.js",
+          "tests/phase73/phase73_retry_blocked_by_notification_cap.test.js",
+          "tests/phase73/phase73_retry_blocked_by_notification_policy.test.js",
+          "tests/phase73/phase73_retry_failure_keeps_pending.test.js",
+          "tests/phase73/phase73_retry_success_marks_done.test.js"
+        ]
+      }
+    },
+    "planSegmentSend": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 13,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase67/planSegmentSend.js",
+        "route_files": [
+          "src/routes/phase67PlanSend.js"
+        ],
+        "test_files": [
+          "tests/phase67/phase67_plan_appends_audit.test.js",
+          "tests/phase67/phase67_plan_does_not_send.test.js",
+          "tests/phase68/phase68_blocked_by_notification_cap.test.js",
+          "tests/phase68/phase68_blocked_by_notification_policy.test.js",
+          "tests/phase68/phase68_exec_appends_audit_and_sends.test.js",
+          "tests/phase71/phase71_execute_requires_matching_planHash.test.js",
+          "tests/phase71/phase71_plan_returns_planHash.test.js",
+          "tests/phase72/phase72_enqueue_on_failure.test.js",
+          "tests/phase72/phase72_no_enqueue_on_success.test.js",
+          "tests/phase76/phase76_execute_requires_templateVersion_match.test.js",
+          "tests/phase76/phase76_plan_returns_templateVersion.test.js",
+          "tests/phase79/phase79_audit_contains_snapshots.test.js",
+          "tests/phase79/phase79_execute_returns_runId.test.js"
+        ]
+      }
+    },
+    "previewNotification": {
+      "endpoints": 10,
+      "repos": 2,
+      "collections": 2,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 19,
+      "evidence": {
+        "usecase_file": "src/usecases/adminOs/previewNotification.js",
+        "route_files": [
+          "src/routes/admin/osNotifications.js"
+        ],
+        "test_files": []
+      }
+    },
+    "recordClickAndRedirect": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 3,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/track/recordClickAndRedirect.js",
+        "route_files": [
+          "src/routes/trackClick.js",
+          "src/routes/trackClickGet.js"
+        ],
+        "test_files": [
+          "tests/phase0/click.test.js",
+          "tests/phase20/recordClickAndRedirect.test.js",
+          "tests/phase21/phase21_t06_click_b_day_window.test.js"
+        ]
+      }
+    },
+    "recordCtaStats": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 2,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase18/recordCtaStats.js",
+        "route_files": [],
+        "test_files": []
+      }
+    },
+    "recordOpsNextAction": {
+      "endpoints": 2,
+      "repos": 2,
+      "collections": 2,
+      "tests": 11,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/recordOpsNextAction.js",
+        "route_files": [
+          "src/routes/phase24OpsState.js"
+        ],
+        "test_files": [
+          "tests/phase120/phase120_decision_log_links_suggestion_snapshot.test.js",
+          "tests/phase24/phase24_t07_ops_nextaction_usecase.test.js",
+          "tests/phase25/phase25_t02_submit_ops_decision.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t05_submit_audit_snapshot.test.js",
+          "tests/phase25/phase25_t09_submit_close_audit.test.js",
+          "tests/phase25/phase25_t10_close_guard.test.js",
+          "tests/phase26/phase26_t02_submit_post_check.test.js",
+          "tests/phase36_39/phase36_decision_timeline_append.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase50/phase50_obs_emitted_on_submit_and_execute.test.js"
+        ]
+      }
+    },
+    "recordUserLlmConsent": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/llm/recordUserLlmConsent.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": [
+          "tests/phaseLLMNext4/phaseLLMNext4_record_user_llm_consent.test.js"
+        ]
+      }
+    },
+    "registrationCompleteness": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 10,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/registrationCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase101/phase101_ops_console_view_includes_suggestion.test.js",
+          "tests/phase102/phase102_ops_assist_input_shape_stable.test.js",
+          "tests/phase106/phase106_llm_disabled_default_fallback.test.js",
+          "tests/phase108/phase108_full_flow_suggest_adopt_submit_audit.test.js",
+          "tests/phase118/phase118_suggestion_schema.test.js",
+          "tests/phase119/phase119_audit_append_on_suggestion.test.js",
+          "tests/phase24/phase24_t06_registration_completeness.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js",
+          "tests/phase5/stateSummary.test.js",
+          "tests/phase6/memberSummary.test.js"
+        ]
+      }
+    },
+    "resolveAutomationTargets": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase117/resolveAutomationTargets.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase117/phase117_resolve_targets.test.js"
+        ]
+      }
+    },
+    "retryQueuedSend": {
+      "endpoints": 3,
+      "repos": 5,
+      "collections": 5,
+      "tests": 5,
+      "risk_score": "HIGH",
+      "score": 13,
+      "evidence": {
+        "usecase_file": "src/usecases/phase73/retryQueuedSend.js",
+        "route_files": [
+          "src/routes/phase73RetryQueue.js"
+        ],
+        "test_files": [
+          "tests/phase72/phase72_delivery_id_idempotency.test.js",
+          "tests/phase73/phase73_retry_blocked_by_notification_cap.test.js",
+          "tests/phase73/phase73_retry_blocked_by_notification_policy.test.js",
+          "tests/phase73/phase73_retry_failure_keeps_pending.test.js",
+          "tests/phase73/phase73_retry_success_marks_done.test.js"
+        ]
+      }
+    },
+    "reviewSourceRefDecision": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/reviewSourceRefDecision.js",
+        "route_files": [
+          "src/routes/admin/cityPackReviewInbox.js"
+        ],
+        "test_files": [
+          "tests/phase250/phase250_t02_review_confirm_extends_valid_until.test.js",
+          "tests/phase250/phase250_t03_review_retire_warns_city_pack_reference.test.js"
+        ]
+      }
+    },
+    "runAutomation": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 9,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 17,
+      "evidence": {
+        "usecase_file": "src/usecases/phase2/runAutomation.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase2/runAutomation.test.js"
+        ]
+      }
+    },
+    "runCityPackDraftJob": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 3,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/runCityPackDraftJob.js",
+        "route_files": [
+          "src/routes/admin/cityPackRequests.js",
+          "src/routes/internal/cityPackDraftGeneratorJob.js"
+        ],
+        "test_files": [
+          "tests/phase260/phase260_t02_draft_job_creates_sources_and_pack.test.js",
+          "tests/phase266/phase266_t03_draft_job_structure_defaults.test.js",
+          "tests/phase306/phase306_t03_city_pack_draft_job_slot_contents.test.js"
+        ]
+      }
+    },
+    "runCityPackSourceAuditJob": {
+      "endpoints": 0,
+      "repos": 3,
+      "collections": 3,
+      "tests": 3,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/runCityPackSourceAuditJob.js",
+        "route_files": [
+          "src/routes/admin/cityPackReviewInbox.js",
+          "src/routes/internal/cityPackSourceAuditJob.js"
+        ],
+        "test_files": [
+          "tests/phase250/phase250_t01_source_audit_classification.test.js",
+          "tests/phase250/phase250_t05_canary_run_writes_audit_and_evidence.test.js",
+          "tests/phase268/phase268_t01_source_audit_stage_confidence_contract.test.js"
+        ]
+      }
+    },
+    "runNotificationTest": {
+      "endpoints": 2,
+      "repos": 4,
+      "collections": 5,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 13,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/runNotificationTest.js",
+        "route_files": [
+          "src/routes/admin/notificationTest.js"
+        ],
+        "test_files": [
+          "tests/phase206/phase206_notification_test_dry_run.test.js",
+          "tests/phase206/phase206_notification_test_self_send.test.js"
+        ]
+      }
+    },
+    "runOpsBatch": {
+      "endpoints": 1,
+      "repos": 0,
+      "collections": 0,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/phase52/runOpsBatch.js",
+        "route_files": [
+          "src/routes/phase52OpsBatch.js"
+        ],
+        "test_files": [
+          "tests/phase52/phase52_batch_dryrun_no_writes.test.js",
+          "tests/phase52/phase52_batch_jobkey_validation.test.js"
+        ]
+      }
+    },
+    "segmentSendHash": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 6,
+      "risk_score": "LOW",
+      "score": 3,
+      "evidence": {
+        "usecase_file": "src/usecases/phase67/segmentSendHash.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase71/phase71_plan_returns_planHash.test.js",
+          "tests/phase86/phase86_batching_updates_progress.test.js",
+          "tests/phase88/phase88_partial_failure_done_with_errors.test.js",
+          "tests/phase89/phase89_aborted_records_ops_state.test.js",
+          "tests/phase89/phase89_breaker_aborts_on_429_storm.test.js",
+          "tests/phase91/phase91_audit_appended_on_start_done_abort.test.js"
+        ]
+      }
+    },
+    "sendNotice": {
+      "endpoints": 1,
+      "repos": 3,
+      "collections": 3,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 12,
+      "evidence": {
+        "usecase_file": "src/usecases/phase36/sendNotice.js",
+        "route_files": [
+          "src/routes/phase36NoticeSend.js"
+        ],
+        "test_files": [
+          "tests/phase36/phase36_notice_send_flow.test.js"
+        ]
+      }
+    },
+    "sendNotification": {
+      "endpoints": 2,
+      "repos": 5,
+      "collections": 5,
+      "tests": 6,
+      "risk_score": "HIGH",
+      "score": 12,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/sendNotification.js",
+        "route_files": [
+          "src/routes/admin/cityPackBulletins.js",
+          "src/routes/admin/notifications.js"
+        ],
+        "test_files": [
+          "tests/phase0/notifications.test.js",
+          "tests/phase206/phase206_notification_test_self_send.test.js",
+          "tests/phase250/phase250_t04_send_notification_blocks_expired_source.test.js",
+          "tests/phase267/phase267_t04_send_notification_optional_source_fallback.test.js",
+          "tests/phase271/phase271_t02_bulletin_send_contract.test.js",
+          "tests/phase72/phase72_delivery_id_idempotency.test.js"
+        ]
+      }
+    },
+    "sendNotificationPhase1": {
+      "endpoints": 1,
+      "repos": 5,
+      "collections": 5,
+      "tests": 2,
+      "risk_score": "HIGH",
+      "score": 13,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/sendNotificationPhase1.js",
+        "route_files": [
+          "src/routes/admin/phase1Notifications.js"
+        ],
+        "test_files": [
+          "tests/phase1/admin-notifications.test.js",
+          "tests/phase1/smoke.test.js"
+        ]
+      }
+    },
+    "sendOpsNotice": {
+      "endpoints": 1,
+      "repos": 4,
+      "collections": 4,
+      "tests": 1,
+      "risk_score": "HIGH",
+      "score": 11,
+      "evidence": {
+        "usecase_file": "src/usecases/phase121/sendOpsNotice.js",
+        "route_files": [
+          "src/routes/phase121OpsNoticeSend.js"
+        ],
+        "test_files": [
+          "tests/phase121/phase121_ops_notice_send_flow.test.js"
+        ]
+      }
+    },
+    "sendWelcomeMessage": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/sendWelcomeMessage.js",
+        "route_files": [
+          "src/routes/webhookLine.js"
+        ],
+        "test_files": [
+          "tests/phase0/welcome.test.js"
+        ]
+      }
+    },
+    "setChecklistItemDone": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/checklists/setChecklistItemDone.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase4/checklistToggle.test.js"
+        ]
+      }
+    },
+    "setKillSwitch": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 4,
+      "evidence": {
+        "usecase_file": "src/usecases/killSwitch/setKillSwitch.js",
+        "route_files": [
+          "src/routes/admin/killSwitch.js",
+          "src/routes/admin/osKillSwitch.js"
+        ],
+        "test_files": [
+          "tests/phase0/killSwitch.test.js",
+          "tests/phase306/phase306_t04_city_pack_killswitch_fail_closed.test.js"
+        ]
+      }
+    },
+    "setMemberNumber": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/users/setMemberNumber.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase4/memberNumber.test.js"
+        ]
+      }
+    },
+    "setOpsReview": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/setOpsReview.js",
+        "route_files": [],
+        "test_files": []
+      }
+    },
+    "shouldRefreshOpsAssist": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase51/shouldRefreshOpsAssist.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase51/phase51_cache_hit_no_llm_call.test.js"
+        ]
+      }
+    },
+    "sortUsersSummaryStable": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase5/sortUsersSummaryStable.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase128/phase128_users_sort_stable.test.js"
+        ]
+      }
+    },
+    "submitOpsDecision": {
+      "endpoints": 1,
+      "repos": 2,
+      "collections": 2,
+      "tests": 18,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/phase25/submitOpsDecision.js",
+        "route_files": [
+          "src/routes/phase25OpsDecision.js"
+        ],
+        "test_files": [
+          "tests/phase129_131/phase130_no_action_decision_is_logged.test.js",
+          "tests/phase142/phase142_trace_bundle_includes_mitigation_decision.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase25/phase25_t02_submit_ops_decision.test.js",
+          "tests/phase25/phase25_t04_console_to_submit_flow.test.js",
+          "tests/phase25/phase25_t05_submit_audit_snapshot.test.js",
+          "tests/phase25/phase25_t06_decision_consistency_guard.test.js",
+          "tests/phase25/phase25_t09_submit_close_audit.test.js",
+          "tests/phase25/phase25_t10_close_guard.test.js",
+          "tests/phase26/phase26_t02_submit_post_check.test.js",
+          "tests/phase35/phase35_t03_ops_loop_integration.test.js",
+          "tests/phase36_39/phase36_39_full_ops_flow.test.js",
+          "tests/phase36_39/phase36_decision_timeline_append.test.js",
+          "tests/phase36_39/phase39_ops_safety_guard.test.js",
+          "tests/phase40_44/phase44_automation_safety_guard.test.js",
+          "tests/phase47/phase47_execute_requires_flag_and_ready.test.js",
+          "tests/phase49/phase49_full_ops_flow.test.js",
+          "tests/phase50/phase50_obs_emitted_on_submit_and_execute.test.js"
+        ]
+      }
+    },
+    "suggestNotificationMitigation": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase141/suggestNotificationMitigation.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase141/phase141_suggest_mitigation_when_health_bad.test.js"
+        ]
+      }
+    },
+    "suggestNotificationTemplate": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 5,
+      "evidence": {
+        "usecase_file": "src/usecases/phase53/suggestNotificationTemplate.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase53/phase53_suggest_template_mapping.test.js"
+        ]
+      }
+    },
+    "suggestOpsDecision": {
+      "endpoints": 1,
+      "repos": 0,
+      "collections": 0,
+      "tests": 4,
+      "risk_score": "MEDIUM",
+      "score": 6,
+      "evidence": {
+        "usecase_file": "src/usecases/phase32/suggestOpsDecision.js",
+        "route_files": [
+          "src/routes/phase32OpsDecisionSuggest.js"
+        ],
+        "test_files": [
+          "tests/phase32/phase32_t01_suggest_ready_filters_actions.test.js",
+          "tests/phase32/phase32_t02_suggest_not_ready_only_escalate.test.js",
+          "tests/phase32/phase32_t03_suggest_llm_failure_graceful.test.js",
+          "tests/phase34/phase34_t05_phase32_33_34_integration.test.js"
+        ]
+      }
+    },
+    "testSendNotification": {
+      "endpoints": 2,
+      "repos": 3,
+      "collections": 3,
+      "tests": 5,
+      "risk_score": "HIGH",
+      "score": 8,
+      "evidence": {
+        "usecase_file": "src/usecases/notifications/testSendNotification.js",
+        "route_files": [
+          "src/routes/admin/notifications.js"
+        ],
+        "test_files": [
+          "tests/phase0/testSendNotification.test.js",
+          "tests/phase21/phase21_t18_verify_invalid_rapt_exitcode.test.js",
+          "tests/phase21/testSendNotificationRecordSent.test.js",
+          "tests/phase72/phase72_delivery_id_idempotency.test.js",
+          "tests/phase72/phase72_test_send_notification_sets_sent_at.test.js"
+        ]
+      }
+    },
+    "toggleChecklistItem": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 2,
+      "risk_score": "MEDIUM",
+      "score": 7,
+      "evidence": {
+        "usecase_file": "src/usecases/checklists/toggleChecklistItem.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase1/smoke.test.js",
+          "tests/phase1/toggleChecklistItem.test.js"
+        ]
+      }
+    },
+    "updateLink": {
+      "endpoints": 2,
+      "repos": 1,
+      "collections": 1,
+      "tests": 0,
+      "risk_score": "HIGH",
+      "score": 9,
+      "evidence": {
+        "usecase_file": "src/usecases/linkRegistry/updateLink.js",
+        "route_files": [
+          "src/routes/admin/linkRegistry.js",
+          "src/routes/admin/vendors.js"
+        ],
+        "test_files": []
+      }
+    },
+    "userSummaryCompleteness": {
+      "endpoints": 0,
+      "repos": 0,
+      "collections": 0,
+      "tests": 5,
+      "risk_score": "LOW",
+      "score": 3,
+      "evidence": {
+        "usecase_file": "src/usecases/phase24/userSummaryCompleteness.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase129_131/phase131_ops_console_detail_fields.test.js",
+          "tests/phase145/phase145_audit_logs_cover_view_suggest_decision_execute.test.js",
+          "tests/phase24/phase24_t03_user_summary_completeness.test.js",
+          "tests/phase24/phase24_t10_overall_decision_readiness.test.js",
+          "tests/phase5/stateSummary.test.js"
+        ]
+      }
+    },
+    "validateCityPackSources": {
+      "endpoints": 0,
+      "repos": 1,
+      "collections": 1,
+      "tests": 1,
+      "risk_score": "MEDIUM",
+      "score": 4,
+      "evidence": {
+        "usecase_file": "src/usecases/cityPack/validateCityPackSources.js",
+        "route_files": [],
+        "test_files": [
+          "tests/phase267/phase267_t03_validate_city_pack_sources_required_optional.test.js"
+        ]
+      }
+    }
+  }
+}

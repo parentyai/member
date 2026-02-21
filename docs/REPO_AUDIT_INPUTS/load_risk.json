@@ -1,0 +1,692 @@
+{
+  "estimated_worst_case_docs_scan": 62000,
+  "fallback_risk": 40,
+  "hotspots": [
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/phase2ReadRepo.js",
+        "line": 15,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/phase2ReadRepo.js",
+        "line": 23,
+        "type": "listAll",
+        "call": "listAllUsers",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/phase2ReadRepo.js",
+        "line": 31,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/phase2ReadRepo.js",
+        "line": 39,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/phase2ReadRepo.js",
+        "line": 47,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/analyticsReadRepo.js",
+        "line": 15,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/analyticsReadRepo.js",
+        "line": 23,
+        "type": "listAll",
+        "call": "listAllUsers",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/analyticsReadRepo.js",
+        "line": 31,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/analyticsReadRepo.js",
+        "line": 39,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/repos/firestore/analyticsReadRepo.js",
+        "line": 47,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/routes/admin/monitorInsights.js",
+        "line": 67,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/routes/admin/osDashboardKpi.js",
+        "line": 101,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": 5000
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 5000,
+      "estimated_scan": 15000,
+      "endpoints": [
+        "GET /api/admin/os/dashboard/kpi",
+        "GET /api/admin/os/errors/summary",
+        "GET /api/admin/os/redac/status"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/routes/admin/osDashboardKpi.js",
+        "line": 102,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": 5000
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 5000,
+      "estimated_scan": 15000,
+      "endpoints": [
+        "GET /api/admin/os/dashboard/kpi",
+        "GET /api/admin/os/errors/summary",
+        "GET /api/admin/os/redac/status"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase2/runAutomation.js",
+        "line": 77,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase2/runAutomation.js",
+        "line": 78,
+        "type": "listAll",
+        "call": "listAllUsers",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase2/runAutomation.js",
+        "line": 79,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase2/runAutomation.js",
+        "line": 80,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": []
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 149,
+        "type": "listAll",
+        "call": "listAllUsers",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "GET /api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 150,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "GET /api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 151,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "GET /api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 152,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "GET /api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 153,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 1,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "GET /api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 103,
+        "type": "listAll",
+        "call": "listAllUsers",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 104,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 105,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 106,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 107,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getNotificationOperationalSummary.js",
+        "line": 36,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 2000,
+      "endpoints": [
+        "GET /api/phase4/admin/notifications-summary",
+        "GET /api/phase4/admin/users-summary"
+      ]
+    }
+  ],
+  "fallback_points": [
+    {
+      "file": "src/repos/firestore/queryFallback.js",
+      "line": 47,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/queryFallback.js",
+      "line": 59,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/notificationsRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/notificationsRepo.js",
+      "line": 43,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sourceEvidenceRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sourceEvidenceRepo.js",
+      "line": 65,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sourceEvidenceRepo.js",
+      "line": 82,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackBulletinsRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackBulletinsRepo.js",
+      "line": 90,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/templatesVRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/templatesVRepo.js",
+      "line": 53,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/templatesVRepo.js",
+      "line": 95,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sendRetryQueueRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sendRetryQueueRepo.js",
+      "line": 54,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackRequestsRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackRequestsRepo.js",
+      "line": 118,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackUpdateProposalsRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackUpdateProposalsRepo.js",
+      "line": 89,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/notificationTemplatesRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/notificationTemplatesRepo.js",
+      "line": 61,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionDriftsRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionDriftsRepo.js",
+      "line": 33,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackFeedbackRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackFeedbackRepo.js",
+      "line": 107,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sourceRefsRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/sourceRefsRepo.js",
+      "line": 175,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPacksRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPacksRepo.js",
+      "line": 294,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/linkRegistryRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/linkRegistryRepo.js",
+      "line": 49,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackTemplateLibraryRepo.js",
+      "line": 5,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackTemplateLibraryRepo.js",
+      "line": 92,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackMetricsDailyRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/cityPackMetricsDailyRepo.js",
+      "line": 112,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/usersRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/usersRepo.js",
+      "line": 98,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionLogsRepo.js",
+      "line": 4,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionLogsRepo.js",
+      "line": 36,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionLogsRepo.js",
+      "line": 58,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    },
+    {
+      "file": "src/repos/firestore/decisionLogsRepo.js",
+      "line": 87,
+      "type": "missingIndexFallback",
+      "call": "isMissingIndexError",
+      "limit": "N/A"
+    }
+  ],
+  "assumptions": [
+    "listAll without explicit limit assumes 1000 docs",
+    "endpoint mapping derived from static src/index.js dispatch"
+  ]
+}

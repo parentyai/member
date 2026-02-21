@@ -1,0 +1,250 @@
+{
+  "generatedAt": "2026-02-21T16:46:04Z",
+  "strategy": "DEPRECATE -> reference_block -> delete",
+  "items": [
+    {
+      "type": "duplicate_repo",
+      "canonical": "scenarioReportsRepo",
+      "legacy": [
+        "phase2ReportsRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [
+          "runAutomation"
+        ],
+        "legacy_usecases": {
+          "phase2ReportsRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/scenarioReportsRepo.js",
+        "src/repos/firestore/phase2ReportsRepo.js"
+      ]
+    },
+    {
+      "type": "duplicate_repo",
+      "canonical": "analyticsReadRepo",
+      "legacy": [
+        "phase2ReadRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [
+          "computeCityPackMetrics",
+          "getNotificationOperationalSummary",
+          "getUserOperationalSummary",
+          "getUserStateSummary",
+          "runAutomation"
+        ],
+        "legacy_usecases": {
+          "phase2ReadRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/phase2ReadRepo.js",
+        "src/repos/firestore/analyticsReadRepo.js"
+      ]
+    },
+    {
+      "type": "duplicate_repo",
+      "canonical": "scenarioRunsRepo",
+      "legacy": [
+        "phase2RunsRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [
+          "runAutomation"
+        ],
+        "legacy_usecases": {
+          "phase2RunsRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/scenarioRunsRepo.js",
+        "src/repos/firestore/phase2RunsRepo.js"
+      ]
+    },
+    {
+      "type": "duplicate_repo",
+      "canonical": "ctaStatsRepo",
+      "legacy": [
+        "phase18StatsRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [
+          "recordCtaStats"
+        ],
+        "legacy_usecases": {
+          "phase18StatsRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/ctaStatsRepo.js",
+        "src/repos/firestore/phase18StatsRepo.js"
+      ]
+    },
+    {
+      "type": "duplicate_repo",
+      "canonical": "kpiSnapshotsRepo",
+      "legacy": [
+        "phase22KpiSnapshotsRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [],
+        "legacy_usecases": {
+          "phase22KpiSnapshotsRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/phase22KpiSnapshotsRepo.js",
+        "src/repos/firestore/kpiSnapshotsRepo.js"
+      ]
+    },
+    {
+      "type": "duplicate_repo",
+      "canonical": "kpiSnapshotsReadRepo",
+      "legacy": [
+        "phase22KpiSnapshotsReadRepo"
+      ],
+      "read_redirect": "legacy repo methods call canonical repo methods (compat wrappers)",
+      "write_policy": "new writes only through canonical repo; legacy write paths blocked in step2",
+      "backfill_required": false,
+      "cutover_condition": [
+        "no imports of legacy repos in reachable routes/usecases",
+        "npm test pass",
+        "npm run test:docs pass"
+      ],
+      "rollback_method": "restore legacy imports via revert commit",
+      "impact_radius": {
+        "canonical_usecases": [],
+        "legacy_usecases": {
+          "phase22KpiSnapshotsReadRepo": []
+        }
+      },
+      "evidence": [
+        "src/repos/firestore/phase22KpiSnapshotsReadRepo.js",
+        "src/repos/firestore/kpiSnapshotsReadRepo.js"
+      ]
+    },
+    {
+      "type": "field_naming_drift",
+      "canonical": "scenarioKey",
+      "legacy": [
+        "scenario"
+      ],
+      "read_redirect": "usersPhase1Repo.listUsersByScenario reads scenario and maps to scenarioKey filter adapter",
+      "write_policy": "new writes only scenarioKey; scenario field marked deprecated",
+      "backfill_required": true,
+      "cutover_condition": [
+        "backfill scenario->scenarioKey for users docs",
+        "no writes to scenario in src reachable graph"
+      ],
+      "rollback_method": "re-enable dual-read mapper (scenario + scenarioKey)",
+      "impact_radius": {
+        "usecases_using_users_repo": [
+          "declareCityPackFeedbackFromLine",
+          "declareCityRegionFromLine",
+          "ensureUser",
+          "executeNotificationSend",
+          "getChecklistForUser",
+          "getChecklistWithStatus",
+          "getMemberProfile",
+          "getMemberSummary",
+          "getOpsDashboard",
+          "getRedacMembershipStatusForLine",
+          "getStaleMemberNumberUsers",
+          "listOpsConsole",
+          "planNotificationSend",
+          "registrationCompleteness",
+          "sendNotification",
+          "setChecklistItemDone",
+          "setMemberNumber"
+        ],
+        "usecases_using_users_phase1_repo": [
+          "sendNotificationPhase1"
+        ]
+      },
+      "evidence": [
+        "src/repos/firestore/usersPhase1Repo.js:7-11",
+        "src/repos/firestore/usersRepo.js:87-89",
+        "src/usecases/notifications/createNotification.js:104-108"
+      ]
+    },
+    {
+      "type": "collection_naming_drift",
+      "canonical": "ops_states",
+      "legacy": [
+        "ops_state"
+      ],
+      "read_redirect": "opsStateRepo read through compatibility layer that first checks ops_states then ops_state fallback",
+      "write_policy": "writes only to ops_states",
+      "backfill_required": true,
+      "cutover_condition": [
+        "ops_state global doc migrated to ops_states namespace",
+        "no writes to ops_state in reachable graph"
+      ],
+      "rollback_method": "temporarily restore dual-write adapter to both collections",
+      "impact_radius": {
+        "usecases_ops_states": [
+          "executeOpsNextAction",
+          "executeSegmentSend",
+          "getMemberSummary",
+          "getUserStateSummary",
+          "opsDecisionConsistency",
+          "recordOpsNextAction"
+        ],
+        "usecases_ops_state": [
+          "setOpsReview"
+        ]
+      },
+      "evidence": [
+        "src/repos/firestore/opsStatesRepo.js:5-13",
+        "src/repos/firestore/opsStateRepo.js:5-37"
+      ]
+    }
+  ]
+}

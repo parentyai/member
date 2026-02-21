@@ -1,0 +1,30 @@
+{
+  "guards": [
+    {
+      "name": "isProtectedOpsPath",
+      "evidence": "src/index.js:71-103"
+    },
+    {
+      "name": "requireAdminToken",
+      "evidence": "src/index.js:150-184"
+    },
+    {
+      "name": "requireInternalJobToken",
+      "evidence": "src/routes/internal/cityPackSourceAuditJob.js:27-39, src/routes/internal/cityPackDraftGeneratorJob.js:17-29"
+    }
+  ],
+  "path_classes": {
+    "admin": [
+      "/admin/*",
+      "/api/admin/*"
+    ],
+    "internal": [
+      "/internal/*"
+    ],
+    "public": [
+      "/healthz",
+      "/webhook/line",
+      "/track/click"
+    ]
+  }
+}

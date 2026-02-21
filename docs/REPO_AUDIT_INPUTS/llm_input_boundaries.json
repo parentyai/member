@@ -1,0 +1,24 @@
+{
+  "llm_input_boundaries": [
+    {
+      "file": "src/usecases/llm/buildLlmInputView.js",
+      "purpose": "llm usecase"
+    },
+    {
+      "file": "src/usecases/llm/recordUserLlmConsent.js",
+      "purpose": "llm usecase"
+    },
+    {
+      "file": "src/usecases/llm/guardLlmOutput.js",
+      "purpose": "llm usecase"
+    },
+    {
+      "file": "src/llm/allowList.js",
+      "purpose": "allow-list/input boundary"
+    },
+    {
+      "file": "src/usecases/llm/buildLlmInputView.js",
+      "purpose": "allow-list/input boundary"
+    }
+  ]
+}
