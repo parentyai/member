@@ -2,16 +2,31 @@
 
 const assert = require('assert');
 const { readFileSync } = require('fs');
-const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const { test } = require('node:test');
 
 function countMissingIndexFallbackPoints() {
-  const output = execFileSync('rg', ['-n', 'isMissingIndexError\\(', 'src/repos/firestore', '-S'], { encoding: 'utf8' });
-  return output
-    .trim()
-    .split('\n')
-    .filter((line) => line && !line.includes('queryFallback.js'))
-    .length;
+  const rootDir = path.join(process.cwd(), 'src', 'repos', 'firestore');
+  const stack = [rootDir];
+  let count = 0;
+  while (stack.length) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+      if (entry.name === 'queryFallback.js') continue;
+      const source = fs.readFileSync(fullPath, 'utf8');
+      const matches = source.match(/isMissingIndexError\(/g);
+      if (matches && matches.length) count += matches.length;
+    }
+  }
+  return count;
 }
 
 test('phase307: missing-index fallback points do not exceed audit baseline', () => {
