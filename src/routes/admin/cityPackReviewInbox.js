@@ -5,6 +5,7 @@ const sourceEvidenceRepo = require('../../repos/firestore/sourceEvidenceRepo');
 const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo');
 const cityPackMetricsDailyRepo = require('../../repos/firestore/cityPackMetricsDailyRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
+const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { reviewSourceRefDecision } = require('../../usecases/cityPack/reviewSourceRefDecision');
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
@@ -93,6 +94,25 @@ function resolveConfidenceScore(sourceRef) {
   const value = Number(sourceRef && sourceRef.confidenceScore);
   if (!Number.isFinite(value)) return null;
   return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+async function ensureCityPackWriteAllowed(res, context, entityType, entityId) {
+  const killSwitch = await getKillSwitch();
+  if (!killSwitch) return true;
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.write.blocked',
+    entityType: entityType || 'source_ref',
+    entityId: entityId || 'unknown',
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      reason: 'kill_switch_on',
+      regionKey: null
+    }
+  });
+  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId });
+  return false;
 }
 
 function computePriorityScore(sourceRef, nowMs) {
@@ -192,6 +212,8 @@ async function handleReviewInbox(req, res, context) {
 }
 
 async function handleSourceRefDecision(req, res, bodyText, context, sourceRefId, decision) {
+  const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'source_ref', sourceRefId);
+  if (!writeAllowed) return;
   const payload = parseJson(bodyText, res);
   if (!payload) return;
   const result = await reviewSourceRefDecision({
@@ -210,6 +232,8 @@ async function handleSourceRefDecision(req, res, bodyText, context, sourceRefId,
 }
 
 async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
+  const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'source_ref', sourceRefId);
+  if (!writeAllowed) return;
   const sourceRef = await sourceRefsRepo.getSourceRef(sourceRefId);
   if (!sourceRef) {
     writeJson(res, 404, { ok: false, error: 'source ref not found' });
@@ -436,6 +460,8 @@ async function handleCityPackAuditRunDetail(req, res, context, runId) {
 }
 
 async function handleCityPackAuditRun(req, res, bodyText, context) {
+  const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'source_audit_run', 'manual');
+  if (!writeAllowed) return;
   const payload = parseJson(bodyText, res);
   if (!payload) return;
   const stage = typeof payload.stage === 'string' ? payload.stage : null;

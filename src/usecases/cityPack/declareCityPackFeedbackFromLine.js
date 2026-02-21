@@ -18,7 +18,15 @@ function extractFeedback(text) {
   if (!match) return { status: 'noop' };
   const content = match[1].trim();
   if (!content) return { status: 'usage' };
-  return { status: 'received', feedbackText: content };
+  const slotMatch = content.match(/^\s*\[([a-z_]+)\]\s*(.+)$/i);
+  if (slotMatch) {
+    return {
+      status: 'received',
+      slotKey: slotMatch[1].toLowerCase(),
+      feedbackText: slotMatch[2].trim()
+    };
+  }
+  return { status: 'received', slotKey: null, feedbackText: content };
 }
 
 async function declareCityPackFeedbackFromLine(params) {
@@ -44,7 +52,9 @@ async function declareCityPackFeedbackFromLine(params) {
     regionCity,
     regionState,
     regionKey,
+    slotKey: parsed.slotKey,
     feedbackText: parsed.feedbackText,
+    message: parsed.feedbackText,
     traceId,
     requestId
   });
@@ -59,7 +69,8 @@ async function declareCityPackFeedbackFromLine(params) {
       requestId,
       payloadSummary: {
         lineUserId,
-        regionKey
+        regionKey,
+        slotKey: parsed.slotKey || null
       }
     });
   } catch (_err) {

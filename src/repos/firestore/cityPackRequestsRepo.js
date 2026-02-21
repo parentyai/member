@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc, toMillis } = require('./queryFallback');
+const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 
 const COLLECTION = 'city_pack_requests';
 const ALLOWED_STATUS = new Set([
@@ -50,7 +50,10 @@ function normalizePayload(data) {
     draftCityPackIds: normalizeArray(payload.draftCityPackIds),
     draftTemplateIds: normalizeArray(payload.draftTemplateIds),
     draftSourceRefIds: normalizeArray(payload.draftSourceRefIds),
+    draftLinkRegistryIds: normalizeArray(payload.draftLinkRegistryIds),
     draftSourceCandidates: Array.isArray(payload.draftSourceCandidates) ? payload.draftSourceCandidates.map((item) => String(item)).filter((item) => item.trim()) : [],
+    experienceStage: normalizeString(payload.experienceStage),
+    lastReviewAt: payload.lastReviewAt || null,
     error: typeof payload.error === 'string' ? payload.error : null
   };
 }
@@ -73,7 +76,10 @@ async function createRequest(data) {
     draftCityPackIds: payload.draftCityPackIds,
     draftTemplateIds: payload.draftTemplateIds,
     draftSourceRefIds: payload.draftSourceRefIds,
+    draftLinkRegistryIds: payload.draftLinkRegistryIds,
     draftSourceCandidates: payload.draftSourceCandidates,
+    experienceStage: payload.experienceStage,
+    lastReviewAt: payload.lastReviewAt,
     error: payload.error,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()

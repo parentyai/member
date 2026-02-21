@@ -51,6 +51,19 @@ function buildDefaultSlots() {
   }];
 }
 
+function buildDefaultSlotContents() {
+  const output = {};
+  cityPacksRepo.FIXED_SLOT_KEYS.forEach((slotKey) => {
+    output[slotKey] = {
+      description: `${slotKey} guidance (draft)`,
+      ctaText: '詳細を確認',
+      linkRegistryId: 'pending_review',
+      sourceRefs: []
+    };
+  });
+  return output;
+}
+
 function buildDefaultTargetingRules(request) {
   if (!request || !request.regionKey) return [];
   return [{
@@ -92,6 +105,7 @@ async function runCityPackDraftJob(params) {
   await cityPackRequestsRepo.updateRequest(requestId, {
     status: 'collecting',
     lastJobRunId: runId,
+    experienceStage: 'collecting',
     error: null
   });
 
@@ -100,6 +114,7 @@ async function runCityPackDraftJob(params) {
   if (!normalized.valid.length) {
     await cityPackRequestsRepo.updateRequest(requestId, {
       status: 'needs_review',
+      experienceStage: 'needs_review',
       error: 'source_candidates_missing'
     });
     await appendAuditLog({
@@ -116,6 +131,7 @@ async function runCityPackDraftJob(params) {
   if (normalized.invalid.length) {
     await cityPackRequestsRepo.updateRequest(requestId, {
       status: 'needs_review',
+      experienceStage: 'needs_review',
       error: 'source_candidates_invalid'
     });
     await appendAuditLog({
@@ -151,6 +167,8 @@ async function runCityPackDraftJob(params) {
     rules: [],
     targetingRules: buildDefaultTargetingRules(request),
     slots: buildDefaultSlots(),
+    slotContents: buildDefaultSlotContents(),
+    slotSchemaVersion: 'v1_fixed_8_slots',
     description: request && request.regionKey ? `Draft for ${request.regionKey}` : 'Draft',
     requestId,
     templateRefs: []
@@ -158,9 +176,11 @@ async function runCityPackDraftJob(params) {
 
   await cityPackRequestsRepo.updateRequest(requestId, {
     status: 'drafted',
+    experienceStage: 'drafted',
     draftCityPackIds: [cityPack.id],
     draftTemplateIds: [],
     draftSourceRefIds: sourceRefIds,
+    draftLinkRegistryIds: [],
     error: null
   });
 

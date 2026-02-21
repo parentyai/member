@@ -747,7 +747,7 @@ function createServer() {
     || pathname === '/api/admin/city-pack-requests'
     || /^\/api\/admin\/city-pack-requests\/[^/]+(\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-feedback'
-    || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|reject|propose))?$/.test(pathname)
+    || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|triage|resolve|reject|propose))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-bulletins'
     || /^\/api\/admin\/city-pack-bulletins\/[^/]+(\/(approve|reject|send))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-update-proposals'
@@ -809,7 +809,7 @@ function createServer() {
         return;
       }
       if (pathname === '/api/admin/city-pack-feedback'
-        || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|reject|propose))?$/.test(pathname)) {
+        || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|triage|resolve|reject|propose))?$/.test(pathname)) {
         const { handleCityPackFeedback } = require('./routes/admin/cityPackFeedback');
         const body = await collectBody();
         await handleCityPackFeedback(req, res, body);

@@ -2,6 +2,7 @@
 
 const cityPackRequestsRepo = require('../../repos/firestore/cityPackRequestsRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
+const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { runCityPackDraftJob } = require('../../usecases/cityPack/runCityPackDraftJob');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
@@ -34,6 +35,46 @@ function parseDetailPath(pathname) {
   const match = pathname.match(/^\/api\/admin\/city-pack-requests\/([^/]+)$/);
   if (!match) return null;
   return match[1];
+}
+
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function resolveWarningCount(item) {
+  const status = String(item && item.status || '');
+  const error = item && item.error ? 1 : 0;
+  if (status === 'failed') return 2 + error;
+  if (status === 'needs_review') return 1 + error;
+  return error;
+}
+
+function resolveAgingHours(item) {
+  const reference = toMillis(item && item.updatedAt) || toMillis(item && item.createdAt) || toMillis(item && item.requestedAt);
+  if (!reference) return null;
+  return Math.max(0, Math.round(((Date.now() - reference) / (60 * 60 * 1000)) * 10) / 10);
+}
+
+async function ensureCityPackWriteAllowed(res, context, entityType, entityId, extraSummary) {
+  const killSwitch = await getKillSwitch();
+  if (!killSwitch) return true;
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.write.blocked',
+    entityType: entityType || 'city_pack_request',
+    entityId: entityId || 'unknown',
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: Object.assign({
+      reason: 'kill_switch_on'
+    }, extraSummary || {})
+  });
+  writeJson(res, 409, { ok: false, error: 'kill switch on', traceId: context.traceId });
+  return false;
 }
 
 async function handleList(req, res, context) {
@@ -72,6 +113,11 @@ async function handleList(req, res, context) {
       traceId: item.traceId || null,
       draftCityPackIds: Array.isArray(item.draftCityPackIds) ? item.draftCityPackIds : [],
       draftSourceRefIds: Array.isArray(item.draftSourceRefIds) ? item.draftSourceRefIds : [],
+      draftLinkRegistryIds: Array.isArray(item.draftLinkRegistryIds) ? item.draftLinkRegistryIds : [],
+      experienceStage: item.experienceStage || null,
+      lastReviewAt: item.lastReviewAt || null,
+      warningCount: resolveWarningCount(item),
+      agingHours: resolveAgingHours(item),
       error: item.error || null
     }))
   });
@@ -127,6 +173,11 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
     writeJson(res, 404, { ok: false, error: 'request not found' });
     return;
   }
+  const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'city_pack_request', requestId, {
+    regionKey: request.regionKey || null,
+    action
+  });
+  if (!writeAllowed) return;
 
   if (action === 'approve') {
     const draftIds = Array.isArray(request.draftCityPackIds) ? request.draftCityPackIds : [];
@@ -134,7 +185,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       writeJson(res, 409, { ok: false, error: 'draft_city_pack_required' });
       return;
     }
-    await cityPackRequestsRepo.updateRequest(requestId, { status: 'approved', error: null });
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'approved',
+      experienceStage: 'approved',
+      lastReviewAt: new Date().toISOString(),
+      error: null
+    });
     await appendAuditLog({
       actor: context.actor,
       action: 'city_pack.request.approve',
@@ -142,14 +198,18 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { draftCityPackIds: draftIds }
+      payloadSummary: { draftCityPackIds: draftIds, regionKey: request.regionKey || null }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'approved', traceId: context.traceId });
     return;
   }
 
   if (action === 'reject') {
-    await cityPackRequestsRepo.updateRequest(requestId, { status: 'rejected' });
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'rejected',
+      experienceStage: 'rejected',
+      lastReviewAt: new Date().toISOString()
+    });
     await appendAuditLog({
       actor: context.actor,
       action: 'city_pack.request.reject',
@@ -157,7 +217,7 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { status: 'rejected' }
+      payloadSummary: { status: 'rejected', regionKey: request.regionKey || null }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'rejected', traceId: context.traceId });
     return;
@@ -167,7 +227,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
     const payload = parseJson(bodyText, res);
     if (!payload) return;
     const note = typeof payload.note === 'string' && payload.note.trim() ? payload.note.trim() : 'needs_review';
-    await cityPackRequestsRepo.updateRequest(requestId, { status: 'needs_review', error: note });
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'needs_review',
+      experienceStage: 'needs_review',
+      lastReviewAt: new Date().toISOString(),
+      error: note
+    });
     await appendAuditLog({
       actor: context.actor,
       action: 'city_pack.request.request_changes',
@@ -175,7 +240,7 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { note }
+      payloadSummary: { note, regionKey: request.regionKey || null }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'needs_review', traceId: context.traceId });
     return;
@@ -197,7 +262,7 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { ok: result.ok, reason: result.reason || null }
+      payloadSummary: { ok: result.ok, reason: result.reason || null, regionKey: request.regionKey || null }
     });
     writeJson(res, 200, Object.assign({ traceId: context.traceId }, result));
     return;
@@ -228,7 +293,11 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       writeJson(res, 409, { ok: false, error: 'activation_failed', results, traceId: context.traceId });
       return;
     }
-    await cityPackRequestsRepo.updateRequest(requestId, { status: 'active' });
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'active',
+      experienceStage: 'active',
+      lastReviewAt: new Date().toISOString()
+    });
     await appendAuditLog({
       actor: context.actor,
       action: 'city_pack.request.activate',
@@ -236,7 +305,7 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { activated: draftIds }
+      payloadSummary: { activated: draftIds, regionKey: request.regionKey || null }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'active', results, traceId: context.traceId });
     return;
