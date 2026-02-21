@@ -12,6 +12,16 @@ const ADMIN_MANUAL_PATH = path.join(ROOT, 'docs', 'ADMIN_MANUAL_JA.md');
 const RUNBOOK_JA_PATH = path.join(ROOT, 'docs', 'RUNBOOK_JA.md');
 const PHASE24_PLAN_PATH = path.join(ROOT, 'docs', 'PHASE24_PLAN.md');
 const PACKAGE_JSON_PATH = path.join(ROOT, 'package.json');
+const COMMIT_SOURCE_FILES = Object.freeze([
+  path.join('docs', 'REPO_AUDIT_INPUTS', 'feature_map.json'),
+  path.join('docs', 'REPO_AUDIT_INPUTS', 'dependency_graph.json'),
+  path.join('docs', 'REPO_AUDIT_INPUTS', 'state_transitions.json'),
+  path.join('docs', 'REPO_AUDIT_INPUTS', 'data_model_map.json'),
+  path.join('docs', 'ADMIN_MANUAL_JA.md'),
+  path.join('docs', 'DATA_MAP.md'),
+  path.join('docs', 'RUNBOOK_JA.md'),
+  path.join('docs', 'PHASE24_PLAN.md')
+]);
 
 const CATEGORY_ORDER = Object.freeze([
   'notifications',
@@ -85,6 +95,19 @@ function listTestFiles(dir) {
 }
 
 function resolveStableSourceCommit() {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (eventPath && fs.existsSync(eventPath)) {
+    try {
+      const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+      const headSha = event && event.pull_request && event.pull_request.head && event.pull_request.head.sha;
+      if (typeof headSha === 'string' && headSha.trim().length > 0) {
+        return headSha.trim();
+      }
+    } catch (_err) {
+      // continue with git-based fallback
+    }
+  }
+
   try {
     const rawParents = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
     const parts = rawParents.split(/\s+/).filter(Boolean);
@@ -99,6 +122,21 @@ function resolveStableSourceCommit() {
 }
 
 function getLastCommit() {
+  try {
+    const args = ['log', '-1', '--format=%H|%cI|%s', '--', ...COMMIT_SOURCE_FILES];
+    const raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+    if (raw) {
+      const parts = raw.split('|');
+      return {
+        hash: parts[0] || '',
+        date: parts[1] || '',
+        subject: parts.slice(2).join('|') || ''
+      };
+    }
+  } catch (_err) {
+    // continue with commit fallback
+  }
+
   const sourceCommit = resolveStableSourceCommit();
   const raw = execFileSync('git', ['show', '-s', '--format=%H|%cI|%s', sourceCommit], { cwd: ROOT, encoding: 'utf8' }).trim();
   const parts = raw.split('|');
