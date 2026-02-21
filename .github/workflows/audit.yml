@@ -29,6 +29,9 @@ jobs:
       - name: Verify repo map inputs are generated
         run: npm run repo-map:check
 
+      - name: Verify structural cleanup artifacts are generated
+        run: npm run cleanup:check
+
   audit:
     runs-on: ubuntu-latest
     steps:
