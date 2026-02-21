@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -130,7 +131,34 @@ function resolveStableSourceCommit() {
   return 'HEAD';
 }
 
+function computeInputsDigest() {
+  const hash = crypto.createHash('sha256');
+  COMMIT_SOURCE_FILES.forEach((relPath) => {
+    const absolute = path.join(ROOT, relPath);
+    hash.update(relPath);
+    hash.update('\n');
+    if (fs.existsSync(absolute)) {
+      hash.update(fs.readFileSync(absolute));
+    } else {
+      hash.update('MISSING');
+    }
+    hash.update('\n');
+  });
+  return hash.digest('hex');
+}
+
 function getLastCommit() {
+  try {
+    const digest = computeInputsDigest();
+    return {
+      hash: digest.slice(0, 40),
+      date: 'NOT AVAILABLE',
+      subject: 'repo_map_input_digest'
+    };
+  } catch (_err) {
+    // continue with git fallback
+  }
+
   try {
     const args = ['log', '-1', '--format=%H|%cI|%s', '--', ...COMMIT_SOURCE_FILES];
     const raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
