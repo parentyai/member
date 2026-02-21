@@ -19,7 +19,10 @@ Retention dry-run で検証済みの対象のみ、stg環境で限定的に appl
 1. dry-run結果確認（先行必須）
 - `POST /internal/jobs/retention-dry-run`
 2. apply実行
-- body: `{"collections":[...],"cutoffIso":"...","limit":200}`
+- body: `{"collections":[...],"cutoffIso":"...","limit":200,"maxDeletes":200,"dryRunTraceId":"...","cursor":{"events":"evt_0001"}}`
+  - `dryRunTraceId` は直前の dry-run 実行 traceId を指定する
+  - `maxDeletes` は1回の実行上限
+  - `cursor` は段階実行（resume）に利用
 3. 監査確認
 - `traceId`, `deletedCount`, `sampleDeletedIds`
 
