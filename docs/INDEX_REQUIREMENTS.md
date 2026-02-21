@@ -79,3 +79,14 @@ Firestore missing-index fallback を段階的に無効化するための最小�
 ## 運用ルール
 - 新規 fallback catch を追加する場合は、`tests/phase307/phase307_index_fallback_drift.test.js` に反映すること。
 - full-scan を許容する場合は、理由と期限を execution log に残すこと。
+
+## Snapshot Read Mode Contract (Phase312 add-only)
+- `OPS_SNAPSHOT_MODE=prefer|require`（既定: `prefer`）
+- `prefer`:
+  - snapshot が新鮮なら snapshot を返却
+  - snapshot 不在/期限切れ時のみ bounded fallback を許可
+- `require`:
+  - snapshot が新鮮なら snapshot を返却
+  - snapshot 不在/期限切れ時は `NOT AVAILABLE` を返却し、full-scan fallback を禁止
+- 互換:
+  - `OPS_SNAPSHOT_READ_ENABLED=0|false` は `disabled` と同等扱い（ローカル/検証向け）
