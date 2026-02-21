@@ -63,6 +63,20 @@ function monthBuckets(months) {
   return buckets;
 }
 
+function resolveBucketQueryRange(buckets) {
+  if (!Array.isArray(buckets) || buckets.length === 0) {
+    return { fromAt: null, toAt: null };
+  }
+  const first = buckets[0];
+  const last = buckets[buckets.length - 1];
+  const fromMs = Number.isFinite(first && first.start) ? first.start : null;
+  const toMs = Number.isFinite(last && last.end) ? Math.max(last.end - 1, last.start || 0) : null;
+  return {
+    fromAt: Number.isFinite(fromMs) ? new Date(fromMs) : null,
+    toAt: Number.isFinite(toMs) ? new Date(toMs) : null
+  };
+}
+
 function countByBuckets(rows, getTime, buckets) {
   const counts = buckets.map(() => 0);
   rows.forEach((row) => {
@@ -119,11 +133,20 @@ function isSnapshotFresh(snapshot, freshnessMinutes) {
 
 async function computeDashboardKpis(windowMonths, scanLimit) {
   const buckets = monthBuckets(windowMonths);
+  const queryRange = resolveBucketQueryRange(buckets);
   const [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
     analyticsReadRepo.listAllUsers({ limit: scanLimit }),
     analyticsReadRepo.listAllNotifications({ limit: scanLimit }),
-    analyticsReadRepo.listAllNotificationDeliveries({ limit: scanLimit }),
-    analyticsReadRepo.listAllEvents({ limit: scanLimit }),
+    analyticsReadRepo.listNotificationDeliveriesBySentAtRange({
+      limit: scanLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    }),
+    analyticsReadRepo.listEventsByCreatedAtRange({
+      limit: scanLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    }),
     linkRegistryRepo.listLinks({ limit: 500 }),
     systemFlagsRepo.getKillSwitch()
   ]);

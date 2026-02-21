@@ -176,3 +176,5 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RUNBOOK_STRUCT_DRIFT_BACKFILL.md`（構造ドリフト補正ジョブの運用手順）
 - `docs/RUNBOOK_RETENTION_APPLY.md`（Retention applyジョブのstg運用手順）
+- `docs/PHASE316_PLAN.md`（Read Path収束 follow-up: hotspot上位3のbounded query化計画）
+- `docs/PHASE316_EXECUTION_LOG.md`（Read Path収束 follow-up: hotspot上位3のbounded query化実行ログ）
