@@ -292,4 +292,12 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE372_EXECUTION_LOG.md`（Product-out収束ロードマップ: 最終ratchet固定と出荷判定実行ログ）
 - `docs/PHASE373_PLAN.md`（City Pack統合: Language導入 + Nationwide=federal_only運用計画）
 - `docs/PHASE373_EXECUTION_LOG.md`（City Pack統合: Language導入 + Nationwide=federal_only運用実行ログ）
+- `docs/PHASE573_PLAN.md`（収束実装: scoped-first read path 安全化計画）
+- `docs/PHASE573_EXECUTION_LOG.md`（収束実装: scoped-first read path 安全化実行ログ）
+- `docs/PHASE574_PLAN.md`（収束実装: nationwide policy/language ガード固定計画）
+- `docs/PHASE574_EXECUTION_LOG.md`（収束実装: nationwide policy/language ガード固定実行ログ）
+- `docs/PHASE575_PLAN.md`（収束実装: regional+nationwide composition API計画）
+- `docs/PHASE575_EXECUTION_LOG.md`（収束実装: regional+nationwide composition API実行ログ）
+- `docs/PHASE576_PLAN.md`（収束実装: nationwide composition / fallback / readiness UI可視化計画）
+- `docs/PHASE576_EXECUTION_LOG.md`（収束実装: nationwide composition / fallback / readiness UI可視化実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

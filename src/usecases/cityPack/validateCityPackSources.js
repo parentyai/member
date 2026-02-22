@@ -29,6 +29,16 @@ function normalizeAuthorityLevel(value) {
   return authorityLevel || 'other';
 }
 
+function normalizeNationwidePolicy(value) {
+  const policy = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return policy || 'federal_only';
+}
+
+function normalizeLanguage(value) {
+  const language = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return language || 'ja';
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -82,12 +92,43 @@ async function validateCityPackSources(params, deps) {
   const now = payload.now instanceof Date ? payload.now : new Date();
   const nowMs = now.getTime();
   const packClass = normalizePackClass(payload.packClass);
+  const nationwidePolicy = normalizeNationwidePolicy(payload.nationwidePolicy);
+  const language = normalizeLanguage(payload.language);
   const getSourceRef = deps && deps.getSourceRef ? deps.getSourceRef : sourceRefsRepo.getSourceRef;
 
   const sources = [];
   const failures = [];
   const blockingFailures = [];
   const optionalFailures = [];
+  const policyGuardViolations = [];
+  if (packClass === 'nationwide') {
+    if (nationwidePolicy !== 'federal_only') {
+      const violation = {
+        sourceRefId: null,
+        requiredLevel: 'required',
+        category: SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED,
+        reason: 'nationwide_policy_invalid',
+        status: null,
+        validUntil: null
+      };
+      policyGuardViolations.push(violation);
+      failures.push(violation);
+      blockingFailures.push(violation);
+    }
+    if (!language) {
+      const violation = {
+        sourceRefId: null,
+        requiredLevel: 'required',
+        category: SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED,
+        reason: 'nationwide_language_missing',
+        status: null,
+        validUntil: null
+      };
+      policyGuardViolations.push(violation);
+      failures.push(violation);
+      blockingFailures.push(violation);
+    }
+  }
   for (const sourceRefId of sourceRefIds) {
     const ref = await getSourceRef(sourceRefId);
     const requiredLevel = normalizeRequiredLevel(ref && ref.requiredLevel);
@@ -129,6 +170,7 @@ async function validateCityPackSources(params, deps) {
     invalidSourceRefs: failures,
     blockingInvalidSourceRefs: blockingFailures,
     optionalInvalidSourceRefs: optionalFailures,
+    policyGuardViolations,
     policyInvalidSourceRefs: failures.filter((item) => item.category === SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED),
     blockedReasonCategory,
     blocked: blockingFailures.length > 0

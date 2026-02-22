@@ -741,6 +741,7 @@ function createServer() {
   }
 
   const isCityPackAdminRoute = pathname === '/api/admin/city-packs'
+    || pathname === '/api/admin/city-packs/composition'
     || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
     || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
     || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)
@@ -789,6 +790,7 @@ function createServer() {
     });
     (async () => {
       if (pathname === '/api/admin/city-packs'
+        || pathname === '/api/admin/city-packs/composition'
         || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
         || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
         || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)

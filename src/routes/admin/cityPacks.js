@@ -5,6 +5,7 @@ const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirmToken');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
+const { composeCityAndNationwidePacks } = require('../../usecases/nationwidePack/composeCityAndNationwidePacks');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
 function writeJson(res, status, payload) {
@@ -108,6 +109,9 @@ function importConfirmTokenData(planHash) {
 async function handleCreateCityPack(req, res, bodyText, context) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
+  const normalizedPackClass = cityPacksRepo.normalizePackClass(payload.packClass);
+  const normalizedLanguage = cityPacksRepo.normalizeLanguage(payload.language);
+  const normalizedNationwidePolicy = cityPacksRepo.normalizeNationwidePolicy(normalizedPackClass, payload.nationwidePolicy);
   const created = await cityPacksRepo.createCityPack({
     id: payload.id,
     name: payload.name,
@@ -135,9 +139,9 @@ async function handleCreateCityPack(req, res, bodyText, context) {
       name: payload.name || null,
       sourceRefCount: Array.isArray(payload.sourceRefs) ? payload.sourceRefs.length : 0,
       validUntil: payload.validUntil || null,
-      packClass: payload.packClass || null,
-      language: payload.language || null,
-      nationwidePolicy: payload.nationwidePolicy || null
+      packClass: normalizedPackClass,
+      language: normalizedLanguage,
+      nationwidePolicy: normalizedNationwidePolicy
     }
   });
   writeJson(res, 201, {
@@ -159,6 +163,31 @@ async function handleListCityPacks(req, res, context) {
     traceId: context.traceId,
     items
   });
+}
+
+async function handleCityPackComposition(req, res, context) {
+  const url = new URL(req.url, 'http://localhost');
+  const regionKey = (url.searchParams.get('regionKey') || '').trim() || null;
+  const language = (url.searchParams.get('language') || '').trim().toLowerCase() || 'ja';
+  const limit = normalizeLimit(url.searchParams.get('limit'));
+  const payload = await composeCityAndNationwidePacks({ regionKey, language, limit });
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.composition.view',
+    entityType: 'city_pack',
+    entityId: 'composition',
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      regionKey,
+      language,
+      limit,
+      total: payload && payload.summary ? payload.summary.total : 0,
+      regional: payload && payload.summary ? payload.summary.regional : 0,
+      nationwide: payload && payload.summary ? payload.summary.nationwide : 0
+    }
+  });
+  writeJson(res, 200, Object.assign({ traceId: context.traceId }, payload));
 }
 
 async function handleGetCityPack(req, res, context, cityPackId) {
@@ -380,6 +409,10 @@ async function handleCityPacks(req, res, bodyText) {
   };
 
   try {
+    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {
+      await handleCityPackComposition(req, res, context);
+      return;
+    }
     if (req.method === 'GET' && pathname === '/api/admin/city-packs') {
       await handleListCityPacks(req, res, context);
       return;

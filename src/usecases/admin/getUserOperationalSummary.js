@@ -3,8 +3,10 @@
 const {
   listAllEvents,
   listEventsByCreatedAtRange,
+  listEventsByLineUserIdsAndCreatedAtRange,
   listAllChecklists,
   listChecklistsByScenarioAndStep,
+  listChecklistsByScenarioStepPairs,
   listAllUserChecklists,
   listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,
@@ -254,16 +256,10 @@ async function getUserOperationalSummary(params) {
   const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
   const checklistPairs = collectScenarioStepPairs(scopedUsers);
   const scopedLineUserIds = collectLineUserIds(scopedUsers);
-  const checklistsPromise = safeQuery(async () => {
-    if (!checklistPairs.length) return [];
-    const rowsByPair = await Promise.all(checklistPairs.map((pair) => listChecklistsByScenarioAndStep({
-      scenario: pair.scenarioKey,
-      step: pair.stepKey,
-      limit: analyticsLimit
-    })));
-    const mergedRows = dedupeRowsById(rowsByPair.flat());
-    return mergedRows.slice(0, analyticsLimit);
-  });
+  const checklistsPromise = safeQuery(() => listChecklistsByScenarioStepPairs({
+    pairs: checklistPairs,
+    limit: analyticsLimit
+  }));
   let eventsPromise = Promise.resolve({ rows: [], failed: false });
   let deliveriesPromise = Promise.resolve({ rows: [], failed: false });
   const userChecklistsPromise = safeQuery(() => listUserChecklistsByLineUserIds({
@@ -271,7 +267,8 @@ async function getUserOperationalSummary(params) {
     limit: analyticsLimit
   }));
   if (queryRange.fromAt && scopedLineUserIds.length > 0) {
-    eventsPromise = safeQuery(() => listEventsByCreatedAtRange({
+    eventsPromise = safeQuery(() => listEventsByLineUserIdsAndCreatedAtRange({
+      lineUserIds: scopedLineUserIds,
       limit: analyticsLimit,
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt
@@ -295,8 +292,29 @@ async function getUserOperationalSummary(params) {
   let deliveries = dedupeRowsById(deliveriesResult.rows);
   let fallbackBlockedNotAvailable = false;
 
+  if (checklists.length === 0 && checklistPairs.length === 1) {
+    const pair = checklistPairs[0];
+    const singlePairResult = await safeQuery(() => listChecklistsByScenarioAndStep({
+      scenario: pair.scenarioKey,
+      step: pair.stepKey,
+      limit: analyticsLimit
+    }));
+    if (singlePairResult.rows.length > 0) {
+      checklists = dedupeRowsById(singlePairResult.rows);
+    }
+  }
+
   if (events.length === 0) {
-    // keep bounded range-first contract; no-op until fallback branches below
+    if (queryRange.fromAt) {
+      const rangeEventsResult = await safeQuery(() => listEventsByCreatedAtRange({
+        limit: analyticsLimit,
+        fromAt: queryRange.fromAt,
+        toAt: queryRange.toAt
+      }));
+      if (rangeEventsResult.rows.length > 0) {
+        events = dedupeRowsById(rangeEventsResult.rows);
+      }
+    }
   }
   if (eventsResult.failed && !fallbackBlocked) {
     events = await listAllEvents({ limit: analyticsLimit });

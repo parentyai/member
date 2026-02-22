@@ -54,6 +54,7 @@ async function activateCityPack(params, deps) {
   const validation = await validateCityPackSources({
     sourceRefs,
     packClass,
+    language,
     nationwidePolicy,
     now: payload.now
   });
@@ -77,6 +78,7 @@ async function activateCityPack(params, deps) {
         reason: 'source_not_ready',
         blockedReasonCategory: validation.blockedReasonCategory,
         invalidSourceRefs: validation.invalidSourceRefs,
+        policyGuardViolations: Array.isArray(validation.policyGuardViolations) ? validation.policyGuardViolations : [],
         packClass,
         language,
         nationwidePolicy
@@ -88,6 +90,7 @@ async function activateCityPack(params, deps) {
       cityPackId,
       blockedReasonCategory: validation.blockedReasonCategory,
       invalidSourceRefs: validation.invalidSourceRefs,
+      policyGuardViolations: Array.isArray(validation.policyGuardViolations) ? validation.policyGuardViolations : [],
       packClass,
       language,
       traceId
