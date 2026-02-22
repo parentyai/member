@@ -15,7 +15,7 @@
 | 7 | `src/routes/admin/monitorInsights.js` | 103 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 | 8 | `src/routes/admin/osDashboardKpi.js` | 163 | listAllUsers | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 | 9 | `src/routes/admin/osDashboardKpi.js` | 166 | listAllNotifications | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 10 | `src/usecases/admin/getNotificationOperationalSummary.js` | 169 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 10 | `src/usecases/admin/getNotificationOperationalSummary.js` | 180 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 
 ## 段階移行順
 1. `/src/routes/admin/osDashboardKpi.js`

@@ -1,7 +1,8 @@
 {
-  "generatedAt": "NOT AVAILABLE",
-  "gitCommit": "efc4ab6afd38d24908c2ae7d328e7d85c8ef379e",
-  "branch": "NOT_AVAILABLE",
+  "generatedAt": "2026-02-22T00:12:06-05:00",
+  "gitCommit": "aa4b9b768b7667c845a545c09e753ab78ee0cdd8",
+  "branch": "codex/phase345-350-snapshot-fallback-gates",
+  "sourceDigest": "0a067aba02cc9d7025f8cc4fe12f16673b0522474c801eb1f6fb1448bb8944f6",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -77,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "61dafe6a97dba58bc052b86fdf24a0b6721d27eee3248083a4a393a9ecb69d39",
-      "bytes": 11894
+      "sha256": "5057d3ba3d00f816fb32aadacaf2655856d93c46776c6eb2b34002527841d73c",
+      "bytes": 14897
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -102,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "dded6495282b9c3d6ce7df49ec2a94e5e4171929fc034b63d9d658137a65a41b",
+      "sha256": "bf3c8ff6cec234b540e75b64244d9ed005392da123c131afd183d771079d1e2e",
       "bytes": 288099
     },
     {
