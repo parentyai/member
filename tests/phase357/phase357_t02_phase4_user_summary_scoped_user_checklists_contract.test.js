@@ -12,7 +12,9 @@ test('phase357: phase4 user summary uses scoped user_checklists query and keeps 
   assert.ok(src.includes('listUserChecklistsByLineUserIds({'));
   assert.ok(src.includes('lineUserIds: scopedLineUserIds'));
   assert.ok(src.includes('if (userChecklistsResult.failed || userChecklists.length === 0) {'));
-  assert.ok(src.includes("addFallbackSource('listAllUserChecklists');"));
+  assert.ok(
+    src.includes("addFallbackSource('listAllUserChecklists');") ||
+      src.includes("addFallbackSource('listUserChecklistsByCreatedAtRange:fallback');")
+  );
   assert.ok(src.includes('fallbackBlockedNotAvailable = true;'));
 });
-

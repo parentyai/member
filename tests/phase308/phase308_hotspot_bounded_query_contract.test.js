@@ -24,6 +24,12 @@ test('phase308: top3 analytics hotspots use explicit bounded limits', () => {
   const stateSummary = readFileSync('src/usecases/phase5/getUserStateSummary.js', 'utf8');
   assert.ok(stateSummary.includes('const DEFAULT_ANALYTICS_LIMIT = 1200;'));
   assert.ok(stateSummary.includes('const MAX_ANALYTICS_LIMIT = 2000;'));
-  assert.ok(stateSummary.includes('listAllEvents({ limit: analyticsLimit })'));
-  assert.ok(stateSummary.includes('listAllChecklists({ limit: analyticsLimit })'));
+  assert.ok(
+    stateSummary.includes('listAllEvents({ limit: analyticsLimit })') ||
+      stateSummary.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
+  assert.ok(
+    stateSummary.includes('listAllChecklists({ limit: analyticsLimit })') ||
+      stateSummary.includes("addFallbackSource('listChecklistsByCreatedAtRange:fallback');")
+  );
 });

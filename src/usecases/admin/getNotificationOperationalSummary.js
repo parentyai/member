@@ -2,7 +2,6 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const {
-  listAllEvents,
   listEventsByCreatedAtRange,
   listEventsByNotificationIdsAndCreatedAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
@@ -239,8 +238,8 @@ async function getNotificationOperationalSummary(params) {
     }
     if (!events.length && !fallbackBlocked) {
       if (fallbackOnEmpty || scoped.failed || rangeFailed) {
-        events = await listAllEvents({ limit: eventsLimit });
-        addFallbackSource('listAllEvents');
+        events = await listEventsByCreatedAtRange({ limit: eventsLimit });
+        addFallbackSource('listEventsByCreatedAtRange:fallback');
       }
     }
     if (!events.length && (scoped.failed || rangeFailed) && fallbackBlocked) {

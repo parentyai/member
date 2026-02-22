@@ -320,4 +320,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE585_EXECUTION_LOG.md`（Read Path収束継続: dashboard/monitor bounded fallback 置換実行ログ）
 - `docs/PHASE586_PLAN.md`（Read Path収束継続: baseline ratchet 追記計画）
 - `docs/PHASE586_EXECUTION_LOG.md`（Read Path収束継続: baseline ratchet 追記実行ログ）
+- `docs/PHASE587_PLAN.md`（Read Path収束継続: phase4 summary global fallback bounded化計画）
+- `docs/PHASE587_EXECUTION_LOG.md`（Read Path収束継続: phase4 summary global fallback bounded化実行ログ）
+- `docs/PHASE588_PLAN.md`（Read Path収束継続: phase5 state global fallback bounded化計画）
+- `docs/PHASE588_EXECUTION_LOG.md`（Read Path収束継続: phase5 state global fallback bounded化実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

@@ -12,7 +12,16 @@ test('phase339: phase5 state summary uses scoped queries before listAll fallback
   assert.ok(src.includes('listEventsByLineUserIdAndCreatedAtRange'));
   assert.ok(src.includes('listNotificationDeliveriesByLineUserIdAndSentAtRange'));
   assert.ok(src.includes('listUserChecklistsByLineUserId'));
-  assert.ok(src.includes('listAllEvents'));
-  assert.ok(src.includes('listAllNotificationDeliveries'));
-  assert.ok(src.includes('listAllUserChecklists'));
+  assert.ok(
+    src.includes('listAllEvents') ||
+      src.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
+  assert.ok(
+    src.includes('listAllNotificationDeliveries') ||
+      src.includes("addFallbackSource('listNotificationDeliveriesBySentAtRange:fallback');")
+  );
+  assert.ok(
+    src.includes('listAllUserChecklists') ||
+      src.includes("addFallbackSource('listUserChecklistsByCreatedAtRange:fallback');")
+  );
 });

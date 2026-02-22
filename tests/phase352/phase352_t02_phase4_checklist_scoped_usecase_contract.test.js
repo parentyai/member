@@ -12,5 +12,8 @@ test('phase352: phase4 user operational summary prefers checklist scoped read pa
   assert.ok(src.includes('collectScenarioStepPairs(scopedUsers)'));
   assert.ok(src.includes('checklistsPromise'));
   assert.ok(src.includes('if (checklistsResult.failed || checklists.length === 0) {'));
-  assert.ok(src.includes('checklists = await listAllChecklists({ limit: analyticsLimit });'));
+  assert.ok(
+    src.includes('checklists = await listAllChecklists({ limit: analyticsLimit });') ||
+      src.includes('checklists = await listChecklistsByCreatedAtRange({ limit: analyticsLimit });')
+  );
 });
