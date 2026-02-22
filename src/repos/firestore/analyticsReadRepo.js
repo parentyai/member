@@ -4,6 +4,7 @@ const { getDb } = require('../../infra/firestore');
 
 const DEFAULT_LIMIT = 1000;
 const MAX_LIMIT = 5000;
+const IN_QUERY_CHUNK_SIZE = 10;
 
 function resolveLimit(value) {
   if (value === undefined || value === null) return DEFAULT_LIMIT;
@@ -24,6 +25,53 @@ function toDate(value) {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
   return null;
+}
+
+function toMillis(value) {
+  const date = toDate(value);
+  return date ? date.getTime() : null;
+}
+
+function sortRowsByFieldDesc(rows, fieldName) {
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  list.sort((a, b) => {
+    const aMs = toMillis(a && a.data && a.data[fieldName]);
+    const bMs = toMillis(b && b.data && b.data[fieldName]);
+    if (aMs && bMs) return bMs - aMs;
+    if (aMs) return -1;
+    if (bMs) return 1;
+    const aId = String(a && a.id ? a.id : '');
+    const bId = String(b && b.id ? b.id : '');
+    return aId.localeCompare(bId);
+  });
+  return list;
+}
+
+function dedupeById(rows) {
+  const map = new Map();
+  for (const row of rows || []) {
+    if (!row || !row.id) continue;
+    if (!map.has(row.id)) map.set(row.id, row);
+  }
+  return Array.from(map.values());
+}
+
+function normalizeIdList(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(
+    value
+      .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+      .filter(Boolean)
+  ));
+}
+
+function chunkList(list, size) {
+  const chunkSize = Math.max(1, Number(size) || IN_QUERY_CHUNK_SIZE);
+  const chunks = [];
+  for (let i = 0; i < list.length; i += chunkSize) {
+    chunks.push(list.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
 
 async function listAllEvents(opts) {
@@ -131,6 +179,30 @@ async function listUserChecklistsByLineUserId(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listUserChecklistsByLineUserIds(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserIds = normalizeIdList(options.lineUserIds);
+  if (!lineUserIds.length) return [];
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const chunks = chunkList(lineUserIds, IN_QUERY_CHUNK_SIZE);
+  const perChunkLimit = Math.max(1, Math.floor(limit / Math.max(1, chunks.length)));
+  const settled = await Promise.all(chunks.map(async (chunk) => {
+    const rowsByUser = await Promise.all(chunk.map(async (lineUserId) => {
+      const snap = await db
+        .collection('user_checklists')
+        .where('lineUserId', '==', lineUserId)
+        .orderBy('createdAt', 'desc')
+        .limit(perChunkLimit)
+        .get();
+      return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    }));
+    return rowsByUser.flat();
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'createdAt').slice(0, limit);
+}
+
 async function listAllNotificationDeliveries(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -167,6 +239,30 @@ async function listNotificationDeliveriesByLineUserIdAndSentAtRange(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listEventsByNotificationIdsAndCreatedAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const notificationIds = normalizeIdList(options.notificationIds);
+  if (!notificationIds.length) return [];
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  const chunks = chunkList(notificationIds, IN_QUERY_CHUNK_SIZE);
+  const perChunkLimit = Math.max(1, Math.floor(limit / Math.max(1, chunks.length)));
+  const settled = await Promise.all(chunks.map(async (chunk) => {
+    const rowsByNotification = await Promise.all(chunk.map(async (notificationId) => {
+      let query = db.collection('events').where('ref.notificationId', '==', notificationId);
+      if (fromAt) query = query.where('createdAt', '>=', fromAt);
+      if (toAt) query = query.where('createdAt', '<=', toAt);
+      const snap = await query.orderBy('createdAt', 'desc').limit(perChunkLimit).get();
+      return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    }));
+    return rowsByNotification.flat();
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'createdAt').slice(0, limit);
+}
+
 async function listAllNotifications(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -198,9 +294,11 @@ module.exports = {
   listChecklistsByScenarioAndStep,
   listAllUserChecklists,
   listUserChecklistsByLineUserId,
+  listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange,
   listNotificationDeliveriesByLineUserIdAndSentAtRange,
+  listEventsByNotificationIdsAndCreatedAtRange,
   listAllNotifications,
   listNotificationsByCreatedAtRange
 };
