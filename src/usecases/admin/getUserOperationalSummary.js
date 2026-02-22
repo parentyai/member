@@ -20,11 +20,23 @@ const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_operational_summary';
 const SNAPSHOT_KEY = 'latest';
+const DEFAULT_LIST_LIMIT = null;
+const MAX_LIST_LIMIT = 500;
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
+
+function resolveListLimit(value, analyticsLimit) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return DEFAULT_LIST_LIMIT;
+  const bounded = Math.min(Math.floor(num), MAX_LIST_LIMIT);
+  if (Number.isFinite(analyticsLimit) && analyticsLimit > 0) {
+    return Math.min(bounded, analyticsLimit);
+  }
+  return bounded;
 }
 
 function toMillis(value) {
@@ -151,8 +163,10 @@ async function getUserOperationalSummary(params) {
     return [];
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
+  const listLimit = resolveListLimit(opts.limit, analyticsLimit);
   const users = await usersRepo.listUsers({ limit: analyticsLimit });
-  const queryRange = resolveAnalyticsQueryRangeFromUsers(users);
+  const scopedUsers = listLimit ? users.slice(0, listLimit) : users;
+  const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
   let eventsPromise = Promise.resolve([]);
   let deliveriesPromise = Promise.resolve([]);
   if (queryRange.fromAt) {
@@ -185,7 +199,7 @@ async function getUserOperationalSummary(params) {
   const latestActionByUser = buildLatestActionByUser(events);
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
 
-  return users.map((user) => {
+  return scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
     const createdAtMs = toMillis(data.createdAt);
     const scenarioKey = data.scenarioKey;
