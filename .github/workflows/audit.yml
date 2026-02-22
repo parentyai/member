@@ -32,6 +32,9 @@ jobs:
       - name: Verify audit inputs manifest is generated
         run: npm run audit-inputs:check
 
+      - name: Verify supervisor master is generated
+        run: npm run supervisor-master:check
+
       - name: Verify load risk report is generated and within budgets
         run: npm run load-risk:check
 

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:47:53-05:00",
-  "gitCommit": "9beb7050dbb1bc851070dc7caaaa11d356449e0f",
-  "branch": "codex/phase577-580",
-  "sourceDigest": "d14c2889470a71a84279a8ad08343c635d77f157d40d5a59c3ae768ed5330145",
+  "generatedAt": "2026-02-22T13:01:48-05:00",
+  "gitCommit": "a5b94bf06b00c608dd72b20e53ee855ff23e5b82",
+  "branch": "codex/supervisor-master-json",
+  "sourceDigest": "7f96eeeb36be2f21fcb381a07a448941607f520e1b343f1caa96c928cfe48eff",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -110,6 +110,11 @@
       "file": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
       "sha256": "aef84a98d6c89d62c744257f41a73505f351c652ebc8f78d961a439e0bb83307",
       "bytes": 3810
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
+      "sha256": "81121756e19ca0c1952a85ab2252b95bf643fb0ce47eae4194901838e8f68ca1",
+      "bytes": 2274
     }
   ],
   "diff_detection_rules": [
