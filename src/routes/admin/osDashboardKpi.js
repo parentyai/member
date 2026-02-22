@@ -4,6 +4,7 @@ const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
@@ -403,6 +404,29 @@ async function handleDashboardKpi(req, res) {
         sourceTraceId: traceId,
         data: { kpis, windowMonths, scanLimit }
       });
+    }
+    if (computed.fallbackUsed === true || computed.fallbackBlocked === true) {
+      try {
+        await appendAuditLog({
+          actor,
+          action: 'read_path.fallback.dashboard_kpi',
+          entityType: 'read_path',
+          entityId: 'dashboard_kpi',
+          traceId: traceId || undefined,
+          requestId: requestId || undefined,
+          payloadSummary: {
+            fallbackUsed: computed.fallbackUsed === true,
+            fallbackBlocked: computed.fallbackBlocked === true,
+            fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
+            snapshotMode,
+            fallbackMode,
+            windowMonths,
+            scanLimit
+          }
+        });
+      } catch (_auditErr) {
+        // best effort only
+      }
     }
 
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
