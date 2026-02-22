@@ -134,9 +134,17 @@ function isSnapshotFresh(snapshot, freshnessMinutes) {
 async function computeDashboardKpis(windowMonths, scanLimit) {
   const buckets = monthBuckets(windowMonths);
   const queryRange = resolveBucketQueryRange(buckets);
-  const [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
-    analyticsReadRepo.listAllUsers({ limit: scanLimit }),
-    analyticsReadRepo.listAllNotifications({ limit: scanLimit }),
+  let [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
+    analyticsReadRepo.listUsersByCreatedAtRange({
+      limit: scanLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    }),
+    analyticsReadRepo.listNotificationsByCreatedAtRange({
+      limit: scanLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    }),
     analyticsReadRepo.listNotificationDeliveriesBySentAtRange({
       limit: scanLimit,
       fromAt: queryRange.fromAt,
@@ -150,6 +158,13 @@ async function computeDashboardKpis(windowMonths, scanLimit) {
     linkRegistryRepo.listLinks({ limit: 500 }),
     systemFlagsRepo.getKillSwitch()
   ]);
+
+  if (users.length === 0) {
+    users = await analyticsReadRepo.listAllUsers({ limit: scanLimit });
+  }
+  if (notifications.length === 0) {
+    notifications = await analyticsReadRepo.listAllNotifications({ limit: scanLimit });
+  }
 
   const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
   const normalizedNotifications = notifications.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));

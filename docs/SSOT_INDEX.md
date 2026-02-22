@@ -180,3 +180,5 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/RUNBOOK_RETENTION_APPLY.md`（Retention applyジョブのstg運用手順）
 - `docs/PHASE316_PLAN.md`（Read Path収束 follow-up: hotspot上位3のbounded query化計画）
 - `docs/PHASE316_EXECUTION_LOG.md`（Read Path収束 follow-up: hotspot上位3のbounded query化実行ログ）
+- `docs/PHASE318_PLAN.md`（Read Path収束 follow-up: dashboard users/notifications bounded query化計画）
+- `docs/PHASE318_EXECUTION_LOG.md`（Read Path収束 follow-up: dashboard users/notifications bounded query化実行ログ）
