@@ -34,6 +34,13 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - hotspots_count_max: 20
 - note: Product-out 収束基準。phase372 以降はこの末尾基準をCI評価に採用。
 
+## current_baseline_phase597
+- worst_case_docs_scan_max: 20000
+- fallback_points_max: 17
+- hotspots_count_max: 20
+- unbounded_hotspots_max: 0
+- note: listAll callsite の未上限（limit未指定）をゼロ固定。以後は増悪をCIで停止。
+
 ## current_baseline_phase584
 - worst_case_docs_scan_max: 16000
 - fallback_points_max: 17

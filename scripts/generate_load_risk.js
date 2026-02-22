@@ -44,6 +44,16 @@ function parseLimitFromLine(line) {
   return null;
 }
 
+function hasLimitArgumentOnLine(line, call) {
+  if (!line || !call) return false;
+  const escaped = call.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const objectCall = new RegExp(`\\b${escaped}\\s*\\(\\s*\\{[^}]*\\blimit\\s*:`);
+  if (objectCall.test(line)) return true;
+  const positionalCall = new RegExp(`\\b${escaped}\\s*\\([^)]*\\blimit\\s*:\\s*`);
+  if (positionalCall.test(line)) return true;
+  return false;
+}
+
 function resolveGeneratedAt() {
   try {
     const value = childProcess.execSync('git log -1 --format=%cI -- docs/REPO_AUDIT_INPUTS/load_risk.json', {
@@ -263,6 +273,7 @@ function buildLoadRisk() {
           continue;
         }
         const explicitLimit = parseLimitFromLine(line);
+        const hasLimitArg = hasLimitArgumentOnLine(line, call);
         const limitAssumed = explicitLimit || DEFAULT_LIMIT_ASSUMED;
         hotspots.push({
           hotspot: {
@@ -270,7 +281,10 @@ function buildLoadRisk() {
             line: lineNo,
             type: 'listAll',
             call,
-            limit: explicitLimit ? String(explicitLimit) : 'UNSPECIFIED'
+            limit: explicitLimit
+              ? String(explicitLimit)
+              : (hasLimitArg ? 'DYNAMIC' : 'UNSPECIFIED'),
+            has_limit_arg: hasLimitArg
           },
           endpoint_count: 0,
           limit_assumed: limitAssumed,
@@ -323,6 +337,8 @@ function buildLoadRisk() {
   });
 
   const estimatedWorstCaseDocsScan = hotspots.reduce((sum, row) => sum + Number(row.estimated_scan || 0), 0);
+  const unboundedHotspots = hotspots.filter((row) => !Boolean(row && row.hotspot && row.hotspot.has_limit_arg));
+  const boundedHotspots = hotspots.filter((row) => Boolean(row && row.hotspot && row.hotspot.has_limit_arg));
   const fallbackSurfaceCount = new Set(fallbackPoints.map((row) => `${row.file}::${row.call}`)).size;
 
   return {
@@ -332,13 +348,17 @@ function buildLoadRisk() {
     estimated_worst_case_docs_scan: estimatedWorstCaseDocsScan,
     fallback_risk: fallbackSurfaceCount,
     hotspots_count: hotspots.length,
+    unbounded_hotspots_count: unboundedHotspots.length,
+    bounded_hotspots_count: boundedHotspots.length,
     hotspots,
+    unbounded_hotspots: unboundedHotspots,
+    bounded_hotspots: boundedHotspots,
     fallback_points: fallbackPoints,
     fallback_surface_count: fallbackSurfaceCount,
     assumptions: [
       'listAll function declarations are excluded from hotspots (runtime callsites only)',
       'fallback_risk counts unique file/call surfaces',
-      'listAll without explicit limit assumes 1000 docs',
+      'listAll without explicit numeric limit assumes 1000 docs',
       'endpoint mapping derived from static src/index.js handler dispatch and dependency_graph.json'
     ]
   };
@@ -349,20 +369,24 @@ function readBudgets() {
     return {
       worstCaseMax: null,
       fallbackPointsMax: null,
-      hotspotsCountMax: null
+      hotspotsCountMax: null,
+      unboundedHotspotsMax: null
     };
   }
   const text = fs.readFileSync(BUDGETS_PATH, 'utf8');
   const worstMatches = [...text.matchAll(/worst_case_docs_scan_max:\s*(\d+)/g)];
   const fallbackMatches = [...text.matchAll(/fallback_points_max:\s*(\d+)/g)];
   const hotspotMatches = [...text.matchAll(/hotspots_count_max:\s*(\d+)/g)];
+  const unboundedMatches = [...text.matchAll(/unbounded_hotspots_max:\s*(\d+)/g)];
   const worstMatch = worstMatches.length ? worstMatches[worstMatches.length - 1] : null;
   const fallbackMatch = fallbackMatches.length ? fallbackMatches[fallbackMatches.length - 1] : null;
   const hotspotMatch = hotspotMatches.length ? hotspotMatches[hotspotMatches.length - 1] : null;
+  const unboundedMatch = unboundedMatches.length ? unboundedMatches[unboundedMatches.length - 1] : null;
   return {
     worstCaseMax: worstMatch ? Number(worstMatch[1]) : null,
     fallbackPointsMax: fallbackMatch ? Number(fallbackMatch[1]) : null,
-    hotspotsCountMax: hotspotMatch ? Number(hotspotMatch[1]) : null
+    hotspotsCountMax: hotspotMatch ? Number(hotspotMatch[1]) : null,
+    unboundedHotspotsMax: unboundedMatch ? Number(unboundedMatch[1]) : null
   };
 }
 
@@ -376,6 +400,12 @@ function verifyBudgets(loadRisk) {
   }
   if (Number.isFinite(budgets.hotspotsCountMax) && Array.isArray(loadRisk.hotspots) && loadRisk.hotspots.length > budgets.hotspotsCountMax) {
     throw new Error(`hotspots count exceeds budget (${loadRisk.hotspots.length} > ${budgets.hotspotsCountMax})`);
+  }
+  if (Number.isFinite(budgets.unboundedHotspotsMax)
+    && Number(loadRisk.unbounded_hotspots_count) > budgets.unboundedHotspotsMax) {
+    throw new Error(
+      `unbounded hotspots count exceeds budget (${loadRisk.unbounded_hotspots_count} > ${budgets.unboundedHotspotsMax})`
+    );
   }
 }
 
