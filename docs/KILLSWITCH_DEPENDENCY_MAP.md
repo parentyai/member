@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 41
+- 抽出件数: 42
 
 | file | line | reference |
 | --- | --- | --- |
@@ -20,6 +20,7 @@
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/notifications.js` | 120 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 172 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 180 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
 | `src/routes/admin/osKillSwitch.js` | 26 | `const killSwitch = await getKillSwitch();` |

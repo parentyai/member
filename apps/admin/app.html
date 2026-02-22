@@ -12,7 +12,7 @@
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
         <div class="nav-group">
-          <div class="nav-group-label" data-dict-key="ui.label.nav.group.dashboard">ダッシュボード</div>
+          <div class="nav-group-label nav-group-label-dashboard" data-dict-key="ui.label.nav.group.dashboard">ダッシュボード</div>
           <button class="nav-item is-active" data-pane-target="home">
             <span class="nav-icon" aria-hidden="true">D</span>
             <span data-dict-key="ui.label.nav.dashboard">ダッシュボード</span>
@@ -68,6 +68,10 @@
 
         <div class="nav-group">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
+          <button class="nav-item" data-pane-target="alerts">
+            <span class="nav-icon" aria-hidden="true">!</span>
+            <span data-dict-key="ui.label.nav.alerts">要対応</span>
+          </button>
           <button class="nav-item" data-pane-target="errors">
             <span class="nav-icon" aria-hidden="true">O</span>
             <span data-dict-key="ui.label.nav.opsStatus">状態確認</span>
@@ -110,13 +114,32 @@
         <header class="app-topbar">
           <div class="top-metric top-metric-wide">
             <div class="top-label" data-dict-key="ui.label.nav.home">ダッシュボード</div>
-            <div class="top-sub" data-dict-key="ui.desc.home.dashboardLead">通知配信の判断指標を期間別に確認します。</div>
+            <div class="top-summary-line">
+              <span class="top-summary-item">
+                <span data-dict-key="ui.label.top.registered">登録者数</span>:
+                <strong id="topbar-registered-count">-</strong>
+                <span data-dict-key="ui.label.top.unit.people">名</span>
+              </span>
+              <span class="top-summary-separator" aria-hidden="true">|</span>
+              <span class="top-summary-item">
+                <span data-dict-key="ui.label.top.todayScheduled">本日配信予定件数</span>:
+                <strong id="topbar-scheduled-count">-</strong>
+                <span data-dict-key="ui.label.top.unit.items">件</span>
+              </span>
+              <span class="top-summary-separator" aria-hidden="true">|</span>
+              <button id="topbar-open-alerts" type="button" class="top-summary-link">
+                <span data-dict-key="ui.label.top.openAlerts">要対応案件</span>:
+                <strong id="topbar-alerts-count">-</strong>
+                <span data-dict-key="ui.label.top.unit.items">件</span>
+              </button>
+            </div>
           </div>
           <div class="top-role">
             <span class="role-label" data-dict-key="ui.label.role">Role</span>
             <div class="role-switch" role="group" aria-label="Role Switch">
-              <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operator">運用者</button>
-              <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.admin">管理者</button>
+              <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
+              <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
+              <button class="role-btn" data-role-value="developer" data-dict-key="ui.label.role.developer">開発</button>
             </div>
           </div>
           <div class="top-developer" data-role="admin">
@@ -141,7 +164,7 @@
           <div class="page-header-actions">
             <button id="page-action-primary" type="button" class="secondary-btn hidden"></button>
             <button id="page-action-secondary" type="button" class="secondary-btn hidden"></button>
-            <button id="header-consult-link" type="button" class="secondary-btn" data-dict-key="ui.label.header.consult">相談窓口</button>
+            <button id="header-consult-link" type="button" class="secondary-btn hidden" data-dict-key="ui.label.header.consult">相談窓口</button>
           </div>
         </section>
 
@@ -169,52 +192,137 @@
           <div class="panel dashboard-panel">
             <div class="panel-title" data-dict-key="ui.label.home.dashboard">ダッシュボード</div>
             <div class="panel-body">
-              <div class="row dashboard-controls">
+              <div class="row dashboard-controls hidden">
                 <label for="dashboard-window-months" data-dict-key="ui.label.home.window">期間</label>
                 <select id="dashboard-window-months" class="select-inline">
                   <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
                   <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
                   <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
                   <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                  <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
                 </select>
                 <button id="dashboard-reload" type="button" data-dict-key="ui.label.home.reload">指標を更新</button>
               </div>
               <div class="dashboard-kpi-grid">
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.lineRegistered">LINE登録者数推移</div>
-                  <div id="dashboard-kpi-registrations-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-registrations-spark" class="kpi-sparkline"></div>
+                <div class="dashboard-kpi-card" data-dashboard-card="registrations">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.lineRegistered">登録者数推移</div>
+                    <select id="dashboard-window-registrations" class="select-inline dashboard-window-select" data-dashboard-metric="registrations">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-registrations-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-registrations-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-registrations-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-registrations-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-registrations-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.redacMatch">リダックIDマッチ率</div>
-                  <div id="dashboard-kpi-membership-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-membership-spark" class="kpi-sparkline"></div>
+                <div class="dashboard-kpi-card" data-dashboard-card="membership">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.redacMatch">メンバーID登録率</div>
+                    <select id="dashboard-window-membership" class="select-inline dashboard-window-select" data-dashboard-metric="membership">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-membership-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-membership-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-membership-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-membership-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-membership-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数推移</div>
-                  <div id="dashboard-kpi-step-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-step-spark" class="kpi-sparkline"></div>
-                  <div id="dashboard-kpi-step-note" class="dashboard-kpi-note">-</div>
+                <div class="dashboard-kpi-card" data-dashboard-card="engagement">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.engagement">エンゲージメント</div>
+                    <select id="dashboard-window-engagement" class="select-inline dashboard-window-select" data-dashboard-metric="engagement">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-engagement-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-engagement-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-engagement-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-engagement-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-engagement-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.reactionRate">通知反応率推移</div>
-                  <div id="dashboard-kpi-churn-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-churn-spark" class="kpi-sparkline"></div>
-                  <div id="dashboard-kpi-churn-note" class="dashboard-kpi-note">-</div>
+                <div class="dashboard-kpi-card" data-dashboard-card="notifications">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.notificationCount">通知件数</div>
+                    <select id="dashboard-window-notifications" class="select-inline dashboard-window-select" data-dashboard-metric="notifications">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-notifications-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-notifications-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-notifications-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-notifications-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-notifications-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.consultClicks">相談クリック件数推移</div>
-                  <div id="dashboard-kpi-ctr-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-ctr-spark" class="kpi-sparkline"></div>
-                  <div id="dashboard-kpi-ctr-note" class="dashboard-kpi-note">-</div>
+                <div class="dashboard-kpi-card" data-dashboard-card="reaction">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.reactionRate">反応率</div>
+                    <select id="dashboard-window-reaction" class="select-inline dashboard-window-select" data-dashboard-metric="reaction">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-reaction-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-reaction-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-reaction-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-reaction-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-reaction-note" class="dashboard-kpi-note">-</div>
                 </div>
-                <div class="dashboard-kpi-card">
-                  <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.killWarn">KillSwitch/WARN推移</div>
-                  <div id="dashboard-kpi-citypack-value" class="dashboard-kpi-value">-</div>
-                  <div id="dashboard-kpi-citypack-spark" class="kpi-sparkline"></div>
-                  <div id="dashboard-kpi-citypack-note" class="dashboard-kpi-note">-</div>
+                <div class="dashboard-kpi-card" data-dashboard-card="faq">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title" data-dict-key="ui.metric.dashboard.faqUsage">FAQ利用件数</div>
+                    <select id="dashboard-window-faq" class="select-inline dashboard-window-select" data-dashboard-metric="faq">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-faq-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-faq-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-faq-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-faq-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-faq-note" class="dashboard-kpi-note">-</div>
                 </div>
               </div>
               <div class="task-card-list dashboard-shortcuts">
@@ -227,6 +335,35 @@
                 <button type="button" class="task-card-btn" data-open-pane="errors">
                   <span data-dict-key="ui.label.home.task.errors">異常確認から開始</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="pane-alerts" class="app-pane" data-pane="alerts">
+          <div class="panel">
+            <div class="panel-title" data-dict-key="ui.label.alerts.title">要対応一覧</div>
+            <div class="panel-body">
+              <div class="row">
+                <button id="alerts-reload" type="button" data-dict-key="ui.label.alerts.reload">要対応を更新</button>
+              </div>
+              <p id="alerts-summary-note" class="alerts-summary-note">-</p>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th data-dict-key="ui.label.alerts.col.type">種別</th>
+                      <th data-dict-key="ui.label.alerts.col.count">件数</th>
+                      <th data-dict-key="ui.label.alerts.col.impact">影響</th>
+                      <th data-dict-key="ui.label.alerts.col.action">対応</th>
+                    </tr>
+                  </thead>
+                  <tbody id="alerts-rows">
+                    <tr>
+                      <td colspan="4" data-dict-key="ui.label.common.empty">データなし</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

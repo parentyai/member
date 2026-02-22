@@ -19,7 +19,7 @@ const {
 } = require('../../domain/readModel/fallbackPolicy');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
-const MONTHS_ALLOWED = new Set([1, 3, 6, 12]);
+const MONTHS_ALLOWED = new Set([1, 3, 6, 12, 36]);
 const MAX_SCAN_LIMIT = 3000;
 const DEFAULT_SCAN_LIMIT = 2000;
 const DEFAULT_SNAPSHOT_FRESHNESS_MINUTES = 60;
@@ -28,7 +28,7 @@ function parseWindowMonths(req) {
   const url = new URL(req.url, 'http://localhost');
   const raw = Number(url.searchParams.get('windowMonths') || 1);
   if (!Number.isFinite(raw)) return 1;
-  const normalized = Math.max(1, Math.min(12, Math.floor(raw)));
+  const normalized = Math.max(1, Math.min(36, Math.floor(raw)));
   if (!MONTHS_ALLOWED.has(normalized)) return 1;
   return normalized;
 }
@@ -246,6 +246,20 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     return Math.round((clicked / delivered) * 1000) / 10;
   });
 
+  const engagementSeries = buckets.map((bucket) => {
+    let delivered = 0;
+    let read = 0;
+    deliveries.forEach((row) => {
+      const payload = row && row.data ? row.data : row;
+      const sentAt = toMillis(payload && payload.sentAt);
+      if (!Number.isFinite(sentAt) || sentAt < bucket.start || sentAt >= bucket.end) return;
+      if (payload && payload.delivered === true) delivered += 1;
+      if (payload && payload.readAt) read += 1;
+    });
+    if (!delivered) return 0;
+    return Math.round((read / delivered) * 1000) / 10;
+  });
+
   const consultSeries = buckets.map((bucket) => {
     let count = 0;
     events.forEach((row) => {
@@ -258,23 +272,53 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     return count;
   });
 
+  const faqSeries = buckets.map((bucket) => {
+    let count = 0;
+    events.forEach((row) => {
+      const payload = row && row.data ? row.data : row;
+      const createdAt = toMillis(payload && payload.createdAt);
+      if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
+      const type = String(payload && payload.type ? payload.type : '').toUpperCase();
+      if (type.includes('FAQ')) count += 1;
+    });
+    return count;
+  });
+
   const warnCount = links.filter((row) => row && row.lastHealth && row.lastHealth.state === 'WARN').length;
   const killSwitchWarnSeries = buckets.map(() => warnCount + (killSwitch ? 1 : 0));
 
+  const notificationsMetric = simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`);
+  const reactionMetric = simpleMetric(
+    reactionSeries.length ? `${reactionSeries[reactionSeries.length - 1]}%` : '0%',
+    reactionSeries,
+    '通知反応率（クリック / 配信）'
+  );
+  const consultMetric = simpleMetric(
+    String(consultSeries.reduce((sum, value) => sum + value, 0)),
+    consultSeries,
+    '相談クリック件数（events集計）'
+  );
+  const faqMetric = simpleMetric(
+    String(faqSeries.reduce((sum, value) => sum + value, 0)),
+    faqSeries,
+    'FAQ利用件数（events集計）'
+  );
+  const engagementMetric = simpleMetric(
+    engagementSeries.length ? `${engagementSeries[engagementSeries.length - 1]}%` : '0%',
+    engagementSeries,
+    'エンゲージメント（既読 / 配信）'
+  );
+
   const kpis = {
-    registrations: simpleMetric(String(registrationTotal), registrationsSeries, `${windowMonths}ヶ月のLINE登録件数`),
-    membership: simpleMetric(ratioLabel(membershipMatched, normalizedUsers.length), membershipSeries, 'リダックくらぶID一致率'),
-    stepStates: simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`),
-    churnRate: simpleMetric(
-      reactionSeries.length ? `${reactionSeries[reactionSeries.length - 1]}%` : '0%',
-      reactionSeries,
-      '通知反応率（クリック / 配信）'
-    ),
-    ctrTrend: simpleMetric(
-      String(consultSeries.reduce((sum, value) => sum + value, 0)),
-      consultSeries,
-      '相談クリック件数（events集計）'
-    ),
+    registrations: simpleMetric(String(registrationTotal), registrationsSeries, `${windowMonths}ヶ月の登録件数`),
+    membership: simpleMetric(ratioLabel(membershipMatched, normalizedUsers.length), membershipSeries, 'メンバーID登録率'),
+    engagement: engagementMetric,
+    notifications: notificationsMetric,
+    reaction: reactionMetric,
+    faqUsage: faqMetric,
+    stepStates: notificationsMetric,
+    churnRate: reactionMetric,
+    ctrTrend: consultMetric,
     cityPackUsage: links.length
       ? simpleMetric(`${warnCount}${killSwitch ? ' + KillSwitch ON' : ''}`, killSwitchWarnSeries, 'WARNリンク数 + KillSwitch状態')
       : notAvailable('link_registryが未設定のため取得できません')
@@ -294,6 +338,10 @@ function buildNotAvailableKpis(note) {
   return {
     registrations: notAvailable(message),
     membership: notAvailable(message),
+    engagement: notAvailable(message),
+    notifications: notAvailable(message),
+    reaction: notAvailable(message),
+    faqUsage: notAvailable(message),
     stepStates: notAvailable(message),
     churnRate: notAvailable(message),
     ctrTrend: notAvailable(message),
