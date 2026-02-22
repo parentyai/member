@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:34:42-05:00",
-  "gitCommit": "a406cf28b08329fc0af43fa970e6e1070b17f148",
+  "generatedAt": "2026-02-22T17:31:49-05:00",
+  "gitCommit": "3745296fc17ed01c9572275889683b92a7e06e3e",
   "branch": "codex/phase591-594-fallback-risk-converge",
-  "sourceDigest": "02bd8d754858f88fe7636c4b73f389e5cdd5514042393b813bee443959795849",
+  "sourceDigest": "93c146ff0688e42c2fbb39d7f18101b7c5703423cf4891cb309cd1222c1d87a0",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "72ed5316b15c6b21ec41ef5877fc20333158d1e31461cf09c5e70aa2a875843c",
+      "sha256": "b929d5b1d8e62cd0127eb9b6876581716348d3d22509f1fb759db453f6b6dae1",
       "bytes": 288099
     },
     {
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b3ad395d0eb8f80d75c5cb9505566fc05d667c6303c8c80baf0dc44498fa79e3",
+      "sha256": "121ea65d8f87d88bd38a7c737716210433eeaa63df22ac11c35d1715d99f1f50",
       "bytes": 2287
     }
   ],

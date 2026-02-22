@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:34:42-05:00",
-  "gitCommit": "a406cf28b08329fc0af43fa970e6e1070b17f148",
+  "generatedAt": "2026-02-22T17:31:49-05:00",
+  "gitCommit": "3745296fc17ed01c9572275889683b92a7e06e3e",
   "branch": "codex/phase591-594-fallback-risk-converge",
-  "sourceDigest": "fe020dde90fe1c72b4f71d6b93279af96fc2f13bbc724b21ab9e6297f957e6ed",
+  "sourceDigest": "ec186caf5b445d71d42811088f94df13a83391c926b4380cb0d321274df4f455",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
