@@ -145,6 +145,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE314_EXECUTION_LOG.md`（Retention apply運用化: dry-run照合 + 段階適用実行ログ）
 - `docs/PHASE315_PLAN.md`（Struct Cleanup: Canonical/Legacy明確化 + 構造整流計画）
 - `docs/PHASE315_EXECUTION_LOG.md`（Struct Cleanup: Canonical/Legacy明確化 + 構造整流実行ログ）
+- `docs/PHASE317_PLAN.md`（Read Path収束 follow-up: notification summary bounded events計画）
+- `docs/PHASE317_EXECUTION_LOG.md`（Read Path収束 follow-up: notification summary bounded events実行ログ）
 - `docs/CLEANUP_PLAN.md`（Struct Cleanup実施計画）
 - `docs/CLEANUP_DIFF_SUMMARY.md`（Struct Cleanup差分要約）
 - `docs/STRUCTURAL_RISK_BEFORE_AFTER.md`（構造リスクの前後比較）
