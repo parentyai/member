@@ -131,7 +131,13 @@ async function handleNotificationsSummaryFiltered(req, res) {
 
 async function handleStaleMemberNumber(req, res) {
   try {
-    const result = await getStaleMemberNumberUsers();
+    const url = new URL(req.url, 'http://localhost');
+    const limitRaw = url.searchParams.get('limit');
+    const limit = parsePositiveInt(limitRaw, 1, 500);
+    if (limitRaw && !limit) {
+      throw new Error('invalid limit');
+    }
+    const result = await getStaleMemberNumberUsers({ limit });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, count: result.count, items: result.items }));
   } catch (err) {
