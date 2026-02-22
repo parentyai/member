@@ -62,7 +62,10 @@ function filterByReviewAge(item, reviewAgeDays, nowMs) {
 
 async function getUsersSummaryFiltered(params) {
   const payload = params || {};
-  const items = await getUserOperationalSummary();
+  const items = await getUserOperationalSummary({
+    limit: payload.limit,
+    analyticsLimit: payload.analyticsLimit
+  });
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const enriched = items.map((item) => {
     const stale = isStaleMemberNumber(item, nowMs);

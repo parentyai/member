@@ -71,3 +71,19 @@ test('phase323: notifications summary filter forwards limit/eventsLimit options'
   const notifications = await getNotificationsSummaryFiltered({ limit: 1, eventsLimit: 1 });
   assert.strictEqual(notifications.length, 1);
 });
+
+test('phase324: users summary filter forwards limit/analyticsLimit options', async () => {
+  await usersRepo.createUser('U1', {
+    scenarioKey: 'A',
+    stepKey: '3mo',
+    createdAt: '2026-01-01T00:00:00Z'
+  });
+  await usersRepo.createUser('U2', {
+    scenarioKey: 'A',
+    stepKey: '3mo',
+    createdAt: '2026-01-02T00:00:00Z'
+  });
+
+  const users = await getUsersSummaryFiltered({ limit: 1, analyticsLimit: 1 });
+  assert.strictEqual(users.length, 1);
+});
