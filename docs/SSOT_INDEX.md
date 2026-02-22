@@ -316,4 +316,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE583_EXECUTION_LOG.md`（Read Path収束継続: dashboard/monitor fallbackOnEmpty 横並び化実行ログ）
 - `docs/PHASE584_PLAN.md`（Read Path収束継続: ratchet更新と停止条件固定計画）
 - `docs/PHASE584_EXECUTION_LOG.md`（Read Path収束継続: ratchet更新と停止条件固定実行ログ）
+- `docs/PHASE585_PLAN.md`（Read Path収束継続: dashboard/monitor bounded fallback 置換計画）
+- `docs/PHASE585_EXECUTION_LOG.md`（Read Path収束継続: dashboard/monitor bounded fallback 置換実行ログ）
+- `docs/PHASE586_PLAN.md`（Read Path収束継続: baseline ratchet 追記計画）
+- `docs/PHASE586_EXECUTION_LOG.md`（Read Path収束継続: baseline ratchet 追記実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T15:36:23-05:00",
-  "gitCommit": "3bc718078dc9b1c885b8be67e05f5e3b7e34de76",
+  "generatedAt": "2026-02-22T15:58:07-05:00",
+  "gitCommit": "7831c9806eec37232394583dedebb7e58f5c45c0",
   "branch": "codex/foundation-os-unbounded-hotspot-gate",
-  "sourceDigest": "c79499824c00ffcb67c50579bd64fe1ba1d3c2fbec6d605911dc50d6921464f0",
+  "sourceDigest": "e062629d5dd621e1e8a5b7d32abe84ca4ce0cdb79dbe6c4a636c31c6d85dcacf",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

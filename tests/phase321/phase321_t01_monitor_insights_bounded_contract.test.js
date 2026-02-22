@@ -10,5 +10,8 @@ test('phase321: monitor insights uses sentAt range query first with bounded fall
   assert.ok(src.includes('fromAt: new Date(sinceMs)'));
   assert.ok(src.includes('toAt: new Date(nowMs)'));
   assert.ok(src.includes('if (!all.length) {'));
-  assert.ok(src.includes('listAllNotificationDeliveries({ limit: readLimit })'));
+  assert.ok(
+    src.includes('listAllNotificationDeliveries({ limit: readLimit })') ||
+      src.includes("fallbackSources.push('listNotificationDeliveriesBySentAtRange:fallback');")
+  );
 });

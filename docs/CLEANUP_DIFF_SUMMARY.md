@@ -6,7 +6,7 @@
 | legacy repos | 6 | 6 | DEPRECATED/LEGACY_HEADER強化 |
 | duplicate groups | 6 | 6 | 削除なし、可視化のみ |
 | missing-index fallback points | 21 | 21 | 設計固定のみ |
-| full-scan hotspots | 16 | 16 | 優先順位固定のみ |
+| full-scan hotspots | 13 | 13 | 優先順位固定のみ |
 | lifecycle rows | 44 | 45 | retentionPolicy準拠へ再生成 |
 | unreachable frozen files | 0 markers | 20 | LEGACY_FROZEN_DO_NOT_USE を付与 |
 
