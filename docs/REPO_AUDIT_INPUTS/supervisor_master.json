@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:15:34-05:00",
-  "gitCommit": "827cb75869bd89bc0af0a4dbf41903f7aca83715",
+  "generatedAt": "2026-02-22T16:25:53-05:00",
+  "gitCommit": "dfc1e58e9075bf35f0cc72679cb847710db2dbd0",
   "branch": "codex/phase587-590-readpath-converge",
-  "sourceDigest": "b3767dd581585a8676c44e6c240394ca968826ef08deed39d93ba7f0bcad4e53",
+  "sourceDigest": "4c9d38c2caad185f7626cb09b2b4e64cea789e23115c164debf40c3d7fe5cea6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

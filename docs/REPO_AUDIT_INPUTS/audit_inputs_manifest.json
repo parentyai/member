@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:15:34-05:00",
-  "gitCommit": "827cb75869bd89bc0af0a4dbf41903f7aca83715",
+  "generatedAt": "2026-02-22T16:25:53-05:00",
+  "gitCommit": "dfc1e58e9075bf35f0cc72679cb847710db2dbd0",
   "branch": "codex/phase587-590-readpath-converge",
-  "sourceDigest": "3df71a517d37180faef81b8d0245cf09ee1c95b55e23250130fca9fee4cebfee",
+  "sourceDigest": "238d338f26af87146a57ec9c05428a606a3c046b04c636cb01eb5388ca118b44",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "4df28bf88426a76a0a7eef92db262d95407092088d5cdb41bfa93f98521fd87f",
-      "bytes": 5872
+      "sha256": "94b98d0275247957b8dd004bbeff75d985cbd76fea9f16c9319b755a16c528ec",
+      "bytes": 4404
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "e364d883fba3676b0775db2e07d42cedbc1017cb21f0e0a3ca48e71fc755adeb",
+      "sha256": "d145e6ebc133186ef83743637d56f844f99381d79b148160d7aa01c0bd41ccbd",
       "bytes": 288099
     },
     {
@@ -113,7 +113,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "cfb696a59b5187545bb1e0f9c2c22c93389bfffa04e85b140383e5dcef8b7211",
+      "sha256": "682b98bfd8bdea994fbe11ab01c6bfc7a789d6fd5b122b3001980165015d9507",
       "bytes": 2282
     }
   ],

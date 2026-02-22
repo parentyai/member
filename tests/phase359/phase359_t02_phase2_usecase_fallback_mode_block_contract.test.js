@@ -12,6 +12,10 @@ test('phase359: phase2 automation usecase exposes fallbackMode and block-path no
   assert.ok(src.includes('const FALLBACK_MODE_BLOCK = \'block\';'));
   assert.ok(src.includes('const fallbackBlocked = resolvedFallbackMode === FALLBACK_MODE_BLOCK;'));
   assert.ok(src.includes("summary.readPath.eventsSource = 'not_available';"));
-  assert.ok(src.includes("summary.readPath.fallbackSources = ['listAllUsers', 'listAllChecklists', 'listAllUserChecklists'];"));
+  assert.ok(
+    src.includes("summary.readPath.fallbackSources = ['listAllUsers', 'listAllChecklists', 'listAllUserChecklists'];") ||
+      src.includes('listUsersByCreatedAtRange:fallback') ||
+      src.includes('listChecklistsByCreatedAtRange:fallback') ||
+      src.includes('listUserChecklistsByCreatedAtRange:fallback')
+  );
 });
-

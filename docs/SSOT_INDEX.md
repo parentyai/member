@@ -324,4 +324,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE587_EXECUTION_LOG.md`（Read Path収束継続: phase4 summary global fallback bounded化実行ログ）
 - `docs/PHASE588_PLAN.md`（Read Path収束継続: phase5 state global fallback bounded化計画）
 - `docs/PHASE588_EXECUTION_LOG.md`（Read Path収束継続: phase5 state global fallback bounded化実行ログ）
+- `docs/PHASE589_PLAN.md`（Read Path収束継続: phase2 automation global fallback bounded化計画）
+- `docs/PHASE589_EXECUTION_LOG.md`（Read Path収束継続: phase2 automation global fallback bounded化実行ログ）
+- `docs/PHASE590_PLAN.md`（Read Path収束継続: baseline ratchet phase590計画）
+- `docs/PHASE590_EXECUTION_LOG.md`（Read Path収束継続: baseline ratchet phase590実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
