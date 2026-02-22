@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-02-22T18:35:51-05:00",
+  "generatedAt": "2026-02-22T18:44:45-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "b158f8eb50c33d9caf88a81e5196dd5c4562c2b9be3433d7767dd8bdae359c11",
-  "surface_count": 16,
-  "point_count": 20,
+  "sourceDigest": "4ce20e96a6ee39d31fe405518f14a7febd1f03f763109829a995d17385b373f0",
+  "surface_count": 15,
+  "point_count": 19,
   "call_breakdown": {
-    "isMissingIndexError": 16
+    "isMissingIndexError": 15
   },
   "items": [
     {
@@ -141,20 +141,6 @@
       "call": "isMissingIndexError",
       "lines": [
         50
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/notificationsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        44
       ],
       "occurrences": 1,
       "policy": {
