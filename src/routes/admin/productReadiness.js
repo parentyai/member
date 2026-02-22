@@ -47,23 +47,45 @@ function toMillis(value) {
 
 function parseCurrentBudgets() {
   if (!fs.existsSync(READ_PATH_BUDGETS_PATH)) {
-    return { worstCaseMax: null, fallbackPointsMax: null, hotspotsCountMax: null, missingIndexSurfaceMax: null };
+    return {
+      worstCaseMax: null,
+      fallbackPointsMax: null,
+      hotspotsCountMax: null,
+      missingIndexSurfaceMax: null,
+      loadRiskFreshnessMaxHours: null,
+      missingIndexSurfaceFreshnessMaxHours: null
+    };
   }
   const text = fs.readFileSync(READ_PATH_BUDGETS_PATH, 'utf8');
   const worstMatches = [...text.matchAll(/worst_case_docs_scan_max:\s*(\d+)/g)];
   const fallbackMatches = [...text.matchAll(/fallback_points_max:\s*(\d+)/g)];
   const hotspotMatches = [...text.matchAll(/hotspots_count_max:\s*(\d+)/g)];
   const missingIndexMatches = [...text.matchAll(/missing_index_surface_max:\s*(\d+)/g)];
+  const loadRiskFreshnessMatches = [...text.matchAll(/load_risk_freshness_max_hours:\s*(\d+)/g)];
+  const missingIndexFreshnessMatches = [...text.matchAll(/missing_index_surface_freshness_max_hours:\s*(\d+)/g)];
   const worstMatch = worstMatches.length ? worstMatches[worstMatches.length - 1] : null;
   const fallbackMatch = fallbackMatches.length ? fallbackMatches[fallbackMatches.length - 1] : null;
   const hotspotMatch = hotspotMatches.length ? hotspotMatches[hotspotMatches.length - 1] : null;
   const missingIndexMatch = missingIndexMatches.length ? missingIndexMatches[missingIndexMatches.length - 1] : null;
+  const loadRiskFreshnessMatch = loadRiskFreshnessMatches.length ? loadRiskFreshnessMatches[loadRiskFreshnessMatches.length - 1] : null;
+  const missingIndexFreshnessMatch = missingIndexFreshnessMatches.length
+    ? missingIndexFreshnessMatches[missingIndexFreshnessMatches.length - 1]
+    : null;
   return {
     worstCaseMax: worstMatch ? Number(worstMatch[1]) : null,
     fallbackPointsMax: fallbackMatch ? Number(fallbackMatch[1]) : null,
     hotspotsCountMax: hotspotMatch ? Number(hotspotMatch[1]) : null,
-    missingIndexSurfaceMax: missingIndexMatch ? Number(missingIndexMatch[1]) : null
+    missingIndexSurfaceMax: missingIndexMatch ? Number(missingIndexMatch[1]) : null,
+    loadRiskFreshnessMaxHours: loadRiskFreshnessMatch ? Number(loadRiskFreshnessMatch[1]) : null,
+    missingIndexSurfaceFreshnessMaxHours: missingIndexFreshnessMatch ? Number(missingIndexFreshnessMatch[1]) : null
   };
+}
+
+function parseGeneratedAtHours(value) {
+  if (!value || value === 'NOT AVAILABLE' || value === 'NOT_AVAILABLE') return Number.NaN;
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return Number.NaN;
+  return (Date.now() - ms) / (60 * 60 * 1000);
 }
 
 function readLoadRisk() {
@@ -123,6 +145,10 @@ async function handleProductReadiness(req, res) {
     const loadRisk = readLoadRisk();
     const missingIndexSurface = readMissingIndexSurface();
     const budgets = parseCurrentBudgets();
+    const loadRiskFreshnessMaxHours = budgets.loadRiskFreshnessMaxHours;
+    const missingIndexSurfaceFreshnessMaxHours = budgets.missingIndexSurfaceFreshnessMaxHours;
+    const loadRiskGeneratedAtHours = parseGeneratedAtHours(loadRisk && loadRisk.generatedAt);
+    const missingIndexGeneratedAtHours = parseGeneratedAtHours(missingIndexSurface && missingIndexSurface.generatedAt);
     const fallbackSpikeMax = Number.isFinite(Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX))
       ? Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX)
       : 200;
@@ -140,6 +166,17 @@ async function handleProductReadiness(req, res) {
     if (!loadRisk) {
       blockers.push({ code: 'load_risk_missing', message: 'load_risk.json is not available' });
     } else {
+      if (!Number.isFinite(loadRiskGeneratedAtHours)) {
+        blockers.push({ code: 'load_risk_generated_at_invalid', message: 'load_risk.json generatedAt is missing or invalid' });
+      } else if (Number.isFinite(loadRiskFreshnessMaxHours) && loadRiskGeneratedAtHours > loadRiskFreshnessMaxHours) {
+        blockers.push({
+          code: 'load_risk_generated_at_stale',
+          message: 'load_risk.json is stale',
+          value: loadRiskGeneratedAtHours,
+          thresholdHours: loadRiskFreshnessMaxHours
+        });
+      }
+
       if (Number.isFinite(budgets.worstCaseMax)
         && Number(loadRisk.estimated_worst_case_docs_scan) > budgets.worstCaseMax) {
         blockers.push({
@@ -196,11 +233,35 @@ async function handleProductReadiness(req, res) {
     const missingIndexSurfacePointCount = Number.isFinite(Number(missingIndexSurface && missingIndexSurface.point_count))
       ? Number(missingIndexSurface.point_count)
       : NaN;
+
+    if (!missingIndexSurface) {
+      if (Number.isFinite(budgets.missingIndexSurfaceMax)) {
+        blockers.push({
+          code: 'missing_index_surface_unavailable',
+          message: 'missing_index_surface.json is not available',
+          budget: budgets.missingIndexSurfaceMax
+        });
+      }
+    } else if (!Number.isFinite(missingIndexSurfaceGeneratedAtHours)) {
+      blockers.push({
+        code: 'missing_index_surface_generated_at_invalid',
+        message: 'missing_index_surface.json generatedAt is missing or invalid',
+        budget: budgets.missingIndexSurfaceFreshnessMaxHours
+      });
+    } else if (Number.isFinite(missingIndexSurfaceFreshnessMaxHours) && missingIndexSurfaceGeneratedAtHours > missingIndexSurfaceFreshnessMaxHours) {
+      blockers.push({
+        code: 'missing_index_surface_generated_at_stale',
+        message: 'missing_index_surface.json is stale',
+        value: missingIndexSurfaceGeneratedAtHours,
+        thresholdHours: budgets.missingIndexSurfaceFreshnessMaxHours
+      });
+    }
+
     if (Number.isFinite(budgets.missingIndexSurfaceMax)
       && !Number.isFinite(missingIndexSurfaceCount)) {
       blockers.push({
-        code: 'missing_index_surface_unavailable',
-        message: 'missing_index_surface.json is not available',
+        code: 'missing_index_surface_invalid_data',
+        message: 'missing_index_surface.json surface_count is missing or invalid',
         budget: budgets.missingIndexSurfaceMax
       });
     } else if (Number.isFinite(budgets.missingIndexSurfaceMax)
@@ -247,6 +308,8 @@ async function handleProductReadiness(req, res) {
         loadRisk: {
           ok: blockers.every((item) => !String(item.code).startsWith('load_risk_')),
           value: loadRisk || null,
+          generatedAtHours: Number.isFinite(loadRiskGeneratedAtHours) ? loadRiskGeneratedAtHours : null,
+          freshnessHoursMax: loadRiskFreshnessMaxHours,
           budget: budgets
         },
         snapshotHealth: {
@@ -266,6 +329,8 @@ async function handleProductReadiness(req, res) {
           ok: blockers.every((item) => !String(item.code).startsWith('missing_index_surface_')),
           surfaceCount: Number.isFinite(missingIndexSurfaceCount) ? missingIndexSurfaceCount : null,
           pointCount: Number.isFinite(missingIndexSurfacePointCount) ? missingIndexSurfacePointCount : null,
+          generatedAtHours: Number.isFinite(missingIndexGeneratedAtHours) ? missingIndexGeneratedAtHours : null,
+          freshnessHoursMax: missingIndexSurfaceFreshnessMaxHours,
           budget: budgets.missingIndexSurfaceMax
         }
       }
