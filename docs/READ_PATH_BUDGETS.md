@@ -57,4 +57,6 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - fallback_points_max: 17
 - hotspots_count_max: 0
 - missing_index_surface_max: 17
+- load_risk_freshness_max_hours: 24
+- missing_index_surface_freshness_max_hours: 24
 - note: phase591-594 の fallback risk 可視化基準。missing-index fallback surface の増悪を追加ゲート化。
