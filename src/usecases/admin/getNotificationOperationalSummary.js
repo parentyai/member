@@ -5,8 +5,17 @@ const {
   listAllEvents,
   listEventsByCreatedAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
+const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const {
+  resolveSnapshotReadMode,
+  isSnapshotReadEnabled,
+  isSnapshotRequired,
+  isFallbackAllowed
+} = require('../../domain/readModel/snapshotReadPolicy');
 const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
+const SNAPSHOT_TYPE = 'notification_operational_summary';
+const SNAPSHOT_KEY = 'latest';
 
 function resolveEventsLimit(value) {
   const num = Number(value);
@@ -53,14 +62,77 @@ function resolveNotificationEventRange(notifications) {
   };
 }
 
+function resolveNotificationFilters(options) {
+  return {
+    status: typeof options.status === 'string' && options.status.trim() ? options.status.trim() : undefined,
+    scenarioKey: typeof options.scenarioKey === 'string' && options.scenarioKey.trim() ? options.scenarioKey.trim() : undefined,
+    stepKey: typeof options.stepKey === 'string' && options.stepKey.trim() ? options.stepKey.trim() : undefined
+  };
+}
+
+function createSummaryItem(notification, current) {
+  return {
+    notificationId: notification.id,
+    title: notification.title || null,
+    sentAt: notification.sentAt || null,
+    openCount: current.open,
+    clickCount: current.click,
+    lastReactionAt: current.lastValue ? formatTimestamp(current.lastValue) : null
+  };
+}
+
+async function buildFromSnapshot(snapshotItems, options) {
+  const opts = options || {};
+  const filters = resolveNotificationFilters(opts);
+  const hasScopedFilter = Boolean(filters.status || filters.scenarioKey || filters.stepKey);
+  const limit = Number.isFinite(Number(opts.limit)) && Number(opts.limit) > 0 ? Math.floor(Number(opts.limit)) : null;
+  if (!hasScopedFilter) {
+    const sorted = Array.isArray(snapshotItems) ? snapshotItems : [];
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+  const notifications = await notificationsRepo.listNotifications({
+    limit,
+    status: filters.status,
+    scenarioKey: filters.scenarioKey,
+    stepKey: filters.stepKey
+  });
+  const byId = new Map((Array.isArray(snapshotItems) ? snapshotItems : []).map((row) => [row.notificationId, row]));
+  return notifications.map((notification) => {
+    const current = byId.get(notification.id) || { openCount: 0, clickCount: 0, lastReactionAt: null };
+    return {
+      notificationId: notification.id,
+      title: notification.title || null,
+      sentAt: notification.sentAt || null,
+      openCount: Number(current.openCount) || 0,
+      clickCount: Number(current.clickCount) || 0,
+      lastReactionAt: current.lastReactionAt || null
+    };
+  });
+}
+
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
+  const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
+  if (isSnapshotReadEnabled(snapshotMode)) {
+    const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
+    if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
+      return buildFromSnapshot(snapshot.data.items, opts);
+    }
+    if (isSnapshotRequired(snapshotMode)) {
+      return [];
+    }
+  }
+  if (!isFallbackAllowed(snapshotMode)) {
+    return [];
+  }
+
   const eventsLimit = resolveEventsLimit(opts.eventsLimit);
+  const filters = resolveNotificationFilters(opts);
   const notifications = await notificationsRepo.listNotifications({
     limit: opts.limit,
-    status: opts.status,
-    scenarioKey: opts.scenarioKey,
-    stepKey: opts.stepKey
+    status: filters.status,
+    scenarioKey: filters.scenarioKey,
+    stepKey: filters.stepKey
   });
   const eventRange = resolveNotificationEventRange(notifications);
   let events;
@@ -96,14 +168,7 @@ async function getNotificationOperationalSummary(params) {
 
   return notifications.map((notification) => {
     const current = counts.get(notification.id) || { open: 0, click: 0, lastValue: null };
-    return {
-      notificationId: notification.id,
-      title: notification.title || null,
-      sentAt: notification.sentAt || null,
-      openCount: current.open,
-      clickCount: current.click,
-      lastReactionAt: current.lastValue ? formatTimestamp(current.lastValue) : null
-    };
+    return createSummaryItem(notification, current);
   });
 }
 

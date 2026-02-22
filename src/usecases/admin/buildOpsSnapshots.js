@@ -4,6 +4,7 @@ const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { computeDashboardKpis } = require('../../routes/admin/osDashboardKpi');
 const { getUserOperationalSummary } = require('./getUserOperationalSummary');
+const { getNotificationOperationalSummary } = require('./getNotificationOperationalSummary');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
 
 const ALLOWED_WINDOWS = new Set([1, 3, 6, 12]);
@@ -81,6 +82,24 @@ async function buildOpsSnapshots(params) {
   };
   if (!dryRun) await opsSnapshotsRepo.saveSnapshot(userSummaryPayload);
   items.push({ snapshotType: 'user_operational_summary', snapshotKey: 'latest', dryRun });
+
+  const notificationSummary = await getNotificationOperationalSummary({
+    limit: scanLimit,
+    eventsLimit: scanLimit,
+    useSnapshot: false
+  });
+  const notificationSummaryPayload = {
+    snapshotType: 'notification_operational_summary',
+    snapshotKey: 'latest',
+    asOf,
+    freshnessMinutes: 60,
+    sourceTraceId: traceId,
+    data: {
+      items: notificationSummary
+    }
+  };
+  if (!dryRun) await opsSnapshotsRepo.saveSnapshot(notificationSummaryPayload);
+  items.push({ snapshotType: 'notification_operational_summary', snapshotKey: 'latest', dryRun });
 
   for (const lineUserId of lineUserIds) {
     const state = await getUserStateSummary({ lineUserId, analyticsLimit: scanLimit, useSnapshot: false });

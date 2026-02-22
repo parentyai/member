@@ -204,3 +204,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE328_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 state summary analyticsLimit knob追加実行ログ）
 - `docs/PHASE329_PLAN.md`（Read Path収束 follow-up: phase4/phase5 summary snapshotMode knob追加計画）
 - `docs/PHASE329_EXECUTION_LOG.md`（Read Path収束 follow-up: phase4/phase5 summary snapshotMode knob追加実行ログ）
+- `docs/PHASE330_PLAN.md`（Read Path収束 follow-up: phase4 notifications summary snapshotMode + snapshot build追加計画）
+- `docs/PHASE330_EXECUTION_LOG.md`（Read Path収束 follow-up: phase4 notifications summary snapshotMode + snapshot build追加実行ログ）
+- `docs/PHASE331_PLAN.md`（Read Path収束 follow-up: phase5 notifications summary snapshotMode追加計画）
+- `docs/PHASE331_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 notifications summary snapshotMode追加実行ログ）
