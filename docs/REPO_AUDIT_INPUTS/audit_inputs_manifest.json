@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T14:32:07-05:00",
-  "gitCommit": "fd4e33d8798532e5ea383d468e0ceacaba6732f5",
-  "branch": "codex/phase578-agents-execution-os-gate",
-  "sourceDigest": "c4dacb41dc27da37988c46452ae673a184595c756e4b962cb679bc46093e7b72",
+  "generatedAt": "2026-02-22T14:33:00-05:00",
+  "gitCommit": "802e453e3f6d3efdb07a584c585b6ee83e644001",
+  "branch": "codex/phase578-agents-execution-os-gate-fix",
+  "sourceDigest": "3113b131d1473d5ac5d9666d723c566db03f221173b33b43d4a0415b5fba62e1",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -113,8 +113,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "81121756e19ca0c1952a85ab2252b95bf643fb0ce47eae4194901838e8f68ca1",
-      "bytes": 2274
+      "sha256": "856bb53d3ed76125ae6f40095cf5940b74c37c903a63a34265190f749c8f5ac4",
+      "bytes": 2289
     }
   ],
   "diff_detection_rules": [
