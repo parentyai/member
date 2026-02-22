@@ -11,16 +11,16 @@ const TASKS = Object.freeze([
     script: path.join('scripts', 'generate_repo_map.js')
   },
   {
-    label: 'supervisor-master',
-    script: path.join('scripts', 'generate_supervisor_master.js')
-  },
-  {
     label: 'load-risk',
     script: path.join('scripts', 'generate_load_risk.js')
   },
   {
     label: 'cleanup',
     script: path.join('scripts', 'generate_cleanup_reports.js')
+  },
+  {
+    label: 'supervisor-master',
+    script: path.join('scripts', 'generate_supervisor_master.js')
   },
   {
     label: 'audit-inputs',

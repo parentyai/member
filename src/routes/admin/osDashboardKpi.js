@@ -194,16 +194,20 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
 
   if (users.length === 0) {
     if (!fallbackBlocked && fallbackOnEmpty) {
-      users = await analyticsReadRepo.listAllUsers({ limit: scanLimit });
-      fallbackSources.push('listAllUsers');
+      users = await analyticsReadRepo.listUsersByCreatedAtRange({
+        limit: scanLimit
+      });
+      fallbackSources.push('listUsersByCreatedAtRange:fallback');
     } else {
       fallbackBlockedNotAvailable = true;
     }
   }
   if (notifications.length === 0) {
     if (!fallbackBlocked && fallbackOnEmpty) {
-      notifications = await analyticsReadRepo.listAllNotifications({ limit: scanLimit });
-      fallbackSources.push('listAllNotifications');
+      notifications = await analyticsReadRepo.listNotificationsByCreatedAtRange({
+        limit: scanLimit
+      });
+      fallbackSources.push('listNotificationsByCreatedAtRange:fallback');
     } else {
       fallbackBlockedNotAvailable = true;
     }

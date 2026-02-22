@@ -1,55 +1,8 @@
 {
-  "estimated_worst_case_docs_scan": 16000,
+  "estimated_worst_case_docs_scan": 13000,
   "fallback_risk": 17,
-  "hotspots_count": 16,
+  "hotspots_count": 13,
   "hotspots": [
-    {
-      "hotspot": {
-        "file": "src/routes/admin/monitorInsights.js",
-        "line": 141,
-        "type": "listAll",
-        "call": "listAllNotificationDeliveries",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/monitor-insights"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/routes/admin/osDashboardKpi.js",
-        "line": 197,
-        "type": "listAll",
-        "call": "listAllUsers",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 2,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/os/dashboard/kpi",
-        "/api/admin/os/errors/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/routes/admin/osDashboardKpi.js",
-        "line": 205,
-        "type": "listAll",
-        "call": "listAllNotifications",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 2,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/os/dashboard/kpi",
-        "/api/admin/os/errors/summary"
-      ]
-    },
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",

@@ -1,7 +1,6 @@
 'use strict';
 
 const {
-  listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
@@ -138,10 +137,12 @@ async function handleMonitorInsights(req, res) {
       fallbackBlockedFlag = true;
     } else if (!all.length) {
       if (!fallbackBlocked && fallbackOnEmpty) {
-        all = await listAllNotificationDeliveries({ limit: readLimit });
-        dataSource = 'fallback';
+        all = await listNotificationDeliveriesBySentAtRange({
+          limit: readLimit
+        });
+        dataSource = 'fallback_bounded';
         fallbackUsed = true;
-        fallbackSources.push('listAllNotificationDeliveries');
+        fallbackSources.push('listNotificationDeliveriesBySentAtRange:fallback');
       } else {
         dataSource = 'not_available';
         note = 'NOT AVAILABLE';

@@ -14,8 +14,14 @@ test('phase351: dashboard kpi compute path blocks listAll fallback when fallback
     src.includes('if (!fallbackBlocked) {') ||
       src.includes('if (!fallbackBlocked && fallbackOnEmpty) {')
   );
-  assert.ok(src.includes("fallbackSources.push('listAllUsers');"));
-  assert.ok(src.includes("fallbackSources.push('listAllNotifications');"));
+  assert.ok(
+    src.includes("fallbackSources.push('listAllUsers');") ||
+      src.includes("fallbackSources.push('listUsersByCreatedAtRange:fallback');")
+  );
+  assert.ok(
+    src.includes("fallbackSources.push('listAllNotifications');") ||
+      src.includes("fallbackSources.push('listNotificationsByCreatedAtRange:fallback');")
+  );
   assert.ok(src.includes('fallbackBlockedNotAvailable = true;'));
   assert.ok(src.includes("dataSource: computed.fallbackBlocked ? 'not_available' : 'computed'"));
 });
