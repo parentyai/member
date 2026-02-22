@@ -12,7 +12,10 @@ test('phase573: user operational summary uses scoped-first events/checklists pat
   assert.ok(src.includes('listEventsByLineUserIdsAndCreatedAtRange'));
   assert.ok(src.includes('listChecklistsByScenarioStepPairs'));
   assert.ok(src.includes('listUserChecklistsByLineUserIds'));
-  assert.ok(src.includes("if (eventsResult.failed && !fallbackBlocked)"));
+  assert.ok(
+    src.includes("if (eventsResult.failed && !fallbackBlocked)") ||
+      src.includes('const shouldFallbackEvents = fallbackOnEmpty || eventsResult.failed || rangeEventsFailed;')
+  );
   assert.ok(src.includes("if (checklistsResult.failed || checklists.length === 0)"));
 });
 

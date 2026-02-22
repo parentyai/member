@@ -9,7 +9,7 @@
 - legacy repos: 6
 - duplicate groups: 6
 - missing-index fallback points: 21
-- full-scan hotspots: 20
+- full-scan hotspots: 16
 - lifecycle collections: 45
 - unreachable frozen targets: 20
 

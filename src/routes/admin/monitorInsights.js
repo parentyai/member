@@ -48,6 +48,13 @@ function resolveFallbackMode(value) {
   return null;
 }
 
+function parseFallbackOnEmpty(value) {
+  if (value === null || value === undefined || value === '') return true;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return null;
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -87,6 +94,7 @@ async function handleMonitorInsights(req, res) {
   const readLimit = normalizeReadLimit(url.searchParams.get('readLimit'));
   const snapshotModeRaw = url.searchParams.get('snapshotMode');
   const fallbackModeRaw = url.searchParams.get('fallbackMode');
+  const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
   const parsedSnapshotMode = normalizeSnapshotMode(snapshotModeRaw);
   if (snapshotModeRaw && !parsedSnapshotMode) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
@@ -97,6 +105,12 @@ async function handleMonitorInsights(req, res) {
   if (fallbackModeRaw && !fallbackMode) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'invalid fallbackMode' }));
+    return;
+  }
+  const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
+  if (fallbackOnEmptyRaw && fallbackOnEmpty === null) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid fallbackOnEmpty' }));
     return;
   }
   const fallbackBlocked = fallbackMode === 'block';
@@ -123,7 +137,7 @@ async function handleMonitorInsights(req, res) {
       note = 'NOT AVAILABLE';
       fallbackBlockedFlag = true;
     } else if (!all.length) {
-      if (!fallbackBlocked) {
+      if (!fallbackBlocked && fallbackOnEmpty) {
         all = await listAllNotificationDeliveries({ limit: readLimit });
         dataSource = 'fallback';
         fallbackUsed = true;
@@ -237,6 +251,7 @@ async function handleMonitorInsights(req, res) {
           limit,
           snapshotMode,
           fallbackMode,
+          fallbackOnEmpty,
           dataSource,
           deliveries: deliveries.length,
           vendorCount: vendorCtrTop.length
@@ -256,6 +271,7 @@ async function handleMonitorInsights(req, res) {
             fallbackSources,
             snapshotMode,
             fallbackMode,
+            fallbackOnEmpty,
             dataSource,
             readLimit
           }
@@ -273,6 +289,7 @@ async function handleMonitorInsights(req, res) {
       windowDays,
       snapshotMode,
       fallbackMode,
+      fallbackOnEmpty,
       dataSource,
       source: dataSource,
       asOf,

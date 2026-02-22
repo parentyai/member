@@ -10,5 +10,7 @@ test('phase343: package scripts and audit workflow include audit-inputs checks',
   assert.ok(pkg.scripts && pkg.scripts['audit-inputs:check']);
 
   const workflow = fs.readFileSync('.github/workflows/audit.yml', 'utf8');
-  assert.ok(workflow.includes('npm run audit-inputs:check'));
+  assert.ok(
+    workflow.includes('npm run audit-inputs:check') || workflow.includes('npm run docs-artifacts:check')
+  );
 });

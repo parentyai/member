@@ -6,7 +6,9 @@ const { test } = require('node:test');
 
 test('phase311: audit workflow and package scripts enforce repo-map drift checks', () => {
   const workflow = fs.readFileSync('.github/workflows/audit.yml', 'utf8');
-  assert.ok(workflow.includes('npm run repo-map:check'));
+  assert.ok(
+    workflow.includes('npm run repo-map:check') || workflow.includes('npm run docs-artifacts:check')
+  );
 
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   assert.ok(pkg.scripts && pkg.scripts['repo-map:generate']);

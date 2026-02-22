@@ -320,18 +320,13 @@ async function getUserOperationalSummary(params) {
       }
     }
   }
-  if (eventsResult.failed && !fallbackBlocked) {
-    events = await listAllEvents({ limit: analyticsLimit });
-    addFallbackSource('listAllEvents');
-  }
-  if (events.length === 0 && !fallbackBlocked) {
-    if (fallbackOnEmpty || eventsResult.failed || rangeEventsFailed) {
+  if (events.length === 0) {
+    const shouldFallbackEvents = fallbackOnEmpty || eventsResult.failed || rangeEventsFailed;
+    if (!fallbackBlocked && shouldFallbackEvents) {
       events = await listAllEvents({ limit: analyticsLimit });
       addFallbackSource('listAllEvents');
     }
-  }
-  if (events.length === 0 && fallbackBlocked) {
-    if (fallbackOnEmpty || eventsResult.failed || rangeEventsFailed) {
+    if (fallbackBlocked && shouldFallbackEvents) {
       fallbackBlockedNotAvailable = true;
     }
   }
@@ -349,18 +344,13 @@ async function getUserOperationalSummary(params) {
       }
     }
   }
-  if (deliveriesResult.failed && !fallbackBlocked) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-    addFallbackSource('listAllNotificationDeliveries');
-  }
-  if (deliveries.length === 0 && !fallbackBlocked) {
-    if (fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed) {
+  if (deliveries.length === 0) {
+    const shouldFallbackDeliveries = fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed;
+    if (!fallbackBlocked && shouldFallbackDeliveries) {
       deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
       addFallbackSource('listAllNotificationDeliveries');
     }
-  }
-  if (deliveries.length === 0 && fallbackBlocked) {
-    if (fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed) {
+    if (fallbackBlocked && shouldFallbackDeliveries) {
       fallbackBlockedNotAvailable = true;
     }
   }

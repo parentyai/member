@@ -14,7 +14,8 @@ function handleError(res, err) {
     message.includes('not found') ||
     message.includes('invalid limit') ||
     message.includes('invalid snapshotMode') ||
-    message.includes('invalid fallbackMode')
+    message.includes('invalid fallbackMode') ||
+    message.includes('invalid fallbackOnEmpty')
   ) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
@@ -42,6 +43,13 @@ function parseFallbackMode(value) {
   if (value === null || value === undefined || value === '') return resolveFallbackModeDefault();
   const normalized = normalizeFallbackMode(value);
   if (normalized) return normalized;
+  return null;
+}
+
+function parseFallbackOnEmpty(value) {
+  if (value === null || value === undefined || value === '') return true;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
   return null;
 }
 
@@ -87,9 +95,11 @@ async function handleUserStateSummary(req, res) {
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
     const fallbackModeRaw = url.searchParams.get('fallbackMode');
+    const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     const fallbackMode = parseFallbackMode(fallbackModeRaw);
+    const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
     if (analyticsLimitRaw && !analyticsLimit) {
       throw new Error('invalid limit');
     }
@@ -99,11 +109,15 @@ async function handleUserStateSummary(req, res) {
     if (fallbackModeRaw && !fallbackMode) {
       throw new Error('invalid fallbackMode');
     }
+    if (fallbackOnEmptyRaw && fallbackOnEmpty === null) {
+      throw new Error('invalid fallbackOnEmpty');
+    }
     const result = await getUserStateSummary({
       lineUserId,
       analyticsLimit,
       snapshotMode,
       fallbackMode,
+      fallbackOnEmpty,
       includeMeta: true
     });
     const item = result && typeof result === 'object' && !Array.isArray(result) && result.item ? result.item : result;
@@ -112,6 +126,7 @@ async function handleUserStateSummary(req, res) {
       scope: 'phase5_state_summary',
       snapshotMode: snapshotMode || null,
       fallbackMode,
+      fallbackOnEmpty,
       lineUserId: lineUserId || null
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -123,7 +138,8 @@ async function handleUserStateSummary(req, res) {
       freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
       fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
-      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : [],
+      fallbackOnEmpty
     }));
   } catch (err) {
     handleError(res, err);

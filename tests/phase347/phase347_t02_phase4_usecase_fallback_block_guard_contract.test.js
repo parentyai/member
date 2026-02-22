@@ -12,10 +12,20 @@ test('phase347: phase4 usecases guard listAll fallback when fallbackMode is bloc
   const notificationSrc = fs.readFileSync(notificationSummaryFile, 'utf8');
 
   assert.ok(userSrc.includes("const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;"));
-  assert.ok(userSrc.includes('if (events.length === 0 && !fallbackBlocked) {'));
-  assert.ok(userSrc.includes('if (deliveries.length === 0 && !fallbackBlocked) {'));
+  assert.ok(
+    userSrc.includes('if (events.length === 0 && !fallbackBlocked) {') ||
+      userSrc.includes('if (!fallbackBlocked && shouldFallbackEvents) {')
+  );
+  assert.ok(
+    userSrc.includes('if (deliveries.length === 0 && !fallbackBlocked) {') ||
+      userSrc.includes('if (!fallbackBlocked && shouldFallbackDeliveries) {')
+  );
 
   assert.ok(notificationSrc.includes("const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;"));
   assert.ok(notificationSrc.includes('if (!events.length && !fallbackBlocked) {'));
+  assert.ok(
+    notificationSrc.includes('if (fallbackOnEmpty || scoped.failed || rangeFailed) {') ||
+      notificationSrc.includes('if (!events.length && !fallbackBlocked) {')
+  );
   assert.ok(notificationSrc.includes("dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed'"));
 });

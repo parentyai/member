@@ -1,21 +1,21 @@
 # FULL_SCAN_BOUNDING_PLAN
 
-- 推定 worst-case docs scan: 20000
-- hotspot件数: 20
+- 推定 worst-case docs scan: 16000
+- hotspot件数: 16
 - 本フェーズでは実装変更せず、bounded query移行順のみ固定する。
 
 | rank | file | line | call | estimated_scan | bounded query移行案 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `src/routes/admin/monitorInsights.js` | 127 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 2 | `src/routes/admin/osDashboardKpi.js` | 187 | listAllUsers | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 3 | `src/routes/admin/osDashboardKpi.js` | 195 | listAllNotifications | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 1 | `src/routes/admin/monitorInsights.js` | 141 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 2 | `src/routes/admin/osDashboardKpi.js` | 197 | listAllUsers | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 3 | `src/routes/admin/osDashboardKpi.js` | 205 | listAllNotifications | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 | 4 | `src/usecases/admin/getNotificationOperationalSummary.js` | 242 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 5 | `src/usecases/admin/getUserOperationalSummary.js` | 324 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 6 | `src/usecases/admin/getUserOperationalSummary.js` | 329 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 7 | `src/usecases/admin/getUserOperationalSummary.js` | 353 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 8 | `src/usecases/admin/getUserOperationalSummary.js` | 358 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 9 | `src/usecases/admin/getUserOperationalSummary.js` | 372 | listAllChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 10 | `src/usecases/admin/getUserOperationalSummary.js` | 382 | listAllUserChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 5 | `src/usecases/admin/getUserOperationalSummary.js` | 326 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 6 | `src/usecases/admin/getUserOperationalSummary.js` | 350 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 7 | `src/usecases/admin/getUserOperationalSummary.js` | 362 | listAllChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 8 | `src/usecases/admin/getUserOperationalSummary.js` | 372 | listAllUserChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 9 | `src/usecases/phase2/runAutomation.js` | 180 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 10 | `src/usecases/phase2/runAutomation.js` | 229 | listAllUsers | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 
 ## 段階移行順
 1. `/src/routes/admin/osDashboardKpi.js`

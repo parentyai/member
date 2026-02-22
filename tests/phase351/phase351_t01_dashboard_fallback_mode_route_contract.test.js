@@ -11,5 +11,8 @@ test('phase351: dashboard kpi route parses fallbackMode and rejects invalid valu
   assert.ok(src.includes('function parseFallbackMode(req)'));
   assert.ok(src.includes("throw new Error('invalid fallbackMode')"));
   assert.ok(src.includes('fallbackMode = parseFallbackMode(req);'));
-  assert.ok(src.includes('computed = await computeDashboardKpis(windowMonths, scanLimit, { fallbackMode });'));
+  assert.ok(
+    src.includes('computed = await computeDashboardKpis(windowMonths, scanLimit, { fallbackMode });') ||
+    src.includes('computeDashboardKpis(windowMonths, scanLimit, { fallbackMode, fallbackOnEmpty });')
+  );
 });
