@@ -208,3 +208,13 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE330_EXECUTION_LOG.md`（Read Path収束 follow-up: phase4 notifications summary snapshotMode + snapshot build追加実行ログ）
 - `docs/PHASE331_PLAN.md`（Read Path収束 follow-up: phase5 notifications summary snapshotMode追加計画）
 - `docs/PHASE331_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 notifications summary snapshotMode追加実行ログ）
+- `docs/PHASE332_PLAN.md`（Read Path収束 follow-up: phase5 users summary snapshotMode追加計画）
+- `docs/PHASE332_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 users summary snapshotMode追加実行ログ）
+- `docs/PHASE333_PLAN.md`（Read Path収束 follow-up: phase5 users summary snapshotMode require契約固定計画）
+- `docs/PHASE333_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 users summary snapshotMode require契約固定実行ログ）
+- `docs/PHASE334_PLAN.md`（Read Path収束 follow-up: phase4 summary metadata統一計画）
+- `docs/PHASE334_EXECUTION_LOG.md`（Read Path収束 follow-up: phase4 summary metadata統一実行ログ）
+- `docs/PHASE335_PLAN.md`（Read Path収束 follow-up: monitor insights snapshotMode fallback制御計画）
+- `docs/PHASE335_EXECUTION_LOG.md`（Read Path収束 follow-up: monitor insights snapshotMode fallback制御実行ログ）
+- `docs/PHASE336_PLAN.md`（Read Path収束 follow-up: retention runs admin可視化API計画）
+- `docs/PHASE336_EXECUTION_LOG.md`（Read Path収束 follow-up: retention runs admin可視化API実行ログ）
