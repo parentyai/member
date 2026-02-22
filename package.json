@@ -26,6 +26,8 @@
     "cleanup:check": "node scripts/check_structural_cleanup.js",
     "audit-inputs:generate": "node scripts/generate_audit_inputs_manifest.js",
     "audit-inputs:check": "node scripts/generate_audit_inputs_manifest.js --check",
+    "supervisor-master:generate": "node scripts/generate_supervisor_master.js",
+    "supervisor-master:check": "node scripts/generate_supervisor_master.js --check",
     "load-risk:generate": "node scripts/generate_load_risk.js",
     "load-risk:check": "node scripts/generate_load_risk.js --check"
   }

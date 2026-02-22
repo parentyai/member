@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-02-22T12:44:45-05:00",
+  "gitCommit": "82dbd4c50b821d7fd3344504c2daf75b93964ac5",
+  "branch": "codex/supervisor-master-json",
+  "sourceDigest": "c1d702ac266be7dfa9d9064727c43aec481a6a94b31c807c73dc0209a87c090e",
+  "required": {
+    "ssot": {
+      "index": "docs/SSOT_INDEX.md",
+      "ui_os": "docs/SSOT_ADMIN_UI_OS.md",
+      "ui_dictionary": "docs/ADMIN_UI_DICTIONARY_JA.md",
+      "data_model": "docs/SSOT_ADMIN_UI_DATA_MODEL.md",
+      "service_phase": "docs/SSOT_SERVICE_PHASES.md",
+      "notification_preset": "docs/SSOT_NOTIFICATION_PRESETS.md",
+      "phase_preset_matrix": "docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md"
+    },
+    "audit_inputs": {
+      "manifest": "docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json",
+      "dependency_graph": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
+      "state_transitions": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
+      "data_model_map": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
+      "kill_switch_points": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
+      "protection_matrix": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
+      "impact_radius": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
+      "load_risk": "docs/REPO_AUDIT_INPUTS/load_risk.json"
+    },
+    "guards": {
+      "index_route_guard": "src/index.js"
+    },
+    "ci": {
+      "workflows": [
+        ".github/workflows/audit.yml",
+        ".github/workflows/deploy.yml",
+        ".github/workflows/deploy-webhook.yml",
+        ".github/workflows/deploy-track.yml",
+        ".github/workflows/stg-notification-e2e.yml"
+      ],
+      "scripts": "package.json"
+    }
+  },
+  "recommended": {
+    "data_map": "docs/DATA_MAP.md",
+    "retention": "docs/SSOT_RETENTION.md",
+    "retention_addendum": "docs/SSOT_RETENTION_ADDENDUM.md",
+    "line_only_delta": "docs/SSOT_LINE_ONLY_DELTA.md",
+    "kill_switch_dependency_map": "docs/KILLSWITCH_DEPENDENCY_MAP.md",
+    "schema_templates_v": "docs/SCHEMA_templates_v.md",
+    "schema_ops_segments": "docs/SCHEMA_ops_segments.md",
+    "audit_report_latest": "docs/REPO_FULL_AUDIT_REPORT_2026-02-21.md"
+  },
+  "excluded_examples": [
+    "tests/**",
+    "apps/admin/*.html",
+    "docs/PHASE*_EXECUTION_LOG.md",
+    "docs/PHASE*_PLAN.md",
+    "docs/CI_EVIDENCE/**"
+  ]
+}
