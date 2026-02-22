@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T18:29:54-05:00",
-  "gitCommit": "ff4113ec0447fa227ad72eee2b9a90165fb1c18c",
-  "branch": "codex/foundation-os-unbounded-hotspot-gate-v2",
-  "sourceDigest": "d05a9b6f198e4a0cabdc32e58e1d2f05c353b8b327a5aa199423984e73a76808",
+  "generatedAt": "2026-02-22T18:39:22-05:00",
+  "gitCommit": "851f6060bc65ad52e88142a148b7734361629ded",
+  "branch": "codex/phase604-reduce-missing-index-surface",
+  "sourceDigest": "70c5996980deb89a79103f440eb2705793536ea8bb0e2ced0e8d15e9a0032246",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

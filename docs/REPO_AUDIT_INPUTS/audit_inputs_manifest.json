@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T18:29:54-05:00",
-  "gitCommit": "ff4113ec0447fa227ad72eee2b9a90165fb1c18c",
-  "branch": "codex/foundation-os-unbounded-hotspot-gate-v2",
-  "sourceDigest": "5da9c234385ee2901d858e661235d5af0d140993483072401b420d28b264cc9d",
+  "generatedAt": "2026-02-22T18:39:22-05:00",
+  "gitCommit": "851f6060bc65ad52e88142a148b7734361629ded",
+  "branch": "codex/phase604-reduce-missing-index-surface",
+  "sourceDigest": "40953a7efacec90910333b19ad6ff36b55dacdd0c580359dade2956bed2a1980",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "f0924bf68baba2dbb9e3b4683915a76cad4379345cbe1a35a8bbfb45ecd1c995",
-      "bytes": 4749
+      "sha256": "b158f8eb50c33d9caf88a81e5196dd5c4562c2b9be3433d7767dd8bdae359c11",
+      "bytes": 4556
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -88,8 +88,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "b10406a6fc0cd0916a0dc0d91a6f57e7929e31422efec02411bde1a4e4e03c8f",
-      "bytes": 6354
+      "sha256": "5ba3fbc3b39471b8c8621a058706ac977084096f56ccc1bd193d559fefc8cddf",
+      "bytes": 6008
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/notification_flow.json",
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "4bfd346ac57474a11045a2f6240085fdf44a9a8c2b4e48dd791b941621834285",
+      "sha256": "7385ea60e6b9a86c97dc43a9874546dd3164bcc5a11a5003459db00e3a2e27f2",
       "bytes": 288099
     },
     {
@@ -118,8 +118,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "2d67ea3d4ff0eef7e6778070b0f9742596a07aedf18a488a5e23d5ccd849e40c",
-      "bytes": 2291
+      "sha256": "1bb177e8dddd4072a285830622035f77bce04d921340c9754d172eea71a5175d",
+      "bytes": 2289
     }
   ],
   "diff_detection_rules": [

@@ -1,9 +1,9 @@
 {
   "source": "src/**/*.js, src/index.js, docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-  "generatedAt": "2026-02-22T18:28:12-05:00",
-  "sourceDigest": "592bfce3ccdcc2d21eabcb2231cefd61496c3c45a84b185e4b9ba03a242dd62a",
+  "generatedAt": "2026-02-22T18:35:51-05:00",
+  "sourceDigest": "d9340c47e6f76889f6aee31f00d7d8c5af9d5d82bd4c14501fc8b76c2d58cbc6",
   "estimated_worst_case_docs_scan": 0,
-  "fallback_risk": 17,
+  "fallback_risk": 16,
   "hotspots_count": 0,
   "unbounded_hotspots_count": 0,
   "bounded_hotspots_count": 0,
@@ -103,13 +103,6 @@
       "limit": "N/A"
     },
     {
-      "file": "src/repos/firestore/notificationTemplatesRepo.js",
-      "line": 62,
-      "type": "missingIndexFallback",
-      "call": "isMissingIndexError",
-      "limit": "N/A"
-    },
-    {
       "file": "src/repos/firestore/sendRetryQueueRepo.js",
       "line": 55,
       "type": "missingIndexFallback",
@@ -159,7 +152,7 @@
       "limit": "N/A"
     }
   ],
-  "fallback_surface_count": 17,
+  "fallback_surface_count": 16,
   "assumptions": [
     "listAll function declarations are excluded from hotspots (runtime callsites only)",
     "fallback_risk counts unique file/call surfaces",
