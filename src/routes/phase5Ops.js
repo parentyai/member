@@ -73,15 +73,24 @@ async function handleUsersSummaryFiltered(req, res) {
     const unreviewed = url.searchParams.get('unreviewed') === '1';
     const reviewAgeRaw = url.searchParams.get('reviewAgeDays');
     const reviewAgeDays = parseReviewAgeDays(reviewAgeRaw);
+    const limitRaw = url.searchParams.get('limit');
+    const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
+    const limit = parsePositiveInt(limitRaw, 1, 500);
+    const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     if (reviewAgeRaw && !reviewAgeDays) {
       throw new Error('invalid reviewAgeDays');
+    }
+    if ((limitRaw && !limit) || (analyticsLimitRaw && !analyticsLimit)) {
+      throw new Error('invalid limit');
     }
     const [items, opsState] = await Promise.all([
       getUsersSummaryFiltered(Object.assign({}, range, {
         needsAttention,
         stale,
         unreviewed,
-        reviewAgeDays
+        reviewAgeDays,
+        limit,
+        analyticsLimit
       })),
       getOpsState()
     ]);
