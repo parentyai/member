@@ -15,6 +15,10 @@ const TASKS = Object.freeze([
     script: path.join('scripts', 'generate_load_risk.js')
   },
   {
+    label: 'missing-index-surface',
+    script: path.join('scripts', 'generate_missing_index_surface.js')
+  },
+  {
     label: 'cleanup',
     script: path.join('scripts', 'generate_cleanup_reports.js')
   },

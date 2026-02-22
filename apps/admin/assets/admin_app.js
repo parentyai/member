@@ -65,6 +65,8 @@ const state = {
   retentionRuns: [],
   snapshotHealthItems: [],
   readPathFallbackSummary: [],
+  missingIndexSurfaceItems: [],
+  missingIndexSurfaceMeta: null,
   productReadiness: null,
   paneUpdatedAt: {}
 };
@@ -4445,6 +4447,94 @@ async function loadReadPathFallbackSummary(options) {
   }
 }
 
+function parseMissingIndexSurfaceLimit() {
+  const el = document.getElementById('maintenance-missing-index-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 30;
+  return Math.min(Math.floor(value), 200);
+}
+
+function readMissingIndexSurfaceFileFilter() {
+  const el = document.getElementById('maintenance-missing-index-file-filter');
+  const value = el && typeof el.value === 'string' ? el.value.trim() : '';
+  return value || null;
+}
+
+function formatMissingIndexPolicy(policy) {
+  const row = policy && typeof policy === 'object' ? policy : {};
+  const prod = row.production ? String(row.production) : '-';
+  const local = row.local ? String(row.local) : '-';
+  return `prod=${prod} / local=${local}`;
+}
+
+function renderMissingIndexSurface(payload) {
+  const tbody = document.getElementById('maintenance-missing-index-rows');
+  const note = document.getElementById('maintenance-missing-index-note');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(payload && payload.items) ? payload.items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (note) note.textContent = t('ui.desc.maintenance.missingIndexSurface.empty', 'missing-index surface はありません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const lines = Array.isArray(item && item.lines) ? item.lines.map((line) => String(line)).join(',') : '-';
+    const occurrences = Number.isFinite(Number(item && item.occurrences)) ? Number(item.occurrences) : 0;
+    const cols = [
+      item && item.file ? String(item.file) : '-',
+      item && item.call ? String(item.call) : '-',
+      lines || '-',
+      String(occurrences),
+      formatMissingIndexPolicy(item && item.policy)
+    ];
+    cols.forEach((value, index) => {
+      const td = document.createElement('td');
+      if (index === 3) td.classList.add('cell-num');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  if (note) {
+    const generatedAt = payload && payload.generatedAt ? formatDateLabel(payload.generatedAt) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    const surfaceCount = Number.isFinite(Number(payload && payload.surfaceCount)) ? Number(payload.surfaceCount) : rows.length;
+    note.textContent = `${t('ui.label.maintenance.missingIndexSurface.summary', 'surface件数')}: ${surfaceCount} / generatedAt=${generatedAt}`;
+  }
+}
+
+async function loadMissingIndexSurface(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('audit-trace');
+  const limit = parseMissingIndexSurfaceLimit();
+  const fileContains = readMissingIndexSurfaceFileFilter();
+  const qs = new URLSearchParams();
+  qs.set('limit', String(limit));
+  if (fileContains) qs.set('fileContains', fileContains);
+  try {
+    const res = await fetch(`/api/admin/missing-index-surface?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.missingIndexSurfaceItems = Array.isArray(data.items) ? data.items : [];
+    state.missingIndexSurfaceMeta = data;
+    renderMissingIndexSurface(data);
+    if (notify) showToast(t('ui.toast.maintenance.missingIndexSurface.reloadOk', 'missing-index surface を更新しました'), 'ok');
+  } catch (_err) {
+    state.missingIndexSurfaceItems = [];
+    state.missingIndexSurfaceMeta = null;
+    renderMissingIndexSurface(null);
+    if (notify) showToast(t('ui.toast.maintenance.missingIndexSurface.reloadFail', 'missing-index surface の取得に失敗しました'), 'danger');
+  }
+}
+
 function parseProductReadinessWindowHours() {
   const el = document.getElementById('maintenance-product-readiness-window');
   const value = Number(el && el.value);
@@ -5461,6 +5551,9 @@ function setupMaintenanceControls() {
   document.getElementById('maintenance-fallback-summary-reload')?.addEventListener('click', () => {
     void loadReadPathFallbackSummary({ notify: true });
   });
+  document.getElementById('maintenance-missing-index-reload')?.addEventListener('click', () => {
+    void loadMissingIndexSurface({ notify: true });
+  });
   document.getElementById('maintenance-product-readiness-reload')?.addEventListener('click', () => {
     void loadProductReadiness({ notify: true });
   });
@@ -5473,6 +5566,7 @@ function setupMaintenanceControls() {
   void loadSnapshotHealth({ notify: false });
   void loadRetentionRuns({ notify: false });
   void loadReadPathFallbackSummary({ notify: false });
+  void loadMissingIndexSurface({ notify: false });
   void loadProductReadiness({ notify: false });
 }
 

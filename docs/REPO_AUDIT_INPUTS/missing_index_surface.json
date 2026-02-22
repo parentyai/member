@@ -1,0 +1,259 @@
+{
+  "generatedAt": "2026-02-22T16:32:15-05:00",
+  "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
+  "sourceDigest": "94b98d0275247957b8dd004bbeff75d985cbd76fea9f16c9319b755a16c528ec",
+  "surface_count": 17,
+  "point_count": 21,
+  "call_breakdown": {
+    "isMissingIndexError": 17
+  },
+  "items": [
+    {
+      "file": "src/repos/firestore/cityPackBulletinsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        91
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPackFeedbackRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        142
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPackMetricsDailyRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        113
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPackRequestsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        153
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPacksRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        339
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPackTemplateLibraryRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        93
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/cityPackUpdateProposalsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        90
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/decisionDriftsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        34
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/decisionLogsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        37,
+        65,
+        100
+      ],
+      "occurrences": 3,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/linkRegistryRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        50
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/notificationsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        44
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/notificationTemplatesRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        62
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/sendRetryQueueRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        55
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/sourceEvidenceRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        66,
+        89
+      ],
+      "occurrences": 2,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/sourceRefsRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        206
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/templatesVRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        54,
+        102
+      ],
+      "occurrences": 2,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    },
+    {
+      "file": "src/repos/firestore/usersRepo.js",
+      "call": "isMissingIndexError",
+      "lines": [
+        104
+      ],
+      "occurrences": 1,
+      "policy": {
+        "production": "fail_closed",
+        "staging": "fail_closed",
+        "local": "fallback_allowed",
+        "test": "fallback_allowed"
+      }
+    }
+  ],
+  "assumptions": [
+    "derived from docs/REPO_AUDIT_INPUTS/load_risk.json fallback_points",
+    "surface is grouped by file + call",
+    "policy classification follows src/repos/firestore/indexFallbackPolicy.js"
+  ]
+}

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:25:53-05:00",
-  "gitCommit": "dfc1e58e9075bf35f0cc72679cb847710db2dbd0",
-  "branch": "codex/phase587-590-readpath-converge",
-  "sourceDigest": "4c9d38c2caad185f7626cb09b2b4e64cea789e23115c164debf40c3d7fe5cea6",
+  "generatedAt": "2026-02-22T16:34:42-05:00",
+  "gitCommit": "a406cf28b08329fc0af43fa970e6e1070b17f148",
+  "branch": "codex/phase591-594-fallback-risk-converge",
+  "sourceDigest": "fe020dde90fe1c72b4f71d6b93279af96fc2f13bbc724b21ab9e6297f957e6ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

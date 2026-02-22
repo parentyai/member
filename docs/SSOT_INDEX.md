@@ -328,4 +328,13 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE589_EXECUTION_LOG.md`（Read Path収束継続: phase2 automation global fallback bounded化実行ログ）
 - `docs/PHASE590_PLAN.md`（Read Path収束継続: baseline ratchet phase590計画）
 - `docs/PHASE590_EXECUTION_LOG.md`（Read Path収束継続: baseline ratchet phase590実行ログ）
+- `docs/PHASE591_PLAN.md`（Read Path収束継続: missing-index surface artifact 固定計画）
+- `docs/PHASE591_EXECUTION_LOG.md`（Read Path収束継続: missing-index surface artifact 固定実行ログ）
+- `docs/PHASE592_PLAN.md`（Read Path収束継続: missing-index surface admin API計画）
+- `docs/PHASE592_EXECUTION_LOG.md`（Read Path収束継続: missing-index surface admin API実行ログ）
+- `docs/PHASE593_PLAN.md`（Read Path収束継続: maintenance missing-index surface 可視化計画）
+- `docs/PHASE593_EXECUTION_LOG.md`（Read Path収束継続: maintenance missing-index surface 可視化実行ログ）
+- `docs/PHASE594_PLAN.md`（Read Path収束継続: missing-index surface budget ratchet計画）
+- `docs/PHASE594_EXECUTION_LOG.md`（Read Path収束継続: missing-index surface budget ratchet実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
+- `docs/REPO_AUDIT_INPUTS/missing_index_surface.json`（missing-index fallback surface 集計）
