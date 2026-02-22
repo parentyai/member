@@ -28,7 +28,7 @@ function parseDateParam(value, endOfDay) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays')) {
+  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays') || message.includes('invalid limit')) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
@@ -53,6 +53,14 @@ function parseReviewAgeDays(value) {
   const num = Number(value);
   if (!Number.isInteger(num)) return null;
   if (num < 1 || num > 365) return null;
+  return num;
+}
+
+function parsePositiveInt(value, min, max) {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  if (!Number.isInteger(num)) return null;
+  if (num < min || num > max) return null;
   return num;
 }
 
@@ -94,7 +102,17 @@ async function handleNotificationsSummaryFiltered(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const range = parseRange(url);
-    const items = await getNotificationsSummaryFiltered(range);
+    const limitRaw = url.searchParams.get('limit');
+    const eventsLimitRaw = url.searchParams.get('eventsLimit');
+    const limit = parsePositiveInt(limitRaw, 1, 500);
+    const eventsLimit = parsePositiveInt(eventsLimitRaw, 1, 3000);
+    if ((limitRaw && !limit) || (eventsLimitRaw && !eventsLimit)) {
+      throw new Error('invalid limit');
+    }
+    const items = await getNotificationsSummaryFiltered(Object.assign({}, range, {
+      limit,
+      eventsLimit
+    }));
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, items }));
   } catch (err) {

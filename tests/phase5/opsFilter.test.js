@@ -53,3 +53,21 @@ test('phase5 ops filters: date range', async () => {
   assert.strictEqual(notifications.length, 1);
   assert.strictEqual(notifications[0].notificationId, notif2.id);
 });
+
+test('phase323: notifications summary filter forwards limit/eventsLimit options', async () => {
+  const notif1 = await notificationsRepo.createNotification({
+    title: 'N1',
+    sentAt: '2026-01-01T00:00:00Z'
+  });
+  setServerTimestampForTest('2026-01-02T00:00:00Z');
+  const notif2 = await notificationsRepo.createNotification({
+    title: 'N2',
+    sentAt: '2026-01-02T00:00:00Z'
+  });
+
+  await eventsRepo.createEvent({ lineUserId: 'U1', type: 'open', ref: { notificationId: notif1.id } });
+  await eventsRepo.createEvent({ lineUserId: 'U1', type: 'open', ref: { notificationId: notif2.id } });
+
+  const notifications = await getNotificationsSummaryFiltered({ limit: 1, eventsLimit: 1 });
+  assert.strictEqual(notifications.length, 1);
+});
