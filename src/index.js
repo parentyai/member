@@ -1078,6 +1078,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/missing-index-surface' || pathname === '/api/admin/missing-index-surface/')) {
+    const { handleMissingIndexSurface } = require('./routes/admin/missingIndexSurface');
+    handleMissingIndexSurface(req, res);
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/api/admin/read-path-fallback-summary' || pathname === '/api/admin/read-path-fallback-summary/')) {
     const { handleReadPathFallbackSummary } = require('./routes/admin/readPathFallbackSummary');
     handleReadPathFallbackSummary(req, res);

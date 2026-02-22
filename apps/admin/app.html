@@ -2265,6 +2265,33 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.missingIndexSurface.title">Missing-index fallback surface</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <label for="maintenance-missing-index-limit" data-dict-key="ui.label.maintenance.missingIndexSurface.limit">表示件数</label>
+                    <input id="maintenance-missing-index-limit" type="number" min="1" max="200" value="30" />
+                    <label for="maintenance-missing-index-file-filter" data-dict-key="ui.label.maintenance.missingIndexSurface.fileFilter">file contains</label>
+                    <input id="maintenance-missing-index-file-filter" type="text" data-dict-placeholder="ui.placeholder.maintenance.missingIndexSurface.fileFilter" placeholder="任意" />
+                    <button id="maintenance-missing-index-reload" type="button" data-dict-key="ui.label.maintenance.missingIndexSurface.reload">surface更新</button>
+                  </div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.missingIndexSurface.table.file">file</th>
+                          <th data-dict-key="ui.label.maintenance.missingIndexSurface.table.call">call</th>
+                          <th data-dict-key="ui.label.maintenance.missingIndexSurface.table.lines">lines</th>
+                          <th class="cell-num" data-dict-key="ui.label.maintenance.missingIndexSurface.table.occurrences">occurrences</th>
+                          <th data-dict-key="ui.label.maintenance.missingIndexSurface.table.policy">policy</th>
+                        </tr>
+                      </thead>
+                      <tbody id="maintenance-missing-index-rows"></tbody>
+                    </table>
+                  </div>
+                  <p id="maintenance-missing-index-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.missingIndexSurface.note">stg/prod は fail-closed です。</p>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.maintenance.productReadiness.title">Product Readiness</div>
                 <div class="panel-body">
                   <div class="row row-top">

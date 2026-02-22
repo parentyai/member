@@ -51,3 +51,10 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - fallback_points_max: 17
 - hotspots_count_max: 0
 - note: phase587-590 の収束基準。phase4/phase5/phase2 read-path の listAll hotspot を除去。
+
+## current_baseline_phase594
+- worst_case_docs_scan_max: 0
+- fallback_points_max: 17
+- hotspots_count_max: 0
+- missing_index_surface_max: 17
+- note: phase591-594 の fallback risk 可視化基準。missing-index fallback surface の増悪を追加ゲート化。
