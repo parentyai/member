@@ -81,13 +81,18 @@ async function handleUsersSummaryFiltered(req, res) {
     const reviewAgeDays = parseReviewAgeDays(reviewAgeRaw);
     const limitRaw = url.searchParams.get('limit');
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
+    const snapshotModeRaw = url.searchParams.get('snapshotMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
+    const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
       throw new Error('invalid reviewAgeDays');
     }
     if ((limitRaw && !limit) || (analyticsLimitRaw && !analyticsLimit)) {
       throw new Error('invalid limit');
+    }
+    if (snapshotModeRaw && !snapshotMode) {
+      throw new Error('invalid snapshotMode');
     }
     const [items, opsState] = await Promise.all([
       getUsersSummaryFiltered(Object.assign({}, range, {
@@ -96,7 +101,8 @@ async function handleUsersSummaryFiltered(req, res) {
         unreviewed,
         reviewAgeDays,
         limit,
-        analyticsLimit
+        analyticsLimit,
+        snapshotMode
       })),
       getOpsState()
     ]);
