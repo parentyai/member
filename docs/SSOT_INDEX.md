@@ -188,3 +188,5 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE320_EXECUTION_LOG.md`（Read Path収束 follow-up: user state summary user-targeted + bounded range化実行ログ）
 - `docs/PHASE321_PLAN.md`（Read Path収束 follow-up: monitor insights deliveries bounded range化計画）
 - `docs/PHASE321_EXECUTION_LOG.md`（Read Path収束 follow-up: monitor insights deliveries bounded range化実行ログ）
+- `docs/PHASE322_PLAN.md`（Read Path収束 follow-up: phase2 automation events week-bounded range化計画）
+- `docs/PHASE322_EXECUTION_LOG.md`（Read Path収束 follow-up: phase2 automation events week-bounded range化実行ログ）

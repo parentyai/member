@@ -2,6 +2,7 @@
 
 const {
   listAllEvents,
+  listEventsByCreatedAtRange,
   listAllUsers,
   listAllChecklists,
   listAllUserChecklists
@@ -12,6 +13,9 @@ const {
   upsertChecklistPendingReport
 } = require('../../repos/firestore/scenarioReportsRepo');
 const { upsertRun } = require('../../repos/firestore/scenarioRunsRepo');
+
+const DEFAULT_ANALYTICS_LIMIT = 1000;
+const MAX_ANALYTICS_LIMIT = 5000;
 
 function isEnabled() {
   return String(process.env.PHASE2_AUTOMATION_ENABLED || '').toLowerCase() === 'true';
@@ -32,6 +36,13 @@ function toDate(value) {
   return null;
 }
 
+function resolveAnalyticsLimit(value) {
+  if (value === undefined || value === null) return DEFAULT_ANALYTICS_LIMIT;
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
+  return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
+
 function dateKey(date) {
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -39,19 +50,35 @@ function dateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-function weekStartKey(date) {
+function startOfUtcDay(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function weekStartDateUtc(date) {
   const day = date.getUTCDay();
   const diff = (day + 6) % 7; // Monday=0
-  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const start = startOfUtcDay(date);
   start.setUTCDate(start.getUTCDate() - diff);
-  return dateKey(start);
+  return start;
+}
+
+function weekEndDateUtc(date) {
+  const start = weekStartDateUtc(date);
+  const end = new Date(start.getTime());
+  end.setUTCDate(end.getUTCDate() + 7);
+  end.setUTCMilliseconds(end.getUTCMilliseconds() - 1);
+  return end;
+}
+
+function weekStartKey(date) {
+  return dateKey(weekStartDateUtc(date));
 }
 
 function ensureCounts() {
   return { open: 0, click: 0, complete: 0 };
 }
 
-async function runPhase2Automation({ runId, targetDate, dryRun, logger }) {
+async function runPhase2Automation({ runId, targetDate, dryRun, logger, analyticsLimit }) {
   if (!isEnabled()) return { ok: false, error: 'automation disabled' };
   if (typeof runId !== 'string' || runId.trim().length === 0) return { ok: false, error: 'runId required' };
   if (!isValidDateString(targetDate)) return { ok: false, error: 'targetDate required' };
@@ -71,13 +98,31 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger }) {
       skipped: 0
     }
   };
+  const resolvedAnalyticsLimit = resolveAnalyticsLimit(analyticsLimit);
+  summary.readPath = {
+    analyticsLimit: resolvedAnalyticsLimit,
+    eventsSource: 'range'
+  };
 
   try {
-    const [events, users, checklists, userChecklists] = await Promise.all([
-      listAllEvents(),
-      listAllUsers(),
-      listAllChecklists(),
-      listAllUserChecklists()
+    const targetDateObj = new Date(`${targetDate}T00:00:00Z`);
+    const rangeFrom = weekStartDateUtc(targetDateObj);
+    const rangeTo = weekEndDateUtc(targetDateObj);
+
+    let events = await listEventsByCreatedAtRange({
+      limit: resolvedAnalyticsLimit,
+      fromAt: rangeFrom,
+      toAt: rangeTo
+    });
+    if (!Array.isArray(events) || events.length === 0) {
+      events = await listAllEvents({ limit: resolvedAnalyticsLimit });
+      summary.readPath.eventsSource = 'fallback_all';
+    }
+
+    const [users, checklists, userChecklists] = await Promise.all([
+      listAllUsers({ limit: resolvedAnalyticsLimit }),
+      listAllChecklists({ limit: resolvedAnalyticsLimit }),
+      listAllUserChecklists({ limit: resolvedAnalyticsLimit })
     ]);
 
     const userScenario = new Map();

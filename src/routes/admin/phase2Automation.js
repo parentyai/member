@@ -19,6 +19,7 @@ async function handleRunPhase2(req, res, body) {
     runId: payload.runId,
     targetDate: payload.targetDate,
     dryRun: payload.dryRun,
+    analyticsLimit: payload.analyticsLimit,
     logger: (msg) => console.log(msg)
   });
   if (!result.ok) {
