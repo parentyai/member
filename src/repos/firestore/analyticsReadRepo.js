@@ -110,6 +110,30 @@ async function listEventsByLineUserIdAndCreatedAtRange(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listEventsByLineUserIdsAndCreatedAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserIds = normalizeIdList(options.lineUserIds);
+  if (!lineUserIds.length) return [];
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  const chunks = chunkList(lineUserIds, IN_QUERY_CHUNK_SIZE);
+  const perChunkLimit = Math.max(1, Math.floor(limit / Math.max(1, chunks.length)));
+  const settled = await Promise.all(chunks.map(async (chunk) => {
+    const rowsByUser = await Promise.all(chunk.map(async (lineUserId) => {
+      let query = db.collection('events').where('lineUserId', '==', lineUserId);
+      if (fromAt) query = query.where('createdAt', '>=', fromAt);
+      if (toAt) query = query.where('createdAt', '<=', toAt);
+      const snap = await query.orderBy('createdAt', 'desc').limit(perChunkLimit).get();
+      return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    }));
+    return rowsByUser.flat();
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'createdAt').slice(0, limit);
+}
+
 async function listAllUsers(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -372,6 +396,7 @@ module.exports = {
   listAllEvents,
   listEventsByCreatedAtRange,
   listEventsByLineUserIdAndCreatedAtRange,
+  listEventsByLineUserIdsAndCreatedAtRange,
   listAllUsers,
   listUsersByCreatedAtRange,
   listUsersByLineUserIds,

@@ -23,6 +23,7 @@ const state = {
   cityPackProposalItems: [],
   cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
+  cityPackCompositionItems: [],
   cityPackKpi: null,
   cityPackMetrics: null,
   cityPackRuns: [],
@@ -2088,6 +2089,116 @@ function renderCityPackInboxRows(items) {
   });
 }
 
+function parseCityPackCompositionLimit() {
+  const el = document.getElementById('city-pack-composition-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 30;
+  return Math.min(Math.floor(value), 200);
+}
+
+function readCityPackCompositionRegionKey() {
+  const el = document.getElementById('city-pack-composition-region-key');
+  const value = el && typeof el.value === 'string' ? el.value.trim() : '';
+  return value || null;
+}
+
+function readCityPackCompositionLanguage() {
+  const el = document.getElementById('city-pack-composition-language');
+  const value = el && typeof el.value === 'string' ? el.value.trim().toLowerCase() : '';
+  return value || 'ja';
+}
+
+function renderCityPackCompositionDiagnostics() {
+  const readinessEl = document.getElementById('city-pack-composition-readiness');
+  const fallbackEl = document.getElementById('city-pack-composition-fallback');
+
+  if (readinessEl) {
+    const status = state.productReadiness && state.productReadiness.status
+      ? String(state.productReadiness.status)
+      : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    const blockers = Array.isArray(state.productReadiness && state.productReadiness.blockers)
+      ? state.productReadiness.blockers.length
+      : 0;
+    readinessEl.textContent = `${t('ui.label.cityPack.composition.readiness', 'Readiness')}: ${status} / blockers=${blockers}`;
+  }
+
+  if (fallbackEl) {
+    const rows = Array.isArray(state.readPathFallbackSummary) ? state.readPathFallbackSummary : [];
+    const total = rows.reduce((sum, row) => {
+      const count = Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0;
+      return sum + count;
+    }, 0);
+    const blocked = rows.reduce((sum, row) => {
+      const count = Number.isFinite(Number(row && row.fallbackBlockedCount)) ? Number(row.fallbackBlockedCount) : 0;
+      return sum + count;
+    }, 0);
+    if (!rows.length) {
+      fallbackEl.textContent = `${t('ui.label.cityPack.composition.fallback', 'Fallback summary')}: ${t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE')}`;
+      return;
+    }
+    fallbackEl.textContent = `${t('ui.label.cityPack.composition.fallback', 'Fallback summary')}: total=${total} / blocked=${blocked}`;
+  }
+}
+
+function renderCityPackComposition(items, summary) {
+  const tbody = document.getElementById('city-pack-composition-rows');
+  const summaryEl = document.getElementById('city-pack-composition-summary');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (summaryEl) {
+      summaryEl.textContent = t('ui.desc.cityPack.compositionEmpty', 'Compositionに一致する候補はありません。');
+    }
+    renderCityPackCompositionDiagnostics();
+    return;
+  }
+
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    const cols = [
+      item && item.packClass ? String(item.packClass) : '-',
+      item && item.language ? String(item.language) : 'ja',
+      item && item.nationwidePolicy ? String(item.nationwidePolicy) : '-',
+      item && item.reason ? String(item.reason) : '-',
+      item && item.name ? String(item.name) : '-',
+      item && item.cityPackId ? String(item.cityPackId) : '-',
+      formatDateLabel(item && item.updatedAt)
+    ];
+    cols.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const packId = item && item.cityPackId ? String(item.cityPackId) : '';
+      if (!packId) return;
+      const exportInput = document.getElementById('city-pack-template-export-pack-id');
+      if (exportInput) exportInput.value = packId;
+      const structurePackId = document.getElementById('city-pack-structure-pack-id');
+      if (structurePackId) structurePackId.textContent = packId;
+    });
+    tbody.appendChild(tr);
+  });
+
+  if (summaryEl) {
+    const safe = summary && typeof summary === 'object' ? summary : {};
+    const total = Number.isFinite(Number(safe.total)) ? Number(safe.total) : rows.length;
+    const regional = Number.isFinite(Number(safe.regional)) ? Number(safe.regional) : 0;
+    const nationwide = Number.isFinite(Number(safe.nationwide)) ? Number(safe.nationwide) : 0;
+    summaryEl.textContent = `${t('ui.label.cityPack.composition.summary', '候補')}: total=${total} / regional=${regional} / nationwide=${nationwide}`;
+  }
+  renderCityPackCompositionDiagnostics();
+}
+
 function createCityPackRequestActionButton(action, label, row) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -3003,6 +3114,33 @@ async function loadCityPackReviewInbox(options) {
   } catch (_err) {
     if (notify) showToast(t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'), 'danger');
     renderCityPackInboxRows([]);
+  }
+}
+
+async function loadCityPackComposition(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('monitor-trace');
+  const regionKey = readCityPackCompositionRegionKey();
+  const language = readCityPackCompositionLanguage();
+  const limit = parseCityPackCompositionLimit();
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (regionKey) params.set('regionKey', regionKey);
+  if (language) params.set('language', language);
+  try {
+    const res = await fetch(`/api/admin/city-packs/composition?${params.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    const items = Array.isArray(data.items) ? data.items : [];
+    state.cityPackCompositionItems = items;
+    renderCityPackComposition(items, data.summary || null);
+    setPaneUpdatedAt('city-pack');
+    if (notify) showToast(t('ui.toast.cityPack.compositionLoaded', 'Pack composition を更新しました'), 'ok');
+  } catch (_err) {
+    state.cityPackCompositionItems = [];
+    renderCityPackComposition([], null);
+    if (notify) showToast(t('ui.toast.cityPack.compositionLoadFail', 'Pack composition の取得に失敗しました'), 'danger');
   }
 }
 
@@ -4035,10 +4173,12 @@ async function loadReadPathFallbackSummary(options) {
     if (!data || data.ok !== true) throw new Error('failed');
     state.readPathFallbackSummary = Array.isArray(data.items) ? data.items : [];
     renderReadPathFallbackSummary(state.readPathFallbackSummary);
+    renderCityPackCompositionDiagnostics();
     if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadOk', 'read-path fallback サマリーを更新しました'), 'ok');
   } catch (_err) {
     state.readPathFallbackSummary = [];
     renderReadPathFallbackSummary([]);
+    renderCityPackCompositionDiagnostics();
     if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadFail', 'read-path fallback サマリーの取得に失敗しました'), 'danger');
   }
 }
@@ -4117,10 +4257,12 @@ async function loadProductReadiness(options) {
     if (!data || data.ok !== true) throw new Error('failed');
     state.productReadiness = data;
     renderProductReadiness(data);
+    renderCityPackCompositionDiagnostics();
     if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadOk', 'Product Readiness 判定を更新しました'), 'ok');
   } catch (_err) {
     state.productReadiness = null;
     renderProductReadiness(null);
+    renderCityPackCompositionDiagnostics();
     if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadFail', 'Product Readiness 判定の取得に失敗しました'), 'danger');
   }
 }
@@ -4928,6 +5070,18 @@ function setupCityPackControls() {
   document.getElementById('city-pack-metrics-window-days')?.addEventListener('change', () => {
     void loadCityPackMetrics({ notify: false });
   });
+  document.getElementById('city-pack-composition-reload')?.addEventListener('click', () => {
+    void loadCityPackComposition({ notify: true });
+  });
+  document.getElementById('city-pack-composition-region-key')?.addEventListener('change', () => {
+    void loadCityPackComposition({ notify: false });
+  });
+  document.getElementById('city-pack-composition-language')?.addEventListener('change', () => {
+    void loadCityPackComposition({ notify: false });
+  });
+  document.getElementById('city-pack-composition-limit')?.addEventListener('change', () => {
+    void loadCityPackComposition({ notify: false });
+  });
   document.getElementById('city-pack-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: false });
     void loadCityPackFeedback({ notify: false });
@@ -4938,6 +5092,7 @@ function setupCityPackControls() {
     void loadCityPackKpi({ notify: false });
     void loadCityPackMetrics({ notify: false });
     void loadCityPackAuditRuns({ notify: false });
+    void loadCityPackComposition({ notify: false });
   });
   document.getElementById('city-pack-status-filter')?.addEventListener('change', () => {
     void loadCityPackReviewInbox({ notify: false });
@@ -5496,6 +5651,7 @@ function setupLlmControls() {
   loadCityPackKpi({ notify: false });
   loadCityPackMetrics({ notify: false });
   loadCityPackAuditRuns({ notify: false });
+  loadCityPackComposition({ notify: false });
   loadDashboardKpis({ notify: false });
   loadRepoMap({ notify: false });
   renderAllDecisionCards();

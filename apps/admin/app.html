@@ -1005,6 +1005,43 @@
                   </table>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.composition.title">Pack Composition（regional + nationwide）</div>
+                <div class="panel-body">
+                  <div class="note" data-dict-key="ui.desc.cityPack.composition">地域向け pack と nationwide(federal_only) pack の候補順を read-only で確認します。</div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.cityPack.composition.regionKey" data-dict-tip="ui.help.cityPack.composition.regionKey">regionKey
+                      <input id="city-pack-composition-region-key" type="text" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.composition.regionKey" placeholder="tx::austin" />
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.composition.language" data-dict-tip="ui.help.cityPack.composition.language">language
+                      <input id="city-pack-composition-language" type="text" class="input-sm" value="ja" />
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.composition.limit" data-dict-tip="ui.help.cityPack.composition.limit">件数
+                      <input id="city-pack-composition-limit" type="number" min="1" max="200" value="30" class="input-sm" />
+                    </label>
+                    <button id="city-pack-composition-reload" type="button" data-dict-key="ui.label.cityPack.composition.reload">Composition更新</button>
+                  </div>
+                  <div id="city-pack-composition-summary" class="note" data-dict-key="ui.desc.cityPack.compositionSummary">Composition: 読み込み待ち</div>
+                  <div id="city-pack-composition-readiness" class="note" data-dict-key="ui.desc.cityPack.compositionReadiness">Readiness: 読み込み待ち</div>
+                  <div id="city-pack-composition-fallback" class="note" data-dict-key="ui.desc.cityPack.compositionFallback">Fallback summary: 読み込み待ち</div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.cityPack.composition.col.packClass">packClass</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.language">language</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.policy">policy</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.reason">reason</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.name">name</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.cityPackId">cityPackId</th>
+                          <th data-dict-key="ui.label.cityPack.composition.col.updatedAt">updatedAt</th>
+                        </tr>
+                      </thead>
+                      <tbody id="city-pack-composition-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="pane-detail">
               <div class="panel">
