@@ -14,6 +14,8 @@ test('phase591: missing index surface generator emits grouped surfaces and budge
   assert.ok(src.includes('missing_index_surface_max'));
   assert.ok(src.includes('fallback_points'));
   assert.ok(src.includes('missingIndexFallback'));
+  assert.ok(src.includes('delete comparableCurrent.generatedAt;'));
+  assert.ok(src.includes('delete comparableNext.generatedAt;'));
 });
 
 test('phase591: package scripts expose missing-index-surface generate/check commands', () => {

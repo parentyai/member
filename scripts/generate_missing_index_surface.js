@@ -130,8 +130,23 @@ function run() {
   const next = `${JSON.stringify(payload, null, 2)}\n`;
 
   if (checkMode) {
-    const current = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
-    if (current !== next) {
+    const currentRaw = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
+    let currentJson = null;
+    try {
+      currentJson = currentRaw ? JSON.parse(currentRaw) : null;
+    } catch (_err) {
+      process.stderr.write('missing_index_surface.json is invalid JSON. run: npm run missing-index-surface:generate\n');
+      process.exit(1);
+    }
+    if (!currentJson) {
+      process.stderr.write('missing_index_surface.json is stale. run: npm run missing-index-surface:generate\n');
+      process.exit(1);
+    }
+    const comparableCurrent = Object.assign({}, currentJson);
+    const comparableNext = Object.assign({}, payload);
+    delete comparableCurrent.generatedAt;
+    delete comparableNext.generatedAt;
+    if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableNext)) {
       process.stderr.write('missing_index_surface.json is stale. run: npm run missing-index-surface:generate\n');
       process.exit(1);
     }
