@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T14:33:00-05:00",
-  "gitCommit": "802e453e3f6d3efdb07a584c585b6ee83e644001",
-  "branch": "codex/phase578-agents-execution-os-gate-fix",
-  "sourceDigest": "8519892036f34286dc87ac7facc9cfd651da0f149554257f820662c08e499e7c",
+  "generatedAt": "2026-02-22T15:33:31-05:00",
+  "gitCommit": "6edbd80d6e0b75830e959d5ca2f0ce0444dc7144",
+  "branch": "codex/phase579-dashboard-redesign",
+  "sourceDigest": "c8e3edd9263a4c54095bc970b61e354ddd3901c85443200768574ea7976daa36",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
