@@ -18,6 +18,8 @@ const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
 const SNAPSHOT_TYPE = 'notification_operational_summary';
 const SNAPSHOT_KEY = 'latest';
+const FALLBACK_MODE_ALLOW = 'allow';
+const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveEventsLimit(value) {
   const num = Number(value);
@@ -72,6 +74,11 @@ function resolveNotificationFilters(options) {
   };
 }
 
+function resolveFallbackMode(value) {
+  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
+  return FALLBACK_MODE_ALLOW;
+}
+
 function createSummaryItem(notification, current) {
   return {
     notificationId: notification.id,
@@ -114,6 +121,8 @@ async function buildFromSnapshot(snapshotItems, options) {
 
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
+  const fallbackMode = resolveFallbackMode(opts.fallbackMode);
+  const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const withMeta = (items, meta) => {
@@ -159,6 +168,7 @@ async function getNotificationOperationalSummary(params) {
   });
   const eventRange = resolveNotificationEventRange(notifications);
   let events;
+  let fallbackBlockedNotAvailable = false;
   if (eventRange) {
     events = await listEventsByCreatedAtRange({
       limit: eventsLimit,
@@ -166,10 +176,20 @@ async function getNotificationOperationalSummary(params) {
       toAt: eventRange.toAt
     });
     if (!events.length) {
-      events = await listAllEvents({ limit: eventsLimit });
+      if (!events.length && !fallbackBlocked) {
+        events = await listAllEvents({ limit: eventsLimit });
+      }
+      if (!events.length && fallbackBlocked) {
+        fallbackBlockedNotAvailable = true;
+      }
     }
   } else {
-    events = await listAllEvents({ limit: eventsLimit });
+    if (fallbackBlocked) {
+      events = [];
+      fallbackBlockedNotAvailable = true;
+    } else {
+      events = await listAllEvents({ limit: eventsLimit });
+    }
   }
 
   const counts = new Map();
@@ -193,10 +213,12 @@ async function getNotificationOperationalSummary(params) {
     const current = counts.get(notification.id) || { open: 0, click: 0, lastValue: null };
     return createSummaryItem(notification, current);
   });
+  const computedAsOf = new Date().toISOString();
   return withMeta(items, {
-    dataSource: 'computed',
-    asOf: new Date().toISOString(),
-    freshnessMinutes: null
+    dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
+    asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
+    freshnessMinutes: null,
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
   });
 }
 

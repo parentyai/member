@@ -67,6 +67,7 @@ async function getUsersSummaryFiltered(params) {
     limit: payload.limit,
     analyticsLimit: payload.analyticsLimit,
     snapshotMode: payload.snapshotMode,
+    fallbackMode: payload.fallbackMode,
     includeMeta
   });
   const baseItems = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);

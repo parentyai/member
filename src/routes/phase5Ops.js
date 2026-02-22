@@ -28,7 +28,13 @@ function parseDateParam(value, endOfDay) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays') || message.includes('invalid limit') || message.includes('invalid snapshotMode')) {
+  if (
+    message.includes('invalid date') ||
+    message.includes('invalid reviewAgeDays') ||
+    message.includes('invalid limit') ||
+    message.includes('invalid snapshotMode') ||
+    message.includes('invalid fallbackMode')
+  ) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
@@ -70,6 +76,12 @@ function parseSnapshotMode(value) {
   return null;
 }
 
+function parseFallbackMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'allow' || value === 'block') return value;
+  return null;
+}
+
 async function handleUsersSummaryFiltered(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -82,9 +94,11 @@ async function handleUsersSummaryFiltered(req, res) {
     const limitRaw = url.searchParams.get('limit');
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
+    const fallbackModeRaw = url.searchParams.get('fallbackMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    const fallbackMode = parseFallbackMode(fallbackModeRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
       throw new Error('invalid reviewAgeDays');
     }
@@ -93,6 +107,9 @@ async function handleUsersSummaryFiltered(req, res) {
     }
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
+    }
+    if (fallbackModeRaw && !fallbackMode) {
+      throw new Error('invalid fallbackMode');
     }
     const [summary, opsState] = await Promise.all([
       getUsersSummaryFiltered(Object.assign({}, range, {
@@ -103,6 +120,7 @@ async function handleUsersSummaryFiltered(req, res) {
         limit,
         analyticsLimit,
         snapshotMode,
+        fallbackMode,
         includeMeta: true
       })),
       getOpsState()
@@ -136,19 +154,25 @@ async function handleNotificationsSummaryFiltered(req, res) {
     const limitRaw = url.searchParams.get('limit');
     const eventsLimitRaw = url.searchParams.get('eventsLimit');
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
+    const fallbackModeRaw = url.searchParams.get('fallbackMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const eventsLimit = parsePositiveInt(eventsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    const fallbackMode = parseFallbackMode(fallbackModeRaw);
     if ((limitRaw && !limit) || (eventsLimitRaw && !eventsLimit)) {
       throw new Error('invalid limit');
     }
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
+    if (fallbackModeRaw && !fallbackMode) {
+      throw new Error('invalid fallbackMode');
+    }
     const summary = await getNotificationsSummaryFiltered(Object.assign({}, range, {
       limit,
       eventsLimit,
       snapshotMode,
+      fallbackMode,
       includeMeta: true
     }));
     const items = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
