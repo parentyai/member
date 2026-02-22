@@ -172,7 +172,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 220,
+        "line": 221,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -189,7 +189,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 231,
+        "line": 233,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"

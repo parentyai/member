@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T01:42:51-05:00",
-  "gitCommit": "419e0288f3f42583fc36bf0958465b2c752a8675",
+  "generatedAt": "2026-02-22T01:46:54-05:00",
+  "gitCommit": "4098b94532fbffe4da8455b888a849a0ebfac3d5",
   "branch": "codex/phase357-362-convergence",
-  "sourceDigest": "4bf8c3047354ef31d76be39a9d6319d4a3fa8224bbdc92ed617c2553b190e4a8",
+  "sourceDigest": "5d5da932caa6e2b17cc40945f33949399b396ad41e29085c50e940ee32663888",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,7 +78,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "710a4810fa74964bce9322ff3dda04fb350ce18968355e08ac9b408a51a1456b",
+      "sha256": "8791ee17e21f7bbe5859887a8477970e180e73a3f8d792fe0c28e127632f157d",
       "bytes": 14900
     },
     {
