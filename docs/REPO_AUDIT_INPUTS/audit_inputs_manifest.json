@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:44:45-05:00",
-  "gitCommit": "82dbd4c50b821d7fd3344504c2daf75b93964ac5",
-  "branch": "codex/supervisor-master-json",
-  "sourceDigest": "7f96eeeb36be2f21fcb381a07a448941607f520e1b343f1caa96c928cfe48eff",
+  "generatedAt": "2026-02-22T12:47:53-05:00",
+  "gitCommit": "9beb7050dbb1bc851070dc7caaaa11d356449e0f",
+  "branch": "codex/phase577-580",
+  "sourceDigest": "d14c2889470a71a84279a8ad08343c635d77f157d40d5a59c3ae768ed5330145",
   "counts": {
     "endpoints": 105,
     "routes": 77,
