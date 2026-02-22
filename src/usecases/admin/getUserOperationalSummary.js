@@ -149,18 +149,37 @@ function buildLatestReactionByUser(deliveries) {
 
 async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
+  const includeMeta = opts.includeMeta === true;
+  const withMeta = (items, meta) => {
+    if (!includeMeta) return items;
+    return { items, meta };
+  };
   const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
   if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
     if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
-      return snapshot.data.items;
+      return withMeta(snapshot.data.items, {
+        dataSource: 'snapshot',
+        asOf: snapshot.asOf || null,
+        freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
+          ? Number(snapshot.freshnessMinutes)
+          : null
+      });
     }
     if (isSnapshotRequired(snapshotMode)) {
-      return [];
+      return withMeta([], {
+        dataSource: 'not_available',
+        asOf: null,
+        freshnessMinutes: null
+      });
     }
   }
   if (!isFallbackAllowed(snapshotMode)) {
-    return [];
+    return withMeta([], {
+      dataSource: 'not_available',
+      asOf: null,
+      freshnessMinutes: null
+    });
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
   const listLimit = resolveListLimit(opts.limit, analyticsLimit);
@@ -199,7 +218,7 @@ async function getUserOperationalSummary(params) {
   const latestActionByUser = buildLatestActionByUser(events);
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
 
-  return scopedUsers.map((user) => {
+  const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
     const createdAtMs = toMillis(data.createdAt);
     const scenarioKey = data.scenarioKey;
@@ -226,6 +245,11 @@ async function getUserOperationalSummary(params) {
       lastActionAt: latest ? formatTimestamp(latest.value) : null,
       lastReactionAt
     };
+  });
+  return withMeta(items, {
+    dataSource: 'computed',
+    asOf: new Date().toISOString(),
+    freshnessMinutes: null
   });
 }
 

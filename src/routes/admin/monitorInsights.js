@@ -10,6 +10,11 @@ const { listSnapshots } = require('../../repos/firestore/kpiSnapshotsReadRepo');
 const faqAnswerLogsRepo = require('../../repos/firestore/faqAnswerLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const {
+  normalizeSnapshotMode,
+  resolveSnapshotReadMode,
+  isSnapshotRequired
+} = require('../../domain/readModel/snapshotReadPolicy');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_DELIVERIES_READ_LIMIT = 1000;
@@ -69,6 +74,14 @@ async function handleMonitorInsights(req, res) {
   const windowDays = normalizeWindowDays(url.searchParams.get('windowDays'));
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const readLimit = normalizeReadLimit(url.searchParams.get('readLimit'));
+  const snapshotModeRaw = url.searchParams.get('snapshotMode');
+  const parsedSnapshotMode = normalizeSnapshotMode(snapshotModeRaw);
+  if (snapshotModeRaw && !parsedSnapshotMode) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid snapshotMode' }));
+    return;
+  }
+  const snapshotMode = resolveSnapshotReadMode({ snapshotMode: parsedSnapshotMode || undefined });
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const actor = resolveActor(req);
@@ -81,8 +94,14 @@ async function handleMonitorInsights(req, res) {
       fromAt: new Date(sinceMs),
       toAt: new Date(nowMs)
     });
-    if (!all.length) {
+    let dataSource = 'range';
+    let note = null;
+    if (!all.length && isSnapshotRequired(snapshotMode)) {
+      dataSource = 'not_available';
+      note = 'NOT AVAILABLE';
+    } else if (!all.length) {
       all = await listAllNotificationDeliveries({ limit: readLimit });
+      dataSource = 'fallback';
     }
     const deliveries = all
       .map((item) => Object.assign({ id: item.id }, item.data || {}))
@@ -183,6 +202,8 @@ async function handleMonitorInsights(req, res) {
         payloadSummary: {
           windowDays,
           limit,
+          snapshotMode,
+          dataSource,
           deliveries: deliveries.length,
           vendorCount: vendorCtrTop.length
         }
@@ -197,6 +218,9 @@ async function handleMonitorInsights(req, res) {
       serverTime: new Date().toISOString(),
       traceId,
       windowDays,
+      snapshotMode,
+      dataSource,
+      note,
       vendorCtrTop,
       ctrTop,
       abSnapshot,

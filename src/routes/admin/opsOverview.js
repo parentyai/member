@@ -46,10 +46,19 @@ async function handleUsersSummary(req, res) {
     const items = await getUserOperationalSummary({
       limit,
       analyticsLimit,
-      snapshotMode
+      snapshotMode,
+      includeMeta: true
     });
+    const normalizedItems = Array.isArray(items) ? items : (Array.isArray(items.items) ? items.items : []);
+    const meta = items && !Array.isArray(items) && items.meta ? items.meta : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items }));
+    res.end(JSON.stringify({
+      ok: true,
+      items: normalizedItems,
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }));
   } catch (err) {
     handleError(res, err);
   }
@@ -73,16 +82,25 @@ async function handleNotificationsSummary(req, res) {
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
-    const items = await getNotificationOperationalSummary({
+    const summary = await getNotificationOperationalSummary({
       limit,
       eventsLimit,
       snapshotMode,
+      includeMeta: true,
       status: status || undefined,
       scenarioKey: scenarioKey || undefined,
       stepKey: stepKey || undefined
     });
+    const items = Array.isArray(summary) ? summary : (Array.isArray(summary.items) ? summary.items : []);
+    const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items }));
+    res.end(JSON.stringify({
+      ok: true,
+      items,
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }));
   } catch (err) {
     handleError(res, err);
   }
