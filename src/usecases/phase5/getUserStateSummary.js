@@ -1,12 +1,14 @@
 'use strict';
 
 const {
-  listAllUsers,
   listAllEvents,
+  listEventsByCreatedAtRange,
   listAllChecklists,
   listAllUserChecklists,
-  listAllNotificationDeliveries
+  listAllNotificationDeliveries,
+  listNotificationDeliveriesBySentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
+const usersRepo = require('../../repos/firestore/usersRepo');
 const { getNotificationReadModel } = require('../admin/getNotificationReadModel');
 const { evaluateChecklistCompleteness } = require('../phase24/checklistCompleteness');
 const { evaluateUserSummaryCompleteness } = require('../phase24/userSummaryCompleteness');
@@ -149,6 +151,18 @@ function resolveLatestNotificationId(deliveries, lineUserId) {
   return latestId;
 }
 
+function resolveAnalyticsQueryRangeFromUser(user) {
+  const data = user && user.data ? user.data : (user || {});
+  const createdAtMs = toMillis(data.createdAt);
+  if (!Number.isFinite(createdAtMs)) {
+    return { fromAt: null, toAt: null };
+  }
+  return {
+    fromAt: new Date(createdAtMs),
+    toAt: new Date()
+  };
+}
+
 async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
   const notificationId = resolveLatestNotificationId(deliveries, lineUserId);
   if (!notificationId) return null;
@@ -182,18 +196,39 @@ async function getUserStateSummary(params) {
     };
   }
   const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
+  const user = await usersRepo.getUser(payload.lineUserId);
+  if (!user) throw new Error('user not found');
+  const data = user.data || user || {};
+  const queryRange = resolveAnalyticsQueryRangeFromUser(user);
+  let eventsPromise = Promise.resolve([]);
+  let deliveriesPromise = Promise.resolve([]);
+  if (queryRange.fromAt) {
+    eventsPromise = listEventsByCreatedAtRange({
+      limit: analyticsLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    });
+    deliveriesPromise = listNotificationDeliveriesBySentAtRange({
+      limit: analyticsLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    });
+  }
 
-  const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
-    listAllUsers({ limit: analyticsLimit }),
-    listAllEvents({ limit: analyticsLimit }),
+  let [events, checklists, userChecklists, deliveries] = await Promise.all([
+    eventsPromise,
     listAllChecklists({ limit: analyticsLimit }),
     listAllUserChecklists({ limit: analyticsLimit }),
-    listAllNotificationDeliveries({ limit: analyticsLimit })
+    deliveriesPromise
   ]);
 
-  const user = users.find((entry) => entry.id === payload.lineUserId);
-  if (!user) throw new Error('user not found');
-  const data = user.data || {};
+  if (events.length === 0) {
+    events = await listAllEvents({ limit: analyticsLimit });
+  }
+  if (deliveries.length === 0) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+  }
+
   const nowMs = Date.now();
   const hasMemberNumber = Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0);
   const memberNumberStale = isMemberNumberStale(data, nowMs);
@@ -208,7 +243,9 @@ async function getUserStateSummary(params) {
     { totalItems: checklistTotal },
     { completedCount: checklistCompleted }
   );
-  const registrationCompleteness = await evaluateRegistrationCompleteness(user, { allUsers: users });
+  const registrationCompleteness = await evaluateRegistrationCompleteness(user, {
+    listUsersByMemberNumber: usersRepo.listUsersByMemberNumber
+  });
   const opsState = await opsStatesRepo.getOpsState(user.id);
   const opsStateCompleteness = evaluateOpsStateCompleteness(opsState);
   const userSummaryCompleteness = evaluateUserSummaryCompleteness({
