@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T09:34:59-05:00",
-  "gitCommit": "1e14ccf6c4d49416b0df6954019d4a23a976f1ee",
-  "branch": "codex/citypack-language-federal",
-  "sourceDigest": "92746514b3350fa91e6972854412be9b68919aec01da06663e019e1368a31be6",
+  "generatedAt": "2026-02-22T12:05:52-05:00",
+  "gitCommit": "941b1fda507e60608c0b9602448b4865d50a0d6a",
+  "branch": "codex/phase573-576",
+  "sourceDigest": "00cc1bcf9762a800d20cdb5efc45e325ae7da0d6a34062a4e8c0bffcf8ab74f1",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "316c92e70be85c2c2f3373b96c82aa38ad72e3bffa1b7697d1489fbefe95c56f",
+      "sha256": "7597970b78a752f4a5766d56ddd5739da62b858bc0dcfe9f30d762cf413bc525",
       "bytes": 288099
     },
     {
