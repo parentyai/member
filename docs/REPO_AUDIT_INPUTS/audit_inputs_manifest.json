@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-02-21T16:46:04Z",
-  "gitCommit": "a1bb63e5bf775d26a3ffafdabfbf3fc3198569ca",
-  "branch": "codex/phase306",
+  "generatedAt": "NOT AVAILABLE",
+  "gitCommit": "efc4ab6afd38d24908c2ae7d328e7d85c8ef379e",
+  "branch": "NOT_AVAILABLE",
   "counts": {
     "endpoints": 105,
-    "routes": 0,
-    "usecases": 116,
-    "repos": 51,
-    "collections": 51
+    "routes": 77,
+    "usecases": 88,
+    "repos": 50,
+    "collections": 44
   },
   "files": [
     {
@@ -27,8 +27,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
-      "sha256": "7f99016c49db0f7e4e5293d9955c6fab118782e6dd44fd93df20814ab22915d8",
-      "bytes": 14410
+      "sha256": "01cd15631b090d797bd505d0dc3cd486a2ce19f71368251e457f6056a4acd0c3",
+      "bytes": 14713
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
@@ -77,8 +77,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "4f67128c75fa18270b6c5cd7c7ec3fd4c060d7a936c6945e2e54dbdd6511194c",
-      "bytes": 17964
+      "sha256": "61dafe6a97dba58bc052b86fdf24a0b6721d27eee3248083a4a393a9ecb69d39",
+      "bytes": 11894
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -101,6 +101,11 @@
       "bytes": 163
     },
     {
+      "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
+      "sha256": "dded6495282b9c3d6ce7df49ec2a94e5e4171929fc034b63d9d658137a65a41b",
+      "bytes": 288099
+    },
+    {
       "file": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
       "sha256": "aef84a98d6c89d62c744257f41a73505f351c652ebc8f78d961a439e0bb83307",
       "bytes": 3810
@@ -113,5 +118,5 @@
     "If new docs JSON is added under docs/REPO_AUDIT_INPUTS, include in manifest files list."
   ],
   "previous_manifest": "NONE",
-  "manifest_version": 1
+  "manifest_version": 2
 }

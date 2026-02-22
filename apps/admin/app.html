@@ -1577,7 +1577,7 @@
                   </div>
                   <div id="struct-drift-summary" class="note" data-dict-key="ui.desc.structDrift.summary">実行履歴: 読み込み待ち</div>
                   <div class="table-wrap table-section">
-                    <table class="table table-compact">
+                    <table class="table table-compact retention-runs-table">
                       <thead>
                         <tr>
                           <th data-dict-key="ui.label.structDrift.table.createdAt">実行時刻</th>
@@ -1958,6 +1958,34 @@
                   <p data-dict-key="ui.desc.maintenance.notice">配信回復/補正は /admin/master に集約されています。</p>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.retentionRuns.title">Retention 実行履歴</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <label for="maintenance-retention-runs-limit" data-dict-key="ui.label.maintenance.retentionRuns.limit">表示件数</label>
+                    <input id="maintenance-retention-runs-limit" type="number" min="1" max="200" value="30" />
+                    <label for="maintenance-retention-runs-trace" data-dict-key="ui.label.maintenance.retentionRuns.traceFilter">traceId</label>
+                    <input id="maintenance-retention-runs-trace" type="text" data-dict-placeholder="ui.placeholder.maintenance.retentionRuns.traceFilter" placeholder="任意" />
+                    <button id="maintenance-retention-runs-reload" type="button" data-dict-key="ui.label.maintenance.retentionRuns.reload">実行履歴更新</button>
+                  </div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.retentionRuns.table.createdAt">実行時刻</th>
+                          <th data-dict-key="ui.label.maintenance.retentionRuns.table.action">操作</th>
+                          <th class="cell-num" data-dict-key="ui.label.maintenance.retentionRuns.table.deleted">削除件数</th>
+                          <th data-dict-key="ui.label.maintenance.retentionRuns.table.collection">対象</th>
+                          <th data-dict-key="ui.label.maintenance.retentionRuns.table.traceId">traceId</th>
+                          <th data-dict-key="ui.label.maintenance.retentionRuns.table.dryRunTraceId">dryRunTraceId</th>
+                        </tr>
+                      </thead>
+                      <tbody id="maintenance-retention-runs-rows"></tbody>
+                    </table>
+                  </div>
+                  <p id="maintenance-retention-runs-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.retentionRuns.note">行クリックで監査検索に反映します。</p>
+                </div>
+              </div>
             </div>
             <div class="pane-detail"></div>
             <aside class="pane-actions">
@@ -1965,6 +1993,7 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <a class="btn" href="/admin/master" data-dict-key="ui.label.maintenance.toMaster">回復画面へ</a>
+                  <button id="maintenance-open-audit" type="button" data-dict-key="ui.label.maintenance.openAudit">監査ログを開く</button>
                 </div>
               </div>
             </aside>

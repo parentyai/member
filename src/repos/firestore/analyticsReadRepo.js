@@ -47,6 +47,21 @@ async function listEventsByCreatedAtRange(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listEventsByLineUserIdAndCreatedAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserId = typeof options.lineUserId === 'string' ? options.lineUserId.trim() : '';
+  if (!lineUserId) return [];
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  let query = db.collection('events').where('lineUserId', '==', lineUserId);
+  if (fromAt) query = query.where('createdAt', '>=', fromAt);
+  if (toAt) query = query.where('createdAt', '<=', toAt);
+  const snap = await query.orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 async function listAllUsers(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -84,6 +99,21 @@ async function listAllUserChecklists(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listUserChecklistsByLineUserId(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserId = typeof options.lineUserId === 'string' ? options.lineUserId.trim() : '';
+  if (!lineUserId) return [];
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const snap = await db
+    .collection('user_checklists')
+    .where('lineUserId', '==', lineUserId)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 async function listAllNotificationDeliveries(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -99,6 +129,21 @@ async function listNotificationDeliveriesBySentAtRange(opts) {
   const toAt = toDate(options.toAt);
   const db = getDb();
   let query = db.collection('notification_deliveries');
+  if (fromAt) query = query.where('sentAt', '>=', fromAt);
+  if (toAt) query = query.where('sentAt', '<=', toAt);
+  const snap = await query.orderBy('sentAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
+async function listNotificationDeliveriesByLineUserIdAndSentAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserId = typeof options.lineUserId === 'string' ? options.lineUserId.trim() : '';
+  if (!lineUserId) return [];
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  let query = db.collection('notification_deliveries').where('lineUserId', '==', lineUserId);
   if (fromAt) query = query.where('sentAt', '>=', fromAt);
   if (toAt) query = query.where('sentAt', '<=', toAt);
   const snap = await query.orderBy('sentAt', 'desc').limit(limit).get();
@@ -129,12 +174,15 @@ async function listNotificationsByCreatedAtRange(opts) {
 module.exports = {
   listAllEvents,
   listEventsByCreatedAtRange,
+  listEventsByLineUserIdAndCreatedAtRange,
   listAllUsers,
   listUsersByCreatedAtRange,
   listAllChecklists,
   listAllUserChecklists,
+  listUserChecklistsByLineUserId,
   listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange,
+  listNotificationDeliveriesByLineUserIdAndSentAtRange,
   listAllNotifications,
   listNotificationsByCreatedAtRange
 };

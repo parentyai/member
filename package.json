@@ -23,6 +23,10 @@
     "repo-map:generate": "node scripts/generate_repo_map.js",
     "repo-map:check": "node scripts/generate_repo_map.js --check",
     "cleanup:generate": "node scripts/generate_cleanup_reports.js",
-    "cleanup:check": "node scripts/check_structural_cleanup.js"
+    "cleanup:check": "node scripts/check_structural_cleanup.js",
+    "audit-inputs:generate": "node scripts/generate_audit_inputs_manifest.js",
+    "audit-inputs:check": "node scripts/generate_audit_inputs_manifest.js --check",
+    "load-risk:generate": "node scripts/generate_load_risk.js",
+    "load-risk:check": "node scripts/generate_load_risk.js --check"
   }
 }

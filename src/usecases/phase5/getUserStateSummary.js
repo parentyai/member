@@ -3,10 +3,13 @@
 const {
   listAllEvents,
   listEventsByCreatedAtRange,
+  listEventsByLineUserIdAndCreatedAtRange,
   listAllChecklists,
   listAllUserChecklists,
+  listUserChecklistsByLineUserId,
   listAllNotificationDeliveries,
-  listNotificationDeliveriesBySentAtRange
+  listNotificationDeliveriesBySentAtRange,
+  listNotificationDeliveriesByLineUserIdAndSentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { getNotificationReadModel } = require('../admin/getNotificationReadModel');
@@ -22,7 +25,9 @@ const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
   isSnapshotRequired,
-  isFallbackAllowed
+  isFallbackAllowed,
+  resolveSnapshotFreshnessMinutes,
+  isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -171,62 +176,121 @@ async function resolveNotificationSummaryCompleteness(deliveries, lineUserId) {
   return item && item.completeness ? item.completeness : null;
 }
 
+async function safeQuery(queryFn) {
+  try {
+    const rows = await queryFn();
+    return { rows: Array.isArray(rows) ? rows : [], failed: false };
+  } catch (_err) {
+    return { rows: [], failed: true };
+  }
+}
+
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
+  const includeMeta = payload.includeMeta === true;
+  const freshnessMinutes = resolveSnapshotFreshnessMinutes(payload);
+  const withMeta = (item, meta) => {
+    if (!includeMeta) return item;
+    return { item, meta };
+  };
   const snapshotMode = resolveSnapshotReadMode({ useSnapshot: payload.useSnapshot, snapshotMode: payload.snapshotMode });
   if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, payload.lineUserId);
-    if (snapshot && snapshot.data && typeof snapshot.data === 'object') {
-      return snapshot.data;
+    if (snapshot && snapshot.data && typeof snapshot.data === 'object' && isSnapshotFresh(snapshot, freshnessMinutes)) {
+      return withMeta(snapshot.data, {
+        dataSource: 'snapshot',
+        asOf: snapshot.asOf || null,
+        freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
+          ? Number(snapshot.freshnessMinutes)
+          : freshnessMinutes
+      });
     }
     if (isSnapshotRequired(snapshotMode)) {
-      return {
+      return withMeta({
         lineUserId: payload.lineUserId,
         notAvailable: true,
         notAvailableReason: 'snapshot_required_not_available'
-      };
+      }, {
+        dataSource: 'not_available',
+        asOf: null,
+        freshnessMinutes
+      });
     }
   }
   if (!isFallbackAllowed(snapshotMode)) {
-    return {
+    return withMeta({
       lineUserId: payload.lineUserId,
       notAvailable: true,
       notAvailableReason: 'snapshot_fallback_disabled'
-    };
+    }, {
+      dataSource: 'not_available',
+      asOf: null,
+      freshnessMinutes
+    });
   }
   const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
   const user = await usersRepo.getUser(payload.lineUserId);
   if (!user) throw new Error('user not found');
   const data = user.data || user || {};
   const queryRange = resolveAnalyticsQueryRangeFromUser(user);
-  let eventsPromise = Promise.resolve([]);
-  let deliveriesPromise = Promise.resolve([]);
+  let eventsPromise = Promise.resolve({ rows: [], failed: false });
+  let deliveriesPromise = Promise.resolve({ rows: [], failed: false });
   if (queryRange.fromAt) {
-    eventsPromise = listEventsByCreatedAtRange({
+    eventsPromise = safeQuery(() => listEventsByLineUserIdAndCreatedAtRange({
+      lineUserId: payload.lineUserId,
       limit: analyticsLimit,
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt
-    });
-    deliveriesPromise = listNotificationDeliveriesBySentAtRange({
+    }));
+    deliveriesPromise = safeQuery(() => listNotificationDeliveriesByLineUserIdAndSentAtRange({
+      lineUserId: payload.lineUserId,
       limit: analyticsLimit,
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt
-    });
+    }));
   }
+  const userChecklistsPromise = safeQuery(() => listUserChecklistsByLineUserId({
+    lineUserId: payload.lineUserId,
+    limit: analyticsLimit
+  }));
 
-  let [events, checklists, userChecklists, deliveries] = await Promise.all([
+  let [eventsResult, checklists, userChecklistsResult, deliveriesResult] = await Promise.all([
     eventsPromise,
     listAllChecklists({ limit: analyticsLimit }),
-    listAllUserChecklists({ limit: analyticsLimit }),
+    userChecklistsPromise,
     deliveriesPromise
   ]);
+  let events = eventsResult.rows;
+  let userChecklists = userChecklistsResult.rows;
+  let deliveries = deliveriesResult.rows;
 
-  if (events.length === 0) {
-    events = await listAllEvents({ limit: analyticsLimit });
+  if (eventsResult.failed || events.length === 0) {
+    if (queryRange.fromAt) {
+      events = await listEventsByCreatedAtRange({
+        limit: analyticsLimit,
+        fromAt: queryRange.fromAt,
+        toAt: queryRange.toAt
+      });
+    }
+    if (events.length === 0) {
+      events = await listAllEvents({ limit: analyticsLimit });
+    }
   }
-  if (deliveries.length === 0) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+  if (deliveriesResult.failed || deliveries.length === 0) {
+    if (queryRange.fromAt) {
+      deliveries = await listNotificationDeliveriesBySentAtRange({
+        limit: analyticsLimit,
+        fromAt: queryRange.fromAt,
+        toAt: queryRange.toAt
+      });
+    }
+    if (deliveries.length === 0) {
+      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    }
+  }
+  if (userChecklistsResult.failed) {
+    userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
   }
 
   const nowMs = Date.now();
@@ -262,7 +326,7 @@ async function getUserStateSummary(params) {
     opsDecisionCompleteness
   });
 
-  return {
+  const item = {
     lineUserId: user.id,
     hasMemberNumber,
     checklistCompleted,
@@ -278,6 +342,11 @@ async function getUserStateSummary(params) {
     lastActionAt,
     lastReactionAt
   };
+  return withMeta(item, {
+    dataSource: 'computed',
+    asOf: new Date().toISOString(),
+    freshnessMinutes: null
+  });
 }
 
 module.exports = {

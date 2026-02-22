@@ -62,13 +62,17 @@ function filterByReviewAge(item, reviewAgeDays, nowMs) {
 
 async function getUsersSummaryFiltered(params) {
   const payload = params || {};
-  const items = await getUserOperationalSummary({
+  const includeMeta = payload.includeMeta === true;
+  const summary = await getUserOperationalSummary({
     limit: payload.limit,
     analyticsLimit: payload.analyticsLimit,
-    snapshotMode: payload.snapshotMode
+    snapshotMode: payload.snapshotMode,
+    includeMeta
   });
+  const baseItems = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
+  const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
-  const enriched = items.map((item) => {
+  const enriched = baseItems.map((item) => {
     const stale = isStaleMemberNumber(item, nowMs);
     const checklistIncomplete = isChecklistIncomplete(item);
     const needsAttention = !item.hasMemberNumber || checklistIncomplete || stale;
@@ -87,7 +91,16 @@ async function getUsersSummaryFiltered(params) {
     .filter((item) => filterByStale(item, payload.stale))
     .filter((item) => filterByUnreviewed(item, payload.unreviewed))
     .filter((item) => filterByReviewAge(item, payload.reviewAgeDays, nowMs));
-  return sortUsersSummaryStable(filtered);
+  const items = sortUsersSummaryStable(filtered);
+  if (!includeMeta) return items;
+  return {
+    items,
+    meta: {
+      dataSource: meta && meta.dataSource ? meta.dataSource : 'not_available',
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }
+  };
 }
 
 module.exports = {

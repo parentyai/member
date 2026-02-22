@@ -94,7 +94,7 @@ async function handleUsersSummaryFiltered(req, res) {
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
-    const [items, opsState] = await Promise.all([
+    const [summary, opsState] = await Promise.all([
       getUsersSummaryFiltered(Object.assign({}, range, {
         needsAttention,
         stale,
@@ -102,10 +102,13 @@ async function handleUsersSummaryFiltered(req, res) {
         reviewAgeDays,
         limit,
         analyticsLimit,
-        snapshotMode
+        snapshotMode,
+        includeMeta: true
       })),
       getOpsState()
     ]);
+    const items = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
+    const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
     const review = opsState
       ? {
           lastReviewedAt: formatTimestamp(opsState.lastReviewedAt),
@@ -113,7 +116,14 @@ async function handleUsersSummaryFiltered(req, res) {
         }
       : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items, review }));
+    res.end(JSON.stringify({
+      ok: true,
+      items,
+      review,
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }));
   } catch (err) {
     handleError(res, err);
   }
@@ -135,13 +145,22 @@ async function handleNotificationsSummaryFiltered(req, res) {
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
-    const items = await getNotificationsSummaryFiltered(Object.assign({}, range, {
+    const summary = await getNotificationsSummaryFiltered(Object.assign({}, range, {
       limit,
       eventsLimit,
-      snapshotMode
+      snapshotMode,
+      includeMeta: true
     }));
+    const items = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
+    const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, items }));
+    res.end(JSON.stringify({
+      ok: true,
+      items,
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }));
   } catch (err) {
     handleError(res, err);
   }
