@@ -5,7 +5,7 @@ const { getNotificationOperationalSummary } = require('../../usecases/admin/getN
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('required') || message.includes('invalid limit')) {
+  if (message.includes('required') || message.includes('invalid limit') || message.includes('invalid snapshotMode')) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end(message);
     return;
@@ -22,19 +22,31 @@ function parsePositiveInt(value, min, max) {
   return num;
 }
 
+function parseSnapshotMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'prefer' || value === 'require') return value;
+  return null;
+}
+
 async function handleUsersSummary(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const limitRaw = url.searchParams.get('limit');
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
+    const snapshotModeRaw = url.searchParams.get('snapshotMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
+    const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     if ((limitRaw && !limit) || (analyticsLimitRaw && !analyticsLimit)) {
       throw new Error('invalid limit');
     }
+    if (snapshotModeRaw && !snapshotMode) {
+      throw new Error('invalid snapshotMode');
+    }
     const items = await getUserOperationalSummary({
       limit,
-      analyticsLimit
+      analyticsLimit,
+      snapshotMode
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, items }));
