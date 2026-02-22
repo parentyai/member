@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T09:32:09-05:00",
-  "gitCommit": "1d6f7072203eb1554a1fdd7391861bc7202b6930",
+  "generatedAt": "2026-02-22T09:34:59-05:00",
+  "gitCommit": "1e14ccf6c4d49416b0df6954019d4a23a976f1ee",
   "branch": "codex/citypack-language-federal",
-  "sourceDigest": "d708f4cfc26b9517d6814eab8ee2bfbd1e4a6020d9ac2ad1c9ec3f522365302a",
+  "sourceDigest": "92746514b3350fa91e6972854412be9b68919aec01da06663e019e1368a31be6",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,7 +78,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "d707ff623df56f0c9c6123e490fad2512e79205739dc630ef0d36274c1f498c9",
+      "sha256": "ab7b19d38096156dcec17a10e9172672217601fc37d91dd56560aa3f845e1e8a",
       "bytes": 12724
     },
     {
