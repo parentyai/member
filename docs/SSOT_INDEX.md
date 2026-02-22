@@ -234,4 +234,16 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE343_EXECUTION_LOG.md`（Read Path収束 follow-up: audit inputs manifest再生成実行ログ）
 - `docs/PHASE344_PLAN.md`（Read Path収束 follow-up: load risk再生成 + 予算ゲート計画）
 - `docs/PHASE344_EXECUTION_LOG.md`（Read Path収束 follow-up: load risk再生成 + 予算ゲート実行ログ）
+- `docs/PHASE345_PLAN.md`（Read Path収束 follow-up: audit inputs manifest 実値化計画）
+- `docs/PHASE345_EXECUTION_LOG.md`（Read Path収束 follow-up: audit inputs manifest 実値化実行ログ）
+- `docs/PHASE346_PLAN.md`（Read Path収束 follow-up: load risk endpoint連結強化計画）
+- `docs/PHASE346_EXECUTION_LOG.md`（Read Path収束 follow-up: load risk endpoint連結強化実行ログ）
+- `docs/PHASE347_PLAN.md`（Read Path収束 follow-up: phase4 summary fallbackModeノブ計画）
+- `docs/PHASE347_EXECUTION_LOG.md`（Read Path収束 follow-up: phase4 summary fallbackModeノブ実行ログ）
+- `docs/PHASE348_PLAN.md`（Read Path収束 follow-up: phase5 summary/state fallbackModeノブ計画）
+- `docs/PHASE348_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 summary/state fallbackModeノブ実行ログ）
+- `docs/PHASE349_PLAN.md`（Read Path収束 follow-up: ops snapshot health API計画）
+- `docs/PHASE349_EXECUTION_LOG.md`（Read Path収束 follow-up: ops snapshot health API実行ログ）
+- `docs/PHASE350_PLAN.md`（Read Path収束 follow-up: read path budget ratchet計画）
+- `docs/PHASE350_EXECUTION_LOG.md`（Read Path収束 follow-up: read path budget ratchet実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

@@ -1070,6 +1070,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/ops-snapshot-health' || pathname === '/api/admin/ops-snapshot-health/')) {
+    const { handleOpsSnapshotHealth } = require('./routes/admin/opsSnapshotHealth');
+    handleOpsSnapshotHealth(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
     const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;
