@@ -218,3 +218,20 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE335_EXECUTION_LOG.md`（Read Path収束 follow-up: monitor insights snapshotMode fallback制御実行ログ）
 - `docs/PHASE336_PLAN.md`（Read Path収束 follow-up: retention runs admin可視化API計画）
 - `docs/PHASE336_EXECUTION_LOG.md`（Read Path収束 follow-up: retention runs admin可視化API実行ログ）
+- `docs/PHASE337_PLAN.md`（Read Path収束 follow-up: phase5 summary metadata統一計画）
+- `docs/PHASE337_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 summary metadata統一実行ログ）
+- `docs/PHASE338_PLAN.md`（Read Path収束 follow-up: phase5 state summary metadata統一計画）
+- `docs/PHASE338_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 state summary metadata統一実行ログ）
+- `docs/PHASE339_PLAN.md`（Read Path収束 follow-up: phase5 state user-scoped query優先化計画）
+- `docs/PHASE339_EXECUTION_LOG.md`（Read Path収束 follow-up: phase5 state user-scoped query優先化実行ログ）
+- `docs/PHASE340_PLAN.md`（Read Path収束 follow-up: snapshot freshness 契約横断統一計画）
+- `docs/PHASE340_EXECUTION_LOG.md`（Read Path収束 follow-up: snapshot freshness 契約横断統一実行ログ）
+- `docs/PHASE341_PLAN.md`（Read Path収束 follow-up: ops snapshot targets部分更新計画）
+- `docs/PHASE341_EXECUTION_LOG.md`（Read Path収束 follow-up: ops snapshot targets部分更新実行ログ）
+- `docs/PHASE342_PLAN.md`（Read Path収束 follow-up: retention runs admin UI可視化計画）
+- `docs/PHASE342_EXECUTION_LOG.md`（Read Path収束 follow-up: retention runs admin UI可視化実行ログ）
+- `docs/PHASE343_PLAN.md`（Read Path収束 follow-up: audit inputs manifest再生成計画）
+- `docs/PHASE343_EXECUTION_LOG.md`（Read Path収束 follow-up: audit inputs manifest再生成実行ログ）
+- `docs/PHASE344_PLAN.md`（Read Path収束 follow-up: load risk再生成 + 予算ゲート計画）
+- `docs/PHASE344_EXECUTION_LOG.md`（Read Path収束 follow-up: load risk再生成 + 予算ゲート実行ログ）
+- `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

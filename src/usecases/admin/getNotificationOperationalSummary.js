@@ -10,7 +10,9 @@ const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
   isSnapshotRequired,
-  isFallbackAllowed
+  isFallbackAllowed,
+  resolveSnapshotFreshnessMinutes,
+  isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
 const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
@@ -113,6 +115,7 @@ async function buildFromSnapshot(snapshotItems, options) {
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
   const includeMeta = opts.includeMeta === true;
+  const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const withMeta = (items, meta) => {
     if (!includeMeta) return items;
     return { items, meta };
@@ -120,21 +123,21 @@ async function getNotificationOperationalSummary(params) {
   const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
   if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
-    if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
+    if (snapshot && snapshot.data && Array.isArray(snapshot.data.items) && isSnapshotFresh(snapshot, freshnessMinutes)) {
       const items = await buildFromSnapshot(snapshot.data.items, opts);
       return withMeta(items, {
         dataSource: 'snapshot',
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
-          : null
+          : freshnessMinutes
       });
     }
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
         asOf: null,
-        freshnessMinutes: null
+        freshnessMinutes
       });
     }
   }
@@ -142,7 +145,7 @@ async function getNotificationOperationalSummary(params) {
     return withMeta([], {
       dataSource: 'not_available',
       asOf: null,
-      freshnessMinutes: null
+      freshnessMinutes
     });
   }
 

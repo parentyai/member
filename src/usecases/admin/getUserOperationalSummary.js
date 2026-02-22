@@ -14,7 +14,9 @@ const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
   isSnapshotRequired,
-  isFallbackAllowed
+  isFallbackAllowed,
+  resolveSnapshotFreshnessMinutes,
+  isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
@@ -150,6 +152,7 @@ function buildLatestReactionByUser(deliveries) {
 async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const includeMeta = opts.includeMeta === true;
+  const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const withMeta = (items, meta) => {
     if (!includeMeta) return items;
     return { items, meta };
@@ -157,20 +160,20 @@ async function getUserOperationalSummary(params) {
   const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
   if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
-    if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
+    if (snapshot && snapshot.data && Array.isArray(snapshot.data.items) && isSnapshotFresh(snapshot, freshnessMinutes)) {
       return withMeta(snapshot.data.items, {
         dataSource: 'snapshot',
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
-          : null
+          : freshnessMinutes
       });
     }
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
         asOf: null,
-        freshnessMinutes: null
+        freshnessMinutes
       });
     }
   }
@@ -178,7 +181,7 @@ async function getUserOperationalSummary(params) {
     return withMeta([], {
       dataSource: 'not_available',
       asOf: null,
-      freshnessMinutes: null
+      freshnessMinutes
     });
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);

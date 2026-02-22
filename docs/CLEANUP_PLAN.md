@@ -8,8 +8,8 @@
 - canonical repos: 22
 - legacy repos: 6
 - duplicate groups: 6
-- missing-index fallback points: 40
-- full-scan hotspots: 28
+- missing-index fallback points: 22
+- full-scan hotspots: 23
 - lifecycle collections: 45
 - unreachable frozen targets: 20
 

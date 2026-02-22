@@ -23,12 +23,25 @@ function inRange(value, fromMs, toMs) {
 
 async function getNotificationsSummaryFiltered(params) {
   const payload = params || {};
-  const items = await getNotificationOperationalSummary({
+  const includeMeta = payload.includeMeta === true;
+  const summary = await getNotificationOperationalSummary({
     limit: payload.limit,
     eventsLimit: payload.eventsLimit,
-    snapshotMode: payload.snapshotMode
+    snapshotMode: payload.snapshotMode,
+    includeMeta
   });
-  return items.filter((item) => inRange(item.lastReactionAt || item.sentAt, payload.fromMs, payload.toMs));
+  const baseItems = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
+  const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
+  const items = baseItems.filter((item) => inRange(item.lastReactionAt || item.sentAt, payload.fromMs, payload.toMs));
+  if (!includeMeta) return items;
+  return {
+    items,
+    meta: {
+      dataSource: meta && meta.dataSource ? meta.dataSource : 'not_available',
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }
+  };
 }
 
 module.exports = {

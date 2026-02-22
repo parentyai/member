@@ -58,6 +58,7 @@ const state = {
   topAnomaly: '-',
   structDriftRuns: [],
   structDriftLastResult: null,
+  retentionRuns: [],
   paneUpdatedAt: {}
 };
 
@@ -3721,6 +3722,106 @@ async function runStructDriftBackfill(mode) {
   }
 }
 
+function parseRetentionRunsLimit() {
+  const el = document.getElementById('maintenance-retention-runs-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 30;
+  return Math.min(Math.floor(value), 200);
+}
+
+function readRetentionRunsTraceFilter() {
+  const el = document.getElementById('maintenance-retention-runs-trace');
+  const value = el && typeof el.value === 'string' ? el.value.trim() : '';
+  return value || null;
+}
+
+function formatRetentionAction(action) {
+  if (action === 'retention.dry_run.execute') return 'dry-run';
+  if (action === 'retention.apply.execute') return 'apply';
+  if (action === 'retention.apply.blocked') return 'blocked';
+  return action || '-';
+}
+
+function renderRetentionRuns(items) {
+  const tbody = document.getElementById('maintenance-retention-runs-rows');
+  const note = document.getElementById('maintenance-retention-runs-note');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (note) note.textContent = t('ui.desc.maintenance.retentionRuns.empty', '実行履歴はありません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const deletedCount = Number.isFinite(Number(item && item.deletedCount)) ? Number(item.deletedCount) : 0;
+    const collectionText = item && item.collection
+      ? String(item.collection)
+      : (Array.isArray(item && item.collections) && item.collections.length ? item.collections.join(',') : '-');
+    const cols = [
+      formatDateLabel(item && item.createdAt),
+      formatRetentionAction(item && item.action),
+      String(deletedCount),
+      collectionText,
+      item && item.traceId ? String(item.traceId) : '-',
+      item && item.dryRunTraceId ? String(item.dryRunTraceId) : '-'
+    ];
+    cols.forEach((value, index) => {
+      const td = document.createElement('td');
+      if (index === 2) td.classList.add('cell-num');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const trace = item && item.traceId ? String(item.traceId) : '';
+      if (!trace) return;
+      const traceInput = document.getElementById('audit-trace');
+      if (traceInput) traceInput.value = trace;
+      void loadAudit().catch(() => {
+        showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+      });
+    });
+    tbody.appendChild(tr);
+  });
+  if (note) {
+    const latest = rows[0];
+    const latestText = latest
+      ? `${formatDateLabel(latest.createdAt)} / ${formatRetentionAction(latest.action)} / deleted=${Number.isFinite(Number(latest.deletedCount)) ? Number(latest.deletedCount) : 0}`
+      : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    note.textContent = `${t('ui.label.maintenance.retentionRuns.summary', '最新')}: ${latestText}`;
+  }
+}
+
+async function loadRetentionRuns(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('audit-trace');
+  const limit = parseRetentionRunsLimit();
+  const queryTraceId = readRetentionRunsTraceFilter();
+  const qs = new URLSearchParams();
+  qs.set('limit', String(limit));
+  if (queryTraceId) qs.set('traceId', queryTraceId);
+  try {
+    const res = await fetch(`/api/admin/retention-runs?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.retentionRuns = Array.isArray(data.items) ? data.items : [];
+    renderRetentionRuns(state.retentionRuns);
+    if (notify) showToast(t('ui.toast.maintenance.retentionRuns.reloadOk', 'Retention実行履歴を更新しました'), 'ok');
+  } catch (_err) {
+    state.retentionRuns = [];
+    renderRetentionRuns([]);
+    if (notify) showToast(t('ui.toast.maintenance.retentionRuns.reloadFail', 'Retention実行履歴の取得に失敗しました'), 'danger');
+  }
+}
+
 function normalizeComposerType(value) {
   const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (raw === 'GENERAL' || raw === 'ANNOUNCEMENT' || raw === 'VENDOR' || raw === 'AB' || raw === 'STEP') return raw;
@@ -4612,6 +4713,19 @@ function setupVendorControls() {
   });
 }
 
+function setupMaintenanceControls() {
+  document.getElementById('maintenance-retention-runs-reload')?.addEventListener('click', () => {
+    void loadRetentionRuns({ notify: true });
+  });
+  document.getElementById('maintenance-open-audit')?.addEventListener('click', async () => {
+    activatePane('audit');
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  });
+  void loadRetentionRuns({ notify: false });
+}
+
 function setupDecisionActions() {
   document.getElementById('composer-action-edit')?.addEventListener('click', () => {
     activatePane('composer');
@@ -5026,6 +5140,7 @@ function setupLlmControls() {
   setupReadModelControls();
   setupCityPackControls();
   setupVendorControls();
+  setupMaintenanceControls();
   setupDecisionActions();
   setupAudit();
   setupLlmControls();

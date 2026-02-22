@@ -44,6 +44,7 @@ async function handleOpsSnapshotJob(req, res, bodyText) {
     dryRun: payload.dryRun === true,
     scanLimit: payload.scanLimit,
     windowMonths: payload.windowMonths,
+    targets: payload.targets,
     lineUserIds: payload.lineUserIds,
     traceId,
     requestId: payload.requestId || null,

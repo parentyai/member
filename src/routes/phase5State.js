@@ -49,10 +49,19 @@ async function handleUserStateSummary(req, res) {
     const result = await getUserStateSummary({
       lineUserId,
       analyticsLimit,
-      snapshotMode
+      snapshotMode,
+      includeMeta: true
     });
+    const item = result && typeof result === 'object' && !Array.isArray(result) && result.item ? result.item : result;
+    const meta = result && typeof result === 'object' && !Array.isArray(result) && result.meta ? result.meta : null;
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, item: result }));
+    res.end(JSON.stringify({
+      ok: true,
+      item,
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+    }));
   } catch (err) {
     handleError(res, err);
   }

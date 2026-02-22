@@ -1786,6 +1786,15 @@ details:not([open]) > *:not(summary) {
   white-space: nowrap;
 }
 
+.retention-runs-table td,
+.retention-runs-table th {
+  vertical-align: top;
+}
+
+.retention-runs-note {
+  margin: var(--space-2) 0 0;
+}
+
 @media (max-width: 1100px) {
   .app-nav {
     position: static;
