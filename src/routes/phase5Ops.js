@@ -28,7 +28,7 @@ function parseDateParam(value, endOfDay) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays') || message.includes('invalid limit')) {
+  if (message.includes('invalid date') || message.includes('invalid reviewAgeDays') || message.includes('invalid limit') || message.includes('invalid snapshotMode')) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
@@ -62,6 +62,12 @@ function parsePositiveInt(value, min, max) {
   if (!Number.isInteger(num)) return null;
   if (num < min || num > max) return null;
   return num;
+}
+
+function parseSnapshotMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'prefer' || value === 'require') return value;
+  return null;
 }
 
 async function handleUsersSummaryFiltered(req, res) {
@@ -113,14 +119,20 @@ async function handleNotificationsSummaryFiltered(req, res) {
     const range = parseRange(url);
     const limitRaw = url.searchParams.get('limit');
     const eventsLimitRaw = url.searchParams.get('eventsLimit');
+    const snapshotModeRaw = url.searchParams.get('snapshotMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const eventsLimit = parsePositiveInt(eventsLimitRaw, 1, 3000);
+    const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     if ((limitRaw && !limit) || (eventsLimitRaw && !eventsLimit)) {
       throw new Error('invalid limit');
     }
+    if (snapshotModeRaw && !snapshotMode) {
+      throw new Error('invalid snapshotMode');
+    }
     const items = await getNotificationsSummaryFiltered(Object.assign({}, range, {
       limit,
-      eventsLimit
+      eventsLimit,
+      snapshotMode
     }));
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, items }));

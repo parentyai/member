@@ -59,18 +59,24 @@ async function handleNotificationsSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const limitRaw = url.searchParams.get('limit');
   const eventsLimitRaw = url.searchParams.get('eventsLimit');
+  const snapshotModeRaw = url.searchParams.get('snapshotMode');
   const status = url.searchParams.get('status');
   const scenarioKey = url.searchParams.get('scenarioKey');
   const stepKey = url.searchParams.get('stepKey');
   try {
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const eventsLimit = parsePositiveInt(eventsLimitRaw, 1, 3000);
+    const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     if ((limitRaw && !limit) || (eventsLimitRaw && !eventsLimit)) {
       throw new Error('invalid limit');
+    }
+    if (snapshotModeRaw && !snapshotMode) {
+      throw new Error('invalid snapshotMode');
     }
     const items = await getNotificationOperationalSummary({
       limit,
       eventsLimit,
+      snapshotMode,
       status: status || undefined,
       scenarioKey: scenarioKey || undefined,
       stepKey: stepKey || undefined

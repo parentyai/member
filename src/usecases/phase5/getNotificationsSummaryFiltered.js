@@ -25,7 +25,8 @@ async function getNotificationsSummaryFiltered(params) {
   const payload = params || {};
   const items = await getNotificationOperationalSummary({
     limit: payload.limit,
-    eventsLimit: payload.eventsLimit
+    eventsLimit: payload.eventsLimit,
+    snapshotMode: payload.snapshotMode
   });
   return items.filter((item) => inRange(item.lastReactionAt || item.sentAt, payload.fromMs, payload.toMs));
 }
