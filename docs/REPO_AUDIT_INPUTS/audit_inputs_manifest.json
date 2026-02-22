@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T16:34:42-05:00",
-  "gitCommit": "a406cf28b08329fc0af43fa970e6e1070b17f148",
+  "generatedAt": "2026-02-22T18:14:43-05:00",
+  "gitCommit": "dc33b63d6942be495afbc65e0d2e5fe4e8e4103e",
   "branch": "codex/phase591-594-fallback-risk-converge",
-  "sourceDigest": "02bd8d754858f88fe7636c4b73f389e5cdd5514042393b813bee443959795849",
+  "sourceDigest": "2819af80f200c10acf15c26b21056d56554a1e0546830dc2b6a69ab30b25427b",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "94b98d0275247957b8dd004bbeff75d985cbd76fea9f16c9319b755a16c528ec",
-      "bytes": 4404
+      "sha256": "5f6f5c99727a72ccf4359fd63a35992779d88357f83bd6651ea1703a8887aaea",
+      "bytes": 4623
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -88,7 +88,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "a99741623fb5839ee1d07ee3970c8bc55868010e406ae8ee3745b006b2a9e639",
+      "sha256": "f33d6ccb7b31c4debf823f5d98c905aef58e563569b286c2ec9e9e7456ebcb90",
       "bytes": 6354
     },
     {
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "72ed5316b15c6b21ec41ef5877fc20333158d1e31461cf09c5e70aa2a875843c",
+      "sha256": "ac0724a0b583eee63b50c874e49b52a97e07411f91f1328e6004418c96a5aa22",
       "bytes": 288099
     },
     {
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b3ad395d0eb8f80d75c5cb9505566fc05d667c6303c8c80baf0dc44498fa79e3",
+      "sha256": "c29f8af8dd466baf2cbe7b8d3bd8f812fa09681c6ce217f2fe086446f44c2f63",
       "bytes": 2287
     }
   ],

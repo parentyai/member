@@ -4580,16 +4580,21 @@ function renderProductReadiness(payload) {
       && Number.isFinite(Number(payload.checks.fallbackSpikes.count))
       ? Number(payload.checks.fallbackSpikes.count)
       : null;
+    const missingIndexSurfaceCount = payload && payload.checks && payload.checks.missingIndexSurface
+      && Number.isFinite(Number(payload.checks.missingIndexSurface.surfaceCount))
+      ? Number(payload.checks.missingIndexSurface.surfaceCount)
+      : null;
     const staleRatio = payload && payload.checks && payload.checks.snapshotHealth
       && Number.isFinite(Number(payload.checks.snapshotHealth.staleRatio))
       ? Number(payload.checks.snapshotHealth.staleRatio)
       : null;
-    if (fallbackCount === null && staleRatio === null) {
+    if (fallbackCount === null && staleRatio === null && missingIndexSurfaceCount === null) {
       noteEl.textContent = t('ui.desc.maintenance.productReadiness.note', 'GO/NO_GO は運用判断の参考値です。');
     } else {
       const staleText = staleRatio === null ? '-' : `${Math.round(staleRatio * 1000) / 10}%`;
       const fallbackText = fallbackCount === null ? '-' : String(fallbackCount);
-      noteEl.textContent = `${t('ui.label.maintenance.productReadiness.summary', 'snapshot stale率 / fallback件数')}: ${staleText} / ${fallbackText}`;
+      const missingIndexText = missingIndexSurfaceCount === null ? '-' : String(missingIndexSurfaceCount);
+      noteEl.textContent = `${t('ui.label.maintenance.productReadiness.summary', 'snapshot stale率 / fallback件数 / missing-index surface')}: ${staleText} / ${fallbackText} / ${missingIndexText}`;
     }
   }
 }

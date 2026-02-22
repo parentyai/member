@@ -336,5 +336,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE593_EXECUTION_LOG.md`（Read Path収束継続: maintenance missing-index surface 可視化実行ログ）
 - `docs/PHASE594_PLAN.md`（Read Path収束継続: missing-index surface budget ratchet計画）
 - `docs/PHASE594_EXECUTION_LOG.md`（Read Path収束継続: missing-index surface budget ratchet実行ログ）
+- `docs/PHASE596_PLAN.md`（Product-out収束継続: snapshot/fallback gate budget 追加計画）
+- `docs/PHASE596_EXECUTION_LOG.md`（Product-out収束継続: snapshot/fallback gate budget 追加実行ログ）
+- `tests/phase596/*`（productReadiness threshold 契約テスト）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
 - `docs/REPO_AUDIT_INPUTS/missing_index_surface.json`（missing-index fallback surface 集計）

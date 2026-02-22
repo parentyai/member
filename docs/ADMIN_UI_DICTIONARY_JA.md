@@ -1426,7 +1426,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.label.maintenance.productReadiness.blockerCount": "blockers",
   "ui.desc.maintenance.productReadiness.note": "GO/NO_GO は運用判断の参考値です。",
   "ui.desc.maintenance.productReadiness.blockersEmpty": "blocker はありません。",
-  "ui.label.maintenance.productReadiness.summary": "snapshot stale率 / fallback件数",
+  "ui.label.maintenance.productReadiness.summary": "snapshot stale率 / fallback件数 / missing-index surface",
   "ui.toast.maintenance.productReadiness.reloadOk": "Product Readiness 判定を更新しました",
   "ui.toast.maintenance.productReadiness.reloadFail": "Product Readiness 判定の取得に失敗しました",
   "ui.value.boolean.yes": "はい",

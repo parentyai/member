@@ -2,6 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const childProcess = require('child_process');
+const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'src');
@@ -10,6 +12,7 @@ const DEP_GRAPH_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'dependency_
 const OUTPUT_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'load_risk.json');
 const BUDGETS_PATH = path.join(ROOT, 'docs', 'READ_PATH_BUDGETS.md');
 const DEFAULT_LIMIT_ASSUMED = 1000;
+const SOURCE_FILES = [INDEX_FILE, DEP_GRAPH_PATH];
 
 function toPosix(value) {
   return value.replace(/\\/g, '/');
@@ -39,6 +42,46 @@ function parseLimitFromLine(line) {
     if (Number.isFinite(value) && value > 0) return value;
   }
   return null;
+}
+
+function resolveGeneratedAt() {
+  try {
+    const value = childProcess.execSync('git log -1 --format=%cI -- docs/REPO_AUDIT_INPUTS/load_risk.json', {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'ignore']
+    }).toString('utf8').trim();
+    if (value) return value;
+  } catch (_err) {
+    // fall through
+  }
+  return 'NOT_AVAILABLE';
+}
+
+function buildSourceDigest() {
+  const hash = crypto.createHash('sha256');
+  const sources = [];
+
+  SOURCE_FILES.forEach((file) => {
+    if (fs.existsSync(file)) sources.push(file);
+  });
+
+  const allFiles = [];
+  const jsFiles = [];
+  walkJsFiles(SRC_DIR, jsFiles);
+  jsFiles.sort().forEach((file) => allFiles.push(file));
+  sources.forEach((file) => {
+    if (!allFiles.includes(file)) allFiles.push(file);
+  });
+
+  allFiles.forEach((file) => {
+    const rel = toPosix(path.relative(ROOT, file));
+    hash.update(rel);
+    hash.update('\n');
+    hash.update(fs.readFileSync(file, 'utf8'));
+    hash.update('\n');
+  });
+
+  return hash.digest('hex');
 }
 
 function isFunctionDeclarationLine(line, functionName) {
@@ -283,6 +326,9 @@ function buildLoadRisk() {
   const fallbackSurfaceCount = new Set(fallbackPoints.map((row) => `${row.file}::${row.call}`)).size;
 
   return {
+    source: 'src/**/*.js, src/index.js, docs/REPO_AUDIT_INPUTS/dependency_graph.json',
+    generatedAt: resolveGeneratedAt(),
+    sourceDigest: buildSourceDigest(),
     estimated_worst_case_docs_scan: estimatedWorstCaseDocsScan,
     fallback_risk: fallbackSurfaceCount,
     hotspots_count: hotspots.length,
@@ -300,7 +346,11 @@ function buildLoadRisk() {
 
 function readBudgets() {
   if (!fs.existsSync(BUDGETS_PATH)) {
-    return { worstCaseMax: null, fallbackPointsMax: null, hotspotsCountMax: null };
+    return {
+      worstCaseMax: null,
+      fallbackPointsMax: null,
+      hotspotsCountMax: null
+    };
   }
   const text = fs.readFileSync(BUDGETS_PATH, 'utf8');
   const worstMatches = [...text.matchAll(/worst_case_docs_scan_max:\s*(\d+)/g)];
@@ -335,8 +385,32 @@ function run() {
   const next = `${JSON.stringify(payload, null, 2)}\n`;
 
   if (checkMode) {
-    const current = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
-    if (current !== next) {
+    const currentRaw = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
+    let current = null;
+    try {
+      current = currentRaw ? JSON.parse(currentRaw) : null;
+    } catch (_err) {
+      process.stderr.write('load_risk.json is invalid JSON. run: npm run load-risk:generate\n');
+      process.exit(1);
+    }
+    let expected = null;
+    try {
+      expected = JSON.parse(next);
+    } catch (_err) {
+      process.stderr.write('generated load_risk.json is invalid JSON\n');
+      process.exit(1);
+    }
+    if (!current) {
+      process.stderr.write('load_risk.json is stale. run: npm run load-risk:generate\n');
+      process.exit(1);
+    }
+
+    const comparableCurrent = Object.assign({}, current);
+    const comparableNext = Object.assign({}, expected);
+    delete comparableCurrent.generatedAt;
+    delete comparableNext.generatedAt;
+
+    if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableNext)) {
       process.stderr.write('load_risk.json is stale. run: npm run load-risk:generate\n');
       process.exit(1);
     }
