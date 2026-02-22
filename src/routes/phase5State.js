@@ -4,7 +4,12 @@ const { getUserStateSummary } = require('../usecases/phase5/getUserStateSummary'
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('required') || message.includes('not found')) {
+  if (
+    message.includes('required') ||
+    message.includes('not found') ||
+    message.includes('invalid limit') ||
+    message.includes('invalid snapshotMode')
+  ) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
@@ -13,11 +18,39 @@ function handleError(res, err) {
   res.end(JSON.stringify({ ok: false, error: 'error' }));
 }
 
+function parsePositiveInt(value, min, max) {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  if (!Number.isInteger(num)) return null;
+  if (num < min || num > max) return null;
+  return num;
+}
+
+function parseSnapshotMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'prefer' || value === 'require') return value;
+  return null;
+}
+
 async function handleUserStateSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = url.searchParams.get('lineUserId');
   try {
-    const result = await getUserStateSummary({ lineUserId });
+    const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
+    const snapshotModeRaw = url.searchParams.get('snapshotMode');
+    const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
+    const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    if (analyticsLimitRaw && !analyticsLimit) {
+      throw new Error('invalid limit');
+    }
+    if (snapshotModeRaw && !snapshotMode) {
+      throw new Error('invalid snapshotMode');
+    }
+    const result = await getUserStateSummary({
+      lineUserId,
+      analyticsLimit,
+      snapshotMode
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, item: result }));
   } catch (err) {
