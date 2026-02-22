@@ -1,69 +1,8 @@
 {
-  "estimated_worst_case_docs_scan": 4000,
+  "estimated_worst_case_docs_scan": 0,
   "fallback_risk": 17,
-  "hotspots_count": 4,
-  "hotspots": [
-    {
-      "hotspot": {
-        "file": "src/usecases/phase2/runAutomation.js",
-        "line": 180,
-        "type": "listAll",
-        "call": "listAllEvents",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/admin/phase2/automation/run"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/phase2/runAutomation.js",
-        "line": 229,
-        "type": "listAll",
-        "call": "listAllUsers",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/admin/phase2/automation/run"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/phase2/runAutomation.js",
-        "line": 234,
-        "type": "listAll",
-        "call": "listAllChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/admin/phase2/automation/run"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/phase2/runAutomation.js",
-        "line": 239,
-        "type": "listAll",
-        "call": "listAllUserChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/admin/phase2/automation/run"
-      ]
-    }
-  ],
+  "hotspots_count": 0,
+  "hotspots": [],
   "fallback_points": [
     {
       "file": "src/repos/firestore/cityPackBulletinsRepo.js",

@@ -45,3 +45,9 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - fallback_points_max: 17
 - hotspots_count_max: 13
 - note: phase585-586 の bounded fallback 置換後基準。global listAll fallback の route呼び出しを削減。
+
+## current_baseline_phase590
+- worst_case_docs_scan_max: 0
+- fallback_points_max: 17
+- hotspots_count_max: 0
+- note: phase587-590 の収束基準。phase4/phase5/phase2 read-path の listAll hotspot を除去。

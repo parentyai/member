@@ -1,13 +1,12 @@
 'use strict';
 
 const {
-  listAllEvents,
   listEventsByCreatedAtRange,
-  listAllUsers,
+  listUsersByCreatedAtRange,
   listUsersByLineUserIds,
-  listAllChecklists,
+  listChecklistsByCreatedAtRange,
   listChecklistsByScenarioStepPairs,
-  listAllUserChecklists,
+  listUserChecklistsByCreatedAtRange,
   listUserChecklistsByLineUserIds
 } = require('../../repos/firestore/analyticsReadRepo');
 const {
@@ -177,14 +176,14 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
     });
     if (!Array.isArray(events) || events.length === 0) {
       if (!fallbackBlocked) {
-        events = await listAllEvents({ limit: resolvedAnalyticsLimit });
-        summary.readPath.eventsSource = 'fallback_all';
-        addFallbackSource('listAllEvents');
+        events = await listEventsByCreatedAtRange({ limit: resolvedAnalyticsLimit });
+        summary.readPath.eventsSource = 'fallback_bounded';
+        addFallbackSource('listEventsByCreatedAtRange:fallback');
       } else {
         events = [];
         summary.readPath.eventsSource = 'not_available';
         summary.readPath.fallbackBlocked = true;
-        summary.readPath.fallbackSources = ['listAllEvents'];
+        summary.readPath.fallbackSources = ['listEventsByCreatedAtRange:fallback'];
       }
     }
 
@@ -226,26 +225,30 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
     }
 
     if (!fallbackBlocked && (users.length === 0 || usersScopedFailed || scopedLineUserIds.length === 0)) {
-      users = await listAllUsers({ limit: resolvedAnalyticsLimit });
-      summary.readPath.userSource = 'fallback_all';
-      addFallbackSource('listAllUsers');
+      users = await listUsersByCreatedAtRange({ limit: resolvedAnalyticsLimit });
+      summary.readPath.userSource = 'fallback_bounded';
+      addFallbackSource('listUsersByCreatedAtRange:fallback');
     }
     if (!fallbackBlocked && (checklists.length === 0 || checklistsScopedFailed || scopedLineUserIds.length === 0)) {
-      checklists = await listAllChecklists({ limit: resolvedAnalyticsLimit });
-      summary.readPath.checklistSource = 'fallback_all';
-      addFallbackSource('listAllChecklists');
+      checklists = await listChecklistsByCreatedAtRange({ limit: resolvedAnalyticsLimit });
+      summary.readPath.checklistSource = 'fallback_bounded';
+      addFallbackSource('listChecklistsByCreatedAtRange:fallback');
     }
     if (!fallbackBlocked && (userChecklists.length === 0 || userChecklistsScopedFailed || scopedLineUserIds.length === 0)) {
-      userChecklists = await listAllUserChecklists({ limit: resolvedAnalyticsLimit });
-      summary.readPath.userChecklistSource = 'fallback_all';
-      addFallbackSource('listAllUserChecklists');
+      userChecklists = await listUserChecklistsByCreatedAtRange({ limit: resolvedAnalyticsLimit });
+      summary.readPath.userChecklistSource = 'fallback_bounded';
+      addFallbackSource('listUserChecklistsByCreatedAtRange:fallback');
     }
     if (fallbackBlocked) {
       summary.readPath.userSource = 'not_available';
       summary.readPath.checklistSource = 'not_available';
       summary.readPath.userChecklistSource = 'not_available';
       summary.readPath.fallbackBlocked = true;
-      summary.readPath.fallbackSources = ['listAllUsers', 'listAllChecklists', 'listAllUserChecklists'];
+      summary.readPath.fallbackSources = [
+        'listUsersByCreatedAtRange:fallback',
+        'listChecklistsByCreatedAtRange:fallback',
+        'listUserChecklistsByCreatedAtRange:fallback'
+      ];
       if (summary.readPath.eventsSource === 'range') {
         summary.readPath.eventsSource = 'range_only';
       }
