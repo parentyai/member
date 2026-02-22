@@ -6,6 +6,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT, 'docs');
 const ADMIN_DIR = path.join(ROOT, 'apps', 'admin');
+const AGENTS_PATH = path.join(ROOT, 'AGENTS.md');
 
 const requiredDocs = [
   'ADMIN_MANUAL_JA.md',
@@ -295,6 +296,37 @@ if (fs.existsSync(ssotIndexPath)) {
   }
 } else {
   fail('docs/SSOT_INDEX.md が存在しません');
+}
+
+// 9) AGENTS.md must exist and include mandatory execution guardrails
+const agents = readText(AGENTS_PATH);
+if (agents) {
+  const requiredHeadings = [
+    '## 第1部：既存規範（原文保持）',
+    '## 第2部：強化規範（add-only追記）'
+  ];
+  requiredHeadings.forEach((heading) => {
+    if (!agents.includes(heading)) {
+      fail(`AGENTS.md に必須見出しがありません: ${heading}`);
+    }
+  });
+
+  const requiredKeywords = [
+    '観測義務',
+    '副作用監査',
+    '優先度妥当性',
+    '反証義務',
+    '認知負債',
+    'ドキュメント整合義務',
+    '次の一手',
+    '曖昧語禁止',
+    'ロールバック'
+  ];
+  requiredKeywords.forEach((keyword) => {
+    if (!agents.includes(keyword)) {
+      fail(`AGENTS.md に必須キーワードがありません: ${keyword}`);
+    }
+  });
 }
 
 if (errors.length) {

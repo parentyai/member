@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:44:45-05:00",
-  "gitCommit": "82dbd4c50b821d7fd3344504c2daf75b93964ac5",
-  "branch": "codex/supervisor-master-json",
-  "sourceDigest": "c1d702ac266be7dfa9d9064727c43aec481a6a94b31c807c73dc0209a87c090e",
+  "generatedAt": "2026-02-22T14:33:00-05:00",
+  "gitCommit": "802e453e3f6d3efdb07a584c585b6ee83e644001",
+  "branch": "codex/phase578-agents-execution-os-gate-fix",
+  "sourceDigest": "8519892036f34286dc87ac7facc9cfd651da0f149554257f820662c08e499e7c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
