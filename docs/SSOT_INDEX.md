@@ -302,4 +302,6 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE576_EXECUTION_LOG.md`（収束実装: nationwide composition / fallback / readiness UI可視化実行ログ）
 - `docs/PHASE577_PLAN.md`（収束実装 follow-up: phase4 summary global fallback failure-only化計画）
 - `docs/PHASE577_EXECUTION_LOG.md`（収束実装 follow-up: phase4 summary global fallback failure-only化実行ログ）
+- `docs/PHASE578_PLAN.md`（実行OS強化 follow-up: AGENTS規範 docs gate固定計画）
+- `docs/PHASE578_EXECUTION_LOG.md`（実行OS強化 follow-up: AGENTS規範 docs gate固定実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
