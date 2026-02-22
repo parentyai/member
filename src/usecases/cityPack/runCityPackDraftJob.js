@@ -40,6 +40,16 @@ function buildDraftName(request) {
   return regionKey || 'City Pack Draft';
 }
 
+function normalizeRequestClass(value) {
+  const requestClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return requestClass === 'nationwide' ? 'nationwide' : 'regional';
+}
+
+function normalizeRequestedLanguage(value) {
+  const language = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return language || 'ja';
+}
+
 function buildDefaultSlots() {
   return [{
     slotId: 'core',
@@ -159,6 +169,8 @@ async function runCityPackDraftJob(params) {
   }
 
   const cityPackName = buildDraftName(request);
+  const requestClass = normalizeRequestClass(request && request.requestClass);
+  const requestedLanguage = normalizeRequestedLanguage(request && request.requestedLanguage);
   const cityPack = await cityPacksRepo.createCityPack({
     name: cityPackName,
     status: 'draft',
@@ -171,7 +183,10 @@ async function runCityPackDraftJob(params) {
     slotSchemaVersion: 'v1_fixed_8_slots',
     description: request && request.regionKey ? `Draft for ${request.regionKey}` : 'Draft',
     requestId,
-    templateRefs: []
+    templateRefs: [],
+    packClass: requestClass,
+    language: requestedLanguage,
+    nationwidePolicy: requestClass === 'nationwide' ? cityPacksRepo.NATIONWIDE_POLICY_FEDERAL_ONLY : null
   });
 
   await cityPackRequestsRepo.updateRequest(requestId, {
@@ -194,7 +209,9 @@ async function runCityPackDraftJob(params) {
     payloadSummary: {
       runId,
       sourceRefCount: sourceRefIds.length,
-      cityPackId: cityPack.id
+      cityPackId: cityPack.id,
+      requestClass,
+      requestedLanguage
     }
   });
 

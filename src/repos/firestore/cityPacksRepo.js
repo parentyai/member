@@ -8,8 +8,11 @@ const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./inde
 const COLLECTION = 'city_packs';
 const VALIDITY_DAYS = 120;
 const ALLOWED_STATUS = new Set(['draft', 'active', 'retired']);
+const ALLOWED_PACK_CLASS = new Set(['regional', 'nationwide']);
 const ALLOWED_SLOT_STATUS = new Set(['active', 'inactive']);
 const ALLOWED_TARGET_EFFECT = new Set(['include', 'exclude']);
+const DEFAULT_LANGUAGE = 'ja';
+const NATIONWIDE_POLICY_FEDERAL_ONLY = 'federal_only';
 const FIXED_SLOT_KEYS = Object.freeze([
   'emergency',
   'admin',
@@ -41,6 +44,34 @@ function addDays(baseDate, days) {
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_STATUS.has(status) ? status : 'draft';
+}
+
+function normalizePackClass(value) {
+  const packClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_PACK_CLASS.has(packClass) ? packClass : 'regional';
+}
+
+function normalizeLanguage(value) {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return normalized || DEFAULT_LANGUAGE;
+}
+
+function normalizeNationwidePolicy(packClass, _value) {
+  if (packClass === 'nationwide') return NATIONWIDE_POLICY_FEDERAL_ONLY;
+  return null;
+}
+
+function resolvePackClassFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  return ALLOWED_PACK_CLASS.has(normalized) ? normalized : null;
+}
+
+function resolveLanguageFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
 }
 
 function normalizeStringArray(values) {
@@ -202,6 +233,9 @@ function normalizePayload(data) {
   const name = typeof payload.name === 'string' ? payload.name.trim() : '';
   const basePackId = normalizeBasePackId(payload.basePackId);
   const overrides = normalizeOverrides(payload.overrides);
+  const packClass = normalizePackClass(payload.packClass);
+  const language = normalizeLanguage(payload.language);
+  const nationwidePolicy = normalizeNationwidePolicy(packClass, payload.nationwidePolicy);
   return {
     id: typeof payload.id === 'string' && payload.id.trim() ? payload.id.trim() : `cp_${crypto.randomUUID()}`,
     name,
@@ -219,7 +253,10 @@ function normalizePayload(data) {
     basePackId,
     overrides,
     slotContents: normalizeSlotContents(payload.slotContents),
-    slotSchemaVersion: normalizeSlotSchemaVersion(payload.slotSchemaVersion)
+    slotSchemaVersion: normalizeSlotSchemaVersion(payload.slotSchemaVersion),
+    packClass,
+    language,
+    nationwidePolicy
   };
 }
 
@@ -268,6 +305,9 @@ async function createCityPack(data) {
     overrides: payload.overrides,
     slotContents: payload.slotContents,
     slotSchemaVersion: payload.slotSchemaVersion,
+    packClass: payload.packClass,
+    language: payload.language,
+    nationwidePolicy: payload.nationwidePolicy,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -287,6 +327,10 @@ async function listCityPacks(params) {
   const limit = Number.isFinite(Number(opts.limit)) ? Math.min(Math.max(Math.floor(Number(opts.limit)), 1), 200) : 50;
   let baseQuery = getDb().collection(COLLECTION);
   if (opts.status) baseQuery = baseQuery.where('status', '==', normalizeStatus(opts.status));
+  const packClass = resolvePackClassFilter(opts.packClass);
+  if (packClass) baseQuery = baseQuery.where('packClass', '==', packClass);
+  const language = resolveLanguageFilter(opts.language);
+  if (language) baseQuery = baseQuery.where('language', '==', language);
   let rows;
   try {
     const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
@@ -321,6 +365,12 @@ async function updateCityPack(cityPackId, patch) {
 module.exports = {
   VALIDITY_DAYS,
   FIXED_SLOT_KEYS,
+  ALLOWED_PACK_CLASS,
+  DEFAULT_LANGUAGE,
+  NATIONWIDE_POLICY_FEDERAL_ONLY,
+  normalizePackClass,
+  normalizeLanguage,
+  normalizeNationwidePolicy,
   createCityPack,
   getCityPack,
   listCityPacks,

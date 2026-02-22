@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const sourceEvidenceRepo = require('../../repos/firestore/sourceEvidenceRepo');
 const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo');
+const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -44,6 +45,13 @@ function normalizeStage(value, mode) {
 function normalizeTargetSourceRefIds(value) {
   if (!Array.isArray(value)) return [];
   return Array.from(new Set(value.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim())));
+}
+
+function normalizePackClassFilter(value) {
+  const packClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!packClass) return null;
+  if (packClass === 'regional' || packClass === 'nationwide') return packClass;
+  return null;
 }
 
 function summarizeFailures(failureCounts) {
@@ -217,6 +225,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   const stage = normalizeStage(payload.stage, mode);
   const useHeavyStage = stage === 'heavy';
   const targetSourceRefIds = normalizeTargetSourceRefIds(payload.targetSourceRefIds);
+  const packClass = normalizePackClassFilter(payload.packClass);
   const actor = payload.actor || 'city_pack_audit_job';
   const traceId = payload.traceId || `trace-city-pack-${now.getTime()}`;
   const runId = typeof payload.runId === 'string' && payload.runId.trim() ? payload.runId.trim() : `cp_run_${now.getTime()}`;
@@ -225,6 +234,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   const saveRun = deps && deps.saveRun ? deps.saveRun : sourceAuditRunsRepo.saveRun;
   const listSourceRefs = deps && deps.listSourceRefs ? deps.listSourceRefs : sourceRefsRepo.listSourceRefs;
   const listSourceRefsForAudit = deps && deps.listSourceRefsForAudit ? deps.listSourceRefsForAudit : sourceRefsRepo.listSourceRefsForAudit;
+  const getCityPack = deps && deps.getCityPack ? deps.getCityPack : cityPacksRepo.getCityPack;
   const updateSourceRef = deps && deps.updateSourceRef ? deps.updateSourceRef : sourceRefsRepo.updateSourceRef;
   const createEvidence = deps && deps.createEvidence ? deps.createEvidence : sourceEvidenceRepo.createEvidence;
   const audit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
@@ -236,6 +246,7 @@ async function runCityPackSourceAuditJob(params, deps) {
       runId,
       mode: existingRun.mode || mode,
       stage: existingRun.stage || stage,
+      packClass: existingRun.packClass || packClass || null,
       startedAt: existingRun.startedAt || null,
       endedAt: existingRun.endedAt || null,
       processed: Number(existingRun.processed) || 0,
@@ -252,6 +263,7 @@ async function runCityPackSourceAuditJob(params, deps) {
     runId,
     mode,
     stage,
+    packClass,
     traceId,
     startedAt: now.toISOString(),
     endedAt: null,
@@ -273,6 +285,29 @@ async function runCityPackSourceAuditJob(params, deps) {
       horizonDays: 14,
       limit: 500
     });
+  }
+
+  if (packClass) {
+    const cityPackCache = new Map();
+    const filtered = [];
+    for (const sourceRef of candidates) {
+      const usedByCityPackIds = Array.isArray(sourceRef && sourceRef.usedByCityPackIds) ? sourceRef.usedByCityPackIds : [];
+      if (!usedByCityPackIds.length) continue;
+      let matched = false;
+      for (const cityPackId of usedByCityPackIds) {
+        if (!cityPackCache.has(cityPackId)) {
+          cityPackCache.set(cityPackId, await getCityPack(cityPackId));
+        }
+        const cityPack = cityPackCache.get(cityPackId);
+        if (!cityPack) continue;
+        if ((cityPack.packClass || 'regional') === packClass) {
+          matched = true;
+          break;
+        }
+      }
+      if (matched) filtered.push(sourceRef);
+    }
+    candidates = filtered;
   }
 
   const failureCounts = new Map();
@@ -375,6 +410,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   await saveRun(runId, {
     mode,
     stage,
+    packClass,
     endedAt: finishedAt,
     processed: candidates.length,
     succeeded,
@@ -393,6 +429,7 @@ async function runCityPackSourceAuditJob(params, deps) {
     payloadSummary: {
       mode,
       stage,
+      packClass,
       processed: candidates.length,
       succeeded,
       failed,
@@ -406,6 +443,7 @@ async function runCityPackSourceAuditJob(params, deps) {
     runId,
     mode,
     stage,
+    packClass,
     startedAt: now.toISOString(),
     endedAt: finishedAt,
     processed: candidates.length,

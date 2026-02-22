@@ -16,6 +16,9 @@ const ALLOWED_STATUS = new Set([
   'rejected',
   'failed'
 ]);
+const ALLOWED_REQUEST_CLASS = new Set(['regional', 'nationwide']);
+const DEFAULT_REQUEST_CLASS = 'regional';
+const DEFAULT_REQUEST_LANGUAGE = 'ja';
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -24,6 +27,29 @@ function normalizeStatus(value) {
 
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function normalizeRequestClass(value) {
+  const requestClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_REQUEST_CLASS.has(requestClass) ? requestClass : DEFAULT_REQUEST_CLASS;
+}
+
+function normalizeRequestedLanguage(value) {
+  const language = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return language || DEFAULT_REQUEST_LANGUAGE;
+}
+
+function normalizeRequestClassFilter(value) {
+  if (typeof value !== 'string') return null;
+  const requestClass = value.trim().toLowerCase();
+  if (!requestClass) return null;
+  return ALLOWED_REQUEST_CLASS.has(requestClass) ? requestClass : null;
+}
+
+function normalizeRequestedLanguageFilter(value) {
+  if (typeof value !== 'string') return null;
+  const language = value.trim().toLowerCase();
+  return language || null;
 }
 
 function normalizeArray(values) {
@@ -45,6 +71,8 @@ function normalizePayload(data) {
     regionCity: normalizeString(payload.regionCity),
     regionState: normalizeString(payload.regionState),
     regionKey: normalizeString(payload.regionKey),
+    requestClass: normalizeRequestClass(payload.requestClass),
+    requestedLanguage: normalizeRequestedLanguage(payload.requestedLanguage),
     requestedAt: payload.requestedAt || new Date().toISOString(),
     lastJobRunId: normalizeString(payload.lastJobRunId),
     traceId: normalizeString(payload.traceId),
@@ -71,6 +99,8 @@ async function createRequest(data) {
     regionCity: payload.regionCity,
     regionState: payload.regionState,
     regionKey: payload.regionKey,
+    requestClass: payload.requestClass,
+    requestedLanguage: payload.requestedLanguage,
     requestedAt: payload.requestedAt,
     lastJobRunId: payload.lastJobRunId,
     traceId: payload.traceId,
@@ -111,6 +141,10 @@ async function listRequests(params) {
   let baseQuery = getDb().collection(COLLECTION);
   if (opts.status) baseQuery = baseQuery.where('status', '==', normalizeStatus(opts.status));
   if (opts.regionKey) baseQuery = baseQuery.where('regionKey', '==', String(opts.regionKey));
+  const requestClass = normalizeRequestClassFilter(opts.requestClass);
+  if (requestClass) baseQuery = baseQuery.where('requestClass', '==', requestClass);
+  const requestedLanguage = normalizeRequestedLanguageFilter(opts.requestedLanguage);
+  if (requestedLanguage) baseQuery = baseQuery.where('requestedLanguage', '==', requestedLanguage);
   let rows;
   try {
     const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
@@ -133,6 +167,8 @@ async function listRequests(params) {
 
 module.exports = {
   normalizeStatus,
+  normalizeRequestClass,
+  normalizeRequestedLanguage,
   createRequest,
   getRequest,
   updateRequest,

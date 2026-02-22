@@ -64,6 +64,7 @@ async function handleCityPackSourceAuditJob(req, res, bodyText, options) {
     runId: payload.runId,
     mode: forcedMode || payload.mode,
     stage: forcedStage || payload.stage,
+    packClass: payload.packClass,
     targetSourceRefIds: payload.targetSourceRefIds,
     traceId: traceIdHeader || payload.traceId || null,
     actor: 'city_pack_source_audit_job',

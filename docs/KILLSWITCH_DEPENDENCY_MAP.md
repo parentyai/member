@@ -12,11 +12,11 @@
 | `src/routes/admin/cityPackBulletins.js` | 6 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackBulletins.js` | 160 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackFeedback.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/cityPackFeedback.js` | 107 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/cityPackFeedback.js` | 115 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackRequests.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackRequests.js` | 63 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/cityPackReviewInbox.js` | 100 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/cityPackReviewInbox.js` | 111 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/notifications.js` | 120 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 172 | `const killSwitch = await getKillSwitch();` |

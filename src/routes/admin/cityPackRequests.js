@@ -81,8 +81,10 @@ async function handleList(req, res, context) {
   const url = new URL(req.url, 'http://localhost');
   const status = url.searchParams.get('status') || '';
   const regionKey = url.searchParams.get('regionKey') || '';
+  const requestClass = url.searchParams.get('requestClass') || '';
+  const requestedLanguage = url.searchParams.get('requestedLanguage') || '';
   const limit = normalizeLimit(url.searchParams.get('limit'), 50, 200);
-  const items = await cityPackRequestsRepo.listRequests({ status, regionKey, limit });
+  const items = await cityPackRequestsRepo.listRequests({ status, regionKey, requestClass, requestedLanguage, limit });
 
   await appendAuditLog({
     actor: context.actor,
@@ -94,6 +96,8 @@ async function handleList(req, res, context) {
     payloadSummary: {
       status: status || null,
       regionKey: regionKey || null,
+      requestClass: requestClass || null,
+      requestedLanguage: requestedLanguage || null,
       count: items.length
     }
   });
@@ -107,6 +111,8 @@ async function handleList(req, res, context) {
       regionCity: item.regionCity || null,
       regionState: item.regionState || null,
       regionKey: item.regionKey || null,
+      requestClass: item.requestClass || 'regional',
+      requestedLanguage: item.requestedLanguage || 'ja',
       lineUserId: item.lineUserId || null,
       requestedAt: item.requestedAt || null,
       lastJobRunId: item.lastJobRunId || null,
@@ -155,7 +161,9 @@ async function handleDetail(req, res, context, requestId) {
     requestId: context.requestId,
     payloadSummary: {
       status: request.status || null,
-      regionKey: request.regionKey || null
+      regionKey: request.regionKey || null,
+      requestClass: request.requestClass || 'regional',
+      requestedLanguage: request.requestedLanguage || 'ja'
     }
   });
 
@@ -198,7 +206,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { draftCityPackIds: draftIds, regionKey: request.regionKey || null }
+      payloadSummary: {
+        draftCityPackIds: draftIds,
+        regionKey: request.regionKey || null,
+        requestClass: request.requestClass || 'regional',
+        requestedLanguage: request.requestedLanguage || 'ja'
+      }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'approved', traceId: context.traceId });
     return;
@@ -217,7 +230,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { status: 'rejected', regionKey: request.regionKey || null }
+      payloadSummary: {
+        status: 'rejected',
+        regionKey: request.regionKey || null,
+        requestClass: request.requestClass || 'regional',
+        requestedLanguage: request.requestedLanguage || 'ja'
+      }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'rejected', traceId: context.traceId });
     return;
@@ -240,7 +258,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { note, regionKey: request.regionKey || null }
+      payloadSummary: {
+        note,
+        regionKey: request.regionKey || null,
+        requestClass: request.requestClass || 'regional',
+        requestedLanguage: request.requestedLanguage || 'ja'
+      }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'needs_review', traceId: context.traceId });
     return;
@@ -262,7 +285,13 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { ok: result.ok, reason: result.reason || null, regionKey: request.regionKey || null }
+      payloadSummary: {
+        ok: result.ok,
+        reason: result.reason || null,
+        regionKey: request.regionKey || null,
+        requestClass: request.requestClass || 'regional',
+        requestedLanguage: request.requestedLanguage || 'ja'
+      }
     });
     writeJson(res, 200, Object.assign({ traceId: context.traceId }, result));
     return;
@@ -305,7 +334,12 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
       entityId: requestId,
       traceId: context.traceId,
       requestId: context.requestId,
-      payloadSummary: { activated: draftIds, regionKey: request.regionKey || null }
+      payloadSummary: {
+        activated: draftIds,
+        regionKey: request.regionKey || null,
+        requestClass: request.requestClass || 'regional',
+        requestedLanguage: request.requestedLanguage || 'ja'
+      }
     });
     writeJson(res, 200, { ok: true, requestId, status: 'active', results, traceId: context.traceId });
     return;

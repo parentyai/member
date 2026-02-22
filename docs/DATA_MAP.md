@@ -89,6 +89,9 @@ Typical fields:
 - `slotSchemaVersion`（例: `v1_fixed_8_slots`）
 - `basePackId`（1段のみ継承）
 - `overrides`（継承上書き）
+- `packClass` (`regional`/`nationwide`)
+- `language`（既定 `ja`）
+- `nationwidePolicy`（`packClass=nationwide` のとき `federal_only`）
 
 ### `city_pack_requests/{requestId}`
 Purpose: City Pack 生成リクエストの状態機械（LINE申告→草案→承認→有効化）。
@@ -97,6 +100,8 @@ Typical fields:
 - `status` (`queued`/`collecting`/`drafted`/`needs_review`/`approved`/`active`/`rejected`/`failed`)
 - `lineUserId`
 - `regionCity`, `regionState`, `regionKey`
+- `requestClass` (`regional`/`nationwide`)
+- `requestedLanguage`（既定 `ja`）
 - `requestedAt`
 - `lastJobRunId`
 - `traceId`
@@ -115,6 +120,8 @@ Typical fields:
 - `status` (`queued`/`reviewed`/`rejected`/`proposed`/`new`/`triaged`/`resolved`)
 - `lineUserId`
 - `regionCity`, `regionState`, `regionKey`
+- `packClass` (`regional`/`nationwide`)
+- `language`（既定 `ja`）
 - `feedbackText`
 - `message`
 - `slotKey`
@@ -135,6 +142,7 @@ Typical fields:
 - `riskLevel`
 - `sourceType` (`official`/`semi_official`/`community`/`other`)
 - `requiredLevel` (`required`/`optional`)
+- `authorityLevel` (`federal`/`state`/`local`/`other`)
 - `confidenceScore`（0..100）
 - `lastAuditStage` (`light`/`heavy`)
 - `evidenceLatestId`
@@ -217,6 +225,7 @@ Purpose: 実装フェーズ分割時の互換契約を固定するための予�
 #### Planned fields in `source_refs/{id}`
 - `sourceType`: 情報源種別
 - `requiredLevel`: `required|optional`
+- `authorityLevel`: `federal|state|local|other`
 - `confidenceScore`: 信頼度スコア（0..100）
 - `lastAuditStage`: `light|heavy`
 

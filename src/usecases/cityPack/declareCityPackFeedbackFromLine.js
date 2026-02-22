@@ -52,6 +52,8 @@ async function declareCityPackFeedbackFromLine(params) {
     regionCity,
     regionState,
     regionKey,
+    packClass: 'regional',
+    language: 'ja',
     slotKey: parsed.slotKey,
     feedbackText: parsed.feedbackText,
     message: parsed.feedbackText,

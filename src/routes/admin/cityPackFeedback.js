@@ -37,8 +37,10 @@ function parseDetailPath(pathname) {
 async function handleList(req, res, context) {
   const url = new URL(req.url, 'http://localhost');
   const status = url.searchParams.get('status') || '';
+  const packClass = url.searchParams.get('packClass') || '';
+  const language = url.searchParams.get('language') || '';
   const limit = normalizeLimit(url.searchParams.get('limit'), 50, 200);
-  const items = await cityPackFeedbackRepo.listFeedback({ status, limit });
+  const items = await cityPackFeedbackRepo.listFeedback({ status, packClass, language, limit });
 
   await appendAuditLog({
     actor: context.actor,
@@ -49,6 +51,8 @@ async function handleList(req, res, context) {
     requestId: context.requestId,
     payloadSummary: {
       status: status || null,
+      packClass: packClass || null,
+      language: language || null,
       count: items.length
     }
   });
@@ -63,6 +67,8 @@ async function handleList(req, res, context) {
       regionCity: item.regionCity || null,
       regionState: item.regionState || null,
       regionKey: item.regionKey || null,
+      packClass: item.packClass || 'regional',
+      language: item.language || 'ja',
       slotKey: item.slotKey || null,
       feedbackText: item.feedbackText || null,
       message: item.message || item.feedbackText || null,
@@ -92,7 +98,9 @@ async function handleDetail(req, res, context, feedbackId) {
     requestId: context.requestId,
     payloadSummary: {
       status: feedback.status || null,
-      regionKey: feedback.regionKey || null
+      regionKey: feedback.regionKey || null,
+      packClass: feedback.packClass || 'regional',
+      language: feedback.language || 'ja'
     }
   });
 
@@ -163,7 +171,9 @@ async function handleAction(req, res, bodyText, context, feedbackId, action) {
     payloadSummary: {
       status: nextStatus,
       regionKey: feedback.regionKey || null,
-      slotKey: feedback.slotKey || null
+      slotKey: feedback.slotKey || null,
+      packClass: feedback.packClass || 'regional',
+      language: feedback.language || 'ja'
     }
   });
 

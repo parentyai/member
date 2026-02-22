@@ -802,6 +802,16 @@
                     <label data-dict-key="ui.label.cityPack.requestRegion" data-dict-tip="ui.help.cityPack.requestRegion">地域キー
                       <input id="city-pack-request-region" type="text" class="input-sm" data-dict-placeholder="ui.placeholder.cityPack.requestRegion" placeholder="TX::austin" />
                     </label>
+                    <label data-dict-key="ui.label.cityPack.requestClass" data-dict-tip="ui.help.cityPack.requestClass">packClass
+                      <select id="city-pack-request-class-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.packClass.all">すべて</option>
+                        <option value="regional" data-dict-key="ui.value.cityPack.packClass.regional">regional</option>
+                        <option value="nationwide" data-dict-key="ui.value.cityPack.packClass.nationwide">nationwide</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.requestLanguage" data-dict-tip="ui.help.cityPack.requestLanguage">language
+                      <input id="city-pack-request-language-filter" type="text" class="input-sm" placeholder="ja" />
+                    </label>
                     <label data-dict-key="ui.label.cityPack.requestLimit" data-dict-tip="ui.help.cityPack.requestLimit">件数
                       <input id="city-pack-request-limit" type="number" min="1" max="200" value="50" class="input-sm" />
                     </label>
@@ -812,6 +822,8 @@
                       <tr>
                         <th data-dict-key="ui.label.cityPack.request.col.status">status</th>
                         <th data-dict-key="ui.label.cityPack.request.col.region">region</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.packClass">packClass</th>
+                        <th data-dict-key="ui.label.cityPack.request.col.language">language</th>
                         <th data-dict-key="ui.label.cityPack.request.col.requestId">requestId</th>
                         <th data-dict-key="ui.label.cityPack.request.col.stage">stage</th>
                         <th data-dict-key="ui.label.cityPack.request.col.draft">draft</th>
@@ -845,6 +857,16 @@
                     <label data-dict-key="ui.label.cityPack.feedbackLimit" data-dict-tip="ui.help.cityPack.feedbackLimit">件数
                       <input id="city-pack-feedback-limit" type="number" min="1" max="200" value="50" class="input-sm" />
                     </label>
+                    <label data-dict-key="ui.label.cityPack.feedbackClass" data-dict-tip="ui.help.cityPack.feedbackClass">packClass
+                      <select id="city-pack-feedback-class-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.packClass.all">すべて</option>
+                        <option value="regional" data-dict-key="ui.value.cityPack.packClass.regional">regional</option>
+                        <option value="nationwide" data-dict-key="ui.value.cityPack.packClass.nationwide">nationwide</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.feedbackLanguage" data-dict-tip="ui.help.cityPack.feedbackLanguage">language
+                      <input id="city-pack-feedback-language-filter" type="text" class="input-sm" placeholder="ja" />
+                    </label>
                     <button id="city-pack-feedback-reload" type="button" data-dict-key="ui.label.cityPack.feedbackReload">Feedback更新</button>
                   </div>
                   <table class="table-compact">
@@ -852,6 +874,8 @@
                       <tr>
                         <th data-dict-key="ui.label.cityPack.feedback.col.status">status</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.region">region</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.packClass">packClass</th>
+                        <th data-dict-key="ui.label.cityPack.feedback.col.language">language</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.slot">slot</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.feedback">feedback</th>
                         <th data-dict-key="ui.label.cityPack.feedback.col.resolution">resolution</th>
@@ -946,6 +970,16 @@
                     <label data-dict-key="ui.label.cityPack.limit" data-dict-tip="ui.help.cityPack.limit">件数
                       <input id="city-pack-limit" type="number" min="1" max="200" value="50" class="input-sm" />
                     </label>
+                    <label data-dict-key="ui.label.cityPack.packClassFilter" data-dict-tip="ui.help.cityPack.packClassFilter">packClass
+                      <select id="city-pack-pack-class-filter" class="select-inline">
+                        <option value="" data-dict-key="ui.value.cityPack.packClass.all">すべて</option>
+                        <option value="regional" data-dict-key="ui.value.cityPack.packClass.regional">regional</option>
+                        <option value="nationwide" data-dict-key="ui.value.cityPack.packClass.nationwide">nationwide</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.cityPack.languageFilter" data-dict-tip="ui.help.cityPack.languageFilter">language
+                      <input id="city-pack-language-filter" type="text" class="input-sm" placeholder="ja" />
+                    </label>
                     <button id="city-pack-reload" type="button" data-dict-key="ui.label.cityPack.reload">Inbox更新</button>
                   </div>
                   <table class="table-compact">
@@ -954,7 +988,10 @@
                         <th data-dict-key="ui.label.cityPack.col.priority">priority</th>
                         <th data-dict-key="ui.label.cityPack.col.source">source</th>
                         <th data-dict-key="ui.label.cityPack.col.sourceType">sourceType</th>
+                        <th data-dict-key="ui.label.cityPack.col.authorityLevel">authorityLevel</th>
                         <th data-dict-key="ui.label.cityPack.col.requiredLevel">requiredLevel</th>
+                        <th data-dict-key="ui.label.cityPack.col.usedByClass">packClass</th>
+                        <th data-dict-key="ui.label.cityPack.col.usedByLanguage">language</th>
                         <th data-dict-key="ui.label.cityPack.col.confidence">confidence</th>
                         <th data-dict-key="ui.label.cityPack.col.auditStage">auditStage</th>
                         <th data-dict-key="ui.label.cityPack.col.result">result</th>
@@ -1206,6 +1243,14 @@
                         <select id="city-pack-required-level" class="select-inline">
                           <option value="required" data-dict-key="ui.value.cityPack.requiredLevel.required">required</option>
                           <option value="optional" data-dict-key="ui.value.cityPack.requiredLevel.optional">optional</option>
+                        </select>
+                      </label>
+                      <label data-dict-key="ui.label.cityPack.authorityLevel" data-dict-tip="ui.help.cityPack.authorityLevel">authorityLevel
+                        <select id="city-pack-authority-level" class="select-inline">
+                          <option value="federal" data-dict-key="ui.value.cityPack.authorityLevel.federal">federal</option>
+                          <option value="state" data-dict-key="ui.value.cityPack.authorityLevel.state">state</option>
+                          <option value="local" data-dict-key="ui.value.cityPack.authorityLevel.local">local</option>
+                          <option value="other" data-dict-key="ui.value.cityPack.authorityLevel.other">other</option>
                         </select>
                       </label>
                       <button id="city-pack-source-policy-save" type="button" data-dict-key="ui.label.cityPack.sourcePolicy.save">ポリシー保存</button>

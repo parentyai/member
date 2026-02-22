@@ -51,6 +51,8 @@ async function declareCityRegionFromLine(params) {
     regionCity,
     regionState,
     regionKey,
+    requestClass: 'regional',
+    requestedLanguage: 'ja',
     requestedAt: new Date().toISOString(),
     traceId,
     experienceStage: 'queued',
