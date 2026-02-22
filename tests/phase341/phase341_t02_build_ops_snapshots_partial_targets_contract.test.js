@@ -4,13 +4,20 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const { createDbStub } = require('../phase0/firestoreStub');
-const { setDbForTest, clearDbForTest } = require('../../src/infra/firestore');
+const {
+  setDbForTest,
+  clearDbForTest,
+  setServerTimestampForTest,
+  clearServerTimestampForTest
+} = require('../../src/infra/firestore');
 const { buildOpsSnapshots } = require('../../src/usecases/admin/buildOpsSnapshots');
 
 test('phase341: buildOpsSnapshots supports partial targets with backward-compatible default', async (t) => {
   setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
   t.after(() => {
     clearDbForTest();
+    clearServerTimestampForTest();
   });
 
   const result = await buildOpsSnapshots({
