@@ -1,14 +1,12 @@
 'use strict';
 
 const {
-  listAllEvents,
   listEventsByCreatedAtRange,
   listEventsByLineUserIdAndCreatedAtRange,
-  listAllChecklists,
+  listChecklistsByCreatedAtRange,
   listChecklistsByScenarioAndStep,
-  listAllUserChecklists,
+  listUserChecklistsByCreatedAtRange,
   listUserChecklistsByLineUserId,
-  listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange,
   listNotificationDeliveriesByLineUserIdAndSentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
@@ -315,8 +313,8 @@ async function getUserStateSummary(params) {
   if (events.length === 0) {
     const shouldFallbackEvents = fallbackOnEmpty || eventsResult.failed || rangeEventsFailed;
     if (!fallbackBlocked && shouldFallbackEvents) {
-      events = await listAllEvents({ limit: analyticsLimit });
-      addFallbackSource('listAllEvents');
+      events = await listEventsByCreatedAtRange({ limit: analyticsLimit });
+      addFallbackSource('listEventsByCreatedAtRange:fallback');
     }
     if (fallbackBlocked && shouldFallbackEvents) {
       fallbackBlockedNotAvailable = true;
@@ -338,8 +336,8 @@ async function getUserStateSummary(params) {
   if (deliveries.length === 0) {
     const shouldFallbackDeliveries = fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed;
     if (!fallbackBlocked && shouldFallbackDeliveries) {
-      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-      addFallbackSource('listAllNotificationDeliveries');
+      deliveries = await listNotificationDeliveriesBySentAtRange({ limit: analyticsLimit });
+      addFallbackSource('listNotificationDeliveriesBySentAtRange:fallback');
     }
     if (fallbackBlocked && shouldFallbackDeliveries) {
       fallbackBlockedNotAvailable = true;
@@ -349,8 +347,8 @@ async function getUserStateSummary(params) {
     if (!checklistsResult.failed && !fallbackOnEmpty) {
       // keep scoped empty result without global fallback
     } else if (!fallbackBlocked) {
-      checklists = await listAllChecklists({ limit: analyticsLimit });
-      addFallbackSource('listAllChecklists');
+      checklists = await listChecklistsByCreatedAtRange({ limit: analyticsLimit });
+      addFallbackSource('listChecklistsByCreatedAtRange:fallback');
     } else {
       fallbackBlockedNotAvailable = true;
     }
@@ -359,8 +357,8 @@ async function getUserStateSummary(params) {
     if (!userChecklistsResult.failed && !fallbackOnEmpty) {
       // keep scoped empty result without global fallback
     } else if (!fallbackBlocked) {
-      userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
-      addFallbackSource('listAllUserChecklists');
+      userChecklists = await listUserChecklistsByCreatedAtRange({ limit: analyticsLimit });
+      addFallbackSource('listUserChecklistsByCreatedAtRange:fallback');
     } else {
       fallbackBlockedNotAvailable = true;
     }

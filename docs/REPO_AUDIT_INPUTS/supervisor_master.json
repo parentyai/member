@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T15:58:07-05:00",
-  "gitCommit": "7831c9806eec37232394583dedebb7e58f5c45c0",
-  "branch": "codex/foundation-os-unbounded-hotspot-gate",
-  "sourceDigest": "e062629d5dd621e1e8a5b7d32abe84ca4ce0cdb79dbe6c4a636c31c6d85dcacf",
+  "generatedAt": "2026-02-22T16:15:34-05:00",
+  "gitCommit": "827cb75869bd89bc0af0a4dbf41903f7aca83715",
+  "branch": "codex/phase587-590-readpath-converge",
+  "sourceDigest": "b3767dd581585a8676c44e6c240394ca968826ef08deed39d93ba7f0bcad4e53",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

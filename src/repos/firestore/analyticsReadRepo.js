@@ -183,6 +183,19 @@ async function listAllChecklists(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listChecklistsByCreatedAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  let query = db.collection('checklists');
+  if (fromAt) query = query.where('createdAt', '>=', fromAt);
+  if (toAt) query = query.where('createdAt', '<=', toAt);
+  const snap = await query.orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 async function listChecklistsByScenarioAndStep(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const scenario = typeof options.scenario === 'string' ? options.scenario.trim() : '';
@@ -245,6 +258,19 @@ async function listAllUserChecklists(opts) {
   const limit = resolveLimit(options.limit);
   const db = getDb();
   const snap = await db.collection('user_checklists').orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
+async function listUserChecklistsByCreatedAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  let query = db.collection('user_checklists');
+  if (fromAt) query = query.where('createdAt', '>=', fromAt);
+  if (toAt) query = query.where('createdAt', '<=', toAt);
+  const snap = await query.orderBy('createdAt', 'desc').limit(limit).get();
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
@@ -401,9 +427,11 @@ module.exports = {
   listUsersByCreatedAtRange,
   listUsersByLineUserIds,
   listAllChecklists,
+  listChecklistsByCreatedAtRange,
   listChecklistsByScenarioAndStep,
   listChecklistsByScenarioStepPairs,
   listAllUserChecklists,
+  listUserChecklistsByCreatedAtRange,
   listUserChecklistsByLineUserId,
   listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,

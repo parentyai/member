@@ -12,6 +12,8 @@ test('phase358: notification summary collects notification ids and queries scope
   assert.ok(src.includes('listEventsByNotificationIdsAndCreatedAtRange({'));
   assert.ok(src.includes('notificationIds,'));
   assert.ok(src.includes('events = await listEventsByCreatedAtRange({'));
-  assert.ok(src.includes("addFallbackSource('listAllEvents');"));
+  assert.ok(
+    src.includes("addFallbackSource('listAllEvents');") ||
+      src.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
 });
-

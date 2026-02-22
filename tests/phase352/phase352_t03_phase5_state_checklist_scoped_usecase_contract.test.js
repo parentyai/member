@@ -11,6 +11,9 @@ test('phase352: phase5 state summary prefers checklist scoped read path with fal
   assert.ok(src.includes('listChecklistsByScenarioAndStep'));
   assert.ok(src.includes('const checklistsPromise = safeQuery(() => listChecklistsByScenarioAndStep({'));
   assert.ok(src.includes('if (checklistsResult.failed || checklists.length === 0) {'));
-  assert.ok(src.includes('checklists = await listAllChecklists({ limit: analyticsLimit });'));
+  assert.ok(
+    src.includes('checklists = await listAllChecklists({ limit: analyticsLimit });') ||
+      src.includes('checklists = await listChecklistsByCreatedAtRange({ limit: analyticsLimit });')
+  );
   assert.ok(src.includes('fallbackBlockedNotAvailable = true;'));
 });

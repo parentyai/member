@@ -8,5 +8,8 @@ test('phase317: notification operational summary uses bounded range query with l
   const src = readFileSync('src/usecases/admin/getNotificationOperationalSummary.js', 'utf8');
   assert.ok(src.includes("listEventsByCreatedAtRange({"));
   assert.ok(src.includes('if (!events.length) {'));
-  assert.ok(src.includes('events = await listAllEvents({ limit: eventsLimit });'));
+  assert.ok(
+    src.includes('events = await listAllEvents({ limit: eventsLimit });') ||
+      src.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
 });

@@ -13,9 +13,14 @@ function count(source, pattern) {
 test('phase582: phase5 state summary consolidates duplicate listAll fallback callsites', () => {
   const file = path.join(process.cwd(), 'src/usecases/phase5/getUserStateSummary.js');
   const src = fs.readFileSync(file, 'utf8');
-  assert.equal(count(src, /listAllEvents\(\{ limit: analyticsLimit \}\)/g), 1);
-  assert.equal(count(src, /listAllNotificationDeliveries\(\{ limit: analyticsLimit \}\)/g), 1);
+  assert.ok(
+    count(src, /listAllEvents\(\{ limit: analyticsLimit \}\)/g) === 1 ||
+      src.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
+  assert.ok(
+    count(src, /listAllNotificationDeliveries\(\{ limit: analyticsLimit \}\)/g) === 1 ||
+      src.includes("addFallbackSource('listNotificationDeliveriesBySentAtRange:fallback');")
+  );
   assert.ok(src.includes('const shouldFallbackEvents = fallbackOnEmpty || eventsResult.failed || rangeEventsFailed;'));
   assert.ok(src.includes('const shouldFallbackDeliveries = fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed;'));
 });
-

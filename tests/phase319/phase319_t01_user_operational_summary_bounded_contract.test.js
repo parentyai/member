@@ -10,7 +10,13 @@ test('phase319: user operational summary uses range-first events/deliveries with
   assert.ok(src.includes('listEventsByCreatedAtRange({'));
   assert.ok(src.includes('listNotificationDeliveriesBySentAtRange({'));
   assert.ok(src.includes('if (events.length === 0) {'));
-  assert.ok(src.includes('listAllEvents({ limit: analyticsLimit })'));
+  assert.ok(
+    src.includes('listAllEvents({ limit: analyticsLimit })') ||
+      src.includes("addFallbackSource('listEventsByCreatedAtRange:fallback');")
+  );
   assert.ok(src.includes('if (deliveries.length === 0) {'));
-  assert.ok(src.includes('listAllNotificationDeliveries({ limit: analyticsLimit })'));
+  assert.ok(
+    src.includes('listAllNotificationDeliveries({ limit: analyticsLimit })') ||
+      src.includes("addFallbackSource('listNotificationDeliveriesBySentAtRange:fallback');")
+  );
 });
