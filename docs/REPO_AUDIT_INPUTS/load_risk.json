@@ -69,7 +69,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 320,
+        "line": 319,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -86,7 +86,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 324,
+        "line": 328,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -103,7 +103,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 332,
+        "line": 336,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -120,7 +120,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 348,
+        "line": 351,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -137,7 +137,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 357,
+        "line": 365,
         "type": "listAll",
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
@@ -154,7 +154,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 365,
+        "line": 373,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"

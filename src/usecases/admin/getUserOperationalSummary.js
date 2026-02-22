@@ -202,6 +202,7 @@ async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const fallbackMode = resolveFallbackMode(opts.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
+  const fallbackOnEmpty = opts.fallbackOnEmpty !== false;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const fallbackSources = [];
@@ -290,6 +291,8 @@ async function getUserOperationalSummary(params) {
   let userChecklists = dedupeRowsById(userChecklistsResult.rows);
   let events = dedupeRowsById(eventsResult.rows);
   let deliveries = dedupeRowsById(deliveriesResult.rows);
+  let rangeEventsFailed = false;
+  let rangeDeliveriesFailed = false;
   let fallbackBlockedNotAvailable = false;
 
   if (checklists.length === 0 && checklistPairs.length === 1) {
@@ -311,6 +314,7 @@ async function getUserOperationalSummary(params) {
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
       }));
+      rangeEventsFailed = rangeEventsResult.failed;
       if (rangeEventsResult.rows.length > 0) {
         events = dedupeRowsById(rangeEventsResult.rows);
       }
@@ -321,17 +325,17 @@ async function getUserOperationalSummary(params) {
     addFallbackSource('listAllEvents');
   }
   if (events.length === 0 && !fallbackBlocked) {
-    events = await listAllEvents({ limit: analyticsLimit });
-    addFallbackSource('listAllEvents');
+    if (fallbackOnEmpty || eventsResult.failed || rangeEventsFailed) {
+      events = await listAllEvents({ limit: analyticsLimit });
+      addFallbackSource('listAllEvents');
+    }
   }
   if (events.length === 0 && fallbackBlocked) {
-    fallbackBlockedNotAvailable = true;
+    if (fallbackOnEmpty || eventsResult.failed || rangeEventsFailed) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
 
-  if (deliveriesResult.failed && !fallbackBlocked) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-    addFallbackSource('listAllNotificationDeliveries');
-  }
   if (deliveries.length === 0) {
     if (queryRange.fromAt) {
       const rangeDeliveriesResult = await safeQuery(() => listNotificationDeliveriesBySentAtRange({
@@ -339,21 +343,32 @@ async function getUserOperationalSummary(params) {
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
       }));
+      rangeDeliveriesFailed = rangeDeliveriesResult.failed;
       if (rangeDeliveriesResult.rows.length > 0) {
         deliveries = dedupeRowsById(rangeDeliveriesResult.rows);
       }
     }
   }
-  if (deliveries.length === 0 && !fallbackBlocked) {
+  if (deliveriesResult.failed && !fallbackBlocked) {
     deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
     addFallbackSource('listAllNotificationDeliveries');
   }
+  if (deliveries.length === 0 && !fallbackBlocked) {
+    if (fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed) {
+      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+      addFallbackSource('listAllNotificationDeliveries');
+    }
+  }
   if (deliveries.length === 0 && fallbackBlocked) {
-    fallbackBlockedNotAvailable = true;
+    if (fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
 
   if (checklistsResult.failed || checklists.length === 0) {
-    if (!fallbackBlocked) {
+    if (!checklistsResult.failed && !fallbackOnEmpty) {
+      // keep scoped empty result without global fallback
+    } else if (!fallbackBlocked) {
       checklists = await listAllChecklists({ limit: analyticsLimit });
       addFallbackSource('listAllChecklists');
     } else {
@@ -361,7 +376,9 @@ async function getUserOperationalSummary(params) {
     }
   }
   if (userChecklistsResult.failed || userChecklists.length === 0) {
-    if (!fallbackBlocked) {
+    if (!userChecklistsResult.failed && !fallbackOnEmpty) {
+      // keep scoped empty result without global fallback
+    } else if (!fallbackBlocked) {
       userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
       addFallbackSource('listAllUserChecklists');
     } else {

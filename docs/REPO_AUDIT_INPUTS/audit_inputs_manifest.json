@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:08:17-05:00",
-  "gitCommit": "7bd92d59765d156544052be52372e31ca085c24b",
-  "branch": "codex/phase573-576",
-  "sourceDigest": "e251980f4ca7e7e5c1a7484e22370b7f3ab8e5501715c19bc2bb37c2d4428e26",
+  "generatedAt": "2026-02-22T12:15:27-05:00",
+  "gitCommit": "40f1ad7acb1689e86540e5b10da3ad508eec6691",
+  "branch": "codex/phase577-580",
+  "sourceDigest": "8d4a557ae05a4fba1a4a7ea721a8f1d73dc03aa9f237db629bf31e23dddc6e19",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "7597970b78a752f4a5766d56ddd5739da62b858bc0dcfe9f30d762cf413bc525",
+      "sha256": "8290cd383ec9d85cd9da23b63a04ec09736cf5a1fde73552542a7bf7ed7ab118",
       "bytes": 288099
     },
     {
