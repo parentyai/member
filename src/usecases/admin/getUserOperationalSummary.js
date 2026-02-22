@@ -8,7 +8,8 @@ const {
   listAllUserChecklists,
   listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,
-  listNotificationDeliveriesBySentAtRange
+  listNotificationDeliveriesBySentAtRange,
+  listNotificationDeliveriesByLineUserIdsAndSentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
@@ -253,43 +254,36 @@ async function getUserOperationalSummary(params) {
   const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
   const checklistPairs = collectScenarioStepPairs(scopedUsers);
   const scopedLineUserIds = collectLineUserIds(scopedUsers);
-  const checklistsPromise = (async () => {
-    if (!checklistPairs.length) return { rows: [], failed: false };
-    const settled = await Promise.all(checklistPairs.map((pair) => safeQuery(() => listChecklistsByScenarioAndStep({
+  const checklistsPromise = safeQuery(async () => {
+    if (!checklistPairs.length) return [];
+    const rowsByPair = await Promise.all(checklistPairs.map((pair) => listChecklistsByScenarioAndStep({
       scenario: pair.scenarioKey,
       step: pair.stepKey,
       limit: analyticsLimit
-    }))));
-    const rows = [];
-    let failed = false;
-    settled.forEach((entry) => {
-      if (entry.failed) {
-        failed = true;
-        return;
-      }
-      rows.push(...entry.rows);
-    });
-    return { rows, failed };
-  })();
-  let eventsPromise = Promise.resolve([]);
-  let deliveriesPromise = Promise.resolve([]);
+    })));
+    const mergedRows = dedupeRowsById(rowsByPair.flat());
+    return mergedRows.slice(0, analyticsLimit);
+  });
+  let eventsPromise = Promise.resolve({ rows: [], failed: false });
+  let deliveriesPromise = Promise.resolve({ rows: [], failed: false });
   const userChecklistsPromise = safeQuery(() => listUserChecklistsByLineUserIds({
     lineUserIds: scopedLineUserIds,
     limit: analyticsLimit
   }));
-  if (queryRange.fromAt) {
-    eventsPromise = listEventsByCreatedAtRange({
+  if (queryRange.fromAt && scopedLineUserIds.length > 0) {
+    eventsPromise = safeQuery(() => listEventsByCreatedAtRange({
       limit: analyticsLimit,
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt
-    });
-    deliveriesPromise = listNotificationDeliveriesBySentAtRange({
+    }));
+    deliveriesPromise = safeQuery(() => listNotificationDeliveriesByLineUserIdsAndSentAtRange({
+      lineUserIds: scopedLineUserIds,
       limit: analyticsLimit,
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt
-    });
+    }));
   }
-  let [events, checklistsResult, userChecklistsResult, deliveries] = await Promise.all([
+  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult] = await Promise.all([
     eventsPromise,
     checklistsPromise,
     userChecklistsPromise,
@@ -297,26 +291,49 @@ async function getUserOperationalSummary(params) {
   ]);
   let checklists = dedupeRowsById(checklistsResult.rows);
   let userChecklists = dedupeRowsById(userChecklistsResult.rows);
+  let events = dedupeRowsById(eventsResult.rows);
+  let deliveries = dedupeRowsById(deliveriesResult.rows);
   let fallbackBlockedNotAvailable = false;
 
   if (events.length === 0) {
-    if (events.length === 0 && !fallbackBlocked) {
-      events = await listAllEvents({ limit: analyticsLimit });
-      addFallbackSource('listAllEvents');
-    }
-    if (events.length === 0 && fallbackBlocked) {
-      fallbackBlockedNotAvailable = true;
-    }
+    // keep bounded range-first contract; no-op until fallback branches below
+  }
+  if (eventsResult.failed && !fallbackBlocked) {
+    events = await listAllEvents({ limit: analyticsLimit });
+    addFallbackSource('listAllEvents');
+  }
+  if (events.length === 0 && !fallbackBlocked) {
+    events = await listAllEvents({ limit: analyticsLimit });
+    addFallbackSource('listAllEvents');
+  }
+  if (events.length === 0 && fallbackBlocked) {
+    fallbackBlockedNotAvailable = true;
+  }
+
+  if (deliveriesResult.failed && !fallbackBlocked) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    addFallbackSource('listAllNotificationDeliveries');
   }
   if (deliveries.length === 0) {
-    if (deliveries.length === 0 && !fallbackBlocked) {
-      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-      addFallbackSource('listAllNotificationDeliveries');
-    }
-    if (deliveries.length === 0 && fallbackBlocked) {
-      fallbackBlockedNotAvailable = true;
+    if (queryRange.fromAt) {
+      const rangeDeliveriesResult = await safeQuery(() => listNotificationDeliveriesBySentAtRange({
+        limit: analyticsLimit,
+        fromAt: queryRange.fromAt,
+        toAt: queryRange.toAt
+      }));
+      if (rangeDeliveriesResult.rows.length > 0) {
+        deliveries = dedupeRowsById(rangeDeliveriesResult.rows);
+      }
     }
   }
+  if (deliveries.length === 0 && !fallbackBlocked) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    addFallbackSource('listAllNotificationDeliveries');
+  }
+  if (deliveries.length === 0 && fallbackBlocked) {
+    fallbackBlockedNotAvailable = true;
+  }
+
   if (checklistsResult.failed || checklists.length === 0) {
     if (!fallbackBlocked) {
       checklists = await listAllChecklists({ limit: analyticsLimit });

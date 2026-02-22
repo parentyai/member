@@ -60,6 +60,8 @@ const state = {
   structDriftLastResult: null,
   retentionRuns: [],
   snapshotHealthItems: [],
+  readPathFallbackSummary: [],
+  productReadiness: null,
   paneUpdatedAt: {}
 };
 
@@ -3917,6 +3919,176 @@ async function loadRetentionRuns(options) {
   }
 }
 
+function parseReadPathFallbackSummaryLimit() {
+  const el = document.getElementById('maintenance-fallback-summary-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 20;
+  return Math.min(Math.floor(value), 200);
+}
+
+function parseReadPathFallbackSummaryWindowHours() {
+  const el = document.getElementById('maintenance-fallback-summary-window');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 24;
+  return Math.min(Math.floor(value), 24 * 30);
+}
+
+function renderReadPathFallbackSummary(items) {
+  const tbody = document.getElementById('maintenance-fallback-summary-rows');
+  const note = document.getElementById('maintenance-fallback-summary-note');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (note) note.textContent = t('ui.desc.maintenance.fallbackSummary.empty', 'fallback サマリーはありません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      item && item.endpoint ? String(item.endpoint) : '-',
+      item && item.action ? String(item.action) : '-',
+      String(Number.isFinite(Number(item && item.count)) ? Number(item.count) : 0),
+      String(Number.isFinite(Number(item && item.fallbackUsedCount)) ? Number(item.fallbackUsedCount) : 0),
+      String(Number.isFinite(Number(item && item.fallbackBlockedCount)) ? Number(item.fallbackBlockedCount) : 0),
+      formatDateLabel(item && item.latestCreatedAt),
+      item && item.latestTraceId ? String(item.latestTraceId) : '-'
+    ];
+    cols.forEach((value, index) => {
+      const td = document.createElement('td');
+      if (index >= 2 && index <= 4) td.classList.add('cell-num');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const trace = item && item.latestTraceId ? String(item.latestTraceId) : '';
+      if (!trace) return;
+      const traceInput = document.getElementById('audit-trace');
+      if (traceInput) traceInput.value = trace;
+      void loadAudit().catch(() => {
+        showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+      });
+    });
+    tbody.appendChild(tr);
+  });
+  if (note) {
+    const total = rows.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0), 0);
+    note.textContent = `${t('ui.label.maintenance.fallbackSummary.summary', 'fallback件数')}: ${total}`;
+  }
+}
+
+async function loadReadPathFallbackSummary(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('audit-trace');
+  const limit = parseReadPathFallbackSummaryLimit();
+  const windowHours = parseReadPathFallbackSummaryWindowHours();
+  const qs = new URLSearchParams();
+  qs.set('limit', String(limit));
+  qs.set('windowHours', String(windowHours));
+  try {
+    const res = await fetch(`/api/admin/read-path-fallback-summary?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.readPathFallbackSummary = Array.isArray(data.items) ? data.items : [];
+    renderReadPathFallbackSummary(state.readPathFallbackSummary);
+    if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadOk', 'read-path fallback サマリーを更新しました'), 'ok');
+  } catch (_err) {
+    state.readPathFallbackSummary = [];
+    renderReadPathFallbackSummary([]);
+    if (notify) showToast(t('ui.toast.maintenance.fallbackSummary.reloadFail', 'read-path fallback サマリーの取得に失敗しました'), 'danger');
+  }
+}
+
+function parseProductReadinessWindowHours() {
+  const el = document.getElementById('maintenance-product-readiness-window');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 24;
+  return Math.min(Math.floor(value), 24 * 30);
+}
+
+function parseProductReadinessStaleAfterMinutes() {
+  const el = document.getElementById('maintenance-product-readiness-stale-after');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 60;
+  return Math.min(Math.floor(value), 1440);
+}
+
+function renderProductReadiness(payload) {
+  const statusEl = document.getElementById('maintenance-product-readiness-status');
+  const blockerCountEl = document.getElementById('maintenance-product-readiness-blocker-count');
+  const blockersEl = document.getElementById('maintenance-product-readiness-blockers');
+  const noteEl = document.getElementById('maintenance-product-readiness-note');
+  const status = payload && payload.status ? String(payload.status) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  const blockers = Array.isArray(payload && payload.blockers) ? payload.blockers : [];
+
+  if (statusEl) statusEl.textContent = status;
+  if (blockerCountEl) blockerCountEl.textContent = String(blockers.length);
+  if (blockersEl) {
+    blockersEl.innerHTML = '';
+    if (!blockers.length) {
+      const li = document.createElement('li');
+      li.textContent = t('ui.desc.maintenance.productReadiness.blockersEmpty', 'blocker はありません。');
+      blockersEl.appendChild(li);
+    } else {
+      blockers.forEach((item) => {
+        const li = document.createElement('li');
+        const code = item && item.code ? String(item.code) : '-';
+        const message = item && item.message ? String(item.message) : '-';
+        li.textContent = `${code}: ${message}`;
+        blockersEl.appendChild(li);
+      });
+    }
+  }
+  if (noteEl) {
+    const fallbackCount = payload && payload.checks && payload.checks.fallbackSpikes
+      && Number.isFinite(Number(payload.checks.fallbackSpikes.count))
+      ? Number(payload.checks.fallbackSpikes.count)
+      : null;
+    const staleRatio = payload && payload.checks && payload.checks.snapshotHealth
+      && Number.isFinite(Number(payload.checks.snapshotHealth.staleRatio))
+      ? Number(payload.checks.snapshotHealth.staleRatio)
+      : null;
+    if (fallbackCount === null && staleRatio === null) {
+      noteEl.textContent = t('ui.desc.maintenance.productReadiness.note', 'GO/NO_GO は運用判断の参考値です。');
+    } else {
+      const staleText = staleRatio === null ? '-' : `${Math.round(staleRatio * 1000) / 10}%`;
+      const fallbackText = fallbackCount === null ? '-' : String(fallbackCount);
+      noteEl.textContent = `${t('ui.label.maintenance.productReadiness.summary', 'snapshot stale率 / fallback件数')}: ${staleText} / ${fallbackText}`;
+    }
+  }
+}
+
+async function loadProductReadiness(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('audit-trace');
+  const windowHours = parseProductReadinessWindowHours();
+  const staleAfterMinutes = parseProductReadinessStaleAfterMinutes();
+  const qs = new URLSearchParams();
+  qs.set('windowHours', String(windowHours));
+  qs.set('staleAfterMinutes', String(staleAfterMinutes));
+  try {
+    const res = await fetch(`/api/admin/product-readiness?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.productReadiness = data;
+    renderProductReadiness(data);
+    if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadOk', 'Product Readiness 判定を更新しました'), 'ok');
+  } catch (_err) {
+    state.productReadiness = null;
+    renderProductReadiness(null);
+    if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadFail', 'Product Readiness 判定の取得に失敗しました'), 'danger');
+  }
+}
+
 function normalizeComposerType(value) {
   const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (raw === 'GENERAL' || raw === 'ANNOUNCEMENT' || raw === 'VENDOR' || raw === 'AB' || raw === 'STEP') return raw;
@@ -4815,6 +4987,12 @@ function setupMaintenanceControls() {
   document.getElementById('maintenance-retention-runs-reload')?.addEventListener('click', () => {
     void loadRetentionRuns({ notify: true });
   });
+  document.getElementById('maintenance-fallback-summary-reload')?.addEventListener('click', () => {
+    void loadReadPathFallbackSummary({ notify: true });
+  });
+  document.getElementById('maintenance-product-readiness-reload')?.addEventListener('click', () => {
+    void loadProductReadiness({ notify: true });
+  });
   document.getElementById('maintenance-open-audit')?.addEventListener('click', async () => {
     activatePane('audit');
     await loadAudit().catch(() => {
@@ -4823,6 +5001,8 @@ function setupMaintenanceControls() {
   });
   void loadSnapshotHealth({ notify: false });
   void loadRetentionRuns({ notify: false });
+  void loadReadPathFallbackSummary({ notify: false });
+  void loadProductReadiness({ notify: false });
 }
 
 function setupDecisionActions() {

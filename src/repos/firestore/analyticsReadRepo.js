@@ -131,6 +131,26 @@ async function listUsersByCreatedAtRange(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listUsersByLineUserIds(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserIds = normalizeIdList(options.lineUserIds);
+  if (!lineUserIds.length) return [];
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const chunks = chunkList(lineUserIds, IN_QUERY_CHUNK_SIZE);
+  const perChunkLimit = Math.max(1, Math.floor(limit / Math.max(1, chunks.length)));
+  const settled = await Promise.all(chunks.map(async (chunk) => {
+    const rows = await Promise.all(chunk.map(async (lineUserId) => {
+      const snap = await db.collection('users').doc(lineUserId).get();
+      if (!snap.exists) return null;
+      return { id: snap.id, data: snap.data() };
+    }));
+    return rows.filter(Boolean).slice(0, perChunkLimit);
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'createdAt').slice(0, limit);
+}
+
 async function listAllChecklists(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -154,6 +174,46 @@ async function listChecklistsByScenarioAndStep(opts) {
     .limit(limit)
     .get();
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
+function normalizeScenarioStepPairs(value) {
+  if (!Array.isArray(value)) return [];
+  const normalized = [];
+  const seen = new Set();
+  value.forEach((entry) => {
+    if (!entry || typeof entry !== 'object') return;
+    const scenarioRaw = typeof entry.scenarioKey === 'string' ? entry.scenarioKey : entry.scenario;
+    const stepRaw = typeof entry.stepKey === 'string' ? entry.stepKey : entry.step;
+    const scenario = typeof scenarioRaw === 'string' ? scenarioRaw.trim() : '';
+    const step = typeof stepRaw === 'string' ? stepRaw.trim() : '';
+    if (!scenario || !step) return;
+    const key = `${scenario}__${step}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    normalized.push({ scenario, step });
+  });
+  return normalized;
+}
+
+async function listChecklistsByScenarioStepPairs(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const pairs = normalizeScenarioStepPairs(options.pairs);
+  if (!pairs.length) return [];
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const perPairLimit = Math.max(1, Math.floor(limit / Math.max(1, pairs.length)));
+  const settled = await Promise.all(pairs.map(async (pair) => {
+    const snap = await db
+      .collection('checklists')
+      .where('scenario', '==', pair.scenario)
+      .where('step', '==', pair.step)
+      .orderBy('createdAt', 'desc')
+      .limit(perPairLimit)
+      .get();
+    return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'createdAt').slice(0, limit);
 }
 
 async function listAllUserChecklists(opts) {
@@ -239,6 +299,30 @@ async function listNotificationDeliveriesByLineUserIdAndSentAtRange(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listNotificationDeliveriesByLineUserIdsAndSentAtRange(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const lineUserIds = normalizeIdList(options.lineUserIds);
+  if (!lineUserIds.length) return [];
+  const limit = resolveLimit(options.limit);
+  const fromAt = toDate(options.fromAt);
+  const toAt = toDate(options.toAt);
+  const db = getDb();
+  const chunks = chunkList(lineUserIds, IN_QUERY_CHUNK_SIZE);
+  const perChunkLimit = Math.max(1, Math.floor(limit / Math.max(1, chunks.length)));
+  const settled = await Promise.all(chunks.map(async (chunk) => {
+    const rowsByUser = await Promise.all(chunk.map(async (lineUserId) => {
+      let query = db.collection('notification_deliveries').where('lineUserId', '==', lineUserId);
+      if (fromAt) query = query.where('sentAt', '>=', fromAt);
+      if (toAt) query = query.where('sentAt', '<=', toAt);
+      const snap = await query.orderBy('sentAt', 'desc').limit(perChunkLimit).get();
+      return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+    }));
+    return rowsByUser.flat();
+  }));
+  const merged = dedupeById(settled.flat());
+  return sortRowsByFieldDesc(merged, 'sentAt').slice(0, limit);
+}
+
 async function listEventsByNotificationIdsAndCreatedAtRange(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const notificationIds = normalizeIdList(options.notificationIds);
@@ -290,14 +374,17 @@ module.exports = {
   listEventsByLineUserIdAndCreatedAtRange,
   listAllUsers,
   listUsersByCreatedAtRange,
+  listUsersByLineUserIds,
   listAllChecklists,
   listChecklistsByScenarioAndStep,
+  listChecklistsByScenarioStepPairs,
   listAllUserChecklists,
   listUserChecklistsByLineUserId,
   listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange,
   listNotificationDeliveriesByLineUserIdAndSentAtRange,
+  listNotificationDeliveriesByLineUserIdsAndSentAtRange,
   listEventsByNotificationIdsAndCreatedAtRange,
   listAllNotifications,
   listNotificationsByCreatedAtRange

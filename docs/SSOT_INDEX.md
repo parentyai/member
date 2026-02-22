@@ -270,4 +270,24 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE361_EXECUTION_LOG.md`（Read Path収束 final package: read-path fallback監査証跡統一実行ログ）
 - `docs/PHASE362_PLAN.md`（Read Path収束 final package: read path budget ratchet計画）
 - `docs/PHASE362_EXECUTION_LOG.md`（Read Path収束 final package: read path budget ratchet実行ログ）
+- `docs/PHASE363_PLAN.md`（Product-out収束ロードマップ: load_risk測定精度正規化計画）
+- `docs/PHASE363_EXECUTION_LOG.md`（Product-out収束ロードマップ: load_risk測定精度正規化実行ログ）
+- `docs/PHASE364_PLAN.md`（Product-out収束ロードマップ: phase4 users summary fallback縮小計画）
+- `docs/PHASE364_EXECUTION_LOG.md`（Product-out収束ロードマップ: phase4 users summary fallback縮小実行ログ）
+- `docs/PHASE365_PLAN.md`（Product-out収束ロードマップ: phase4 notifications summary fallback縮小計画）
+- `docs/PHASE365_EXECUTION_LOG.md`（Product-out収束ロードマップ: phase4 notifications summary fallback縮小実行ログ）
+- `docs/PHASE366_PLAN.md`（Product-out収束ロードマップ: phase5 state fallback縮小計画）
+- `docs/PHASE366_EXECUTION_LOG.md`（Product-out収束ロードマップ: phase5 state fallback縮小実行ログ）
+- `docs/PHASE367_PLAN.md`（Product-out収束ロードマップ: phase2 automation bounded化計画）
+- `docs/PHASE367_EXECUTION_LOG.md`（Product-out収束ロードマップ: phase2 automation bounded化実行ログ）
+- `docs/PHASE368_PLAN.md`（Product-out収束ロードマップ: monitor/dashboard fallback診断統一計画）
+- `docs/PHASE368_EXECUTION_LOG.md`（Product-out収束ロードマップ: monitor/dashboard fallback診断統一実行ログ）
+- `docs/PHASE369_PLAN.md`（Product-out収束ロードマップ: read-path fallback summary API計画）
+- `docs/PHASE369_EXECUTION_LOG.md`（Product-out収束ロードマップ: read-path fallback summary API実行ログ）
+- `docs/PHASE370_PLAN.md`（Product-out収束ロードマップ: maintenance pane fallback summary可視化計画）
+- `docs/PHASE370_EXECUTION_LOG.md`（Product-out収束ロードマップ: maintenance pane fallback summary可視化実行ログ）
+- `docs/PHASE371_PLAN.md`（Product-out収束ロードマップ: product readiness API計画）
+- `docs/PHASE371_EXECUTION_LOG.md`（Product-out収束ロードマップ: product readiness API実行ログ）
+- `docs/PHASE372_PLAN.md`（Product-out収束ロードマップ: 最終ratchet固定と出荷判定計画）
+- `docs/PHASE372_EXECUTION_LOG.md`（Product-out収束ロードマップ: 最終ratchet固定と出荷判定実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

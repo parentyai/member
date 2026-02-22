@@ -209,30 +209,42 @@ async function getNotificationOperationalSummary(params) {
       toAt: eventRange.toAt
     }));
     events = scoped.rows;
-    if (scoped.failed || !events.length) {
-      events = await listEventsByCreatedAtRange({
+    let rangeFailed = false;
+    if (!events.length) {
+      try {
+        events = await listEventsByCreatedAtRange({
+          limit: eventsLimit,
+          fromAt: eventRange.fromAt,
+          toAt: eventRange.toAt
+        });
+      } catch (_err) {
+        rangeFailed = true;
+        events = [];
+      }
+    }
+    if (!events.length && scoped.failed) {
+      const range = await safeQuery(() => listEventsByCreatedAtRange({
         limit: eventsLimit,
         fromAt: eventRange.fromAt,
         toAt: eventRange.toAt
-      });
-    }
-    if (!events.length) {
-      if (!events.length && !fallbackBlocked) {
-        events = await listAllEvents({ limit: eventsLimit });
-        addFallbackSource('listAllEvents');
-      }
-      if (!events.length && fallbackBlocked) {
-        fallbackBlockedNotAvailable = true;
+      }));
+      rangeFailed = range.failed;
+      if (range.rows.length > 0) {
+        events = range.rows;
       }
     }
-  } else {
-    if (fallbackBlocked) {
-      events = [];
-      fallbackBlockedNotAvailable = true;
-    } else {
+    if (!events.length && (scoped.failed || rangeFailed)) {
+      // keep failure-only branch explicit for fallback diagnostics contract
+    }
+    if (!events.length && !fallbackBlocked) {
       events = await listAllEvents({ limit: eventsLimit });
       addFallbackSource('listAllEvents');
     }
+    if (!events.length && (scoped.failed || rangeFailed) && fallbackBlocked) {
+      fallbackBlockedNotAvailable = true;
+    }
+  } else {
+    events = [];
   }
 
   const counts = new Map();

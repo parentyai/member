@@ -1076,6 +1076,18 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/read-path-fallback-summary' || pathname === '/api/admin/read-path-fallback-summary/')) {
+    const { handleReadPathFallbackSummary } = require('./routes/admin/readPathFallbackSummary');
+    handleReadPathFallbackSummary(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/api/admin/product-readiness' || pathname === '/api/admin/product-readiness/')) {
+    const { handleProductReadiness } = require('./routes/admin/productReadiness');
+    handleProductReadiness(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
     const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;

@@ -335,6 +335,9 @@ async function handleDashboardKpi(req, res) {
           source: 'snapshot',
           asOf: snapshot.asOf || null,
           freshnessMinutes: snapshot.freshnessMinutes || freshnessMinutes,
+          fallbackUsed: false,
+          fallbackBlocked: false,
+          fallbackSources: [],
           kpis: snapshot.data.kpis
         }));
         return;
@@ -353,6 +356,10 @@ async function handleDashboardKpi(req, res) {
           source: 'not_available',
           asOf: null,
           freshnessMinutes,
+          note: 'NOT AVAILABLE',
+          fallbackUsed: false,
+          fallbackBlocked: true,
+          fallbackSources: [],
           kpis
         }));
         return;
@@ -370,6 +377,10 @@ async function handleDashboardKpi(req, res) {
         source: 'not_available',
         asOf: null,
         freshnessMinutes,
+        note: 'NOT AVAILABLE',
+        fallbackUsed: false,
+        fallbackBlocked: true,
+        fallbackSources: [],
         kpis
       }));
       return;
@@ -388,6 +399,10 @@ async function handleDashboardKpi(req, res) {
         source: 'not_available',
         asOf: null,
         freshnessMinutes,
+        note: 'NOT AVAILABLE',
+        fallbackUsed: false,
+        fallbackBlocked: true,
+        fallbackSources: [],
         kpis
       }));
       return;

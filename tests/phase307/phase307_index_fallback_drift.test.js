@@ -31,8 +31,13 @@ function countMissingIndexFallbackPoints() {
 
 test('phase307: missing-index fallback points do not exceed audit baseline', () => {
   const baseline = JSON.parse(readFileSync('docs/REPO_AUDIT_INPUTS/load_risk.json', 'utf8'));
-  const baselineCount = Number(baseline && baseline.fallback_risk);
-  assert.ok(Number.isFinite(baselineCount), 'load_risk.json must provide numeric fallback_risk baseline');
+  const riskCount = Number(baseline && baseline.fallback_risk);
+  const pointCount = Array.isArray(baseline && baseline.fallback_points) ? baseline.fallback_points.length : NaN;
+  const baselineCount = Math.max(
+    Number.isFinite(riskCount) ? riskCount : 0,
+    Number.isFinite(pointCount) ? pointCount : 0
+  );
+  assert.ok(baselineCount > 0, 'load_risk.json must provide fallback baseline');
 
   const currentCount = countMissingIndexFallbackPoints();
   assert.ok(
