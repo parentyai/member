@@ -4,6 +4,10 @@ const { getUsersSummaryFiltered } = require('../usecases/phase5/getUsersSummaryF
 const { getNotificationsSummaryFiltered } = require('../usecases/phase5/getNotificationsSummaryFiltered');
 const { getStaleMemberNumberUsers } = require('../usecases/phase5/getStaleMemberNumberUsers');
 const { getOpsState } = require('../repos/firestore/opsStateRepo');
+const {
+  normalizeFallbackMode,
+  resolveFallbackModeDefault
+} = require('../domain/readModel/fallbackPolicy');
 
 function formatTimestamp(value) {
   if (!value) return null;
@@ -77,8 +81,9 @@ function parseSnapshotMode(value) {
 }
 
 function parseFallbackMode(value) {
-  if (value === null || value === undefined || value === '') return null;
-  if (value === 'allow' || value === 'block') return value;
+  if (value === null || value === undefined || value === '') return resolveFallbackModeDefault();
+  const normalized = normalizeFallbackMode(value);
+  if (normalized) return normalized;
   return null;
 }
 
@@ -140,7 +145,10 @@ async function handleUsersSummaryFiltered(req, res) {
       review,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }));
   } catch (err) {
     handleError(res, err);
@@ -183,7 +191,10 @@ async function handleNotificationsSummaryFiltered(req, res) {
       items,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }));
   } catch (err) {
     handleError(res, err);

@@ -125,6 +125,11 @@ async function getNotificationOperationalSummary(params) {
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
+  const fallbackSources = [];
+  const addFallbackSource = (sourceName) => {
+    if (!sourceName || fallbackSources.includes(sourceName)) return;
+    fallbackSources.push(sourceName);
+  };
   const withMeta = (items, meta) => {
     if (!includeMeta) return items;
     return { items, meta };
@@ -139,14 +144,20 @@ async function getNotificationOperationalSummary(params) {
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
-          : freshnessMinutes
+          : freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: false,
+        fallbackSources: []
       });
     }
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
         asOf: null,
-        freshnessMinutes
+        freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: true,
+        fallbackSources: []
       });
     }
   }
@@ -154,7 +165,10 @@ async function getNotificationOperationalSummary(params) {
     return withMeta([], {
       dataSource: 'not_available',
       asOf: null,
-      freshnessMinutes
+      freshnessMinutes,
+      fallbackUsed: false,
+      fallbackBlocked: true,
+      fallbackSources: []
     });
   }
 
@@ -178,6 +192,7 @@ async function getNotificationOperationalSummary(params) {
     if (!events.length) {
       if (!events.length && !fallbackBlocked) {
         events = await listAllEvents({ limit: eventsLimit });
+        addFallbackSource('listAllEvents');
       }
       if (!events.length && fallbackBlocked) {
         fallbackBlockedNotAvailable = true;
@@ -189,6 +204,7 @@ async function getNotificationOperationalSummary(params) {
       fallbackBlockedNotAvailable = true;
     } else {
       events = await listAllEvents({ limit: eventsLimit });
+      addFallbackSource('listAllEvents');
     }
   }
 
@@ -218,7 +234,10 @@ async function getNotificationOperationalSummary(params) {
     dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
     asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
     freshnessMinutes: null,
-    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null,
+    fallbackUsed: fallbackSources.length > 0,
+    fallbackBlocked: fallbackBlockedNotAvailable,
+    fallbackSources
   });
 }
 

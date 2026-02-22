@@ -31,6 +31,15 @@ function parseStaleAfterMinutes(req) {
   return resolveSnapshotFreshnessMinutes({ freshnessMinutes: value });
 }
 
+function parseSnapshotType(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const raw = url.searchParams.get('snapshotType');
+  if (raw === null || raw === undefined) return null;
+  const value = String(raw).trim();
+  if (!value) return null;
+  return value;
+}
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date) return value.getTime();
@@ -86,6 +95,7 @@ async function handleOpsSnapshotHealth(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const limit = parseLimit(req);
+  const snapshotType = parseSnapshotType(req);
 
   let staleAfterMinutes;
   try {
@@ -97,7 +107,7 @@ async function handleOpsSnapshotHealth(req, res) {
   }
 
   try {
-    const rows = await opsSnapshotsRepo.listSnapshots({ limit });
+    const rows = await opsSnapshotsRepo.listSnapshots({ limit, snapshotType });
     const items = rows.map((row) => normalizeSnapshot(row, staleAfterMinutes));
 
     try {
@@ -110,6 +120,7 @@ async function handleOpsSnapshotHealth(req, res) {
         requestId: requestId || undefined,
         payloadSummary: {
           limit,
+          snapshotType,
           staleAfterMinutes,
           count: items.length
         }
@@ -124,6 +135,7 @@ async function handleOpsSnapshotHealth(req, res) {
       traceId,
       requestId,
       limit,
+      snapshotType,
       staleAfterMinutes,
       items
     }));

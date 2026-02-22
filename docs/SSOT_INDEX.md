@@ -246,4 +246,16 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE349_EXECUTION_LOG.md`（Read Path収束 follow-up: ops snapshot health API実行ログ）
 - `docs/PHASE350_PLAN.md`（Read Path収束 follow-up: read path budget ratchet計画）
 - `docs/PHASE350_EXECUTION_LOG.md`（Read Path収束 follow-up: read path budget ratchet実行ログ）
+- `docs/PHASE351_PLAN.md`（Read Path収束 follow-up: dashboard KPI fallbackModeノブ計画）
+- `docs/PHASE351_EXECUTION_LOG.md`（Read Path収束 follow-up: dashboard KPI fallbackModeノブ実行ログ）
+- `docs/PHASE352_PLAN.md`（Read Path収束 follow-up: checklist scoped read-path優先化計画）
+- `docs/PHASE352_EXECUTION_LOG.md`（Read Path収束 follow-up: checklist scoped read-path優先化実行ログ）
+- `docs/PHASE353_PLAN.md`（Read Path収束 follow-up: fallback diagnosticsメタ統一計画）
+- `docs/PHASE353_EXECUTION_LOG.md`（Read Path収束 follow-up: fallback diagnosticsメタ統一実行ログ）
+- `docs/PHASE354_PLAN.md`（Read Path収束 follow-up: ops snapshot health maintenance可視化計画）
+- `docs/PHASE354_EXECUTION_LOG.md`（Read Path収束 follow-up: ops snapshot health maintenance可視化実行ログ）
+- `docs/PHASE355_PLAN.md`（Read Path収束 follow-up: load risk hotspots budget ratchet計画）
+- `docs/PHASE355_EXECUTION_LOG.md`（Read Path収束 follow-up: load risk hotspots budget ratchet実行ログ）
+- `docs/PHASE356_PLAN.md`（Read Path収束 follow-up: fallbackMode運用デフォルト制御計画）
+- `docs/PHASE356_EXECUTION_LOG.md`（Read Path収束 follow-up: fallbackMode運用デフォルト制御実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

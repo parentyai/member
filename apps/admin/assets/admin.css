@@ -1795,6 +1795,11 @@ details:not([open]) > *:not(summary) {
   margin: var(--space-2) 0 0;
 }
 
+.snapshot-health-table td,
+.snapshot-health-table th {
+  vertical-align: top;
+}
+
 @media (max-width: 1100px) {
   .app-nav {
     position: static;
