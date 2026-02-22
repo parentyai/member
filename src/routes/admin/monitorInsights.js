@@ -15,6 +15,10 @@ const {
   resolveSnapshotReadMode,
   isSnapshotRequired
 } = require('../../domain/readModel/snapshotReadPolicy');
+const {
+  normalizeFallbackMode,
+  resolveFallbackModeDefault
+} = require('../../domain/readModel/fallbackPolicy');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_DELIVERIES_READ_LIMIT = 1000;
@@ -35,6 +39,13 @@ function normalizeReadLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return DEFAULT_DELIVERIES_READ_LIMIT;
   return Math.min(Math.floor(num), MAX_DELIVERIES_READ_LIMIT);
+}
+
+function resolveFallbackMode(value) {
+  if (value === null || value === undefined || value === '') return resolveFallbackModeDefault();
+  const normalized = normalizeFallbackMode(value);
+  if (normalized) return normalized;
+  return null;
 }
 
 function toMillis(value) {
@@ -75,12 +86,20 @@ async function handleMonitorInsights(req, res) {
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const readLimit = normalizeReadLimit(url.searchParams.get('readLimit'));
   const snapshotModeRaw = url.searchParams.get('snapshotMode');
+  const fallbackModeRaw = url.searchParams.get('fallbackMode');
   const parsedSnapshotMode = normalizeSnapshotMode(snapshotModeRaw);
   if (snapshotModeRaw && !parsedSnapshotMode) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'invalid snapshotMode' }));
     return;
   }
+  const fallbackMode = resolveFallbackMode(fallbackModeRaw);
+  if (fallbackModeRaw && !fallbackMode) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid fallbackMode' }));
+    return;
+  }
+  const fallbackBlocked = fallbackMode === 'block';
   const snapshotMode = resolveSnapshotReadMode({ snapshotMode: parsedSnapshotMode || undefined });
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
@@ -96,12 +115,24 @@ async function handleMonitorInsights(req, res) {
     });
     let dataSource = 'range';
     let note = null;
+    let fallbackUsed = false;
+    let fallbackBlockedFlag = false;
+    const fallbackSources = [];
     if (!all.length && isSnapshotRequired(snapshotMode)) {
       dataSource = 'not_available';
       note = 'NOT AVAILABLE';
+      fallbackBlockedFlag = true;
     } else if (!all.length) {
-      all = await listAllNotificationDeliveries({ limit: readLimit });
-      dataSource = 'fallback';
+      if (!fallbackBlocked) {
+        all = await listAllNotificationDeliveries({ limit: readLimit });
+        dataSource = 'fallback';
+        fallbackUsed = true;
+        fallbackSources.push('listAllNotificationDeliveries');
+      } else {
+        dataSource = 'not_available';
+        note = 'NOT AVAILABLE';
+        fallbackBlockedFlag = true;
+      }
     }
     const deliveries = all
       .map((item) => Object.assign({ id: item.id }, item.data || {}))
@@ -203,11 +234,30 @@ async function handleMonitorInsights(req, res) {
           windowDays,
           limit,
           snapshotMode,
+          fallbackMode,
           dataSource,
           deliveries: deliveries.length,
           vendorCount: vendorCtrTop.length
         }
       });
+      if (fallbackUsed || fallbackBlockedFlag) {
+        await appendAuditLog({
+          actor,
+          action: 'read_path.fallback.monitor_insights',
+          entityType: 'read_path',
+          entityId: 'monitor_insights',
+          traceId,
+          requestId,
+          payloadSummary: {
+            fallbackUsed,
+            fallbackBlocked: fallbackBlockedFlag,
+            fallbackSources,
+            snapshotMode,
+            fallbackMode,
+            readLimit
+          }
+        });
+      }
     } catch (_err) {
       // best effort only
     }
@@ -219,8 +269,12 @@ async function handleMonitorInsights(req, res) {
       traceId,
       windowDays,
       snapshotMode,
+      fallbackMode,
       dataSource,
       note,
+      fallbackUsed,
+      fallbackBlocked: fallbackBlockedFlag,
+      fallbackSources,
       vendorCtrTop,
       ctrTop,
       abSnapshot,
