@@ -63,6 +63,8 @@ function parseCurrentBudgets() {
   const missingIndexMatches = [...text.matchAll(/missing_index_surface_max:\s*(\d+)/g)];
   const loadRiskFreshnessMatches = [...text.matchAll(/load_risk_freshness_max_hours:\s*(\d+)/g)];
   const missingIndexFreshnessMatches = [...text.matchAll(/missing_index_surface_freshness_max_hours:\s*(\d+)/g)];
+  const snapshotStaleRatioMatches = [...text.matchAll(/snapshot_stale_ratio_max:\s*([0-9]+(?:\.[0-9]+)?)/g)];
+  const fallbackSpikeMatches = [...text.matchAll(/fallback_spike_max:\s*(\d+)/g)];
   const worstMatch = worstMatches.length ? worstMatches[worstMatches.length - 1] : null;
   const fallbackMatch = fallbackMatches.length ? fallbackMatches[fallbackMatches.length - 1] : null;
   const hotspotMatch = hotspotMatches.length ? hotspotMatches[hotspotMatches.length - 1] : null;
@@ -71,13 +73,19 @@ function parseCurrentBudgets() {
   const missingIndexFreshnessMatch = missingIndexFreshnessMatches.length
     ? missingIndexFreshnessMatches[missingIndexFreshnessMatches.length - 1]
     : null;
+  const snapshotStaleRatioMatch = snapshotStaleRatioMatches.length
+    ? snapshotStaleRatioMatches[snapshotStaleRatioMatches.length - 1]
+    : null;
+  const fallbackSpikeMatch = fallbackSpikeMatches.length ? fallbackSpikeMatches[fallbackSpikeMatches.length - 1] : null;
   return {
     worstCaseMax: worstMatch ? Number(worstMatch[1]) : null,
     fallbackPointsMax: fallbackMatch ? Number(fallbackMatch[1]) : null,
     hotspotsCountMax: hotspotMatch ? Number(hotspotMatch[1]) : null,
     missingIndexSurfaceMax: missingIndexMatch ? Number(missingIndexMatch[1]) : null,
     loadRiskFreshnessMaxHours: loadRiskFreshnessMatch ? Number(loadRiskFreshnessMatch[1]) : null,
-    missingIndexSurfaceFreshnessMaxHours: missingIndexFreshnessMatch ? Number(missingIndexFreshnessMatch[1]) : null
+    missingIndexSurfaceFreshnessMaxHours: missingIndexFreshnessMatch ? Number(missingIndexFreshnessMatch[1]) : null,
+    snapshotStaleRatioMax: snapshotStaleRatioMatch ? Number(snapshotStaleRatioMatch[1]) : null,
+    fallbackSpikeMax: fallbackSpikeMatch ? Number(fallbackSpikeMatch[1]) : null
   };
 }
 
@@ -149,9 +157,12 @@ async function handleProductReadiness(req, res) {
     const missingIndexSurfaceFreshnessMaxHours = budgets.missingIndexSurfaceFreshnessMaxHours;
     const loadRiskGeneratedAtHours = parseGeneratedAtHours(loadRisk && loadRisk.generatedAt);
     const missingIndexGeneratedAtHours = parseGeneratedAtHours(missingIndexSurface && missingIndexSurface.generatedAt);
-    const fallbackSpikeMax = Number.isFinite(Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX))
+    const snapshotStaleRatioThreshold = Number.isFinite(Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX))
+      ? Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX)
+      : (Number.isFinite(budgets.snapshotStaleRatioMax) ? budgets.snapshotStaleRatioMax : 0.5);
+    const fallbackSpikeThreshold = Number.isFinite(Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX))
       ? Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX)
-      : 200;
+      : (Number.isFinite(budgets.fallbackSpikeMax) ? budgets.fallbackSpikeMax : 200);
 
     const staleCount = (snapshots || []).filter((row) => isSnapshotStale(row, staleAfterMinutes)).length;
     const snapshotCount = Array.isArray(snapshots) ? snapshots.length : 0;
@@ -209,21 +220,21 @@ async function handleProductReadiness(req, res) {
 
     if (snapshotCount === 0) {
       blockers.push({ code: 'snapshot_missing', message: 'ops snapshots are missing' });
-    } else if (staleRatio > 0.5) {
+    } else if (staleRatio > snapshotStaleRatioThreshold) {
       blockers.push({
         code: 'snapshot_stale_ratio_high',
         message: 'snapshot stale ratio is above threshold',
         value: staleRatio,
-        threshold: 0.5
+        threshold: snapshotStaleRatioThreshold
       });
     }
 
-    if (fallbackEventsCount > fallbackSpikeMax) {
+    if (fallbackEventsCount > fallbackSpikeThreshold) {
       blockers.push({
         code: 'fallback_spike_detected',
         message: 'read-path fallback events exceed spike threshold',
         value: fallbackEventsCount,
-        threshold: fallbackSpikeMax
+        threshold: fallbackSpikeThreshold
       });
     }
 
@@ -313,16 +324,17 @@ async function handleProductReadiness(req, res) {
           budget: budgets
         },
         snapshotHealth: {
-          ok: snapshotCount > 0 && staleRatio <= 0.5,
+          ok: snapshotCount > 0 && staleRatio <= snapshotStaleRatioThreshold,
           snapshotCount,
           staleCount,
           staleRatio,
+          staleRatioThreshold: snapshotStaleRatioThreshold,
           staleAfterMinutes
         },
         fallbackSpikes: {
-          ok: fallbackEventsCount <= fallbackSpikeMax,
+          ok: fallbackEventsCount <= fallbackSpikeThreshold,
           count: fallbackEventsCount,
-          threshold: fallbackSpikeMax,
+          threshold: fallbackSpikeThreshold,
           windowHours
         },
         missingIndexSurface: {

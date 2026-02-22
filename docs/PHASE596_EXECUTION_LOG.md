@@ -1,0 +1,26 @@
+# PHASE596 実行ログ
+
+- 実施日: 2026-02-22（ローカル実行）
+- 方針: add-only
+- 変更内容:
+  - `productReadiness` の閾値解決を `READ_PATH_BUDGETS.md` 末尾から読み取りへ変更。
+  - 環境変数 `READ_PATH_SNAPSHOT_STALE_RATIO_MAX` / `READ_PATH_FALLBACK_SPIKE_MAX` による上書き対応。
+  - 失効しないデフォルト（0.5 / 200）を残し、既存挙動を維持。
+  - `READ_PATH_BUDGETS.md` に `current_baseline_phase596` を追記。
+  - `tests/phase596/*` を追加。
+- 追加したキー:
+  - `snapshot_stale_ratio_max`
+  - `fallback_spike_max`
+- テスト:
+  - `node --test tests/phase596/*.test.js`
+  - `npm run test:docs`
+  - `npm test`
+- 結果: 全件 PASS
+  - `node --test tests/phase596/*.test.js`
+  - `npm run test:docs`
+  - `npm run repo-map:check`
+  - `npm run cleanup:check`
+  - `npm run docs-artifacts:check`
+  - `npm run load-risk:generate`
+  - `npm run load-risk:check`
+  - `npm test`
