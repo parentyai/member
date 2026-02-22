@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:22:23-05:00",
-  "gitCommit": "187859f62bd57711e2d460b936a94afd9c88a3e3",
+  "generatedAt": "2026-02-22T12:28:43-05:00",
+  "gitCommit": "fbb71b2d97968ff436f8321a0e998dbf08ec82bb",
   "branch": "codex/phase577-580",
-  "sourceDigest": "5d0d3f305f6f5e3ba9729bb97e76d5725bc9acdb1a1e954e6b5f9d4ff51f6118",
+  "sourceDigest": "b283e1147762c6ce975f66b0631080560ffad311fd801bb78dc99e8417292f5c",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,7 +78,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "906e4c99d72f24d472c218383138fe02660e767d54fa73990ca61a9fefb1c2b3",
+      "sha256": "18e3250714871bc0adfb12581186eb64550f0abc769b25e293dacdb2e2718416",
       "bytes": 12724
     },
     {
