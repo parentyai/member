@@ -3,7 +3,8 @@
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const {
   listAllEvents,
-  listEventsByCreatedAtRange
+  listEventsByCreatedAtRange,
+  listEventsByNotificationIdsAndCreatedAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const {
@@ -88,6 +89,22 @@ function createSummaryItem(notification, current) {
     clickCount: current.click,
     lastReactionAt: current.lastValue ? formatTimestamp(current.lastValue) : null
   };
+}
+
+function collectNotificationIds(notifications) {
+  return Array.from(new Set((notifications || []).map((notification) => {
+    const id = notification && notification.id ? String(notification.id).trim() : '';
+    return id;
+  }).filter(Boolean)));
+}
+
+async function safeQuery(queryFn) {
+  try {
+    const rows = await queryFn();
+    return { rows: Array.isArray(rows) ? rows : [], failed: false };
+  } catch (_err) {
+    return { rows: [], failed: true };
+  }
 }
 
 async function buildFromSnapshot(snapshotItems, options) {
@@ -181,14 +198,24 @@ async function getNotificationOperationalSummary(params) {
     stepKey: filters.stepKey
   });
   const eventRange = resolveNotificationEventRange(notifications);
+  const notificationIds = collectNotificationIds(notifications);
   let events;
   let fallbackBlockedNotAvailable = false;
   if (eventRange) {
-    events = await listEventsByCreatedAtRange({
+    const scoped = await safeQuery(() => listEventsByNotificationIdsAndCreatedAtRange({
+      notificationIds,
       limit: eventsLimit,
       fromAt: eventRange.fromAt,
       toAt: eventRange.toAt
-    });
+    }));
+    events = scoped.rows;
+    if (scoped.failed || !events.length) {
+      events = await listEventsByCreatedAtRange({
+        limit: eventsLimit,
+        fromAt: eventRange.fromAt,
+        toAt: eventRange.toAt
+      });
+    }
     if (!events.length) {
       if (!events.length && !fallbackBlocked) {
         events = await listAllEvents({ limit: eventsLimit });

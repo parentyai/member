@@ -6,6 +6,7 @@ const {
   listAllChecklists,
   listChecklistsByScenarioAndStep,
   listAllUserChecklists,
+  listUserChecklistsByLineUserIds,
   listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
@@ -172,6 +173,10 @@ function collectScenarioStepPairs(users) {
   });
 }
 
+function collectLineUserIds(users) {
+  return Array.from(new Set((users || []).map((user) => (user && user.id ? String(user.id).trim() : '')).filter(Boolean)));
+}
+
 function dedupeRowsById(rows) {
   const map = new Map();
   (rows || []).forEach((row) => {
@@ -247,6 +252,7 @@ async function getUserOperationalSummary(params) {
   const scopedUsers = listLimit ? users.slice(0, listLimit) : users;
   const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
   const checklistPairs = collectScenarioStepPairs(scopedUsers);
+  const scopedLineUserIds = collectLineUserIds(scopedUsers);
   const checklistsPromise = (async () => {
     if (!checklistPairs.length) return { rows: [], failed: false };
     const settled = await Promise.all(checklistPairs.map((pair) => safeQuery(() => listChecklistsByScenarioAndStep({
@@ -267,6 +273,10 @@ async function getUserOperationalSummary(params) {
   })();
   let eventsPromise = Promise.resolve([]);
   let deliveriesPromise = Promise.resolve([]);
+  const userChecklistsPromise = safeQuery(() => listUserChecklistsByLineUserIds({
+    lineUserIds: scopedLineUserIds,
+    limit: analyticsLimit
+  }));
   if (queryRange.fromAt) {
     eventsPromise = listEventsByCreatedAtRange({
       limit: analyticsLimit,
@@ -279,13 +289,14 @@ async function getUserOperationalSummary(params) {
       toAt: queryRange.toAt
     });
   }
-  let [events, checklistsResult, userChecklists, deliveries] = await Promise.all([
+  let [events, checklistsResult, userChecklistsResult, deliveries] = await Promise.all([
     eventsPromise,
     checklistsPromise,
-    listAllUserChecklists({ limit: analyticsLimit }),
+    userChecklistsPromise,
     deliveriesPromise
   ]);
   let checklists = dedupeRowsById(checklistsResult.rows);
+  let userChecklists = dedupeRowsById(userChecklistsResult.rows);
   let fallbackBlockedNotAvailable = false;
 
   if (events.length === 0) {
@@ -310,6 +321,14 @@ async function getUserOperationalSummary(params) {
     if (!fallbackBlocked) {
       checklists = await listAllChecklists({ limit: analyticsLimit });
       addFallbackSource('listAllChecklists');
+    } else {
+      fallbackBlockedNotAvailable = true;
+    }
+  }
+  if (userChecklistsResult.failed || userChecklists.length === 0) {
+    if (!fallbackBlocked) {
+      userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
+      addFallbackSource('listAllUserChecklists');
     } else {
       fallbackBlockedNotAvailable = true;
     }

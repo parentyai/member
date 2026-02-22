@@ -15,11 +15,20 @@ function parseJson(body, res) {
 async function handleRunPhase2(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
+  const fallbackMode = payload && typeof payload.fallbackMode === 'string'
+    ? payload.fallbackMode.trim().toLowerCase()
+    : '';
+  if (fallbackMode && fallbackMode !== 'allow' && fallbackMode !== 'block') {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'invalid fallbackMode' }));
+    return;
+  }
   const result = await runPhase2Automation({
     runId: payload.runId,
     targetDate: payload.targetDate,
     dryRun: payload.dryRun,
     analyticsLimit: payload.analyticsLimit,
+    fallbackMode: fallbackMode || undefined,
     logger: (msg) => console.log(msg)
   });
   if (!result.ok) {

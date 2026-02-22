@@ -1,6 +1,7 @@
 'use strict';
 
 const { getUserStateSummary } = require('../usecases/phase5/getUserStateSummary');
+const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
@@ -44,6 +45,41 @@ function parseFallbackMode(value) {
   return null;
 }
 
+function resolveHeader(req, key) {
+  if (!req || !req.headers) return null;
+  const value = req.headers[key];
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  return null;
+}
+
+function resolveAuditActor(req) {
+  return resolveHeader(req, 'x-actor') || 'phase5_api';
+}
+
+async function appendFallbackAudit(req, meta, extra) {
+  if (!meta) return;
+  const fallbackUsed = Boolean(meta.fallbackUsed);
+  const fallbackBlocked = Boolean(meta.fallbackBlocked);
+  if (!fallbackUsed && !fallbackBlocked) return;
+  try {
+    await appendAuditLog({
+      actor: resolveAuditActor(req),
+      action: 'read_path.fallback.phase5_state',
+      entityType: 'read_path',
+      entityId: 'phase5_state',
+      traceId: resolveHeader(req, 'x-trace-id') || undefined,
+      requestId: resolveHeader(req, 'x-request-id') || undefined,
+      payloadSummary: Object.assign({
+        fallbackUsed,
+        fallbackBlocked,
+        fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
+      }, extra || {})
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
 async function handleUserStateSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = url.searchParams.get('lineUserId');
@@ -72,6 +108,12 @@ async function handleUserStateSummary(req, res) {
     });
     const item = result && typeof result === 'object' && !Array.isArray(result) && result.item ? result.item : result;
     const meta = result && typeof result === 'object' && !Array.isArray(result) && result.meta ? result.meta : null;
+    await appendFallbackAudit(req, meta, {
+      scope: 'phase5_state_summary',
+      snapshotMode: snapshotMode || null,
+      fallbackMode,
+      lineUserId: lineUserId || null
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
       ok: true,

@@ -2,6 +2,7 @@
 
 const { getUserOperationalSummary } = require('../../usecases/admin/getUserOperationalSummary');
 const { getNotificationOperationalSummary } = require('../../usecases/admin/getNotificationOperationalSummary');
+const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
@@ -44,6 +45,41 @@ function parseFallbackMode(value) {
   return null;
 }
 
+function resolveHeader(req, key) {
+  if (!req || !req.headers) return null;
+  const value = req.headers[key];
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  return null;
+}
+
+function resolveAuditActor(req) {
+  return resolveHeader(req, 'x-actor') || 'admin_api';
+}
+
+async function appendFallbackAudit(req, action, meta, extra) {
+  if (!meta) return;
+  const fallbackUsed = Boolean(meta.fallbackUsed);
+  const fallbackBlocked = Boolean(meta.fallbackBlocked);
+  if (!fallbackUsed && !fallbackBlocked) return;
+  try {
+    await appendAuditLog({
+      actor: resolveAuditActor(req),
+      action,
+      entityType: 'read_path',
+      entityId: 'summary',
+      traceId: resolveHeader(req, 'x-trace-id') || undefined,
+      requestId: resolveHeader(req, 'x-request-id') || undefined,
+      payloadSummary: Object.assign({
+        fallbackUsed,
+        fallbackBlocked,
+        fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
+      }, extra || {})
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
 async function handleUsersSummary(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -73,6 +109,11 @@ async function handleUsersSummary(req, res) {
     });
     const normalizedItems = Array.isArray(items) ? items : (Array.isArray(items.items) ? items.items : []);
     const meta = items && !Array.isArray(items) && items.meta ? items.meta : null;
+    await appendFallbackAudit(req, 'read_path.fallback.users_summary', meta, {
+      scope: 'phase4_users_summary',
+      snapshotMode: snapshotMode || null,
+      fallbackMode
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
       ok: true,
@@ -124,6 +165,11 @@ async function handleNotificationsSummary(req, res) {
     });
     const items = Array.isArray(summary) ? summary : (Array.isArray(summary.items) ? summary.items : []);
     const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
+    await appendFallbackAudit(req, 'read_path.fallback.notifications_summary', meta, {
+      scope: 'phase4_notifications_summary',
+      snapshotMode: snapshotMode || null,
+      fallbackMode
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
       ok: true,

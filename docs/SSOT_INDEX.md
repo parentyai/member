@@ -258,4 +258,16 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE355_EXECUTION_LOG.md`（Read Path収束 follow-up: load risk hotspots budget ratchet実行ログ）
 - `docs/PHASE356_PLAN.md`（Read Path収束 follow-up: fallbackMode運用デフォルト制御計画）
 - `docs/PHASE356_EXECUTION_LOG.md`（Read Path収束 follow-up: fallbackMode運用デフォルト制御実行ログ）
+- `docs/PHASE357_PLAN.md`（Read Path収束 final package: phase4 users summary scoped user_checklists計画）
+- `docs/PHASE357_EXECUTION_LOG.md`（Read Path収束 final package: phase4 users summary scoped user_checklists実行ログ）
+- `docs/PHASE358_PLAN.md`（Read Path収束 final package: phase4 notifications summary scoped events計画）
+- `docs/PHASE358_EXECUTION_LOG.md`（Read Path収束 final package: phase4 notifications summary scoped events実行ログ）
+- `docs/PHASE359_PLAN.md`（Read Path収束 final package: phase2 automation fallbackModeノブ計画）
+- `docs/PHASE359_EXECUTION_LOG.md`（Read Path収束 final package: phase2 automation fallbackModeノブ実行ログ）
+- `docs/PHASE360_PLAN.md`（Read Path収束 final package: monitor insights fallbackModeノブ計画）
+- `docs/PHASE360_EXECUTION_LOG.md`（Read Path収束 final package: monitor insights fallbackModeノブ実行ログ）
+- `docs/PHASE361_PLAN.md`（Read Path収束 final package: read-path fallback監査証跡統一計画）
+- `docs/PHASE361_EXECUTION_LOG.md`（Read Path収束 final package: read-path fallback監査証跡統一実行ログ）
+- `docs/PHASE362_PLAN.md`（Read Path収束 final package: read path budget ratchet計画）
+- `docs/PHASE362_EXECUTION_LOG.md`（Read Path収束 final package: read path budget ratchet実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

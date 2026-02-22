@@ -16,6 +16,8 @@ const { upsertRun } = require('../../repos/firestore/scenarioRunsRepo');
 
 const DEFAULT_ANALYTICS_LIMIT = 1000;
 const MAX_ANALYTICS_LIMIT = 5000;
+const FALLBACK_MODE_ALLOW = 'allow';
+const FALLBACK_MODE_BLOCK = 'block';
 
 function isEnabled() {
   return String(process.env.PHASE2_AUTOMATION_ENABLED || '').toLowerCase() === 'true';
@@ -41,6 +43,13 @@ function resolveAnalyticsLimit(value) {
   const num = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
+
+function resolveFallbackMode(value) {
+  if (typeof value !== 'string' || !value.trim()) return FALLBACK_MODE_ALLOW;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
+  return FALLBACK_MODE_ALLOW;
 }
 
 function dateKey(date) {
@@ -78,7 +87,7 @@ function ensureCounts() {
   return { open: 0, click: 0, complete: 0 };
 }
 
-async function runPhase2Automation({ runId, targetDate, dryRun, logger, analyticsLimit }) {
+async function runPhase2Automation({ runId, targetDate, dryRun, logger, analyticsLimit, fallbackMode }) {
   if (!isEnabled()) return { ok: false, error: 'automation disabled' };
   if (typeof runId !== 'string' || runId.trim().length === 0) return { ok: false, error: 'runId required' };
   if (!isValidDateString(targetDate)) return { ok: false, error: 'targetDate required' };
@@ -99,9 +108,12 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
     }
   };
   const resolvedAnalyticsLimit = resolveAnalyticsLimit(analyticsLimit);
+  const resolvedFallbackMode = resolveFallbackMode(fallbackMode);
+  const fallbackBlocked = resolvedFallbackMode === FALLBACK_MODE_BLOCK;
   summary.readPath = {
     analyticsLimit: resolvedAnalyticsLimit,
-    eventsSource: 'range'
+    eventsSource: 'range',
+    fallbackMode: resolvedFallbackMode
   };
 
   try {
@@ -115,15 +127,34 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       toAt: rangeTo
     });
     if (!Array.isArray(events) || events.length === 0) {
-      events = await listAllEvents({ limit: resolvedAnalyticsLimit });
-      summary.readPath.eventsSource = 'fallback_all';
+      if (!fallbackBlocked) {
+        events = await listAllEvents({ limit: resolvedAnalyticsLimit });
+        summary.readPath.eventsSource = 'fallback_all';
+      } else {
+        events = [];
+        summary.readPath.eventsSource = 'not_available';
+        summary.readPath.fallbackBlocked = true;
+        summary.readPath.fallbackSources = ['listAllEvents'];
+      }
     }
 
-    const [users, checklists, userChecklists] = await Promise.all([
-      listAllUsers({ limit: resolvedAnalyticsLimit }),
-      listAllChecklists({ limit: resolvedAnalyticsLimit }),
-      listAllUserChecklists({ limit: resolvedAnalyticsLimit })
-    ]);
+    const [users, checklists, userChecklists] = fallbackBlocked
+      ? [[], [], []]
+      : await Promise.all([
+        listAllUsers({ limit: resolvedAnalyticsLimit }),
+        listAllChecklists({ limit: resolvedAnalyticsLimit }),
+        listAllUserChecklists({ limit: resolvedAnalyticsLimit })
+      ]);
+    if (fallbackBlocked) {
+      summary.readPath.userSource = 'not_available';
+      summary.readPath.checklistSource = 'not_available';
+      summary.readPath.userChecklistSource = 'not_available';
+      summary.readPath.fallbackBlocked = true;
+      summary.readPath.fallbackSources = ['listAllUsers', 'listAllChecklists', 'listAllUserChecklists'];
+      if (summary.readPath.eventsSource === 'range') {
+        summary.readPath.eventsSource = 'range_only';
+      }
+    }
 
     const userScenario = new Map();
     for (const user of users) {
