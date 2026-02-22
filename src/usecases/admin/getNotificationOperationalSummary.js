@@ -112,18 +112,38 @@ async function buildFromSnapshot(snapshotItems, options) {
 
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
+  const includeMeta = opts.includeMeta === true;
+  const withMeta = (items, meta) => {
+    if (!includeMeta) return items;
+    return { items, meta };
+  };
   const snapshotMode = resolveSnapshotReadMode({ useSnapshot: opts.useSnapshot, snapshotMode: opts.snapshotMode });
   if (isSnapshotReadEnabled(snapshotMode)) {
     const snapshot = await opsSnapshotsRepo.getSnapshot(SNAPSHOT_TYPE, SNAPSHOT_KEY);
     if (snapshot && snapshot.data && Array.isArray(snapshot.data.items)) {
-      return buildFromSnapshot(snapshot.data.items, opts);
+      const items = await buildFromSnapshot(snapshot.data.items, opts);
+      return withMeta(items, {
+        dataSource: 'snapshot',
+        asOf: snapshot.asOf || null,
+        freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
+          ? Number(snapshot.freshnessMinutes)
+          : null
+      });
     }
     if (isSnapshotRequired(snapshotMode)) {
-      return [];
+      return withMeta([], {
+        dataSource: 'not_available',
+        asOf: null,
+        freshnessMinutes: null
+      });
     }
   }
   if (!isFallbackAllowed(snapshotMode)) {
-    return [];
+    return withMeta([], {
+      dataSource: 'not_available',
+      asOf: null,
+      freshnessMinutes: null
+    });
   }
 
   const eventsLimit = resolveEventsLimit(opts.eventsLimit);
@@ -166,9 +186,14 @@ async function getNotificationOperationalSummary(params) {
     counts.set(notificationId, current);
   }
 
-  return notifications.map((notification) => {
+  const items = notifications.map((notification) => {
     const current = counts.get(notification.id) || { open: 0, click: 0, lastValue: null };
     return createSummaryItem(notification, current);
+  });
+  return withMeta(items, {
+    dataSource: 'computed',
+    asOf: new Date().toISOString(),
+    freshnessMinutes: null
   });
 }
 

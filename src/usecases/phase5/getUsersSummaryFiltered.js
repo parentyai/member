@@ -64,7 +64,8 @@ async function getUsersSummaryFiltered(params) {
   const payload = params || {};
   const items = await getUserOperationalSummary({
     limit: payload.limit,
-    analyticsLimit: payload.analyticsLimit
+    analyticsLimit: payload.analyticsLimit,
+    snapshotMode: payload.snapshotMode
   });
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const enriched = items.map((item) => {

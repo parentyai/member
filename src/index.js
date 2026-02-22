@@ -1064,6 +1064,12 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && (pathname === '/api/admin/retention-runs' || pathname === '/api/admin/retention-runs/')) {
+    const { handleRetentionRuns } = require('./routes/admin/retentionRuns');
+    handleRetentionRuns(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && (pathname === '/api/admin/redac-membership/unlink' || pathname === '/api/admin/redac-membership/unlink/')) {
     const { handleRedacMembershipUnlink } = require('./routes/admin/redacMembershipUnlink');
     let bytes = 0;
