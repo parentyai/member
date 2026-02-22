@@ -52,6 +52,9 @@ const state = {
   composerCurrentConfirmToken: null,
   composerKillSwitch: false,
   dashboardKpis: null,
+  dashboardCacheByMonths: {},
+  topbarStatus: null,
+  alertsSummary: null,
   repoMap: null,
   legacyStatusItems: [],
   topCauses: '-',
@@ -70,6 +73,7 @@ const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
 const PANE_HEADER_MAP = Object.freeze({
   home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
+  alerts: { titleKey: 'ui.label.alerts.title', subtitleKey: 'ui.desc.page.alerts' },
   composer: { titleKey: 'ui.label.page.composer', subtitleKey: 'ui.desc.page.composer' },
   monitor: { titleKey: 'ui.label.page.monitor', subtitleKey: 'ui.desc.page.monitor' },
   errors: { titleKey: 'ui.label.page.errors', subtitleKey: 'ui.desc.page.errors' },
@@ -83,6 +87,17 @@ const PANE_HEADER_MAP = Object.freeze({
   llm: { titleKey: 'ui.label.page.faq', subtitleKey: 'ui.desc.page.faq' },
   settings: { titleKey: 'ui.label.page.settings', subtitleKey: 'ui.desc.page.settings' },
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
+});
+
+const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
+const DASHBOARD_DEFAULT_WINDOW = 1;
+const DASHBOARD_CARD_CONFIG = Object.freeze({
+  registrations: { kpiKeys: ['registrations'], unit: 'count' },
+  membership: { kpiKeys: ['membership'], unit: 'percent' },
+  engagement: { kpiKeys: ['engagement'], unit: 'percent' },
+  notifications: { kpiKeys: ['notifications', 'stepStates'], unit: 'count' },
+  reaction: { kpiKeys: ['reaction', 'churnRate'], unit: 'percent' },
+  faq: { kpiKeys: ['faqUsage', 'ctrTrend'], unit: 'count' }
 });
 
 function showToast(message, tone) {
@@ -262,7 +277,7 @@ function applyDict() {
 }
 
 function setRole(role) {
-  const nextRole = role === 'admin' ? 'admin' : 'operator';
+  const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
   state.role = nextRole;
   if (appShell) appShell.setAttribute('data-role', nextRole);
   document.querySelectorAll('.role-btn').forEach((btn) => {
@@ -331,14 +346,26 @@ function setupHomeControls() {
       activatePane(target);
     });
   });
+  document.getElementById('topbar-open-alerts')?.addEventListener('click', () => {
+    activatePane('alerts');
+    void loadAlertsSummary({ notify: false });
+  });
   document.getElementById('home-run-test')?.addEventListener('click', () => {
     runHomeSafeTest();
   });
   document.getElementById('dashboard-reload')?.addEventListener('click', () => {
     void loadDashboardKpis({ notify: true });
   });
+  document.querySelectorAll('.dashboard-window-select').forEach((el) => {
+    el.addEventListener('change', () => {
+      void loadDashboardKpis({ notify: false });
+    });
+  });
   document.getElementById('dashboard-window-months')?.addEventListener('change', () => {
     void loadDashboardKpis({ notify: false });
+  });
+  document.getElementById('alerts-reload')?.addEventListener('click', () => {
+    void loadAlertsSummary({ notify: true });
   });
 }
 
@@ -824,6 +851,7 @@ function normalizePaneTarget(target) {
   const value = typeof target === 'string' ? target : '';
   const allowed = new Set([
     'home',
+    'alerts',
     'composer',
     'monitor',
     'errors',
@@ -880,6 +908,7 @@ function activateInitialPane() {
 
 const PANE_SHORTCUTS = Object.freeze({
   '0': 'home',
+  a: 'alerts',
   '1': 'composer',
   '2': 'monitor',
   '3': 'errors',
@@ -968,6 +997,16 @@ function getHealthCounts(items) {
 }
 
 function updateTopBar() {
+  const summary = state.topbarStatus && typeof state.topbarStatus === 'object'
+    ? state.topbarStatus
+    : {};
+  const topRegistered = document.getElementById('topbar-registered-count');
+  const topScheduled = document.getElementById('topbar-scheduled-count');
+  const topAlerts = document.getElementById('topbar-alerts-count');
+  if (topRegistered) topRegistered.textContent = summary.registeredCountLabel || '-';
+  if (topScheduled) topScheduled.textContent = summary.scheduledTodayCountLabel || '-';
+  if (topAlerts) topAlerts.textContent = summary.openAlertsLabel || '-';
+
   const counts = getHealthCounts(state.monitorItems);
   const todo = counts.DANGER || 0;
   const topTodo = document.getElementById('top-todo');
@@ -993,69 +1032,292 @@ function updateTopBar() {
   if (monitorAnomaly) monitorAnomaly.textContent = state.topAnomaly || '-';
 }
 
-function formatPercent(value) {
-  if (!Number.isFinite(Number(value))) return '-';
-  return `${Math.round(Number(value) * 1000) / 10}%`;
+function normalizeDashboardWindow(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return DASHBOARD_DEFAULT_WINDOW;
+  const normalized = Math.floor(num);
+  if (!DASHBOARD_ALLOWED_WINDOWS.includes(normalized)) return DASHBOARD_DEFAULT_WINDOW;
+  return normalized;
 }
 
-function createSparklineBars(containerEl, series) {
-  if (!containerEl) return;
-  containerEl.innerHTML = '';
-  if (!Array.isArray(series) || !series.length) return;
-  const numeric = series.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value));
-  if (!numeric.length) return;
-  const max = Math.max(...numeric, 1);
-  series.forEach((value) => {
-    const bar = document.createElement('span');
-    bar.className = 'kpi-spark-bar';
-    const safe = Number.isFinite(Number(value)) ? Number(value) : 0;
-    const ratio = max > 0 ? safe / max : 0;
-    bar.style.height = `${Math.max(8, Math.round(ratio * 36))}px`;
-    containerEl.appendChild(bar);
+function getDashboardWindowMonths(metricKey) {
+  const metricSelect = document.getElementById(`dashboard-window-${metricKey}`);
+  if (metricSelect) return normalizeDashboardWindow(metricSelect.value);
+  const defaultSelect = document.getElementById('dashboard-window-months');
+  if (defaultSelect) return normalizeDashboardWindow(defaultSelect.value);
+  return DASHBOARD_DEFAULT_WINDOW;
+}
+
+function resolveDashboardPayload(windowMonths) {
+  const key = String(normalizeDashboardWindow(windowMonths));
+  return state.dashboardCacheByMonths && state.dashboardCacheByMonths[key]
+    ? state.dashboardCacheByMonths[key]
+    : null;
+}
+
+function resolveDashboardMetric(payload, metricKey) {
+  const config = DASHBOARD_CARD_CONFIG[metricKey];
+  if (!config || !payload || !payload.kpis || typeof payload.kpis !== 'object') return null;
+  for (const key of config.kpiKeys) {
+    if (payload.kpis[key]) return payload.kpis[key];
+  }
+  return null;
+}
+
+function formatDashboardSeriesValue(value, unit) {
+  if (!Number.isFinite(Number(value))) return '-';
+  if (unit === 'percent') return `${Math.round(Number(value) * 10) / 10}%`;
+  return `${Math.round(Number(value) * 10) / 10}`;
+}
+
+function parseDashboardNumericValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+  const normalized = value.replace(/[^0-9.+-]/g, '');
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function renderDashboardLineChartSvg(metricKey, series, unit) {
+  const chartEl = document.getElementById(`dashboard-kpi-${metricKey}-chart`);
+  if (!chartEl) return;
+  chartEl.innerHTML = '';
+  const numeric = Array.isArray(series)
+    ? series.map((value) => (Number.isFinite(Number(value)) ? Number(value) : null))
+    : [];
+  const values = numeric.filter((value) => value !== null);
+  if (!values.length) {
+    chartEl.textContent = t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
+    chartEl.classList.add('is-empty');
+    return;
+  }
+  chartEl.classList.remove('is-empty');
+  const width = 280;
+  const height = 96;
+  const padding = 12;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const span = Math.max(max - min, 1);
+  const stepX = numeric.length > 1 ? (width - padding * 2) / (numeric.length - 1) : 0;
+  const points = numeric.map((value, index) => {
+    const safeValue = value === null ? min : value;
+    const x = padding + index * stepX;
+    const y = height - padding - ((safeValue - min) / span) * (height - padding * 2);
+    return { x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+  const lastPoint = points[points.length - 1];
+  const svg = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metricKey} chart" preserveAspectRatio="none">
+      <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="dashboard-chart-axis"></line>
+      <path d="${path}" class="dashboard-chart-line"></path>
+      <circle cx="${lastPoint.x.toFixed(2)}" cy="${lastPoint.y.toFixed(2)}" r="3" class="dashboard-chart-point"></circle>
+      <text x="${width - padding}" y="${padding + 8}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(max, unit)}</text>
+      <text x="${width - padding}" y="${height - 2}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(min, unit)}</text>
+    </svg>
+  `;
+  chartEl.insertAdjacentHTML('beforeend', svg);
+}
+
+function renderDashboardDelta(metricKey, currentValue, previousValue, unit) {
+  const deltaEl = document.getElementById(`dashboard-kpi-${metricKey}-delta`);
+  if (!deltaEl) return;
+  const current = Number(currentValue);
+  const previous = Number(previousValue);
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) {
+    deltaEl.textContent = '-';
+    deltaEl.classList.remove('is-up', 'is-down', 'is-flat');
+    return;
+  }
+  const delta = current - previous;
+  const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+  const abs = Math.abs(delta);
+  const text = unit === 'percent'
+    ? `${arrow} ${delta >= 0 ? '+' : '-'}${Math.round(abs * 10) / 10}pt`
+    : `${arrow} ${delta >= 0 ? '+' : '-'}${Math.round(abs * 10) / 10}`;
+  deltaEl.textContent = text;
+  deltaEl.classList.remove('is-up', 'is-down', 'is-flat');
+  if (delta > 0) deltaEl.classList.add('is-up');
+  else if (delta < 0) deltaEl.classList.add('is-down');
+  else deltaEl.classList.add('is-flat');
+}
+
+function renderDashboardMetricCard(metricKey, payload) {
+  const currentEl = document.getElementById(`dashboard-kpi-${metricKey}-current`);
+  const previousEl = document.getElementById(`dashboard-kpi-${metricKey}-previous`);
+  const noteEl = document.getElementById(`dashboard-kpi-${metricKey}-note`);
+  const config = DASHBOARD_CARD_CONFIG[metricKey];
+  if (!currentEl || !previousEl || !noteEl || !config) return;
+
+  const metric = resolveDashboardMetric(payload, metricKey);
+  if (!metric || metric.available !== true) {
+    currentEl.textContent = t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
+    previousEl.textContent = '-';
+    noteEl.textContent = t('ui.desc.dashboard.notAvailable', '現行データから算出できません');
+    renderDashboardLineChartSvg(metricKey, [], config.unit);
+    renderDashboardDelta(metricKey, NaN, NaN, config.unit);
+    return;
+  }
+
+  const series = Array.isArray(metric.series) ? metric.series.filter((value) => Number.isFinite(Number(value))).map(Number) : [];
+  const currentSeriesValue = series.length ? series[series.length - 1] : null;
+  const previousSeriesValue = series.length > 1 ? series[series.length - 2] : currentSeriesValue;
+  const displayCurrent = typeof metric.valueLabel === 'string' && metric.valueLabel.trim()
+    ? metric.valueLabel
+    : formatDashboardSeriesValue(currentSeriesValue, config.unit);
+
+  currentEl.textContent = displayCurrent || '-';
+  previousEl.textContent = formatDashboardSeriesValue(previousSeriesValue, config.unit);
+  noteEl.textContent = metric.note || '-';
+  renderDashboardLineChartSvg(metricKey, series, config.unit);
+
+  const currentNumeric = parseDashboardNumericValue(displayCurrent);
+  if (currentNumeric !== null && currentSeriesValue !== null && config.unit === 'count') {
+    renderDashboardDelta(metricKey, currentSeriesValue, previousSeriesValue, config.unit);
+  } else {
+    renderDashboardDelta(metricKey, currentSeriesValue, previousSeriesValue, config.unit);
+  }
+}
+
+function resolveTopbarStatusFromState() {
+  const registrationPayload = resolveDashboardPayload(getDashboardWindowMonths('registrations'));
+  const registrationMetric = resolveDashboardMetric(registrationPayload, 'registrations');
+  const registeredCountLabel = registrationMetric && registrationMetric.available === true
+    ? (registrationMetric.valueLabel || formatDashboardSeriesValue(
+      Array.isArray(registrationMetric.series) && registrationMetric.series.length
+        ? registrationMetric.series[registrationMetric.series.length - 1]
+        : null,
+      'count'
+    ))
+    : '-';
+  const totals = state.alertsSummary && state.alertsSummary.totals ? state.alertsSummary.totals : {};
+  const scheduledTodayCount = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : null;
+  const openAlerts = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : null;
+  state.topbarStatus = {
+    registeredCountLabel: registeredCountLabel || '-',
+    scheduledTodayCountLabel: scheduledTodayCount === null ? '-' : String(scheduledTodayCount),
+    openAlertsLabel: openAlerts === null ? '-' : String(openAlerts)
+  };
+}
+
+async function loadTopbarStatus() {
+  resolveTopbarStatusFromState();
+  updateTopBar();
+}
+
+function renderDashboardKpis() {
+  Object.keys(DASHBOARD_CARD_CONFIG).forEach((metricKey) => {
+    const windowMonths = getDashboardWindowMonths(metricKey);
+    const payload = resolveDashboardPayload(windowMonths);
+    renderDashboardMetricCard(metricKey, payload);
   });
 }
 
-function renderDashboardMetricCard(metricKey, metric) {
-  const valueEl = document.getElementById(`dashboard-kpi-${metricKey}-value`);
-  const sparkEl = document.getElementById(`dashboard-kpi-${metricKey}-spark`);
-  const noteEl = document.getElementById(`dashboard-kpi-${metricKey}-note`);
-  if (!valueEl || !sparkEl || !noteEl) return;
-
-  if (!metric || metric.available !== true) {
-    valueEl.textContent = t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
-    noteEl.textContent = t('ui.desc.dashboard.notAvailable', '現行データから算出できません');
-    createSparklineBars(sparkEl, []);
-    return;
-  }
-  valueEl.textContent = metric.valueLabel || '-';
-  noteEl.textContent = metric.note || '-';
-  createSparklineBars(sparkEl, metric.series || []);
+async function fetchDashboardKpiByMonths(windowMonths, traceId) {
+  const key = String(normalizeDashboardWindow(windowMonths));
+  if (state.dashboardCacheByMonths[key]) return state.dashboardCacheByMonths[key];
+  const res = await fetch(
+    `/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(key)}&fallbackMode=block`,
+    { headers: buildHeaders({}, traceId) }
+  );
+  const data = await readJsonResponse(res);
+  if (!data || data.ok !== true) throw new Error((data && data.error) || 'kpi load failed');
+  state.dashboardCacheByMonths[key] = data;
+  return data;
 }
 
-function renderDashboardKpis(payload) {
-  const kpis = payload && payload.kpis && typeof payload.kpis === 'object' ? payload.kpis : {};
-  renderDashboardMetricCard('registrations', kpis.registrations);
-  renderDashboardMetricCard('membership', kpis.membership);
-  renderDashboardMetricCard('step', kpis.stepStates);
-  renderDashboardMetricCard('churn', kpis.churnRate);
-  renderDashboardMetricCard('ctr', kpis.ctrTrend);
-  renderDashboardMetricCard('citypack', kpis.cityPackUsage);
+function renderAlertsSummary(payload) {
+  const body = document.getElementById('alerts-rows');
+  const note = document.getElementById('alerts-summary-note');
+  if (!body) return;
+  body.innerHTML = '';
+  const rows = payload && Array.isArray(payload.items) ? payload.items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    body.appendChild(tr);
+  } else {
+    rows.forEach((item) => {
+      const tr = document.createElement('tr');
+      const typeTd = document.createElement('td');
+      typeTd.textContent = item && item.typeLabel ? item.typeLabel : '-';
+      tr.appendChild(typeTd);
+      const countTd = document.createElement('td');
+      countTd.className = 'cell-num';
+      countTd.textContent = Number.isFinite(Number(item && item.count)) ? String(item.count) : '-';
+      tr.appendChild(countTd);
+      const impactTd = document.createElement('td');
+      impactTd.textContent = item && item.impact ? item.impact : '-';
+      tr.appendChild(impactTd);
+      const actionTd = document.createElement('td');
+      if (item && item.actionPane) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'secondary-btn';
+        button.textContent = item.actionLabel || t('ui.label.alerts.action.open', '開く');
+        button.addEventListener('click', () => activatePane(String(item.actionPane)));
+        actionTd.appendChild(button);
+      } else {
+        actionTd.textContent = '-';
+      }
+      tr.appendChild(actionTd);
+      body.appendChild(tr);
+    });
+  }
+  const totals = payload && payload.totals ? payload.totals : {};
+  if (note) {
+    const open = Number.isFinite(Number(totals.openAlerts)) ? Number(totals.openAlerts) : 0;
+    const scheduled = Number.isFinite(Number(totals.scheduledTodayCount)) ? Number(totals.scheduledTodayCount) : 0;
+    note.textContent = `${t('ui.label.alerts.summary', '要対応合計')}: ${open} / ${t('ui.label.top.todayScheduled', '本日配信予定件数')}: ${scheduled}`;
+  }
+}
+
+async function loadAlertsSummary(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('errors-trace') || newTraceId();
+  try {
+    const res = await fetch('/api/admin/os/alerts/summary?limit=200', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'alerts load failed');
+    state.alertsSummary = data;
+    renderAlertsSummary(data);
+    await loadTopbarStatus();
+    if (notify) showToast(t('ui.toast.alerts.reloadOk', '要対応一覧を更新しました'), 'ok');
+  } catch (_err) {
+    state.alertsSummary = { totals: { openAlerts: null, scheduledTodayCount: null }, items: [] };
+    renderAlertsSummary(state.alertsSummary);
+    await loadTopbarStatus();
+    if (notify) showToast(t('ui.toast.alerts.reloadFail', '要対応一覧の取得に失敗しました'), 'danger');
+  }
 }
 
 async function loadDashboardKpis(options) {
   const notify = !options || options.notify !== false;
-  const months = document.getElementById('dashboard-window-months')?.value || '1';
   const traceId = ensureTraceInput('traceId') || newTraceId();
-  try {
-    const res = await fetch(`/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(months)}`, { headers: buildHeaders({}, traceId) });
-    const data = await readJsonResponse(res);
-    if (!data || data.ok !== true) throw new Error((data && data.error) || 'kpi load failed');
-    state.dashboardKpis = data.kpis || null;
-    renderDashboardKpis(data);
-    if (notify) showToast(t('ui.toast.dashboard.reloadOk', 'ダッシュボード指標を更新しました'), 'ok');
-  } catch (_err) {
-    renderDashboardKpis({ kpis: {} });
-    if (notify) showToast(t('ui.toast.dashboard.reloadFail', 'ダッシュボード指標の取得に失敗しました'), 'danger');
+  const monthsNeeded = Array.from(new Set(Object.keys(DASHBOARD_CARD_CONFIG).map((metricKey) => getDashboardWindowMonths(metricKey))));
+  let failed = false;
+  for (const months of monthsNeeded) {
+    try {
+      await fetchDashboardKpiByMonths(months, traceId);
+    } catch (_err) {
+      failed = true;
+      delete state.dashboardCacheByMonths[String(months)];
+    }
+  }
+  const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
+  state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
+  renderDashboardKpis();
+  await loadTopbarStatus();
+  if (notify) {
+    showToast(
+      failed ? t('ui.toast.dashboard.reloadFail', 'ダッシュボード指標の取得に失敗しました') : t('ui.toast.dashboard.reloadOk', 'ダッシュボード指標を更新しました'),
+      failed ? 'danger' : 'ok'
+    );
   }
 }
 
@@ -5653,6 +5915,7 @@ function setupLlmControls() {
   loadCityPackAuditRuns({ notify: false });
   loadCityPackComposition({ notify: false });
   loadDashboardKpis({ notify: false });
+  loadAlertsSummary({ notify: false });
   loadRepoMap({ notify: false });
   renderAllDecisionCards();
 })();

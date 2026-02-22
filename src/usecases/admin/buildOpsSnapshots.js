@@ -7,8 +7,8 @@ const { getUserOperationalSummary } = require('./getUserOperationalSummary');
 const { getNotificationOperationalSummary } = require('./getNotificationOperationalSummary');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
 
-const ALLOWED_WINDOWS = new Set([1, 3, 6, 12]);
-const DEFAULT_WINDOWS = Object.freeze([1, 3, 6, 12]);
+const ALLOWED_WINDOWS = new Set([1, 3, 6, 12, 36]);
+const DEFAULT_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const SNAPSHOT_TARGETS = Object.freeze([
   'dashboard_kpi',
   'user_operational_summary',
@@ -23,7 +23,7 @@ function normalizeWindows(value) {
   value.forEach((item) => {
     const num = Number(item);
     if (!Number.isFinite(num)) return;
-    const normalized = Math.max(1, Math.min(12, Math.floor(num)));
+    const normalized = Math.max(1, Math.min(36, Math.floor(num)));
     if (!ALLOWED_WINDOWS.has(normalized)) return;
     if (out.includes(normalized)) return;
     out.push(normalized);

@@ -1143,6 +1143,7 @@ function createServer() {
       handleExecute: handleDeliveryBackfillExecute
     } = require('./routes/admin/osDeliveryBackfill');
     const { handleStatus: handleRedacStatus } = require('./routes/admin/osRedacStatus');
+    const { handleAlertsSummary } = require('./routes/admin/osAlerts');
     const { handleErrorsSummary } = require('./routes/admin/osErrors');
     const {
       handleDraft,
@@ -1248,6 +1249,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/redac/status') {
         await handleRedacStatus(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/alerts/summary') {
+        await handleAlertsSummary(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {
