@@ -1,12 +1,12 @@
 'use strict';
 
 const {
-  listAllUsers,
   listAllEvents,
   listAllChecklists,
   listAllUserChecklists,
   listAllNotificationDeliveries
 } = require('../../repos/firestore/analyticsReadRepo');
+const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const {
   resolveSnapshotReadMode,
@@ -132,7 +132,7 @@ async function getUserOperationalSummary(params) {
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
   const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
-    listAllUsers({ limit: analyticsLimit }),
+    usersRepo.listUsers({ limit: analyticsLimit }),
     listAllEvents({ limit: analyticsLimit }),
     listAllChecklists({ limit: analyticsLimit }),
     listAllUserChecklists({ limit: analyticsLimit }),
@@ -145,7 +145,7 @@ async function getUserOperationalSummary(params) {
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
 
   return users.map((user) => {
-    const data = user.data || {};
+    const data = user && user.data ? user.data : (user || {});
     const createdAtMs = toMillis(data.createdAt);
     const scenarioKey = data.scenarioKey;
     const stepKey = data.stepKey;
