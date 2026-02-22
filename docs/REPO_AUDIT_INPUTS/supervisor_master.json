@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T18:14:43-05:00",
-  "gitCommit": "dc33b63d6942be495afbc65e0d2e5fe4e8e4103e",
-  "branch": "codex/phase591-594-fallback-risk-converge",
-  "sourceDigest": "900683e6e4550b1d28f96a249e5cb67219f5acf44fcd295b7a90fff528cae14f",
+  "generatedAt": "2026-02-22T18:29:54-05:00",
+  "gitCommit": "ff4113ec0447fa227ad72eee2b9a90165fb1c18c",
+  "branch": "codex/foundation-os-unbounded-hotspot-gate-v2",
+  "sourceDigest": "d05a9b6f198e4a0cabdc32e58e1d2f05c353b8b327a5aa199423984e73a76808",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
