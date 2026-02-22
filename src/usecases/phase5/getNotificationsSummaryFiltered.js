@@ -23,7 +23,10 @@ function inRange(value, fromMs, toMs) {
 
 async function getNotificationsSummaryFiltered(params) {
   const payload = params || {};
-  const items = await getNotificationOperationalSummary();
+  const items = await getNotificationOperationalSummary({
+    limit: payload.limit,
+    eventsLimit: payload.eventsLimit
+  });
   return items.filter((item) => inRange(item.lastReactionAt || item.sentAt, payload.fromMs, payload.toMs));
 }
 
