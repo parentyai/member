@@ -140,6 +140,7 @@ async function getNotificationOperationalSummary(params) {
   const opts = params || {};
   const fallbackMode = resolveFallbackMode(opts.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
+  const fallbackOnEmpty = opts.fallbackOnEmpty !== false;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const fallbackSources = [];
@@ -237,8 +238,10 @@ async function getNotificationOperationalSummary(params) {
       // keep failure-only branch explicit for fallback diagnostics contract
     }
     if (!events.length && !fallbackBlocked) {
-      events = await listAllEvents({ limit: eventsLimit });
-      addFallbackSource('listAllEvents');
+      if (fallbackOnEmpty || scoped.failed || rangeFailed) {
+        events = await listAllEvents({ limit: eventsLimit });
+        addFallbackSource('listAllEvents');
+      }
     }
     if (!events.length && (scoped.failed || rangeFailed) && fallbackBlocked) {
       fallbackBlockedNotAvailable = true;

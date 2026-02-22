@@ -9,13 +9,13 @@
 | 1 | `src/routes/admin/monitorInsights.js` | 127 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 | 2 | `src/routes/admin/osDashboardKpi.js` | 187 | listAllUsers | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 | 3 | `src/routes/admin/osDashboardKpi.js` | 195 | listAllNotifications | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 4 | `src/usecases/admin/getNotificationOperationalSummary.js` | 240 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 5 | `src/usecases/admin/getUserOperationalSummary.js` | 320 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 6 | `src/usecases/admin/getUserOperationalSummary.js` | 324 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 7 | `src/usecases/admin/getUserOperationalSummary.js` | 332 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 8 | `src/usecases/admin/getUserOperationalSummary.js` | 348 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 9 | `src/usecases/admin/getUserOperationalSummary.js` | 357 | listAllChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
-| 10 | `src/usecases/admin/getUserOperationalSummary.js` | 365 | listAllUserChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 4 | `src/usecases/admin/getNotificationOperationalSummary.js` | 242 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 5 | `src/usecases/admin/getUserOperationalSummary.js` | 324 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 6 | `src/usecases/admin/getUserOperationalSummary.js` | 329 | listAllEvents | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 7 | `src/usecases/admin/getUserOperationalSummary.js` | 353 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 8 | `src/usecases/admin/getUserOperationalSummary.js` | 358 | listAllNotificationDeliveries | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 9 | `src/usecases/admin/getUserOperationalSummary.js` | 372 | listAllChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
+| 10 | `src/usecases/admin/getUserOperationalSummary.js` | 382 | listAllUserChecklists | 1000 | limit上限固定 + snapshot/read-model優先 + where条件明示 |
 
 ## 段階移行順
 1. `/src/routes/admin/osDashboardKpi.js`

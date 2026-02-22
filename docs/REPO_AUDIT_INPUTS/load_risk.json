@@ -52,24 +52,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 240,
-        "type": "listAll",
-        "call": "listAllEvents",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 3,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 320,
+        "line": 242,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -103,7 +86,24 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 332,
+        "line": 329,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 353,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -120,7 +120,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 348,
+        "line": 358,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -137,7 +137,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 357,
+        "line": 372,
         "type": "listAll",
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
@@ -154,7 +154,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 365,
+        "line": 382,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
