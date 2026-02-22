@@ -1,6 +1,9 @@
 'use strict';
 
-const { listAllNotificationDeliveries } = require('../../repos/firestore/analyticsReadRepo');
+const {
+  listAllNotificationDeliveries,
+  listNotificationDeliveriesBySentAtRange
+} = require('../../repos/firestore/analyticsReadRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { listSnapshots } = require('../../repos/firestore/kpiSnapshotsReadRepo');
@@ -9,6 +12,8 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DEFAULT_DELIVERIES_READ_LIMIT = 1000;
+const MAX_DELIVERIES_READ_LIMIT = 5000;
 
 function normalizeWindowDays(value) {
   if (String(value) === '30') return 30;
@@ -19,6 +24,12 @@ function normalizeLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return 10;
   return Math.min(Math.floor(num), 100);
+}
+
+function normalizeReadLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return DEFAULT_DELIVERIES_READ_LIMIT;
+  return Math.min(Math.floor(num), MAX_DELIVERIES_READ_LIMIT);
 }
 
 function toMillis(value) {
@@ -57,6 +68,7 @@ async function handleMonitorInsights(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const windowDays = normalizeWindowDays(url.searchParams.get('windowDays'));
   const limit = normalizeLimit(url.searchParams.get('limit'));
+  const readLimit = normalizeReadLimit(url.searchParams.get('readLimit'));
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const actor = resolveActor(req);
@@ -64,7 +76,14 @@ async function handleMonitorInsights(req, res) {
   const sinceMs = nowMs - (windowDays * MS_PER_DAY);
 
   try {
-    const all = await listAllNotificationDeliveries();
+    let all = await listNotificationDeliveriesBySentAtRange({
+      limit: readLimit,
+      fromAt: new Date(sinceMs),
+      toAt: new Date(nowMs)
+    });
+    if (!all.length) {
+      all = await listAllNotificationDeliveries({ limit: readLimit });
+    }
     const deliveries = all
       .map((item) => Object.assign({ id: item.id }, item.data || {}))
       .filter((item) => {
