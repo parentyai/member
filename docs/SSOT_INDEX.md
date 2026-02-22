@@ -182,3 +182,5 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE316_EXECUTION_LOG.md`（Read Path収束 follow-up: hotspot上位3のbounded query化実行ログ）
 - `docs/PHASE318_PLAN.md`（Read Path収束 follow-up: dashboard users/notifications bounded query化計画）
 - `docs/PHASE318_EXECUTION_LOG.md`（Read Path収束 follow-up: dashboard users/notifications bounded query化実行ログ）
+- `docs/PHASE319_PLAN.md`（Read Path収束 follow-up: user operational summary bounded range化計画）
+- `docs/PHASE319_EXECUTION_LOG.md`（Read Path収束 follow-up: user operational summary bounded range化実行ログ）

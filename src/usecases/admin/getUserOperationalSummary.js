@@ -2,9 +2,11 @@
 
 const {
   listAllEvents,
+  listEventsByCreatedAtRange,
   listAllChecklists,
   listAllUserChecklists,
-  listAllNotificationDeliveries
+  listAllNotificationDeliveries,
+  listNotificationDeliveriesBySentAtRange
 } = require('../../repos/firestore/analyticsReadRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
@@ -45,6 +47,24 @@ function formatTimestamp(value) {
     if (!Number.isNaN(date.getTime())) return date.toISOString();
   }
   return value;
+}
+
+function resolveAnalyticsQueryRangeFromUsers(users) {
+  if (!Array.isArray(users) || users.length === 0) return { fromAt: null, toAt: null };
+  let minCreatedAtMs = null;
+  users.forEach((user) => {
+    const data = user && user.data ? user.data : (user || {});
+    const createdAtMs = toMillis(data.createdAt);
+    if (!Number.isFinite(createdAtMs)) return;
+    if (!Number.isFinite(minCreatedAtMs) || createdAtMs < minCreatedAtMs) {
+      minCreatedAtMs = createdAtMs;
+    }
+  });
+  if (!Number.isFinite(minCreatedAtMs)) return { fromAt: null, toAt: null };
+  return {
+    fromAt: new Date(minCreatedAtMs),
+    toAt: new Date()
+  };
 }
 
 function buildChecklistTotals(checklists) {
@@ -131,14 +151,35 @@ async function getUserOperationalSummary(params) {
     return [];
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
-  const [users, events, checklists, userChecklists, deliveries] = await Promise.all([
-    usersRepo.listUsers({ limit: analyticsLimit }),
-    listAllEvents({ limit: analyticsLimit }),
+  const users = await usersRepo.listUsers({ limit: analyticsLimit });
+  const queryRange = resolveAnalyticsQueryRangeFromUsers(users);
+  let eventsPromise = Promise.resolve([]);
+  let deliveriesPromise = Promise.resolve([]);
+  if (queryRange.fromAt) {
+    eventsPromise = listEventsByCreatedAtRange({
+      limit: analyticsLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    });
+    deliveriesPromise = listNotificationDeliveriesBySentAtRange({
+      limit: analyticsLimit,
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt
+    });
+  }
+  let [events, checklists, userChecklists, deliveries] = await Promise.all([
+    eventsPromise,
     listAllChecklists({ limit: analyticsLimit }),
     listAllUserChecklists({ limit: analyticsLimit }),
-    listAllNotificationDeliveries({ limit: analyticsLimit })
+    deliveriesPromise
   ]);
 
+  if (events.length === 0) {
+    events = await listAllEvents({ limit: analyticsLimit });
+  }
+  if (deliveries.length === 0) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+  }
   const totals = buildChecklistTotals(checklists);
   const completedByUser = buildCompletedByUser(userChecklists);
   const latestActionByUser = buildLatestActionByUser(events);
