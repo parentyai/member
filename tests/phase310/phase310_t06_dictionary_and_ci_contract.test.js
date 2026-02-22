@@ -30,5 +30,7 @@ test('phase310: developer labels exist in dictionary and audit workflow checks r
   });
 
   const workflow = fs.readFileSync('.github/workflows/audit.yml', 'utf8');
-  assert.ok(workflow.includes('npm run repo-map:check'));
+  assert.ok(
+    workflow.includes('npm run repo-map:check') || workflow.includes('npm run docs-artifacts:check')
+  );
 });

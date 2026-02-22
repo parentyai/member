@@ -26,20 +26,8 @@ jobs:
       - name: Verify docs
         run: npm run test:docs
 
-      - name: Verify repo map inputs are generated
-        run: npm run repo-map:check
-
-      - name: Verify audit inputs manifest is generated
-        run: npm run audit-inputs:check
-
-      - name: Verify supervisor master is generated
-        run: npm run supervisor-master:check
-
-      - name: Verify load risk report is generated and within budgets
-        run: npm run load-risk:check
-
-      - name: Verify structural cleanup artifacts are generated
-        run: npm run cleanup:check
+      - name: Verify docs artifacts are generated and aligned
+        run: npm run docs-artifacts:check
 
   audit:
     runs-on: ubuntu-latest

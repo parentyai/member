@@ -306,4 +306,14 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE579_EXECUTION_LOG.md`（Dashboard Redesign: 経営・運用判断中枢化実行ログ）
 - `docs/PHASE578_PLAN.md`（実行OS強化 follow-up: AGENTS規範 docs gate固定計画）
 - `docs/PHASE578_EXECUTION_LOG.md`（実行OS強化 follow-up: AGENTS規範 docs gate固定実行ログ）
+- `docs/PHASE580_PLAN.md`（Read Path収束継続: docs生成物ドリフト防止パック計画）
+- `docs/PHASE580_EXECUTION_LOG.md`（Read Path収束継続: docs生成物ドリフト防止パック実行ログ）
+- `docs/PHASE581_PLAN.md`（Read Path収束継続: phase5 fallbackOnEmpty パリティ追加計画）
+- `docs/PHASE581_EXECUTION_LOG.md`（Read Path収束継続: phase5 fallbackOnEmpty パリティ追加実行ログ）
+- `docs/PHASE582_PLAN.md`（Read Path収束継続: scoped-first 配線最終化計画）
+- `docs/PHASE582_EXECUTION_LOG.md`（Read Path収束継続: scoped-first 配線最終化実行ログ）
+- `docs/PHASE583_PLAN.md`（Read Path収束継続: dashboard/monitor fallbackOnEmpty 横並び化計画）
+- `docs/PHASE583_EXECUTION_LOG.md`（Read Path収束継続: dashboard/monitor fallbackOnEmpty 横並び化実行ログ）
+- `docs/PHASE584_PLAN.md`（Read Path収束継続: ratchet更新と停止条件固定計画）
+- `docs/PHASE584_EXECUTION_LOG.md`（Read Path収束継続: ratchet更新と停止条件固定実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

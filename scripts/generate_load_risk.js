@@ -285,6 +285,7 @@ function buildLoadRisk() {
   return {
     estimated_worst_case_docs_scan: estimatedWorstCaseDocsScan,
     fallback_risk: fallbackSurfaceCount,
+    hotspots_count: hotspots.length,
     hotspots,
     fallback_points: fallbackPoints,
     fallback_surface_count: fallbackSurfaceCount,

@@ -33,3 +33,9 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - fallback_points_max: 17
 - hotspots_count_max: 20
 - note: Product-out 収束基準。phase372 以降はこの末尾基準をCI評価に採用。
+
+## current_baseline_phase584
+- worst_case_docs_scan_max: 16000
+- fallback_points_max: 17
+- hotspots_count_max: 16
+- note: phase580-584 の収束基準。docs artifact 一括ゲートと fallbackOnEmpty 制御後の基準値。

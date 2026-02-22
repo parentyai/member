@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T15:33:31-05:00",
-  "gitCommit": "6edbd80d6e0b75830e959d5ca2f0ce0444dc7144",
-  "branch": "codex/phase579-dashboard-redesign",
-  "sourceDigest": "c8e3edd9263a4c54095bc970b61e354ddd3901c85443200768574ea7976daa36",
+  "generatedAt": "2026-02-22T15:36:23-05:00",
+  "gitCommit": "3bc718078dc9b1c885b8be67e05f5e3b7e34de76",
+  "branch": "codex/foundation-os-unbounded-hotspot-gate",
+  "sourceDigest": "c79499824c00ffcb67c50579bd64fe1ba1d3c2fbec6d605911dc50d6921464f0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

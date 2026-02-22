@@ -198,6 +198,7 @@ async function getUserStateSummary(params) {
   if (!payload.lineUserId) throw new Error('lineUserId required');
   const fallbackMode = resolveFallbackMode(payload.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
+  const fallbackOnEmpty = payload.fallbackOnEmpty !== false;
   const includeMeta = payload.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(payload);
   const fallbackSources = [];
@@ -294,6 +295,8 @@ async function getUserStateSummary(params) {
   let events = eventsResult.rows;
   let userChecklists = userChecklistsResult.rows;
   let deliveries = deliveriesResult.rows;
+  let rangeEventsFailed = false;
+  let rangeDeliveriesFailed = false;
   let fallbackBlockedNotAvailable = false;
 
   if (events.length === 0) {
@@ -303,21 +306,21 @@ async function getUserStateSummary(params) {
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
       }));
+      rangeEventsFailed = rangeEventsResult.failed;
       if (rangeEventsResult.rows.length > 0) {
         events = rangeEventsResult.rows;
       }
     }
   }
-  if (eventsResult.failed && !fallbackBlocked) {
-    events = await listAllEvents({ limit: analyticsLimit });
-    addFallbackSource('listAllEvents');
-  }
-  if (events.length === 0 && !fallbackBlocked) {
-    events = await listAllEvents({ limit: analyticsLimit });
-    addFallbackSource('listAllEvents');
-  }
-  if (events.length === 0 && fallbackBlocked) {
-    fallbackBlockedNotAvailable = true;
+  if (events.length === 0) {
+    const shouldFallbackEvents = fallbackOnEmpty || eventsResult.failed || rangeEventsFailed;
+    if (!fallbackBlocked && shouldFallbackEvents) {
+      events = await listAllEvents({ limit: analyticsLimit });
+      addFallbackSource('listAllEvents');
+    }
+    if (fallbackBlocked && shouldFallbackEvents) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
   if (deliveries.length === 0) {
     if (queryRange.fromAt) {
@@ -326,35 +329,41 @@ async function getUserStateSummary(params) {
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
       }));
+      rangeDeliveriesFailed = rangeDeliveriesResult.failed;
       if (rangeDeliveriesResult.rows.length > 0) {
         deliveries = rangeDeliveriesResult.rows;
       }
     }
   }
-  if (deliveriesResult.failed && !fallbackBlocked) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-    addFallbackSource('listAllNotificationDeliveries');
-  }
-  if (deliveries.length === 0 && !fallbackBlocked) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-    addFallbackSource('listAllNotificationDeliveries');
-  }
-  if (deliveries.length === 0 && fallbackBlocked) {
-    fallbackBlockedNotAvailable = true;
+  if (deliveries.length === 0) {
+    const shouldFallbackDeliveries = fallbackOnEmpty || deliveriesResult.failed || rangeDeliveriesFailed;
+    if (!fallbackBlocked && shouldFallbackDeliveries) {
+      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+      addFallbackSource('listAllNotificationDeliveries');
+    }
+    if (fallbackBlocked && shouldFallbackDeliveries) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
   if (checklistsResult.failed || checklists.length === 0) {
-    if (!fallbackBlocked) {
+    if (!checklistsResult.failed && !fallbackOnEmpty) {
+      // keep scoped empty result without global fallback
+    } else if (!fallbackBlocked) {
       checklists = await listAllChecklists({ limit: analyticsLimit });
       addFallbackSource('listAllChecklists');
     } else {
       fallbackBlockedNotAvailable = true;
     }
   }
-  if (userChecklistsResult.failed && !fallbackBlocked) {
-    userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
-    addFallbackSource('listAllUserChecklists');
-  } else if (userChecklistsResult.failed && fallbackBlocked) {
-    fallbackBlockedNotAvailable = true;
+  if (userChecklistsResult.failed || userChecklists.length === 0) {
+    if (!userChecklistsResult.failed && !fallbackOnEmpty) {
+      // keep scoped empty result without global fallback
+    } else if (!fallbackBlocked) {
+      userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
+      addFallbackSource('listAllUserChecklists');
+    } else {
+      fallbackBlockedNotAvailable = true;
+    }
   }
 
   const nowMs = Date.now();

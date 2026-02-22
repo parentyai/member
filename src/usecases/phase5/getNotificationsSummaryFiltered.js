@@ -29,6 +29,7 @@ async function getNotificationsSummaryFiltered(params) {
     eventsLimit: payload.eventsLimit,
     snapshotMode: payload.snapshotMode,
     fallbackMode: payload.fallbackMode,
+    fallbackOnEmpty: payload.fallbackOnEmpty,
     includeMeta
   });
   const baseItems = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
