@@ -10,10 +10,17 @@
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -23,10 +30,17 @@
         "call": "listAllUsers",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -36,10 +50,17 @@
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -49,10 +70,17 @@
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -62,10 +90,17 @@
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -75,10 +110,17 @@
         "call": "listAllNotifications",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 6,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/city-pack-source-audit/run",
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary",
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
@@ -91,7 +133,9 @@
       "endpoint_count": 1,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/monitor-insights"
+      ]
     },
     {
       "hotspot": {
@@ -101,10 +145,13 @@
         "call": "listAllUsers",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/os/dashboard/kpi",
+        "/api/admin/os/errors/summary"
+      ]
     },
     {
       "hotspot": {
@@ -114,88 +161,115 @@
         "call": "listAllNotifications",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/admin/os/dashboard/kpi",
+        "/api/admin/os/errors/summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 169,
+        "line": 180,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 3,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 172,
+        "line": 191,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 3,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 208,
-        "type": "listAll",
-        "call": "listAllChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": []
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 209,
-        "type": "listAll",
-        "call": "listAllUserChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": []
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 214,
-        "type": "listAll",
-        "call": "listAllEvents",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 1,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
         "line": 217,
         "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 218,
+        "type": "listAll",
+        "call": "listAllUserChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 225,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 233,
+        "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 3,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
     },
     {
       "hotspot": {
@@ -208,7 +282,9 @@
       "endpoint_count": 1,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/admin/phase2/automation/run"
+      ]
     },
     {
       "hotspot": {
@@ -221,7 +297,9 @@
       "endpoint_count": 1,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/admin/phase2/automation/run"
+      ]
     },
     {
       "hotspot": {
@@ -234,7 +312,9 @@
       "endpoint_count": 1,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/admin/phase2/automation/run"
+      ]
     },
     {
       "hotspot": {
@@ -247,59 +327,73 @@
       "endpoint_count": 1,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/admin/phase2/automation/run"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 260,
+        "line": 269,
         "type": "listAll",
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 277,
+        "line": 288,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 289,
+        "line": 305,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     },
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 293,
+        "line": 313,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
       },
-      "endpoint_count": 1,
+      "endpoint_count": 2,
       "limit_assumed": 1000,
       "estimated_scan": 1000,
-      "endpoints": []
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
     }
   ],
   "fallback_points": [
@@ -460,6 +554,6 @@
   ],
   "assumptions": [
     "listAll without explicit limit assumes 1000 docs",
-    "endpoint mapping derived from static src/index.js dispatch"
+    "endpoint mapping derived from static src/index.js handler dispatch and dependency_graph.json"
   ]
 }

@@ -5,7 +5,12 @@ const { getNotificationOperationalSummary } = require('../../usecases/admin/getN
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
-  if (message.includes('required') || message.includes('invalid limit') || message.includes('invalid snapshotMode')) {
+  if (
+    message.includes('required') ||
+    message.includes('invalid limit') ||
+    message.includes('invalid snapshotMode') ||
+    message.includes('invalid fallbackMode')
+  ) {
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end(message);
     return;
@@ -28,25 +33,37 @@ function parseSnapshotMode(value) {
   return null;
 }
 
+function parseFallbackMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'allow' || value === 'block') return value;
+  return null;
+}
+
 async function handleUsersSummary(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
     const limitRaw = url.searchParams.get('limit');
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
+    const fallbackModeRaw = url.searchParams.get('fallbackMode');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    const fallbackMode = parseFallbackMode(fallbackModeRaw);
     if ((limitRaw && !limit) || (analyticsLimitRaw && !analyticsLimit)) {
       throw new Error('invalid limit');
     }
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
+    if (fallbackModeRaw && !fallbackMode) {
+      throw new Error('invalid fallbackMode');
+    }
     const items = await getUserOperationalSummary({
       limit,
       analyticsLimit,
       snapshotMode,
+      fallbackMode,
       includeMeta: true
     });
     const normalizedItems = Array.isArray(items) ? items : (Array.isArray(items.items) ? items.items : []);
@@ -69,6 +86,7 @@ async function handleNotificationsSummary(req, res) {
   const limitRaw = url.searchParams.get('limit');
   const eventsLimitRaw = url.searchParams.get('eventsLimit');
   const snapshotModeRaw = url.searchParams.get('snapshotMode');
+  const fallbackModeRaw = url.searchParams.get('fallbackMode');
   const status = url.searchParams.get('status');
   const scenarioKey = url.searchParams.get('scenarioKey');
   const stepKey = url.searchParams.get('stepKey');
@@ -76,16 +94,21 @@ async function handleNotificationsSummary(req, res) {
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const eventsLimit = parsePositiveInt(eventsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    const fallbackMode = parseFallbackMode(fallbackModeRaw);
     if ((limitRaw && !limit) || (eventsLimitRaw && !eventsLimit)) {
       throw new Error('invalid limit');
     }
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
+    if (fallbackModeRaw && !fallbackMode) {
+      throw new Error('invalid fallbackMode');
+    }
     const summary = await getNotificationOperationalSummary({
       limit,
       eventsLimit,
       snapshotMode,
+      fallbackMode,
       includeMeta: true,
       status: status || undefined,
       scenarioKey: scenarioKey || undefined,

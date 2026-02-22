@@ -10,3 +10,8 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - 予算超過は CI fail（増悪のみ停止）。
 - 予算以下への改善は pass。
 - 予算更新は SSOT 追記 + 実行ログ必須。
+
+## current_baseline_phase350
+- worst_case_docs_scan_max: 23000
+- fallback_points_max: 22
+- note: 既存 `budgets` は履歴値として保持し、CI評価はこの末尾値を採用する。

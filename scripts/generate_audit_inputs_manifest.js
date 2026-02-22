@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const childProcess = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const INPUT_DIR = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS');
@@ -47,6 +48,33 @@ function buildSourceDigest(files) {
   return hash.digest('hex');
 }
 
+function readGitValue(command, fallback) {
+  try {
+    const value = childProcess.execSync(command, {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'ignore']
+    }).toString('utf8').trim();
+    if (value) return value;
+  } catch (_err) {
+    // ignore: fallback below
+  }
+  return fallback;
+}
+
+function resolveBranchName() {
+  const envBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.CI_COMMIT_REF_NAME;
+  if (typeof envBranch === 'string' && envBranch.trim()) return envBranch.trim();
+  return readGitValue('git rev-parse --abbrev-ref HEAD', 'NOT_AVAILABLE');
+}
+
+function resolveGitMetadata(files) {
+  const sourceDigest = buildSourceDigest(files);
+  const gitCommit = readGitValue('git rev-parse HEAD', sourceDigest.slice(0, 40));
+  const generatedAt = readGitValue('git log -1 --format=%cI', 'NOT_AVAILABLE');
+  const branch = resolveBranchName();
+  return { sourceDigest, gitCommit, generatedAt, branch };
+}
+
 function buildCounts() {
   const protection = readJson(path.join(INPUT_DIR, 'protection_matrix.json'));
   const deps = readJson(path.join(INPUT_DIR, 'dependency_graph.json'));
@@ -67,7 +95,7 @@ function buildCounts() {
 
 function buildManifest() {
   const files = listInputFiles();
-  const sourceDigest = buildSourceDigest(files);
+  const gitMeta = resolveGitMetadata(files);
   const fileRows = files.map((filePath) => {
     const stat = fs.statSync(filePath);
     return {
@@ -78,9 +106,10 @@ function buildManifest() {
   });
 
   return {
-    generatedAt: 'NOT AVAILABLE',
-    gitCommit: sourceDigest.slice(0, 40),
-    branch: 'NOT_AVAILABLE',
+    generatedAt: gitMeta.generatedAt,
+    gitCommit: gitMeta.gitCommit,
+    branch: gitMeta.branch,
+    sourceDigest: gitMeta.sourceDigest,
     counts: buildCounts(),
     files: fileRows,
     diff_detection_rules: Array.from(DIFF_DETECTION_RULES),
@@ -95,8 +124,27 @@ function run() {
   const next = `${JSON.stringify(manifest, null, 2)}\n`;
 
   if (checkMode) {
-    const current = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
-    if (current !== next) {
+    const currentRaw = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';
+    let currentJson = null;
+    try {
+      currentJson = currentRaw ? JSON.parse(currentRaw) : null;
+    } catch (_err) {
+      process.stderr.write('audit_inputs_manifest.json is invalid JSON. run: npm run audit-inputs:generate\n');
+      process.exit(1);
+    }
+    if (!currentJson) {
+      process.stderr.write('audit_inputs_manifest.json is stale. run: npm run audit-inputs:generate\n');
+      process.exit(1);
+    }
+    const comparableCurrent = Object.assign({}, currentJson);
+    const comparableNext = Object.assign({}, manifest);
+    delete comparableCurrent.generatedAt;
+    delete comparableCurrent.gitCommit;
+    delete comparableCurrent.branch;
+    delete comparableNext.generatedAt;
+    delete comparableNext.gitCommit;
+    delete comparableNext.branch;
+    if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableNext)) {
       process.stderr.write('audit_inputs_manifest.json is stale. run: npm run audit-inputs:generate\n');
       process.exit(1);
     }

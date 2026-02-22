@@ -24,6 +24,8 @@ const SNAPSHOT_TYPE = 'user_operational_summary';
 const SNAPSHOT_KEY = 'latest';
 const DEFAULT_LIST_LIMIT = null;
 const MAX_LIST_LIMIT = 500;
+const FALLBACK_MODE_ALLOW = 'allow';
+const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
@@ -39,6 +41,11 @@ function resolveListLimit(value, analyticsLimit) {
     return Math.min(bounded, analyticsLimit);
   }
   return bounded;
+}
+
+function resolveFallbackMode(value) {
+  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
+  return FALLBACK_MODE_ALLOW;
 }
 
 function toMillis(value) {
@@ -151,6 +158,8 @@ function buildLatestReactionByUser(deliveries) {
 
 async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
+  const fallbackMode = resolveFallbackMode(opts.fallbackMode);
+  const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const withMeta = (items, meta) => {
@@ -209,12 +218,23 @@ async function getUserOperationalSummary(params) {
     listAllUserChecklists({ limit: analyticsLimit }),
     deliveriesPromise
   ]);
+  let fallbackBlockedNotAvailable = false;
 
   if (events.length === 0) {
-    events = await listAllEvents({ limit: analyticsLimit });
+    if (events.length === 0 && !fallbackBlocked) {
+      events = await listAllEvents({ limit: analyticsLimit });
+    }
+    if (events.length === 0 && fallbackBlocked) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
   if (deliveries.length === 0) {
-    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    if (deliveries.length === 0 && !fallbackBlocked) {
+      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    }
+    if (deliveries.length === 0 && fallbackBlocked) {
+      fallbackBlockedNotAvailable = true;
+    }
   }
   const totals = buildChecklistTotals(checklists);
   const completedByUser = buildCompletedByUser(userChecklists);
@@ -249,10 +269,12 @@ async function getUserOperationalSummary(params) {
       lastReactionAt
     };
   });
+  const computedAsOf = new Date().toISOString();
   return withMeta(items, {
-    dataSource: 'computed',
-    asOf: new Date().toISOString(),
-    freshnessMinutes: null
+    dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
+    asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
+    freshnessMinutes: null,
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
   });
 }
 

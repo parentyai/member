@@ -35,11 +35,18 @@ const STALE_DAYS = 14;
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_state_summary';
+const FALLBACK_MODE_ALLOW = 'allow';
+const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
+}
+
+function resolveFallbackMode(value) {
+  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
+  return FALLBACK_MODE_ALLOW;
 }
 
 function toMillis(value) {
@@ -188,6 +195,8 @@ async function safeQuery(queryFn) {
 async function getUserStateSummary(params) {
   const payload = params || {};
   if (!payload.lineUserId) throw new Error('lineUserId required');
+  const fallbackMode = resolveFallbackMode(payload.fallbackMode);
+  const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = payload.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(payload);
   const withMeta = (item, meta) => {
@@ -264,6 +273,7 @@ async function getUserStateSummary(params) {
   let events = eventsResult.rows;
   let userChecklists = userChecklistsResult.rows;
   let deliveries = deliveriesResult.rows;
+  let fallbackBlockedNotAvailable = false;
 
   if (eventsResult.failed || events.length === 0) {
     if (queryRange.fromAt) {
@@ -274,7 +284,12 @@ async function getUserStateSummary(params) {
       });
     }
     if (events.length === 0) {
-      events = await listAllEvents({ limit: analyticsLimit });
+      if (events.length === 0 && !fallbackBlocked) {
+        events = await listAllEvents({ limit: analyticsLimit });
+      }
+      if (events.length === 0 && fallbackBlocked) {
+        fallbackBlockedNotAvailable = true;
+      }
     }
   }
   if (deliveriesResult.failed || deliveries.length === 0) {
@@ -286,11 +301,18 @@ async function getUserStateSummary(params) {
       });
     }
     if (deliveries.length === 0) {
-      deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+      if (deliveries.length === 0 && !fallbackBlocked) {
+        deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+      }
+      if (deliveries.length === 0 && fallbackBlocked) {
+        fallbackBlockedNotAvailable = true;
+      }
     }
   }
-  if (userChecklistsResult.failed) {
+  if (userChecklistsResult.failed && !fallbackBlocked) {
     userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
+  } else if (userChecklistsResult.failed && fallbackBlocked) {
+    fallbackBlockedNotAvailable = true;
   }
 
   const nowMs = Date.now();
@@ -342,10 +364,12 @@ async function getUserStateSummary(params) {
     lastActionAt,
     lastReactionAt
   };
+  const computedAsOf = new Date().toISOString();
   return withMeta(item, {
-    dataSource: 'computed',
-    asOf: new Date().toISOString(),
-    freshnessMinutes: null
+    dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
+    asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
+    freshnessMinutes: null,
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
   });
 }
 

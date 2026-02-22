@@ -8,7 +8,8 @@ function handleError(res, err) {
     message.includes('required') ||
     message.includes('not found') ||
     message.includes('invalid limit') ||
-    message.includes('invalid snapshotMode')
+    message.includes('invalid snapshotMode') ||
+    message.includes('invalid fallbackMode')
   ) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
@@ -32,24 +33,36 @@ function parseSnapshotMode(value) {
   return null;
 }
 
+function parseFallbackMode(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'allow' || value === 'block') return value;
+  return null;
+}
+
 async function handleUserStateSummary(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = url.searchParams.get('lineUserId');
   try {
     const analyticsLimitRaw = url.searchParams.get('analyticsLimit');
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
+    const fallbackModeRaw = url.searchParams.get('fallbackMode');
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
+    const fallbackMode = parseFallbackMode(fallbackModeRaw);
     if (analyticsLimitRaw && !analyticsLimit) {
       throw new Error('invalid limit');
     }
     if (snapshotModeRaw && !snapshotMode) {
       throw new Error('invalid snapshotMode');
     }
+    if (fallbackModeRaw && !fallbackMode) {
+      throw new Error('invalid fallbackMode');
+    }
     const result = await getUserStateSummary({
       lineUserId,
       analyticsLimit,
       snapshotMode,
+      fallbackMode,
       includeMeta: true
     });
     const item = result && typeof result === 'object' && !Array.isArray(result) && result.item ? result.item : result;
