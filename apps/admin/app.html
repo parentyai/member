@@ -1680,7 +1680,7 @@
                     <button id="repo-map-load-legacy" type="button" data-dict-key="ui.label.developer.loadLegacyStatus">LEGACY導線を再読込</button>
                   </div>
                   <div class="table-wrap">
-                    <table class="table table-compact">
+                    <table class="table table-compact snapshot-health-table">
                       <thead>
                         <tr>
                           <th data-dict-key="ui.label.developer.legacy.path">旧URL</th>
@@ -1956,6 +1956,36 @@
                 <div class="panel-title" data-dict-key="ui.label.maintenance.notice">保守操作はMasterで実行</div>
                 <div class="panel-body">
                   <p data-dict-key="ui.desc.maintenance.notice">配信回復/補正は /admin/master に集約されています。</p>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.snapshotHealth.title">Snapshot 健全性</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <label for="maintenance-snapshot-health-limit" data-dict-key="ui.label.maintenance.snapshotHealth.limit">表示件数</label>
+                    <input id="maintenance-snapshot-health-limit" type="number" min="1" max="200" value="30" />
+                    <label for="maintenance-snapshot-health-stale-after" data-dict-key="ui.label.maintenance.snapshotHealth.staleAfter">stale判定（分）</label>
+                    <input id="maintenance-snapshot-health-stale-after" type="number" min="1" max="1440" value="60" />
+                    <label for="maintenance-snapshot-health-type" data-dict-key="ui.label.maintenance.snapshotHealth.type">snapshotType</label>
+                    <input id="maintenance-snapshot-health-type" type="text" data-dict-placeholder="ui.placeholder.maintenance.snapshotHealth.type" placeholder="任意" />
+                    <button id="maintenance-snapshot-health-reload" type="button" data-dict-key="ui.label.maintenance.snapshotHealth.reload">健全性更新</button>
+                  </div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.snapshotType">snapshotType</th>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.snapshotKey">snapshotKey</th>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.asOf">asOf</th>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.stale">stale</th>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.traceId">sourceTraceId</th>
+                          <th data-dict-key="ui.label.maintenance.snapshotHealth.table.updatedAt">updatedAt</th>
+                        </tr>
+                      </thead>
+                      <tbody id="maintenance-snapshot-health-rows"></tbody>
+                    </table>
+                  </div>
+                  <p id="maintenance-snapshot-health-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.snapshotHealth.note">行クリックで監査検索に反映します。</p>
                 </div>
               </div>
               <div class="panel">

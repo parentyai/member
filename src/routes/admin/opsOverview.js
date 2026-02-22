@@ -2,6 +2,10 @@
 
 const { getUserOperationalSummary } = require('../../usecases/admin/getUserOperationalSummary');
 const { getNotificationOperationalSummary } = require('../../usecases/admin/getNotificationOperationalSummary');
+const {
+  normalizeFallbackMode,
+  resolveFallbackModeDefault
+} = require('../../domain/readModel/fallbackPolicy');
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -34,8 +38,9 @@ function parseSnapshotMode(value) {
 }
 
 function parseFallbackMode(value) {
-  if (value === null || value === undefined || value === '') return null;
-  if (value === 'allow' || value === 'block') return value;
+  if (value === null || value === undefined || value === '') return resolveFallbackModeDefault();
+  const normalized = normalizeFallbackMode(value);
+  if (normalized) return normalized;
   return null;
 }
 
@@ -74,7 +79,10 @@ async function handleUsersSummary(req, res) {
       items: normalizedItems,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }));
   } catch (err) {
     handleError(res, err);
@@ -122,7 +130,10 @@ async function handleNotificationsSummary(req, res) {
       items,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }));
   } catch (err) {
     handleError(res, err);

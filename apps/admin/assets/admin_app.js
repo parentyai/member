@@ -59,6 +59,7 @@ const state = {
   structDriftRuns: [],
   structDriftLastResult: null,
   retentionRuns: [],
+  snapshotHealthItems: [],
   paneUpdatedAt: {}
 };
 
@@ -3722,6 +3723,100 @@ async function runStructDriftBackfill(mode) {
   }
 }
 
+function parseSnapshotHealthLimit() {
+  const el = document.getElementById('maintenance-snapshot-health-limit');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 30;
+  return Math.min(Math.floor(value), 200);
+}
+
+function parseSnapshotHealthStaleAfterMinutes() {
+  const el = document.getElementById('maintenance-snapshot-health-stale-after');
+  const value = Number(el && el.value);
+  if (!Number.isFinite(value) || value <= 0) return 60;
+  return Math.min(Math.floor(value), 1440);
+}
+
+function readSnapshotHealthTypeFilter() {
+  const el = document.getElementById('maintenance-snapshot-health-type');
+  const value = el && typeof el.value === 'string' ? el.value.trim() : '';
+  return value || null;
+}
+
+function renderSnapshotHealth(items) {
+  const tbody = document.getElementById('maintenance-snapshot-health-rows');
+  const note = document.getElementById('maintenance-snapshot-health-note');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.className = 'cell-muted';
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    if (note) note.textContent = t('ui.desc.maintenance.snapshotHealth.empty', 'Snapshot はありません。');
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      item && item.snapshotType ? String(item.snapshotType) : '-',
+      item && item.snapshotKey ? String(item.snapshotKey) : '-',
+      formatDateLabel(item && item.asOf),
+      item && item.isStale ? t('ui.value.boolean.yes', 'はい') : t('ui.value.boolean.no', 'いいえ'),
+      item && item.sourceTraceId ? String(item.sourceTraceId) : '-',
+      formatDateLabel(item && item.updatedAt)
+    ];
+    cols.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const trace = item && item.sourceTraceId ? String(item.sourceTraceId) : '';
+      if (!trace) return;
+      const traceInput = document.getElementById('audit-trace');
+      if (traceInput) traceInput.value = trace;
+      void loadAudit().catch(() => {
+        showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+      });
+    });
+    tbody.appendChild(tr);
+  });
+  if (note) {
+    const staleCount = rows.filter((row) => row && row.isStale).length;
+    note.textContent = `${t('ui.label.maintenance.snapshotHealth.summary', 'stale件数')}: ${staleCount} / ${rows.length}`;
+  }
+}
+
+async function loadSnapshotHealth(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('audit-trace');
+  const limit = parseSnapshotHealthLimit();
+  const staleAfterMinutes = parseSnapshotHealthStaleAfterMinutes();
+  const snapshotType = readSnapshotHealthTypeFilter();
+  const qs = new URLSearchParams();
+  qs.set('limit', String(limit));
+  qs.set('staleAfterMinutes', String(staleAfterMinutes));
+  if (snapshotType) qs.set('snapshotType', snapshotType);
+  try {
+    const res = await fetch(`/api/admin/ops-snapshot-health?${qs.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error('failed');
+    state.snapshotHealthItems = Array.isArray(data.items) ? data.items : [];
+    renderSnapshotHealth(state.snapshotHealthItems);
+    if (notify) showToast(t('ui.toast.maintenance.snapshotHealth.reloadOk', 'Snapshot健全性を更新しました'), 'ok');
+  } catch (_err) {
+    state.snapshotHealthItems = [];
+    renderSnapshotHealth([]);
+    if (notify) showToast(t('ui.toast.maintenance.snapshotHealth.reloadFail', 'Snapshot健全性の取得に失敗しました'), 'danger');
+  }
+}
+
 function parseRetentionRunsLimit() {
   const el = document.getElementById('maintenance-retention-runs-limit');
   const value = Number(el && el.value);
@@ -4714,6 +4809,9 @@ function setupVendorControls() {
 }
 
 function setupMaintenanceControls() {
+  document.getElementById('maintenance-snapshot-health-reload')?.addEventListener('click', () => {
+    void loadSnapshotHealth({ notify: true });
+  });
   document.getElementById('maintenance-retention-runs-reload')?.addEventListener('click', () => {
     void loadRetentionRuns({ notify: true });
   });
@@ -4723,6 +4821,7 @@ function setupMaintenanceControls() {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
+  void loadSnapshotHealth({ notify: false });
   void loadRetentionRuns({ notify: false });
 }
 

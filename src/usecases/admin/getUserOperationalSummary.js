@@ -4,6 +4,7 @@ const {
   listAllEvents,
   listEventsByCreatedAtRange,
   listAllChecklists,
+  listChecklistsByScenarioAndStep,
   listAllUserChecklists,
   listAllNotificationDeliveries,
   listNotificationDeliveriesBySentAtRange
@@ -156,12 +157,50 @@ function buildLatestReactionByUser(deliveries) {
   return { latestClick, latestRead };
 }
 
+function collectScenarioStepPairs(users) {
+  const pairSet = new Set();
+  (users || []).forEach((user) => {
+    const data = user && user.data ? user.data : (user || {});
+    const scenarioKey = typeof data.scenarioKey === 'string' ? data.scenarioKey.trim() : '';
+    const stepKey = typeof data.stepKey === 'string' ? data.stepKey.trim() : '';
+    if (!scenarioKey || !stepKey) return;
+    pairSet.add(`${scenarioKey}__${stepKey}`);
+  });
+  return Array.from(pairSet.values()).map((key) => {
+    const parts = key.split('__');
+    return { scenarioKey: parts[0], stepKey: parts[1] };
+  });
+}
+
+function dedupeRowsById(rows) {
+  const map = new Map();
+  (rows || []).forEach((row) => {
+    if (!row || !row.id) return;
+    if (!map.has(row.id)) map.set(row.id, row);
+  });
+  return Array.from(map.values());
+}
+
+async function safeQuery(queryFn) {
+  try {
+    const rows = await queryFn();
+    return { rows: Array.isArray(rows) ? rows : [], failed: false };
+  } catch (_err) {
+    return { rows: [], failed: true };
+  }
+}
+
 async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const fallbackMode = resolveFallbackMode(opts.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
+  const fallbackSources = [];
+  const addFallbackSource = (sourceName) => {
+    if (!sourceName || fallbackSources.includes(sourceName)) return;
+    fallbackSources.push(sourceName);
+  };
   const withMeta = (items, meta) => {
     if (!includeMeta) return items;
     return { items, meta };
@@ -175,14 +214,20 @@ async function getUserOperationalSummary(params) {
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
-          : freshnessMinutes
+          : freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: false,
+        fallbackSources: []
       });
     }
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
         asOf: null,
-        freshnessMinutes
+        freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: true,
+        fallbackSources: []
       });
     }
   }
@@ -190,7 +235,10 @@ async function getUserOperationalSummary(params) {
     return withMeta([], {
       dataSource: 'not_available',
       asOf: null,
-      freshnessMinutes
+      freshnessMinutes,
+      fallbackUsed: false,
+      fallbackBlocked: true,
+      fallbackSources: []
     });
   }
   const analyticsLimit = resolveAnalyticsLimit(opts.analyticsLimit);
@@ -198,6 +246,25 @@ async function getUserOperationalSummary(params) {
   const users = await usersRepo.listUsers({ limit: analyticsLimit });
   const scopedUsers = listLimit ? users.slice(0, listLimit) : users;
   const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
+  const checklistPairs = collectScenarioStepPairs(scopedUsers);
+  const checklistsPromise = (async () => {
+    if (!checklistPairs.length) return { rows: [], failed: false };
+    const settled = await Promise.all(checklistPairs.map((pair) => safeQuery(() => listChecklistsByScenarioAndStep({
+      scenario: pair.scenarioKey,
+      step: pair.stepKey,
+      limit: analyticsLimit
+    }))));
+    const rows = [];
+    let failed = false;
+    settled.forEach((entry) => {
+      if (entry.failed) {
+        failed = true;
+        return;
+      }
+      rows.push(...entry.rows);
+    });
+    return { rows, failed };
+  })();
   let eventsPromise = Promise.resolve([]);
   let deliveriesPromise = Promise.resolve([]);
   if (queryRange.fromAt) {
@@ -212,17 +279,19 @@ async function getUserOperationalSummary(params) {
       toAt: queryRange.toAt
     });
   }
-  let [events, checklists, userChecklists, deliveries] = await Promise.all([
+  let [events, checklistsResult, userChecklists, deliveries] = await Promise.all([
     eventsPromise,
-    listAllChecklists({ limit: analyticsLimit }),
+    checklistsPromise,
     listAllUserChecklists({ limit: analyticsLimit }),
     deliveriesPromise
   ]);
+  let checklists = dedupeRowsById(checklistsResult.rows);
   let fallbackBlockedNotAvailable = false;
 
   if (events.length === 0) {
     if (events.length === 0 && !fallbackBlocked) {
       events = await listAllEvents({ limit: analyticsLimit });
+      addFallbackSource('listAllEvents');
     }
     if (events.length === 0 && fallbackBlocked) {
       fallbackBlockedNotAvailable = true;
@@ -231,8 +300,17 @@ async function getUserOperationalSummary(params) {
   if (deliveries.length === 0) {
     if (deliveries.length === 0 && !fallbackBlocked) {
       deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+      addFallbackSource('listAllNotificationDeliveries');
     }
     if (deliveries.length === 0 && fallbackBlocked) {
+      fallbackBlockedNotAvailable = true;
+    }
+  }
+  if (checklistsResult.failed || checklists.length === 0) {
+    if (!fallbackBlocked) {
+      checklists = await listAllChecklists({ limit: analyticsLimit });
+      addFallbackSource('listAllChecklists');
+    } else {
       fallbackBlockedNotAvailable = true;
     }
   }
@@ -274,7 +352,10 @@ async function getUserOperationalSummary(params) {
     dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
     asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
     freshnessMinutes: null,
-    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null,
+    fallbackUsed: fallbackSources.length > 0,
+    fallbackBlocked: fallbackBlockedNotAvailable,
+    fallbackSources
   });
 }
 

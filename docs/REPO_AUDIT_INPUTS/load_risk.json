@@ -65,7 +65,7 @@
     {
       "hotspot": {
         "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 94,
+        "line": 111,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
@@ -85,7 +85,7 @@
     {
       "hotspot": {
         "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 117,
+        "line": 134,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -105,7 +105,7 @@
     {
       "hotspot": {
         "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 153,
+        "line": 170,
         "type": "listAll",
         "call": "listAllNotifications",
         "limit": "UNSPECIFIED"
@@ -140,7 +140,7 @@
     {
       "hotspot": {
         "file": "src/routes/admin/osDashboardKpi.js",
-        "line": 163,
+        "line": 186,
         "type": "listAll",
         "call": "listAllUsers",
         "limit": "UNSPECIFIED"
@@ -156,7 +156,7 @@
     {
       "hotspot": {
         "file": "src/routes/admin/osDashboardKpi.js",
-        "line": 166,
+        "line": 194,
         "type": "listAll",
         "call": "listAllNotifications",
         "limit": "UNSPECIFIED"
@@ -172,7 +172,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 180,
+        "line": 194,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -189,7 +189,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 191,
+        "line": 206,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -206,24 +206,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 217,
-        "type": "listAll",
-        "call": "listAllChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 3,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 218,
+        "line": 285,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
@@ -240,7 +223,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 225,
+        "line": 293,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -257,9 +240,26 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 233,
+        "line": 302,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 311,
+        "type": "listAll",
+        "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
       },
       "endpoint_count": 3,
@@ -334,23 +334,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 269,
-        "type": "listAll",
-        "call": "listAllChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 2,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 288,
+        "line": 309,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -366,7 +350,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 305,
+        "line": 327,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -382,7 +366,23 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 313,
+        "line": 337,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 344,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"

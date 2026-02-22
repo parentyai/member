@@ -10,6 +10,12 @@ const {
   isSnapshotRequired,
   isFallbackAllowed
 } = require('../../domain/readModel/snapshotReadPolicy');
+const {
+  FALLBACK_MODE_ALLOW,
+  FALLBACK_MODE_BLOCK,
+  normalizeFallbackMode,
+  resolveFallbackModeDefault
+} = require('../../domain/readModel/fallbackPolicy');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12]);
@@ -31,6 +37,15 @@ function parseScanLimit(req) {
   const raw = Number(url.searchParams.get('scanLimit'));
   if (!Number.isFinite(raw)) return DEFAULT_SCAN_LIMIT;
   return Math.max(100, Math.min(MAX_SCAN_LIMIT, Math.floor(raw)));
+}
+
+function parseFallbackMode(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const raw = url.searchParams.get('fallbackMode');
+  if (raw === null || raw === undefined || raw === '') return resolveFallbackModeDefault();
+  const normalized = normalizeFallbackMode(raw);
+  if (normalized) return normalized;
+  throw new Error('invalid fallbackMode');
 }
 
 function toMillis(value) {
@@ -131,7 +146,12 @@ function isSnapshotFresh(snapshot, freshnessMinutes) {
   return nowMs - asOfMs <= freshnessMinutes * 60 * 1000;
 }
 
-async function computeDashboardKpis(windowMonths, scanLimit) {
+async function computeDashboardKpis(windowMonths, scanLimit, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const fallbackMode = opts.fallbackMode === FALLBACK_MODE_BLOCK
+    ? FALLBACK_MODE_BLOCK
+    : FALLBACK_MODE_ALLOW;
+  const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const buckets = monthBuckets(windowMonths);
   const queryRange = resolveBucketQueryRange(buckets);
   let [users, notifications, deliveries, events, links, killSwitch] = await Promise.all([
@@ -158,12 +178,34 @@ async function computeDashboardKpis(windowMonths, scanLimit) {
     linkRegistryRepo.listLinks({ limit: 500 }),
     systemFlagsRepo.getKillSwitch()
   ]);
+  let fallbackBlockedNotAvailable = false;
+  const fallbackSources = [];
 
   if (users.length === 0) {
-    users = await analyticsReadRepo.listAllUsers({ limit: scanLimit });
+    if (!fallbackBlocked) {
+      users = await analyticsReadRepo.listAllUsers({ limit: scanLimit });
+      fallbackSources.push('listAllUsers');
+    } else {
+      fallbackBlockedNotAvailable = true;
+    }
   }
   if (notifications.length === 0) {
-    notifications = await analyticsReadRepo.listAllNotifications({ limit: scanLimit });
+    if (!fallbackBlocked) {
+      notifications = await analyticsReadRepo.listAllNotifications({ limit: scanLimit });
+      fallbackSources.push('listAllNotifications');
+    } else {
+      fallbackBlockedNotAvailable = true;
+    }
+  }
+
+  if (fallbackBlockedNotAvailable) {
+    return {
+      kpis: buildNotAvailableKpis('NOT AVAILABLE'),
+      asOf: null,
+      fallbackUsed: false,
+      fallbackBlocked: true,
+      fallbackSources
+    };
   }
 
   const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
@@ -239,7 +281,10 @@ async function computeDashboardKpis(windowMonths, scanLimit) {
 
   return {
     kpis,
-    asOf: new Date().toISOString()
+    asOf: new Date().toISOString(),
+    fallbackUsed: fallbackSources.length > 0,
+    fallbackBlocked: false,
+    fallbackSources
   };
 }
 
@@ -262,6 +307,14 @@ async function handleDashboardKpi(req, res) {
   const requestId = resolveRequestId(req);
   const windowMonths = parseWindowMonths(req);
   const scanLimit = parseScanLimit(req);
+  let fallbackMode;
+  try {
+    fallbackMode = parseFallbackMode(req);
+  } catch (err) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: err.message, traceId, requestId }));
+    return;
+  }
   const freshnessMinutes = resolveSnapshotFreshnessMinutes();
   const snapshotMode = resolveSnapshotReadMode();
   const snapshotReadEnabled = isSnapshotReadEnabled(snapshotMode);
@@ -339,9 +392,9 @@ async function handleDashboardKpi(req, res) {
       return;
     }
 
-    const computed = await computeDashboardKpis(windowMonths, scanLimit);
+    const computed = await computeDashboardKpis(windowMonths, scanLimit, { fallbackMode });
     const kpis = computed.kpis;
-    if (snapshotReadEnabled) {
+    if (snapshotReadEnabled && computed.fallbackBlocked !== true) {
       await opsSnapshotsRepo.saveSnapshot({
         snapshotType: 'dashboard_kpi',
         snapshotKey,
@@ -359,10 +412,14 @@ async function handleDashboardKpi(req, res) {
       requestId,
       windowMonths,
       scanLimit,
-      dataSource: 'computed',
-      source: 'computed',
+      dataSource: computed.fallbackBlocked ? 'not_available' : 'computed',
+      source: computed.fallbackBlocked ? 'not_available' : 'computed',
       asOf: computed.asOf,
       freshnessMinutes,
+      note: computed.fallbackBlocked ? 'NOT AVAILABLE' : null,
+      fallbackUsed: computed.fallbackUsed === true,
+      fallbackBlocked: computed.fallbackBlocked === true,
+      fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
       kpis
     }));
   } catch (err) {

@@ -1,6 +1,10 @@
 'use strict';
 
 const { getUserStateSummary } = require('../usecases/phase5/getUserStateSummary');
+const {
+  normalizeFallbackMode,
+  resolveFallbackModeDefault
+} = require('../domain/readModel/fallbackPolicy');
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -34,8 +38,9 @@ function parseSnapshotMode(value) {
 }
 
 function parseFallbackMode(value) {
-  if (value === null || value === undefined || value === '') return null;
-  if (value === 'allow' || value === 'block') return value;
+  if (value === null || value === undefined || value === '') return resolveFallbackModeDefault();
+  const normalized = normalizeFallbackMode(value);
+  if (normalized) return normalized;
   return null;
 }
 
@@ -73,7 +78,10 @@ async function handleUserStateSummary(req, res) {
       item,
       dataSource: meta && meta.dataSource ? meta.dataSource : null,
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }));
   } catch (err) {
     handleError(res, err);

@@ -99,7 +99,10 @@ async function getUsersSummaryFiltered(params) {
     meta: {
       dataSource: meta && meta.dataSource ? meta.dataSource : 'not_available',
       asOf: meta && Object.prototype.hasOwnProperty.call(meta, 'asOf') ? meta.asOf : null,
-      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null
+      freshnessMinutes: meta && Object.prototype.hasOwnProperty.call(meta, 'freshnessMinutes') ? meta.freshnessMinutes : null,
+      fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
+      fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
+      fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
     }
   };
 }

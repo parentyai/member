@@ -5,6 +5,7 @@ const {
   listEventsByCreatedAtRange,
   listEventsByLineUserIdAndCreatedAtRange,
   listAllChecklists,
+  listChecklistsByScenarioAndStep,
   listAllUserChecklists,
   listUserChecklistsByLineUserId,
   listAllNotificationDeliveries,
@@ -199,6 +200,11 @@ async function getUserStateSummary(params) {
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const includeMeta = payload.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(payload);
+  const fallbackSources = [];
+  const addFallbackSource = (sourceName) => {
+    if (!sourceName || fallbackSources.includes(sourceName)) return;
+    fallbackSources.push(sourceName);
+  };
   const withMeta = (item, meta) => {
     if (!includeMeta) return item;
     return { item, meta };
@@ -212,7 +218,10 @@ async function getUserStateSummary(params) {
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
-          : freshnessMinutes
+          : freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: false,
+        fallbackSources: []
       });
     }
     if (isSnapshotRequired(snapshotMode)) {
@@ -223,7 +232,10 @@ async function getUserStateSummary(params) {
       }, {
         dataSource: 'not_available',
         asOf: null,
-        freshnessMinutes
+        freshnessMinutes,
+        fallbackUsed: false,
+        fallbackBlocked: true,
+        fallbackSources: []
       });
     }
   }
@@ -235,7 +247,10 @@ async function getUserStateSummary(params) {
     }, {
       dataSource: 'not_available',
       asOf: null,
-      freshnessMinutes
+      freshnessMinutes,
+      fallbackUsed: false,
+      fallbackBlocked: true,
+      fallbackSources: []
     });
   }
   const analyticsLimit = resolveAnalyticsLimit(payload.analyticsLimit);
@@ -259,17 +274,23 @@ async function getUserStateSummary(params) {
       toAt: queryRange.toAt
     }));
   }
+  const checklistsPromise = safeQuery(() => listChecklistsByScenarioAndStep({
+    scenario: data.scenarioKey,
+    step: data.stepKey,
+    limit: analyticsLimit
+  }));
   const userChecklistsPromise = safeQuery(() => listUserChecklistsByLineUserId({
     lineUserId: payload.lineUserId,
     limit: analyticsLimit
   }));
 
-  let [eventsResult, checklists, userChecklistsResult, deliveriesResult] = await Promise.all([
+  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult] = await Promise.all([
     eventsPromise,
-    listAllChecklists({ limit: analyticsLimit }),
+    checklistsPromise,
     userChecklistsPromise,
     deliveriesPromise
   ]);
+  let checklists = checklistsResult.rows;
   let events = eventsResult.rows;
   let userChecklists = userChecklistsResult.rows;
   let deliveries = deliveriesResult.rows;
@@ -286,6 +307,7 @@ async function getUserStateSummary(params) {
     if (events.length === 0) {
       if (events.length === 0 && !fallbackBlocked) {
         events = await listAllEvents({ limit: analyticsLimit });
+        addFallbackSource('listAllEvents');
       }
       if (events.length === 0 && fallbackBlocked) {
         fallbackBlockedNotAvailable = true;
@@ -303,14 +325,24 @@ async function getUserStateSummary(params) {
     if (deliveries.length === 0) {
       if (deliveries.length === 0 && !fallbackBlocked) {
         deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+        addFallbackSource('listAllNotificationDeliveries');
       }
       if (deliveries.length === 0 && fallbackBlocked) {
         fallbackBlockedNotAvailable = true;
       }
     }
   }
+  if (checklistsResult.failed || checklists.length === 0) {
+    if (!fallbackBlocked) {
+      checklists = await listAllChecklists({ limit: analyticsLimit });
+      addFallbackSource('listAllChecklists');
+    } else {
+      fallbackBlockedNotAvailable = true;
+    }
+  }
   if (userChecklistsResult.failed && !fallbackBlocked) {
     userChecklists = await listAllUserChecklists({ limit: analyticsLimit });
+    addFallbackSource('listAllUserChecklists');
   } else if (userChecklistsResult.failed && fallbackBlocked) {
     fallbackBlockedNotAvailable = true;
   }
@@ -369,7 +401,10 @@ async function getUserStateSummary(params) {
     dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
     asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
     freshnessMinutes: null,
-    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null
+    note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null,
+    fallbackUsed: fallbackSources.length > 0,
+    fallbackBlocked: fallbackBlockedNotAvailable,
+    fallbackSources
   });
 }
 

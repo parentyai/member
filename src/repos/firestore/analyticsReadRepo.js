@@ -91,6 +91,23 @@ async function listAllChecklists(opts) {
   return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
 }
 
+async function listChecklistsByScenarioAndStep(opts) {
+  const options = opts && typeof opts === 'object' ? opts : {};
+  const scenario = typeof options.scenario === 'string' ? options.scenario.trim() : '';
+  const step = typeof options.step === 'string' ? options.step.trim() : '';
+  if (!scenario || !step) return [];
+  const limit = resolveLimit(options.limit);
+  const db = getDb();
+  const snap = await db
+    .collection('checklists')
+    .where('scenario', '==', scenario)
+    .where('step', '==', step)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
+  return snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+}
+
 async function listAllUserChecklists(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
   const limit = resolveLimit(options.limit);
@@ -178,6 +195,7 @@ module.exports = {
   listAllUsers,
   listUsersByCreatedAtRange,
   listAllChecklists,
+  listChecklistsByScenarioAndStep,
   listAllUserChecklists,
   listUserChecklistsByLineUserId,
   listAllNotificationDeliveries,

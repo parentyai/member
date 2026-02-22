@@ -276,16 +276,19 @@ function buildLoadRisk() {
 
 function readBudgets() {
   if (!fs.existsSync(BUDGETS_PATH)) {
-    return { worstCaseMax: null, fallbackPointsMax: null };
+    return { worstCaseMax: null, fallbackPointsMax: null, hotspotsCountMax: null };
   }
   const text = fs.readFileSync(BUDGETS_PATH, 'utf8');
   const worstMatches = [...text.matchAll(/worst_case_docs_scan_max:\s*(\d+)/g)];
   const fallbackMatches = [...text.matchAll(/fallback_points_max:\s*(\d+)/g)];
+  const hotspotMatches = [...text.matchAll(/hotspots_count_max:\s*(\d+)/g)];
   const worstMatch = worstMatches.length ? worstMatches[worstMatches.length - 1] : null;
   const fallbackMatch = fallbackMatches.length ? fallbackMatches[fallbackMatches.length - 1] : null;
+  const hotspotMatch = hotspotMatches.length ? hotspotMatches[hotspotMatches.length - 1] : null;
   return {
     worstCaseMax: worstMatch ? Number(worstMatch[1]) : null,
-    fallbackPointsMax: fallbackMatch ? Number(fallbackMatch[1]) : null
+    fallbackPointsMax: fallbackMatch ? Number(fallbackMatch[1]) : null,
+    hotspotsCountMax: hotspotMatch ? Number(hotspotMatch[1]) : null
   };
 }
 
@@ -296,6 +299,9 @@ function verifyBudgets(loadRisk) {
   }
   if (Number.isFinite(budgets.fallbackPointsMax) && Number(loadRisk.fallback_risk) > budgets.fallbackPointsMax) {
     throw new Error(`fallback points exceed budget (${loadRisk.fallback_risk} > ${budgets.fallbackPointsMax})`);
+  }
+  if (Number.isFinite(budgets.hotspotsCountMax) && Array.isArray(loadRisk.hotspots) && loadRisk.hotspots.length > budgets.hotspotsCountMax) {
+    throw new Error(`hotspots count exceeds budget (${loadRisk.hotspots.length} > ${budgets.hotspotsCountMax})`);
   }
 }
 
