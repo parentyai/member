@@ -335,7 +335,7 @@
     },
     {
       "file": "src/repos/firestore/cityPackFeedbackRepo.js",
-      "line": 108,
+      "line": 142,
       "type": "missingIndexFallback",
       "call": "isMissingIndexError",
       "limit": "N/A"
@@ -349,14 +349,14 @@
     },
     {
       "file": "src/repos/firestore/cityPackRequestsRepo.js",
-      "line": 119,
+      "line": 153,
       "type": "missingIndexFallback",
       "call": "isMissingIndexError",
       "limit": "N/A"
     },
     {
       "file": "src/repos/firestore/cityPacksRepo.js",
-      "line": 295,
+      "line": 339,
       "type": "missingIndexFallback",
       "call": "isMissingIndexError",
       "limit": "N/A"
@@ -447,7 +447,7 @@
     },
     {
       "file": "src/repos/firestore/sourceRefsRepo.js",
-      "line": 176,
+      "line": 206,
       "type": "missingIndexFallback",
       "call": "isMissingIndexError",
       "limit": "N/A"

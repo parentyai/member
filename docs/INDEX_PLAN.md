@@ -7,12 +7,12 @@
 | file | lines | mode | notes |
 | --- | --- | --- | --- |
 | `src/repos/firestore/cityPackBulletinsRepo.js` | 91 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
-| `src/repos/firestore/cityPackFeedbackRepo.js` | 108 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
+| `src/repos/firestore/cityPackFeedbackRepo.js` | 142 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackMetricsDailyRepo.js` | 113 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
-| `src/repos/firestore/cityPackRequestsRepo.js` | 119 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
+| `src/repos/firestore/cityPackRequestsRepo.js` | 153 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackTemplateLibraryRepo.js` | 93 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackUpdateProposalsRepo.js` | 90 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
-| `src/repos/firestore/cityPacksRepo.js` | 295 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
+| `src/repos/firestore/cityPacksRepo.js` | 339 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/decisionDriftsRepo.js` | 34 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/decisionLogsRepo.js` | 37, 65, 100 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/linkRegistryRepo.js` | 50 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
@@ -20,7 +20,7 @@
 | `src/repos/firestore/notificationsRepo.js` | 44 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/sendRetryQueueRepo.js` | 55 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/sourceEvidenceRepo.js` | 66, 89 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
-| `src/repos/firestore/sourceRefsRepo.js` | 176 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
+| `src/repos/firestore/sourceRefsRepo.js` | 206 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/templatesVRepo.js` | 54, 102 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/usersRepo.js` | 104 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 

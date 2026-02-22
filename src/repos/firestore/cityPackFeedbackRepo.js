@@ -15,6 +15,9 @@ const ALLOWED_STATUS = new Set([
   'triaged',
   'resolved'
 ]);
+const ALLOWED_PACK_CLASS = new Set(['regional', 'nationwide']);
+const DEFAULT_PACK_CLASS = 'regional';
+const DEFAULT_LANGUAGE = 'ja';
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -23,6 +26,29 @@ function normalizeStatus(value) {
 
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function normalizePackClass(value) {
+  const packClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_PACK_CLASS.has(packClass) ? packClass : DEFAULT_PACK_CLASS;
+}
+
+function normalizeLanguage(value) {
+  const language = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return language || DEFAULT_LANGUAGE;
+}
+
+function normalizePackClassFilter(value) {
+  if (typeof value !== 'string') return null;
+  const packClass = value.trim().toLowerCase();
+  if (!packClass) return null;
+  return ALLOWED_PACK_CLASS.has(packClass) ? packClass : null;
+}
+
+function normalizeLanguageFilter(value) {
+  if (typeof value !== 'string') return null;
+  const language = value.trim().toLowerCase();
+  return language || null;
 }
 
 function resolveId(payload) {
@@ -43,6 +69,8 @@ function normalizePayload(data) {
     regionCity: normalizeString(payload.regionCity),
     regionState: normalizeString(payload.regionState),
     regionKey: normalizeString(payload.regionKey),
+    packClass: normalizePackClass(payload.packClass),
+    language: normalizeLanguage(payload.language),
     slotKey,
     feedbackText: feedbackText || message,
     message: message || feedbackText,
@@ -65,6 +93,8 @@ async function createFeedback(data) {
     regionCity: payload.regionCity,
     regionState: payload.regionState,
     regionKey: payload.regionKey,
+    packClass: payload.packClass,
+    language: payload.language,
     slotKey: payload.slotKey,
     feedbackText: payload.feedbackText,
     message: payload.message,
@@ -100,6 +130,10 @@ async function listFeedback(params) {
   const limit = Number.isFinite(Number(opts.limit)) ? Math.min(Math.max(Math.floor(Number(opts.limit)), 1), 200) : 50;
   let baseQuery = getDb().collection(COLLECTION);
   if (opts.status) baseQuery = baseQuery.where('status', '==', normalizeStatus(opts.status));
+  const packClass = normalizePackClassFilter(opts.packClass);
+  if (packClass) baseQuery = baseQuery.where('packClass', '==', packClass);
+  const language = normalizeLanguageFilter(opts.language);
+  if (language) baseQuery = baseQuery.where('language', '==', language);
   let rows;
   try {
     const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
@@ -122,6 +156,8 @@ async function listFeedback(params) {
 
 module.exports = {
   normalizeStatus,
+  normalizePackClass,
+  normalizeLanguage,
   createFeedback,
   getFeedback,
   updateFeedback,

@@ -5,12 +5,28 @@ const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const SOURCE_BLOCK_REASONS = Object.freeze({
   SOURCE_EXPIRED: 'SOURCE_EXPIRED',
   SOURCE_DEAD: 'SOURCE_DEAD',
-  SOURCE_BLOCKED: 'SOURCE_BLOCKED'
+  SOURCE_BLOCKED: 'SOURCE_BLOCKED',
+  SOURCE_POLICY_BLOCKED: 'SOURCE_POLICY_BLOCKED'
 });
 
 function normalizeRequiredLevel(value) {
   const requiredLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return requiredLevel === 'optional' ? 'optional' : 'required';
+}
+
+function normalizePackClass(value) {
+  const packClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return packClass === 'nationwide' ? 'nationwide' : 'regional';
+}
+
+function normalizeSourceType(value) {
+  const sourceType = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return sourceType || 'other';
+}
+
+function normalizeAuthorityLevel(value) {
+  const authorityLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return authorityLevel || 'other';
 }
 
 function toMillis(value) {
@@ -34,10 +50,25 @@ function resolveFailure(ref, nowMs) {
   return null;
 }
 
+function resolvePolicyFailure(ref, packClass) {
+  if (packClass !== 'nationwide') return null;
+  if (!ref) return { category: SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED, reason: 'source_not_found' };
+  const sourceType = normalizeSourceType(ref.sourceType);
+  if (sourceType !== 'official' && sourceType !== 'semi_official') {
+    return { category: SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED, reason: 'nationwide_source_type_invalid' };
+  }
+  const authorityLevel = normalizeAuthorityLevel(ref.authorityLevel);
+  if (authorityLevel !== 'federal') {
+    return { category: SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED, reason: 'nationwide_authority_invalid' };
+  }
+  return null;
+}
+
 function pickBlockedCategory(failures) {
   if (!Array.isArray(failures) || !failures.length) return null;
   if (failures.some((item) => item.category === SOURCE_BLOCK_REASONS.SOURCE_EXPIRED)) return SOURCE_BLOCK_REASONS.SOURCE_EXPIRED;
   if (failures.some((item) => item.category === SOURCE_BLOCK_REASONS.SOURCE_DEAD)) return SOURCE_BLOCK_REASONS.SOURCE_DEAD;
+  if (failures.some((item) => item.category === SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED)) return SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED;
   return SOURCE_BLOCK_REASONS.SOURCE_BLOCKED;
 }
 
@@ -50,6 +81,7 @@ async function validateCityPackSources(params, deps) {
 
   const now = payload.now instanceof Date ? payload.now : new Date();
   const nowMs = now.getTime();
+  const packClass = normalizePackClass(payload.packClass);
   const getSourceRef = deps && deps.getSourceRef ? deps.getSourceRef : sourceRefsRepo.getSourceRef;
 
   const sources = [];
@@ -60,19 +92,34 @@ async function validateCityPackSources(params, deps) {
     const ref = await getSourceRef(sourceRefId);
     const requiredLevel = normalizeRequiredLevel(ref && ref.requiredLevel);
     sources.push({ sourceRefId, ref: ref || null });
-    const failure = resolveFailure(ref, nowMs);
-    if (!failure) continue;
-    const failureItem = {
+    const baseFailure = resolveFailure(ref, nowMs);
+    if (baseFailure) {
+      const failureItem = {
+        sourceRefId,
+        requiredLevel,
+        category: baseFailure.category,
+        reason: baseFailure.reason,
+        status: ref && ref.status ? ref.status : null,
+        validUntil: ref && ref.validUntil ? ref.validUntil : null
+      };
+      failures.push(failureItem);
+      if (requiredLevel === 'optional') optionalFailures.push(failureItem);
+      else blockingFailures.push(failureItem);
+      continue;
+    }
+    const policyFailure = resolvePolicyFailure(ref, packClass);
+    if (!policyFailure) continue;
+    const policyFailureItem = {
       sourceRefId,
       requiredLevel,
-      category: failure.category,
-      reason: failure.reason,
+      category: policyFailure.category,
+      reason: policyFailure.reason,
       status: ref && ref.status ? ref.status : null,
       validUntil: ref && ref.validUntil ? ref.validUntil : null
     };
-    failures.push(failureItem);
-    if (requiredLevel === 'optional') optionalFailures.push(failureItem);
-    else blockingFailures.push(failureItem);
+    failures.push(policyFailureItem);
+    // nationwide policy violations are always blocking (fail-closed).
+    blockingFailures.push(policyFailureItem);
   }
 
   const blockedReasonCategory = pickBlockedCategory(blockingFailures);
@@ -82,6 +129,7 @@ async function validateCityPackSources(params, deps) {
     invalidSourceRefs: failures,
     blockingInvalidSourceRefs: blockingFailures,
     optionalInvalidSourceRefs: optionalFailures,
+    policyInvalidSourceRefs: failures.filter((item) => item.category === SOURCE_BLOCK_REASONS.SOURCE_POLICY_BLOCKED),
     blockedReasonCategory,
     blocked: blockingFailures.length > 0
   };

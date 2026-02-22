@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T01:53:11-05:00",
-  "gitCommit": "54679852d87aeac6a05ace68dc4a008dae970b25",
-  "branch": "codex/phase363-372-productout",
-  "sourceDigest": "822f91925eba88a7d59b03a7b979a6cfb3e22b3313d04196ae2ff8983078f98a",
+  "generatedAt": "2026-02-22T09:34:59-05:00",
+  "gitCommit": "1e14ccf6c4d49416b0df6954019d4a23a976f1ee",
+  "branch": "codex/citypack-language-federal",
+  "sourceDigest": "92746514b3350fa91e6972854412be9b68919aec01da06663e019e1368a31be6",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,7 +78,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "d707ff623df56f0c9c6123e490fad2512e79205739dc630ef0d36274c1f498c9",
+      "sha256": "ab7b19d38096156dcec17a10e9172672217601fc37d91dd56560aa3f845e1e8a",
       "bytes": 12724
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "b53ebf35254b77b2515f39dc84337ef1e85a715d6757af97a3598aabb428f7f7",
+      "sha256": "316c92e70be85c2c2f3373b96c82aa38ad72e3bffa1b7697d1489fbefe95c56f",
       "bytes": 288099
     },
     {

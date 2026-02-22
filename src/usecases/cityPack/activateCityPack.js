@@ -16,6 +16,7 @@ async function activateCityPack(params, deps) {
 
   const getCityPack = deps && deps.getCityPack ? deps.getCityPack : cityPacksRepo.getCityPack;
   const updateCityPack = deps && deps.updateCityPack ? deps.updateCityPack : cityPacksRepo.updateCityPack;
+  const updateSourceRef = deps && deps.updateSourceRef ? deps.updateSourceRef : sourceRefsRepo.updateSourceRef;
   const linkCityPack = deps && deps.linkCityPack ? deps.linkCityPack : sourceRefsRepo.linkCityPack;
   const audit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
 
@@ -47,8 +48,24 @@ async function activateCityPack(params, deps) {
     return { ok: false, reason: 'source_refs_required', cityPackId, traceId };
   }
 
-  const validation = await validateCityPackSources({ sourceRefs, now: payload.now });
+  const packClass = cityPack.packClass || 'regional';
+  const language = cityPack.language || 'ja';
+  const nationwidePolicy = cityPack.nationwidePolicy || null;
+  const validation = await validateCityPackSources({
+    sourceRefs,
+    packClass,
+    nationwidePolicy,
+    now: payload.now
+  });
   if (!validation.ok) {
+    const policyInvalidSourceRefs = Array.isArray(validation.policyInvalidSourceRefs) ? validation.policyInvalidSourceRefs : [];
+    for (const failure of policyInvalidSourceRefs) {
+      if (!failure || !failure.sourceRefId) continue;
+      await updateSourceRef(failure.sourceRefId, {
+        status: 'needs_review',
+        lastResult: 'policy_blocked'
+      });
+    }
     await audit({
       actor,
       action: 'city_pack.activate.blocked',
@@ -59,7 +76,10 @@ async function activateCityPack(params, deps) {
       payloadSummary: {
         reason: 'source_not_ready',
         blockedReasonCategory: validation.blockedReasonCategory,
-        invalidSourceRefs: validation.invalidSourceRefs
+        invalidSourceRefs: validation.invalidSourceRefs,
+        packClass,
+        language,
+        nationwidePolicy
       }
     });
     return {
@@ -68,6 +88,8 @@ async function activateCityPack(params, deps) {
       cityPackId,
       blockedReasonCategory: validation.blockedReasonCategory,
       invalidSourceRefs: validation.invalidSourceRefs,
+      packClass,
+      language,
       traceId
     };
   }
@@ -91,7 +113,10 @@ async function activateCityPack(params, deps) {
     payloadSummary: {
       status: 'active',
       sourceRefCount: sourceRefs.length,
-      allowedIntents: ['CITY_PACK']
+      allowedIntents: ['CITY_PACK'],
+      packClass,
+      language,
+      nationwidePolicy
     }
   });
 
@@ -100,6 +125,8 @@ async function activateCityPack(params, deps) {
     cityPackId,
     status: 'active',
     sourceRefCount: sourceRefs.length,
+    packClass,
+    language,
     traceId
   };
 }

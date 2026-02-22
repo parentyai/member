@@ -11,6 +11,7 @@ const ALLOWED_STATUS = new Set(['active', 'needs_review', 'dead', 'blocked', 're
 const ALLOWED_RISK_LEVEL = new Set(['low', 'medium', 'high']);
 const ALLOWED_SOURCE_TYPE = new Set(['official', 'semi_official', 'community', 'other']);
 const ALLOWED_REQUIRED_LEVEL = new Set(['required', 'optional']);
+const ALLOWED_AUTHORITY_LEVEL = new Set(['federal', 'state', 'local', 'other']);
 const ALLOWED_AUDIT_STAGE = new Set(['light', 'heavy']);
 
 function normalizeStatus(value) {
@@ -31,6 +32,25 @@ function normalizeSourceType(value) {
 function normalizeRequiredLevel(value) {
   const requiredLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_REQUIRED_LEVEL.has(requiredLevel) ? requiredLevel : 'required';
+}
+
+function normalizeAuthorityLevel(value) {
+  const authorityLevel = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_AUTHORITY_LEVEL.has(authorityLevel) ? authorityLevel : 'other';
+}
+
+function resolveSourceTypeFilter(value) {
+  if (typeof value !== 'string') return null;
+  const sourceType = value.trim().toLowerCase();
+  if (!sourceType) return null;
+  return ALLOWED_SOURCE_TYPE.has(sourceType) ? sourceType : null;
+}
+
+function resolveAuthorityLevelFilter(value) {
+  if (typeof value !== 'string') return null;
+  const authorityLevel = value.trim().toLowerCase();
+  if (!authorityLevel) return null;
+  return ALLOWED_AUTHORITY_LEVEL.has(authorityLevel) ? authorityLevel : null;
 }
 
 function normalizeAuditStage(value) {
@@ -92,6 +112,7 @@ function normalizeSourceRefData(data) {
     riskLevel: normalizeRiskLevel(payload.riskLevel),
     sourceType: normalizeSourceType(payload.sourceType),
     requiredLevel: normalizeRequiredLevel(payload.requiredLevel),
+    authorityLevel: normalizeAuthorityLevel(payload.authorityLevel),
     confidenceScore: normalizeConfidenceScore(payload.confidenceScore),
     lastAuditStage: normalizeAuditStage(payload.lastAuditStage),
     evidenceLatestId: typeof payload.evidenceLatestId === 'string' ? payload.evidenceLatestId.trim() : null,
@@ -101,10 +122,14 @@ function normalizeSourceRefData(data) {
 
 function normalizeSourcePolicyPatch(data) {
   const payload = data && typeof data === 'object' ? data : {};
-  return {
+  const output = {
     sourceType: normalizeSourceType(payload.sourceType),
     requiredLevel: normalizeRequiredLevel(payload.requiredLevel)
   };
+  if (Object.prototype.hasOwnProperty.call(payload, 'authorityLevel')) {
+    output.authorityLevel = normalizeAuthorityLevel(payload.authorityLevel);
+  }
+  return output;
 }
 
 function ensureUrl(url) {
@@ -139,6 +164,7 @@ async function createSourceRef(data) {
     riskLevel: normalized.riskLevel,
     sourceType: normalized.sourceType,
     requiredLevel: normalized.requiredLevel,
+    authorityLevel: normalized.authorityLevel,
     confidenceScore: normalized.confidenceScore,
     lastAuditStage: normalized.lastAuditStage,
     evidenceLatestId: normalized.evidenceLatestId,
@@ -167,6 +193,10 @@ async function listSourceRefs(params) {
     const status = normalizeStatus(opts.status);
     baseQuery = baseQuery.where('status', '==', status);
   }
+  const sourceType = resolveSourceTypeFilter(opts.sourceType);
+  if (sourceType) baseQuery = baseQuery.where('sourceType', '==', sourceType);
+  const authorityLevel = resolveAuthorityLevelFilter(opts.authorityLevel);
+  if (authorityLevel) baseQuery = baseQuery.where('authorityLevel', '==', authorityLevel);
 
   let rows;
   try {
@@ -232,6 +262,7 @@ async function linkCityPack(sourceRefId, cityPackId) {
 module.exports = {
   VALIDITY_DAYS,
   normalizeAuditStage,
+  normalizeAuthorityLevel,
   normalizeConfidenceScore,
   normalizeRequiredLevel,
   normalizeSourcePolicyPatch,

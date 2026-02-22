@@ -290,4 +290,6 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE371_EXECUTION_LOG.md`（Product-out収束ロードマップ: product readiness API実行ログ）
 - `docs/PHASE372_PLAN.md`（Product-out収束ロードマップ: 最終ratchet固定と出荷判定計画）
 - `docs/PHASE372_EXECUTION_LOG.md`（Product-out収束ロードマップ: 最終ratchet固定と出荷判定実行ログ）
+- `docs/PHASE373_PLAN.md`（City Pack統合: Language導入 + Nationwide=federal_only運用計画）
+- `docs/PHASE373_EXECUTION_LOG.md`（City Pack統合: Language導入 + Nationwide=federal_only運用実行ログ）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）

@@ -35,6 +35,17 @@ function normalizeEvidenceLimit(value) {
   return Math.min(Math.floor(num), 200);
 }
 
+function normalizePackClassFilter(value) {
+  const packClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!packClass) return null;
+  return packClass === 'nationwide' ? 'nationwide' : packClass === 'regional' ? 'regional' : null;
+}
+
+function normalizeLanguageFilter(value) {
+  const language = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return language || null;
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -143,28 +154,42 @@ function resolvePriorityLevel(score) {
   return 'LOW';
 }
 
-async function resolveUsedByNames(sourceRef) {
+async function resolveUsedByDetails(sourceRef) {
   const ids = Array.isArray(sourceRef && sourceRef.usedByCityPackIds) ? sourceRef.usedByCityPackIds : [];
   if (!ids.length) return [];
-  const names = [];
+  const details = [];
   for (const cityPackId of ids) {
     const cityPack = await cityPacksRepo.getCityPack(cityPackId);
     if (!cityPack) continue;
-    names.push(cityPack.name || cityPack.id);
+    details.push({
+      cityPackId,
+      name: cityPack.name || cityPack.id,
+      packClass: cityPack.packClass || 'regional',
+      language: cityPack.language || 'ja'
+    });
   }
-  return names;
+  return details;
 }
 
 async function handleReviewInbox(req, res, context) {
   const url = new URL(req.url, 'http://localhost');
   const status = (url.searchParams.get('status') || '').trim() || null;
+  const packClass = normalizePackClassFilter(url.searchParams.get('packClass'));
+  const language = normalizeLanguageFilter(url.searchParams.get('language'));
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const nowMs = Date.now();
 
-  const refs = await sourceRefsRepo.listSourceRefs({ status, limit });
+  const expandedLimit = (packClass || language) ? Math.min(limit * 5, 1000) : limit;
+  const refs = await sourceRefsRepo.listSourceRefs({ status, limit: expandedLimit });
   const items = [];
   for (const sourceRef of refs) {
-    const usedBy = await resolveUsedByNames(sourceRef);
+    const usedByDetails = await resolveUsedByDetails(sourceRef);
+    const packClassMatches = !packClass || usedByDetails.some((item) => item.packClass === packClass);
+    const languageMatches = !language || usedByDetails.some((item) => item.language === language);
+    if (!packClassMatches || !languageMatches) continue;
+    const usedBy = usedByDetails.map((item) => item.name);
+    const usedByPackClasses = Array.from(new Set(usedByDetails.map((item) => item.packClass)));
+    const usedByLanguages = Array.from(new Set(usedByDetails.map((item) => item.language)));
     const priorityScore = computePriorityScore(sourceRef, nowMs);
     items.push({
       sourceRefId: sourceRef.id,
@@ -179,8 +204,11 @@ async function handleReviewInbox(req, res, context) {
       riskLevel: sourceRef.riskLevel || null,
       sourceType: sourceRef.sourceType || 'other',
       requiredLevel: sourceRef.requiredLevel || 'required',
+      authorityLevel: sourceRef.authorityLevel || 'other',
       confidenceScore: resolveConfidenceScore(sourceRef),
       lastAuditStage: resolveAuditStage(sourceRef),
+      usedByPackClasses,
+      usedByLanguages,
       priorityScore,
       priorityLevel: resolvePriorityLevel(priorityScore),
       traceId: context.traceId
@@ -190,6 +218,7 @@ async function handleReviewInbox(req, res, context) {
     if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
     return toMillis(b.validUntil) - toMillis(a.validUntil);
   });
+  const limitedItems = items.slice(0, limit);
 
   await appendAuditLog({
     actor: context.actor,
@@ -200,14 +229,16 @@ async function handleReviewInbox(req, res, context) {
     requestId: context.requestId,
     payloadSummary: {
       status,
-      count: items.length
+      packClass: packClass || null,
+      language: language || null,
+      count: limitedItems.length
     }
   });
 
   writeJson(res, 200, {
     ok: true,
     traceId: context.traceId,
-    items
+    items: limitedItems
   });
 }
 
@@ -242,6 +273,9 @@ async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
   const policyPatch = sourceRefsRepo.normalizeSourcePolicyPatch(payload);
+  const nextAuthorityLevel = Object.prototype.hasOwnProperty.call(policyPatch, 'authorityLevel')
+    ? policyPatch.authorityLevel
+    : (sourceRef.authorityLevel || 'other');
   await sourceRefsRepo.updateSourceRef(sourceRefId, policyPatch);
   await appendAuditLog({
     actor: context.actor,
@@ -252,7 +286,8 @@ async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
     requestId: context.requestId,
     payloadSummary: {
       sourceType: policyPatch.sourceType,
-      requiredLevel: policyPatch.requiredLevel
+      requiredLevel: policyPatch.requiredLevel,
+      authorityLevel: nextAuthorityLevel
     }
   });
   writeJson(res, 200, {
@@ -260,7 +295,8 @@ async function handleSourceRefPolicy(req, res, bodyText, context, sourceRefId) {
     sourceRefId,
     traceId: context.traceId,
     sourceType: policyPatch.sourceType,
-    requiredLevel: policyPatch.requiredLevel
+    requiredLevel: policyPatch.requiredLevel,
+    authorityLevel: nextAuthorityLevel
   });
 }
 
@@ -469,6 +505,7 @@ async function handleCityPackAuditRun(req, res, bodyText, context) {
     runId: payload.runId,
     mode: payload.mode,
     stage,
+    packClass: normalizePackClassFilter(payload.packClass),
     targetSourceRefIds: payload.targetSourceRefIds,
     traceId: context.traceId,
     actor: context.actor,

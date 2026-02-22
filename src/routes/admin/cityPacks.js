@@ -62,6 +62,9 @@ function normalizeImportTemplate(input) {
   if (!name) throw new Error('template.name required');
   const sourceRefs = normalizeStringArray(template.sourceRefs);
   if (!sourceRefs.length) throw new Error('template.sourceRefs required');
+  const packClass = cityPacksRepo.normalizePackClass(template.packClass);
+  const language = cityPacksRepo.normalizeLanguage(template.language);
+  const nationwidePolicy = cityPacksRepo.normalizeNationwidePolicy(packClass, template.nationwidePolicy);
 
   return {
     name,
@@ -76,6 +79,9 @@ function normalizeImportTemplate(input) {
     templateRefs: normalizeStringArray(template.templateRefs),
     basePackId: cityPacksRepo.normalizeBasePackId(template.basePackId),
     overrides: cityPacksRepo.normalizeOverrides(template.overrides),
+    packClass,
+    language,
+    nationwidePolicy,
     status: 'draft'
   };
 }
@@ -113,7 +119,10 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     rules: payload.rules,
     targetingRules: payload.targetingRules,
     slots: payload.slots,
-    metadata: payload.metadata
+    metadata: payload.metadata,
+    packClass: payload.packClass,
+    language: payload.language,
+    nationwidePolicy: payload.nationwidePolicy
   });
   await appendAuditLog({
     actor: context.actor,
@@ -125,7 +134,10 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     payloadSummary: {
       name: payload.name || null,
       sourceRefCount: Array.isArray(payload.sourceRefs) ? payload.sourceRefs.length : 0,
-      validUntil: payload.validUntil || null
+      validUntil: payload.validUntil || null,
+      packClass: payload.packClass || null,
+      language: payload.language || null,
+      nationwidePolicy: payload.nationwidePolicy || null
     }
   });
   writeJson(res, 201, {
@@ -138,8 +150,10 @@ async function handleCreateCityPack(req, res, bodyText, context) {
 async function handleListCityPacks(req, res, context) {
   const url = new URL(req.url, 'http://localhost');
   const status = (url.searchParams.get('status') || '').trim() || null;
+  const packClass = (url.searchParams.get('packClass') || '').trim() || null;
+  const language = (url.searchParams.get('language') || '').trim() || null;
   const limit = normalizeLimit(url.searchParams.get('limit'));
-  const items = await cityPacksRepo.listCityPacks({ status, limit });
+  const items = await cityPacksRepo.listCityPacks({ status, packClass, language, limit });
   writeJson(res, 200, {
     ok: true,
     traceId: context.traceId,
@@ -179,7 +193,10 @@ async function handleExportCityPack(req, res, context, cityPackId) {
     metadata: cityPack.metadata && typeof cityPack.metadata === 'object' ? cityPack.metadata : {},
     templateRefs: Array.isArray(cityPack.templateRefs) ? cityPack.templateRefs : [],
     basePackId: cityPack.basePackId || null,
-    overrides: cityPack.overrides || null
+    overrides: cityPack.overrides || null,
+    packClass: cityPack.packClass || 'regional',
+    language: cityPack.language || 'ja',
+    nationwidePolicy: cityPack.nationwidePolicy || null
   };
   await appendAuditLog({
     actor: context.actor,

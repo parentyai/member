@@ -1226,7 +1226,7 @@ function renderMonitorRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 7;
+    td.colSpan = 9;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -1963,6 +1963,7 @@ function renderCityPackSourcePolicy(row) {
   const sourceRefIdEl = document.getElementById('city-pack-source-policy-source-ref-id');
   const sourceTypeEl = document.getElementById('city-pack-source-type');
   const requiredLevelEl = document.getElementById('city-pack-required-level');
+  const authorityLevelEl = document.getElementById('city-pack-authority-level');
   if (sourceRefIdEl) {
     sourceRefIdEl.textContent = row && row.sourceRefId ? String(row.sourceRefId) : '-';
   }
@@ -1971,6 +1972,9 @@ function renderCityPackSourcePolicy(row) {
   }
   if (requiredLevelEl) {
     requiredLevelEl.value = row && row.requiredLevel ? String(row.requiredLevel) : 'required';
+  }
+  if (authorityLevelEl) {
+    authorityLevelEl.value = row && row.authorityLevel ? String(row.authorityLevel) : 'other';
   }
 }
 
@@ -1981,7 +1985,7 @@ function renderCityPackInboxRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 11;
+    td.colSpan = 14;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -2012,9 +2016,21 @@ function renderCityPackInboxRows(items) {
     sourceTypeTd.textContent = row.sourceType || '-';
     tr.appendChild(sourceTypeTd);
 
+    const authorityLevelTd = document.createElement('td');
+    authorityLevelTd.textContent = row.authorityLevel || 'other';
+    tr.appendChild(authorityLevelTd);
+
     const requiredLevelTd = document.createElement('td');
     requiredLevelTd.textContent = row.requiredLevel || '-';
     tr.appendChild(requiredLevelTd);
+
+    const usedByClassTd = document.createElement('td');
+    usedByClassTd.textContent = Array.isArray(row.usedByPackClasses) && row.usedByPackClasses.length ? row.usedByPackClasses.join(' / ') : '-';
+    tr.appendChild(usedByClassTd);
+
+    const usedByLanguageTd = document.createElement('td');
+    usedByLanguageTd.textContent = Array.isArray(row.usedByLanguages) && row.usedByLanguages.length ? row.usedByLanguages.join(' / ') : '-';
+    tr.appendChild(usedByLanguageTd);
 
     const confidenceTd = document.createElement('td');
     confidenceTd.textContent = Number.isFinite(Number(row.confidenceScore)) ? `${Number(row.confidenceScore)}/100` : '-';
@@ -2092,7 +2108,7 @@ function renderCityPackRequestRows(items) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 9;
+    td.colSpan = 11;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -2113,6 +2129,8 @@ function renderCityPackRequestRows(items) {
     const cells = [
       row.status || '-',
       regionLabel,
+      row.requestClass || 'regional',
+      row.requestedLanguage || 'ja',
       row.requestId || '-',
       row.experienceStage || '-',
       draftCount ? String(draftCount) : '-',
@@ -2172,6 +2190,8 @@ function renderCityPackFeedbackRows(items) {
     const cells = [
       row.status || '-',
       regionLabel,
+      row.packClass || 'regional',
+      row.language || 'ja',
       row.slotKey || '-',
       feedbackText,
       row.resolution || '-',
@@ -2240,7 +2260,7 @@ function renderCityPackRequestDetail(payload) {
   const linkDrafts = Array.isArray(req.draftLinkRegistryIds) ? req.draftLinkRegistryIds.length : 0;
   const stage = req.experienceStage || '-';
   const error = req.error ? ` / ${req.error}` : '';
-  if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / stage=${stage} / region=${region} / drafts=${drafts} / links=${linkDrafts} / traceId=${req.traceId || '-'}${error}`;
+  if (summaryEl) summaryEl.textContent = `status=${req.status || '-'} / stage=${stage} / region=${region} / class=${req.requestClass || 'regional'} / language=${req.requestedLanguage || 'ja'} / drafts=${drafts} / links=${linkDrafts} / traceId=${req.traceId || '-'}${error}`;
   if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
   if (packIdEl) packIdEl.textContent = state.selectedCityPackDraftId || '-';
   if (basePackEl) {
@@ -2269,7 +2289,7 @@ function renderCityPackFeedbackDetail(item) {
   const region = [item.regionCity, item.regionState].filter(Boolean).join(', ') || item.regionKey || '-';
   const slotKey = item.slotKey || '-';
   const resolution = item.resolution || '-';
-  if (summaryEl) summaryEl.textContent = `status=${item.status || '-'} / region=${region} / slot=${slotKey} / resolution=${resolution} / traceId=${item.traceId || '-'}`;
+  if (summaryEl) summaryEl.textContent = `status=${item.status || '-'} / region=${region} / class=${item.packClass || 'regional'} / language=${item.language || 'ja'} / slot=${slotKey} / resolution=${resolution} / traceId=${item.traceId || '-'}`;
   if (rawEl) rawEl.textContent = JSON.stringify(item, null, 2);
 }
 
@@ -2822,11 +2842,15 @@ async function loadCityPackRequests(options) {
   const notify = options && options.notify;
   const status = document.getElementById('city-pack-request-status-filter')?.value || '';
   const regionKey = document.getElementById('city-pack-request-region')?.value || '';
+  const requestClass = document.getElementById('city-pack-request-class-filter')?.value || '';
+  const requestedLanguage = document.getElementById('city-pack-request-language-filter')?.value?.trim().toLowerCase() || '';
   const limit = document.getElementById('city-pack-request-limit')?.value || '50';
   const traceId = ensureTraceInput('monitor-trace');
   const params = new URLSearchParams({ limit, traceId });
   if (status) params.set('status', status);
   if (regionKey) params.set('regionKey', regionKey);
+  if (requestClass) params.set('requestClass', requestClass);
+  if (requestedLanguage) params.set('requestedLanguage', requestedLanguage);
   try {
     const res = await fetch(`/api/admin/city-pack-requests?${params.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await res.json();
@@ -2845,12 +2869,16 @@ async function loadCityPackRequests(options) {
 async function loadCityPackFeedback(options) {
   const notify = options && options.notify;
   const status = document.getElementById('city-pack-feedback-status-filter')?.value || '';
+  const packClass = document.getElementById('city-pack-feedback-class-filter')?.value || '';
+  const language = document.getElementById('city-pack-feedback-language-filter')?.value?.trim().toLowerCase() || '';
   const limitRaw = document.getElementById('city-pack-feedback-limit')?.value || '';
   const limit = Number(limitRaw) || 50;
   const trace = ensureTraceInput('monitor-trace');
   try {
     const params = new URLSearchParams();
     if (status) params.set('status', status);
+    if (packClass) params.set('packClass', packClass);
+    if (language) params.set('language', language);
     if (limit) params.set('limit', String(limit));
     const data = await getJson(`/api/admin/city-pack-feedback?${params.toString()}`, trace);
     if (data && data.ok) {
@@ -2955,10 +2983,14 @@ async function loadCityPackRequestDetail(requestId) {
 async function loadCityPackReviewInbox(options) {
   const notify = options && options.notify;
   const status = document.getElementById('city-pack-status-filter')?.value || '';
+  const packClass = document.getElementById('city-pack-pack-class-filter')?.value || '';
+  const language = document.getElementById('city-pack-language-filter')?.value?.trim().toLowerCase() || '';
   const limit = document.getElementById('city-pack-limit')?.value || '50';
   const monitorTrace = ensureTraceInput('monitor-trace');
   const params = new URLSearchParams({ limit, traceId: monitorTrace });
   if (status) params.set('status', status);
+  if (packClass) params.set('packClass', packClass);
+  if (language) params.set('language', language);
   try {
     const res = await fetch(`/api/admin/review-inbox?${params.toString()}`, { headers: buildHeaders({}, monitorTrace) });
     const data = await res.json();
@@ -3086,13 +3118,15 @@ async function runCityPackSaveSourcePolicy() {
   }
   const sourceType = document.getElementById('city-pack-source-type')?.value || 'other';
   const requiredLevel = document.getElementById('city-pack-required-level')?.value || 'required';
+  const authorityLevel = document.getElementById('city-pack-authority-level')?.value || 'other';
   const trace = ensureTraceInput('monitor-trace');
   const approved = window.confirm(t('ui.confirm.cityPack.sourcePolicySave', '情報源ポリシーを保存しますか？'));
   if (!approved) return;
   try {
     const data = await postJson(`/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/policy`, {
       sourceType,
-      requiredLevel
+      requiredLevel,
+      authorityLevel
     }, trace);
     if (data && data.ok) {
       showToast(t('ui.toast.cityPack.policySaved', '情報源ポリシーを保存しました'), 'ok');
@@ -3508,6 +3542,7 @@ async function runCityPackAuditJob() {
   const trace = ensureTraceInput('monitor-trace');
   const stage = document.getElementById('city-pack-run-mode')?.value === 'heavy' ? 'heavy' : 'light';
   const mode = stage === 'heavy' ? 'canary' : 'scheduled';
+  const packClass = document.getElementById('city-pack-pack-class-filter')?.value || '';
   const resultEl = document.getElementById('city-pack-run-result');
   const approved = window.confirm(t('ui.confirm.cityPack.runAudit', 'City Pack監査ジョブを実行しますか？'));
   if (!approved) return;
@@ -3515,6 +3550,7 @@ async function runCityPackAuditJob() {
     const data = await postJson('/api/admin/city-pack-source-audit/run', {
       mode,
       stage,
+      packClass: packClass || null,
       runId: `cp_manual_${Date.now()}`
     }, trace);
     if (resultEl) resultEl.textContent = JSON.stringify(data || {}, null, 2);
@@ -4850,10 +4886,22 @@ function setupCityPackControls() {
   document.getElementById('city-pack-request-region')?.addEventListener('change', () => {
     void loadCityPackRequests({ notify: false });
   });
+  document.getElementById('city-pack-request-class-filter')?.addEventListener('change', () => {
+    void loadCityPackRequests({ notify: false });
+  });
+  document.getElementById('city-pack-request-language-filter')?.addEventListener('change', () => {
+    void loadCityPackRequests({ notify: false });
+  });
   document.getElementById('city-pack-feedback-reload')?.addEventListener('click', () => {
     void loadCityPackFeedback({ notify: true });
   });
   document.getElementById('city-pack-feedback-status-filter')?.addEventListener('change', () => {
+    void loadCityPackFeedback({ notify: false });
+  });
+  document.getElementById('city-pack-feedback-class-filter')?.addEventListener('change', () => {
+    void loadCityPackFeedback({ notify: false });
+  });
+  document.getElementById('city-pack-feedback-language-filter')?.addEventListener('change', () => {
     void loadCityPackFeedback({ notify: false });
   });
   document.getElementById('city-pack-bulletin-reload')?.addEventListener('click', () => {
@@ -4892,6 +4940,12 @@ function setupCityPackControls() {
     void loadCityPackAuditRuns({ notify: false });
   });
   document.getElementById('city-pack-status-filter')?.addEventListener('change', () => {
+    void loadCityPackReviewInbox({ notify: false });
+  });
+  document.getElementById('city-pack-pack-class-filter')?.addEventListener('change', () => {
+    void loadCityPackReviewInbox({ notify: false });
+  });
+  document.getElementById('city-pack-language-filter')?.addEventListener('change', () => {
     void loadCityPackReviewInbox({ notify: false });
   });
   document.getElementById('city-pack-run-audit')?.addEventListener('click', () => {
