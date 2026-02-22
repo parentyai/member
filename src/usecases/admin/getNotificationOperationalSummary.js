@@ -1,7 +1,10 @@
 'use strict';
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
-const { listAllEvents } = require('../../repos/firestore/analyticsReadRepo');
+const {
+  listAllEvents,
+  listEventsByCreatedAtRange
+} = require('../../repos/firestore/analyticsReadRepo');
 const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
 
@@ -33,6 +36,23 @@ function formatTimestamp(value) {
   return value;
 }
 
+function resolveNotificationEventRange(notifications) {
+  if (!Array.isArray(notifications) || notifications.length === 0) return null;
+  let minMs = null;
+  for (const notification of notifications) {
+    const sentMs = toMillis(notification && notification.sentAt);
+    const createdMs = toMillis(notification && notification.createdAt);
+    const candidate = Number.isFinite(sentMs) ? sentMs : createdMs;
+    if (!Number.isFinite(candidate)) continue;
+    if (minMs === null || candidate < minMs) minMs = candidate;
+  }
+  if (!Number.isFinite(minMs)) return null;
+  return {
+    fromAt: new Date(minMs),
+    toAt: new Date()
+  };
+}
+
 async function getNotificationOperationalSummary(params) {
   const opts = params || {};
   const eventsLimit = resolveEventsLimit(opts.eventsLimit);
@@ -42,7 +62,20 @@ async function getNotificationOperationalSummary(params) {
     scenarioKey: opts.scenarioKey,
     stepKey: opts.stepKey
   });
-  const events = await listAllEvents({ limit: eventsLimit });
+  const eventRange = resolveNotificationEventRange(notifications);
+  let events;
+  if (eventRange) {
+    events = await listEventsByCreatedAtRange({
+      limit: eventsLimit,
+      fromAt: eventRange.fromAt,
+      toAt: eventRange.toAt
+    });
+    if (!events.length) {
+      events = await listAllEvents({ limit: eventsLimit });
+    }
+  } else {
+    events = await listAllEvents({ limit: eventsLimit });
+  }
 
   const counts = new Map();
   for (const event of events) {
