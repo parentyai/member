@@ -296,41 +296,51 @@ async function getUserStateSummary(params) {
   let deliveries = deliveriesResult.rows;
   let fallbackBlockedNotAvailable = false;
 
-  if (eventsResult.failed || events.length === 0) {
+  if (events.length === 0) {
     if (queryRange.fromAt) {
-      events = await listEventsByCreatedAtRange({
+      const rangeEventsResult = await safeQuery(() => listEventsByCreatedAtRange({
         limit: analyticsLimit,
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
-      });
-    }
-    if (events.length === 0) {
-      if (events.length === 0 && !fallbackBlocked) {
-        events = await listAllEvents({ limit: analyticsLimit });
-        addFallbackSource('listAllEvents');
-      }
-      if (events.length === 0 && fallbackBlocked) {
-        fallbackBlockedNotAvailable = true;
+      }));
+      if (rangeEventsResult.rows.length > 0) {
+        events = rangeEventsResult.rows;
       }
     }
   }
-  if (deliveriesResult.failed || deliveries.length === 0) {
+  if (eventsResult.failed && !fallbackBlocked) {
+    events = await listAllEvents({ limit: analyticsLimit });
+    addFallbackSource('listAllEvents');
+  }
+  if (events.length === 0 && !fallbackBlocked) {
+    events = await listAllEvents({ limit: analyticsLimit });
+    addFallbackSource('listAllEvents');
+  }
+  if (events.length === 0 && fallbackBlocked) {
+    fallbackBlockedNotAvailable = true;
+  }
+  if (deliveries.length === 0) {
     if (queryRange.fromAt) {
-      deliveries = await listNotificationDeliveriesBySentAtRange({
+      const rangeDeliveriesResult = await safeQuery(() => listNotificationDeliveriesBySentAtRange({
         limit: analyticsLimit,
         fromAt: queryRange.fromAt,
         toAt: queryRange.toAt
-      });
-    }
-    if (deliveries.length === 0) {
-      if (deliveries.length === 0 && !fallbackBlocked) {
-        deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
-        addFallbackSource('listAllNotificationDeliveries');
-      }
-      if (deliveries.length === 0 && fallbackBlocked) {
-        fallbackBlockedNotAvailable = true;
+      }));
+      if (rangeDeliveriesResult.rows.length > 0) {
+        deliveries = rangeDeliveriesResult.rows;
       }
     }
+  }
+  if (deliveriesResult.failed && !fallbackBlocked) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    addFallbackSource('listAllNotificationDeliveries');
+  }
+  if (deliveries.length === 0 && !fallbackBlocked) {
+    deliveries = await listAllNotificationDeliveries({ limit: analyticsLimit });
+    addFallbackSource('listAllNotificationDeliveries');
+  }
+  if (deliveries.length === 0 && fallbackBlocked) {
+    fallbackBlockedNotAvailable = true;
   }
   if (checklistsResult.failed || checklists.length === 0) {
     if (!fallbackBlocked) {

@@ -41,6 +41,17 @@ function parseLimitFromLine(line) {
   return null;
 }
 
+function isFunctionDeclarationLine(line, functionName) {
+  if (!line || !functionName) return false;
+  const escaped = functionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const patterns = [
+    new RegExp(`\\basync\\s+function\\s+${escaped}\\s*\\(`),
+    new RegExp(`\\bfunction\\s+${escaped}\\s*\\(`),
+    new RegExp(`\\bconst\\s+${escaped}\\s*=\\s*(async\\s*)?\\([^)]*\\)\\s*=>`)
+  ];
+  return patterns.some((pattern) => pattern.test(line));
+}
+
 function parsePathsFromBlock(text) {
   const paths = new Set();
   const eqRegex = /pathname\s*===\s*'([^']+)'/g;
@@ -204,6 +215,10 @@ function buildLoadRisk() {
       let match = callRegex.exec(line);
       while (match) {
         const call = match[1];
+        if (isFunctionDeclarationLine(line, call)) {
+          match = callRegex.exec(line);
+          continue;
+        }
         const explicitLimit = parseLimitFromLine(line);
         const limitAssumed = explicitLimit || DEFAULT_LIMIT_ASSUMED;
         hotspots.push({
@@ -225,6 +240,10 @@ function buildLoadRisk() {
       const fallbackRegex = /\b(withMissingIndexFallback|isMissingIndexError)\s*\(/g;
       let fb = fallbackRegex.exec(line);
       while (fb) {
+        if (isFunctionDeclarationLine(line, fb[1])) {
+          fb = fallbackRegex.exec(line);
+          continue;
+        }
         fallbackPoints.push({
           file: rel,
           line: lineNo,
@@ -261,13 +280,17 @@ function buildLoadRisk() {
   });
 
   const estimatedWorstCaseDocsScan = hotspots.reduce((sum, row) => sum + Number(row.estimated_scan || 0), 0);
+  const fallbackSurfaceCount = new Set(fallbackPoints.map((row) => `${row.file}::${row.call}`)).size;
 
   return {
     estimated_worst_case_docs_scan: estimatedWorstCaseDocsScan,
-    fallback_risk: fallbackPoints.length,
+    fallback_risk: fallbackSurfaceCount,
     hotspots,
     fallback_points: fallbackPoints,
+    fallback_surface_count: fallbackSurfaceCount,
     assumptions: [
+      'listAll function declarations are excluded from hotspots (runtime callsites only)',
+      'fallback_risk counts unique file/call surfaces',
       'listAll without explicit limit assumes 1000 docs',
       'endpoint mapping derived from static src/index.js handler dispatch and dependency_graph.json'
     ]

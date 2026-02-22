@@ -1,127 +1,7 @@
 {
-  "estimated_worst_case_docs_scan": 23000,
-  "fallback_risk": 22,
+  "estimated_worst_case_docs_scan": 20000,
+  "fallback_risk": 17,
   "hotspots": [
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 77,
-        "type": "listAll",
-        "call": "listAllEvents",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 113,
-        "type": "listAll",
-        "call": "listAllUsers",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 134,
-        "type": "listAll",
-        "call": "listAllChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 159,
-        "type": "listAll",
-        "call": "listAllUserChecklists",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 206,
-        "type": "listAll",
-        "call": "listAllNotificationDeliveries",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/repos/firestore/analyticsReadRepo.js",
-        "line": 266,
-        "type": "listAll",
-        "call": "listAllNotifications",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 6,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/admin/city-pack-source-audit/run",
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary",
-        "/api/phase5/state/*",
-        "/api/phase5/state/summary"
-      ]
-    },
     {
       "hotspot": {
         "file": "src/routes/admin/monitorInsights.js",
@@ -172,24 +52,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 221,
-        "type": "listAll",
-        "call": "listAllEvents",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 3,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getNotificationOperationalSummary.js",
-        "line": 233,
+        "line": 240,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -206,7 +69,7 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 304,
+        "line": 302,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -223,26 +86,26 @@
     {
       "hotspot": {
         "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 313,
+        "line": 306,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 314,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
-        "limit": "UNSPECIFIED"
-      },
-      "endpoint_count": 3,
-      "limit_assumed": 1000,
-      "estimated_scan": 1000,
-      "endpoints": [
-        "/api/phase4/admin/*",
-        "/api/phase4/admin/notifications-summary",
-        "/api/phase4/admin/users-summary"
-      ]
-    },
-    {
-      "hotspot": {
-        "file": "src/usecases/admin/getUserOperationalSummary.js",
-        "line": 322,
-        "type": "listAll",
-        "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
       },
       "endpoint_count": 3,
@@ -259,6 +122,40 @@
         "file": "src/usecases/admin/getUserOperationalSummary.js",
         "line": 330,
         "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 339,
+        "type": "listAll",
+        "call": "listAllChecklists",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 3,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase4/admin/*",
+        "/api/phase4/admin/notifications-summary",
+        "/api/phase4/admin/users-summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/admin/getUserOperationalSummary.js",
+        "line": 347,
+        "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
       },
@@ -274,7 +171,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase2/runAutomation.js",
-        "line": 131,
+        "line": 180,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -289,7 +186,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase2/runAutomation.js",
-        "line": 144,
+        "line": 229,
         "type": "listAll",
         "call": "listAllUsers",
         "limit": "UNSPECIFIED"
@@ -304,7 +201,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase2/runAutomation.js",
-        "line": 145,
+        "line": 234,
         "type": "listAll",
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
@@ -319,7 +216,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase2/runAutomation.js",
-        "line": 146,
+        "line": 239,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
@@ -334,7 +231,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 309,
+        "line": 312,
         "type": "listAll",
         "call": "listAllEvents",
         "limit": "UNSPECIFIED"
@@ -350,7 +247,23 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 327,
+        "line": 316,
+        "type": "listAll",
+        "call": "listAllEvents",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 335,
         "type": "listAll",
         "call": "listAllNotificationDeliveries",
         "limit": "UNSPECIFIED"
@@ -366,7 +279,23 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 337,
+        "line": 339,
+        "type": "listAll",
+        "call": "listAllNotificationDeliveries",
+        "limit": "UNSPECIFIED"
+      },
+      "endpoint_count": 2,
+      "limit_assumed": 1000,
+      "estimated_scan": 1000,
+      "endpoints": [
+        "/api/phase5/state/*",
+        "/api/phase5/state/summary"
+      ]
+    },
+    {
+      "hotspot": {
+        "file": "src/usecases/phase5/getUserStateSummary.js",
+        "line": 347,
         "type": "listAll",
         "call": "listAllChecklists",
         "limit": "UNSPECIFIED"
@@ -382,7 +311,7 @@
     {
       "hotspot": {
         "file": "src/usecases/phase5/getUserStateSummary.js",
-        "line": 344,
+        "line": 354,
         "type": "listAll",
         "call": "listAllUserChecklists",
         "limit": "UNSPECIFIED"
@@ -496,13 +425,6 @@
       "limit": "N/A"
     },
     {
-      "file": "src/repos/firestore/queryFallback.js",
-      "line": 47,
-      "type": "missingIndexFallback",
-      "call": "isMissingIndexError",
-      "limit": "N/A"
-    },
-    {
       "file": "src/repos/firestore/sendRetryQueueRepo.js",
       "line": 55,
       "type": "missingIndexFallback",
@@ -552,7 +474,10 @@
       "limit": "N/A"
     }
   ],
+  "fallback_surface_count": 17,
   "assumptions": [
+    "listAll function declarations are excluded from hotspots (runtime callsites only)",
+    "fallback_risk counts unique file/call surfaces",
     "listAll without explicit limit assumes 1000 docs",
     "endpoint mapping derived from static src/index.js handler dispatch and dependency_graph.json"
   ]

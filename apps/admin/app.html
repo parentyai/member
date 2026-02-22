@@ -2016,6 +2016,63 @@
                   <p id="maintenance-retention-runs-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.retentionRuns.note">行クリックで監査検索に反映します。</p>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.fallbackSummary.title">Read-path fallback サマリー</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <label for="maintenance-fallback-summary-limit" data-dict-key="ui.label.maintenance.fallbackSummary.limit">表示件数</label>
+                    <input id="maintenance-fallback-summary-limit" type="number" min="1" max="200" value="20" />
+                    <label for="maintenance-fallback-summary-window" data-dict-key="ui.label.maintenance.fallbackSummary.window">集計時間（時間）</label>
+                    <input id="maintenance-fallback-summary-window" type="number" min="1" max="720" value="24" />
+                    <button id="maintenance-fallback-summary-reload" type="button" data-dict-key="ui.label.maintenance.fallbackSummary.reload">サマリー更新</button>
+                  </div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <thead>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.fallbackSummary.table.endpoint">endpoint</th>
+                          <th data-dict-key="ui.label.maintenance.fallbackSummary.table.action">action</th>
+                          <th class="cell-num" data-dict-key="ui.label.maintenance.fallbackSummary.table.count">件数</th>
+                          <th class="cell-num" data-dict-key="ui.label.maintenance.fallbackSummary.table.used">fallbackUsed</th>
+                          <th class="cell-num" data-dict-key="ui.label.maintenance.fallbackSummary.table.blocked">fallbackBlocked</th>
+                          <th data-dict-key="ui.label.maintenance.fallbackSummary.table.latestAt">latestAt</th>
+                          <th data-dict-key="ui.label.maintenance.fallbackSummary.table.latestTrace">latestTraceId</th>
+                        </tr>
+                      </thead>
+                      <tbody id="maintenance-fallback-summary-rows"></tbody>
+                    </table>
+                  </div>
+                  <p id="maintenance-fallback-summary-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.fallbackSummary.note">行クリックで監査検索に反映します。</p>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.maintenance.productReadiness.title">Product Readiness</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <label for="maintenance-product-readiness-window" data-dict-key="ui.label.maintenance.productReadiness.window">fallback集計時間（時間）</label>
+                    <input id="maintenance-product-readiness-window" type="number" min="1" max="720" value="24" />
+                    <label for="maintenance-product-readiness-stale-after" data-dict-key="ui.label.maintenance.productReadiness.staleAfter">snapshot stale判定（分）</label>
+                    <input id="maintenance-product-readiness-stale-after" type="number" min="1" max="1440" value="60" />
+                    <button id="maintenance-product-readiness-reload" type="button" data-dict-key="ui.label.maintenance.productReadiness.reload">判定更新</button>
+                  </div>
+                  <div class="table-wrap table-section">
+                    <table class="table table-compact">
+                      <tbody>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.productReadiness.status">status</th>
+                          <td id="maintenance-product-readiness-status">NOT AVAILABLE</td>
+                        </tr>
+                        <tr>
+                          <th data-dict-key="ui.label.maintenance.productReadiness.blockerCount">blockers</th>
+                          <td id="maintenance-product-readiness-blocker-count">0</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <ul id="maintenance-product-readiness-blockers" class="repo-map-bullet-list"></ul>
+                  <p id="maintenance-product-readiness-note" class="cell-muted retention-runs-note" data-dict-key="ui.desc.maintenance.productReadiness.note">GO/NO_GO は運用判断の参考値です。</p>
+                </div>
+              </div>
             </div>
             <div class="pane-detail"></div>
             <aside class="pane-actions">

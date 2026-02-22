@@ -1,7 +1,7 @@
 # INDEX_PLAN
 
 - 目的: missing-index fallback の発生箇所を固定し、index作成順を明示する。
-- 入力: `docs/REPO_AUDIT_INPUTS/load_risk.json` (fallback_points=22)
+- 入力: `docs/REPO_AUDIT_INPUTS/load_risk.json` (fallback_points=21)
 - 判定: `src/repos/firestore/indexFallbackPolicy.js` により stg/prod は fail-safe。
 
 | file | lines | mode | notes |
@@ -18,7 +18,6 @@
 | `src/repos/firestore/linkRegistryRepo.js` | 50 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/notificationTemplatesRepo.js` | 62 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/notificationsRepo.js` | 44 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
-| `src/repos/firestore/queryFallback.js` | 47 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/sendRetryQueueRepo.js` | 55 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/sourceEvidenceRepo.js` | 66, 89 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/sourceRefsRepo.js` | 176 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |

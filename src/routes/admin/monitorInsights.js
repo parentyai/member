@@ -134,6 +134,8 @@ async function handleMonitorInsights(req, res) {
         fallbackBlockedFlag = true;
       }
     }
+    const asOf = dataSource === 'not_available' ? null : new Date().toISOString();
+    const freshnessMinutes = null;
     const deliveries = all
       .map((item) => Object.assign({ id: item.id }, item.data || {}))
       .filter((item) => {
@@ -254,6 +256,7 @@ async function handleMonitorInsights(req, res) {
             fallbackSources,
             snapshotMode,
             fallbackMode,
+            dataSource,
             readLimit
           }
         });
@@ -271,6 +274,9 @@ async function handleMonitorInsights(req, res) {
       snapshotMode,
       fallbackMode,
       dataSource,
+      source: dataSource,
+      asOf,
+      freshnessMinutes,
       note,
       fallbackUsed,
       fallbackBlocked: fallbackBlockedFlag,

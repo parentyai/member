@@ -33,6 +33,11 @@
 - Ops Console 詳細に `traceId / riskLevel / lastReactionAt / stopReason` が表示される
 - Trace Search で `traceId` を入力すると `audit_logs / decision_logs / decision_timeline` が取得できる
 
+## Product Readiness (GO / NO_GO)
+- `GET /api/admin/product-readiness` が 200 を返し、`status` と `blockers[]` を返却する
+- `status=NO_GO` の場合、`blockers` が運用上の停止理由として説明可能
+- `status=GO` の場合、`load_risk` / snapshot stale / fallback spike の閾値を満たしている
+
 ## Smoke (No Side Effects)
 - `npm test` が PASS
 - `npm run test:trace-smoke` が PASS（副作用ゼロ）

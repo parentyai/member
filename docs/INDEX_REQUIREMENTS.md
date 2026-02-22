@@ -133,6 +133,26 @@ Firestore missing-index fallback を段階的に無効化するための最小�
   - optional `where('createdAt','<=',...)`
   - `orderBy('createdAt','desc')`
 
+### 19) analyticsReadRepo.listNotificationDeliveriesByLineUserIdsAndSentAtRange
+- Source: `src/repos/firestore/analyticsReadRepo.js`
+- Query:
+  - `where('lineUserId','==',...)`（lineUserIdごとに分割クエリ）
+  - optional `where('sentAt','>=',...)`
+  - optional `where('sentAt','<=',...)`
+  - `orderBy('sentAt','desc')`
+
+### 20) analyticsReadRepo.listChecklistsByScenarioStepPairs
+- Source: `src/repos/firestore/analyticsReadRepo.js`
+- Query:
+  - `where('scenario','==',...)`（scenario/stepペアごとに分割クエリ）
+  - `where('step','==',...)`
+  - `orderBy('createdAt','desc')`
+
+### 21) analyticsReadRepo.listUsersByLineUserIds
+- Source: `src/repos/firestore/analyticsReadRepo.js`
+- Query:
+  - `doc(lineUserId).get()`（lineUserIdごとの分割読み取り）
+
 ## 運用ルール
 - 新規 fallback catch を追加する場合は、`tests/phase307/phase307_index_fallback_drift.test.js` に反映すること。
 - full-scan を許容する場合は、理由と期限を execution log に残すこと。
