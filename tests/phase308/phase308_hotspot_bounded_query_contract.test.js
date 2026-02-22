@@ -16,7 +16,10 @@ test('phase308: top3 analytics hotspots use explicit bounded limits', () => {
   assert.ok(userSummary.includes('const DEFAULT_ANALYTICS_LIMIT = 1200;'));
   assert.ok(userSummary.includes('const MAX_ANALYTICS_LIMIT = 2000;'));
   assert.ok(userSummary.includes('usersRepo.listUsers({ limit: analyticsLimit })'));
-  assert.ok(userSummary.includes('listAllNotificationDeliveries({ limit: analyticsLimit })'));
+  assert.ok(userSummary.includes('listEventsByCreatedAtRange({'));
+  assert.ok(userSummary.includes('listNotificationDeliveriesBySentAtRange({'));
+  assert.ok(userSummary.includes('if (events.length === 0) {'));
+  assert.ok(userSummary.includes('if (deliveries.length === 0) {'));
 
   const stateSummary = readFileSync('src/usecases/phase5/getUserStateSummary.js', 'utf8');
   assert.ok(stateSummary.includes('const DEFAULT_ANALYTICS_LIMIT = 1200;'));
