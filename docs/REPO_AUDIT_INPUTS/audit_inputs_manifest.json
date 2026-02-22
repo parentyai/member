@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T14:33:00-05:00",
-  "gitCommit": "802e453e3f6d3efdb07a584c585b6ee83e644001",
-  "branch": "codex/phase578-agents-execution-os-gate-fix",
-  "sourceDigest": "3113b131d1473d5ac5d9666d723c566db03f221173b33b43d4a0415b5fba62e1",
+  "generatedAt": "2026-02-22T15:32:06-05:00",
+  "gitCommit": "c0a541b84d38f2b8d2f3424e742584de2a683066",
+  "branch": "codex/phase579-dashboard-redesign",
+  "sourceDigest": "28bd084e55c0ecd9571db232f3143f10dfe7235c4b9b5eba4b62ecf191d02a63",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "b6a089f23b0187dc4d7c0d2ea84edb3070d8afba705af373e205aa903126544d",
+      "sha256": "3896a869beff4aa7922c5cc644df13afbb942d947b27c09e392ec0f7d1a22a0f",
       "bytes": 288099
     },
     {
