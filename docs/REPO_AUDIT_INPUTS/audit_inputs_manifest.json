@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T12:28:43-05:00",
-  "gitCommit": "fbb71b2d97968ff436f8321a0e998dbf08ec82bb",
+  "generatedAt": "2026-02-22T12:39:01-05:00",
+  "gitCommit": "40c4dd00d8b917a2ff98a019cfaf2b2183c7974a",
   "branch": "codex/phase577-580",
-  "sourceDigest": "b283e1147762c6ce975f66b0631080560ffad311fd801bb78dc99e8417292f5c",
+  "sourceDigest": "d14c2889470a71a84279a8ad08343c635d77f157d40d5a59c3ae768ed5330145",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -103,7 +103,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "8290cd383ec9d85cd9da23b63a04ec09736cf5a1fde73552542a7bf7ed7ab118",
+      "sha256": "1d23292d65bd8258b4bb1d5a60e5e52dd454d65bea2ce075ccd891ead09371c7",
       "bytes": 288099
     },
     {
