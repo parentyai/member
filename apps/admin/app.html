@@ -11,7 +11,7 @@
       <aside class="app-nav">
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-dashboard">
           <div class="nav-group-label nav-group-label-dashboard" data-dict-key="ui.label.nav.group.dashboard">ダッシュボード</div>
           <button class="nav-item is-active" data-pane-target="home">
             <span class="nav-icon" aria-hidden="true">D</span>
@@ -19,7 +19,7 @@
           </button>
         </div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-notifications">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.notifications">通知</div>
           <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-inputs">
             <span class="nav-icon" aria-hidden="true">N</span>
@@ -31,7 +31,7 @@
           </button>
         </div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-users">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.users">ユーザー</div>
           <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-user-search">
             <span class="nav-icon" aria-hidden="true">U</span>
@@ -43,7 +43,7 @@
           </button>
         </div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-communication">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.communication">コミュニケーション</div>
           <button class="nav-item" data-pane-target="audit">
             <span class="nav-icon" aria-hidden="true">F</span>
@@ -55,7 +55,7 @@
           </button>
         </div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-catalog">
           <button class="nav-item" data-pane-target="city-pack">
             <span class="nav-icon" aria-hidden="true">CP</span>
             <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
@@ -66,7 +66,7 @@
           </button>
         </div>
 
-        <div class="nav-group">
+        <div class="nav-group nav-group-operations">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
           <button class="nav-item" data-pane-target="alerts">
             <span class="nav-icon" aria-hidden="true">!</span>
@@ -441,7 +441,9 @@
                       </div>
                       <div>
                         <label for="linkRegistryId" data-dict-key="ui.label.composer.link" data-dict-tip="ui.help.composer.link">リンクID</label>
-                        <input id="linkRegistryId" data-dict-placeholder="ui.desc.composer.linkPlaceholder" placeholder="" />
+                        <select id="linkRegistryId">
+                          <option value="">Link Registryから選択</option>
+                        </select>
                       </div>
                       <div>
                         <label for="notificationCategory" data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
@@ -632,11 +634,14 @@
                   <table class="table-compact composer-saved-table">
                     <thead>
                       <tr>
-                        <th data-dict-key="ui.label.composer.saved.col.createdAt">作成日</th>
-                        <th data-dict-key="ui.label.composer.saved.col.title">タイトル</th>
-                        <th data-dict-key="ui.label.composer.saved.col.status">状態</th>
-                        <th data-dict-key="ui.label.composer.saved.col.targetCount">送信対象数</th>
-                        <th data-dict-key="ui.label.composer.saved.col.ctr">CTR</th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="createdAt" data-dict-key="ui.label.composer.saved.col.createdAt">作成日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="title" data-dict-key="ui.label.composer.saved.col.title">タイトル</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="status" data-dict-key="ui.label.composer.saved.col.status">状態</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="notificationCategory" data-dict-key="ui.label.composer.saved.col.category">カテゴリ</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="scenarioKey" data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="stepKey" data-dict-key="ui.label.composer.saved.col.step">ステップ</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="targetCount" data-dict-key="ui.label.composer.saved.col.targetCount">送信対象数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="ctr" data-dict-key="ui.label.composer.saved.col.ctr">CTR</button></th>
                         <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
                       </tr>
                     </thead>
@@ -872,7 +877,94 @@
           </div>
           <details id="city-pack-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="pane-grid">
+            <div class="panel unified-admin-panel city-pack-unified-panel">
+              <div class="panel-title">City Pack一覧</div>
+              <div class="panel-body">
+                <div class="input-grid">
+                  <div class="row">
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-id">ID</label>
+                      <input id="city-pack-unified-filter-id" type="text" placeholder="requestId / feedbackId / sourceRefId" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-user-id">ユーザーID</label>
+                      <input id="city-pack-unified-filter-user-id" type="text" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-city">都市</label>
+                      <input id="city-pack-unified-filter-city" type="text" />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-status">ステータス</label>
+                      <select id="city-pack-unified-filter-status">
+                        <option value="">すべて</option>
+                        <option value="queued">queued</option>
+                        <option value="drafted">drafted</option>
+                        <option value="needs_review">needs_review</option>
+                        <option value="approved">approved</option>
+                        <option value="active">active</option>
+                        <option value="rejected">rejected</option>
+                        <option value="failed">failed</option>
+                        <option value="new">new</option>
+                        <option value="triaged">triaged</option>
+                        <option value="resolved">resolved</option>
+                        <option value="proposed">proposed</option>
+                        <option value="draft">draft</option>
+                        <option value="sent">sent</option>
+                        <option value="retired">retired</option>
+                        <option value="blocked">blocked</option>
+                        <option value="dead">dead</option>
+                      </select>
+                    </div>
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-type">種別</label>
+                      <select id="city-pack-unified-filter-type">
+                        <option value="">すべて</option>
+                        <option value="request">Request</option>
+                        <option value="feedback">Feedback</option>
+                        <option value="bulletin">Bulletin</option>
+                        <option value="proposal">Proposal</option>
+                        <option value="review">Review</option>
+                        <option value="template">Template</option>
+                      </select>
+                    </div>
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-date-from">作成日 from</label>
+                      <input id="city-pack-unified-filter-date-from" type="date" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="city-pack-unified-filter-date-to">作成日 to</label>
+                      <input id="city-pack-unified-filter-date-to" type="date" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row row-top">
+                  <button id="city-pack-unified-reload" type="button">更新</button>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-compact city-pack-unified-table">
+                    <thead>
+                      <tr>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="createdAt">作成日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="itemId">ID</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="lineUserId">ユーザー</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="cityLabel">都市</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="recordType">種別</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="status">状態</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="assignee">担当</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="updatedAt">更新日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="kpiScore">主要KPI</button></th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-unified-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="pane-grid city-pack-legacy-block">
             <div class="pane-main">
               <div class="panel today-card">
                 <div class="panel-title" data-dict-key="ui.label.cityPack.kpi">City Pack監査KPI</div>
@@ -1611,12 +1703,82 @@
             <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
+                <div class="panel-title">ユーザー一覧</div>
+                <div class="panel-body">
+                  <div class="input-grid">
+                    <div class="row">
+                      <div class="flex-1">
+                        <label for="users-filter-line-user-id">ユーザーID</label>
+                        <input id="users-filter-line-user-id" type="text" />
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-created-from">登録期間（from）</label>
+                        <input id="users-filter-created-from" type="date" />
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-created-to">登録期間（to）</label>
+                        <input id="users-filter-created-to" type="date" />
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="flex-1">
+                        <label for="users-filter-category">カテゴリ</label>
+                        <select id="users-filter-category">
+                          <option value="">すべて</option>
+                          <option value="A">A単身</option>
+                          <option value="B">B夫婦</option>
+                          <option value="C">C帯同1</option>
+                          <option value="D">D帯同2</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-status">ステータス</label>
+                        <select id="users-filter-status">
+                          <option value="">すべて</option>
+                          <option value="赴任前">赴任前</option>
+                          <option value="着任中">着任中</option>
+                          <option value="着任後">着任後</option>
+                          <option value="赴任中">赴任中</option>
+                          <option value="帰任前">帰任前</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-limit">件数</label>
+                        <input id="users-filter-limit" type="number" min="1" max="500" value="200" class="input-sm" />
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-analytics-limit">集計上限</label>
+                        <input id="users-filter-analytics-limit" type="number" min="1" max="2000" value="1200" class="input-sm" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row row-top">
+                    <button id="users-summary-reload" type="button">更新</button>
+                  </div>
+                  <table class="table-compact users-summary-table">
+                    <thead>
+                      <tr>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="createdAt">登録日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">ユーザーID</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount">配信数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="clickCount">クリック数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate">反応率</button></th>
+                      </tr>
+                    </thead>
+                    <tbody id="users-summary-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel read-model-legacy">
                 <div class="panel-title" data-dict-key="ui.label.readModel.definition">この集計が示すもの</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.readModel.definition">直近の通知一覧について、送信結果と反応率をまとめた集計です。</div>
                 </div>
               </div>
-	              <details class="table-section section" open>
+	              <details class="table-section section read-model-legacy" open>
 	                <summary data-dict-key="ui.label.readModel.table">通知集計（参照）</summary>
 	                <div class="table-scroll">
 	                  <table class="table-compact">
@@ -1636,7 +1798,7 @@
 	                </div>
 	              </details>
             </div>
-            <div class="pane-detail">
+            <div class="pane-detail read-model-legacy">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
                 <div class="panel-body">
@@ -1644,7 +1806,7 @@
                 </div>
               </div>
             </div>
-            <aside class="pane-actions">
+            <aside class="pane-actions read-model-legacy">
               <div class="action-panel">
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
@@ -1690,9 +1852,70 @@
           </div>
           <details id="vendors-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
-            <div class="pane-grid">
+            <div class="panel unified-admin-panel vendors-unified-panel">
+              <div class="panel-title">Vendor一覧</div>
+              <div class="panel-body">
+                <div class="input-grid">
+                  <div class="row">
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-id">Vendor ID</label>
+                      <input id="vendor-unified-filter-id" type="text" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-name">名称</label>
+                      <input id="vendor-unified-filter-name" type="text" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-status">ステータス</label>
+                      <select id="vendor-unified-filter-status">
+                        <option value="">すべて</option>
+                        <option value="OK">OK</option>
+                        <option value="WARN">WARN</option>
+                        <option value="DEAD">DEAD</option>
+                        <option value="UNKNOWN">UNKNOWN</option>
+                      </select>
+                    </div>
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-category">カテゴリ</label>
+                      <input id="vendor-unified-filter-category" type="text" />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-date-from">登録日 from</label>
+                      <input id="vendor-unified-filter-date-from" type="date" />
+                    </div>
+                    <div class="flex-1">
+                      <label for="vendor-unified-filter-date-to">登録日 to</label>
+                      <input id="vendor-unified-filter-date-to" type="date" />
+                    </div>
+                  </div>
+                </div>
+                <div class="row row-top">
+                  <button id="vendor-unified-reload" type="button">更新</button>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-compact vendors-unified-table">
+                    <thead>
+                      <tr>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="createdAt">登録日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="linkId">ID</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="vendorLabel">名称</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="category">カテゴリ</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="status">状態</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="updatedAt">最終更新</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="relatedCount">関連件数</button></th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vendor-unified-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="pane-grid vendors-legacy-block">
               <div class="pane-main">
-	                <details class="table-section section" open>
+		                <details class="table-section section" open>
 	                  <summary data-dict-key="ui.label.vendors.table">Vendor一覧</summary>
 	                  <div class="table-scroll">
 	                    <table class="table-compact">

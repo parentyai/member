@@ -159,6 +159,26 @@ function buildLatestReactionByUser(deliveries) {
   return { latestClick, latestRead };
 }
 
+function buildDeliveryStatsByUser(deliveries) {
+  const stats = new Map();
+  for (const delivery of deliveries) {
+    const data = delivery && delivery.data ? delivery.data : {};
+    const lineUserId = typeof data.lineUserId === 'string' ? data.lineUserId : '';
+    if (!lineUserId) continue;
+    const current = stats.get(lineUserId) || { deliveryCount: 0, clickCount: 0 };
+    current.deliveryCount += 1;
+    if (toMillis(data.clickAt)) current.clickCount += 1;
+    stats.set(lineUserId, current);
+  }
+  return stats;
+}
+
+function resolveReactionRate(clickCount, deliveryCount) {
+  if (!Number.isFinite(deliveryCount) || deliveryCount <= 0) return null;
+  if (!Number.isFinite(clickCount) || clickCount < 0) return null;
+  return Math.round((clickCount / deliveryCount) * 10000) / 10000;
+}
+
 function collectScenarioStepPairs(users) {
   const pairSet = new Set();
   (users || []).forEach((user) => {
@@ -377,12 +397,16 @@ async function getUserOperationalSummary(params) {
   const completedByUser = buildCompletedByUser(userChecklists);
   const latestActionByUser = buildLatestActionByUser(events);
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
+  const deliveryStatsByUser = buildDeliveryStatsByUser(deliveries);
 
   const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
     const createdAtMs = toMillis(data.createdAt);
-    const scenarioKey = data.scenarioKey;
-    const stepKey = data.stepKey;
+    const scenarioKey = typeof data.scenarioKey === 'string' ? data.scenarioKey : null;
+    const stepKey = typeof data.stepKey === 'string' ? data.stepKey : null;
+    const memberNumber = typeof data.memberNumber === 'string' && data.memberNumber.trim().length > 0
+      ? data.memberNumber.trim()
+      : null;
     const key = scenarioKey && stepKey ? `${scenarioKey}__${stepKey}` : null;
     const total = key ? (totals.get(key) || 0) : 0;
     const hasChecklistDone = data.checklistDone && typeof data.checklistDone === 'object';
@@ -390,6 +414,9 @@ async function getUserOperationalSummary(params) {
     const latest = latestActionByUser.get(user.id);
     const latestClick = latestReactionByUser.latestClick.get(user.id);
     const latestRead = latestReactionByUser.latestRead.get(user.id);
+    const deliveryStats = deliveryStatsByUser.get(user.id) || { deliveryCount: 0, clickCount: 0 };
+    const deliveryCount = Number.isFinite(deliveryStats.deliveryCount) ? deliveryStats.deliveryCount : 0;
+    const clickCount = Number.isFinite(deliveryStats.clickCount) ? deliveryStats.clickCount : 0;
     const lastReactionAt = latestClick
       ? formatTimestamp(latestClick.value)
       : (latestRead ? formatTimestamp(latestRead.value) : null);
@@ -399,11 +426,17 @@ async function getUserOperationalSummary(params) {
       createdAtMs,
       opsReviewLastReviewedAt: formatTimestamp(data.opsReviewLastReviewedAt),
       opsReviewLastReviewedBy: data.opsReviewLastReviewedBy || null,
-      hasMemberNumber: Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0),
+      memberNumber,
+      scenarioKey,
+      stepKey,
+      hasMemberNumber: Boolean(memberNumber),
       checklistCompleted: completed,
       checklistTotal: total,
       lastActionAt: latest ? formatTimestamp(latest.value) : null,
-      lastReactionAt
+      lastReactionAt,
+      deliveryCount,
+      clickCount,
+      reactionRate: resolveReactionRate(clickCount, deliveryCount)
     };
   });
   const computedAsOf = new Date().toISOString();
