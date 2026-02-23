@@ -137,3 +137,17 @@ notes: <optional>
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
 - 5シナリオすべての `result` が記録されている（PASS/FAIL問わず）
+
+## Latest Mainline Evidence (W7)
+- date: `2026-02-23`
+- workflow run: `22319659529` (`main`, success)
+- fixed-order summary: `pass=5 fail=0 skip=0`
+- scenario results:
+  - `product_readiness_gate: PASS`
+  - `segment: PASS`
+  - `retry_queue: PASS`
+  - `kill_switch_block: PASS`
+  - `composer_cap_block: PASS`
+- note:
+  - prior run `22319585228` failed with `product_readiness_no_go:snapshot_stale_ratio_high`
+  - rerun succeeded after snapshot freshness recovery (`status=GO`)

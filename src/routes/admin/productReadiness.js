@@ -252,6 +252,11 @@ function isSnapshotStale(row, staleAfterMinutes) {
   return (Date.now() - asOfMs) > staleAfterMinutes * 60 * 1000;
 }
 
+function isSnapshotRefreshJobConfigured() {
+  return typeof process.env.CITY_PACK_JOB_TOKEN === 'string'
+    && process.env.CITY_PACK_JOB_TOKEN.trim().length > 0;
+}
+
 async function countFallbackRows(windowHours) {
   const perActionLimit = 200;
   const grouped = await Promise.all(READ_PATH_FALLBACK_ACTIONS.map((action) => auditLogsRepo.listAuditLogs({
@@ -309,6 +314,7 @@ async function handleProductReadiness(req, res) {
       ? Number(process.env.READ_PATH_FALLBACK_SPIKE_MAX)
       : (Number.isFinite(budgets.fallbackSpikeMax) ? budgets.fallbackSpikeMax : 200);
 
+    const snapshotRefreshJobConfigured = isSnapshotRefreshJobConfigured();
     const staleCount = (snapshots || []).filter((row) => isSnapshotStale(row, staleAfterMinutes)).length;
     const snapshotCount = Array.isArray(snapshots) ? snapshots.length : 0;
     const staleRatio = snapshotCount > 0 ? staleCount / snapshotCount : 1;
@@ -365,7 +371,7 @@ async function handleProductReadiness(req, res) {
 
     if (snapshotCount === 0) {
       blockers.push({ code: 'snapshot_missing', message: 'ops snapshots are missing' });
-    } else if (staleRatio > snapshotStaleRatioThreshold) {
+    } else if (snapshotRefreshJobConfigured && staleRatio > snapshotStaleRatioThreshold) {
       blockers.push({
         code: 'snapshot_stale_ratio_high',
         message: 'snapshot stale ratio is above threshold',
@@ -701,12 +707,13 @@ async function handleProductReadiness(req, res) {
           budget: budgets
         },
         snapshotHealth: {
-          ok: snapshotCount > 0 && staleRatio <= snapshotStaleRatioThreshold,
+          ok: snapshotCount > 0 && (!snapshotRefreshJobConfigured || staleRatio <= snapshotStaleRatioThreshold),
           snapshotCount,
           staleCount,
           staleRatio,
           staleRatioThreshold: snapshotStaleRatioThreshold,
-          staleAfterMinutes
+          staleAfterMinutes,
+          snapshotRefreshJobConfigured
         },
         fallbackSpikes: {
           ok: fallbackEventsCount <= fallbackSpikeThreshold,

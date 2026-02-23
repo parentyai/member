@@ -46,3 +46,36 @@
 - route_error check:
   - query: Cloud Logging (`textPayload:"requires an index"`) in last 2 hours
   - result: `requires_an_index_count_last_2h=0`
+
+## stg Notification E2E (W7 GO package / main rerun)
+- date: 2026-02-23
+- ref: `main`
+- workflow: `.github/workflows/stg-notification-e2e.yml`
+- run:
+  - failed run (before refresh): `22319585228`
+  - cause: `product_readiness_no_go:snapshot_stale_ratio_high`
+  - rerun (after refresh): `22319659529`
+  - conclusion: `success`
+- fixed-order result:
+  - `product_readiness_gate: PASS`
+  - `segment: PASS`
+  - `retry_queue: PASS`
+  - `kill_switch_block: PASS`
+  - `composer_cap_block: PASS`
+  - aggregate: `pass=5 fail=0 skip=0`
+- readiness snapshot:
+  - `/api/admin/product-readiness`: `status=GO`
+  - `checks.snapshotHealth.ok=true`
+  - `checks.snapshotHealth.staleCount=0`
+
+## stg Live Readiness Recheck (post-W7)
+- UTC: 2026-02-23T19:04:11Z
+- method: `gcloud run services proxy member --project member-485303 --region us-east1 --port 18080` + `curl`
+- traceId: `trace-product-readiness-20260223190411`
+- requestId: `a365c02e269aff4fd569827db3c77668`
+- result:
+  - `/api/admin/product-readiness`: `status=GO`
+  - `blockers=[]`
+  - `checks.retentionRisk.ok=true` (`undefined_retention_count=0`)
+  - `checks.structureRisk.ok=true` (`activeLegacyRepoImports=0`)
+  - `checks.snapshotHealth.ok=true` (`staleCount=0`, `staleRatio=0`)

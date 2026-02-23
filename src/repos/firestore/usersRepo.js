@@ -80,6 +80,18 @@ function hasMemberNumber(user) {
   return Boolean(user && typeof user.memberNumber === 'string' && user.memberNumber.trim().length > 0);
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function sortUsersByCreatedAtDesc(rows) {
+  return (rows || []).slice().sort((a, b) => toMillis(b && b.createdAt) - toMillis(a && a.createdAt));
+}
+
 async function listUsers(params) {
   const db = getDb();
   const opts = params || {};
@@ -91,15 +103,17 @@ async function listUsers(params) {
   if (normalizedScenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', normalizedScenarioKey);
   if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
   if (opts.region) baseQuery = baseQuery.where('region', '==', opts.region);
-  let query = baseQuery.orderBy('createdAt', 'desc');
+  let query = baseQuery;
   const limit = typeof opts.limit === 'number' ? opts.limit : 500;
   if (limit) query = query.limit(limit);
   let users = [];
   const snap = await query.get();
   users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  users = sortUsersByCreatedAtDesc(users);
   if (opts.membersOnly) {
     users = users.filter(hasMemberNumber);
   }
+  if (limit) users = users.slice(0, limit);
   return users;
 }
 

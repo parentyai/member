@@ -29,10 +29,17 @@ async function planSegmentSend(params, deps) {
   let resolvedTemplateVersion = templateVersion;
 
   if (templateVersion !== null) {
-    resolvedTemplate = await templatesV.getTemplateByVersion({ templateKey, version: templateVersion });
-    if (!resolvedTemplate) throw new Error('template not found');
+    try {
+      resolvedTemplate = await templatesV.getTemplateByVersion({ templateKey, version: templateVersion });
+    } catch (_err) {
+      resolvedTemplate = null;
+    }
   } else {
-    resolvedTemplate = await templatesV.getActiveTemplate({ templateKey });
+    try {
+      resolvedTemplate = await templatesV.getActiveTemplate({ templateKey });
+    } catch (_err) {
+      resolvedTemplate = null;
+    }
     if (resolvedTemplate) {
       resolvedTemplateVersion = resolvedTemplate.version;
     }

@@ -356,7 +356,7 @@ function applyRouteErrorStrictGate(status, reason, routeErrors, strictMode) {
   return { status: nextStatus, reason: nextReason };
 }
 
-async function apiRequest(ctx, method, endpoint, traceId, body) {
+async function apiRequest(ctx, method, endpoint, traceId, body, extraHeaders) {
   if (typeof fetch !== 'function') {
     throw new Error('global fetch unavailable; use Node 20+');
   }
@@ -365,6 +365,13 @@ async function apiRequest(ctx, method, endpoint, traceId, body) {
     'x-actor': ctx.actor,
     'accept': 'application/json'
   };
+  if (extraHeaders && typeof extraHeaders === 'object') {
+    Object.keys(extraHeaders).forEach((key) => {
+      const value = extraHeaders[key];
+      if (value === undefined || value === null || value === '') return;
+      headers[key] = String(value);
+    });
+  }
   if (traceId) headers['x-trace-id'] = traceId;
   const init = { method, headers };
   if (body !== undefined) {
@@ -541,6 +548,8 @@ function rankComposerCandidates(items) {
       id: row.id.trim(),
       title: typeof row.title === 'string' ? row.title : '',
       linkRegistryId: typeof row.linkRegistryId === 'string' ? row.linkRegistryId.trim() : '',
+      scenarioKey: typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '',
+      stepKey: typeof row.stepKey === 'string' ? row.stepKey.trim() : '',
       e2ePreferred: (
         row.id.toLowerCase().includes('e2e')
         || (typeof row.title === 'string' && row.title.toLowerCase().includes('e2e'))
@@ -552,18 +561,24 @@ function rankComposerCandidates(items) {
     });
 }
 
-function buildComposerBootstrapPayload(seed, traceId) {
+function buildComposerBootstrapPayload(seed, traceId, scenarioSeed) {
   const marker = utcCompact(new Date());
   const baseTitle = seed && typeof seed.title === 'string' && seed.title.trim()
     ? seed.title.trim()
     : 'STG E2E composer bootstrap';
+  const scenarioKey = scenarioSeed && typeof scenarioSeed.scenarioKey === 'string' && scenarioSeed.scenarioKey.trim()
+    ? scenarioSeed.scenarioKey.trim()
+    : (seed && typeof seed.scenarioKey === 'string' && seed.scenarioKey.trim() ? seed.scenarioKey.trim() : 'A');
+  const stepKey = scenarioSeed && typeof scenarioSeed.stepKey === 'string' && scenarioSeed.stepKey.trim()
+    ? scenarioSeed.stepKey.trim()
+    : (seed && typeof seed.stepKey === 'string' && seed.stepKey.trim() ? seed.stepKey.trim() : '3mo');
   return {
     title: `${baseTitle} ${marker}`.slice(0, 120),
     body: 'stg-e2e composer cap block bootstrap notification',
     ctaText: 'open',
     linkRegistryId: seed && typeof seed.linkRegistryId === 'string' ? seed.linkRegistryId.trim() : '',
-    scenarioKey: 'A',
-    stepKey: '3mo',
+    scenarioKey,
+    stepKey,
     target: { limit: 1 },
     sourceRefs: [`stg-e2e:${traceId}`]
   };
@@ -587,18 +602,44 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     candidates = rankComposerCandidates(listAllResp.body.items);
   }
 
-  const seed = candidates.find((row) => row && row.linkRegistryId);
+  let seed = candidates.find((row) => row && row.linkRegistryId);
   if (!seed) {
-    return {
-      notificationId: '',
-      source: 'bootstrap',
-      reason: 'composer_notification_bootstrap_seed_missing',
-      attempts
+    const linkResp = await request(
+      ctx,
+      'POST',
+      '/admin/link-registry',
+      traceId,
+      {
+        title: `stg-e2e-bootstrap-${utcCompact(new Date())}`,
+        url: `https://example.com/stg-e2e/${utcCompact(new Date())}`
+      }
+    );
+    attempts.push({ stage: 'link_create', response: summarizeResponse(linkResp) });
+    if (!linkResp.okStatus || !linkResp.body || linkResp.body.ok !== true || typeof linkResp.body.id !== 'string') {
+      return {
+        notificationId: '',
+        source: 'bootstrap',
+        reason: 'composer_notification_bootstrap_seed_missing',
+        attempts
+      };
+    }
+    seed = {
+      id: '',
+      title: 'stg e2e bootstrap',
+      linkRegistryId: linkResp.body.id,
+      e2ePreferred: true
     };
   }
 
-  const draftPayload = buildComposerBootstrapPayload(seed, traceId);
-  const draftResp = await request(ctx, 'POST', '/api/admin/os/notifications/draft', `${traceId}-bootstrap-draft`, draftPayload);
+  const scenarioSeedResult = await resolveUserSeed(ctx, `${traceId}-composer-seed`, request);
+  attempts.push({
+    stage: 'users_summary_seed',
+    reason: scenarioSeedResult.reason || null,
+    response: scenarioSeedResult.response || null,
+    seed: scenarioSeedResult.seed || null
+  });
+  const draftPayload = buildComposerBootstrapPayload(seed, traceId, scenarioSeedResult.seed);
+  const draftResp = await request(ctx, 'POST', '/api/admin/os/notifications/draft', traceId, draftPayload);
   attempts.push({ stage: 'draft', response: summarizeResponse(draftResp) });
   if (!draftResp.okStatus || !draftResp.body || draftResp.body.ok !== true || typeof draftResp.body.notificationId !== 'string') {
     return {
@@ -614,7 +655,7 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     ctx,
     'POST',
     '/api/admin/os/notifications/approve',
-    `${traceId}-bootstrap-approve`,
+    traceId,
     { notificationId }
   );
   attempts.push({ stage: 'approve', notificationId, response: summarizeResponse(approveResp) });
@@ -631,7 +672,7 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     ctx,
     'POST',
     '/api/admin/os/notifications/send/plan',
-    `${traceId}-bootstrap-plan`,
+    traceId,
     { notificationId }
   );
   attempts.push({ stage: 'plan_probe', notificationId, response: summarizeResponse(planProbeResp) });
@@ -694,12 +735,11 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
   const attempts = [];
   for (let i = 0; i < candidates.length; i += 1) {
     const candidate = candidates[i];
-    const probeTraceId = `${traceId}-resolve-${i + 1}`;
     const planResp = await request(
       ctx,
       'POST',
       '/api/admin/os/notifications/send/plan',
-      probeTraceId,
+      traceId,
       { notificationId: candidate.id }
     );
     const summary = summarizeResponse(planResp);
@@ -851,6 +891,27 @@ async function setKillSwitch(ctx, traceId, isOn) {
   });
   requireHttpOk(setResp, 'kill-switch set');
   return true;
+}
+
+async function refreshOpsSnapshotsBestEffort(ctx, traceId) {
+  const token = typeof ctx.internalJobToken === 'string' ? ctx.internalJobToken.trim() : '';
+  if (!token) return { ok: false, reason: 'internal_job_token_missing' };
+  const resp = await apiRequest(
+    ctx,
+    'POST',
+    '/internal/jobs/ops-snapshot-build',
+    traceId,
+    {
+      dryRun: false,
+      scanLimit: 500,
+      targets: ['dashboard_kpi', 'user_operational_summary', 'notification_operational_summary']
+    },
+    { 'x-city-pack-job-token': token }
+  );
+  if (!resp.okStatus || !resp.body || resp.body.ok !== true) {
+    return { ok: false, reason: 'internal_snapshot_refresh_failed', response: summarizeResponse(resp) };
+  }
+  return { ok: true, response: summarizeResponse(resp) };
 }
 
 function normalizeNotificationCaps(caps) {
@@ -1202,6 +1263,17 @@ function evaluateProductReadinessBody(body) {
 async function runProductReadinessScenario(ctx, traceId) {
   const steps = {};
   const adminReadinessChecks = [];
+  const snapshotRefresh = await refreshOpsSnapshotsBestEffort(ctx, traceId);
+  steps.snapshotRefresh = snapshotRefresh.ok === true
+    ? { ok: true, reason: null, error: null, status: 200 }
+    : {
+        ok: false,
+        reason: snapshotRefresh.reason || null,
+        error: snapshotRefresh.response && snapshotRefresh.response.error ? snapshotRefresh.response.error : null,
+        status: snapshotRefresh.response && Number.isFinite(snapshotRefresh.response.status)
+          ? snapshotRefresh.response.status
+          : null
+      };
 
   for (const endpoint of ADMIN_READINESS_ENDPOINTS) {
     const resp = await apiRequest(ctx, 'GET', endpoint.endpoint, traceId);
