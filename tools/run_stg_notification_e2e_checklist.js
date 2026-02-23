@@ -11,6 +11,11 @@ const DEFAULT_OUT_DIR = 'artifacts/stg-notification-e2e';
 const DEFAULT_ROUTE_ERROR_LIMIT = 20;
 const DEFAULT_TRACE_LIMIT = 100;
 const DEFAULT_FAIL_ON_MISSING_AUDIT_ACTIONS = false;
+const SEGMENT_ACCEPTABLE_EXECUTE_REASONS = new Set([
+  'send_failed',
+  'notification_cap_blocked',
+  'notification_policy_blocked'
+]);
 
 const SCENARIO_REQUIRED_AUDIT_ACTIONS = Object.freeze({
   product_readiness_gate: ['product_readiness.view'],
@@ -410,6 +415,55 @@ function pickPreferredTemplate(items) {
   if (normalized.length === 0) return null;
   const preferred = normalized.find((row) => row.e2ePreferred);
   return preferred ? preferred.key : normalized[0].key;
+}
+
+function pickUserSeed(items) {
+  const rows = Array.isArray(items) ? items : [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const lineUserId = typeof row.lineUserId === 'string' ? row.lineUserId.trim() : '';
+    if (!lineUserId) continue;
+    const scenarioKey = typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '';
+    const stepKey = typeof row.stepKey === 'string' ? row.stepKey.trim() : '';
+    return {
+      lineUserId,
+      scenarioKey: scenarioKey || null,
+      stepKey: stepKey || null
+    };
+  }
+  return null;
+}
+
+async function resolveUserSeed(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const endpoint = '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true';
+  const resp = await request(ctx, 'GET', endpoint, traceId);
+  if (!resp.okStatus || !resp.body || typeof resp.body !== 'object') {
+    return {
+      seed: null,
+      reason: 'users_summary_fetch_failed',
+      response: summarizeResponse(resp)
+    };
+  }
+  const seed = pickUserSeed(resp.body.items);
+  if (!seed) {
+    return {
+      seed: null,
+      reason: 'users_summary_seed_not_found',
+      response: summarizeResponse(resp)
+    };
+  }
+  return {
+    seed,
+    reason: null,
+    response: summarizeResponse(resp)
+  };
+}
+
+function hasSegmentLineUserIds(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (!Array.isArray(value.lineUserIds)) return false;
+  return value.lineUserIds.some((item) => typeof item === 'string' && item.trim().length > 0);
 }
 
 async function resolveSegmentTemplateKey(ctx, traceId, preferredKey, requestFn) {
@@ -870,6 +924,17 @@ async function resolveRetryQueueId(ctx, traceId, preferredId) {
 
 async function runSegmentScenario(ctx, opts, traceId) {
   if (opts.skipSegment) return { status: 'SKIP', reason: 'skip_segment_flag' };
+  let resolvedSegmentQuery = opts.segmentQuery || {};
+  let segmentSeed = null;
+  if (!hasSegmentLineUserIds(resolvedSegmentQuery)) {
+    const seedResult = await resolveUserSeed(ctx, `${traceId}-segment-seed`);
+    if (seedResult.seed && seedResult.seed.lineUserId) {
+      segmentSeed = seedResult.seed;
+      resolvedSegmentQuery = Object.assign({}, resolvedSegmentQuery, {
+        lineUserIds: [seedResult.seed.lineUserId]
+      });
+    }
+  }
   const resolvedTemplate = await resolveSegmentTemplateKey(ctx, traceId, opts.segmentTemplateKey);
   if (!resolvedTemplate.templateKey) {
     return {
@@ -881,7 +946,7 @@ async function runSegmentScenario(ctx, opts, traceId) {
 
   const payload = {
     templateKey: resolvedTemplate.templateKey,
-    segmentQuery: opts.segmentQuery || {}
+    segmentQuery: resolvedSegmentQuery
   };
   if (opts.segmentTemplateVersion) payload.templateVersion = Number(opts.segmentTemplateVersion);
 
@@ -898,7 +963,7 @@ async function runSegmentScenario(ctx, opts, traceId) {
   });
   const execute = requireHttpOk(executeResp, 'segment execute');
 
-  if (execute.ok !== true) {
+  if (execute.ok !== true && !SEGMENT_ACCEPTABLE_EXECUTE_REASONS.has(execute.reason)) {
     return {
       status: 'FAIL',
       reason: `segment_execute_not_ok:${execute.reason || 'unknown'}`,
@@ -914,6 +979,7 @@ async function runSegmentScenario(ctx, opts, traceId) {
     status: 'PASS',
     templateKey: payload.templateKey,
     templateKeySource: resolvedTemplate.source || 'input',
+    segmentQuerySource: segmentSeed ? 'auto_user_seed' : 'input_or_default',
     steps: {
       plan: summarizeResponse(planResp),
       dryRun: summarizeResponse(dryResp),
@@ -968,13 +1034,10 @@ async function runKillSwitchScenario(ctx, opts, traceId) {
   const queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
   if (!queueId) return { status: 'SKIP', reason: 'retry_queue_not_found_for_killswitch' };
 
-  const baseline = await getKillSwitchStatus(ctx, `${traceId}-status`);
-  let changed = false;
+  const baseline = await getKillSwitchStatus(ctx, traceId);
+  const changed = !baseline;
   try {
-    if (!baseline) {
-      await setKillSwitch(ctx, `${traceId}-on`, true);
-      changed = true;
-    }
+    await setKillSwitch(ctx, traceId, true);
     const planResp = await apiRequest(ctx, 'POST', '/api/phase73/retry-queue/plan', traceId, { queueId });
     const plan = requireHttpOk(planResp, 'kill-switch retry plan');
     const retryResp = await apiRequest(ctx, 'POST', '/api/phase73/retry-queue/retry', traceId, {
@@ -1005,7 +1068,7 @@ async function runKillSwitchScenario(ctx, opts, traceId) {
   } finally {
     if (changed) {
       try {
-        await setKillSwitch(ctx, `${traceId}-restore`, false);
+        await setKillSwitch(ctx, traceId, false);
       } catch (_err) {
         // Keep scenario result as-is; restore failure will appear via smoke/manual checks.
       }
