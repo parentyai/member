@@ -1,88 +1,11 @@
 {
-  "generatedAt": "2026-02-22T19:47:45-05:00",
+  "generatedAt": "2026-02-22T19:53:30-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "174aad09933f6640e15626cddb8cd0ad07f6832ff4a92196907bd2ea8c3790d0",
-  "surface_count": 5,
-  "point_count": 9,
-  "call_breakdown": {
-    "isMissingIndexError": 5
-  },
-  "items": [
-    {
-      "file": "src/repos/firestore/decisionLogsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        37,
-        65,
-        100
-      ],
-      "occurrences": 3,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/sourceEvidenceRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        66,
-        89
-      ],
-      "occurrences": 2,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/sourceRefsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        206
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/templatesVRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        54,
-        102
-      ],
-      "occurrences": 2,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/usersRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        104
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    }
-  ],
+  "sourceDigest": "604a5243075195bf0020384604e29bc7561f619e5b7e16f048e1fa97f088b781",
+  "surface_count": 0,
+  "point_count": 0,
+  "call_breakdown": {},
+  "items": [],
   "assumptions": [
     "derived from docs/REPO_AUDIT_INPUTS/load_risk.json fallback_points",
     "surface is grouped by file + call",

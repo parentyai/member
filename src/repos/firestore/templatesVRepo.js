@@ -2,8 +2,6 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
-const { isMissingIndexError, sortByNumberDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'templates_v';
 const KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -45,24 +43,10 @@ function normalizeContent(content) {
 async function getLatestTemplateVersion(templateKey) {
   const db = getDb();
   const baseQuery = db.collection(COLLECTION).where('templateKey', '==', templateKey);
-  try {
-    const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
-    if (!snap.docs.length) return null;
-    const doc = snap.docs[0];
-    return Object.assign({ id: doc.id }, doc.data());
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'templatesVRepo',
-      query: 'getLatestTemplateVersion',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByNumberDesc(rows, 'version');
-    return rows.length ? rows[0] : null;
-  }
+  const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
+  if (!snap.docs.length) return null;
+  const doc = snap.docs[0];
+  return Object.assign({ id: doc.id }, doc.data());
 }
 
 async function createTemplateVersion(data) {
@@ -93,24 +77,10 @@ async function getActiveTemplate(params) {
   const baseQuery = db.collection(COLLECTION)
     .where('templateKey', '==', templateKey)
     .where('status', '==', 'active');
-  try {
-    const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
-    if (!snap.docs.length) return null;
-    const doc = snap.docs[0];
-    return Object.assign({ id: doc.id }, doc.data());
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'templatesVRepo',
-      query: 'getActiveTemplate',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByNumberDesc(rows, 'version');
-    return rows.length ? rows[0] : null;
-  }
+  const snap = await baseQuery.orderBy('version', 'desc').limit(1).get();
+  if (!snap.docs.length) return null;
+  const doc = snap.docs[0];
+  return Object.assign({ id: doc.id }, doc.data());
 }
 
 async function getTemplateByVersion(params) {

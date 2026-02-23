@@ -1,8 +1,6 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'decision_logs';
 
@@ -28,24 +26,10 @@ async function getLatestDecision(subjectType, subjectId) {
   const baseQuery = db.collection(COLLECTION)
     .where('subjectType', '==', subjectType)
     .where('subjectId', '==', subjectId);
-  try {
-    const snap = await baseQuery.orderBy('decidedAt', 'desc').limit(1).get();
-    if (!snap.docs.length) return null;
-    const doc = snap.docs[0];
-    return Object.assign({ id: doc.id }, doc.data());
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'decisionLogsRepo',
-      query: 'getLatestDecision',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'decidedAt');
-    return rows.length ? rows[0] : null;
-  }
+  const snap = await baseQuery.orderBy('decidedAt', 'desc').limit(1).get();
+  if (!snap.docs.length) return null;
+  const doc = snap.docs[0];
+  return Object.assign({ id: doc.id }, doc.data());
 }
 
 async function listDecisions(subjectType, subjectId, limit) {
@@ -58,22 +42,8 @@ async function listDecisions(subjectType, subjectId, limit) {
   let query = baseQuery.orderBy('decidedAt', 'desc');
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  try {
-    const snap = await query.get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'decisionLogsRepo',
-      query: 'listDecisions',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'decidedAt');
-    return cap ? rows.slice(0, cap) : rows;
-  }
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 async function getDecisionById(decisionLogId) {
@@ -93,23 +63,8 @@ async function listDecisionsByNotificationId(notificationId, limit, direction) {
   let query = baseQuery.orderBy('decidedAt', dir);
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  try {
-    const snap = await query.get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'decisionLogsRepo',
-      query: 'listDecisionsByNotificationId',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'decidedAt');
-    if (dir === 'asc') rows.reverse();
-    return cap ? rows.slice(0, cap) : rows;
-  }
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 module.exports = {

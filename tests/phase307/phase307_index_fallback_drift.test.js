@@ -37,7 +37,7 @@ test('phase307: missing-index fallback points do not exceed audit baseline', () 
     Number.isFinite(riskCount) ? riskCount : 0,
     Number.isFinite(pointCount) ? pointCount : 0
   );
-  assert.ok(baselineCount > 0, 'load_risk.json must provide fallback baseline');
+  assert.ok(Number.isFinite(baselineCount) && baselineCount >= 0, 'load_risk.json must provide fallback baseline');
 
   const currentCount = countMissingIndexFallbackPoints();
   assert.ok(
