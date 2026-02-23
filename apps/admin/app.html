@@ -66,6 +66,38 @@
           </button>
         </div>
 
+        <div class="nav-group nav-group-developer" data-role="developer">
+          <div class="nav-group-label" data-dict-key="ui.label.developer.menu">開発者</div>
+          <button id="developer-open-map" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">RM</span>
+            <span data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</span>
+          </button>
+          <button id="developer-open-system" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span data-dict-key="ui.label.developer.systemState">システム状態</span>
+          </button>
+          <button id="developer-open-audit" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">A</span>
+            <span data-dict-key="ui.label.developer.audit">監査ログ</span>
+          </button>
+          <button id="developer-open-implementation" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">I</span>
+            <span data-dict-key="ui.label.developer.implementation">実装状況</span>
+          </button>
+          <button id="developer-open-legacy" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">L</span>
+            <span data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</span>
+          </button>
+          <button id="developer-open-manual-redac" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">R</span>
+            <span data-dict-key="ui.label.developer.manualRedac">取説（Redac）</span>
+          </button>
+          <button id="developer-open-manual-user" type="button" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">U</span>
+            <span data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</span>
+          </button>
+        </div>
+
         <div class="nav-group nav-group-operations">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
           <button class="nav-item" data-pane-target="alerts">
@@ -140,18 +172,6 @@
               <button class="role-btn is-active" data-role-value="operator" data-dict-key="ui.label.role.operatorMode">運用</button>
               <button class="role-btn" data-role-value="admin" data-dict-key="ui.label.role.adminMode">管理</button>
               <button class="role-btn" data-role-value="developer" data-dict-key="ui.label.role.developer">開発</button>
-            </div>
-          </div>
-          <div class="top-developer" data-role="admin">
-            <span class="role-label" data-dict-key="ui.label.developer.menu">開発者</span>
-            <div class="top-developer-actions">
-              <button id="developer-open-map" type="button" class="secondary-btn" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</button>
-              <button id="developer-open-system" type="button" class="secondary-btn" data-dict-key="ui.label.developer.systemState">システム状態</button>
-              <button id="developer-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.developer.audit">監査ログ</button>
-              <button id="developer-open-implementation" type="button" class="secondary-btn" data-dict-key="ui.label.developer.implementation">実装状況</button>
-              <button id="developer-open-legacy" type="button" class="secondary-btn" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</button>
-              <button id="developer-open-manual-redac" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
-              <button id="developer-open-manual-user" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
             </div>
           </div>
         </header>
@@ -2077,7 +2097,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-map" class="app-pane" data-pane="developer-map" data-role="admin">
+        <section id="pane-developer-map" class="app-pane" data-pane="developer-map" data-role="developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2180,7 +2200,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-manual-redac" class="app-pane" data-pane="developer-manual-redac" data-role="admin">
+        <section id="pane-developer-manual-redac" class="app-pane" data-pane="developer-manual-redac" data-role="developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2240,7 +2260,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-manual-user" class="app-pane" data-pane="developer-manual-user" data-role="admin">
+        <section id="pane-developer-manual-user" class="app-pane" data-pane="developer-manual-user" data-role="developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
