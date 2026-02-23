@@ -39,6 +39,8 @@
 - `status=GO` の場合、`load_risk` / snapshot stale / fallback spike の閾値を満たしている
 - `checks.retentionRisk.ok=true` であること（`retention_risk_generated_at_stale` / `retention_risk_*_over_budget` が出ていない）
 - `checks.retentionRisk.generatedAtHours` が `docs/RETENTION_BUDGETS.md` の `retention_risk_freshness_max_hours` 以内であること
+- `checks.structureRisk.ok=true` であること（`structure_risk_generated_at_stale` / `structure_risk_*_over_budget` が出ていない）
+- `checks.structureRisk.generatedAtHours` が `docs/STRUCTURE_BUDGETS.md` の `structure_risk_freshness_max_hours` 以内であること
 
 ## Smoke (No Side Effects)
 - `npm test` が PASS

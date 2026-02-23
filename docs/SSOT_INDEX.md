@@ -177,6 +177,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
+- `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）
 - `docs/RUNBOOK_STRUCT_DRIFT_BACKFILL.md`（構造ドリフト補正ジョブの運用手順）
 - `docs/RUNBOOK_RETENTION_APPLY.md`（Retention applyジョブのstg運用手順）
 - `docs/PHASE316_PLAN.md`（Read Path収束 follow-up: hotspot上位3のbounded query化計画）

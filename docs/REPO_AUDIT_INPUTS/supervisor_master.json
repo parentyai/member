@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T20:16:58-05:00",
-  "gitCommit": "b633ff3b16c21237066190ca4f2c6f5897cb73ba",
-  "branch": "codex/phase627-retention-readiness-batch",
-  "sourceDigest": "7dd7dc0178985742ea57f41acea1558923057c40ace76a8e41c3d3ced9db79d3",
+  "generatedAt": "2026-02-22T20:25:23-05:00",
+  "gitCommit": "d89e285cb5b6e3de95438b64ca7637cbecf1ec91",
+  "branch": "codex/phase628-structure-readiness-batch",
+  "sourceDigest": "60e10ef7334644217bd6299a75c979ea310014c4629bf02e1cfdc3cb162942eb",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
@@ -22,7 +22,8 @@
       "protection_matrix": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
       "impact_radius": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
       "load_risk": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "retention_risk": "docs/REPO_AUDIT_INPUTS/retention_risk.json"
+      "retention_risk": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
+      "structure_risk": "docs/REPO_AUDIT_INPUTS/structure_risk.json"
     },
     "guards": {
       "index_route_guard": "src/index.js"
