@@ -87,7 +87,7 @@ function parseArgs(argv, env) {
   const opts = {
     baseUrl: normalizeBaseUrl(sourceEnv.MEMBER_BASE_URL || sourceEnv.BASE_URL || DEFAULT_BASE_URL),
     adminToken: sourceEnv.ADMIN_OS_TOKEN || '',
-    internalJobToken: sourceEnv.CITY_PACK_JOB_TOKEN || sourceEnv.ADMIN_OS_TOKEN || '',
+    internalJobToken: sourceEnv.CITY_PACK_JOB_TOKEN || '',
     actor: sourceEnv.E2E_ACTOR || DEFAULT_ACTOR,
     tracePrefix: sourceEnv.E2E_TRACE_PREFIX || DEFAULT_TRACE_PREFIX,
     projectId: sourceEnv.E2E_GCP_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '',
