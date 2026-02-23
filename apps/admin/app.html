@@ -631,6 +631,13 @@
                       </div>
                     </div>
                   </div>
+                  <div class="filter-bar trend-ui-only">
+                    <div class="filter-chips" id="composer-saved-filter-chips"></div>
+                    <div class="filter-meta">
+                      <span class="result-count" id="composer-saved-result-count">-</span>
+                      <button id="composer-saved-clear" type="button" class="button-subtle filter-clear-btn" data-dict-key="ui.label.filters.clear">条件をクリア</button>
+                    </div>
+                  </div>
                   <table class="table-compact composer-saved-table">
                     <thead>
                       <tr>
@@ -640,8 +647,8 @@
                         <th><button type="button" class="table-sort-btn" data-composer-sort-key="notificationCategory" data-dict-key="ui.label.composer.saved.col.category">カテゴリ</button></th>
                         <th><button type="button" class="table-sort-btn" data-composer-sort-key="scenarioKey" data-dict-key="ui.label.composer.saved.col.scenario">シナリオ</button></th>
                         <th><button type="button" class="table-sort-btn" data-composer-sort-key="stepKey" data-dict-key="ui.label.composer.saved.col.step">ステップ</button></th>
-                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="targetCount" data-dict-key="ui.label.composer.saved.col.targetCount">送信対象数</button></th>
-                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="ctr" data-dict-key="ui.label.composer.saved.col.ctr">CTR</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="targetCount" data-dict-key="ui.label.composer.saved.col.targetCount" data-dict-tip="ui.help.readModel.target">送信対象数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-composer-sort-key="ctr" data-dict-key="ui.label.composer.saved.col.ctr" data-dict-tip="ui.help.readModel.ctr">CTR</button></th>
                         <th data-dict-key="ui.label.composer.saved.col.actions">操作</th>
                       </tr>
                     </thead>
@@ -943,6 +950,13 @@
                 <div class="row row-top">
                   <button id="city-pack-unified-reload" type="button">更新</button>
                 </div>
+                <div class="filter-bar trend-ui-only">
+                  <div class="filter-chips" id="city-pack-unified-filter-chips"></div>
+                  <div class="filter-meta">
+                    <span class="result-count" id="city-pack-unified-result-count">-</span>
+                    <button id="city-pack-unified-clear" type="button" class="button-subtle filter-clear-btn" data-dict-key="ui.label.filters.clear">条件をクリア</button>
+                  </div>
+                </div>
                 <div class="table-scroll">
                   <table class="table-compact city-pack-unified-table">
                     <thead>
@@ -955,7 +969,7 @@
                         <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="status">状態</button></th>
                         <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="assignee">担当</button></th>
                         <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="updatedAt">更新日</button></th>
-                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="kpiScore">主要KPI</button></th>
+                        <th><button type="button" class="table-sort-btn" data-city-pack-sort-key="kpiScore" data-dict-tip="ui.help.cityPack.kpiScore">主要KPI</button></th>
                         <th>操作</th>
                       </tr>
                     </thead>
@@ -1755,6 +1769,13 @@
                   <div class="row row-top">
                     <button id="users-summary-reload" type="button">更新</button>
                   </div>
+                  <div class="filter-bar trend-ui-only">
+                    <div class="filter-chips" id="users-summary-filter-chips"></div>
+                    <div class="filter-meta">
+                      <span class="result-count" id="users-summary-result-count">-</span>
+                      <button id="users-summary-clear" type="button" class="button-subtle filter-clear-btn" data-dict-key="ui.label.filters.clear">条件をクリア</button>
+                    </div>
+                  </div>
                   <table class="table-compact users-summary-table">
                     <thead>
                       <tr>
@@ -1763,9 +1784,9 @@
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount">配信数</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="clickCount">クリック数</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate">反応率</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
                       </tr>
                     </thead>
                     <tbody id="users-summary-rows"></tbody>
@@ -1894,6 +1915,13 @@
                 <div class="row row-top">
                   <button id="vendor-unified-reload" type="button">更新</button>
                 </div>
+                <div class="filter-bar trend-ui-only">
+                  <div class="filter-chips" id="vendor-unified-filter-chips"></div>
+                  <div class="filter-meta">
+                    <span class="result-count" id="vendor-unified-result-count">-</span>
+                    <button id="vendor-unified-clear" type="button" class="button-subtle filter-clear-btn" data-dict-key="ui.label.filters.clear">条件をクリア</button>
+                  </div>
+                </div>
                 <div class="table-scroll">
                   <table class="table-compact vendors-unified-table">
                     <thead>
@@ -1904,7 +1932,7 @@
                         <th><button type="button" class="table-sort-btn" data-vendor-sort-key="category">カテゴリ</button></th>
                         <th><button type="button" class="table-sort-btn" data-vendor-sort-key="status">状態</button></th>
                         <th><button type="button" class="table-sort-btn" data-vendor-sort-key="updatedAt">最終更新</button></th>
-                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="relatedCount">関連件数</button></th>
+                        <th><button type="button" class="table-sort-btn" data-vendor-sort-key="relatedCount" data-dict-tip="ui.help.vendors.relatedCount">関連件数</button></th>
                         <th>操作</th>
                       </tr>
                     </thead>

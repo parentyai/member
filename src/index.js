@@ -601,6 +601,19 @@ function createServer() {
 
   if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
     const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
+    if (String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() === '0') {
+      try {
+        const html = fs.readFileSync(filePath, 'utf8');
+        const flagScript = '<script>window.ADMIN_TREND_UI_ENABLED=false;document.documentElement.classList.add(\"trend-ui-disabled\");</script>';
+        const injected = html.replace('</head>', `${flagScript}</head>`);
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        res.end(injected);
+      } catch (_err) {
+        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('error');
+      }
+      return;
+    }
     serveHtml(res, filePath);
     return;
   }
