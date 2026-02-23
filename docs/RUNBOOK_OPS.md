@@ -100,6 +100,11 @@ STOP の方針:
 - traceId を1つ指定すると、関連する `audit_logs / decision_logs / decision_timeline` が取得できる
 - Ops Console の表示だけで、危険度・反応・提案・判断が把握できる
 
+## Mainline Evidence Reference (stg GO)
+- latest fixed-order stg e2e pass: `2026-02-23`, workflow run `22319659529` (`main`)
+- result summary: `product_readiness_gate / segment / retry_queue / kill_switch_block / composer_cap_block = PASS`
+- 詳細証跡は `docs/PHASE633_EXECUTION_LOG.md` を参照（fail run `22319585228` と recovery 後 rerun 成功を同時記録）
+
 ## Rollback
 - 直近の変更を戻す場合は revert（実装PR / docs PR）
 - 緊急停止は Kill Switch（運用手順に従う）
