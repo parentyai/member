@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T16:44:44-05:00",
-  "gitCommit": "01cf4baaa805e7f194dd5cae86a2b5b0dc249097",
-  "branch": "codex/pr627-remotefix",
-  "sourceDigest": "4905b2eb7337ce74b4719c15dc34ddc172cc210da0385e906064f4b0d11caf48",
+  "generatedAt": "2026-02-23T17:28:11-05:00",
+  "gitCommit": "b9e8cf24901eae6ae2d8d287faf5adf61a9a4d92",
+  "branch": "codex/phase635-admin-ui-layout",
+  "sourceDigest": "99bd7c2392225d6df6c2b8b98850b2493ad74282bf77e29764ad63d131f74833",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -113,7 +113,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "72cacece09d40d8d94303139630170bbef2f1db7982cdbf3972f60cd8f454f10",
+      "sha256": "91e5504ddd2e8ad994379c1544d1d5a79c102bb1d85a358670c4da0869e9ee7a",
       "bytes": 288099
     },
     {
