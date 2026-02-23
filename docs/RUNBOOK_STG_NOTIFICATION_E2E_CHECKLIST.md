@@ -17,6 +17,8 @@ npm run ops:stg-e2e -- \
   --actor ops_stg_e2e \
   --fetch-route-errors \
   --fail-on-route-errors \
+  --fail-on-missing-audit-actions \
+  --trace-limit 100 \
   --project-id member-485303 \
   --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
 ```
@@ -32,7 +34,9 @@ npm run ops:stg-e2e -- \
 ```bash
 gh workflow run stg-notification-e2e.yml --ref main \
   -f actor=ops_stg_e2e \
-  -f route_error_limit=20
+  -f route_error_limit=20 \
+  -f trace_limit=100 \
+  -f fail_on_missing_audit_actions=true
 ```
 
 - 実行 workflow: `.github/workflows/stg-notification-e2e.yml`
@@ -50,6 +54,8 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `segment-query-json`: Segment フィルタを明示したい場合のみ
 - `fetch-route-errors + project-id`: FAIL時に Cloud Logging の `[route_error]` を traceId で回収
 - `fail-on-route-errors`: route_error が1件でも出たシナリオを FAIL 扱いにする（`fetch-route-errors` を暗黙有効化）
+- `trace_limit`: trace bundle 取得件数（`/api/admin/trace?limit`）を 1-500 で指定
+- `fail_on_missing_audit_actions`: シナリオごとの必須 audit action 欠落を FAIL 扱いにする（推奨 true）
 
 ## Checklist (fixed order)
 1. Product Readiness Gate: `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true`
@@ -94,6 +100,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 
 ### Evidence Quality Gate（記録時のチェック）
 - `audit_actions` に `plan` と `execute` の両方が含まれること
+- strict mode（`--fail-on-missing-audit-actions`）では必須 action 欠落時に自動 FAIL になる
 - `result=FAIL` の場合、再実施条件（何を直して再試行するか）を `notes` に書く
 - 個人情報（平文会員ID、token、secret）は書かない
 - URL証跡（Actions run / Cloud Run revision / trace API）を可能な限り添付する

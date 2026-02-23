@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T20:59:35-05:00",
-  "gitCommit": "d172256c9e8354c3140ee0ddba9770afe0d4b691",
-  "branch": "codex/phase630-e2e-auto-resolve-inputs",
-  "sourceDigest": "14c27f6b6e9f813f44eb17601dddeee9119c2d923d2d7865c2d7f034a185b1f1",
+  "generatedAt": "2026-02-22T21:17:05-05:00",
+  "gitCommit": "701b3b1fe3b9e5c5d568b678d9dfc3566689da65",
+  "branch": "codex/phase631-e2e-audit-action-gate-batch",
+  "sourceDigest": "adf1f666c90e6f406f89e44241668477c856c0d753e24b432e90e3e2a84308c4",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "c6424fd12029267093a83ce250bfded8bd6cef5754e49e66f74ed5924153bf21",
+      "sha256": "9f1536965f326420b8811c18948e9945babe26a3bb79e5d6f4dc653b459dbee8",
       "bytes": 288099
     },
     {
@@ -128,8 +128,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "f76807482ec7b1ad1df954b2da467d842f7d4f1e086e318f28fe454bc6d61b9f",
-      "bytes": 2424
+      "sha256": "c5180eb76f3ec8d633d7250f892808a0bc99302175f451b8a8a794ec8d04ceaf",
+      "bytes": 2428
     }
   ],
   "diff_detection_rules": [

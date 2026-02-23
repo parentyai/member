@@ -33,6 +33,16 @@ on:
         required: false
         default: "20"
         type: string
+      trace_limit:
+        description: "Max trace bundle rows to fetch per scenario (1-500)"
+        required: false
+        default: "100"
+        type: string
+      fail_on_missing_audit_actions:
+        description: "Fail run when required audit actions are missing from trace bundle"
+        required: false
+        default: "true"
+        type: string
 
 permissions:
   contents: read
@@ -216,11 +226,16 @@ jobs:
             --fetch-route-errors
             --fail-on-route-errors
             --route-error-limit "${{ github.event.inputs.route_error_limit }}"
+            --trace-limit "${{ github.event.inputs.trace_limit }}"
             --segment-template-key "${{ github.event.inputs.segment_template_key }}"
             --composer-notification-id "${{ github.event.inputs.composer_notification_id }}"
             --out-file "$JSON_OUT"
             --md-out "$MD_OUT"
           )
+
+          if [ "${{ github.event.inputs.fail_on_missing_audit_actions }}" = "true" ]; then
+            ARGS+=(--fail-on-missing-audit-actions)
+          fi
 
           if [ -n "${{ github.event.inputs.retry_queue_id }}" ]; then
             ARGS+=(--retry-queue-id "${{ github.event.inputs.retry_queue_id }}")

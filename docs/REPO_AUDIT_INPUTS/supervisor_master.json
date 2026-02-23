@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T20:59:35-05:00",
-  "gitCommit": "d172256c9e8354c3140ee0ddba9770afe0d4b691",
-  "branch": "codex/phase630-e2e-auto-resolve-inputs",
-  "sourceDigest": "ed89e5a1526d21cb9570893ea7fed27a81967a7225392964d1ede67fc192385a",
+  "generatedAt": "2026-02-22T21:17:05-05:00",
+  "gitCommit": "701b3b1fe3b9e5c5d568b678d9dfc3566689da65",
+  "branch": "codex/phase631-e2e-audit-action-gate-batch",
+  "sourceDigest": "2a90bc059363e342c9651c3106958255a28f324a5c6cb11e3b170d3e286653b9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

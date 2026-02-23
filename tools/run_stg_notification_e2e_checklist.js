@@ -9,6 +9,16 @@ const DEFAULT_ACTOR = 'ops_stg_e2e';
 const DEFAULT_TRACE_PREFIX = 'trace-stg-e2e';
 const DEFAULT_OUT_DIR = 'artifacts/stg-notification-e2e';
 const DEFAULT_ROUTE_ERROR_LIMIT = 20;
+const DEFAULT_TRACE_LIMIT = 100;
+const DEFAULT_FAIL_ON_MISSING_AUDIT_ACTIONS = false;
+
+const SCENARIO_REQUIRED_AUDIT_ACTIONS = Object.freeze({
+  product_readiness_gate: ['product_readiness.view'],
+  segment: ['segment_send.plan', 'segment_send.dry_run', 'segment_send.execute'],
+  retry_queue: ['retry_queue.plan', 'retry_queue.execute'],
+  kill_switch_block: ['kill_switch.plan', 'kill_switch.set', 'retry_queue.execute'],
+  composer_cap_block: ['notifications.send.plan', 'notifications.send.execute']
+});
 
 function readValue(argv, index, label) {
   if (index >= argv.length) throw new Error(`${label} value required`);
@@ -68,9 +78,13 @@ function parseArgs(argv, env) {
     projectId: sourceEnv.E2E_GCP_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '',
     fetchRouteErrors: sourceEnv.E2E_FETCH_ROUTE_ERRORS === '1',
     failOnRouteErrors: sourceEnv.E2E_FAIL_ON_ROUTE_ERRORS === '1',
+    failOnMissingAuditActions: sourceEnv.E2E_FAIL_ON_MISSING_AUDIT_ACTIONS === '1',
     routeErrorLimit: sourceEnv.E2E_ROUTE_ERROR_LIMIT
       ? parsePositiveInt(sourceEnv.E2E_ROUTE_ERROR_LIMIT, 'E2E_ROUTE_ERROR_LIMIT', 1, 200)
       : DEFAULT_ROUTE_ERROR_LIMIT,
+    traceLimit: sourceEnv.E2E_TRACE_LIMIT
+      ? parsePositiveInt(sourceEnv.E2E_TRACE_LIMIT, 'E2E_TRACE_LIMIT', 1, 500)
+      : DEFAULT_TRACE_LIMIT,
     segmentTemplateKey: sourceEnv.E2E_SEGMENT_TEMPLATE_KEY || '',
     segmentTemplateVersion: sourceEnv.E2E_SEGMENT_TEMPLATE_VERSION || '',
     segmentQuery: parseJsonArg(sourceEnv.E2E_SEGMENT_QUERY_JSON || '', 'E2E_SEGMENT_QUERY_JSON') || {},
@@ -98,6 +112,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--fail-on-route-errors') {
       opts.failOnRouteErrors = true;
+      continue;
+    }
+    if (arg === '--fail-on-missing-audit-actions') {
+      opts.failOnMissingAuditActions = true;
       continue;
     }
     if (arg === '--no-auto-set-automation-mode') {
@@ -145,6 +163,10 @@ function parseArgs(argv, env) {
       opts.routeErrorLimit = parsePositiveInt(readValue(argv, ++i, '--route-error-limit'), '--route-error-limit', 1, 200);
       continue;
     }
+    if (arg === '--trace-limit') {
+      opts.traceLimit = parsePositiveInt(readValue(argv, ++i, '--trace-limit'), '--trace-limit', 1, 500);
+      continue;
+    }
     if (arg === '--segment-template-key') {
       opts.segmentTemplateKey = readValue(argv, ++i, '--segment-template-key');
       continue;
@@ -181,6 +203,9 @@ function parseArgs(argv, env) {
     throw new Error('admin token required (ADMIN_OS_TOKEN or --admin-token)');
   }
   if (opts.failOnRouteErrors) opts.fetchRouteErrors = true;
+  if (typeof opts.failOnMissingAuditActions !== 'boolean') {
+    opts.failOnMissingAuditActions = DEFAULT_FAIL_ON_MISSING_AUDIT_ACTIONS;
+  }
   if (opts.fetchRouteErrors && (!opts.projectId || typeof opts.projectId !== 'string' || opts.projectId.trim().length === 0)) {
     throw new Error('project id required when --fetch-route-errors is enabled');
   }
@@ -498,7 +523,13 @@ function requireHttpOk(resp, label) {
 
 async function fetchTraceBundle(ctx, traceId) {
   if (!traceId) return { ok: false, reason: 'trace_id_missing' };
-  const resp = await apiRequest(ctx, 'GET', `/api/admin/trace?traceId=${encodeURIComponent(traceId)}&limit=100`, traceId);
+  const limit = Number.isInteger(ctx && ctx.traceLimit) ? ctx.traceLimit : DEFAULT_TRACE_LIMIT;
+  const resp = await apiRequest(
+    ctx,
+    'GET',
+    `/api/admin/trace?traceId=${encodeURIComponent(traceId)}&limit=${encodeURIComponent(String(limit))}`,
+    traceId
+  );
   if (!resp.okStatus || !resp.body || typeof resp.body !== 'object') {
     return {
       ok: false,
@@ -519,6 +550,43 @@ async function fetchTraceBundle(ctx, traceId) {
         .map((item) => item && item.action)
         .filter((item) => typeof item === 'string')
       : []
+  };
+}
+
+function getRequiredAuditActionsForScenario(scenarioName) {
+  const key = typeof scenarioName === 'string' ? scenarioName : '';
+  const actions = SCENARIO_REQUIRED_AUDIT_ACTIONS[key];
+  return Array.isArray(actions) ? actions.slice() : [];
+}
+
+function evaluateAuditActionCoverage(observedActions, requiredActions) {
+  const required = Array.isArray(requiredActions) ? requiredActions.filter(Boolean) : [];
+  const observedSet = new Set(
+    (Array.isArray(observedActions) ? observedActions : [])
+      .filter((item) => typeof item === 'string' && item.trim().length > 0)
+      .map((item) => item.trim())
+  );
+  const missing = required.filter((action) => !observedSet.has(action));
+  return {
+    ok: missing.length === 0,
+    required,
+    missing
+  };
+}
+
+function applyAuditCoverageGate(status, reason, coverage, strictMode) {
+  const nextStatus = typeof status === 'string' ? status : 'PASS';
+  const nextReason = typeof reason === 'string' && reason.length > 0 ? reason : null;
+  if (strictMode !== true) {
+    return { status: nextStatus, reason: nextReason };
+  }
+  if (!coverage || coverage.ok === true) {
+    return { status: nextStatus, reason: nextReason };
+  }
+  const missing = Array.isArray(coverage.missing) ? coverage.missing.join(',') : '';
+  return {
+    status: 'FAIL',
+    reason: nextReason || `missing_audit_actions:${missing || 'unknown'}`
   };
 }
 
@@ -945,6 +1013,10 @@ function renderMarkdownSummary(report) {
   lines.push(`- baseUrl: ${report.baseUrl}`);
   lines.push(`- actor: ${report.actor}`);
   lines.push(`- headSha: ${report.headSha || 'unknown'}`);
+  if (report.summary) {
+    lines.push(`- traceLimit: ${report.summary.traceLimit || DEFAULT_TRACE_LIMIT}`);
+    lines.push(`- strictAuditActions: ${report.summary.strictAuditActions === true ? 'true' : 'false'}`);
+  }
   lines.push('');
   for (const scenario of report.scenarios || []) {
     lines.push(`## ${scenario.name}`);
@@ -963,6 +1035,12 @@ function renderMarkdownSummary(report) {
         lines.push(`- route_error logs: unavailable (${routeErrors.reason || 'unknown'})`);
       }
     }
+    if (Array.isArray(scenario.requiredAuditActions) && scenario.requiredAuditActions.length > 0) {
+      lines.push(`- required audit actions: ${scenario.requiredAuditActions.join(', ')}`);
+      if (Array.isArray(scenario.missingAuditActions) && scenario.missingAuditActions.length > 0) {
+        lines.push(`- missing audit actions: ${scenario.missingAuditActions.join(', ')}`);
+      }
+    }
     lines.push('');
   }
   return `${lines.join('\n')}\n`;
@@ -971,17 +1049,28 @@ function renderMarkdownSummary(report) {
 async function runScenario(ctx, scenarioName, runner) {
   const traceId = buildTraceId(ctx.tracePrefix, scenarioName, new Date());
   const startedAt = new Date().toISOString();
+  const requiredAuditActions = getRequiredAuditActionsForScenario(scenarioName);
   try {
     const result = await runner(traceId);
     const traceBundle = await fetchTraceBundle(ctx, traceId);
+    const coverage = evaluateAuditActionCoverage(
+      traceBundle && Array.isArray(traceBundle.actions) ? traceBundle.actions : [],
+      requiredAuditActions
+    );
     const shouldFetchRouteErrors = ctx.fetchRouteErrors === true
       && (result.status === 'FAIL' || ctx.failOnRouteErrors === true);
     const routeErrors = shouldFetchRouteErrors ? fetchRouteErrors(ctx, traceId) : null;
-    const strictGate = applyRouteErrorStrictGate(
+    const routeGate = applyRouteErrorStrictGate(
       result.status || 'PASS',
       result.reason || null,
       routeErrors,
       ctx.failOnRouteErrors === true
+    );
+    const strictGate = applyAuditCoverageGate(
+      routeGate.status,
+      routeGate.reason,
+      coverage,
+      ctx.failOnMissingAuditActions === true
     );
     return {
       name: scenarioName,
@@ -993,20 +1082,34 @@ async function runScenario(ctx, scenarioName, runner) {
       steps: result.steps || null,
       queueId: result.queueId || null,
       traceBundle,
-      routeErrors
+      routeErrors,
+      requiredAuditActions: coverage.required,
+      missingAuditActions: coverage.missing
     };
   } catch (err) {
     const traceBundle = await fetchTraceBundle(ctx, traceId);
+    const coverage = evaluateAuditActionCoverage(
+      traceBundle && Array.isArray(traceBundle.actions) ? traceBundle.actions : [],
+      requiredAuditActions
+    );
     const routeErrors = fetchRouteErrors(ctx, traceId);
+    const strictGate = applyAuditCoverageGate(
+      'FAIL',
+      err && err.message ? err.message : 'error',
+      coverage,
+      ctx.failOnMissingAuditActions === true
+    );
     return {
       name: scenarioName,
       traceId,
       startedAt,
       endedAt: new Date().toISOString(),
-      status: 'FAIL',
-      reason: err && err.message ? err.message : 'error',
+      status: strictGate.status,
+      reason: strictGate.reason,
       traceBundle,
-      routeErrors
+      routeErrors,
+      requiredAuditActions: coverage.required,
+      missingAuditActions: coverage.missing
     };
   }
 }
@@ -1021,7 +1124,9 @@ async function runAll(opts) {
     projectId: opts.projectId || '',
     fetchRouteErrors: opts.fetchRouteErrors === true,
     failOnRouteErrors: opts.failOnRouteErrors === true,
-    routeErrorLimit: opts.routeErrorLimit || DEFAULT_ROUTE_ERROR_LIMIT
+    failOnMissingAuditActions: opts.failOnMissingAuditActions === true,
+    routeErrorLimit: opts.routeErrorLimit || DEFAULT_ROUTE_ERROR_LIMIT,
+    traceLimit: opts.traceLimit || DEFAULT_TRACE_LIMIT
   };
 
   const scenarios = [];
@@ -1063,10 +1168,17 @@ async function runAll(opts) {
       strict: opts.allowSkip !== true,
       routeErrorFetchEnabled: opts.fetchRouteErrors === true,
       strictRouteErrors: opts.failOnRouteErrors === true,
+      strictAuditActions: opts.failOnMissingAuditActions === true,
+      traceLimit: opts.traceLimit || DEFAULT_TRACE_LIMIT,
       routeErrorFailures: scenarios.filter((item) => (
         item.status === 'FAIL'
         && typeof item.reason === 'string'
         && item.reason.startsWith('route_error_')
+      )).length,
+      auditCoverageFailures: scenarios.filter((item) => (
+        item.status === 'FAIL'
+        && typeof item.reason === 'string'
+        && item.reason.startsWith('missing_audit_actions:')
       )).length
     }
   };
@@ -1090,10 +1202,19 @@ function printSummary(report) {
       if (scenario.routeErrors.ok) console.log(`  route_error_logs=${scenario.routeErrors.count}`);
       else console.log(`  route_error_logs=unavailable (${scenario.routeErrors.reason || 'unknown'})`);
     }
+    if (Array.isArray(scenario.requiredAuditActions) && scenario.requiredAuditActions.length > 0) {
+      console.log(`  required_audit_actions=${scenario.requiredAuditActions.join(',')}`);
+      if (Array.isArray(scenario.missingAuditActions) && scenario.missingAuditActions.length > 0) {
+        console.log(`  missing_audit_actions=${scenario.missingAuditActions.join(',')}`);
+      }
+    }
   }
   console.log(`pass=${report.summary.pass} fail=${report.summary.fail} skip=${report.summary.skip}`);
   if (report.summary.strictRouteErrors === true) {
     console.log(`route_error_failures=${report.summary.routeErrorFailures || 0}`);
+  }
+  if (report.summary.strictAuditActions === true) {
+    console.log(`audit_action_failures=${report.summary.auditCoverageFailures || 0}`);
   }
 }
 
@@ -1130,6 +1251,9 @@ module.exports = {
   buildRouteErrorLoggingFilter,
   fetchRouteErrors,
   applyRouteErrorStrictGate,
+  evaluateAuditActionCoverage,
+  getRequiredAuditActionsForScenario,
+  applyAuditCoverageGate,
   evaluateProductReadinessBody,
   resolveSegmentTemplateKey,
   resolveComposerNotificationId
