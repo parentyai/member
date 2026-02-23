@@ -3,6 +3,7 @@
 ## Required checks
 - `npm run test:docs`
 - `npm run repo-map:check`
+- `npm run retention-risk:check`
 - `npm run cleanup:check`
 - `npm test`
 

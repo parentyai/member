@@ -367,14 +367,26 @@ function buildCleanupPlan(designMeta, loadRisk, lifecycleRows, unreachable) {
 }
 
 function buildCleanupDiffSummary(designMeta, loadRisk, lifecycleRows, unreachable) {
+  const fallbackPoints = (loadRisk.fallback_points || []).length;
+  const hotspotCount = (loadRisk.hotspots || []).length;
+  const fallbackNote = fallbackPoints === 0
+    ? '実行経路置換完了（fallback zero）'
+    : '段階移行中（fallback残件あり）';
+  const fullScanNote = hotspotCount === 0
+    ? 'bounded運用固定（hotspot zero）'
+    : '段階移行中（hotspot残件あり）';
   const rows = [['item', 'before', 'after', 'note']];
   rows.push(['canonical repos', String((designMeta.canonical_repos || []).length), String((designMeta.canonical_repos || []).length), '変更なし']);
   rows.push(['legacy repos', String((designMeta.legacy_repos || []).length), String((designMeta.legacy_repos || []).length), 'DEPRECATED/LEGACY_HEADER強化']);
   rows.push(['duplicate groups', String((designMeta.merge_candidates || []).length), String((designMeta.merge_candidates || []).length), '削除なし、可視化のみ']);
-  rows.push(['missing-index fallback points', String((loadRisk.fallback_points || []).length), String((loadRisk.fallback_points || []).length), '設計固定のみ']);
-  rows.push(['full-scan hotspots', String((loadRisk.hotspots || []).length), String((loadRisk.hotspots || []).length), '優先順位固定のみ']);
+  rows.push(['missing-index fallback points', String(fallbackPoints), String(fallbackPoints), fallbackNote]);
+  rows.push(['full-scan hotspots', String(hotspotCount), String(hotspotCount), fullScanNote]);
   rows.push(['lifecycle rows', '44', String(lifecycleRows.length), 'retentionPolicy準拠へ再生成']);
   rows.push(['unreachable frozen files', '0 markers', String(unreachable.length), 'LEGACY_FROZEN_DO_NOT_USE を付与']);
+
+  const remarks = fallbackPoints === 0 && hotspotCount === 0
+    ? '- 本フェーズは構造文書化/凍結に加え、missing-index fallback と full-scan hotspot の実行経路置換を完了。'
+    : '- 本フェーズは構造文書化と凍結のみ。実行経路置換は次PR。';
 
   return [
     '# CLEANUP_DIFF_SUMMARY',
@@ -382,17 +394,21 @@ function buildCleanupDiffSummary(designMeta, loadRisk, lifecycleRows, unreachabl
     formatMarkdownTable(rows).trimEnd(),
     '',
     '## 備考',
-    '- 本フェーズは構造文書化と凍結のみ。実行経路置換は次PR。',
+    remarks,
     ''
   ].join('\n');
 }
 
 function buildRiskBeforeAfter(designMeta, loadRisk, lifecycleRows) {
+  const fallbackPoints = (loadRisk.fallback_points || []).length;
+  const hotspotCount = (loadRisk.hotspots || []).length;
+  const fallbackAfter = fallbackPoints === 0 ? 'low' : 'medium';
+  const fullScanAfter = hotspotCount === 0 ? 'low' : 'medium';
   const undefinedRetention = lifecycleRows.filter((row) => row.retention === 'UNDEFINED_IN_CODE').length;
   const rows = [['risk', 'before', 'after', 'mitigation']];
   rows.push(['duplicate実装の分岐', 'high', 'medium', 'LEGACY_HEADER + canonical alias明示']);
-  rows.push(['missing-index fallback依存', 'high', 'medium', 'INDEX_PLAN + CI監視']);
-  rows.push(['full-scan常用', 'high', 'medium', 'FULL_SCAN_BOUNDING_PLANで移行順固定']);
+  rows.push(['missing-index fallback依存', 'high', fallbackAfter, 'INDEX_PLAN + CI監視']);
+  rows.push(['full-scan常用', 'high', fullScanAfter, 'FULL_SCAN_BOUNDING_PLANで移行順固定']);
   rows.push(['scenario命名ドリフト', 'high', 'medium', 'NAMING_DRIFT_SCENARIOKEY_PLANでmapper統一']);
   rows.push(['retention定義不鮮明', 'high', 'medium', `SSOT_RETENTION_ADDENDUM (${undefinedRetention}件未定義を明示)`]);
 
@@ -415,6 +431,7 @@ function buildCIChecklist() {
     '## Required checks',
     '- `npm run test:docs`',
     '- `npm run repo-map:check`',
+    '- `npm run retention-risk:check`',
     '- `npm run cleanup:check`',
     '- `npm test`',
     '',
