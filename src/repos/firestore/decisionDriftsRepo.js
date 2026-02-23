@@ -1,8 +1,6 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'decision_drifts';
 
@@ -25,24 +23,10 @@ async function getLatestDecisionDrift(lineUserId) {
   if (!lineUserId) throw new Error('lineUserId required');
   const db = getDb();
   const baseQuery = db.collection(COLLECTION).where('lineUserId', '==', lineUserId);
-  try {
-    const snap = await baseQuery.orderBy('createdAt', 'desc').limit(1).get();
-    if (!snap.docs.length) return null;
-    const doc = snap.docs[0];
-    return Object.assign({ id: doc.id }, doc.data());
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'decisionDriftsRepo',
-      query: 'getLatestDecisionDrift',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'createdAt');
-    return rows.length ? rows[0] : null;
-  }
+  const snap = await baseQuery.orderBy('createdAt', 'desc').limit(1).get();
+  if (!snap.docs.length) return null;
+  const doc = snap.docs[0];
+  return Object.assign({ id: doc.id }, doc.data());
 }
 
 module.exports = {

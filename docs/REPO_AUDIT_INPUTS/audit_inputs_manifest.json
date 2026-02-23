@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:25:48-05:00",
-  "gitCommit": "8db53ccbc6dfbaccf9cc3998b3230d8d0a3eac2a",
-  "branch": "main",
-  "sourceDigest": "7b60f8c779e0d7431662fcf397fd6ab6eca6068eca8f4fff4879c2e910da9907",
+  "generatedAt": "2026-02-22T19:30:41-05:00",
+  "gitCommit": "0c2b7c618667436f29157bf5a193a2c4653b0af3",
+  "branch": "codex/phase608-reduce-missing-index-surface-decision-drifts",
+  "sourceDigest": "6b29687540ab0e274c9edb37bae5ba3fc7d4b8a3ba6739a4abc868572aa2aa63",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "0c607d306a644a1d570aacc7567dddb97b4cd011c23d172a472ee2e0ac4c4a4c",
-      "bytes": 4001
+      "sha256": "db82d06cfc6082babdddb596b2fb9504c707257fa0283f21223cf4db89e13fd6",
+      "bytes": 3815
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -88,8 +88,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d35a26699e676161d843b790b200db9550e976107cf57139c8155762fe449a4d",
-      "bytes": 4994
+      "sha256": "f7f53a1ff11f524838476d504bb02e6d065d84bb495fb4ab55854503e7fdd437",
+      "bytes": 4655
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/notification_flow.json",
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "463babc362004c88c2b4155c95146e871ed35a926a56706d4eb3a40494f54689",
+      "sha256": "1c9f9bed6e32ee36d629a25455e6cd2eff66dbd83a71b09d596c2bfc2e083f22",
       "bytes": 288099
     },
     {
@@ -118,8 +118,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "7b4432f56c36cbae127e47c823c7cd0c8466cb83d9ad2699436a60adf9502f35",
-      "bytes": 2250
+      "sha256": "b80cab863e305bdd290ffbf3fd17671a9d0d216e4ee5ee157189f25e745bd270",
+      "bytes": 2305
     }
   ],
   "diff_detection_rules": [
