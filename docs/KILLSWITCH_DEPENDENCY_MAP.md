@@ -25,8 +25,8 @@
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
 | `src/routes/admin/osKillSwitch.js` | 26 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/phase1Notifications.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/phase1Notifications.js` | 53 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/productReadiness.js` | 240 | `systemFlagsRepo.getKillSwitch(),` |
+| `src/routes/admin/phase1Notifications.js` | 67 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/productReadiness.js` | 280 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 26 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |

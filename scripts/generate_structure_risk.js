@@ -2,11 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const childProcess = require('child_process');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const DESIGN_AI_META_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'design_ai_meta.json');
+const DEPENDENCY_GRAPH_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'dependency_graph.json');
 const OUTPUT_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'structure_risk.json');
 const BUDGETS_PATH = path.join(ROOT, 'docs', 'STRUCTURE_BUDGETS.md');
 
@@ -15,16 +15,7 @@ function toPosix(value) {
 }
 
 function resolveGeneratedAt() {
-  try {
-    const value = childProcess.execSync('git log -1 --format=%cI -- docs/REPO_AUDIT_INPUTS/design_ai_meta.json', {
-      cwd: ROOT,
-      stdio: ['ignore', 'pipe', 'ignore']
-    }).toString('utf8').trim();
-    if (value) return value;
-  } catch (_err) {
-    // fall through
-  }
-  return 'NOT_AVAILABLE';
+  return new Date().toISOString();
 }
 
 function buildSourceDigest(text) {
@@ -45,6 +36,32 @@ function normalizePairArray(value) {
     .sort((a, b) => `${a[0]}:${a[1]}`.localeCompare(`${b[0]}:${b[1]}`));
 }
 
+function readUsecaseToRepo() {
+  if (!fs.existsSync(DEPENDENCY_GRAPH_PATH)) return {};
+  try {
+    const payload = JSON.parse(fs.readFileSync(DEPENDENCY_GRAPH_PATH, 'utf8'));
+    if (payload && typeof payload.usecase_to_repo === 'object' && payload.usecase_to_repo !== null) {
+      return payload.usecase_to_repo;
+    }
+  } catch (_err) {
+    // fallback below
+  }
+  return {};
+}
+
+function countActiveLegacyRepoImports(legacyRepos, usecaseToRepo) {
+  if (!Array.isArray(legacyRepos) || !legacyRepos.length) return 0;
+  const legacySet = new Set(legacyRepos.map((item) => String(item)));
+  let count = 0;
+  Object.values(usecaseToRepo || {}).forEach((repos) => {
+    if (!Array.isArray(repos)) return;
+    repos.forEach((repoName) => {
+      if (legacySet.has(String(repoName))) count += 1;
+    });
+  });
+  return count;
+}
+
 function buildPayload() {
   const raw = fs.readFileSync(DESIGN_AI_META_PATH, 'utf8');
   const meta = JSON.parse(raw);
@@ -55,6 +72,8 @@ function buildPayload() {
   const namingDrift = meta && typeof meta.naming_drift === 'object' ? meta.naming_drift : {};
   const namingDriftScenario = normalizeStringArray(namingDrift.scenario);
   const namingDriftScenarioKey = normalizeStringArray(namingDrift.scenarioKey);
+  const usecaseToRepo = readUsecaseToRepo();
+  const activeLegacyRepoImportsCount = countActiveLegacyRepoImports(legacyRepos, usecaseToRepo);
 
   return {
     generatedAt: resolveGeneratedAt(),
@@ -64,6 +83,7 @@ function buildPayload() {
     legacy_repos_count: legacyRepos.length,
     merge_candidates_count: mergeCandidates.length,
     unresolved_dynamic_dep_count: unresolvedDynamicDep.length,
+    active_legacy_repo_imports_count: activeLegacyRepoImportsCount,
     naming_drift_scenario_count: namingDriftScenario.length,
     naming_drift_scenarioKey_count: namingDriftScenarioKey.length,
     canonical_repos: canonicalRepos,
@@ -76,6 +96,7 @@ function buildPayload() {
     },
     assumptions: [
       'derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json',
+      'active_legacy_repo_imports_count is derived from docs/REPO_AUDIT_INPUTS/dependency_graph.json usecase_to_repo',
       'merge_candidates_count indicates duplicate/alias convergence debt',
       'budget checks are sourced from docs/STRUCTURE_BUDGETS.md latest baseline'
     ]
@@ -96,7 +117,8 @@ function readBudget() {
     legacy_repos_max: parseLastBudgetValue(text, 'legacy_repos_max'),
     merge_candidates_max: parseLastBudgetValue(text, 'merge_candidates_max'),
     naming_drift_scenario_max: parseLastBudgetValue(text, 'naming_drift_scenario_max'),
-    unresolved_dynamic_dep_max: parseLastBudgetValue(text, 'unresolved_dynamic_dep_max')
+    unresolved_dynamic_dep_max: parseLastBudgetValue(text, 'unresolved_dynamic_dep_max'),
+    active_legacy_repo_imports_max: parseLastBudgetValue(text, 'active_legacy_repo_imports_max')
   };
 }
 
@@ -129,6 +151,15 @@ function verifyBudget(payload) {
   ) {
     throw new Error(
       `structure unresolved dynamic dep exceeds budget (${payload.unresolved_dynamic_dep_count} > ${budget.unresolved_dynamic_dep_max})`
+    );
+  }
+  if (
+    Number.isFinite(budget.active_legacy_repo_imports_max)
+    && Number(payload.active_legacy_repo_imports_count) > budget.active_legacy_repo_imports_max
+  ) {
+    throw new Error(
+      'structure active legacy repo imports exceeds budget'
+      + ` (${payload.active_legacy_repo_imports_count} > ${budget.active_legacy_repo_imports_max})`
     );
   }
 }
@@ -174,4 +205,3 @@ function run() {
 }
 
 run();
-

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T23:25:29-05:00",
-  "gitCommit": "1c7b2c332b6e79e81b45395109aeeeb79d934441",
-  "branch": "codex/phase633-index-governance",
-  "sourceDigest": "861556b532e270e9bb81acbfc320311c4ec4d561b254a775e116e4c59962a90d",
+  "generatedAt": "2026-02-22T23:57:49-05:00",
+  "gitCommit": "3a589858536d7bd57fe708926ded098b5e718628",
+  "branch": "codex/phase634-trend-ui",
+  "sourceDigest": "3ee78729af29028b1f19ffd20e44ca81999d810f31502cea9f81793763cbd632",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -59,7 +59,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 
 ## Checklist (fixed order)
 1. Product Readiness Gate（管理API 6本）:
-   - `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true`
+   - `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true` / `checks.structureRisk.activeLegacyRepoImports=0`
    - `/api/admin/read-path-fallback-summary` が HTTP 200
    - `/api/admin/retention-runs` が HTTP 200
    - `/api/admin/struct-drift/backfill-runs` が HTTP 200

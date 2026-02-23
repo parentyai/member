@@ -8,6 +8,18 @@ function resolveTimestamp(at) {
   return at || serverTimestamp();
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function sortByCreatedAtDesc(rows) {
+  return rows.slice().sort((a, b) => toMillis(b && b.createdAt) - toMillis(a && a.createdAt));
+}
+
 async function appendAuditLog(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
@@ -22,12 +34,12 @@ module.exports = {
     if (!traceId) throw new Error('traceId required');
     const db = getDb();
     const cap = typeof limit === 'number' ? limit : 50;
-    let query = db.collection(COLLECTION)
-      .where('traceId', '==', traceId)
-      .orderBy('createdAt', 'desc');
+    let query = db.collection(COLLECTION).where('traceId', '==', traceId);
     if (cap) query = query.limit(cap);
     const snap = await query.get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+    const sorted = sortByCreatedAtDesc(rows);
+    return cap ? sorted.slice(0, cap) : sorted;
   },
   async listAuditLogs(filters) {
     const payload = filters || {};

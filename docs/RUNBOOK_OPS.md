@@ -14,7 +14,7 @@ LINE-only / SSOT（Firestore）/ traceId 監査を前提に、判断→記録→
 - `/admin/ops` にアクセスできること（READ ONLY）
 - Trace Search（`/api/admin/trace?traceId=...`）で監査ログが参照できること
 - 送信を伴う操作をする前に Kill Switch 状態を確認すること（ONなら送信しない）
-- `GET /api/admin/product-readiness` が `status=GO` であること（`checks.retentionRisk.ok=true` と `checks.structureRisk.ok=true` を含む）
+- `GET /api/admin/product-readiness` が `status=GO` であること（`checks.retentionRisk.ok=true` と `checks.structureRisk.ok=true` と `checks.structureRisk.activeLegacyRepoImports=0` を含む）
 
 ## Steps
 ### 1) Ops Console を開く（view）
@@ -88,6 +88,7 @@ STOP の方針:
    - `ok=true`
    - `generatedAtHours` が `freshnessHoursMax` 以下
    - `legacyReposCount` / `mergeCandidatesCount` / `namingDriftScenarioCount` / `unresolvedDynamicDepCount` が `budget` 以下
+   - `activeLegacyRepoImports=0`（legacy repo import が稼働導線に残っていない）
 3. `blockers` に `structure_risk_*` があれば送信運用を開始しない
 
 ## Recovery Rule（delivery stuck）

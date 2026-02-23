@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-02-21T13:30:03-05:00",
+  "generatedAt": "2026-02-23T05:00:42.166Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
   "sourceDigest": "edcff4c333c033c9bc65b7fc9d243d31b9de79f963c2ea3d241e577074ad0709",
   "canonical_repos_count": 22,
   "legacy_repos_count": 6,
   "merge_candidates_count": 6,
   "unresolved_dynamic_dep_count": 0,
+  "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 9,
   "naming_drift_scenarioKey_count": 22,
   "canonical_repos": [
@@ -106,6 +107,7 @@
   },
   "assumptions": [
     "derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
+    "active_legacy_repo_imports_count is derived from docs/REPO_AUDIT_INPUTS/dependency_graph.json usecase_to_repo",
     "merge_candidates_count indicates duplicate/alias convergence debt",
     "budget checks are sourced from docs/STRUCTURE_BUDGETS.md latest baseline"
   ]

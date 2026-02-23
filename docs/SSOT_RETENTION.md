@@ -5,29 +5,36 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
 ## Policy
 - すべての削除系処理は `dry-run` から開始する。
 - `audit_logs` は append-only、削除対象外。
-- retention 未定義のコレクションは `UNDEFINED` と明示し、実行時削除禁止。
+- retention は以下の profile で明示する（Balanced）。
+  - `event`: `180d`
+  - `aggregate`: `90d`
+  - `transient`: `30d`
+  - `evidence`: `365d`
+  - `config`: `INDEFINITE`
+- `retention=UNDEFINED_IN_CODE` は運用上の未解消状態として扱い、実行時削除禁止。
 
 ## Collection Matrix
 
 | collection | kind | retention_days | deletable | recomputable |
 |---|---|---:|---|---|
-| audit_logs | evidence | UNDEFINED | NO | NO |
-| events | event | UNDEFINED | CONDITIONAL | YES |
-| notification_deliveries | event | UNDEFINED | CONDITIONAL | YES |
-| notifications | config | UNDEFINED | NO | NO |
-| users | config | UNDEFINED | NO | NO |
-| link_registry | config | UNDEFINED | NO | NO |
-| city_packs | config | UNDEFINED | NO | NO |
-| source_refs | config | 120d validity (field-level) | CONDITIONAL | NO |
-| source_evidence | evidence | UNDEFINED | NO | NO |
-| city_pack_requests | event | UNDEFINED | CONDITIONAL | NO |
-| city_pack_feedback | event | UNDEFINED | CONDITIONAL | NO |
-| city_pack_bulletins | event | UNDEFINED | CONDITIONAL | YES |
-| city_pack_update_proposals | event | UNDEFINED | CONDITIONAL | YES |
-| ops_states | config | UNDEFINED | NO | NO |
-| ops_state (legacy) | config | UNDEFINED | NO | NO |
-| ops_read_model_snapshots | aggregate | UNDEFINED | CONDITIONAL | YES |
-| system_flags | config | UNDEFINED | NO | NO |
+| audit_logs | evidence | 365d | NO | NO |
+| events | event | 180d | CONDITIONAL | YES |
+| notification_deliveries | event | 180d | CONDITIONAL | YES |
+| notifications | config | INDEFINITE | NO | NO |
+| users | config | INDEFINITE | NO | NO |
+| link_registry | config | INDEFINITE | NO | NO |
+| city_packs | config | INDEFINITE | NO | NO |
+| source_refs | config | INDEFINITE | NO | NO |
+| source_evidence | config | INDEFINITE | NO | NO |
+| city_pack_requests | config | INDEFINITE | NO | NO |
+| city_pack_feedback | config | INDEFINITE | NO | NO |
+| city_pack_bulletins | config | INDEFINITE | NO | NO |
+| city_pack_update_proposals | config | INDEFINITE | NO | NO |
+| ops_states | config | INDEFINITE | NO | NO |
+| ops_state (legacy) | config | INDEFINITE | NO | NO |
+| ops_read_model_snapshots | aggregate | 90d | CONDITIONAL | YES |
+| source_audit_runs | transient | 30d | CONDITIONAL | YES |
+| system_flags | config | INDEFINITE | NO | NO |
 
 ## Dry-run Job Contract
 - Endpoint: `POST /internal/jobs/retention-dry-run`
