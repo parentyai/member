@@ -2,8 +2,6 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'source_evidence';
 
@@ -59,22 +57,8 @@ async function listEvidenceBySourceRef(sourceRefId, limit) {
   const cap = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 100) : 20;
   const db = getDb();
   const baseQuery = db.collection(COLLECTION).where('sourceRefId', '==', sourceRefId);
-  try {
-    const snap = await baseQuery.orderBy('checkedAt', 'desc').limit(cap).get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'sourceEvidenceRepo',
-      query: 'listEvidenceBySourceRef',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'checkedAt');
-    return rows.slice(0, cap);
-  }
+  const snap = await baseQuery.orderBy('checkedAt', 'desc').limit(cap).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 async function listEvidenceByTraceId(traceId, limit) {
@@ -82,22 +66,8 @@ async function listEvidenceByTraceId(traceId, limit) {
   const cap = Number.isFinite(Number(limit)) ? Math.min(Math.max(Math.floor(Number(limit)), 1), 100) : 20;
   const db = getDb();
   const baseQuery = db.collection(COLLECTION).where('traceId', '==', traceId);
-  try {
-    const snap = await baseQuery.orderBy('checkedAt', 'desc').limit(cap).get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'sourceEvidenceRepo',
-      query: 'listEvidenceByTraceId',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'checkedAt');
-    return rows.slice(0, cap);
-  }
+  const snap = await baseQuery.orderBy('checkedAt', 'desc').limit(cap).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 module.exports = {

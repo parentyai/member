@@ -1,9 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
 const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'users';
 
@@ -97,23 +95,8 @@ async function listUsers(params) {
   const limit = typeof opts.limit === 'number' ? opts.limit : 500;
   if (limit) query = query.limit(limit);
   let users = [];
-  try {
-    const snap = await query.get();
-    users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'usersRepo',
-      query: 'listUsers',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    // Fallback for environments without composite indexes.
-    const snap = await baseQuery.get();
-    users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(users, 'createdAt');
-    if (limit) users = users.slice(0, limit);
-  }
+  const snap = await query.get();
+  users = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   if (opts.membersOnly) {
     users = users.filter(hasMemberNumber);
   }
