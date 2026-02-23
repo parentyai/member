@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:55:37-05:00",
-  "gitCommit": "d7dfdd3caa4d9514ec9d4b90aa17cc3f31c669d2",
-  "branch": "codex/phase620-final-missing-index",
-  "sourceDigest": "4da7adfc1565bd337a23083bcf8d9ed3c87885bb7c23e3d3a1ce289ce1612738",
+  "generatedAt": "2026-02-22T20:02:39-05:00",
+  "gitCommit": "1d5e11563c831c34f795278edac1134f5c6cc16c",
+  "branch": "codex/phase625-retention-risk-gate",
+  "sourceDigest": "e54391dad9dcb7bc1014655305c13f501abe39f232adeec6f9ad1c495038835f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
@@ -21,7 +21,8 @@
       "kill_switch_points": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
       "protection_matrix": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
       "impact_radius": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
-      "load_risk": "docs/REPO_AUDIT_INPUTS/load_risk.json"
+      "load_risk": "docs/REPO_AUDIT_INPUTS/load_risk.json",
+      "retention_risk": "docs/REPO_AUDIT_INPUTS/retention_risk.json"
     },
     "guards": {
       "index_route_guard": "src/index.js"

@@ -26,7 +26,8 @@ const REQUIRED = Object.freeze({
     kill_switch_points: 'docs/REPO_AUDIT_INPUTS/kill_switch_points.json',
     protection_matrix: 'docs/REPO_AUDIT_INPUTS/protection_matrix.json',
     impact_radius: 'docs/REPO_AUDIT_INPUTS/impact_radius.json',
-    load_risk: 'docs/REPO_AUDIT_INPUTS/load_risk.json'
+    load_risk: 'docs/REPO_AUDIT_INPUTS/load_risk.json',
+    retention_risk: 'docs/REPO_AUDIT_INPUTS/retention_risk.json'
   },
   guards: {
     index_route_guard: 'src/index.js'

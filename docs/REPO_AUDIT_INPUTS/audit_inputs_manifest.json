@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:55:37-05:00",
-  "gitCommit": "d7dfdd3caa4d9514ec9d4b90aa17cc3f31c669d2",
-  "branch": "codex/phase620-final-missing-index",
-  "sourceDigest": "ca6f72a34ecec203b3110e4081181a33dc1bc42beba489a29cd286886aada67f",
+  "generatedAt": "2026-02-22T20:02:39-05:00",
+  "gitCommit": "1d5e11563c831c34f795278edac1134f5c6cc16c",
+  "branch": "codex/phase625-retention-risk-gate",
+  "sourceDigest": "646fd6d2237db20585ebfaa089b1b258515d0c4b73bab263c138a58410c44778",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,7 +78,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "604a5243075195bf0020384604e29bc7561f619e5b7e16f048e1fa97f088b781",
+      "sha256": "c1e0623da1f99e33a8a776e615405378ed9bec23379d063679a239b4a2fc8c87",
       "bytes": 828
     },
     {
@@ -88,7 +88,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "435f53a4a58d85873524f466b16440d87e3a89c522354ac60e2cf35d6cc9e096",
+      "sha256": "3bd8a9a987cfdf4130fd3a8bdeccb736b46478f44789dc2469ecfc388e456096",
       "bytes": 487
     },
     {
@@ -108,8 +108,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "0baf7c40c8a9fa6372ed3c993c45ebfb02f799d3135234a0514cb679dce360dd",
+      "sha256": "293a69daee2f414ba49bee3356468b3c1e78c003b73fd6e77c1c39b21542c8ad",
       "bytes": 288099
+    },
+    {
+      "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
+      "sha256": "118e586d0225943a414a9fe3875d55abf3a8895c3583b29093a21a366d492c13",
+      "bytes": 2568
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
@@ -118,8 +123,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "1d7288cdfc076fdceff3e31c51f570c5afcd0353ceb16a911b7b9798e9625912",
-      "bytes": 2280
+      "sha256": "2767609603286df259a9edc7e95c404668d801c2854c74a4f22119632fa3efbb",
+      "bytes": 2350
     }
   ],
   "diff_detection_rules": [
