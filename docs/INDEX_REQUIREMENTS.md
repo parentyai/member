@@ -10,6 +10,11 @@ Firestore missing-index fallback を段階的に無効化するための最小�
   - `ENV_NAME in {stg,stage,staging,prod,production}` のときは `FIRESTORE_FAIL_ON_MISSING_INDEX` 未指定でも fail-closed。
   - ローカル/テストは従来どおり env var 明示で fail-closed を切替。
 
+## 実運用SSOT（Index定義）
+- Firestore composite index の実運用定義は `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` を唯一のSSOTとする。
+- index差分検知は `npm run firestore-indexes:check` を使用する。
+- 不足indexの作成コマンド確認は `npm run firestore-indexes:plan -- --project-id <PROJECT_ID>` を使用する。
+
 ## High Priority Queries
 
 ### 1) usersRepo.listUsers

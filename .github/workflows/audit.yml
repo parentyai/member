@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   security-events: write
+  id-token: write
 
 jobs:
   docs:
@@ -28,6 +29,57 @@ jobs:
 
       - name: Verify docs artifacts are generated and aligned
         run: npm run docs-artifacts:check
+
+  firestore-indexes:
+    name: firestore-indexes
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+      GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+      DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate required index-check variables
+        run: |
+          REQUIRED_VARS=(
+            GCP_WIF_PROVIDER
+            DEPLOY_SA_EMAIL
+          )
+          MISSING=0
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              MISSING=1
+            fi
+          done
+          if [ -z "${FIRESTORE_PROJECT_ID}" ] && [ -z "${GCP_PROJECT_ID}" ]; then
+            echo "::error title=Missing workflow variable::FIRESTORE_PROJECT_ID or GCP_PROJECT_ID must be set"
+            MISSING=1
+          fi
+          if [ "$MISSING" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
+
+      - name: Check required Firestore composite indexes
+        run: npm run firestore-indexes:check -- --project-id "${FIRESTORE_PROJECT_ID:-$GCP_PROJECT_ID}"
 
   audit:
     runs-on: ubuntu-latest

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T21:17:05-05:00",
-  "gitCommit": "701b3b1fe3b9e5c5d568b678d9dfc3566689da65",
+  "generatedAt": "2026-02-22T21:18:06-05:00",
+  "gitCommit": "50a57cfeb5985f51d3dd97106ddbaf6a7bb01b30",
   "branch": "codex/phase631-e2e-audit-action-gate-batch",
-  "sourceDigest": "adf1f666c90e6f406f89e44241668477c856c0d753e24b432e90e3e2a84308c4",
+  "sourceDigest": "df38664e1fe069e6c383741b7e9be6fb50147e4def3ce1bf107b872157fd4527",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -57,6 +57,11 @@
       "bytes": 48596
     },
     {
+      "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
+      "sha256": "e7ee30f5955ed35a5ca052feef857aaf14c7526409db3eaf4bbe7cc5a4c599fd",
+      "bytes": 5734
+    },
+    {
       "file": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
       "sha256": "d90cdb3977a2fa214d6888b00c2d61acd745411d6b64c7f86fa97c77a2bc3d44",
       "bytes": 80512
@@ -78,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "f7b0084cdd269bbb6b625fdeb02644770d0df59747e3bd77ded1c70909099eb9",
+      "sha256": "326fa1b84c74b06856892951c76a88d3d769e42acc4fada9b3b4c7604db80ce9",
       "bytes": 828
     },
     {
@@ -88,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "0813a59361d989a7a49282178789cf902f91fa7e53ee79f61de15e5f45ac35b3",
+      "sha256": "68a444c487a45cc6a76579aa8a24b53142c073ed423476c60d6b6d7ae29c93ae",
       "bytes": 487
     },
     {
@@ -108,7 +113,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "9f1536965f326420b8811c18948e9945babe26a3bb79e5d6f4dc653b459dbee8",
+      "sha256": "de9750f0f798b25fa1b97ba0aa8df72e8caebc70ba64ea7331ab4cd9fddd951e",
       "bytes": 288099
     },
     {
@@ -128,7 +133,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c5180eb76f3ec8d633d7250f892808a0bc99302175f451b8a8a794ec8d04ceaf",
+      "sha256": "dc5cff3262a2a4ed5902cca6d9eb68628d34088f0588d84262b88452e0c9848b",
       "bytes": 2428
     }
   ],

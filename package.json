@@ -37,6 +37,8 @@
     "load-risk:generate": "node scripts/generate_load_risk.js",
     "load-risk:check": "node scripts/generate_load_risk.js --check",
     "missing-index-surface:generate": "node scripts/generate_missing_index_surface.js",
-    "missing-index-surface:check": "node scripts/generate_missing_index_surface.js --check"
+    "missing-index-surface:check": "node scripts/generate_missing_index_surface.js --check",
+    "firestore-indexes:check": "node scripts/check_firestore_indexes.js --check",
+    "firestore-indexes:plan": "node scripts/check_firestore_indexes.js --plan"
   }
 }

@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "description": "Firestore composite indexes required to keep admin read paths fail-closed without runtime missing-index errors.",
+  "indexes": [
+    {
+      "id": "audit_logs_action_createdAt_desc",
+      "collectionGroup": "audit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "action",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+          "line": 36
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+          "line": 38
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.product_readiness.view"
+      }
+    },
+    {
+      "id": "link_registry_lastHealth_state_createdAt_desc",
+      "collectionGroup": "link_registry",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lastHealth.state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
+          "line": 40
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
+          "line": 41
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.os_alerts_summary"
+      }
+    },
+    {
+      "id": "city_packs_language_status_updatedAt_desc",
+      "collectionGroup": "city_packs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "language",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
+          "line": 328
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
+          "line": 332
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
+          "line": 333
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.city_packs"
+      }
+    },
+    {
+      "id": "notifications_status_createdAt_desc",
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
+          "line": 32
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
+          "line": 35
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.os_alerts_summary"
+      }
+    },
+    {
+      "id": "send_retry_queue_status_createdAt_desc",
+      "collectionGroup": "send_retry_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/sendRetryQueueRepo.js",
+          "line": 45
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/sendRetryQueueRepo.js",
+          "line": 46
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.os_alerts_summary"
+      }
+    },
+    {
+      "id": "decision_logs_audit_notificationId_decidedAt_desc",
+      "collectionGroup": "decision_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "audit.notificationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "decidedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
+          "line": 62
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
+          "line": 63
+        }
+      ],
+      "observedBy": {
+        "kind": "route_error_missing_index",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.os_alerts_summary"
+      }
+    }
+  ],
+  "assumptions": [
+    "Definitions are add-only; do not remove existing index contracts.",
+    "Indexes are evaluated by collectionGroup + queryScope + ordered field tuple.",
+    "Firestore synthetic __name__ ordering is ignored in diff because it is auto-appended by API responses."
+  ]
+}

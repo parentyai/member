@@ -357,17 +357,17 @@ async function handleProductReadiness(req, res) {
           budget: budgets.missingIndexSurfaceMax
         });
       }
-    } else if (!Number.isFinite(missingIndexSurfaceGeneratedAtHours)) {
+    } else if (!Number.isFinite(missingIndexGeneratedAtHours)) {
       blockers.push({
         code: 'missing_index_surface_generated_at_invalid',
         message: 'missing_index_surface.json generatedAt is missing or invalid',
         budget: budgets.missingIndexSurfaceFreshnessMaxHours
       });
-    } else if (Number.isFinite(missingIndexSurfaceFreshnessMaxHours) && missingIndexSurfaceGeneratedAtHours > missingIndexSurfaceFreshnessMaxHours) {
+    } else if (Number.isFinite(missingIndexSurfaceFreshnessMaxHours) && missingIndexGeneratedAtHours > missingIndexSurfaceFreshnessMaxHours) {
       blockers.push({
         code: 'missing_index_surface_generated_at_stale',
         message: 'missing_index_surface.json is stale',
-        value: missingIndexSurfaceGeneratedAtHours,
+        value: missingIndexGeneratedAtHours,
         thresholdHours: budgets.missingIndexSurfaceFreshnessMaxHours
       });
     }

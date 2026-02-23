@@ -76,6 +76,15 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
 - 参照権限がない運用でも、`NOT_FOUND` の fail-fast が必要な場合は、
   別の高権限 principal で手動 preflight を実行する。
 
+## Firestore Index Drift Guard
+- Firestore composite index の運用定義は `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` を参照する。
+- deploy 前に以下を実行し、不足indexがないことを確認する。
+  - `npm run firestore-indexes:check -- --project-id <PROJECT_ID>`
+- 不足indexの作成コマンドを確認したい場合:
+  - `npm run firestore-indexes:plan -- --project-id <PROJECT_ID>`
+- `audit.yml` には `firestore-indexes` job を追加し、PR時点で index ドリフトを検知して停止する。
+- Branch protection の Required status checks に `firestore-indexes` を追加すること。
+
 ## OIDC / WIF Guardrail（workflow_dispatch 対応）
 `workflow_dispatch(target_environment=prod)` で OIDC が `unauthorized_client` になる場合は、
 Workload Identity Provider の `attributeCondition` が `push(main)` のみ許可している可能性が高い。
