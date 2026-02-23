@@ -21,6 +21,7 @@ function parseArgs(argv, env) {
   const opts = {
     check: false,
     plan: false,
+    contractsOnly: false,
     projectId: (sourceEnv.FIRESTORE_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '').trim(),
     requiredFile: DEFAULT_REQUIRED_PATH
   };
@@ -33,6 +34,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--plan') {
       opts.plan = true;
+      continue;
+    }
+    if (arg === '--contracts-only') {
+      opts.contractsOnly = true;
       continue;
     }
     if (arg === '--project-id') {
@@ -394,20 +399,33 @@ function printContractErrors(errors) {
 function run(argv, env, execFileSyncFn) {
   const opts = parseArgs(argv || process.argv, env || process.env);
   const execSync = execFileSyncFn || childProcess.execFileSync;
-  const projectId = resolveProjectId(opts, execSync);
   const requiredPayload = readRequiredPayload(opts.requiredFile);
   const required = requiredPayload.indexes;
   const criticalContracts = requiredPayload.criticalContracts;
-  const actual = listActualIndexes(projectId, execSync);
-  const diff = diffIndexes(required, actual);
   const contractErrors = validateCriticalContracts(required, criticalContracts);
+  const contractsOnly = Boolean(opts.contractsOnly);
 
-  printDiffSummary(projectId, opts.requiredFile, required, actual, diff);
-  if (opts.plan) printCreatePlan(projectId, diff.missing);
+  let projectId = '';
+  let actual = [];
+  let diff = {
+    missing: [],
+    extra: [],
+    present: []
+  };
+
+  if (contractsOnly) {
+    process.stdout.write(`[firestore-indexes] contracts-only mode enabled\n`);
+  } else {
+    projectId = resolveProjectId(opts, execSync);
+    actual = listActualIndexes(projectId, execSync);
+    diff = diffIndexes(required, actual);
+    printDiffSummary(projectId, opts.requiredFile, required, actual, diff);
+    if (opts.plan) printCreatePlan(projectId, diff.missing);
+  }
   printContractErrors(contractErrors);
 
-  if (opts.check && (diff.missing.length > 0 || contractErrors.length > 0)) {
-    if (diff.missing.length > 0) {
+  if (opts.check && (contractErrors.length > 0 || (!contractsOnly && diff.missing.length > 0))) {
+    if (!contractsOnly && diff.missing.length > 0) {
       process.stderr.write(`不足 index が ${diff.missing.length} 件あります。上記 create plan を実行してください。\n`);
     }
     if (contractErrors.length > 0) {

@@ -46,6 +46,7 @@ jobs:
           node-version: "20"
 
       - name: Validate required index-check variables
+        if: github.event_name != 'pull_request'
         run: |
           REQUIRED_VARS=(
             GCP_WIF_PROVIDER
@@ -67,6 +68,7 @@ jobs:
           fi
 
       - name: Auth (OIDC)
+        if: github.event_name != 'pull_request'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
@@ -74,11 +76,17 @@ jobs:
           token_format: access_token
 
       - name: Setup gcloud
+        if: github.event_name != 'pull_request'
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.FIRESTORE_PROJECT_ID || env.GCP_PROJECT_ID }}
 
+      - name: Validate required Firestore critical contracts (PR-safe)
+        if: github.event_name == 'pull_request'
+        run: npm run firestore-indexes:check -- --contracts-only
+
       - name: Check required Firestore composite indexes
+        if: github.event_name != 'pull_request'
         run: npm run firestore-indexes:check -- --project-id "${FIRESTORE_PROJECT_ID:-$GCP_PROJECT_ID}"
 
   audit-run:

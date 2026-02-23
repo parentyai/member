@@ -8,7 +8,8 @@ const {
   normalizeRequiredIndex,
   normalizeCriticalContract,
   validateCriticalContracts,
-  resolveEvidencePath
+  resolveEvidencePath,
+  run
 } = require('../../scripts/check_firestore_indexes');
 
 test('phase633: validateCriticalContracts detects unknown required index ids', () => {
@@ -58,4 +59,19 @@ test('phase633: validateCriticalContracts detects unresolved sourceEvidence path
 test('phase633: resolveEvidencePath remaps absolute local repo paths to current workspace', () => {
   const resolved = resolveEvidencePath('/Users/parentyai.com/Projects/Member/src/index.js');
   assert.strictEqual(path.basename(resolved), 'index.js');
+});
+
+test('phase633: contracts-only check does not require project id or gcloud calls', () => {
+  const execCalls = [];
+  const requiredFile = path.join(process.cwd(), 'docs', 'REPO_AUDIT_INPUTS', 'firestore_required_indexes.json');
+  const code = run(
+    ['node', 'scripts/check_firestore_indexes.js', '--check', '--contracts-only', '--required-file', requiredFile],
+    {},
+    (cmd, args) => {
+      execCalls.push({ cmd, args });
+      throw new Error('exec should not be called in contracts-only mode');
+    }
+  );
+  assert.strictEqual(code, 0);
+  assert.strictEqual(execCalls.length, 0);
 });
