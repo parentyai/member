@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T23:57:49-05:00",
-  "gitCommit": "3a589858536d7bd57fe708926ded098b5e718628",
-  "branch": "codex/phase634-trend-ui",
-  "sourceDigest": "6204d57d0f0931536fc577ad10bbcbd59f84035ef4aa0372148e0f99451bee50",
+  "generatedAt": "2026-02-23T11:51:09-05:00",
+  "gitCommit": "438035f55ed5bb1ead89f984b9ce7fd83e475d28",
+  "branch": "HEAD",
+  "sourceDigest": "b833e1174a701eb72a9f5afe0ccb616ecc8db88880400b545c29ed3d126946d3",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -133,8 +133,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "4bcdc614623cb5a905bf1eb48a714a2c8d9389df24fb03e85efd38c9e8679215",
-      "bytes": 2409
+      "sha256": "1287b87aa4b86a215d37d2ae50bc4e3c85d69361c2ed63370c79ce038b02d7a0",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

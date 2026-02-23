@@ -55,6 +55,7 @@ env:
   GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
   DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
   ADMIN_OS_TOKEN: ${{ secrets.ADMIN_OS_TOKEN }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
 
 jobs:
   stg-e2e:
@@ -232,6 +233,10 @@ jobs:
             --out-file "$JSON_OUT"
             --md-out "$MD_OUT"
           )
+
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            ARGS+=(--internal-job-token "$CITY_PACK_JOB_TOKEN")
+          fi
 
           if [ "${{ github.event.inputs.fail_on_missing_audit_actions }}" = "true" ]; then
             ARGS+=(--fail-on-missing-audit-actions)
