@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T22:10:33-05:00",
-  "gitCommit": "ed7dc56012dab61e2b1da12cdc58fca5c1355e02",
+  "generatedAt": "2026-02-22T22:41:54-05:00",
+  "gitCommit": "5b581c224e7d6337133f7c3c90e263d06bdf23e0",
   "branch": "codex/phase633-index-governance",
-  "sourceDigest": "ff86b732a864da5486dc94e0be01097d4053d1472d91c19353e68dec416e22d3",
+  "sourceDigest": "57cf9d616f9b802731b54430be17cb13faf6b564fd29024c83f7e61426055d25",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

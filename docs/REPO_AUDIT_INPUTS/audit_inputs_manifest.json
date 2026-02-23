@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T22:10:33-05:00",
-  "gitCommit": "ed7dc56012dab61e2b1da12cdc58fca5c1355e02",
+  "generatedAt": "2026-02-22T22:41:54-05:00",
+  "gitCommit": "5b581c224e7d6337133f7c3c90e263d06bdf23e0",
   "branch": "codex/phase633-index-governance",
-  "sourceDigest": "afe26560a116228381b79700decf829ed3501be98afb9b47d5dc0cd7f3657388",
+  "sourceDigest": "c13cffe45bccbad3ea3e1e7c0670f5e9508c492fc82f3a493cdc9477fad7dd0d",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -133,7 +133,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "6b0b4411ed62683a4b2c8283e903af672b84dd93a29e0849b264ab6a8b6791f4",
+      "sha256": "1191bf4e34f97a372213d8e7eb372412e90ea7039481750a5be2f7fec0f10962",
       "bytes": 2417
     }
   ],
