@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-02-22T18:44:45-05:00",
+  "generatedAt": "2026-02-22T18:59:20-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "4ce20e96a6ee39d31fe405518f14a7febd1f03f763109829a995d17385b373f0",
-  "surface_count": 15,
-  "point_count": 19,
+  "sourceDigest": "03103eee4437672b8125fa5c5e1a0264c159247f169249d0b9418dda22acce61",
+  "surface_count": 14,
+  "point_count": 18,
   "call_breakdown": {
-    "isMissingIndexError": 15
+    "isMissingIndexError": 14
   },
   "items": [
     {
@@ -141,20 +141,6 @@
       "call": "isMissingIndexError",
       "lines": [
         50
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/sendRetryQueueRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        55
       ],
       "occurrences": 1,
       "policy": {

@@ -10,4 +10,4 @@
 
 ## 注記
 - duplicate groups: 6
-- fallback points: 19
+- fallback points: 18
