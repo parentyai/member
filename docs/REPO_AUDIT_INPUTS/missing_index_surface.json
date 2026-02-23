@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-02-22T19:19:03-05:00",
+  "generatedAt": "2026-02-22T19:28:33-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "0c607d306a644a1d570aacc7567dddb97b4cd011c23d172a472ee2e0ac4c4a4c",
-  "surface_count": 13,
-  "point_count": 17,
+  "sourceDigest": "db82d06cfc6082babdddb596b2fb9504c707257fa0283f21223cf4db89e13fd6",
+  "surface_count": 12,
+  "point_count": 16,
   "call_breakdown": {
-    "isMissingIndexError": 13
+    "isMissingIndexError": 12
   },
   "items": [
     {
@@ -97,20 +97,6 @@
       "call": "isMissingIndexError",
       "lines": [
         90
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/decisionDriftsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        34
       ],
       "occurrences": 1,
       "policy": {
