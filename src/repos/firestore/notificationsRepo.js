@@ -8,6 +8,18 @@ function resolveTimestamp(at) {
   return at || serverTimestamp();
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function sortByCreatedAtDesc(rows) {
+  return rows.slice().sort((a, b) => toMillis(b && b.createdAt) - toMillis(a && a.createdAt));
+}
+
 async function createNotification(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
@@ -32,11 +44,13 @@ async function listNotifications(params) {
   if (opts.status) baseQuery = baseQuery.where('status', '==', opts.status);
   if (opts.scenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', opts.scenarioKey);
   if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
-  let query = baseQuery.orderBy('createdAt', 'desc');
   const limit = typeof opts.limit === 'number' ? opts.limit : 50;
+  let query = baseQuery;
   if (limit) query = query.limit(limit);
   const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const sorted = sortByCreatedAtDesc(rows);
+  return limit ? sorted.slice(0, limit) : sorted;
 }
 
 async function updateNotificationStatus(id, statusPatch) {

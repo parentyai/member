@@ -24,6 +24,7 @@ const RETENTION_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 're
 const RETENTION_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'RETENTION_BUDGETS.md');
 const STRUCTURE_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'structure_risk.json');
 const STRUCTURE_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'STRUCTURE_BUDGETS.md');
+const DEPENDENCY_GRAPH_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'dependency_graph.json');
 
 function parseWindowHours(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -134,7 +135,8 @@ function parseStructureBudgets() {
       mergeCandidatesMax: null,
       namingDriftScenarioMax: null,
       unresolvedDynamicDepMax: null,
-      structureRiskFreshnessMaxHours: null
+      structureRiskFreshnessMaxHours: null,
+      activeLegacyRepoImportsMax: null
     };
   }
   const text = fs.readFileSync(STRUCTURE_BUDGETS_PATH, 'utf8');
@@ -142,6 +144,7 @@ function parseStructureBudgets() {
   const mergeCandidatesMatches = [...text.matchAll(/merge_candidates_max:\s*(\d+)/g)];
   const namingDriftScenarioMatches = [...text.matchAll(/naming_drift_scenario_max:\s*(\d+)/g)];
   const unresolvedDynamicDepMatches = [...text.matchAll(/unresolved_dynamic_dep_max:\s*(\d+)/g)];
+  const activeLegacyRepoImportsMatches = [...text.matchAll(/active_legacy_repo_imports_max:\s*(\d+)/g)];
   const freshnessMatches = [...text.matchAll(/structure_risk_freshness_max_hours:\s*(\d+)/g)];
   const legacyReposMatch = legacyReposMatches.length ? legacyReposMatches[legacyReposMatches.length - 1] : null;
   const mergeCandidatesMatch = mergeCandidatesMatches.length
@@ -153,13 +156,17 @@ function parseStructureBudgets() {
   const unresolvedDynamicDepMatch = unresolvedDynamicDepMatches.length
     ? unresolvedDynamicDepMatches[unresolvedDynamicDepMatches.length - 1]
     : null;
+  const activeLegacyRepoImportsMatch = activeLegacyRepoImportsMatches.length
+    ? activeLegacyRepoImportsMatches[activeLegacyRepoImportsMatches.length - 1]
+    : null;
   const freshnessMatch = freshnessMatches.length ? freshnessMatches[freshnessMatches.length - 1] : null;
   return {
     legacyReposMax: legacyReposMatch ? Number(legacyReposMatch[1]) : null,
     mergeCandidatesMax: mergeCandidatesMatch ? Number(mergeCandidatesMatch[1]) : null,
     namingDriftScenarioMax: namingDriftScenarioMatch ? Number(namingDriftScenarioMatch[1]) : null,
     unresolvedDynamicDepMax: unresolvedDynamicDepMatch ? Number(unresolvedDynamicDepMatch[1]) : null,
-    structureRiskFreshnessMaxHours: freshnessMatch ? Number(freshnessMatch[1]) : null
+    structureRiskFreshnessMaxHours: freshnessMatch ? Number(freshnessMatch[1]) : null,
+    activeLegacyRepoImportsMax: activeLegacyRepoImportsMatch ? Number(activeLegacyRepoImportsMatch[1]) : null
   };
 }
 
@@ -206,6 +213,39 @@ function readStructureRisk() {
   }
 }
 
+function readDependencyGraph() {
+  if (!fs.existsSync(DEPENDENCY_GRAPH_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(DEPENDENCY_GRAPH_PATH, 'utf8'));
+  } catch (_err) {
+    return null;
+  }
+}
+
+function countActiveLegacyRepoImports(structureRisk, dependencyGraph) {
+  const payload = dependencyGraph && typeof dependencyGraph === 'object' ? dependencyGraph : {};
+  const usecaseToRepo = payload.usecase_to_repo && typeof payload.usecase_to_repo === 'object'
+    ? payload.usecase_to_repo
+    : {};
+  const legacyRepos = Array.isArray(structureRisk && structureRisk.legacy_repos)
+    ? structureRisk.legacy_repos
+      .filter((item) => typeof item === 'string' && item.trim().length > 0)
+      .map((item) => item.trim())
+    : [];
+  if (!legacyRepos.length) return 0;
+  const legacySet = new Set(legacyRepos);
+  let count = 0;
+  Object.values(usecaseToRepo).forEach((repos) => {
+    if (!Array.isArray(repos)) return;
+    repos.forEach((repoName) => {
+      if (typeof repoName !== 'string') return;
+      if (!legacySet.has(repoName.trim())) return;
+      count += 1;
+    });
+  });
+  return count;
+}
+
 function isSnapshotStale(row, staleAfterMinutes) {
   const asOfMs = toMillis(row && row.asOf);
   if (!Number.isFinite(asOfMs) || asOfMs <= 0) return true;
@@ -246,6 +286,7 @@ async function handleProductReadiness(req, res) {
     const missingIndexSurface = readMissingIndexSurface();
     const retentionRisk = readRetentionRisk();
     const structureRisk = readStructureRisk();
+    const dependencyGraph = readDependencyGraph();
     const budgets = parseCurrentBudgets();
     const retentionBudgets = parseRetentionBudgets();
     const structureBudgets = parseStructureBudgets();
@@ -410,6 +451,7 @@ async function handleProductReadiness(req, res) {
     const unresolvedDynamicDepCount = Number.isFinite(Number(structureRisk && structureRisk.unresolved_dynamic_dep_count))
       ? Number(structureRisk.unresolved_dynamic_dep_count)
       : NaN;
+    const activeLegacyRepoImports = countActiveLegacyRepoImports(structureRisk, dependencyGraph);
 
     if (!retentionRisk) {
       blockers.push({
@@ -592,6 +634,18 @@ async function handleProductReadiness(req, res) {
       });
     }
 
+    if (
+      Number.isFinite(structureBudgets.activeLegacyRepoImportsMax)
+      && activeLegacyRepoImports > structureBudgets.activeLegacyRepoImportsMax
+    ) {
+      blockers.push({
+        code: 'structure_risk_active_legacy_imports_over_budget',
+        message: 'active legacy repo imports exceed budget',
+        value: activeLegacyRepoImports,
+        budget: structureBudgets.activeLegacyRepoImportsMax
+      });
+    }
+
     const status = blockers.length === 0 ? 'GO' : 'NO_GO';
 
     try {
@@ -622,7 +676,8 @@ async function handleProductReadiness(req, res) {
             : null,
           structureUnresolvedDynamicDepCount: Number.isFinite(unresolvedDynamicDepCount)
             ? unresolvedDynamicDepCount
-            : null
+            : null,
+          activeLegacyRepoImports
         }
       });
     } catch (auditErr) {
@@ -690,6 +745,7 @@ async function handleProductReadiness(req, res) {
           mergeCandidatesCount: Number.isFinite(mergeCandidatesCount) ? mergeCandidatesCount : null,
           namingDriftScenarioCount: Number.isFinite(namingDriftScenarioCount) ? namingDriftScenarioCount : null,
           unresolvedDynamicDepCount: Number.isFinite(unresolvedDynamicDepCount) ? unresolvedDynamicDepCount : null,
+          activeLegacyRepoImports,
           budget: structureBudgets
         }
       }

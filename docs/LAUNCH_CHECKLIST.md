@@ -41,6 +41,7 @@
 - `checks.retentionRisk.generatedAtHours` が `docs/RETENTION_BUDGETS.md` の `retention_risk_freshness_max_hours` 以内であること
 - `checks.structureRisk.ok=true` であること（`structure_risk_generated_at_stale` / `structure_risk_*_over_budget` が出ていない）
 - `checks.structureRisk.generatedAtHours` が `docs/STRUCTURE_BUDGETS.md` の `structure_risk_freshness_max_hours` 以内であること
+- `checks.structureRisk.activeLegacyRepoImports` が `0` であること
 
 ## Smoke (No Side Effects)
 - `npm test` が PASS

@@ -418,6 +418,8 @@ async function resolveSegmentTemplateKey(ctx, traceId, preferredKey, requestFn) 
   const request = typeof requestFn === 'function' ? requestFn : apiRequest;
   const resp = await request(ctx, 'GET', '/api/phase61/templates?status=active', traceId);
   if (!resp.okStatus || !resp.body || typeof resp.body !== 'object') {
+    const bootstrap = await bootstrapSegmentTemplate(ctx, traceId, request);
+    if (bootstrap.templateKey) return bootstrap;
     return {
       templateKey: '',
       source: 'auto',
@@ -427,6 +429,8 @@ async function resolveSegmentTemplateKey(ctx, traceId, preferredKey, requestFn) 
   }
   const picked = pickPreferredTemplate(resp.body.items);
   if (!picked) {
+    const bootstrap = await bootstrapSegmentTemplate(ctx, traceId, request);
+    if (bootstrap.templateKey) return bootstrap;
     return {
       templateKey: '',
       source: 'auto',
@@ -440,6 +444,36 @@ async function resolveSegmentTemplateKey(ctx, traceId, preferredKey, requestFn) 
   };
 }
 
+function buildE2eTemplateKey(traceId) {
+  const compact = utcCompact(new Date());
+  const base = sanitizeTracePart(traceId).replace(/-/g, '_').slice(0, 24) || 'auto';
+  return `stg_e2e_${base}_${compact}`.slice(0, 64);
+}
+
+async function bootstrapSegmentTemplate(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const templateKey = buildE2eTemplateKey(traceId);
+  const createResp = await request(ctx, 'POST', '/api/phase61/templates', `${traceId}-template-bootstrap`, {
+    key: templateKey,
+    status: 'active',
+    title: 'STG E2E auto template',
+    body: 'stg-e2e segment bootstrap template'
+  });
+  if (!createResp.okStatus || !createResp.body || createResp.body.ok !== true) {
+    return {
+      templateKey: '',
+      source: 'bootstrap',
+      reason: 'segment_template_bootstrap_failed',
+      response: summarizeResponse(createResp)
+    };
+  }
+  return {
+    templateKey,
+    source: 'bootstrap',
+    reason: null
+  };
+}
+
 function rankComposerCandidates(items) {
   const rows = Array.isArray(items) ? items : [];
   return rows
@@ -447,6 +481,7 @@ function rankComposerCandidates(items) {
     .map((row) => ({
       id: row.id.trim(),
       title: typeof row.title === 'string' ? row.title : '',
+      linkRegistryId: typeof row.linkRegistryId === 'string' ? row.linkRegistryId.trim() : '',
       e2ePreferred: (
         row.id.toLowerCase().includes('e2e')
         || (typeof row.title === 'string' && row.title.toLowerCase().includes('e2e'))
@@ -456,6 +491,106 @@ function rankComposerCandidates(items) {
       if (a.e2ePreferred === b.e2ePreferred) return 0;
       return a.e2ePreferred ? -1 : 1;
     });
+}
+
+function buildComposerBootstrapPayload(seed, traceId) {
+  const marker = utcCompact(new Date());
+  const baseTitle = seed && typeof seed.title === 'string' && seed.title.trim()
+    ? seed.title.trim()
+    : 'STG E2E composer bootstrap';
+  return {
+    title: `${baseTitle} ${marker}`.slice(0, 120),
+    body: 'stg-e2e composer cap block bootstrap notification',
+    ctaText: 'open',
+    linkRegistryId: seed && typeof seed.linkRegistryId === 'string' ? seed.linkRegistryId.trim() : '',
+    scenarioKey: 'A',
+    stepKey: '3mo',
+    target: { limit: 1 },
+    sourceRefs: [`stg-e2e:${traceId}`]
+  };
+}
+
+async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandidates) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const attempts = [];
+  let candidates = Array.isArray(seedCandidates) ? seedCandidates : [];
+  if (!candidates.length) {
+    const listAllResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?limit=100', `${traceId}-bootstrap-list`);
+    attempts.push({ stage: 'list_all', response: summarizeResponse(listAllResp) });
+    if (!listAllResp.okStatus || !listAllResp.body || typeof listAllResp.body !== 'object') {
+      return {
+        notificationId: '',
+        source: 'bootstrap',
+        reason: 'composer_notification_bootstrap_list_failed',
+        attempts
+      };
+    }
+    candidates = rankComposerCandidates(listAllResp.body.items);
+  }
+
+  const seed = candidates.find((row) => row && row.linkRegistryId);
+  if (!seed) {
+    return {
+      notificationId: '',
+      source: 'bootstrap',
+      reason: 'composer_notification_bootstrap_seed_missing',
+      attempts
+    };
+  }
+
+  const draftPayload = buildComposerBootstrapPayload(seed, traceId);
+  const draftResp = await request(ctx, 'POST', '/api/admin/os/notifications/draft', `${traceId}-bootstrap-draft`, draftPayload);
+  attempts.push({ stage: 'draft', response: summarizeResponse(draftResp) });
+  if (!draftResp.okStatus || !draftResp.body || draftResp.body.ok !== true || typeof draftResp.body.notificationId !== 'string') {
+    return {
+      notificationId: '',
+      source: 'bootstrap',
+      reason: 'composer_notification_bootstrap_draft_failed',
+      attempts
+    };
+  }
+
+  const notificationId = draftResp.body.notificationId.trim();
+  const approveResp = await request(
+    ctx,
+    'POST',
+    '/api/admin/os/notifications/approve',
+    `${traceId}-bootstrap-approve`,
+    { notificationId }
+  );
+  attempts.push({ stage: 'approve', notificationId, response: summarizeResponse(approveResp) });
+  if (!approveResp.okStatus || !approveResp.body || approveResp.body.ok !== true) {
+    return {
+      notificationId: '',
+      source: 'bootstrap',
+      reason: 'composer_notification_bootstrap_approve_failed',
+      attempts
+    };
+  }
+
+  const planProbeResp = await request(
+    ctx,
+    'POST',
+    '/api/admin/os/notifications/send/plan',
+    `${traceId}-bootstrap-plan`,
+    { notificationId }
+  );
+  attempts.push({ stage: 'plan_probe', notificationId, response: summarizeResponse(planProbeResp) });
+  if (planProbeResp.okStatus && planProbeResp.body && planProbeResp.body.ok === true && typeof planProbeResp.body.planHash === 'string') {
+    return {
+      notificationId,
+      source: 'bootstrap',
+      reason: null,
+      attempts
+    };
+  }
+
+  return {
+    notificationId: '',
+    source: 'bootstrap',
+    reason: 'composer_notification_bootstrap_not_plannable',
+    attempts
+  };
 }
 
 async function resolveComposerNotificationId(ctx, traceId, preferredId, requestFn) {
@@ -468,24 +603,33 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     };
   }
   const request = typeof requestFn === 'function' ? requestFn : apiRequest;
-  const listResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?status=active&limit=100', traceId);
-  if (!listResp.okStatus || !listResp.body || typeof listResp.body !== 'object') {
-    return {
-      notificationId: '',
-      source: 'auto',
-      reason: 'composer_notification_list_failed',
-      response: summarizeResponse(listResp),
-      attempts: []
-    };
+  let listResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?status=active&limit=100', traceId);
+  let candidates = [];
+  if (listResp.okStatus && listResp.body && typeof listResp.body === 'object') {
+    candidates = rankComposerCandidates(listResp.body.items);
+  } else {
+    const fallbackResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?limit=100', `${traceId}-list-fallback`);
+    if (!fallbackResp.okStatus || !fallbackResp.body || typeof fallbackResp.body !== 'object') {
+      return {
+        notificationId: '',
+        source: 'auto',
+        reason: 'composer_notification_list_failed',
+        response: summarizeResponse(listResp),
+        attempts: [{ stage: 'list_fallback', response: summarizeResponse(fallbackResp) }]
+      };
+    }
+    listResp = fallbackResp;
+    candidates = rankComposerCandidates(fallbackResp.body.items);
   }
-  const candidates = rankComposerCandidates(listResp.body.items);
   if (candidates.length === 0) {
-    return {
+    const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
+    if (bootstrap.notificationId) return bootstrap;
+    return Object.assign({
       notificationId: '',
       source: 'auto',
       reason: 'composer_notification_not_found',
       attempts: []
-    };
+    }, { attempts: Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [] });
   }
 
   const attempts = [];
@@ -511,11 +655,14 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     }
   }
 
+  const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
+  if (bootstrap.notificationId) return bootstrap;
+
   return {
     notificationId: '',
     source: 'auto',
     reason: 'composer_notification_plannable_not_found',
-    attempts
+    attempts: attempts.concat(Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [])
   };
 }
 

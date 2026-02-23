@@ -25,6 +25,18 @@ function normalizeStatus(status, fallback) {
   return value;
 }
 
+function toMillis(value) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function sortByCreatedAtDesc(rows) {
+  return rows.slice().sort((a, b) => toMillis(b && b.createdAt) - toMillis(a && a.createdAt));
+}
+
 async function createTemplate(data) {
   const payload = data || {};
   const key = normalizeKey(payload.key);
@@ -48,13 +60,15 @@ async function listTemplates(options) {
   const db = getDb();
   const opts = typeof options === 'number' ? { limit: options } : (options || {});
   const status = opts.status ? normalizeStatus(opts.status, null) : null;
+  const cap = typeof opts.limit === 'number' ? opts.limit : 50;
   let baseQuery = db.collection(COLLECTION);
   if (status) baseQuery = baseQuery.where('status', '==', status);
-  let query = baseQuery.orderBy('createdAt', 'desc');
-  const cap = typeof opts.limit === 'number' ? opts.limit : 50;
+  let query = baseQuery;
   if (cap) query = query.limit(cap);
   const snap = await query.get();
-  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const sorted = sortByCreatedAtDesc(rows);
+  return cap ? sorted.slice(0, cap) : sorted;
 }
 
 async function getTemplateByKey(key) {

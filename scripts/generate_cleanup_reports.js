@@ -237,9 +237,12 @@ function rebuildDataLifecycle(existingLifecycle) {
     const evidence = Array.isArray(current.evidence) && current.evidence.length
       ? current.evidence.slice(0, 5)
       : collectCollectionEvidence(policy.collection);
-    const retention = Number.isFinite(policy.retentionDays)
-      ? `${policy.retentionDays}d`
-      : 'UNDEFINED_IN_CODE';
+    let retention = 'UNDEFINED_IN_CODE';
+    if (Number.isFinite(policy.retentionDays)) {
+      retention = `${policy.retentionDays}d`;
+    } else if (typeof policy.retentionDays === 'string' && policy.retentionDays.trim().toUpperCase() === 'INDEFINITE') {
+      retention = 'INDEFINITE';
+    }
 
     return {
       collection: policy.collection,
@@ -286,7 +289,8 @@ function buildRetentionAddendum(lifecycleRows) {
     '',
     '- 本書は `src/domain/retention/retentionPolicy.js` と `docs/REPO_AUDIT_INPUTS/data_lifecycle.json` の整合補足。',
     '- 物理削除の実行は本フェーズ対象外。',
-    '- `retention=UNDEFINED_IN_CODE` は `retentionDays=null` を意味し、保持期間未確定を示す。',
+    '- `retention=INDEFINITE` は削除期限を定義しない明示値を示す。',
+    '- `retention=UNDEFINED_IN_CODE` は未定義であり、運用上の解消対象を示す。',
     '',
     '## Collection分類',
     '',

@@ -3,7 +3,7 @@
     "collection": "audit_logs",
     "kind": "evidence",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "365d",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/auditLogsRepo.js:13",
@@ -15,7 +15,7 @@
     "collection": "automation_config",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/automationConfigRepo.js:15",
@@ -27,7 +27,7 @@
     "collection": "automation_runs",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/automationRunsRepo.js:13",
@@ -39,7 +39,7 @@
     "collection": "checklists",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/phase2ReadRepo.js:35",
@@ -51,7 +51,7 @@
     "collection": "city_pack_bulletins",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPackBulletinsRepo.js:44",
@@ -63,7 +63,7 @@
     "collection": "city_pack_feedback",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPackFeedbackRepo.js:61",
@@ -75,7 +75,7 @@
     "collection": "city_pack_metrics_daily",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/cityPackMetricsDailyRepo.js:75",
@@ -86,7 +86,7 @@
     "collection": "city_pack_requests",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPackRequestsRepo.js:67",
@@ -98,7 +98,7 @@
     "collection": "city_pack_template_library",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPackTemplateLibraryRepo.js:49",
@@ -110,7 +110,7 @@
     "collection": "city_pack_update_proposals",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPackUpdateProposalsRepo.js:44",
@@ -122,7 +122,7 @@
     "collection": "city_packs",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/cityPacksRepo.js:253",
@@ -134,7 +134,7 @@
     "collection": "decision_drifts",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/decisionDriftsRepo.js:17",
@@ -145,7 +145,7 @@
     "collection": "decision_logs",
     "kind": "evidence",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "365d",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/decisionLogsRepo.js:14",
@@ -157,7 +157,7 @@
     "collection": "decision_timeline",
     "kind": "evidence",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "365d",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/decisionTimelineRepo.js:17",
@@ -169,7 +169,7 @@
     "collection": "events",
     "kind": "event",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "180d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/phase2ReadRepo.js:19",
@@ -181,7 +181,7 @@
     "collection": "faq_answer_logs",
     "kind": "event",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "180d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/faqAnswerLogsRepo.js:13",
@@ -192,7 +192,7 @@
     "collection": "faq_articles",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/faqArticlesRepo.js:184",
@@ -204,7 +204,7 @@
     "collection": "link_registry",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/linkRegistryRepo.js:14",
@@ -216,7 +216,7 @@
     "collection": "notices",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/noticesRepo.js:32",
@@ -228,7 +228,7 @@
     "collection": "notification_deliveries",
     "kind": "event",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "180d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/deliveriesRepo.js:67",
@@ -240,7 +240,7 @@
     "collection": "notification_templates",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/notificationTemplatesRepo.js:37",
@@ -252,7 +252,7 @@
     "collection": "notification_test_run_items",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/notificationTestRunsRepo.js:24"
@@ -262,7 +262,7 @@
     "collection": "notification_test_runs",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/notificationTestRunsRepo.js:15"
@@ -272,7 +272,7 @@
     "collection": "notifications",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/notificationsRepo.js:14",
@@ -284,7 +284,7 @@
     "collection": "ops_assist_cache",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/opsAssistCacheRepo.js:15",
@@ -295,7 +295,7 @@
     "collection": "ops_read_model_snapshots",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/opsSnapshotsRepo.js:5",
@@ -306,7 +306,7 @@
     "collection": "ops_segments",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/opsSegmentsRepo.js:30",
@@ -318,7 +318,7 @@
     "collection": "ops_state",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/opsStateRepo.js:21",
@@ -329,7 +329,7 @@
     "collection": "ops_states",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/opsStatesRepo.js:10",
@@ -340,7 +340,7 @@
     "collection": "phase18_cta_stats",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/ctaStatsRepo.js:30",
@@ -352,7 +352,7 @@
     "collection": "phase2_reports_checklist_pending",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/scenarioReportsRepo.js:49",
@@ -363,7 +363,7 @@
     "collection": "phase2_reports_daily_events",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/scenarioReportsRepo.js:23",
@@ -374,7 +374,7 @@
     "collection": "phase2_reports_weekly_events",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/scenarioReportsRepo.js:36",
@@ -385,7 +385,7 @@
     "collection": "phase2_runs",
     "kind": "aggregate",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/scenarioRunsRepo.js:9",
@@ -397,7 +397,7 @@
     "collection": "phase22_kpi_snapshots",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/phase22KpiSnapshotsRepo.js:10",
@@ -409,7 +409,7 @@
     "collection": "redac_membership_links",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/redacMembershipLinksRepo.js:11",
@@ -421,7 +421,7 @@
     "collection": "send_retry_queue",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/sendRetryQueueRepo.js:25",
@@ -433,7 +433,7 @@
     "collection": "source_audit_runs",
     "kind": "transient",
     "recomputable": true,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "30d",
     "deletable": "CONDITIONAL",
     "evidence": [
       "src/repos/firestore/sourceAuditRunsRepo.js:11",
@@ -445,7 +445,7 @@
     "collection": "source_evidence",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/sourceEvidenceRepo.js:44",
@@ -457,7 +457,7 @@
     "collection": "source_refs",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/sourceRefsRepo.js:130",
@@ -469,7 +469,7 @@
     "collection": "system_flags",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/systemFlagsRepo.js:82",
@@ -481,7 +481,7 @@
     "collection": "templates_v",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/templatesVRepo.js:46",
@@ -493,7 +493,7 @@
     "collection": "user_checklists",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/phase2ReadRepo.js:43",
@@ -505,7 +505,7 @@
     "collection": "user_consents",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/userConsentsRepo.js:26",
@@ -516,7 +516,7 @@
     "collection": "users",
     "kind": "config",
     "recomputable": false,
-    "retention": "UNDEFINED_IN_CODE",
+    "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
       "src/repos/firestore/phase2ReadRepo.js:27",

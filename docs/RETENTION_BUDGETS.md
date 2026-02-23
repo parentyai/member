@@ -19,3 +19,10 @@ retention 未定義の増悪を CI で停止するための予算定義（add-on
 - undefined_recomputable_max: 11
 - retention_risk_freshness_max_hours: 24
 - note: product-readiness が retention_risk.json の鮮度と未定義件数を監視する基準。数値は増悪停止のみを目的とし、削減は別フェーズで段階実施する。
+
+## current_baseline_phase634
+- undefined_retention_max: 0
+- undefined_deletable_conditional_max: 0
+- undefined_recomputable_max: 0
+- retention_risk_freshness_max_hours: 24
+- note: retention profile を明示化（Balanced）し、UNDEFINED をゼロ固定。以後は再増加をCIで停止する。

@@ -4,10 +4,22 @@ const { createNotificationPhase1 } = require('../../usecases/notifications/creat
 const { sendNotificationPhase1 } = require('../../usecases/notifications/sendNotificationPhase1');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 
+const LEGACY_SUNSET = 'Wed, 30 Sep 2026 00:00:00 GMT';
+const LEGACY_SUCCESSOR = '/api/admin/os/notifications/list';
+
+function applyDeprecationHeaders(res, successorPath) {
+  res.setHeader('Deprecation', 'true');
+  res.setHeader('Sunset', LEGACY_SUNSET);
+  if (typeof successorPath === 'string' && successorPath.trim().length > 0) {
+    res.setHeader('Link', `<${successorPath.trim()}>; rel="successor-version"`);
+  }
+}
+
 function parseJson(body, res) {
   try {
     return JSON.parse(body || '{}');
   } catch (err) {
+    applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('invalid json');
     return null;
@@ -20,6 +32,7 @@ function isKillSwitchError(err) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
+  applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
   if (message.includes('not found')) {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('not found');
@@ -39,6 +52,7 @@ async function handleCreatePhase1(req, res, body) {
   if (!payload) return;
   try {
     const result = await createNotificationPhase1(payload);
+    applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, id: result.id }));
   } catch (err) {
@@ -56,10 +70,12 @@ async function handleSendPhase1(req, res, body, notificationId) {
       sentAt: payload.sentAt,
       killSwitch
     });
+    applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount }));
   } catch (err) {
     if (isKillSwitchError(err)) {
+      applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('kill switch on');
       return;

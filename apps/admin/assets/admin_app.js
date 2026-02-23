@@ -6,6 +6,19 @@ const TRACE_HEADER_NAME = 'x-trace-id';
 const toastEl = document.getElementById('toast');
 const appShell = document.getElementById('app-shell');
 
+function resolveAdminTrendUiFlag() {
+  if (typeof window === 'undefined') return true;
+  const raw = window.ADMIN_TREND_UI_ENABLED;
+  if (raw === false || raw === 0) return false;
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  }
+  return true;
+}
+
+const ADMIN_TREND_UI_ENABLED = resolveAdminTrendUiFlag();
+
 const state = {
   dict: {},
   role: 'operator',
@@ -63,7 +76,7 @@ const state = {
   usersSummarySortKey: 'createdAt',
   usersSummarySortDir: 'desc',
   vendorUnifiedFilteredItems: [],
-  vendorSortKey: 'createdAt',
+  vendorSortKey: 'updatedAt',
   vendorSortDir: 'desc',
   dashboardKpis: null,
   dashboardCacheByMonths: {},
@@ -84,6 +97,13 @@ const state = {
   productReadiness: null,
   paneUpdatedAt: {}
 };
+
+if (!ADMIN_TREND_UI_ENABLED) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.classList.add('trend-ui-disabled');
+  }
+  state.vendorSortKey = 'createdAt';
+}
 
 const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
@@ -1851,6 +1871,111 @@ function toggleSortDirection(currentKey, nextKey, currentDirection) {
   return currentDirection === 'asc' ? 'desc' : 'asc';
 }
 
+function applySortUiState(options) {
+  if (!ADMIN_TREND_UI_ENABLED) return;
+  const root = (options && options.root) || document;
+  const attr = options && options.attr ? options.attr : '';
+  if (!attr) return;
+  const sortKey = options && options.sortKey ? String(options.sortKey) : '';
+  const sortDir = options && options.sortDir === 'asc' ? 'asc' : 'desc';
+  root.querySelectorAll(`[${attr}]`).forEach((btn) => {
+    const key = btn.getAttribute(attr) || '';
+    const th = btn.closest('th');
+    if (key && key === sortKey) {
+      btn.setAttribute('data-sort-direction', sortDir);
+      if (th) th.setAttribute('aria-sort', sortDir === 'asc' ? 'ascending' : 'descending');
+    } else {
+      btn.removeAttribute('data-sort-direction');
+      if (th) th.setAttribute('aria-sort', 'none');
+    }
+  });
+}
+
+function getInputValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  return String(el.value || '').trim();
+}
+
+function getSelectValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  return String(el.value || '').trim();
+}
+
+function getSelectLabel(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  const option = el.options && el.selectedIndex >= 0 ? el.options[el.selectedIndex] : null;
+  return option ? String(option.textContent || '').trim() : '';
+}
+
+function setInputValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+function setSelectValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+function pushFilterChip(chips, label, value) {
+  if (!value) return;
+  chips.push({ label, value });
+}
+
+function renderFilterChips(containerId, chips) {
+  if (!ADMIN_TREND_UI_ENABLED) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const list = Array.isArray(chips) ? chips : [];
+  if (!list.length) {
+    const empty = document.createElement('span');
+    empty.className = 'filter-chip filter-chip-empty';
+    empty.textContent = t('ui.label.filters.none', '条件なし');
+    container.appendChild(empty);
+    return;
+  }
+  list.forEach((chip) => {
+    const el = document.createElement('span');
+    el.className = 'filter-chip';
+    el.textContent = `${chip.label}: ${chip.value}`;
+    container.appendChild(el);
+  });
+}
+
+function formatFilterCountLabel(filteredCount, totalCount) {
+  const label = t('ui.label.filters.count', '件数');
+  const totalLabel = t('ui.label.filters.total', '全');
+  if (Number.isFinite(totalCount) && totalCount > 0 && filteredCount !== totalCount) {
+    return `${label}: ${filteredCount} / ${totalLabel}${totalCount}`;
+  }
+  return `${label}: ${filteredCount}`;
+}
+
+function updateFilterMeta(options) {
+  if (!ADMIN_TREND_UI_ENABLED) return;
+  const filteredCount = Number.isFinite(options.filteredCount) ? options.filteredCount : 0;
+  const totalCount = Number.isFinite(options.totalCount) ? options.totalCount : 0;
+  const countEl = document.getElementById(options.countId);
+  if (countEl) countEl.textContent = formatFilterCountLabel(filteredCount, totalCount);
+  const clearBtn = document.getElementById(options.clearId);
+  if (clearBtn) {
+    const disabled = !options.activeCount;
+    clearBtn.disabled = disabled;
+    if (disabled) clearBtn.setAttribute('aria-disabled', 'true');
+    else clearBtn.removeAttribute('aria-disabled');
+  }
+}
+
+function markNumericCell(td) {
+  if (!td) return;
+  td.classList.add('cell-num');
+  td.classList.add('cell-number');
+}
+
 function cityPackRecordTypeLabel(value) {
   const key = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return CITY_PACK_RECORD_TYPE_LABELS[key] || key || '-';
@@ -2035,6 +2160,35 @@ function applyCityPackUnifiedFilters() {
   state.cityPackUnifiedFilteredItems = sortCityPackUnifiedItems(filtered);
 }
 
+function buildCityPackUnifiedFilterChips() {
+  const chips = [];
+  const idValue = getInputValue('city-pack-unified-filter-id');
+  const userValue = getInputValue('city-pack-unified-filter-user-id');
+  const cityValue = getInputValue('city-pack-unified-filter-city');
+  const statusValue = getSelectValue('city-pack-unified-filter-status');
+  const typeValue = getSelectValue('city-pack-unified-filter-type');
+  const createdFrom = getInputValue('city-pack-unified-filter-date-from');
+  const createdTo = getInputValue('city-pack-unified-filter-date-to');
+  pushFilterChip(chips, 'ID', idValue);
+  pushFilterChip(chips, 'ユーザーID', userValue);
+  pushFilterChip(chips, '都市', cityValue);
+  if (statusValue) pushFilterChip(chips, '状態', getSelectLabel('city-pack-unified-filter-status'));
+  if (typeValue) pushFilterChip(chips, '種別', getSelectLabel('city-pack-unified-filter-type'));
+  pushFilterChip(chips, '作成日 from', createdFrom);
+  pushFilterChip(chips, '作成日 to', createdTo);
+  return chips;
+}
+
+function clearCityPackUnifiedFilters() {
+  setInputValue('city-pack-unified-filter-id', '');
+  setInputValue('city-pack-unified-filter-user-id', '');
+  setInputValue('city-pack-unified-filter-city', '');
+  setSelectValue('city-pack-unified-filter-status', '');
+  setSelectValue('city-pack-unified-filter-type', '');
+  setInputValue('city-pack-unified-filter-date-from', '');
+  setInputValue('city-pack-unified-filter-date-to', '');
+}
+
 function createUnifiedActionButton(label, handler) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -2090,7 +2244,22 @@ function renderCityPackUnifiedRows() {
   if (!tbody) return;
   tbody.innerHTML = '';
   applyCityPackUnifiedFilters();
+  applySortUiState({
+    root: document.getElementById('pane-city-pack'),
+    attr: 'data-city-pack-sort-key',
+    sortKey: state.cityPackUnifiedSortKey,
+    sortDir: state.cityPackUnifiedSortDir
+  });
   const items = state.cityPackUnifiedFilteredItems;
+  const chips = buildCityPackUnifiedFilterChips();
+  renderFilterChips('city-pack-unified-filter-chips', chips);
+  updateFilterMeta({
+    countId: 'city-pack-unified-result-count',
+    clearId: 'city-pack-unified-clear',
+    filteredCount: items.length,
+    totalCount: state.cityPackUnifiedItems.length,
+    activeCount: chips.length
+  });
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -2115,7 +2284,7 @@ function renderCityPackUnifiedRows() {
     ];
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 8) td.classList.add('cell-num');
+      if (idx === 8) markNumericCell(td);
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -2190,6 +2359,32 @@ function applyVendorUnifiedFilters() {
   state.vendorUnifiedFilteredItems = sortVendorItems(filtered);
 }
 
+function buildVendorUnifiedFilterChips() {
+  const chips = [];
+  const idValue = getInputValue('vendor-unified-filter-id');
+  const nameValue = getInputValue('vendor-unified-filter-name');
+  const statusValue = getSelectValue('vendor-unified-filter-status');
+  const categoryValue = getInputValue('vendor-unified-filter-category');
+  const createdFrom = getInputValue('vendor-unified-filter-date-from');
+  const createdTo = getInputValue('vendor-unified-filter-date-to');
+  pushFilterChip(chips, 'Vendor ID', idValue);
+  pushFilterChip(chips, '名称', nameValue);
+  if (statusValue) pushFilterChip(chips, 'ステータス', getSelectLabel('vendor-unified-filter-status'));
+  pushFilterChip(chips, 'カテゴリ', categoryValue);
+  pushFilterChip(chips, '登録日 from', createdFrom);
+  pushFilterChip(chips, '登録日 to', createdTo);
+  return chips;
+}
+
+function clearVendorUnifiedFilters() {
+  setInputValue('vendor-unified-filter-id', '');
+  setInputValue('vendor-unified-filter-name', '');
+  setSelectValue('vendor-unified-filter-status', '');
+  setInputValue('vendor-unified-filter-category', '');
+  setInputValue('vendor-unified-filter-date-from', '');
+  setInputValue('vendor-unified-filter-date-to', '');
+}
+
 function runVendorActionForRow(action, row) {
   if (!row || !row.linkId) return;
   state.selectedVendorLinkId = row.linkId;
@@ -2213,7 +2408,22 @@ function renderVendorUnifiedRows() {
   if (!tbody) return;
   tbody.innerHTML = '';
   applyVendorUnifiedFilters();
+  applySortUiState({
+    root: document.getElementById('pane-vendors'),
+    attr: 'data-vendor-sort-key',
+    sortKey: state.vendorSortKey,
+    sortDir: state.vendorSortDir
+  });
   const items = state.vendorUnifiedFilteredItems;
+  const chips = buildVendorUnifiedFilterChips();
+  renderFilterChips('vendor-unified-filter-chips', chips);
+  updateFilterMeta({
+    countId: 'vendor-unified-result-count',
+    clearId: 'vendor-unified-clear',
+    filteredCount: items.length,
+    totalCount: state.vendorItems.length,
+    activeCount: chips.length
+  });
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -2236,7 +2446,7 @@ function renderVendorUnifiedRows() {
     ];
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 6) td.classList.add('cell-num');
+      if (idx === 6) markNumericCell(td);
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -3757,12 +3967,50 @@ function applyUsersSummaryFilters() {
   state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
 }
 
+function buildUsersSummaryFilterChips() {
+  const chips = [];
+  const userId = getInputValue('users-filter-line-user-id');
+  const createdFrom = getInputValue('users-filter-created-from');
+  const createdTo = getInputValue('users-filter-created-to');
+  const category = getSelectValue('users-filter-category');
+  const status = getSelectValue('users-filter-status');
+  pushFilterChip(chips, 'ユーザーID', userId);
+  pushFilterChip(chips, '登録期間 from', createdFrom);
+  pushFilterChip(chips, '登録期間 to', createdTo);
+  if (category) pushFilterChip(chips, 'カテゴリ', getSelectLabel('users-filter-category'));
+  if (status) pushFilterChip(chips, 'ステータス', getSelectLabel('users-filter-status'));
+  return chips;
+}
+
+function clearUsersSummaryFilters() {
+  setInputValue('users-filter-line-user-id', '');
+  setInputValue('users-filter-created-from', '');
+  setInputValue('users-filter-created-to', '');
+  setSelectValue('users-filter-category', '');
+  setSelectValue('users-filter-status', '');
+}
+
 function renderUsersSummaryRows() {
   const tbody = document.getElementById('users-summary-rows');
   if (!tbody) return;
   tbody.innerHTML = '';
   applyUsersSummaryFilters();
+  applySortUiState({
+    root: document.getElementById('pane-read-model'),
+    attr: 'data-users-sort-key',
+    sortKey: state.usersSummarySortKey,
+    sortDir: state.usersSummarySortDir
+  });
   const items = state.usersSummaryFilteredItems;
+  const chips = buildUsersSummaryFilterChips();
+  renderFilterChips('users-summary-filter-chips', chips);
+  updateFilterMeta({
+    countId: 'users-summary-result-count',
+    clearId: 'users-summary-clear',
+    filteredCount: items.length,
+    totalCount: state.usersSummaryItems.length,
+    activeCount: chips.length
+  });
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -3786,7 +4034,7 @@ function renderUsersSummaryRows() {
     ];
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 5 || idx === 6 || idx === 7) td.classList.add('cell-num');
+      if (idx === 5 || idx === 6 || idx === 7) markNumericCell(td);
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -5714,6 +5962,32 @@ function applyComposerSavedFilters() {
   state.composerSavedFilteredItems = sortComposerSavedItems(filtered);
 }
 
+function buildComposerSavedFilterChips() {
+  const chips = [];
+  const keyword = getInputValue('composer-saved-search');
+  const status = getSelectValue('composer-saved-status');
+  const type = getSelectValue('composer-saved-type');
+  const category = getSelectValue('composer-saved-category');
+  const scenario = getSelectValue('composer-saved-scenario');
+  const step = getSelectValue('composer-saved-step');
+  pushFilterChip(chips, '検索', keyword);
+  if (status) pushFilterChip(chips, '状態', getSelectLabel('composer-saved-status'));
+  if (type) pushFilterChip(chips, 'タイプ', getSelectLabel('composer-saved-type'));
+  if (category) pushFilterChip(chips, 'カテゴリ', getSelectLabel('composer-saved-category'));
+  if (scenario) pushFilterChip(chips, 'シナリオ', getSelectLabel('composer-saved-scenario'));
+  if (step) pushFilterChip(chips, 'ステップ', getSelectLabel('composer-saved-step'));
+  return chips;
+}
+
+function clearComposerSavedFilters() {
+  setInputValue('composer-saved-search', '');
+  setSelectValue('composer-saved-status', '');
+  setSelectValue('composer-saved-type', '');
+  setSelectValue('composer-saved-category', '');
+  setSelectValue('composer-saved-scenario', '');
+  setSelectValue('composer-saved-step', '');
+}
+
 function extractComposerLinkDomain(urlValue) {
   const raw = typeof urlValue === 'string' ? urlValue.trim() : '';
   if (!raw) return '-';
@@ -5855,7 +6129,22 @@ function renderComposerSavedRows() {
   if (!tbody) return;
   tbody.innerHTML = '';
   applyComposerSavedFilters();
+  applySortUiState({
+    root: document.getElementById('composer-saved-panel'),
+    attr: 'data-composer-sort-key',
+    sortKey: state.composerSavedSortKey,
+    sortDir: state.composerSavedSortDir
+  });
   const items = state.composerSavedFilteredItems;
+  const chips = buildComposerSavedFilterChips();
+  renderFilterChips('composer-saved-filter-chips', chips);
+  updateFilterMeta({
+    countId: 'composer-saved-result-count',
+    clearId: 'composer-saved-clear',
+    filteredCount: items.length,
+    totalCount: state.composerSavedItems.length,
+    activeCount: chips.length
+  });
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -5883,7 +6172,7 @@ function renderComposerSavedRows() {
     cells.forEach((value, idx) => {
       const td = document.createElement('td');
       if (idx === 2 || idx === 3 || idx === 4 || idx === 5) td.classList.add('cell-muted');
-      if (idx === 6 || idx === 7) td.classList.add('cell-num');
+      if (idx === 6 || idx === 7) markNumericCell(td);
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -6185,6 +6474,10 @@ function setupComposerActions() {
       renderComposerSavedRows();
     });
   });
+  document.getElementById('composer-saved-clear')?.addEventListener('click', () => {
+    clearComposerSavedFilters();
+    renderComposerSavedRows();
+  });
   document.querySelectorAll('[data-composer-sort-key]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const sortKey = btn.getAttribute('data-composer-sort-key');
@@ -6289,6 +6582,10 @@ function setupReadModelControls() {
       renderUsersSummaryRows();
     });
   });
+  document.getElementById('users-summary-clear')?.addEventListener('click', () => {
+    clearUsersSummaryFilters();
+    renderUsersSummaryRows();
+  });
   ['users-filter-limit', 'users-filter-analytics-limit'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -6333,6 +6630,10 @@ function setupCityPackControls() {
     el.addEventListener('change', () => {
       renderCityPackUnifiedRows();
     });
+  });
+  document.getElementById('city-pack-unified-clear')?.addEventListener('click', () => {
+    clearCityPackUnifiedFilters();
+    renderCityPackUnifiedRows();
   });
   document.querySelectorAll('[data-city-pack-sort-key]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -6497,6 +6798,10 @@ function setupVendorControls() {
   document.getElementById('vendor-unified-filter-status')?.addEventListener('change', () => {
     renderVendorUnifiedRows();
     void loadVendors({ notify: false });
+  });
+  document.getElementById('vendor-unified-clear')?.addEventListener('click', () => {
+    clearVendorUnifiedFilters();
+    renderVendorUnifiedRows();
   });
   document.querySelectorAll('[data-vendor-sort-key]').forEach((btn) => {
     btn.addEventListener('click', () => {

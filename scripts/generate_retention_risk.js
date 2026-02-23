@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const childProcess = require('child_process');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -15,16 +14,7 @@ function toPosix(value) {
 }
 
 function resolveGeneratedAt() {
-  try {
-    const value = childProcess.execSync('git log -1 --format=%cI -- docs/REPO_AUDIT_INPUTS/data_lifecycle.json', {
-      cwd: ROOT,
-      stdio: ['ignore', 'pipe', 'ignore']
-    }).toString('utf8').trim();
-    if (value) return value;
-  } catch (_err) {
-    // fall through
-  }
-  return 'NOT_AVAILABLE';
+  return new Date().toISOString();
 }
 
 function buildSourceDigest(text) {
