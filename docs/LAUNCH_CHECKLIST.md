@@ -37,6 +37,8 @@
 - `GET /api/admin/product-readiness` が 200 を返し、`status` と `blockers[]` を返却する
 - `status=NO_GO` の場合、`blockers` が運用上の停止理由として説明可能
 - `status=GO` の場合、`load_risk` / snapshot stale / fallback spike の閾値を満たしている
+- `checks.retentionRisk.ok=true` であること（`retention_risk_generated_at_stale` / `retention_risk_*_over_budget` が出ていない）
+- `checks.retentionRisk.generatedAtHours` が `docs/RETENTION_BUDGETS.md` の `retention_risk_freshness_max_hours` 以内であること
 
 ## Smoke (No Side Effects)
 - `npm test` が PASS

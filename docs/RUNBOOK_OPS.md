@@ -14,6 +14,7 @@ LINE-only / SSOT（Firestore）/ traceId 監査を前提に、判断→記録→
 - `/admin/ops` にアクセスできること（READ ONLY）
 - Trace Search（`/api/admin/trace?traceId=...`）で監査ログが参照できること
 - 送信を伴う操作をする前に Kill Switch 状態を確認すること（ONなら送信しない）
+- `GET /api/admin/product-readiness` が `status=GO` であること（`checks.retentionRisk.ok=true` を含む）
 
 ## Steps
 ### 1) Ops Console を開く（view）
@@ -72,6 +73,14 @@ STOP の方針:
 
 注意:
 - `trace_search.view` は Trace API を呼んだ時点で best-effort で追加される（レスポンスに含まれない場合がある）
+
+### 6) Launch前の retention readiness を確認する
+1. `/api/admin/product-readiness` を実行する
+2. `checks.retentionRisk` を確認する
+   - `ok=true`
+   - `generatedAtHours` が `freshnessHoursMax` 以下
+   - `undefinedRetentionCount` / `undefinedDeletableConditionalCount` / `undefinedRecomputableCount` が `budget` 以下
+3. `blockers` に `retention_risk_*` があれば送信運用を開始しない
 
 ## Recovery Rule（delivery stuck）
 - 送信処理で `reserved/in-flight` が残り再実行で skip される場合、既定は再送ではなく `seal` で回復する。
