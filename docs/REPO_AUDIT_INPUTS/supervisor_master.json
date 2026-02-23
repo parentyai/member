@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:30:41-05:00",
-  "gitCommit": "0c2b7c618667436f29157bf5a193a2c4653b0af3",
-  "branch": "codex/phase608-reduce-missing-index-surface-decision-drifts",
-  "sourceDigest": "eb6cd2cb964c5f6c873927f647447e2aa135aeff7e19d791b31d39ed8546f075",
+  "generatedAt": "2026-02-22T19:35:33-05:00",
+  "gitCommit": "deb17e4d89516649402c75dd3096f3901618fef9",
+  "branch": "main",
+  "sourceDigest": "e461b71bfc2cc61b2179e0248394c0501562bc223ea9a556f0128abdad044d73",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
