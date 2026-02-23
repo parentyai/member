@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:35:33-05:00",
-  "gitCommit": "deb17e4d89516649402c75dd3096f3901618fef9",
-  "branch": "main",
-  "sourceDigest": "30bceea101129b0d877b192f0b094ac99651c8cc60030d097d783c7ff5c68178",
+  "generatedAt": "2026-02-22T19:39:59-05:00",
+  "gitCommit": "250c3370ca0e9726cdf8252946d4817f9de43c57",
+  "branch": "codex/phase610-reduce-missing-index-surface-city-pack-update-proposals",
+  "sourceDigest": "befec08f6ad92f515f1ae09e33a511d35e1df4b60023af0605101471ada73662",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "00368a7367affd85a1e60e35318394dbb993a04155b6491b70780afaea2d7c81",
-      "bytes": 3620
+      "sha256": "be3f20e29fdd40351e963e6c66562c354131412b95f27d93623eebb3743c54b8",
+      "bytes": 3425
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -88,8 +88,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "496ef6d76a51ee9559799306047090be2ab8d6b0382524d540a0945207a3c50a",
-      "bytes": 4307
+      "sha256": "4217d656b57d819ca404d7f342b5ffd7dabac7c45f46f1d860741063d65a7077",
+      "bytes": 3959
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/notification_flow.json",
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "4608aec857877fe26dc15ef810be42c7da19ccd63729457a3e33b18b26416670",
+      "sha256": "b370f02779f74b5c2d16cf163295ce026ebf053a55bff1d94a78332183b864dc",
       "bytes": 288099
     },
     {
@@ -118,8 +118,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "a4187fff05b9fc7f0cd9772331a29e28d308b8668719078bbdfe558af8d5ed2e",
-      "bytes": 2250
+      "sha256": "398d331a405778284796af0a22f4e178480a3d58f5a37888940d004717a7bf59",
+      "bytes": 2316
     }
   ],
   "diff_detection_rules": [

@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-02-22T19:33:23-05:00",
+  "generatedAt": "2026-02-22T19:37:41-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "00368a7367affd85a1e60e35318394dbb993a04155b6491b70780afaea2d7c81",
-  "surface_count": 11,
-  "point_count": 15,
+  "sourceDigest": "be3f20e29fdd40351e963e6c66562c354131412b95f27d93623eebb3743c54b8",
+  "surface_count": 10,
+  "point_count": 14,
   "call_breakdown": {
-    "isMissingIndexError": 11
+    "isMissingIndexError": 10
   },
   "items": [
     {
@@ -69,20 +69,6 @@
       "call": "isMissingIndexError",
       "lines": [
         339
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/cityPackUpdateProposalsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        90
       ],
       "occurrences": 1,
       "policy": {
