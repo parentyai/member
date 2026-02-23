@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:17:31-05:00",
-  "gitCommit": "8c076ecd4fb81bf2633f77d59b9aaaea180bb22b",
-  "branch": "codex/phase606-reduce-missing-index-surface-retry-queue",
-  "sourceDigest": "5ca94b83cd36d62ef77efa1ea06ba330046b260a474825301a299179a9610046",
+  "generatedAt": "2026-02-22T19:25:48-05:00",
+  "gitCommit": "8db53ccbc6dfbaccf9cc3998b3230d8d0a3eac2a",
+  "branch": "main",
+  "sourceDigest": "34bd2f0ccffc133cac9a5f6aa4d87a07957faffbc8f7c5c74f1a93693f3a94ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

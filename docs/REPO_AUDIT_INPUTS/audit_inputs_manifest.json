@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:17:31-05:00",
-  "gitCommit": "8c076ecd4fb81bf2633f77d59b9aaaea180bb22b",
-  "branch": "codex/phase606-reduce-missing-index-surface-retry-queue",
-  "sourceDigest": "f635d99be8896683cf81e702f3d283210728b14c893b0d5c30ea8ec801b19d87",
+  "generatedAt": "2026-02-22T19:25:48-05:00",
+  "gitCommit": "8db53ccbc6dfbaccf9cc3998b3230d8d0a3eac2a",
+  "branch": "main",
+  "sourceDigest": "7b60f8c779e0d7431662fcf397fd6ab6eca6068eca8f4fff4879c2e910da9907",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -78,8 +78,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "03103eee4437672b8125fa5c5e1a0264c159247f169249d0b9418dda22acce61",
-      "bytes": 4185
+      "sha256": "0c607d306a644a1d570aacc7567dddb97b4cd011c23d172a472ee2e0ac4c4a4c",
+      "bytes": 4001
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/migration_plan.json",
@@ -88,8 +88,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "f192bea6bf99011f5cdfbb3aff47e000823ea8051fa897cb20657744b60032c8",
-      "bytes": 5331
+      "sha256": "d35a26699e676161d843b790b200db9550e976107cf57139c8155762fe449a4d",
+      "bytes": 4994
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/notification_flow.json",
@@ -108,7 +108,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "1feb176b8a4e3760b7a5caf3537baae7e45c7490d2048107166b02eb7b8ac4b6",
+      "sha256": "463babc362004c88c2b4155c95146e871ed35a926a56706d4eb3a40494f54689",
       "bytes": 288099
     },
     {
@@ -118,8 +118,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "f396b12df3b31fc75361e5b3aeab942c64180d7e027ef7c20c54113591d2f0a2",
-      "bytes": 2301
+      "sha256": "7b4432f56c36cbae127e47c823c7cd0c8466cb83d9ad2699436a60adf9502f35",
+      "bytes": 2250
     }
   ],
   "diff_detection_rules": [
