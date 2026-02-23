@@ -175,6 +175,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_KB_SPEC_PHASE_NEXT3.md`（Phase Next-3: guide-only解禁・consent UI・lawfulBasis整備・consent verify/revoke API）
 - `docs/LLM_KB_SPEC_PHASE_NEXT4.md`（Phase Next-4: ユーザー向け同意フロー・LINE Webhook経由 AI同意/拒否コマンド・user_consents コレクション）
 - `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
+- `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json`（Firestore composite index 必須定義）
+- `scripts/check_firestore_indexes.js`（Firestore index 差分検知 / 作成plan出力）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）
