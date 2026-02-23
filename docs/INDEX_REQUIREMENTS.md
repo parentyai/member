@@ -15,6 +15,18 @@ Firestore missing-index fallback を段階的に無効化するための最小�
 - index差分検知は `npm run firestore-indexes:check` を使用する。
 - 不足indexの作成コマンド確認は `npm run firestore-indexes:plan -- --project-id <PROJECT_ID>` を使用する。
 
+## Critical契約（route/usecase → requiredIndexIds）
+- クリティカル経路のIndex契約は `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` の `criticalContracts` を正規参照先とする。
+- `criticalContracts[].requiredIndexIds` は同ファイル `indexes[].id` と一致していなければならない。
+- `criticalContracts[].sourceEvidence` は `path + line` を必須とし、`npm run firestore-indexes:check` で不整合を検知して失敗させる。
+- クリティカル契約対象（Phase633）:
+  - `GET /api/admin/product-readiness`
+  - `GET /api/admin/read-path-fallback-summary`
+  - `GET /api/admin/retention-runs`
+  - `GET /api/admin/struct-drift/backfill-runs`
+  - `GET /api/admin/os/alerts/summary`
+  - `GET /api/admin/city-packs`
+
 ## High Priority Queries
 
 ### 1) usersRepo.listUsers

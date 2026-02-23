@@ -34,6 +34,45 @@
       }
     },
     {
+      "id": "audit_logs_action_templateKey_createdAt_desc",
+      "collectionGroup": "audit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "action",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "templateKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+          "line": 36
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+          "line": 37
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+          "line": 38
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-23",
+        "service": "member",
+        "route": "admin.os_alerts_summary"
+      }
+    },
+    {
       "id": "link_registry_lastHealth_state_createdAt_desc",
       "collectionGroup": "link_registry",
       "queryScope": "COLLECTION",
@@ -195,6 +234,118 @@
         "service": "member",
         "route": "admin.os_alerts_summary"
       }
+    }
+  ],
+  "criticalContracts": [
+    {
+      "contractId": "admin_product_readiness",
+      "routeOrUsecase": "GET /api/admin/product-readiness",
+      "requiredIndexIds": [
+        "audit_logs_action_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1093
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/productReadiness.js",
+          "line": 217
+        }
+      ]
+    },
+    {
+      "contractId": "admin_read_path_fallback_summary",
+      "routeOrUsecase": "GET /api/admin/read-path-fallback-summary",
+      "requiredIndexIds": [
+        "audit_logs_action_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1087
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/readPathFallbackSummary.js",
+          "line": 121
+        }
+      ]
+    },
+    {
+      "contractId": "admin_retention_runs",
+      "routeOrUsecase": "GET /api/admin/retention-runs",
+      "requiredIndexIds": [
+        "audit_logs_action_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1069
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/retentionRuns.js",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "contractId": "admin_struct_drift_backfill_runs",
+      "routeOrUsecase": "GET /api/admin/struct-drift/backfill-runs",
+      "requiredIndexIds": [
+        "audit_logs_action_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 708
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/structDriftBackfill.js",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "contractId": "admin_os_alerts_summary",
+      "routeOrUsecase": "GET /api/admin/os/alerts/summary",
+      "requiredIndexIds": [
+        "link_registry_lastHealth_state_createdAt_desc",
+        "notifications_status_createdAt_desc",
+        "send_retry_queue_status_createdAt_desc",
+        "decision_logs_audit_notificationId_decidedAt_desc",
+        "audit_logs_action_templateKey_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1260
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/osAlerts.js",
+          "line": 101
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/usecases/admin/getNotificationReadModel.js",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "contractId": "admin_city_packs_list",
+      "routeOrUsecase": "GET /api/admin/city-packs",
+      "requiredIndexIds": [
+        "city_packs_language_status_updatedAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 792
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPacks.js",
+          "line": 160
+        }
+      ]
     }
   ],
   "assumptions": [

@@ -58,7 +58,13 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `fail_on_missing_audit_actions`: シナリオごとの必須 audit action 欠落を FAIL 扱いにする（推奨 true）
 
 ## Checklist (fixed order)
-1. Product Readiness Gate: `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true`
+1. Product Readiness Gate（管理API 6本）:
+   - `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true`
+   - `/api/admin/read-path-fallback-summary` が HTTP 200
+   - `/api/admin/retention-runs` が HTTP 200
+   - `/api/admin/struct-drift/backfill-runs` が HTTP 200
+   - `/api/admin/os/alerts/summary` が HTTP 200
+   - `/api/admin/city-packs` が HTTP 200
 2. Segment Send: `plan -> dry-run -> execute`
 3. Retry Queue: `plan -> retry`
 4. Kill Switch: ON時に send 系が全ブロックされる
@@ -130,4 +136,4 @@ notes: <optional>
 - `audits/decisions/timeline` が欠損しない
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
-- 4シナリオすべての `result` が記録されている（PASS/FAIL問わず）
+- 5シナリオすべての `result` が記録されている（PASS/FAIL問わず）

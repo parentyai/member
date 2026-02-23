@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T21:18:06-05:00",
-  "gitCommit": "50a57cfeb5985f51d3dd97106ddbaf6a7bb01b30",
-  "branch": "codex/phase631-e2e-audit-action-gate-batch",
-  "sourceDigest": "a0f38e013e95b4d68a53a00203baed5fd42f90d4f1a01e42a835c024217559ba",
+  "generatedAt": "2026-02-22T22:10:33-05:00",
+  "gitCommit": "ed7dc56012dab61e2b1da12cdc58fca5c1355e02",
+  "branch": "codex/phase633-index-governance",
+  "sourceDigest": "ff86b732a864da5486dc94e0be01097d4053d1472d91c19353e68dec416e22d3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

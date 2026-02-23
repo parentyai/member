@@ -177,6 +177,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
 - `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json`（Firestore composite index 必須定義）
 - `scripts/check_firestore_indexes.js`（Firestore index 差分検知 / 作成plan出力）
+- `docs/PHASE633_EXECUTION_LOG.md`（Phase633: index運用恒久固定の実行証跡）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）
