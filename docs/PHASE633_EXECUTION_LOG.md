@@ -79,3 +79,29 @@
   - `checks.retentionRisk.ok=true` (`undefined_retention_count=0`)
   - `checks.structureRisk.ok=true` (`activeLegacyRepoImports=0`)
   - `checks.snapshotHealth.ok=true` (`staleCount=0`, `staleRatio=0`)
+
+## stg Notification E2E Recheck (after PR #627 merge)
+- UTC: 2026-02-23T22:01:36Z
+- ref:
+  - `main` head sha: `6be6c351836395d842139e9c7a9a528dc169a95f`
+  - workflow run: `22326658021`
+- result:
+  - workflow conclusion: `success`
+  - `product_readiness_gate: PASS`
+  - `segment: PASS`
+  - `retry_queue: PASS`
+  - `kill_switch_block: PASS`
+  - `composer_cap_block: PASS`
+  - aggregate: `pass=5 fail=0 skip=0`
+
+## stg Live Readiness Recheck (after PR #627 merge)
+- UTC: 2026-02-23T22:03:48Z
+- method: `gcloud run services proxy member --project member-485303 --region us-east1 --port 18080` + `curl`
+- traceId: `trace-product-readiness-20260223220348`
+- requestId: `575ad7746cf78c1deca838f758b28b5a`
+- result:
+  - `/api/admin/product-readiness`: `status=GO`
+  - `blockers=[]`
+  - `checks.retentionRisk.ok=true` (`undefined_retention_count=0`)
+  - `checks.structureRisk.ok=true` (`activeLegacyRepoImports=0`)
+  - `checks.snapshotHealth.ok=true` (`staleCount=0`, `staleRatio=0`)
