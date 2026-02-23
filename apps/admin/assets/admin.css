@@ -286,7 +286,9 @@ body {
   display: none !important;
 }
 
-.app-shell [data-role-allow].role-hidden {
+.app-shell [data-role-allow].role-hidden {display: none !important; }
+.app-shell[data-role="operator"] [data-role="developer"],
+.app-shell[data-role="admin"] [data-role="developer"] {
   display: none !important;
 }
 
@@ -1517,7 +1519,7 @@ body.app-body {
   height: 64px;
   margin-bottom: 0;
   padding: 0 var(--space-5);
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   z-index: 20;
@@ -1599,7 +1601,7 @@ body.app-body {
   margin-top: var(--space-2);
 }
 
-.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-catalog) {
+.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-notifications):not(.nav-group-users):not(.nav-group-catalog):not(.nav-group-developer) {
   display: none;
 }
 
@@ -1981,6 +1983,14 @@ details:not([open]) > *:not(summary) {
 .repo-map-matrix-table td {
   vertical-align: top;
   min-width: 120px;
+}
+
+#pane-developer-map .pane-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+#pane-developer-map .pane-actions {
+  display: none;
 }
 
 .manual-grid {
