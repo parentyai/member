@@ -49,7 +49,7 @@
             <span class="nav-icon" aria-hidden="true">F</span>
             <span data-dict-key="ui.label.nav.faqHistory">FAQ履歴</span>
           </button>
-          <button class="nav-item" data-pane-target="llm" data-role="admin">
+          <button class="nav-item" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer">
             <span class="nav-icon" aria-hidden="true">K</span>
             <span data-dict-key="ui.label.nav.faqKnowledge">FAQナレッジ管理</span>
           </button>
@@ -84,7 +84,7 @@
             <span class="nav-icon" aria-hidden="true">S</span>
             <span data-dict-key="ui.label.nav.settings">設定</span>
           </button>
-          <button class="nav-item" data-pane-target="maintenance" data-role="admin">
+          <button class="nav-item" data-pane-target="maintenance" data-role="admin" data-role-allow="admin,developer">
             <span class="nav-icon" aria-hidden="true">M</span>
             <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
           </button>
@@ -103,7 +103,7 @@
             <span class="nav-icon" aria-hidden="true">R</span>
             <span data-dict-key="ui.label.nav.readModel">通知集計</span>
           </button>
-          <button class="nav-item" data-pane-target="llm" data-role="admin">
+          <button class="nav-item" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer">
             <span class="nav-icon" aria-hidden="true">L</span>
             <span data-dict-key="ui.label.nav.llm">LLM支援</span>
           </button>
@@ -142,7 +142,7 @@
               <button class="role-btn" data-role-value="developer" data-dict-key="ui.label.role.developer">開発</button>
             </div>
           </div>
-          <div class="top-developer" data-role="admin">
+          <div class="top-developer" data-role="admin" data-role-allow="admin,developer">
             <span class="role-label" data-dict-key="ui.label.developer.menu">開発者</span>
             <div class="top-developer-actions">
               <button id="developer-open-map" type="button" class="secondary-btn" data-dict-key="ui.label.developer.repoMap">Repo Map（全体像）</button>
@@ -167,6 +167,11 @@
             <button id="header-consult-link" type="button" class="secondary-btn hidden" data-dict-key="ui.label.header.consult">相談窓口</button>
           </div>
         </section>
+        <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" role="status" aria-live="polite">
+          <div class="admin-guard-line"><strong>原因:</strong> <span data-guard-field="cause">-</span></div>
+          <div class="admin-guard-line"><strong>影響:</strong> <span data-guard-field="impact">-</span></div>
+          <div class="admin-guard-line"><strong>操作:</strong> <span data-guard-field="action">-</span></div>
+        </div>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">
           <div class="decision-card" id="home-decision-card">
@@ -2077,7 +2082,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-map" class="app-pane" data-pane="developer-map" data-role="admin">
+        <section id="pane-developer-map" class="app-pane" data-pane="developer-map" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2104,11 +2109,16 @@
                   <div class="row row-top">
                     <button id="repo-map-reload" type="button" data-dict-key="ui.label.developer.reload">Repo Map更新</button>
                   </div>
+                  <p id="repo-map-schema-note" class="cell-muted">-</p>
                 </div>
               </div>
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.developer.categories">機能カード一覧</div>
                 <div id="repo-map-categories" class="repo-map-categories"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">開発ToDoカード</div>
+                <div id="repo-map-todo-cards" class="repo-map-todo-list"></div>
               </div>
             </div>
             <div class="pane-detail">
@@ -2180,7 +2190,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-manual-redac" class="app-pane" data-pane="developer-manual-redac" data-role="admin">
+        <section id="pane-developer-manual-redac" class="app-pane" data-pane="developer-manual-redac" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2240,7 +2250,7 @@
           </div>
         </section>
 
-        <section id="pane-developer-manual-user" class="app-pane" data-pane="developer-manual-user" data-role="admin">
+        <section id="pane-developer-manual-user" class="app-pane" data-pane="developer-manual-user" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2284,7 +2294,7 @@
           </div>
         </section>
 
-        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin">
+        <section id="pane-llm" class="app-pane" data-pane="llm" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2419,7 +2429,7 @@
           </div>
         </section>
 
-        <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin">
+        <section id="pane-maintenance" class="app-pane" data-pane="maintenance" data-role="admin" data-role-allow="admin,developer">
           <div class="pane-grid">
             <div class="pane-main">
               <div class="panel">
@@ -2588,6 +2598,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="/admin/assets/admin_ui_core.js"></script>
     <script src="/admin/assets/admin_app.js"></script>
   </body>
 </html>
