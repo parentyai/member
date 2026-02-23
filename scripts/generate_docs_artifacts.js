@@ -23,6 +23,10 @@ const TASKS = Object.freeze([
     script: path.join('scripts', 'generate_retention_risk.js')
   },
   {
+    label: 'structure-risk',
+    script: path.join('scripts', 'generate_structure_risk.js')
+  },
+  {
     label: 'cleanup',
     script: path.join('scripts', 'generate_cleanup_reports.js')
   },

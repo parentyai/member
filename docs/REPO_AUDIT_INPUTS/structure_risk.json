@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-02-21T13:30:03-05:00",
+  "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
+  "sourceDigest": "edcff4c333c033c9bc65b7fc9d243d31b9de79f963c2ea3d241e577074ad0709",
+  "canonical_repos_count": 22,
+  "legacy_repos_count": 6,
+  "merge_candidates_count": 6,
+  "unresolved_dynamic_dep_count": 0,
+  "naming_drift_scenario_count": 9,
+  "naming_drift_scenarioKey_count": 22,
+  "canonical_repos": [
+    "analyticsReadRepo",
+    "auditLogsRepo",
+    "automationConfigRepo",
+    "cityPackRequestsRepo",
+    "cityPacksRepo",
+    "decisionDriftsRepo",
+    "decisionLogsRepo",
+    "decisionTimelineRepo",
+    "deliveriesRepo",
+    "eventsRepo",
+    "linkRegistryRepo",
+    "noticesRepo",
+    "notificationTemplatesRepo",
+    "notificationsRepo",
+    "opsSegmentsRepo",
+    "opsStatesRepo",
+    "sendRetryQueueRepo",
+    "sourceRefsRepo",
+    "systemFlagsRepo",
+    "templatesVRepo",
+    "userChecklistsRepo",
+    "usersRepo"
+  ],
+  "legacy_repos": [
+    "phase18StatsRepo",
+    "phase22KpiSnapshotsReadRepo",
+    "phase22KpiSnapshotsRepo",
+    "phase2ReadRepo",
+    "phase2ReportsRepo",
+    "phase2RunsRepo"
+  ],
+  "merge_candidates": [
+    [
+      "analyticsReadRepo",
+      "phase2ReadRepo"
+    ],
+    [
+      "ctaStatsRepo",
+      "phase18StatsRepo"
+    ],
+    [
+      "kpiSnapshotsReadRepo",
+      "phase22KpiSnapshotsReadRepo"
+    ],
+    [
+      "kpiSnapshotsRepo",
+      "phase22KpiSnapshotsRepo"
+    ],
+    [
+      "scenarioReportsRepo",
+      "phase2ReportsRepo"
+    ],
+    [
+      "scenarioRunsRepo",
+      "phase2RunsRepo"
+    ]
+  ],
+  "unresolved_dynamic_dep": [],
+  "naming_drift": {
+    "scenario": [
+      "src/repos/firestore/checklistsRepo.js",
+      "src/repos/firestore/phase2ReportsRepo.js",
+      "src/repos/firestore/scenarioReportsRepo.js",
+      "src/repos/firestore/usersPhase1Repo.js",
+      "src/usecases/checklists/getChecklistForUser.js",
+      "src/usecases/checklists/getChecklistWithStatus.js",
+      "src/usecases/notifications/createNotificationPhase1.js",
+      "src/usecases/notifications/sendNotificationPhase1.js",
+      "src/usecases/phase2/runAutomation.js"
+    ],
+    "scenarioKey": [
+      "src/repos/firestore/notificationsRepo.js",
+      "src/repos/firestore/usersRepo.js",
+      "src/routes/admin/monitorInsights.js",
+      "src/routes/admin/notificationDeliveries.js",
+      "src/routes/admin/notifications.js",
+      "src/routes/admin/opsOverview.js",
+      "src/routes/admin/osNotifications.js",
+      "src/routes/admin/readModel.js",
+      "src/routes/admin/userTimeline.js",
+      "src/usecases/admin/getNotificationOperationalSummary.js",
+      "src/usecases/admin/getNotificationReadModel.js",
+      "src/usecases/admin/getUserOperationalSummary.js",
+      "src/usecases/adminOs/executeNotificationSend.js",
+      "src/usecases/adminOs/planNotificationSend.js",
+      "src/usecases/notifications/createNotification.js",
+      "src/usecases/notifications/sendNotification.js",
+      "src/usecases/phase117/resolveAutomationTargets.js",
+      "src/usecases/phase140/getNotificationHealthSummary.js",
+      "src/usecases/phase33/executeOpsNextAction.js",
+      "src/usecases/phase5/getUserStateSummary.js",
+      "src/usecases/users/declareRedacMembershipIdFromLine.js",
+      "src/usecases/users/ensureUser.js"
+    ]
+  },
+  "assumptions": [
+    "derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
+    "merge_candidates_count indicates duplicate/alias convergence debt",
+    "budget checks are sourced from docs/STRUCTURE_BUDGETS.md latest baseline"
+  ]
+}

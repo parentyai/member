@@ -32,6 +32,8 @@
     "supervisor-master:check": "node scripts/generate_supervisor_master.js --check",
     "retention-risk:generate": "node scripts/generate_retention_risk.js",
     "retention-risk:check": "node scripts/generate_retention_risk.js --check",
+    "structure-risk:generate": "node scripts/generate_structure_risk.js",
+    "structure-risk:check": "node scripts/generate_structure_risk.js --check",
     "load-risk:generate": "node scripts/generate_load_risk.js",
     "load-risk:check": "node scripts/generate_load_risk.js --check",
     "missing-index-surface:generate": "node scripts/generate_missing_index_surface.js",

@@ -22,6 +22,8 @@ const READ_PATH_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'READ_PATH_BUDGETS.md
 const MISSING_INDEX_SURFACE_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'missing_index_surface.json');
 const RETENTION_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'retention_risk.json');
 const RETENTION_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'RETENTION_BUDGETS.md');
+const STRUCTURE_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'structure_risk.json');
+const STRUCTURE_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'STRUCTURE_BUDGETS.md');
 
 function parseWindowHours(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -125,6 +127,42 @@ function parseRetentionBudgets() {
   };
 }
 
+function parseStructureBudgets() {
+  if (!fs.existsSync(STRUCTURE_BUDGETS_PATH)) {
+    return {
+      legacyReposMax: null,
+      mergeCandidatesMax: null,
+      namingDriftScenarioMax: null,
+      unresolvedDynamicDepMax: null,
+      structureRiskFreshnessMaxHours: null
+    };
+  }
+  const text = fs.readFileSync(STRUCTURE_BUDGETS_PATH, 'utf8');
+  const legacyReposMatches = [...text.matchAll(/legacy_repos_max:\s*(\d+)/g)];
+  const mergeCandidatesMatches = [...text.matchAll(/merge_candidates_max:\s*(\d+)/g)];
+  const namingDriftScenarioMatches = [...text.matchAll(/naming_drift_scenario_max:\s*(\d+)/g)];
+  const unresolvedDynamicDepMatches = [...text.matchAll(/unresolved_dynamic_dep_max:\s*(\d+)/g)];
+  const freshnessMatches = [...text.matchAll(/structure_risk_freshness_max_hours:\s*(\d+)/g)];
+  const legacyReposMatch = legacyReposMatches.length ? legacyReposMatches[legacyReposMatches.length - 1] : null;
+  const mergeCandidatesMatch = mergeCandidatesMatches.length
+    ? mergeCandidatesMatches[mergeCandidatesMatches.length - 1]
+    : null;
+  const namingDriftScenarioMatch = namingDriftScenarioMatches.length
+    ? namingDriftScenarioMatches[namingDriftScenarioMatches.length - 1]
+    : null;
+  const unresolvedDynamicDepMatch = unresolvedDynamicDepMatches.length
+    ? unresolvedDynamicDepMatches[unresolvedDynamicDepMatches.length - 1]
+    : null;
+  const freshnessMatch = freshnessMatches.length ? freshnessMatches[freshnessMatches.length - 1] : null;
+  return {
+    legacyReposMax: legacyReposMatch ? Number(legacyReposMatch[1]) : null,
+    mergeCandidatesMax: mergeCandidatesMatch ? Number(mergeCandidatesMatch[1]) : null,
+    namingDriftScenarioMax: namingDriftScenarioMatch ? Number(namingDriftScenarioMatch[1]) : null,
+    unresolvedDynamicDepMax: unresolvedDynamicDepMatch ? Number(unresolvedDynamicDepMatch[1]) : null,
+    structureRiskFreshnessMaxHours: freshnessMatch ? Number(freshnessMatch[1]) : null
+  };
+}
+
 function parseGeneratedAtHours(value) {
   if (!value || value === 'NOT AVAILABLE' || value === 'NOT_AVAILABLE') return Number.NaN;
   const ms = Date.parse(value);
@@ -154,6 +192,15 @@ function readRetentionRisk() {
   if (!fs.existsSync(RETENTION_RISK_PATH)) return null;
   try {
     return JSON.parse(fs.readFileSync(RETENTION_RISK_PATH, 'utf8'));
+  } catch (_err) {
+    return null;
+  }
+}
+
+function readStructureRisk() {
+  if (!fs.existsSync(STRUCTURE_RISK_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(STRUCTURE_RISK_PATH, 'utf8'));
   } catch (_err) {
     return null;
   }
@@ -198,16 +245,22 @@ async function handleProductReadiness(req, res) {
     const loadRisk = readLoadRisk();
     const missingIndexSurface = readMissingIndexSurface();
     const retentionRisk = readRetentionRisk();
+    const structureRisk = readStructureRisk();
     const budgets = parseCurrentBudgets();
     const retentionBudgets = parseRetentionBudgets();
+    const structureBudgets = parseStructureBudgets();
     const loadRiskFreshnessMaxHours = budgets.loadRiskFreshnessMaxHours;
     const missingIndexSurfaceFreshnessMaxHours = budgets.missingIndexSurfaceFreshnessMaxHours;
     const retentionRiskFreshnessMaxHours = Number.isFinite(Number(process.env.READINESS_RETENTION_RISK_FRESHNESS_MAX_HOURS))
       ? Number(process.env.READINESS_RETENTION_RISK_FRESHNESS_MAX_HOURS)
       : retentionBudgets.retentionRiskFreshnessMaxHours;
+    const structureRiskFreshnessMaxHours = Number.isFinite(Number(process.env.READINESS_STRUCTURE_RISK_FRESHNESS_MAX_HOURS))
+      ? Number(process.env.READINESS_STRUCTURE_RISK_FRESHNESS_MAX_HOURS)
+      : structureBudgets.structureRiskFreshnessMaxHours;
     const loadRiskGeneratedAtHours = parseGeneratedAtHours(loadRisk && loadRisk.generatedAt);
     const missingIndexGeneratedAtHours = parseGeneratedAtHours(missingIndexSurface && missingIndexSurface.generatedAt);
     const retentionRiskGeneratedAtHours = parseGeneratedAtHours(retentionRisk && retentionRisk.generatedAt);
+    const structureRiskGeneratedAtHours = parseGeneratedAtHours(structureRisk && structureRisk.generatedAt);
     const snapshotStaleRatioThreshold = Number.isFinite(Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX))
       ? Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX)
       : (Number.isFinite(budgets.snapshotStaleRatioMax) ? budgets.snapshotStaleRatioMax : 0.5);
@@ -345,6 +398,18 @@ async function handleProductReadiness(req, res) {
     const undefinedRecomputableCount = Number.isFinite(Number(retentionRisk && retentionRisk.undefined_recomputable_count))
       ? Number(retentionRisk.undefined_recomputable_count)
       : NaN;
+    const legacyReposCount = Number.isFinite(Number(structureRisk && structureRisk.legacy_repos_count))
+      ? Number(structureRisk.legacy_repos_count)
+      : NaN;
+    const mergeCandidatesCount = Number.isFinite(Number(structureRisk && structureRisk.merge_candidates_count))
+      ? Number(structureRisk.merge_candidates_count)
+      : NaN;
+    const namingDriftScenarioCount = Number.isFinite(Number(structureRisk && structureRisk.naming_drift_scenario_count))
+      ? Number(structureRisk.naming_drift_scenario_count)
+      : NaN;
+    const unresolvedDynamicDepCount = Number.isFinite(Number(structureRisk && structureRisk.unresolved_dynamic_dep_count))
+      ? Number(structureRisk.unresolved_dynamic_dep_count)
+      : NaN;
 
     if (!retentionRisk) {
       blockers.push({
@@ -427,6 +492,106 @@ async function handleProductReadiness(req, res) {
       });
     }
 
+    if (!structureRisk) {
+      blockers.push({
+        code: 'structure_risk_missing',
+        message: 'structure_risk.json is not available',
+        budget: structureBudgets
+      });
+    } else if (!Number.isFinite(structureRiskGeneratedAtHours)) {
+      blockers.push({
+        code: 'structure_risk_generated_at_invalid',
+        message: 'structure_risk.json generatedAt is missing or invalid',
+        budget: structureRiskFreshnessMaxHours
+      });
+    } else if (
+      Number.isFinite(structureRiskFreshnessMaxHours)
+      && structureRiskGeneratedAtHours > structureRiskFreshnessMaxHours
+    ) {
+      blockers.push({
+        code: 'structure_risk_generated_at_stale',
+        message: 'structure_risk.json is stale',
+        value: structureRiskGeneratedAtHours,
+        thresholdHours: structureRiskFreshnessMaxHours
+      });
+    }
+
+    if (Number.isFinite(structureBudgets.legacyReposMax)
+      && !Number.isFinite(legacyReposCount)) {
+      blockers.push({
+        code: 'structure_risk_invalid_data',
+        message: 'structure_risk legacy_repos_count is missing or invalid',
+        budget: structureBudgets.legacyReposMax
+      });
+    } else if (
+      Number.isFinite(structureBudgets.legacyReposMax)
+      && legacyReposCount > structureBudgets.legacyReposMax
+    ) {
+      blockers.push({
+        code: 'structure_risk_legacy_over_budget',
+        message: 'structure legacy repos count exceeds budget',
+        value: legacyReposCount,
+        budget: structureBudgets.legacyReposMax
+      });
+    }
+
+    if (Number.isFinite(structureBudgets.mergeCandidatesMax)
+      && !Number.isFinite(mergeCandidatesCount)) {
+      blockers.push({
+        code: 'structure_risk_merge_candidates_invalid_data',
+        message: 'structure_risk merge_candidates_count is missing or invalid',
+        budget: structureBudgets.mergeCandidatesMax
+      });
+    } else if (
+      Number.isFinite(structureBudgets.mergeCandidatesMax)
+      && mergeCandidatesCount > structureBudgets.mergeCandidatesMax
+    ) {
+      blockers.push({
+        code: 'structure_risk_merge_candidates_over_budget',
+        message: 'structure merge candidates count exceeds budget',
+        value: mergeCandidatesCount,
+        budget: structureBudgets.mergeCandidatesMax
+      });
+    }
+
+    if (Number.isFinite(structureBudgets.namingDriftScenarioMax)
+      && !Number.isFinite(namingDriftScenarioCount)) {
+      blockers.push({
+        code: 'structure_risk_naming_drift_invalid_data',
+        message: 'structure_risk naming_drift_scenario_count is missing or invalid',
+        budget: structureBudgets.namingDriftScenarioMax
+      });
+    } else if (
+      Number.isFinite(structureBudgets.namingDriftScenarioMax)
+      && namingDriftScenarioCount > structureBudgets.namingDriftScenarioMax
+    ) {
+      blockers.push({
+        code: 'structure_risk_naming_drift_over_budget',
+        message: 'structure naming drift scenario count exceeds budget',
+        value: namingDriftScenarioCount,
+        budget: structureBudgets.namingDriftScenarioMax
+      });
+    }
+
+    if (Number.isFinite(structureBudgets.unresolvedDynamicDepMax)
+      && !Number.isFinite(unresolvedDynamicDepCount)) {
+      blockers.push({
+        code: 'structure_risk_unresolved_dynamic_dep_invalid_data',
+        message: 'structure_risk unresolved_dynamic_dep_count is missing or invalid',
+        budget: structureBudgets.unresolvedDynamicDepMax
+      });
+    } else if (
+      Number.isFinite(structureBudgets.unresolvedDynamicDepMax)
+      && unresolvedDynamicDepCount > structureBudgets.unresolvedDynamicDepMax
+    ) {
+      blockers.push({
+        code: 'structure_risk_unresolved_dynamic_dep_over_budget',
+        message: 'structure unresolved dynamic dependency count exceeds budget',
+        value: unresolvedDynamicDepCount,
+        budget: structureBudgets.unresolvedDynamicDepMax
+      });
+    }
+
     const status = blockers.length === 0 ? 'GO' : 'NO_GO';
 
     try {
@@ -449,6 +614,14 @@ async function handleProductReadiness(req, res) {
             : null,
           retentionRecomputableUndefinedCount: Number.isFinite(undefinedRecomputableCount)
             ? undefinedRecomputableCount
+            : null,
+          structureLegacyReposCount: Number.isFinite(legacyReposCount) ? legacyReposCount : null,
+          structureMergeCandidatesCount: Number.isFinite(mergeCandidatesCount) ? mergeCandidatesCount : null,
+          structureNamingDriftScenarioCount: Number.isFinite(namingDriftScenarioCount)
+            ? namingDriftScenarioCount
+            : null,
+          structureUnresolvedDynamicDepCount: Number.isFinite(unresolvedDynamicDepCount)
+            ? unresolvedDynamicDepCount
             : null
         }
       });
@@ -507,6 +680,17 @@ async function handleProductReadiness(req, res) {
             ? undefinedRecomputableCount
             : null,
           budget: retentionBudgets
+        },
+        structureRisk: {
+          ok: blockers.every((item) => !String(item.code).startsWith('structure_risk_')),
+          value: structureRisk || null,
+          generatedAtHours: Number.isFinite(structureRiskGeneratedAtHours) ? structureRiskGeneratedAtHours : null,
+          freshnessHoursMax: structureRiskFreshnessMaxHours,
+          legacyReposCount: Number.isFinite(legacyReposCount) ? legacyReposCount : null,
+          mergeCandidatesCount: Number.isFinite(mergeCandidatesCount) ? mergeCandidatesCount : null,
+          namingDriftScenarioCount: Number.isFinite(namingDriftScenarioCount) ? namingDriftScenarioCount : null,
+          unresolvedDynamicDepCount: Number.isFinite(unresolvedDynamicDepCount) ? unresolvedDynamicDepCount : null,
+          budget: structureBudgets
         }
       }
     }));
