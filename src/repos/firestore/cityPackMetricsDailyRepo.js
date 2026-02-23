@@ -1,8 +1,6 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'city_pack_metrics_daily';
 
@@ -87,11 +85,6 @@ async function upsertMetricRows(rows) {
   return out;
 }
 
-function compareDateKeyDesc(left, right) {
-  if (left === right) return 0;
-  return left > right ? -1 : 1;
-}
-
 async function listMetricRows(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const limit = Number.isFinite(Number(opts.limit)) ? Math.max(1, Math.min(Math.floor(Number(opts.limit)), 1000)) : 200;
@@ -104,25 +97,8 @@ async function listMetricRows(params) {
   if (cityPackId) query = query.where('cityPackId', '==', cityPackId);
   if (dateFrom) query = query.where('dateKey', '>=', dateFrom);
   if (dateTo) query = query.where('dateKey', '<=', dateTo);
-
-  let rows;
-  try {
-    const snap = await query.orderBy('dateKey', 'desc').limit(limit).get();
-    rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'cityPackMetricsDailyRepo',
-      query: 'listMetricRows',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await query.get();
-    rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    rows.sort((a, b) => compareDateKeyDesc(String(a && a.dateKey || ''), String(b && b.dateKey || '')));
-    rows = rows.slice(0, limit);
-  }
-
+  const snap = await query.orderBy('dateKey', 'desc').limit(limit).get();
+  const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   return rows;
 }
 
