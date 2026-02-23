@@ -359,6 +359,132 @@ function summarizeResponse(resp) {
   };
 }
 
+function pickPreferredTemplate(items) {
+  const rows = Array.isArray(items) ? items : [];
+  if (rows.length === 0) return null;
+  const normalized = rows
+    .filter((row) => row && typeof row.key === 'string' && row.key.trim().length > 0)
+    .map((row) => ({
+      key: row.key.trim(),
+      e2ePreferred: row.key.toLowerCase().includes('e2e')
+    }));
+  if (normalized.length === 0) return null;
+  const preferred = normalized.find((row) => row.e2ePreferred);
+  return preferred ? preferred.key : normalized[0].key;
+}
+
+async function resolveSegmentTemplateKey(ctx, traceId, preferredKey, requestFn) {
+  if (preferredKey && preferredKey.trim()) {
+    return {
+      templateKey: preferredKey.trim(),
+      source: 'input',
+      reason: null
+    };
+  }
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const resp = await request(ctx, 'GET', '/api/phase61/templates?status=active', traceId);
+  if (!resp.okStatus || !resp.body || typeof resp.body !== 'object') {
+    return {
+      templateKey: '',
+      source: 'auto',
+      reason: 'segment_template_list_failed',
+      response: summarizeResponse(resp)
+    };
+  }
+  const picked = pickPreferredTemplate(resp.body.items);
+  if (!picked) {
+    return {
+      templateKey: '',
+      source: 'auto',
+      reason: 'segment_template_not_found'
+    };
+  }
+  return {
+    templateKey: picked,
+    source: 'auto',
+    reason: null
+  };
+}
+
+function rankComposerCandidates(items) {
+  const rows = Array.isArray(items) ? items : [];
+  return rows
+    .filter((row) => row && typeof row.id === 'string' && row.id.trim().length > 0)
+    .map((row) => ({
+      id: row.id.trim(),
+      title: typeof row.title === 'string' ? row.title : '',
+      e2ePreferred: (
+        row.id.toLowerCase().includes('e2e')
+        || (typeof row.title === 'string' && row.title.toLowerCase().includes('e2e'))
+      )
+    }))
+    .sort((a, b) => {
+      if (a.e2ePreferred === b.e2ePreferred) return 0;
+      return a.e2ePreferred ? -1 : 1;
+    });
+}
+
+async function resolveComposerNotificationId(ctx, traceId, preferredId, requestFn) {
+  if (preferredId && preferredId.trim()) {
+    return {
+      notificationId: preferredId.trim(),
+      source: 'input',
+      reason: null,
+      attempts: []
+    };
+  }
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const listResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?status=active&limit=100', traceId);
+  if (!listResp.okStatus || !listResp.body || typeof listResp.body !== 'object') {
+    return {
+      notificationId: '',
+      source: 'auto',
+      reason: 'composer_notification_list_failed',
+      response: summarizeResponse(listResp),
+      attempts: []
+    };
+  }
+  const candidates = rankComposerCandidates(listResp.body.items);
+  if (candidates.length === 0) {
+    return {
+      notificationId: '',
+      source: 'auto',
+      reason: 'composer_notification_not_found',
+      attempts: []
+    };
+  }
+
+  const attempts = [];
+  for (let i = 0; i < candidates.length; i += 1) {
+    const candidate = candidates[i];
+    const probeTraceId = `${traceId}-resolve-${i + 1}`;
+    const planResp = await request(
+      ctx,
+      'POST',
+      '/api/admin/os/notifications/send/plan',
+      probeTraceId,
+      { notificationId: candidate.id }
+    );
+    const summary = summarizeResponse(planResp);
+    attempts.push({ notificationId: candidate.id, response: summary });
+    if (planResp.okStatus && planResp.body && planResp.body.ok === true && typeof planResp.body.planHash === 'string') {
+      return {
+        notificationId: candidate.id,
+        source: 'auto',
+        reason: null,
+        attempts
+      };
+    }
+  }
+
+  return {
+    notificationId: '',
+    source: 'auto',
+    reason: 'composer_notification_plannable_not_found',
+    attempts
+  };
+}
+
 function requireHttpOk(resp, label) {
   if (!resp.okStatus) {
     const detail = summarizeResponse(resp);
@@ -515,10 +641,17 @@ async function resolveRetryQueueId(ctx, traceId, preferredId) {
 
 async function runSegmentScenario(ctx, opts, traceId) {
   if (opts.skipSegment) return { status: 'SKIP', reason: 'skip_segment_flag' };
-  if (!opts.segmentTemplateKey) return { status: 'SKIP', reason: 'segment_template_key_missing' };
+  const resolvedTemplate = await resolveSegmentTemplateKey(ctx, traceId, opts.segmentTemplateKey);
+  if (!resolvedTemplate.templateKey) {
+    return {
+      status: 'SKIP',
+      reason: resolvedTemplate.reason || 'segment_template_key_missing',
+      templateKeySource: resolvedTemplate.source || 'auto'
+    };
+  }
 
   const payload = {
-    templateKey: opts.segmentTemplateKey,
+    templateKey: resolvedTemplate.templateKey,
     segmentQuery: opts.segmentQuery || {}
   };
   if (opts.segmentTemplateVersion) payload.templateVersion = Number(opts.segmentTemplateVersion);
@@ -550,6 +683,8 @@ async function runSegmentScenario(ctx, opts, traceId) {
 
   return {
     status: 'PASS',
+    templateKey: payload.templateKey,
+    templateKeySource: resolvedTemplate.source || 'input',
     steps: {
       plan: summarizeResponse(planResp),
       dryRun: summarizeResponse(dryResp),
@@ -651,12 +786,20 @@ async function runKillSwitchScenario(ctx, opts, traceId) {
 
 async function runComposerCapScenario(ctx, opts, traceId) {
   if (opts.skipComposerCap) return { status: 'SKIP', reason: 'skip_composer_cap_flag' };
-  if (!opts.composerNotificationId) return { status: 'SKIP', reason: 'composer_notification_id_missing' };
+  const resolved = await resolveComposerNotificationId(ctx, traceId, opts.composerNotificationId);
+  if (!resolved.notificationId) {
+    return {
+      status: 'SKIP',
+      reason: resolved.reason || 'composer_notification_id_missing',
+      notificationIdSource: resolved.source || 'auto',
+      resolveAttempts: Array.isArray(resolved.attempts) ? resolved.attempts.length : 0
+    };
+  }
 
   const statusResp = await apiRequest(
     ctx,
     'GET',
-    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(opts.composerNotificationId)}`,
+    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(resolved.notificationId)}`,
     traceId
   );
   const statusBody = requireHttpOk(statusResp, 'composer notification status');
@@ -664,6 +807,8 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     return {
       status: 'FAIL',
       reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
+      notificationId: resolved.notificationId,
+      notificationIdSource: resolved.source || 'input',
       steps: {
         status: summarizeResponse(statusResp)
       }
@@ -685,12 +830,12 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     configChanged = true;
 
     const planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
-      notificationId: opts.composerNotificationId
+      notificationId: resolved.notificationId
     });
     const plan = requireHttpOk(planResp, 'composer send plan');
 
     const executeResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/execute', traceId, {
-      notificationId: opts.composerNotificationId,
+      notificationId: resolved.notificationId,
       planHash: plan.planHash,
       confirmToken: plan.confirmToken
     });
@@ -699,6 +844,8 @@ async function runComposerCapScenario(ctx, opts, traceId) {
       return {
         status: 'FAIL',
         reason: `composer_expected_cap_block_got:${execute.reason || 'unknown'}`,
+        notificationId: resolved.notificationId,
+        notificationIdSource: resolved.source || 'input',
         steps: {
           plan: summarizeResponse(planResp),
           execute: summarizeResponse(executeResp)
@@ -707,6 +854,9 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     }
     return {
       status: 'PASS',
+      notificationId: resolved.notificationId,
+      notificationIdSource: resolved.source || 'input',
+      resolveAttempts: Array.isArray(resolved.attempts) ? resolved.attempts.length : 0,
       steps: {
         plan: summarizeResponse(planResp),
         execute: summarizeResponse(executeResp)
@@ -980,7 +1130,9 @@ module.exports = {
   buildRouteErrorLoggingFilter,
   fetchRouteErrors,
   applyRouteErrorStrictGate,
-  evaluateProductReadinessBody
+  evaluateProductReadinessBody,
+  resolveSegmentTemplateKey,
+  resolveComposerNotificationId
 };
 
 if (require.main === module) {
