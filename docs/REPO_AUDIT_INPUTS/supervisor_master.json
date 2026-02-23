@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T23:57:49-05:00",
-  "gitCommit": "3a589858536d7bd57fe708926ded098b5e718628",
-  "branch": "codex/phase634-trend-ui",
-  "sourceDigest": "3ee78729af29028b1f19ffd20e44ca81999d810f31502cea9f81793763cbd632",
+  "generatedAt": "2026-02-23T00:01:49-05:00",
+  "gitCommit": "19caf11d073d0c680841c4b48916d2c2b5bbeff6",
+  "branch": "HEAD",
+  "sourceDigest": "dacf42243d507002e5b3cbe333d46b921b54ea2f19e71d3b201dda86c8a45c0f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
