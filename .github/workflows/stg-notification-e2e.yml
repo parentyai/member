@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       segment_template_key:
-        description: "Active template key for segment scenario"
-        required: true
+        description: "Active template key for segment scenario (empty = auto-detect active)"
+        required: false
+        default: ""
         type: string
       segment_query_json:
         description: "Optional segment query JSON (lineUserIds, filters)."
@@ -13,8 +14,9 @@ on:
         default: ""
         type: string
       composer_notification_id:
-        description: "Active notificationId for composer cap scenario"
-        required: true
+        description: "Active notificationId for composer cap scenario (empty = auto-detect plannable active)"
+        required: false
+        default: ""
         type: string
       retry_queue_id:
         description: "Optional pending retry queue id (auto-detect when empty)"

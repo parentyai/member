@@ -18,8 +18,6 @@ npm run ops:stg-e2e -- \
   --fetch-route-errors \
   --fail-on-route-errors \
   --project-id member-485303 \
-  --segment-template-key <ACTIVE_TEMPLATE_KEY> \
-  --composer-notification-id <ACTIVE_NOTIFICATION_ID> \
   --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
 ```
 
@@ -33,8 +31,6 @@ npm run ops:stg-e2e -- \
 
 ```bash
 gh workflow run stg-notification-e2e.yml --ref main \
-  -f segment_template_key=<ACTIVE_TEMPLATE_KEY> \
-  -f composer_notification_id=<ACTIVE_NOTIFICATION_ID> \
   -f actor=ops_stg_e2e \
   -f route_error_limit=20
 ```
@@ -45,10 +41,10 @@ gh workflow run stg-notification-e2e.yml --ref main \
 
 ### Required Inputs
 - `ADMIN_OS_TOKEN`: 管理APIトークン
-- `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー
-- `composer-notification-id`: Composer cap block 検証対象の active notificationId
 
 ### Optional Inputs
+- `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー（未指定時は `status=active` を自動解決）
+- `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決）
 - `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
 - `segment-template-version`: 固定バージョン指定が必要な場合のみ
 - `segment-query-json`: Segment フィルタを明示したい場合のみ
