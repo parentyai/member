@@ -30,6 +30,8 @@
     "audit-inputs:check": "node scripts/generate_audit_inputs_manifest.js --check",
     "supervisor-master:generate": "node scripts/generate_supervisor_master.js",
     "supervisor-master:check": "node scripts/generate_supervisor_master.js --check",
+    "retention-risk:generate": "node scripts/generate_retention_risk.js",
+    "retention-risk:check": "node scripts/generate_retention_risk.js --check",
     "load-risk:generate": "node scripts/generate_load_risk.js",
     "load-risk:check": "node scripts/generate_load_risk.js --check",
     "missing-index-surface:generate": "node scripts/generate_missing_index_surface.js",
