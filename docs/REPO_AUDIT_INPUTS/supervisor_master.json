@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T18:39:22-05:00",
-  "gitCommit": "851f6060bc65ad52e88142a148b7734361629ded",
-  "branch": "codex/phase604-reduce-missing-index-surface",
-  "sourceDigest": "70c5996980deb89a79103f440eb2705793536ea8bb0e2ced0e8d15e9a0032246",
+  "generatedAt": "2026-02-22T18:57:45-05:00",
+  "gitCommit": "0204ab09122d5ac78bc9393a98116319ce780835",
+  "branch": "codex/phase605-reduce-missing-index-surface-notifications",
+  "sourceDigest": "9a864be8c0a76fa7bfa60ad8d3c64567f588bbaa6a723675df597a71a7de8b36",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
