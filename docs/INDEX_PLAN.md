@@ -1,12 +1,11 @@
 # INDEX_PLAN
 
 - 目的: missing-index fallback の発生箇所を固定し、index作成順を明示する。
-- 入力: `docs/REPO_AUDIT_INPUTS/load_risk.json` (fallback_points=14)
+- 入力: `docs/REPO_AUDIT_INPUTS/load_risk.json` (fallback_points=13)
 - 判定: `src/repos/firestore/indexFallbackPolicy.js` により stg/prod は fail-safe。
 
 | file | lines | mode | notes |
 | --- | --- | --- | --- |
-| `src/repos/firestore/cityPackBulletinsRepo.js` | 91 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackFeedbackRepo.js` | 142 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackMetricsDailyRepo.js` | 113 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
 | `src/repos/firestore/cityPackRequestsRepo.js` | 153 | stg/prod=fail-safe, local=test=fail-open | index作成完了後にfallback経路を段階停止 |
