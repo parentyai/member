@@ -174,3 +174,15 @@ read path の増悪を CI で停止するための予算定義（add-only）。
 - snapshot_stale_ratio_max: 0.5
 - fallback_spike_max: 200
 - note: phase610 の収束基準。cityPackUpdateProposalsRepo の missing-index fallback を撤去し fallback surface を1段削減。
+
+## current_baseline_phase611
+- worst_case_docs_scan_max: 0
+- fallback_points_max: 9
+- hotspots_count_max: 0
+- unbounded_hotspots_max: 0
+- missing_index_surface_max: 9
+- load_risk_freshness_max_hours: 24
+- missing_index_surface_freshness_max_hours: 24
+- snapshot_stale_ratio_max: 0.5
+- fallback_spike_max: 200
+- note: phase611 の収束基準。cityPackBulletinsRepo の missing-index fallback を撤去し fallback surface を1段削減。
