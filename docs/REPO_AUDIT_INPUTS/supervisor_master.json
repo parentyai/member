@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T20:25:23-05:00",
-  "gitCommit": "d89e285cb5b6e3de95438b64ca7637cbecf1ec91",
-  "branch": "codex/phase628-structure-readiness-batch",
-  "sourceDigest": "60e10ef7334644217bd6299a75c979ea310014c4629bf02e1cfdc3cb162942eb",
+  "generatedAt": "2026-02-22T20:42:08-05:00",
+  "gitCommit": "565e125de0cae76fb05c3fba12c1be256ae7a8dc",
+  "branch": "codex/phase629-e2e-product-readiness-gate",
+  "sourceDigest": "7308319aede9a91a29a377e12f1b2384776843fcf24c850fffdf3c135b825a6d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
