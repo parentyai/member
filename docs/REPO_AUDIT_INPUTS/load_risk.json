@@ -1,9 +1,9 @@
 {
   "source": "src/**/*.js, src/index.js, docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-  "generatedAt": "2026-02-22T19:28:33-05:00",
-  "sourceDigest": "53181e28bb4eecf831db5e3060968abc7c12d3965245cd836c4b74985b0e7300",
+  "generatedAt": "2026-02-22T19:33:23-05:00",
+  "sourceDigest": "8c123f1b63264da63b26461ef0e8cc5d59d97594bca8cdef13e89444e8a5e2e1",
   "estimated_worst_case_docs_scan": 0,
-  "fallback_risk": 12,
+  "fallback_risk": 11,
   "hotspots_count": 0,
   "unbounded_hotspots_count": 0,
   "bounded_hotspots_count": 0,
@@ -42,13 +42,6 @@
     {
       "file": "src/repos/firestore/cityPacksRepo.js",
       "line": 339,
-      "type": "missingIndexFallback",
-      "call": "isMissingIndexError",
-      "limit": "N/A"
-    },
-    {
-      "file": "src/repos/firestore/cityPackTemplateLibraryRepo.js",
-      "line": 93,
       "type": "missingIndexFallback",
       "call": "isMissingIndexError",
       "limit": "N/A"
@@ -124,7 +117,7 @@
       "limit": "N/A"
     }
   ],
-  "fallback_surface_count": 12,
+  "fallback_surface_count": 11,
   "assumptions": [
     "listAll function declarations are excluded from hotspots (runtime callsites only)",
     "fallback_risk counts unique file/call surfaces",
