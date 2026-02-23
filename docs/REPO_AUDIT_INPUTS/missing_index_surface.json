@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-02-22T18:59:20-05:00",
+  "generatedAt": "2026-02-22T19:19:03-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "03103eee4437672b8125fa5c5e1a0264c159247f169249d0b9418dda22acce61",
-  "surface_count": 14,
-  "point_count": 18,
+  "sourceDigest": "0c607d306a644a1d570aacc7567dddb97b4cd011c23d172a472ee2e0ac4c4a4c",
+  "surface_count": 13,
+  "point_count": 17,
   "call_breakdown": {
-    "isMissingIndexError": 14
+    "isMissingIndexError": 13
   },
   "items": [
     {
@@ -129,20 +129,6 @@
         100
       ],
       "occurrences": 3,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/linkRegistryRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        50
-      ],
-      "occurrences": 1,
       "policy": {
         "production": "fail_closed",
         "staging": "fail_closed",
