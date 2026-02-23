@@ -82,6 +82,7 @@ function parseArgs(argv, env) {
   const opts = {
     baseUrl: normalizeBaseUrl(sourceEnv.MEMBER_BASE_URL || sourceEnv.BASE_URL || DEFAULT_BASE_URL),
     adminToken: sourceEnv.ADMIN_OS_TOKEN || '',
+    internalJobToken: sourceEnv.CITY_PACK_JOB_TOKEN || '',
     actor: sourceEnv.E2E_ACTOR || DEFAULT_ACTOR,
     tracePrefix: sourceEnv.E2E_TRACE_PREFIX || DEFAULT_TRACE_PREFIX,
     projectId: sourceEnv.E2E_GCP_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '',
@@ -154,6 +155,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--admin-token') {
       opts.adminToken = readValue(argv, ++i, '--admin-token');
+      continue;
+    }
+    if (arg === '--internal-job-token') {
+      opts.internalJobToken = readValue(argv, ++i, '--internal-job-token');
       continue;
     }
     if (arg === '--actor') {
@@ -1313,6 +1318,7 @@ async function runAll(opts) {
   const ctx = {
     baseUrl: opts.baseUrl,
     adminToken: opts.adminToken,
+    internalJobToken: opts.internalJobToken || '',
     actor: opts.actor,
     tracePrefix: opts.tracePrefix,
     projectId: opts.projectId || '',
