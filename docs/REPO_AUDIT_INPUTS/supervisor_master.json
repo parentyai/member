@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T19:35:33-05:00",
-  "gitCommit": "deb17e4d89516649402c75dd3096f3901618fef9",
-  "branch": "main",
-  "sourceDigest": "e461b71bfc2cc61b2179e0248394c0501562bc223ea9a556f0128abdad044d73",
+  "generatedAt": "2026-02-22T19:39:59-05:00",
+  "gitCommit": "250c3370ca0e9726cdf8252946d4817f9de43c57",
+  "branch": "codex/phase610-reduce-missing-index-surface-city-pack-update-proposals",
+  "sourceDigest": "abf5a77a9de0c483298d74cf70aa30987ab017c1f49f968efcdcd763ffb58ac2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
