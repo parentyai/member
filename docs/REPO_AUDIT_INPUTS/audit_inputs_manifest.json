@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T21:18:06-05:00",
-  "gitCommit": "50a57cfeb5985f51d3dd97106ddbaf6a7bb01b30",
-  "branch": "codex/phase631-e2e-audit-action-gate-batch",
-  "sourceDigest": "df38664e1fe069e6c383741b7e9be6fb50147e4def3ce1bf107b872157fd4527",
+  "generatedAt": "2026-02-22T22:41:54-05:00",
+  "gitCommit": "5b581c224e7d6337133f7c3c90e263d06bdf23e0",
+  "branch": "codex/phase633-index-governance",
+  "sourceDigest": "c13cffe45bccbad3ea3e1e7c0670f5e9508c492fc82f3a493cdc9477fad7dd0d",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -58,8 +58,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
-      "sha256": "e7ee30f5955ed35a5ca052feef857aaf14c7526409db3eaf4bbe7cc5a4c599fd",
-      "bytes": 5734
+      "sha256": "16ee7db199ef87d7337343990d28592c6a5529f8732d8336edb95ff9dcb06f02",
+      "bytes": 10136
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
@@ -113,7 +113,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "de9750f0f798b25fa1b97ba0aa8df72e8caebc70ba64ea7331ab4cd9fddd951e",
+      "sha256": "7005058fa280b8616260580e4241991b6a49c3dcec20953b23806a1296b9a14a",
       "bytes": 288099
     },
     {
@@ -133,8 +133,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "dc5cff3262a2a4ed5902cca6d9eb68628d34088f0588d84262b88452e0c9848b",
-      "bytes": 2428
+      "sha256": "1191bf4e34f97a372213d8e7eb372412e90ea7039481750a5be2f7fec0f10962",
+      "bytes": 2417
     }
   ],
   "diff_detection_rules": [

@@ -12,11 +12,11 @@ test('phase632: INDEX_REQUIREMENTS binds operational SSOT to firestore_required_
   assert.ok(src.includes('npm run firestore-indexes:plan'));
 });
 
-test('phase632: deploy runbook references firestore-indexes check and required branch protection update', () => {
+test('phase632: deploy runbook references firestore-indexes check and audit aggregate required gate update', () => {
   const src = fs.readFileSync(path.join(process.cwd(), 'docs', 'RUNBOOK_DEPLOY_ENVIRONMENTS.md'), 'utf8');
   assert.ok(src.includes('Firestore Index Drift Guard'));
   assert.ok(src.includes('npm run firestore-indexes:check'));
-  assert.ok(src.includes('Branch protection の Required status checks に `firestore-indexes`'));
+  assert.ok(src.includes('required check `audit` は aggregate gate'));
 });
 
 test('phase632: SSOT index references index definition and checker script', () => {

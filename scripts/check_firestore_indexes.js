@@ -21,6 +21,7 @@ function parseArgs(argv, env) {
   const opts = {
     check: false,
     plan: false,
+    contractsOnly: false,
     projectId: (sourceEnv.FIRESTORE_PROJECT_ID || sourceEnv.GCP_PROJECT_ID || '').trim(),
     requiredFile: DEFAULT_REQUIRED_PATH
   };
@@ -33,6 +34,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--plan') {
       opts.plan = true;
+      continue;
+    }
+    if (arg === '--contracts-only') {
+      opts.contractsOnly = true;
       continue;
     }
     if (arg === '--project-id') {
@@ -99,6 +104,66 @@ function normalizeRequiredIndex(raw) {
     queryScope: normalizeQueryScope(payload.queryScope),
     fields
   };
+}
+
+function normalizeSourceEvidenceEntry(raw, label) {
+  const payload = raw && typeof raw === 'object' ? raw : {};
+  const evidencePath = typeof payload.path === 'string' ? payload.path.trim() : '';
+  const line = Number(payload.line);
+  if (!evidencePath) throw new Error(`${label} sourceEvidence.path is required`);
+  if (!Number.isInteger(line) || line <= 0) throw new Error(`${label} sourceEvidence.line must be a positive integer`);
+  return {
+    path: evidencePath,
+    line
+  };
+}
+
+function normalizeCriticalContract(raw) {
+  const payload = raw && typeof raw === 'object' ? raw : {};
+  const contractId = typeof payload.contractId === 'string' ? payload.contractId.trim() : '';
+  const routeOrUsecase = typeof payload.routeOrUsecase === 'string' ? payload.routeOrUsecase.trim() : '';
+  if (!contractId) throw new Error('critical contract contractId is required');
+  if (!routeOrUsecase) throw new Error(`critical contract ${contractId} missing routeOrUsecase`);
+  const requiredIndexIds = Array.isArray(payload.requiredIndexIds)
+    ? payload.requiredIndexIds
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+    : [];
+  if (!requiredIndexIds.length) throw new Error(`critical contract ${contractId} missing requiredIndexIds`);
+  const sourceEvidence = Array.isArray(payload.sourceEvidence)
+    ? payload.sourceEvidence.map((item) => normalizeSourceEvidenceEntry(item, `critical contract ${contractId}`))
+    : [];
+  if (!sourceEvidence.length) throw new Error(`critical contract ${contractId} missing sourceEvidence`);
+  return {
+    contractId,
+    routeOrUsecase,
+    requiredIndexIds,
+    sourceEvidence
+  };
+}
+
+function resolveEvidencePath(rawPath) {
+  const normalized = toPosix(rawPath);
+  if (!normalized) return '';
+
+  const direct = path.isAbsolute(normalized) ? normalized : path.resolve(ROOT, normalized);
+  if (fs.existsSync(direct)) return direct;
+
+  const marker = '/Projects/Member/';
+  const markerIdx = normalized.indexOf(marker);
+  if (markerIdx !== -1) {
+    const relative = normalized.slice(markerIdx + marker.length);
+    const remapped = path.join(ROOT, relative);
+    if (fs.existsSync(remapped)) return remapped;
+  }
+
+  const match = normalized.match(/(?:^|\/)Member\/(.+)$/);
+  if (match && match[1]) {
+    const remapped = path.join(ROOT, match[1]);
+    if (fs.existsSync(remapped)) return remapped;
+  }
+
+  return '';
 }
 
 function parseCollectionGroupFromName(name) {
@@ -196,7 +261,7 @@ function buildCreateCommand(projectId, spec) {
   return args.join(' ');
 }
 
-function readRequiredDefinition(requiredFile) {
+function readRequiredPayload(requiredFile) {
   if (!fs.existsSync(requiredFile)) {
     throw new Error(`required file not found: ${toPosix(path.relative(ROOT, requiredFile))}`);
   }
@@ -207,9 +272,40 @@ function readRequiredDefinition(requiredFile) {
   } catch (_err) {
     throw new Error(`required file is invalid JSON: ${toPosix(path.relative(ROOT, requiredFile))}`);
   }
-  const list = Array.isArray(parsed && parsed.indexes) ? parsed.indexes : [];
+  if (!parsed || typeof parsed !== 'object') throw new Error('required file payload must be an object');
+  const list = Array.isArray(parsed.indexes) ? parsed.indexes : [];
   if (!list.length) throw new Error('required index list is empty');
-  return list.map(normalizeRequiredIndex);
+  const contracts = Array.isArray(parsed.criticalContracts) ? parsed.criticalContracts : [];
+  return {
+    indexes: list.map(normalizeRequiredIndex),
+    criticalContracts: contracts.map(normalizeCriticalContract)
+  };
+}
+
+function readRequiredDefinition(requiredFile) {
+  return readRequiredPayload(requiredFile).indexes;
+}
+
+function validateCriticalContracts(requiredIndexes, criticalContracts) {
+  const contracts = Array.isArray(criticalContracts) ? criticalContracts : [];
+  const idSet = new Set((Array.isArray(requiredIndexes) ? requiredIndexes : []).map((item) => item.id));
+  const errors = [];
+
+  contracts.forEach((contract) => {
+    (contract.requiredIndexIds || []).forEach((id) => {
+      if (!idSet.has(id)) {
+        errors.push(`criticalContracts.${contract.contractId} references unknown index id: ${id}`);
+      }
+    });
+    (contract.sourceEvidence || []).forEach((evidence) => {
+      const resolvedPath = resolveEvidencePath(evidence.path);
+      if (!resolvedPath) {
+        errors.push(`criticalContracts.${contract.contractId} sourceEvidence.path not found: ${evidence.path}`);
+      }
+    });
+  });
+
+  return errors;
 }
 
 function getGcloudProjectFallback(execFileSyncFn) {
@@ -292,19 +388,49 @@ function printCreatePlan(projectId, missing) {
   });
 }
 
+function printContractErrors(errors) {
+  if (!Array.isArray(errors) || errors.length === 0) return;
+  process.stdout.write('critical contract validation errors:\n');
+  errors.forEach((item) => {
+    process.stdout.write(`- ${item}\n`);
+  });
+}
+
 function run(argv, env, execFileSyncFn) {
   const opts = parseArgs(argv || process.argv, env || process.env);
   const execSync = execFileSyncFn || childProcess.execFileSync;
-  const projectId = resolveProjectId(opts, execSync);
-  const required = readRequiredDefinition(opts.requiredFile);
-  const actual = listActualIndexes(projectId, execSync);
-  const diff = diffIndexes(required, actual);
+  const requiredPayload = readRequiredPayload(opts.requiredFile);
+  const required = requiredPayload.indexes;
+  const criticalContracts = requiredPayload.criticalContracts;
+  const contractErrors = validateCriticalContracts(required, criticalContracts);
+  const contractsOnly = Boolean(opts.contractsOnly);
 
-  printDiffSummary(projectId, opts.requiredFile, required, actual, diff);
-  if (opts.plan) printCreatePlan(projectId, diff.missing);
+  let projectId = '';
+  let actual = [];
+  let diff = {
+    missing: [],
+    extra: [],
+    present: []
+  };
 
-  if (opts.check && diff.missing.length > 0) {
-    process.stderr.write(`不足 index が ${diff.missing.length} 件あります。上記 create plan を実行してください。\n`);
+  if (contractsOnly) {
+    process.stdout.write(`[firestore-indexes] contracts-only mode enabled\n`);
+  } else {
+    projectId = resolveProjectId(opts, execSync);
+    actual = listActualIndexes(projectId, execSync);
+    diff = diffIndexes(required, actual);
+    printDiffSummary(projectId, opts.requiredFile, required, actual, diff);
+    if (opts.plan) printCreatePlan(projectId, diff.missing);
+  }
+  printContractErrors(contractErrors);
+
+  if (opts.check && (contractErrors.length > 0 || (!contractsOnly && diff.missing.length > 0))) {
+    if (!contractsOnly && diff.missing.length > 0) {
+      process.stderr.write(`不足 index が ${diff.missing.length} 件あります。上記 create plan を実行してください。\n`);
+    }
+    if (contractErrors.length > 0) {
+      process.stderr.write(`critical contract エラーが ${contractErrors.length} 件あります。required index 定義を修正してください。\n`);
+    }
     return 1;
   }
   return 0;
@@ -325,11 +451,15 @@ module.exports = {
   parseArgs,
   normalizeField,
   normalizeRequiredIndex,
+  normalizeCriticalContract,
   normalizeActualIndex,
   createIndexSignature,
   diffIndexes,
   buildCreateCommand,
+  readRequiredPayload,
   readRequiredDefinition,
+  validateCriticalContracts,
+  resolveEvidencePath,
   resolveProjectId,
   listActualIndexes,
   run

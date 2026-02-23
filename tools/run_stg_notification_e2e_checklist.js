@@ -20,6 +20,15 @@ const SCENARIO_REQUIRED_AUDIT_ACTIONS = Object.freeze({
   composer_cap_block: ['notifications.send.plan', 'notifications.send.execute']
 });
 
+const ADMIN_READINESS_ENDPOINTS = Object.freeze([
+  { key: 'productReadiness', endpoint: '/api/admin/product-readiness', label: 'product-readiness' },
+  { key: 'fallbackSummary', endpoint: '/api/admin/read-path-fallback-summary', label: 'read-path-fallback-summary' },
+  { key: 'retentionRuns', endpoint: '/api/admin/retention-runs', label: 'retention-runs' },
+  { key: 'structDriftBackfillRuns', endpoint: '/api/admin/struct-drift/backfill-runs', label: 'struct-drift/backfill-runs' },
+  { key: 'osAlertsSummary', endpoint: '/api/admin/os/alerts/summary', label: 'os-alerts-summary' },
+  { key: 'cityPacks', endpoint: '/api/admin/city-packs', label: 'city-packs' }
+]);
+
 function readValue(argv, index, label) {
   if (index >= argv.length) throw new Error(`${label} value required`);
   return argv[index];
@@ -976,23 +985,54 @@ function evaluateProductReadinessBody(body) {
 }
 
 async function runProductReadinessScenario(ctx, traceId) {
-  const readinessResp = await apiRequest(ctx, 'GET', '/api/admin/product-readiness', traceId);
-  const readinessBody = requireHttpOk(readinessResp, 'product-readiness');
-  const evaluation = evaluateProductReadinessBody(readinessBody);
-  if (!evaluation.ok) {
+  const steps = {};
+  const adminReadinessChecks = [];
+
+  for (const endpoint of ADMIN_READINESS_ENDPOINTS) {
+    const resp = await apiRequest(ctx, 'GET', endpoint.endpoint, traceId);
+    steps[endpoint.key] = summarizeResponse(resp);
+    adminReadinessChecks.push({
+      endpoint: endpoint.endpoint,
+      status: resp.status,
+      ok: resp.okStatus
+    });
+
+    if (!resp.okStatus) {
+      return {
+        status: 'FAIL',
+        reason: `admin_readiness_endpoint_failed:${endpoint.endpoint}:http_${resp.status}`,
+        adminReadinessChecks,
+        steps
+      };
+    }
+
+    if (endpoint.endpoint === '/api/admin/product-readiness') {
+      const readinessBody = requireHttpOk(resp, 'product-readiness');
+      const evaluation = evaluateProductReadinessBody(readinessBody);
+      if (!evaluation.ok) {
+        return {
+          status: 'FAIL',
+          reason: evaluation.reason,
+          adminReadinessChecks,
+          steps
+        };
+      }
+    }
+  }
+
+  if (adminReadinessChecks.some((item) => item.ok !== true)) {
     return {
       status: 'FAIL',
-      reason: evaluation.reason,
-      steps: {
-        readiness: summarizeResponse(readinessResp)
-      }
+      reason: 'admin_readiness_checks_not_all_ok',
+      adminReadinessChecks,
+      steps
     };
   }
+
   return {
     status: 'PASS',
-    steps: {
-      readiness: summarizeResponse(readinessResp)
-    }
+    adminReadinessChecks,
+    steps
   };
 }
 
@@ -1026,6 +1066,12 @@ function renderMarkdownSummary(report) {
     const bundle = scenario.traceBundle || null;
     if (bundle) {
       lines.push(`- trace bundle: audits=${bundle.audits || 0} decisions=${bundle.decisions || 0} timeline=${bundle.timeline || 0}`);
+    }
+    if (Array.isArray(scenario.adminReadinessChecks) && scenario.adminReadinessChecks.length > 0) {
+      lines.push('- admin readiness checks:');
+      scenario.adminReadinessChecks.forEach((item) => {
+        lines.push(`  - ${item.endpoint}: status=${item.status} ok=${item.ok === true ? 'true' : 'false'}`);
+      });
     }
     const routeErrors = scenario.routeErrors || null;
     if (routeErrors) {
@@ -1081,6 +1127,7 @@ async function runScenario(ctx, scenarioName, runner) {
       reason: strictGate.reason,
       steps: result.steps || null,
       queueId: result.queueId || null,
+      adminReadinessChecks: Array.isArray(result.adminReadinessChecks) ? result.adminReadinessChecks : null,
       traceBundle,
       routeErrors,
       requiredAuditActions: coverage.required,
@@ -1198,6 +1245,11 @@ function printSummary(report) {
     console.log(`${scenario.name}: ${scenario.status}${scenario.reason ? ` (${scenario.reason})` : ''}`);
     console.log(`  traceId=${scenario.traceId}`);
     console.log(`  audits=${bundle.audits || 0} decisions=${bundle.decisions || 0} timeline=${bundle.timeline || 0}`);
+    if (Array.isArray(scenario.adminReadinessChecks) && scenario.adminReadinessChecks.length > 0) {
+      scenario.adminReadinessChecks.forEach((item) => {
+        console.log(`  admin_readiness_check ${item.endpoint}: status=${item.status} ok=${item.ok === true ? 'true' : 'false'}`);
+      });
+    }
     if (scenario.routeErrors) {
       if (scenario.routeErrors.ok) console.log(`  route_error_logs=${scenario.routeErrors.count}`);
       else console.log(`  route_error_logs=unavailable (${scenario.routeErrors.reason || 'unknown'})`);
@@ -1255,6 +1307,7 @@ module.exports = {
   getRequiredAuditActionsForScenario,
   applyAuditCoverageGate,
   evaluateProductReadinessBody,
+  ADMIN_READINESS_ENDPOINTS,
   resolveSegmentTemplateKey,
   resolveComposerNotificationId
 };
