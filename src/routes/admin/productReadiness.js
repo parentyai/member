@@ -20,6 +20,8 @@ const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const LOAD_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'load_risk.json');
 const READ_PATH_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'READ_PATH_BUDGETS.md');
 const MISSING_INDEX_SURFACE_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'missing_index_surface.json');
+const RETENTION_RISK_PATH = path.join(ROOT_DIR, 'docs', 'REPO_AUDIT_INPUTS', 'retention_risk.json');
+const RETENTION_BUDGETS_PATH = path.join(ROOT_DIR, 'docs', 'RETENTION_BUDGETS.md');
 
 function parseWindowHours(req) {
   const url = new URL(req.url, 'http://localhost');
@@ -89,6 +91,40 @@ function parseCurrentBudgets() {
   };
 }
 
+function parseRetentionBudgets() {
+  if (!fs.existsSync(RETENTION_BUDGETS_PATH)) {
+    return {
+      undefinedRetentionMax: null,
+      undefinedDeletableConditionalMax: null,
+      undefinedRecomputableMax: null,
+      retentionRiskFreshnessMaxHours: null
+    };
+  }
+  const text = fs.readFileSync(RETENTION_BUDGETS_PATH, 'utf8');
+  const undefinedRetentionMatches = [...text.matchAll(/undefined_retention_max:\s*(\d+)/g)];
+  const undefinedConditionalMatches = [...text.matchAll(/undefined_deletable_conditional_max:\s*(\d+)/g)];
+  const undefinedRecomputableMatches = [...text.matchAll(/undefined_recomputable_max:\s*(\d+)/g)];
+  const retentionRiskFreshnessMatches = [...text.matchAll(/retention_risk_freshness_max_hours:\s*(\d+)/g)];
+  const undefinedRetentionMatch = undefinedRetentionMatches.length
+    ? undefinedRetentionMatches[undefinedRetentionMatches.length - 1]
+    : null;
+  const undefinedConditionalMatch = undefinedConditionalMatches.length
+    ? undefinedConditionalMatches[undefinedConditionalMatches.length - 1]
+    : null;
+  const undefinedRecomputableMatch = undefinedRecomputableMatches.length
+    ? undefinedRecomputableMatches[undefinedRecomputableMatches.length - 1]
+    : null;
+  const retentionRiskFreshnessMatch = retentionRiskFreshnessMatches.length
+    ? retentionRiskFreshnessMatches[retentionRiskFreshnessMatches.length - 1]
+    : null;
+  return {
+    undefinedRetentionMax: undefinedRetentionMatch ? Number(undefinedRetentionMatch[1]) : null,
+    undefinedDeletableConditionalMax: undefinedConditionalMatch ? Number(undefinedConditionalMatch[1]) : null,
+    undefinedRecomputableMax: undefinedRecomputableMatch ? Number(undefinedRecomputableMatch[1]) : null,
+    retentionRiskFreshnessMaxHours: retentionRiskFreshnessMatch ? Number(retentionRiskFreshnessMatch[1]) : null
+  };
+}
+
 function parseGeneratedAtHours(value) {
   if (!value || value === 'NOT AVAILABLE' || value === 'NOT_AVAILABLE') return Number.NaN;
   const ms = Date.parse(value);
@@ -109,6 +145,15 @@ function readMissingIndexSurface() {
   if (!fs.existsSync(MISSING_INDEX_SURFACE_PATH)) return null;
   try {
     return JSON.parse(fs.readFileSync(MISSING_INDEX_SURFACE_PATH, 'utf8'));
+  } catch (_err) {
+    return null;
+  }
+}
+
+function readRetentionRisk() {
+  if (!fs.existsSync(RETENTION_RISK_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(RETENTION_RISK_PATH, 'utf8'));
   } catch (_err) {
     return null;
   }
@@ -152,11 +197,17 @@ async function handleProductReadiness(req, res) {
 
     const loadRisk = readLoadRisk();
     const missingIndexSurface = readMissingIndexSurface();
+    const retentionRisk = readRetentionRisk();
     const budgets = parseCurrentBudgets();
+    const retentionBudgets = parseRetentionBudgets();
     const loadRiskFreshnessMaxHours = budgets.loadRiskFreshnessMaxHours;
     const missingIndexSurfaceFreshnessMaxHours = budgets.missingIndexSurfaceFreshnessMaxHours;
+    const retentionRiskFreshnessMaxHours = Number.isFinite(Number(process.env.READINESS_RETENTION_RISK_FRESHNESS_MAX_HOURS))
+      ? Number(process.env.READINESS_RETENTION_RISK_FRESHNESS_MAX_HOURS)
+      : retentionBudgets.retentionRiskFreshnessMaxHours;
     const loadRiskGeneratedAtHours = parseGeneratedAtHours(loadRisk && loadRisk.generatedAt);
     const missingIndexGeneratedAtHours = parseGeneratedAtHours(missingIndexSurface && missingIndexSurface.generatedAt);
+    const retentionRiskGeneratedAtHours = parseGeneratedAtHours(retentionRisk && retentionRisk.generatedAt);
     const snapshotStaleRatioThreshold = Number.isFinite(Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX))
       ? Number(process.env.READ_PATH_SNAPSHOT_STALE_RATIO_MAX)
       : (Number.isFinite(budgets.snapshotStaleRatioMax) ? budgets.snapshotStaleRatioMax : 0.5);
@@ -285,6 +336,97 @@ async function handleProductReadiness(req, res) {
       });
     }
 
+    const undefinedRetentionCount = Number.isFinite(Number(retentionRisk && retentionRisk.undefined_retention_count))
+      ? Number(retentionRisk.undefined_retention_count)
+      : NaN;
+    const undefinedDeletableConditionalCount = Number.isFinite(Number(retentionRisk && retentionRisk.undefined_deletable_conditional_count))
+      ? Number(retentionRisk.undefined_deletable_conditional_count)
+      : NaN;
+    const undefinedRecomputableCount = Number.isFinite(Number(retentionRisk && retentionRisk.undefined_recomputable_count))
+      ? Number(retentionRisk.undefined_recomputable_count)
+      : NaN;
+
+    if (!retentionRisk) {
+      blockers.push({
+        code: 'retention_risk_missing',
+        message: 'retention_risk.json is not available',
+        budget: retentionBudgets
+      });
+    } else if (!Number.isFinite(retentionRiskGeneratedAtHours)) {
+      blockers.push({
+        code: 'retention_risk_generated_at_invalid',
+        message: 'retention_risk.json generatedAt is missing or invalid',
+        budget: retentionRiskFreshnessMaxHours
+      });
+    } else if (
+      Number.isFinite(retentionRiskFreshnessMaxHours)
+      && retentionRiskGeneratedAtHours > retentionRiskFreshnessMaxHours
+    ) {
+      blockers.push({
+        code: 'retention_risk_generated_at_stale',
+        message: 'retention_risk.json is stale',
+        value: retentionRiskGeneratedAtHours,
+        thresholdHours: retentionRiskFreshnessMaxHours
+      });
+    }
+
+    if (Number.isFinite(retentionBudgets.undefinedRetentionMax)
+      && !Number.isFinite(undefinedRetentionCount)) {
+      blockers.push({
+        code: 'retention_risk_invalid_data',
+        message: 'retention_risk undefined_retention_count is missing or invalid',
+        budget: retentionBudgets.undefinedRetentionMax
+      });
+    } else if (
+      Number.isFinite(retentionBudgets.undefinedRetentionMax)
+      && undefinedRetentionCount > retentionBudgets.undefinedRetentionMax
+    ) {
+      blockers.push({
+        code: 'retention_risk_undefined_over_budget',
+        message: 'retention undefined count exceeds budget',
+        value: undefinedRetentionCount,
+        budget: retentionBudgets.undefinedRetentionMax
+      });
+    }
+
+    if (Number.isFinite(retentionBudgets.undefinedDeletableConditionalMax)
+      && !Number.isFinite(undefinedDeletableConditionalCount)) {
+      blockers.push({
+        code: 'retention_risk_conditional_invalid_data',
+        message: 'retention_risk undefined_deletable_conditional_count is missing or invalid',
+        budget: retentionBudgets.undefinedDeletableConditionalMax
+      });
+    } else if (
+      Number.isFinite(retentionBudgets.undefinedDeletableConditionalMax)
+      && undefinedDeletableConditionalCount > retentionBudgets.undefinedDeletableConditionalMax
+    ) {
+      blockers.push({
+        code: 'retention_risk_conditional_over_budget',
+        message: 'retention undefined conditional-deletable count exceeds budget',
+        value: undefinedDeletableConditionalCount,
+        budget: retentionBudgets.undefinedDeletableConditionalMax
+      });
+    }
+
+    if (Number.isFinite(retentionBudgets.undefinedRecomputableMax)
+      && !Number.isFinite(undefinedRecomputableCount)) {
+      blockers.push({
+        code: 'retention_risk_recomputable_invalid_data',
+        message: 'retention_risk undefined_recomputable_count is missing or invalid',
+        budget: retentionBudgets.undefinedRecomputableMax
+      });
+    } else if (
+      Number.isFinite(retentionBudgets.undefinedRecomputableMax)
+      && undefinedRecomputableCount > retentionBudgets.undefinedRecomputableMax
+    ) {
+      blockers.push({
+        code: 'retention_risk_recomputable_over_budget',
+        message: 'retention undefined recomputable count exceeds budget',
+        value: undefinedRecomputableCount,
+        budget: retentionBudgets.undefinedRecomputableMax
+      });
+    }
+
     const status = blockers.length === 0 ? 'GO' : 'NO_GO';
 
     try {
@@ -300,7 +442,14 @@ async function handleProductReadiness(req, res) {
           blockerCount: blockers.length,
           windowHours,
           staleAfterMinutes,
-          fallbackEventsCount
+          fallbackEventsCount,
+          retentionUndefinedCount: Number.isFinite(undefinedRetentionCount) ? undefinedRetentionCount : null,
+          retentionConditionalUndefinedCount: Number.isFinite(undefinedDeletableConditionalCount)
+            ? undefinedDeletableConditionalCount
+            : null,
+          retentionRecomputableUndefinedCount: Number.isFinite(undefinedRecomputableCount)
+            ? undefinedRecomputableCount
+            : null
         }
       });
     } catch (auditErr) {
@@ -344,6 +493,20 @@ async function handleProductReadiness(req, res) {
           generatedAtHours: Number.isFinite(missingIndexGeneratedAtHours) ? missingIndexGeneratedAtHours : null,
           freshnessHoursMax: missingIndexSurfaceFreshnessMaxHours,
           budget: budgets.missingIndexSurfaceMax
+        },
+        retentionRisk: {
+          ok: blockers.every((item) => !String(item.code).startsWith('retention_risk_')),
+          value: retentionRisk || null,
+          generatedAtHours: Number.isFinite(retentionRiskGeneratedAtHours) ? retentionRiskGeneratedAtHours : null,
+          freshnessHoursMax: retentionRiskFreshnessMaxHours,
+          undefinedRetentionCount: Number.isFinite(undefinedRetentionCount) ? undefinedRetentionCount : null,
+          undefinedDeletableConditionalCount: Number.isFinite(undefinedDeletableConditionalCount)
+            ? undefinedDeletableConditionalCount
+            : null,
+          undefinedRecomputableCount: Number.isFinite(undefinedRecomputableCount)
+            ? undefinedRecomputableCount
+            : null,
+          budget: retentionBudgets
         }
       }
     }));

@@ -76,6 +76,9 @@ run_step "duplicates" bash -lc "cd \"$ROOT_DIR\" && python3 tools/audit/duplicat
 run_step "GO_SCOPE evidence (required scope)" bash -lc "cd \"$ROOT_DIR\" && python3 tools/audit/go_scope_evidence_check.py > \"$OUT_DIR/evidence_required_scope.txt\"" \
   || fail "GO_SCOPE evidence check failed"
 
+run_step "retention risk budget check" bash -lc "cd \"$ROOT_DIR\" && npm run retention-risk:check > \"$OUT_DIR/retention-risk-check.txt\"" \
+  || fail "retention risk check failed"
+
 DOCKER_GITLEAKS_IMAGE="${DOCKER_GITLEAKS_IMAGE:-zricethezav/gitleaks:v8.30.0}"
 DOCKER_SEMGREP_IMAGE="${DOCKER_SEMGREP_IMAGE:-returntocorp/semgrep:1.151.0}"
 DOCKER_OSV_IMAGE="${DOCKER_OSV_IMAGE:-ghcr.io/google/osv-scanner:v2.3.2}"

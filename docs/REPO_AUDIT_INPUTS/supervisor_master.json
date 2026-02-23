@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-22T20:02:39-05:00",
-  "gitCommit": "1d5e11563c831c34f795278edac1134f5c6cc16c",
-  "branch": "codex/phase625-retention-risk-gate",
-  "sourceDigest": "e54391dad9dcb7bc1014655305c13f501abe39f232adeec6f9ad1c495038835f",
+  "generatedAt": "2026-02-22T20:16:58-05:00",
+  "gitCommit": "b633ff3b16c21237066190ca4f2c6f5897cb73ba",
+  "branch": "codex/phase627-retention-readiness-batch",
+  "sourceDigest": "7dd7dc0178985742ea57f41acea1558923057c40ace76a8e41c3d3ced9db79d3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
