@@ -27,6 +27,14 @@ function resolveAdminOsToken() {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
+function resolveAdminUiFoundationFlag() {
+  const raw = process.env.ENABLE_ADMIN_UI_FOUNDATION_V1;
+  if (typeof raw !== 'string') return true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return true;
+}
+
 function parseCookies(headerValue) {
   const out = {};
   if (typeof headerValue !== 'string' || headerValue.trim().length === 0) return out;
@@ -544,6 +552,36 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/admin/assets/admin_ui_core.js') {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'assets', 'admin_ui_core.js');
+    try {
+      const js = fs.readFileSync(filePath, 'utf8');
+      res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8' });
+      res.end(js);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
+    const trendEnabled = String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0';
+    const foundationEnabled = resolveAdminUiFoundationFlag();
+    try {
+      const html = fs.readFileSync(filePath, 'utf8');
+      const flagScript = `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+      const injected = html.replace('</head>', `${flagScript}</head>`);
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(injected);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+    return;
+  }
+
   if (req.method === 'GET' && pathname === '/admin/ui-dict') {
     const dictPath = path.resolve(__dirname, '..', 'docs', 'ADMIN_UI_DICTIONARY_JA.md');
     try {
@@ -601,10 +639,12 @@ function createServer() {
 
   if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
     const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
-    if (String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() === '0') {
+    const trendEnabled = String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0';
+    const foundationEnabled = resolveAdminUiFoundationFlag();
+    if (!trendEnabled || foundationEnabled) {
       try {
         const html = fs.readFileSync(filePath, 'utf8');
-        const flagScript = '<script>window.ADMIN_TREND_UI_ENABLED=false;document.documentElement.classList.add(\"trend-ui-disabled\");</script>';
+        const flagScript = `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
         const injected = html.replace('</head>', `${flagScript}</head>`);
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         res.end(injected);

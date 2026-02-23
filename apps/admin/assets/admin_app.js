@@ -19,6 +19,25 @@ function resolveAdminTrendUiFlag() {
 
 const ADMIN_TREND_UI_ENABLED = resolveAdminTrendUiFlag();
 
+function resolveAdminUiFoundationFlag() {
+  if (typeof window === 'undefined') return false;
+  const raw = window.ADMIN_UI_FOUNDATION_V1;
+  if (raw === true || raw === 1) return true;
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  }
+  return false;
+}
+
+const ADMIN_UI_FOUNDATION_V1 = resolveAdminUiFoundationFlag();
+const ADMIN_UI_CORE = ADMIN_UI_FOUNDATION_V1
+  && typeof globalThis !== 'undefined'
+  && globalThis.AdminUiCore
+  && typeof globalThis.AdminUiCore === 'object'
+  ? globalThis.AdminUiCore
+  : null;
+
 const state = {
   dict: {},
   role: 'operator',
@@ -179,6 +198,12 @@ const PANE_HEADER_MAP = Object.freeze({
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
 });
 
+const NAV_POLICY = Object.freeze({
+  operator: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings'],
+  admin: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
+  developer: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
+});
+
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
 const DASHBOARD_CARD_CONFIG = Object.freeze({
@@ -189,6 +214,265 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   reaction: { kpiKeys: ['reaction', 'churnRate'], unit: 'percent' },
   faq: { kpiKeys: ['faqUsage', 'ctrTrend'], unit: 'count' }
 });
+
+function isFoundationCoreEnabled() {
+  return Boolean(ADMIN_UI_FOUNDATION_V1 && ADMIN_UI_CORE);
+}
+
+function resolveCoreSlice(name) {
+  if (!isFoundationCoreEnabled()) return null;
+  const slice = ADMIN_UI_CORE[name];
+  return slice && typeof slice === 'object' ? slice : null;
+}
+
+function parseRoleAllowList(value) {
+  if (!value) return [];
+  return String(value).split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function resolveGuardBannerElement() {
+  return document.getElementById('admin-guard-banner');
+}
+
+function clearGuardBanner() {
+  const el = resolveGuardBannerElement();
+  if (!el) return;
+  el.classList.remove('is-visible', 'is-danger', 'is-warn');
+  el.setAttribute('data-admin-guard', 'hidden');
+  const cause = el.querySelector('[data-guard-field="cause"]');
+  const impact = el.querySelector('[data-guard-field="impact"]');
+  const action = el.querySelector('[data-guard-field="action"]');
+  if (cause) cause.textContent = '-';
+  if (impact) impact.textContent = '-';
+  if (action) action.textContent = '-';
+}
+
+function renderGuardBanner(rawError) {
+  const el = resolveGuardBannerElement();
+  if (!el) return;
+  const guardCore = resolveCoreSlice('fetchGuardCore');
+  const normalized = guardCore && typeof guardCore.normalizeGuardError === 'function'
+    ? guardCore.normalizeGuardError(rawError)
+    : {
+        cause: rawError && rawError.error ? String(rawError.error) : '不明なエラー',
+        impact: '操作結果を確定できません',
+        action: 'traceIdで監査ログを確認してください',
+        tone: 'danger'
+      };
+  const cause = el.querySelector('[data-guard-field="cause"]');
+  const impact = el.querySelector('[data-guard-field="impact"]');
+  const action = el.querySelector('[data-guard-field="action"]');
+  if (cause) cause.textContent = normalized.cause || '-';
+  if (impact) impact.textContent = normalized.impact || '-';
+  if (action) action.textContent = normalized.action || '-';
+  el.classList.add('is-visible');
+  el.classList.remove('is-danger', 'is-warn');
+  if (normalized.tone === 'warn') el.classList.add('is-warn');
+  else el.classList.add('is-danger');
+  el.setAttribute('data-admin-guard', 'visible');
+}
+
+function runDangerActionGuard(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const message = opts.confirmKey
+    ? t(opts.confirmKey, opts.confirmFallback || 'この操作を実行しますか？')
+    : (opts.confirmFallback || 'この操作を実行しますか？');
+  const approved = window.confirm(message); // eslint-disable-line no-alert
+  if (!approved) {
+    if (opts.cancelMessage) showToast(opts.cancelMessage, 'warn');
+    return null;
+  }
+  if (!opts.traceInputId) return '';
+  return ensureTraceInput(opts.traceInputId);
+}
+
+function resolveDomainLabel(kind, key, fallback) {
+  if (!isFoundationCoreEnabled()) return fallback;
+  const dictionaryCore = resolveCoreSlice('dictionaryCore');
+  if (!dictionaryCore || typeof dictionaryCore.resolveDomainLabel !== 'function') return fallback;
+  const resolved = dictionaryCore.resolveDomainLabel(kind, key, (dictKey) => t(dictKey, ''));
+  if (typeof resolved === 'string' && resolved.trim()) return resolved.trim();
+  return fallback;
+}
+
+function resolveListStateFromPersistence(listKey, defaults) {
+  if (!isFoundationCoreEnabled()) return Object.assign({}, defaults || {});
+  const stateCore = resolveCoreSlice('stateCore');
+  if (!stateCore) return Object.assign({}, defaults || {});
+  const urlState = typeof stateCore.parseListStateFromQuery === 'function'
+    ? stateCore.parseListStateFromQuery(listKey, globalThis.location.search)
+    : {};
+  const storedState = typeof stateCore.loadListState === 'function'
+    ? stateCore.loadListState(listKey)
+    : {};
+  if (typeof stateCore.mergeStatePriority === 'function') {
+    return stateCore.mergeStatePriority(urlState, storedState, defaults || {});
+  }
+  return Object.assign({}, defaults || {}, storedState || {}, urlState || {});
+}
+
+function persistListStateToStorage(listKey, nextState) {
+  if (!isFoundationCoreEnabled()) return;
+  const stateCore = resolveCoreSlice('stateCore');
+  if (!stateCore) return;
+  try {
+    if (typeof stateCore.saveListState === 'function') {
+      stateCore.saveListState(listKey, nextState || {});
+    }
+    if (globalThis.history && typeof globalThis.history.replaceState === 'function' && typeof stateCore.applyListStateToUrl === 'function') {
+      const nextUrl = stateCore.applyListStateToUrl(listKey, nextState || {});
+      globalThis.history.replaceState({}, '', nextUrl);
+    }
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+function readComposerSavedListState() {
+  return {
+    search: getInputValue('composer-saved-search'),
+    status: getSelectValue('composer-saved-status'),
+    type: getSelectValue('composer-saved-type'),
+    category: getSelectValue('composer-saved-category'),
+    scenario: getSelectValue('composer-saved-scenario'),
+    step: getSelectValue('composer-saved-step'),
+    sortKey: state.composerSavedSortKey,
+    sortDir: state.composerSavedSortDir
+  };
+}
+
+function readUsersSummaryListState() {
+  return {
+    lineUserId: getInputValue('users-filter-line-user-id'),
+    createdFrom: getInputValue('users-filter-created-from'),
+    createdTo: getInputValue('users-filter-created-to'),
+    category: getSelectValue('users-filter-category'),
+    status: getSelectValue('users-filter-status'),
+    limit: getInputValue('users-filter-limit'),
+    analyticsLimit: getInputValue('users-filter-analytics-limit'),
+    sortKey: state.usersSummarySortKey,
+    sortDir: state.usersSummarySortDir
+  };
+}
+
+function readCityPackUnifiedListState() {
+  return {
+    idKeyword: getInputValue('city-pack-unified-filter-id'),
+    userKeyword: getInputValue('city-pack-unified-filter-user-id'),
+    cityKeyword: getInputValue('city-pack-unified-filter-city'),
+    status: getSelectValue('city-pack-unified-filter-status'),
+    recordType: getSelectValue('city-pack-unified-filter-type'),
+    createdFrom: getInputValue('city-pack-unified-filter-date-from'),
+    createdTo: getInputValue('city-pack-unified-filter-date-to'),
+    sortKey: state.cityPackUnifiedSortKey,
+    sortDir: state.cityPackUnifiedSortDir
+  };
+}
+
+function readVendorUnifiedListState() {
+  return {
+    idKeyword: getInputValue('vendor-unified-filter-id'),
+    nameKeyword: getInputValue('vendor-unified-filter-name'),
+    status: getSelectValue('vendor-unified-filter-status'),
+    categoryKeyword: getInputValue('vendor-unified-filter-category'),
+    createdFrom: getInputValue('vendor-unified-filter-date-from'),
+    createdTo: getInputValue('vendor-unified-filter-date-to'),
+    sortKey: state.vendorSortKey,
+    sortDir: state.vendorSortDir
+  };
+}
+
+function readDashboardWindowState() {
+  const out = {};
+  Object.keys(DASHBOARD_CARD_CONFIG).forEach((metricKey) => {
+    out[metricKey] = String(getDashboardWindowMonths(metricKey));
+  });
+  return out;
+}
+
+function applyComposerSavedListState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  if (snapshot.sortKey && COMPOSER_SAVED_SORT_TYPES[snapshot.sortKey]) {
+    state.composerSavedSortKey = snapshot.sortKey;
+  }
+  if (snapshot.sortDir === 'asc' || snapshot.sortDir === 'desc') {
+    state.composerSavedSortDir = snapshot.sortDir;
+  }
+  setInputValue('composer-saved-search', snapshot.search || '');
+  setSelectValue('composer-saved-status', snapshot.status || '');
+  setSelectValue('composer-saved-type', snapshot.type || '');
+  setSelectValue('composer-saved-category', snapshot.category || '');
+  setSelectValue('composer-saved-scenario', snapshot.scenario || '');
+  setSelectValue('composer-saved-step', snapshot.step || '');
+}
+
+function applyUsersSummaryListState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  if (snapshot.sortKey && USERS_SUMMARY_SORT_TYPES[snapshot.sortKey]) {
+    state.usersSummarySortKey = snapshot.sortKey;
+  }
+  if (snapshot.sortDir === 'asc' || snapshot.sortDir === 'desc') {
+    state.usersSummarySortDir = snapshot.sortDir;
+  }
+  setInputValue('users-filter-line-user-id', snapshot.lineUserId || '');
+  setInputValue('users-filter-created-from', snapshot.createdFrom || '');
+  setInputValue('users-filter-created-to', snapshot.createdTo || '');
+  setSelectValue('users-filter-category', snapshot.category || '');
+  setSelectValue('users-filter-status', snapshot.status || '');
+  if (snapshot.limit) setInputValue('users-filter-limit', snapshot.limit);
+  if (snapshot.analyticsLimit) setInputValue('users-filter-analytics-limit', snapshot.analyticsLimit);
+}
+
+function applyCityPackUnifiedListState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  if (snapshot.sortKey && CITY_PACK_UNIFIED_SORT_TYPES[snapshot.sortKey]) {
+    state.cityPackUnifiedSortKey = snapshot.sortKey;
+  }
+  if (snapshot.sortDir === 'asc' || snapshot.sortDir === 'desc') {
+    state.cityPackUnifiedSortDir = snapshot.sortDir;
+  }
+  setInputValue('city-pack-unified-filter-id', snapshot.idKeyword || '');
+  setInputValue('city-pack-unified-filter-user-id', snapshot.userKeyword || '');
+  setInputValue('city-pack-unified-filter-city', snapshot.cityKeyword || '');
+  setSelectValue('city-pack-unified-filter-status', snapshot.status || '');
+  setSelectValue('city-pack-unified-filter-type', snapshot.recordType || '');
+  setInputValue('city-pack-unified-filter-date-from', snapshot.createdFrom || '');
+  setInputValue('city-pack-unified-filter-date-to', snapshot.createdTo || '');
+}
+
+function applyVendorUnifiedListState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  if (snapshot.sortKey && VENDOR_UNIFIED_SORT_TYPES[snapshot.sortKey]) {
+    state.vendorSortKey = snapshot.sortKey;
+  }
+  if (snapshot.sortDir === 'asc' || snapshot.sortDir === 'desc') {
+    state.vendorSortDir = snapshot.sortDir;
+  }
+  setInputValue('vendor-unified-filter-id', snapshot.idKeyword || '');
+  setInputValue('vendor-unified-filter-name', snapshot.nameKeyword || '');
+  setSelectValue('vendor-unified-filter-status', snapshot.status || '');
+  setInputValue('vendor-unified-filter-category', snapshot.categoryKeyword || '');
+  setInputValue('vendor-unified-filter-date-from', snapshot.createdFrom || '');
+  setInputValue('vendor-unified-filter-date-to', snapshot.createdTo || '');
+}
+
+function applyDashboardWindowState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  Object.keys(DASHBOARD_CARD_CONFIG).forEach((metricKey) => {
+    const value = snapshot[metricKey];
+    if (!value) return;
+    const select = document.getElementById(`dashboard-window-${metricKey}`);
+    if (select) select.value = String(normalizeDashboardWindow(value));
+  });
+}
+
+function hydrateListState() {
+  applyComposerSavedListState(resolveListStateFromPersistence('composerSaved', readComposerSavedListState()));
+  applyUsersSummaryListState(resolveListStateFromPersistence('usersSummary', readUsersSummaryListState()));
+  applyCityPackUnifiedListState(resolveListStateFromPersistence('cityPackUnified', readCityPackUnifiedListState()));
+  applyVendorUnifiedListState(resolveListStateFromPersistence('vendorUnified', readVendorUnifiedListState()));
+  applyDashboardWindowState(resolveListStateFromPersistence('dashboardWindow', readDashboardWindowState()));
+}
 
 function showToast(message, tone) {
   if (!toastEl) return;
@@ -206,6 +490,16 @@ function t(key, fallback) {
   }
   if (typeof fallback === 'string') return fallback;
   return '';
+}
+
+function toUnifiedDisplay(value, fallbackValue) {
+  const tableCore = resolveCoreSlice('tableCore');
+  if (tableCore && typeof tableCore.toDisplayValue === 'function') {
+    return tableCore.toDisplayValue(value, fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE'));
+  }
+  if (value === null || value === undefined) return fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
+  if (typeof value === 'string' && value.trim().length === 0) return fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
+  return String(value);
 }
 
 function statusLabel(status) {
@@ -299,7 +593,8 @@ function scenarioLabel(value) {
   const key = `ui.value.scenario.${value}`;
   const label = t(key, '');
   if (label && label !== key) return label;
-  return `${t('ui.label.scenario', 'シナリオ')}${value}`;
+  const fallback = `${t('ui.label.scenario', 'シナリオ')}${value}`;
+  return resolveDomainLabel('scenario', value, fallback);
 }
 
 function stepLabel(value) {
@@ -307,7 +602,7 @@ function stepLabel(value) {
   const key = `ui.value.step.${value}`;
   const label = t(key, '');
   if (label && label !== key) return label;
-  return value;
+  return resolveDomainLabel('step', value, value);
 }
 
 function buildTip(prefixKey, value) {
@@ -366,6 +661,25 @@ function applyDict() {
   });
 }
 
+function applyRoleNavPolicy(role) {
+  const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
+  const navCore = resolveCoreSlice('navCore');
+  const isAllowedByCore = navCore && typeof navCore.isRoleAllowed === 'function'
+    ? navCore.isRoleAllowed
+    : (targetRole, allowList) => {
+        if (!Array.isArray(allowList) || !allowList.length) return true;
+        return allowList.includes(targetRole);
+      };
+  document.querySelectorAll('[data-role-allow]').forEach((el) => {
+    const explicitAllow = parseRoleAllowList(el.getAttribute('data-role-allow'));
+    const allowList = explicitAllow.length ? explicitAllow : [];
+    const allowed = isAllowedByCore(nextRole, allowList);
+    el.classList.toggle('role-hidden', !allowed);
+    if (!allowed) el.setAttribute('aria-hidden', 'true');
+    else el.removeAttribute('aria-hidden');
+  });
+}
+
 function setRole(role) {
   const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
   state.role = nextRole;
@@ -373,6 +687,13 @@ function setRole(role) {
   document.querySelectorAll('.role-btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.roleValue === nextRole);
   });
+  applyRoleNavPolicy(nextRole);
+  const activePane = document.querySelector('.app-pane.is-active');
+  const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : '';
+  const allowList = NAV_POLICY[nextRole] || NAV_POLICY.operator;
+  if (paneKey && !allowList.includes(paneKey)) {
+    activatePane('home');
+  }
 }
 
 function setupRoleSwitch() {
@@ -814,6 +1135,55 @@ function renderRepoMapCommunication(layers) {
   renderStringList('manual-user-evidence', user.evidence, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'));
 }
 
+function renderRepoMapSchemaStatus(validation) {
+  const noteEl = document.getElementById('repo-map-schema-note');
+  if (!noteEl) return;
+  const result = validation && typeof validation === 'object' ? validation : { ok: true, errors: [] };
+  if (result.ok) {
+    noteEl.textContent = 'Repo Map schema: OK';
+    noteEl.classList.remove('admin-guard-text-danger');
+    return;
+  }
+  const errors = Array.isArray(result.errors) ? result.errors.filter(Boolean) : [];
+  noteEl.textContent = `Repo Map schema不整合: ${errors.join(' / ') || '-'}`;
+  noteEl.classList.add('admin-guard-text-danger');
+}
+
+function renderRepoMapTodoCards(cards) {
+  const container = document.getElementById('repo-map-todo-cards');
+  if (!container) return;
+  clearElementChildren(container);
+  const list = Array.isArray(cards) ? cards : [];
+  if (!list.length) {
+    const empty = document.createElement('div');
+    empty.className = 'cell-muted';
+    empty.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    container.appendChild(empty);
+    return;
+  }
+  list.slice(0, 12).forEach((item) => {
+    const card = document.createElement('article');
+    card.className = 'repo-map-todo-card';
+    const urgency = document.createElement('div');
+    urgency.className = `repo-map-todo-urgency is-${item && item.urgency === 'high' ? 'high' : 'normal'}`;
+    urgency.textContent = `緊急度: ${item && item.urgency === 'high' ? '高' : '通常'}`;
+    card.appendChild(urgency);
+    const task = document.createElement('div');
+    task.className = 'repo-map-todo-title';
+    task.textContent = `タスク: ${asText(item && item.task, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'))}`;
+    card.appendChild(task);
+    const why = document.createElement('div');
+    why.className = 'repo-map-todo-line';
+    why.textContent = `なぜ: ${asText(item && item.why, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'))}`;
+    card.appendChild(why);
+    const impact = document.createElement('div');
+    impact.className = 'repo-map-todo-line';
+    impact.textContent = `影響: ${asText(item && item.impact, t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE'))}`;
+    card.appendChild(impact);
+    container.appendChild(card);
+  });
+}
+
 function renderRepoMap(payload) {
   const data = payload && payload.repoMap ? payload.repoMap : null;
   state.repoMap = data;
@@ -846,6 +1216,11 @@ function renderRepoMap(payload) {
   renderRepoMapCategories(data && data.categories);
   renderRepoMapMatrix(data && data.scenarioStepMatrix);
   renderRepoMapCommunication(data && data.layers);
+  const repoMapCore = resolveCoreSlice('repoMapCore');
+  const todoCards = repoMapCore && typeof repoMapCore.buildTodoCards === 'function'
+    ? repoMapCore.buildTodoCards(data || {})
+    : [];
+  renderRepoMapTodoCards(todoCards);
 }
 
 async function loadRepoMap(options) {
@@ -855,6 +1230,13 @@ async function loadRepoMap(options) {
     const res = await fetch('/api/admin/repo-map', { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'repo map load failed');
+    const repoMapCore = resolveCoreSlice('repoMapCore');
+    const validation = repoMapCore && typeof repoMapCore.validateSchemaMin === 'function'
+      ? repoMapCore.validateSchemaMin(data.repoMap || {})
+      : { ok: true, errors: [] };
+    renderRepoMapSchemaStatus(validation);
+    if (!validation.ok) renderGuardBanner({ error: `repo_map_schema_invalid:${(validation.errors || []).join(',')}` });
+    else clearGuardBanner();
     renderRepoMap(data);
     await loadNotificationMatrixOverlay().then((matrix) => {
       renderRepoMapMatrix(matrix);
@@ -864,6 +1246,8 @@ async function loadRepoMap(options) {
     await loadLegacyStatus({ notify: false });
     if (notify) showToast(t('ui.toast.repoMap.reloadOk', 'Repo Mapを更新しました'), 'ok');
   } catch (_err) {
+    renderRepoMapSchemaStatus({ ok: false, errors: ['load_failed'] });
+    renderGuardBanner(_err && _err.message ? { error: _err.message } : { error: 'repo map load failed' });
     renderRepoMap({
       repoMap: {
         meta: {},
@@ -969,28 +1353,30 @@ function normalizePaneTarget(target) {
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const normalizedTarget = normalizePaneTarget(target);
+  const allowList = NAV_POLICY[state.role] || NAV_POLICY.operator;
+  const nextPane = allowList.includes(normalizedTarget) ? normalizedTarget : 'home';
   if (opts.clickedButton) {
     document.querySelectorAll('.nav-item').forEach((el) => {
-      el.classList.toggle('is-active', el === opts.clickedButton);
+      el.classList.toggle('is-active', el === opts.clickedButton && el.dataset.paneTarget === nextPane);
     });
   } else {
     let activated = false;
     document.querySelectorAll('.nav-item').forEach((el) => {
-      const shouldActivate = !activated && el.dataset.paneTarget === normalizedTarget;
+      const shouldActivate = !activated && el.dataset.paneTarget === nextPane;
       el.classList.toggle('is-active', shouldActivate);
       if (shouldActivate) activated = true;
     });
   }
   document.querySelectorAll('.app-pane').forEach((pane) => {
-    pane.classList.toggle('is-active', pane.dataset.pane === normalizedTarget);
+    pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
   if (!opts.skipHistory && globalThis.history && typeof globalThis.history.replaceState === 'function') {
     const nextUrl = new URL(globalThis.location.href);
-    nextUrl.searchParams.set('pane', normalizedTarget);
+    nextUrl.searchParams.set('pane', nextPane);
     globalThis.history.replaceState({}, '', `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
   }
-  updatePageHeader(normalizedTarget);
-  expandPaneDetails(normalizedTarget);
+  updatePageHeader(nextPane);
+  expandPaneDetails(nextPane);
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
   }
@@ -1049,17 +1435,22 @@ function setupPaneKeyboardShortcuts() {
 }
 
 function newTraceId() {
-  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID();
-  }
+  const traceCore = resolveCoreSlice('traceCore');
+  if (traceCore && typeof traceCore.newTraceId === 'function') return traceCore.newTraceId();
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') return globalThis.crypto.randomUUID();
   return `trace-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 }
 
 function ensureTraceInput(id) {
   const el = document.getElementById(id);
   if (!el) return null;
-  if (!el.value) el.value = newTraceId();
-  return el.value.trim();
+  const traceCore = resolveCoreSlice('traceCore');
+  if (!el.value) {
+    el.value = traceCore && typeof traceCore.newTraceId === 'function'
+      ? traceCore.newTraceId()
+      : newTraceId();
+  }
+  return String(el.value || '').trim();
 }
 
 function buildHeaders(extra, traceId) {
@@ -1192,25 +1583,39 @@ function renderDashboardLineChartSvg(metricKey, series, unit) {
   const width = 280;
   const height = 96;
   const padding = 12;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const span = Math.max(max - min, 1);
-  const stepX = numeric.length > 1 ? (width - padding * 2) / (numeric.length - 1) : 0;
-  const points = numeric.map((value, index) => {
-    const safeValue = value === null ? min : value;
-    const x = padding + index * stepX;
-    const y = height - padding - ((safeValue - min) / span) * (height - padding * 2);
-    return { x, y };
-  });
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
-  const lastPoint = points[points.length - 1];
+  const chartCore = resolveCoreSlice('chartCore');
+  let chart = chartCore && typeof chartCore.buildLinePath === 'function'
+    ? chartCore.buildLinePath(values, { width, height, padding })
+    : null;
+  if (!chart || !chart.path || !Array.isArray(chart.points) || !chart.points.length) {
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const span = Math.max(max - min, 1);
+    const stepX = numeric.length > 1 ? (width - padding * 2) / (numeric.length - 1) : 0;
+    const points = numeric.map((value, index) => {
+      const safeValue = value === null ? min : value;
+      const x = padding + index * stepX;
+      const y = height - padding - ((safeValue - min) / span) * (height - padding * 2);
+      return { x, y };
+    });
+    chart = {
+      width,
+      height,
+      padding,
+      max,
+      min,
+      points,
+      path: points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ')
+    };
+  }
+  const lastPoint = chart.points[chart.points.length - 1];
   const svg = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metricKey} chart" preserveAspectRatio="none">
-      <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="dashboard-chart-axis"></line>
-      <path d="${path}" class="dashboard-chart-line"></path>
+    <svg viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label="${metricKey} chart" preserveAspectRatio="none">
+      <line x1="${chart.padding}" y1="${chart.height - chart.padding}" x2="${chart.width - chart.padding}" y2="${chart.height - chart.padding}" class="dashboard-chart-axis"></line>
+      <path d="${chart.path}" class="dashboard-chart-line"></path>
       <circle cx="${lastPoint.x.toFixed(2)}" cy="${lastPoint.y.toFixed(2)}" r="3" class="dashboard-chart-point"></circle>
-      <text x="${width - padding}" y="${padding + 8}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(max, unit)}</text>
-      <text x="${width - padding}" y="${height - 2}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(min, unit)}</text>
+      <text x="${chart.width - chart.padding}" y="${chart.padding + 8}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(chart.max, unit)}</text>
+      <text x="${chart.width - chart.padding}" y="${chart.height - 2}" text-anchor="end" class="dashboard-chart-label">${formatDashboardSeriesValue(chart.min, unit)}</text>
     </svg>
   `;
   chartEl.insertAdjacentHTML('beforeend', svg);
@@ -1328,7 +1733,11 @@ function renderAlertsSummary(payload) {
   const note = document.getElementById('alerts-summary-note');
   if (!body) return;
   body.innerHTML = '';
-  const rows = payload && Array.isArray(payload.items) ? payload.items : [];
+  const rawRows = payload && Array.isArray(payload.items) ? payload.items : [];
+  const alertsCore = resolveCoreSlice('alertsCore');
+  const rows = alertsCore && typeof alertsCore.extractActionable === 'function'
+    ? alertsCore.extractActionable(rawRows, { operableOnly: true, allowZero: false })
+    : rawRows;
   if (!rows.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -1339,6 +1748,7 @@ function renderAlertsSummary(payload) {
   } else {
     rows.forEach((item) => {
       const tr = document.createElement('tr');
+      if (item && item.severity) tr.setAttribute('data-alert-severity', String(item.severity));
       const typeTd = document.createElement('td');
       typeTd.textContent = item && item.typeLabel ? item.typeLabel : '-';
       tr.appendChild(typeTd);
@@ -1380,13 +1790,19 @@ async function loadAlertsSummary(options) {
     const res = await fetch('/api/admin/os/alerts/summary?limit=200', { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'alerts load failed');
-    state.alertsSummary = data;
-    renderAlertsSummary(data);
+    const alertsCore = resolveCoreSlice('alertsCore');
+    const actionable = alertsCore && typeof alertsCore.extractActionable === 'function'
+      ? alertsCore.extractActionable(Array.isArray(data.items) ? data.items : [], { operableOnly: true, allowZero: false })
+      : (Array.isArray(data.items) ? data.items : []);
+    state.alertsSummary = Object.assign({}, data, { items: actionable });
+    renderAlertsSummary(state.alertsSummary);
+    clearGuardBanner();
     await loadTopbarStatus();
     if (notify) showToast(t('ui.toast.alerts.reloadOk', '要対応一覧を更新しました'), 'ok');
   } catch (_err) {
     state.alertsSummary = { totals: { openAlerts: null, scheduledTodayCount: null }, items: [] };
     renderAlertsSummary(state.alertsSummary);
+    renderGuardBanner(_err && _err.message ? { error: _err.message } : { error: 'alerts summary failed' });
     await loadTopbarStatus();
     if (notify) showToast(t('ui.toast.alerts.reloadFail', '要対応一覧の取得に失敗しました'), 'danger');
   }
@@ -1408,6 +1824,7 @@ async function loadDashboardKpis(options) {
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
   state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
   renderDashboardKpis();
+  persistListStateToStorage('dashboardWindow', readDashboardWindowState());
   await loadTopbarStatus();
   if (notify) {
     showToast(
@@ -1741,6 +2158,16 @@ function sortComposerSavedItems(items) {
   const key = state.composerSavedSortKey || 'createdAt';
   const valueType = COMPOSER_SAVED_SORT_TYPES[key] || 'string';
   const direction = state.composerSavedSortDir === 'asc' ? 'asc' : 'desc';
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.sortRows === 'function' && typeof sortCore.compareValues === 'function') {
+    return sortCore.sortRows(list, {
+      key,
+      dir: direction,
+      typeMap: COMPOSER_SAVED_SORT_TYPES,
+      valueGetter: (row, field) => resolveComposerSavedSortValue(row, field),
+      tieBreaker: (a, b) => sortCore.compareValues(a && a.id, b && b.id, 'string', 'asc')
+    });
+  }
   return list.sort((a, b) => {
     const compared = compareSortValue(
       resolveComposerSavedSortValue(a, key),
@@ -1760,7 +2187,8 @@ function normalizeUserCategory(scenarioKey) {
 
 function userCategoryLabel(scenarioKey) {
   const key = normalizeUserCategory(scenarioKey);
-  return USER_CATEGORY_LABELS[key] || '-';
+  if (!key) return '-';
+  return resolveDomainLabel('scenario', key, USER_CATEGORY_LABELS[key] || '-');
 }
 
 function resolveUserStatus(stepKey) {
@@ -1798,6 +2226,16 @@ function sortUsersSummaryItems(items) {
   const key = state.usersSummarySortKey || 'createdAt';
   const valueType = USERS_SUMMARY_SORT_TYPES[key] || 'string';
   const direction = state.usersSummarySortDir === 'asc' ? 'asc' : 'desc';
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.sortRows === 'function' && typeof sortCore.compareValues === 'function') {
+    return sortCore.sortRows(list, {
+      key,
+      dir: direction,
+      typeMap: USERS_SUMMARY_SORT_TYPES,
+      valueGetter: (row, field) => resolveUsersSortValue(row, field),
+      tieBreaker: (a, b) => sortCore.compareValues(a && a.lineUserId, b && b.lineUserId, 'string', 'asc')
+    });
+  }
   return list.sort((a, b) => {
     const compared = compareSortValue(
       resolveUsersSortValue(a, key),
@@ -1811,6 +2249,10 @@ function sortUsersSummaryItems(items) {
 }
 
 function toSortMillis(value) {
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.toSortMillis === 'function') {
+    return sortCore.toSortMillis(value);
+  }
   if (!value) return null;
   if (value instanceof Date) return value.getTime();
   if (typeof value.toDate === 'function') return value.toDate().getTime();
@@ -1828,6 +2270,10 @@ function isSortUnset(value) {
 }
 
 function compareSortValue(baseA, baseB, valueType, direction) {
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.compareValues === 'function') {
+    return sortCore.compareValues(baseA, baseB, valueType, direction);
+  }
   const dir = direction === 'asc' ? 1 : -1;
   const aUnset = isSortUnset(baseA);
   const bUnset = isSortUnset(baseB);
@@ -1978,7 +2424,8 @@ function markNumericCell(td) {
 
 function cityPackRecordTypeLabel(value) {
   const key = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return CITY_PACK_RECORD_TYPE_LABELS[key] || key || '-';
+  const fallback = CITY_PACK_RECORD_TYPE_LABELS[key] || key || '-';
+  return resolveDomainLabel('type', key, fallback);
 }
 
 function resolveCityPackSortValue(item, key) {
@@ -1993,6 +2440,16 @@ function sortCityPackUnifiedItems(items) {
   const key = state.cityPackUnifiedSortKey || 'updatedAt';
   const valueType = CITY_PACK_UNIFIED_SORT_TYPES[key] || 'string';
   const direction = state.cityPackUnifiedSortDir === 'asc' ? 'asc' : 'desc';
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.sortRows === 'function' && typeof sortCore.compareValues === 'function') {
+    return sortCore.sortRows(list, {
+      key,
+      dir: direction,
+      typeMap: CITY_PACK_UNIFIED_SORT_TYPES,
+      valueGetter: (row, field) => resolveCityPackSortValue(row, field),
+      tieBreaker: (a, b) => sortCore.compareValues(a && a.itemId, b && b.itemId, 'string', 'asc')
+    });
+  }
   return list.sort((a, b) => {
     const compared = compareSortValue(
       resolveCityPackSortValue(a, key),
@@ -2141,22 +2598,51 @@ function applyCityPackUnifiedFilters() {
   const recordType = (document.getElementById('city-pack-unified-filter-type')?.value || '').trim().toLowerCase();
   const createdFromMs = parseDateInputMs(document.getElementById('city-pack-unified-filter-date-from')?.value || '', false);
   const createdToMs = parseDateInputMs(document.getElementById('city-pack-unified-filter-date-to')?.value || '', true);
-  const filtered = state.cityPackUnifiedItems.filter((item) => {
-    const itemId = String(item && item.itemId ? item.itemId : '').toLowerCase();
-    const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
-    const cityLabel = String(item && item.cityLabel ? item.cityLabel : '').toLowerCase();
-    const itemStatus = String(item && item.status ? item.status : '').toLowerCase();
-    const itemType = String(item && item.recordType ? item.recordType : '').toLowerCase();
-    if (idKeyword && !itemId.includes(idKeyword)) return false;
-    if (userKeyword && !lineUserId.includes(userKeyword)) return false;
-    if (cityKeyword && !cityLabel.includes(cityKeyword)) return false;
-    if (status && itemStatus !== status) return false;
-    if (recordType && itemType !== recordType) return false;
-    const createdAtMs = toSortMillis(item && item.createdAt);
-    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
-    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
-    return true;
-  });
+  const filterCore = resolveCoreSlice('filterCore');
+  const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
+    ? filterCore.applyAndFilters(state.cityPackUnifiedItems, [
+        { type: 'includes', value: idKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.itemId },
+        { type: 'includes', value: userKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.lineUserId },
+        { type: 'includes', value: cityKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.cityLabel },
+        { type: 'equals', value: status, normalize: { trim: true, lower: true }, getValue: (item) => item && item.status },
+        { type: 'equals', value: recordType, normalize: { trim: true, lower: true }, getValue: (item) => item && item.recordType },
+        {
+          type: 'predicate',
+          value: createdFromMs == null ? '' : String(createdFromMs),
+          predicate: (item, needle) => {
+            const fromMs = Number(needle);
+            if (!Number.isFinite(fromMs) || fromMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs >= fromMs);
+          }
+        },
+        {
+          type: 'predicate',
+          value: createdToMs == null ? '' : String(createdToMs),
+          predicate: (item, needle) => {
+            const toMs = Number(needle);
+            if (!Number.isFinite(toMs) || toMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs <= toMs);
+          }
+        }
+      ])
+    : state.cityPackUnifiedItems.filter((item) => {
+      const itemId = String(item && item.itemId ? item.itemId : '').toLowerCase();
+      const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
+      const cityLabel = String(item && item.cityLabel ? item.cityLabel : '').toLowerCase();
+      const itemStatus = String(item && item.status ? item.status : '').toLowerCase();
+      const itemType = String(item && item.recordType ? item.recordType : '').toLowerCase();
+      if (idKeyword && !itemId.includes(idKeyword)) return false;
+      if (userKeyword && !lineUserId.includes(userKeyword)) return false;
+      if (cityKeyword && !cityLabel.includes(cityKeyword)) return false;
+      if (status && itemStatus !== status) return false;
+      if (recordType && itemType !== recordType) return false;
+      const createdAtMs = toSortMillis(item && item.createdAt);
+      if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+      if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+      return true;
+    });
   state.cityPackUnifiedFilteredItems = sortCityPackUnifiedItems(filtered);
 }
 
@@ -2260,6 +2746,7 @@ function renderCityPackUnifiedRows() {
     totalCount: state.cityPackUnifiedItems.length,
     activeCount: chips.length
   });
+  persistListStateToStorage('cityPackUnified', readCityPackUnifiedListState());
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -2285,7 +2772,7 @@ function renderCityPackUnifiedRows() {
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
       if (idx === 8) markNumericCell(td);
-      td.textContent = String(value);
+      td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
     tr.appendChild(renderCityPackUnifiedActionCell(item));
@@ -2323,6 +2810,16 @@ function sortVendorItems(items) {
   const key = state.vendorSortKey || 'createdAt';
   const valueType = VENDOR_UNIFIED_SORT_TYPES[key] || 'string';
   const direction = state.vendorSortDir === 'asc' ? 'asc' : 'desc';
+  const sortCore = resolveCoreSlice('sortCore');
+  if (sortCore && typeof sortCore.sortRows === 'function' && typeof sortCore.compareValues === 'function') {
+    return sortCore.sortRows(list, {
+      key,
+      dir: direction,
+      typeMap: VENDOR_UNIFIED_SORT_TYPES,
+      valueGetter: (row, field) => resolveVendorSortValue(row, field),
+      tieBreaker: (a, b) => sortCore.compareValues(a && a.linkId, b && b.linkId, 'string', 'asc')
+    });
+  }
   return list.sort((a, b) => {
     const compared = compareSortValue(
       resolveVendorSortValue(a, key),
@@ -2342,20 +2839,48 @@ function applyVendorUnifiedFilters() {
   const categoryKeyword = (document.getElementById('vendor-unified-filter-category')?.value || '').trim().toLowerCase();
   const createdFromMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-from')?.value || '', false);
   const createdToMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-to')?.value || '', true);
-  const filtered = state.vendorItems.filter((item) => {
-    const linkId = String(item && item.linkId ? item.linkId : '').toLowerCase();
-    const vendorLabel = String(item && item.vendorLabel ? item.vendorLabel : '').toLowerCase();
-    const category = String(item && item.category ? item.category : '').toLowerCase();
-    const rowStatus = String(item && item.status ? item.status : '').toUpperCase();
-    if (idKeyword && !linkId.includes(idKeyword)) return false;
-    if (nameKeyword && !vendorLabel.includes(nameKeyword)) return false;
-    if (status && rowStatus !== status) return false;
-    if (categoryKeyword && !category.includes(categoryKeyword)) return false;
-    const createdAtMs = toSortMillis(item && item.createdAt);
-    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
-    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
-    return true;
-  });
+  const filterCore = resolveCoreSlice('filterCore');
+  const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
+    ? filterCore.applyAndFilters(state.vendorItems, [
+        { type: 'includes', value: idKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.linkId },
+        { type: 'includes', value: nameKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.vendorLabel },
+        { type: 'equals', value: status, normalize: { trim: true, upper: true }, getValue: (item) => item && item.status },
+        { type: 'includes', value: categoryKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.category },
+        {
+          type: 'predicate',
+          value: createdFromMs == null ? '' : String(createdFromMs),
+          predicate: (item, needle) => {
+            const fromMs = Number(needle);
+            if (!Number.isFinite(fromMs) || fromMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs >= fromMs);
+          }
+        },
+        {
+          type: 'predicate',
+          value: createdToMs == null ? '' : String(createdToMs),
+          predicate: (item, needle) => {
+            const toMs = Number(needle);
+            if (!Number.isFinite(toMs) || toMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs <= toMs);
+          }
+        }
+      ])
+    : state.vendorItems.filter((item) => {
+      const linkId = String(item && item.linkId ? item.linkId : '').toLowerCase();
+      const vendorLabel = String(item && item.vendorLabel ? item.vendorLabel : '').toLowerCase();
+      const category = String(item && item.category ? item.category : '').toLowerCase();
+      const rowStatus = String(item && item.status ? item.status : '').toUpperCase();
+      if (idKeyword && !linkId.includes(idKeyword)) return false;
+      if (nameKeyword && !vendorLabel.includes(nameKeyword)) return false;
+      if (status && rowStatus !== status) return false;
+      if (categoryKeyword && !category.includes(categoryKeyword)) return false;
+      const createdAtMs = toSortMillis(item && item.createdAt);
+      if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+      if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+      return true;
+    });
   state.vendorUnifiedFilteredItems = sortVendorItems(filtered);
 }
 
@@ -2424,6 +2949,7 @@ function renderVendorUnifiedRows() {
     totalCount: state.vendorItems.length,
     activeCount: chips.length
   });
+  persistListStateToStorage('vendorUnified', readVendorUnifiedListState());
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -2447,7 +2973,7 @@ function renderVendorUnifiedRows() {
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
       if (idx === 6) markNumericCell(td);
-      td.textContent = String(value);
+      td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
     tr.appendChild(renderVendorUnifiedActionCell(item));
@@ -3954,16 +4480,43 @@ function applyUsersSummaryFilters() {
   const createdToMs = parseDateInputMs(document.getElementById('users-filter-created-to')?.value || '', true);
   const category = (document.getElementById('users-filter-category')?.value || '').trim().toUpperCase();
   const status = (document.getElementById('users-filter-status')?.value || '').trim();
-  const filtered = state.usersSummaryItems.filter((item) => {
-    const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
-    if (userIdKeyword && !lineUserId.includes(userIdKeyword)) return false;
-    const createdAtMs = toSortMillis(item && item.createdAt);
-    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
-    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
-    if (category && String(item && item.category ? item.category : '') !== category) return false;
-    if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
-    return true;
-  });
+  const filterCore = resolveCoreSlice('filterCore');
+  const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
+    ? filterCore.applyAndFilters(state.usersSummaryItems, [
+        { type: 'includes', value: userIdKeyword, normalize: { trim: true, lower: true }, getValue: (item) => item && item.lineUserId },
+        {
+          type: 'predicate',
+          value: createdFromMs == null ? '' : String(createdFromMs),
+          predicate: (item, needle) => {
+            const fromMs = Number(needle);
+            if (!Number.isFinite(fromMs) || fromMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs >= fromMs);
+          }
+        },
+        {
+          type: 'predicate',
+          value: createdToMs == null ? '' : String(createdToMs),
+          predicate: (item, needle) => {
+            const toMs = Number(needle);
+            if (!Number.isFinite(toMs) || toMs <= 0) return true;
+            const createdAtMs = toSortMillis(item && item.createdAt);
+            return Boolean(createdAtMs && createdAtMs <= toMs);
+          }
+        },
+        { type: 'equals', value: category, normalize: { trim: true, upper: true }, getValue: (item) => item && item.category },
+        { type: 'equals', value: status, normalize: { trim: true }, getValue: (item) => item && item.statusLabel }
+      ])
+    : state.usersSummaryItems.filter((item) => {
+      const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
+      if (userIdKeyword && !lineUserId.includes(userIdKeyword)) return false;
+      const createdAtMs = toSortMillis(item && item.createdAt);
+      if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+      if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+      if (category && String(item && item.category ? item.category : '') !== category) return false;
+      if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
+      return true;
+    });
   state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
 }
 
@@ -4011,6 +4564,7 @@ function renderUsersSummaryRows() {
     totalCount: state.usersSummaryItems.length,
     activeCount: chips.length
   });
+  persistListStateToStorage('usersSummary', readUsersSummaryListState());
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -4035,7 +4589,7 @@ function renderUsersSummaryRows() {
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
       if (idx === 5 || idx === 6 || idx === 7) markNumericCell(td);
-      td.textContent = String(value);
+      td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -5020,9 +5574,14 @@ async function runCityPackAuditJob() {
 }
 
 function navigateToMonitorWithTrace(traceId, lineUserId) {
+  const normalizedTrace = traceId || (resolveCoreSlice('traceCore') && typeof resolveCoreSlice('traceCore').getTraceFromUrl === 'function'
+    ? resolveCoreSlice('traceCore').getTraceFromUrl(globalThis.location.search)
+    : null);
   activatePane('monitor');
   const monitorTrace = document.getElementById('monitor-trace');
-  if (monitorTrace && traceId) monitorTrace.value = traceId;
+  if (monitorTrace && normalizedTrace) monitorTrace.value = normalizedTrace;
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace && normalizedTrace) auditTrace.value = normalizedTrace;
   const userIdInput = document.getElementById('monitor-user-line-user-id');
   if (userIdInput && lineUserId) userIdInput.value = lineUserId;
   void loadMonitorData({ notify: false });
@@ -5949,16 +6508,31 @@ function applyComposerSavedFilters() {
   const category = (document.getElementById('composer-saved-category')?.value || '').trim().toUpperCase();
   const scenarioKey = (document.getElementById('composer-saved-scenario')?.value || '').trim().toUpperCase();
   const stepKey = (document.getElementById('composer-saved-step')?.value || '').trim().toLowerCase();
-  const filtered = state.composerSavedItems.filter((item) => {
-    const searchable = [item.title, item.body, item.ctaText].map((value) => String(value || '').toLowerCase()).join('\n');
-    if (keyword && !searchable.includes(keyword)) return false;
-    if (status && normalizeComposerSavedStatus(item.status) !== status) return false;
-    if (type && normalizeComposerType(item.notificationType || 'STEP') !== type) return false;
-    if (category && String(item.notificationCategory || '').toUpperCase() !== category) return false;
-    if (scenarioKey && String(item.scenarioKey || '').toUpperCase() !== scenarioKey) return false;
-    if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
-    return true;
-  });
+  const filterCore = resolveCoreSlice('filterCore');
+  const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
+    ? filterCore.applyAndFilters(state.composerSavedItems, [
+        {
+          type: 'includes',
+          value: keyword,
+          normalize: { trim: true, lower: true },
+          getValue: (item) => [item && item.title, item && item.body, item && item.ctaText].map((value) => String(value || '')).join('\n')
+        },
+        { type: 'equals', value: status, normalize: { trim: true, lower: true }, getValue: (item) => normalizeComposerSavedStatus(item && item.status) },
+        { type: 'equals', value: type, normalize: { trim: true, upper: true }, getValue: (item) => normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP') },
+        { type: 'equals', value: category, normalize: { trim: true, upper: true }, getValue: (item) => item && item.notificationCategory },
+        { type: 'equals', value: scenarioKey, normalize: { trim: true, upper: true }, getValue: (item) => item && item.scenarioKey },
+        { type: 'equals', value: stepKey, normalize: { trim: true, lower: true }, getValue: (item) => item && item.stepKey }
+      ])
+    : state.composerSavedItems.filter((item) => {
+      const searchable = [item.title, item.body, item.ctaText].map((value) => String(value || '').toLowerCase()).join('\n');
+      if (keyword && !searchable.includes(keyword)) return false;
+      if (status && normalizeComposerSavedStatus(item.status) !== status) return false;
+      if (type && normalizeComposerType(item.notificationType || 'STEP') !== type) return false;
+      if (category && String(item.notificationCategory || '').toUpperCase() !== category) return false;
+      if (scenarioKey && String(item.scenarioKey || '').toUpperCase() !== scenarioKey) return false;
+      if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
+      return true;
+    });
   state.composerSavedFilteredItems = sortComposerSavedItems(filtered);
 }
 
@@ -6145,6 +6719,7 @@ function renderComposerSavedRows() {
     totalCount: state.composerSavedItems.length,
     activeCount: chips.length
   });
+  persistListStateToStorage('composerSaved', readComposerSavedListState());
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
@@ -6173,7 +6748,7 @@ function renderComposerSavedRows() {
       const td = document.createElement('td');
       if (idx === 2 || idx === 3 || idx === 4 || idx === 5) td.classList.add('cell-muted');
       if (idx === 6 || idx === 7) markNumericCell(td);
-      td.textContent = String(value);
+      td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
     const actionTd = document.createElement('td');
@@ -6268,29 +6843,55 @@ function composerTypeLabel(value) {
 
 function composerCategoryLabel(value) {
   const raw = String(value || '').toUpperCase();
-  if (raw === 'DEADLINE_REQUIRED') return t('ui.value.composer.category.deadline', '期限必須');
-  if (raw === 'IMMEDIATE_ACTION') return t('ui.value.composer.category.immediate', '即時対応');
-  if (raw === 'SEQUENCE_GUIDANCE') return t('ui.value.composer.category.sequence', '順次案内');
-  if (raw === 'TARGETED_ONLY') return t('ui.value.composer.category.targeted', '対象限定');
-  if (raw === 'COMPLETION_CONFIRMATION') return t('ui.value.composer.category.completion', '完了確認');
-  return raw || '-';
+  let fallback = raw || '-';
+  if (raw === 'DEADLINE_REQUIRED') fallback = t('ui.value.composer.category.deadline', '期限必須');
+  if (raw === 'IMMEDIATE_ACTION') fallback = t('ui.value.composer.category.immediate', '即時対応');
+  if (raw === 'SEQUENCE_GUIDANCE') fallback = t('ui.value.composer.category.sequence', '順次案内');
+  if (raw === 'TARGETED_ONLY') fallback = t('ui.value.composer.category.targeted', '対象限定');
+  if (raw === 'COMPLETION_CONFIRMATION') fallback = t('ui.value.composer.category.completion', '完了確認');
+  return resolveDomainLabel('category', raw, fallback);
 }
 
 function composerStatusLabel(value) {
   const raw = normalizeComposerSavedStatus(value);
-  if (raw === 'approved' || raw === 'active') return t('ui.value.composer.status.approved', '承認済み');
-  if (raw === 'executed' || raw === 'sent') return t('ui.value.composer.status.executed', '実行済み');
-  return t('ui.value.composer.status.draft', '下書き');
+  let fallback = t('ui.value.composer.status.draft', '下書き');
+  if (raw === 'approved' || raw === 'active') fallback = t('ui.value.composer.status.approved', '承認済み');
+  if (raw === 'executed' || raw === 'sent') fallback = t('ui.value.composer.status.executed', '実行済み');
+  return resolveDomainLabel('status', raw, fallback);
+}
+
+async function adminFetchJson(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const url = String(opts.url || '');
+  if (!url) return { ok: false, error: 'url missing' };
+  const method = opts.method ? String(opts.method).toUpperCase() : 'GET';
+  const traceId = opts.traceId || newTraceId();
+  const headers = Object.assign({}, opts.headers || {}, buildHeaders({}, traceId));
+  let body;
+  if (opts.payload !== undefined) {
+    headers['content-type'] = headers['content-type'] || 'application/json; charset=utf-8';
+    body = JSON.stringify(opts.payload || {});
+  }
+  const res = await fetch(url, { method, headers, body });
+  const data = await readJsonResponse(res);
+  if (res.ok && data && data.ok !== false) {
+    clearGuardBanner();
+    return data;
+  }
+  if (data && typeof data === 'object') {
+    renderGuardBanner(data);
+    return data;
+  }
+  renderGuardBanner({ error: `http_${res.status}` });
+  return { ok: false, error: `http_${res.status}` };
 }
 
 async function postJson(url, payload, traceId) {
-  const res = await fetch(url, {
+  return adminFetchJson({
+    url,
     method: 'POST',
-    headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, buildHeaders({}, traceId)),
-    body: JSON.stringify(payload || {})
-  });
-  return res.text().then((text) => {
-    try { return JSON.parse(text); } catch (_err) { return { ok: false, error: text || 'error' }; }
+    traceId,
+    payload
   });
 }
 
@@ -6365,8 +6966,8 @@ function setupComposerActions() {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
       return;
     }
-    const resultEl = document.getElementById('draft-result');
     const traceId = ensureTraceInput('traceId');
+    const resultEl = document.getElementById('draft-result');
     const result = await postJson('/api/admin/os/notifications/approve', { notificationId: state.composerCurrentNotificationId }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
     if (result && result.ok) {
@@ -7220,7 +7821,6 @@ async function planLlmConfig() {
 }
 
 async function setLlmConfig() {
-  const traceId = ensureTraceInput('llm-trace');
   const llmEnabled = parseLlmEnabled(document.getElementById('llm-config-enabled')?.value);
   if (llmEnabled === null) {
     renderLlmResult('llm-config-set-result', { ok: false, error: t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です') });
@@ -7232,11 +7832,14 @@ async function setLlmConfig() {
     showToast(t('ui.toast.llm.needConfigPlan', '設定計画が必要です'), 'warn');
     return;
   }
-  const approved = window.confirm(t('ui.confirm.llmConfigSet', 'LLM設定を適用しますか？')); // eslint-disable-line no-alert
-  if (!approved) {
-    showToast(t('ui.toast.llm.configSetCanceled', 'LLM設定の適用を中止しました'), 'warn');
-    return;
-  }
+  const guardedTrace = runDangerActionGuard({
+    confirmKey: 'ui.confirm.llmConfigSet',
+    confirmFallback: 'LLM設定を適用しますか？',
+    traceInputId: 'llm-trace',
+    cancelMessage: t('ui.toast.llm.configSetCanceled', 'LLM設定の適用を中止しました')
+  });
+  if (guardedTrace === null) return;
+  const traceId = guardedTrace || ensureTraceInput('llm-trace');
   try {
     const data = await postJson('/api/admin/llm/config/set', {
       llmEnabled,
@@ -7281,6 +7884,7 @@ function setupLlmControls() {
 (async () => {
   await loadDict();
   applyDict();
+  hydrateListState();
   setupRoleSwitch();
   setupNav();
   setupHeaderActions();

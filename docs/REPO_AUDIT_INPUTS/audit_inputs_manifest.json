@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T17:28:11-05:00",
-  "gitCommit": "b9e8cf24901eae6ae2d8d287faf5adf61a9a4d92",
-  "branch": "codex/phase635-admin-ui-layout",
-  "sourceDigest": "99bd7c2392225d6df6c2b8b98850b2493ad74282bf77e29764ad63d131f74833",
+  "generatedAt": "2026-02-23T18:26:34-05:00",
+  "gitCommit": "3efaf450df8c1e3060f67bbe2d81a0862cf99d8f",
+  "branch": "HEAD",
+  "sourceDigest": "369c1b2e9f2683fe6ee9099c69d3db9b9ffbf965e1975cebf414da2c0a7d989b",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "dfc4686bfd9cb3dee6de22a91d67128b56c6d1efa3b3aa304533cc26b6029beb",
+      "sha256": "fe0628d00c822e6efedefcf93e4a7e003d0f2e0075f5ef49797b3eafe129390d",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "0bf82e3fd20fc6d4d57368f9832dfc20bf08148057c7999ceb62204858f8f4a9",
+      "sha256": "162dfd895178c0917024436133e83920525af38f67b810f0a0efbc096166a71c",
       "bytes": 487
     },
     {
@@ -113,12 +113,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "91e5504ddd2e8ad994379c1544d1d5a79c102bb1d85a358670c4da0869e9ee7a",
+      "sha256": "5c6fb4b16c5093c85032e5ed817a25047e2b66aae2d3918053acb28d3b5af49d",
       "bytes": 288099
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "c682fdd6f4804bf13b16aee5f29ebdacc98829561764cd056e95955d072df94a",
+      "sha256": "657967a44fa712e2627ed39e3c2d3033da95cc46049bff987a9e68d216eefd01",
       "bytes": 740
     },
     {
@@ -128,13 +128,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "3102a0281196b1f906261f1307545a2594768fea80157ef134a3b2c876029960",
+      "sha256": "a43d03fd6c32165269161f9ee28a2543e0ef7eec5adc9e797cb7e4bca70a7a8f",
       "bytes": 3681
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "47f36c9aa9ecd41c709b566e6dc3ad10181343ef825266f3e54a3b0b0d481630",
-      "bytes": 2407
+      "sha256": "226fdbb5628c1623775a04722b368fbb3cf89db93173b6a80e29b305987720de",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [
