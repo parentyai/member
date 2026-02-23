@@ -1,8 +1,6 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'send_retry_queue';
 const STATUS_VALUES = new Set(['PENDING', 'DONE', 'GAVE_UP']);
@@ -48,23 +46,8 @@ async function listPending(limit) {
   let query = baseQuery.orderBy('createdAt', 'desc');
   const cap = typeof limit === 'number' ? limit : 50;
   if (cap) query = query.limit(cap);
-  try {
-    const snap = await query.get();
-    return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'sendRetryQueueRepo',
-      query: 'listPending',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    // Fallback for environments without composite indexes.
-    const snap = await baseQuery.get();
-    const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'createdAt');
-    return cap ? rows.slice(0, cap) : rows;
-  }
+  const snap = await query.get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 async function markDone(id) {
