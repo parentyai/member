@@ -723,6 +723,61 @@ async function runComposerCapScenario(ctx, opts, traceId) {
   }
 }
 
+function joinBlockerCodes(blockers) {
+  if (!Array.isArray(blockers)) return '';
+  return blockers
+    .map((item) => (item && typeof item.code === 'string' ? item.code.trim() : ''))
+    .filter(Boolean)
+    .join(',');
+}
+
+function evaluateProductReadinessBody(body) {
+  if (!body || typeof body !== 'object') {
+    return { ok: false, reason: 'product_readiness_invalid_payload' };
+  }
+  if (body.status !== 'GO') {
+    const blockerCodes = joinBlockerCodes(body.blockers);
+    return {
+      ok: false,
+      reason: blockerCodes
+        ? `product_readiness_no_go:${blockerCodes}`
+        : 'product_readiness_no_go:unknown'
+    };
+  }
+  const checks = body.checks && typeof body.checks === 'object' ? body.checks : null;
+  if (!checks) {
+    return { ok: false, reason: 'product_readiness_checks_missing' };
+  }
+  if (!checks.retentionRisk || checks.retentionRisk.ok !== true) {
+    return { ok: false, reason: 'product_readiness_retention_not_ok' };
+  }
+  if (!checks.structureRisk || checks.structureRisk.ok !== true) {
+    return { ok: false, reason: 'product_readiness_structure_not_ok' };
+  }
+  return { ok: true, reason: null };
+}
+
+async function runProductReadinessScenario(ctx, traceId) {
+  const readinessResp = await apiRequest(ctx, 'GET', '/api/admin/product-readiness', traceId);
+  const readinessBody = requireHttpOk(readinessResp, 'product-readiness');
+  const evaluation = evaluateProductReadinessBody(readinessBody);
+  if (!evaluation.ok) {
+    return {
+      status: 'FAIL',
+      reason: evaluation.reason,
+      steps: {
+        readiness: summarizeResponse(readinessResp)
+      }
+    };
+  }
+  return {
+    status: 'PASS',
+    steps: {
+      readiness: summarizeResponse(readinessResp)
+    }
+  };
+}
+
 function evaluateExitCode(results, allowSkip) {
   const items = Array.isArray(results) ? results : [];
   const hasFail = items.some((item) => item && item.status === 'FAIL');
@@ -831,6 +886,7 @@ async function runAll(opts) {
   }
 
   try {
+    scenarios.push(await runScenario(ctx, 'product_readiness_gate', (traceId) => runProductReadinessScenario(ctx, traceId)));
     scenarios.push(await runScenario(ctx, 'segment', (traceId) => runSegmentScenario(ctx, opts, traceId)));
     scenarios.push(await runScenario(ctx, 'retry_queue', (traceId) => runRetryScenario(ctx, opts, traceId)));
     scenarios.push(await runScenario(ctx, 'kill_switch_block', (traceId) => runKillSwitchScenario(ctx, opts, traceId)));
@@ -923,7 +979,8 @@ module.exports = {
   resolveOutFile,
   buildRouteErrorLoggingFilter,
   fetchRouteErrors,
-  applyRouteErrorStrictGate
+  applyRouteErrorStrictGate,
+  evaluateProductReadinessBody
 };
 
 if (require.main === module) {

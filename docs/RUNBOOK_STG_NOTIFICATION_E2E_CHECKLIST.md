@@ -56,10 +56,11 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `fail-on-route-errors`: route_error が1件でも出たシナリオを FAIL 扱いにする（`fetch-route-errors` を暗黙有効化）
 
 ## Checklist (fixed order)
-1. Segment Send: `plan -> dry-run -> execute`
-2. Retry Queue: `plan -> retry`
-3. Kill Switch: ON時に send 系が全ブロックされる
-4. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
+1. Product Readiness Gate: `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true`
+2. Segment Send: `plan -> dry-run -> execute`
+3. Retry Queue: `plan -> retry`
+4. Kill Switch: ON時に send 系が全ブロックされる
+5. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
 
 ## Run Cadence
 - 推奨: main への通知制御系マージごとに 1 回 + 週次 1 回
@@ -79,6 +80,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 
 ## TraceId Naming (recommended)
 - Segment plan/dry-run/execute: `trace-stg-segment-<UTC compact>`
+- Product readiness gate: `trace-stg-product-readiness-gate-<UTC compact>`
 - Retry plan/retry: `trace-stg-retry-<UTC compact>`
 - Kill switch block: `trace-stg-killswitch-<UTC compact>`
 - Composer cap block: `trace-stg-composer-cap-<UTC compact>`
