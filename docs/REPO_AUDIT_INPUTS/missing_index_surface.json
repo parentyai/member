@@ -1,69 +1,13 @@
 {
-  "generatedAt": "2026-02-22T19:41:52-05:00",
+  "generatedAt": "2026-02-22T19:47:45-05:00",
   "source": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-  "sourceDigest": "eec6d974ad91de326630a1bd73c15a05e019f0f51e70c03fe010cc198e3e067a",
-  "surface_count": 9,
-  "point_count": 13,
+  "sourceDigest": "174aad09933f6640e15626cddb8cd0ad07f6832ff4a92196907bd2ea8c3790d0",
+  "surface_count": 5,
+  "point_count": 9,
   "call_breakdown": {
-    "isMissingIndexError": 9
+    "isMissingIndexError": 5
   },
   "items": [
-    {
-      "file": "src/repos/firestore/cityPackFeedbackRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        142
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/cityPackMetricsDailyRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        113
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/cityPackRequestsRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        153
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
-    {
-      "file": "src/repos/firestore/cityPacksRepo.js",
-      "call": "isMissingIndexError",
-      "lines": [
-        339
-      ],
-      "occurrences": 1,
-      "policy": {
-        "production": "fail_closed",
-        "staging": "fail_closed",
-        "local": "fallback_allowed",
-        "test": "fallback_allowed"
-      }
-    },
     {
       "file": "src/repos/firestore/decisionLogsRepo.js",
       "call": "isMissingIndexError",

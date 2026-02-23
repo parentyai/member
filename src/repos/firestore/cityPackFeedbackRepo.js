@@ -2,8 +2,6 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { isMissingIndexError, sortByTimestampDesc } = require('./queryFallback');
-const { recordMissingIndexFallback, shouldFailOnMissingIndex } = require('./indexFallbackPolicy');
 
 const COLLECTION = 'city_pack_feedback';
 const ALLOWED_STATUS = new Set([
@@ -134,23 +132,8 @@ async function listFeedback(params) {
   if (packClass) baseQuery = baseQuery.where('packClass', '==', packClass);
   const language = normalizeLanguageFilter(opts.language);
   if (language) baseQuery = baseQuery.where('language', '==', language);
-  let rows;
-  try {
-    const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
-    rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-  } catch (err) {
-    if (!isMissingIndexError(err)) throw err;
-    recordMissingIndexFallback({
-      repo: 'cityPackFeedbackRepo',
-      query: 'listFeedback',
-      err
-    });
-    if (shouldFailOnMissingIndex()) throw err;
-    const snap = await baseQuery.get();
-    rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
-    sortByTimestampDesc(rows, 'updatedAt');
-    rows = rows.slice(0, limit);
-  }
+  const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
+  const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   return rows;
 }
 
