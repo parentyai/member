@@ -1594,6 +1594,10 @@ body.app-body {
   margin-top: var(--space-2);
 }
 
+.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-catalog) {
+  display: none;
+}
+
 .nav-group-label {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-12);
@@ -1637,6 +1641,10 @@ details:not([open]) > *:not(summary) {
   display: none !important;
 }
 
+.composer-status-wrap {
+  display: none !important;
+}
+
 .line-preview-cta-secondary {
   background: #f2f4f7;
   color: var(--text-base);
@@ -1661,6 +1669,61 @@ details:not([open]) > *:not(summary) {
 .composer-saved-table td:nth-child(3),
 .composer-saved-table td:nth-child(4) {
   text-align: right;
+}
+
+.users-summary-table td:nth-child(6),
+.users-summary-table td:nth-child(7),
+.users-summary-table td:nth-child(8) {
+  text-align: right;
+}
+
+.read-model-legacy {
+  display: none !important;
+}
+
+.city-pack-legacy-block,
+.vendors-legacy-block {
+  display: none !important;
+}
+
+.unified-admin-panel {
+  margin-bottom: var(--space-3);
+}
+
+.city-pack-unified-table td:nth-child(9),
+.vendors-unified-table td:nth-child(7) {
+  text-align: right;
+}
+
+.city-pack-unified-table td:last-child,
+.vendors-unified-table td:last-child {
+  min-width: 220px;
+}
+
+.unified-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.unified-action-group button {
+  padding: 4px 8px;
+  font-size: var(--font-12);
+}
+
+.table-sort-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.table-sort-btn:hover {
+  color: var(--status-info);
 }
 
 .alert-banner {
@@ -1805,7 +1868,7 @@ details:not([open]) > *:not(summary) {
 }
 
 .top-summary-line {
-  display: flex;
+  display: none !important;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);

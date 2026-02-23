@@ -24,6 +24,10 @@ const state = {
   cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
   cityPackCompositionItems: [],
+  cityPackUnifiedItems: [],
+  cityPackUnifiedFilteredItems: [],
+  cityPackUnifiedSortKey: 'updatedAt',
+  cityPackUnifiedSortDir: 'desc',
   cityPackKpi: null,
   cityPackMetrics: null,
   cityPackRuns: [],
@@ -44,6 +48,9 @@ const state = {
   composerUpdatedAt: null,
   composerSavedItems: [],
   composerSavedFilteredItems: [],
+  composerSavedSortKey: 'createdAt',
+  composerSavedSortDir: 'desc',
+  composerLinkOptions: [],
   composerSelectedNotificationId: null,
   composerListLoadedAt: null,
   composerLinkPreview: null,
@@ -51,6 +58,13 @@ const state = {
   composerCurrentPlanHash: null,
   composerCurrentConfirmToken: null,
   composerKillSwitch: false,
+  usersSummaryItems: [],
+  usersSummaryFilteredItems: [],
+  usersSummarySortKey: 'createdAt',
+  usersSummarySortDir: 'desc',
+  vendorUnifiedFilteredItems: [],
+  vendorSortKey: 'createdAt',
+  vendorSortDir: 'desc',
   dashboardKpis: null,
   dashboardCacheByMonths: {},
   topbarStatus: null,
@@ -73,6 +87,60 @@ const state = {
 
 const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
+const COMPOSER_SAVED_SORT_TYPES = Object.freeze({
+  createdAt: 'date',
+  title: 'string',
+  status: 'string',
+  notificationCategory: 'string',
+  scenarioKey: 'string',
+  stepKey: 'string',
+  targetCount: 'number',
+  ctr: 'number'
+});
+const USERS_SUMMARY_SORT_TYPES = Object.freeze({
+  createdAt: 'date',
+  lineUserId: 'string',
+  memberNumber: 'string',
+  category: 'string',
+  status: 'string',
+  deliveryCount: 'number',
+  clickCount: 'number',
+  reactionRate: 'number'
+});
+const CITY_PACK_UNIFIED_SORT_TYPES = Object.freeze({
+  createdAt: 'date',
+  itemId: 'string',
+  lineUserId: 'string',
+  cityLabel: 'string',
+  recordType: 'string',
+  status: 'string',
+  assignee: 'string',
+  updatedAt: 'date',
+  kpiScore: 'number'
+});
+const VENDOR_UNIFIED_SORT_TYPES = Object.freeze({
+  createdAt: 'date',
+  linkId: 'string',
+  vendorLabel: 'string',
+  category: 'string',
+  status: 'string',
+  updatedAt: 'date',
+  relatedCount: 'number'
+});
+const CITY_PACK_RECORD_TYPE_LABELS = Object.freeze({
+  request: 'Request',
+  feedback: 'Feedback',
+  bulletin: 'Bulletin',
+  proposal: 'Proposal',
+  review: 'Review',
+  template: 'Template'
+});
+const USER_CATEGORY_LABELS = Object.freeze({
+  A: 'A単身',
+  B: 'B夫婦',
+  C: 'C帯同1',
+  D: 'D帯同2'
+});
 const PANE_HEADER_MAP = Object.freeze({
   home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
   alerts: { titleKey: 'ui.label.alerts.title', subtitleKey: 'ui.desc.page.alerts' },
@@ -313,7 +381,13 @@ function updatePageHeader(paneKey) {
   const primaryAction = document.getElementById('page-action-primary');
   const secondaryAction = document.getElementById('page-action-secondary');
   if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
-  if (subtitleEl) subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
+  if (subtitleEl) {
+    if (paneKey === 'composer' || paneKey === 'monitor' || paneKey === 'read-model' || paneKey === 'city-pack' || paneKey === 'vendors') {
+      subtitleEl.textContent = '';
+    } else {
+      subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
+    }
+  }
   if (primaryAction) primaryAction.classList.add('hidden');
   if (secondaryAction) secondaryAction.classList.add('hidden');
 }
@@ -1598,6 +1672,582 @@ function formatPercent(numerator, denominator) {
   return `${Math.round((numerator / denominator) * 1000) / 10}%`;
 }
 
+function formatRatioPercent(value) {
+  if (!Number.isFinite(value)) return '-';
+  const normalized = value > 1 ? value / 100 : value;
+  if (!Number.isFinite(normalized)) return '-';
+  return `${Math.round(normalized * 1000) / 10}%`;
+}
+
+function parseDateInputMs(value, endOfDay) {
+  if (!value) return null;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  if (endOfDay) parsed.setUTCHours(23, 59, 59, 999);
+  return parsed.getTime();
+}
+
+function resolveComposerSavedTargetCount(item) {
+  if (item && item.target && Number.isFinite(Number(item.target.limit))) return Number(item.target.limit);
+  if (Number.isFinite(Number(item && item.targetCount))) return Number(item.targetCount);
+  return null;
+}
+
+function resolveComposerSavedCtr(item) {
+  if (Number.isFinite(Number(item && item.ctr))) {
+    const numeric = Number(item.ctr);
+    return numeric > 1 ? numeric / 100 : numeric;
+  }
+  const sent = Number(item && item.reactionSummary && item.reactionSummary.sent);
+  const clicked = Number(item && item.reactionSummary && item.reactionSummary.clicked);
+  if (!Number.isFinite(sent) || !Number.isFinite(clicked) || sent <= 0) return null;
+  return clicked / sent;
+}
+
+function resolveComposerSavedSortValue(item, key) {
+  if (key === 'status') return composerStatusLabel(item && item.status);
+  if (key === 'notificationCategory') return composerCategoryLabel(item && item.notificationCategory);
+  if (key === 'scenarioKey') return scenarioLabel(item && item.scenarioKey);
+  if (key === 'stepKey') return stepLabel(item && item.stepKey);
+  if (key === 'targetCount') return resolveComposerSavedTargetCount(item);
+  if (key === 'ctr') return resolveComposerSavedCtr(item);
+  if (key === 'createdAt') return item && item.createdAt;
+  if (key === 'title') return item && item.title;
+  return item ? item[key] : null;
+}
+
+function sortComposerSavedItems(items) {
+  const list = Array.isArray(items) ? items.slice() : [];
+  const key = state.composerSavedSortKey || 'createdAt';
+  const valueType = COMPOSER_SAVED_SORT_TYPES[key] || 'string';
+  const direction = state.composerSavedSortDir === 'asc' ? 'asc' : 'desc';
+  return list.sort((a, b) => {
+    const compared = compareSortValue(
+      resolveComposerSavedSortValue(a, key),
+      resolveComposerSavedSortValue(b, key),
+      valueType,
+      direction
+    );
+    if (compared !== 0) return compared;
+    return compareSortValue(a && a.id, b && b.id, 'string', 'asc');
+  });
+}
+
+function normalizeUserCategory(scenarioKey) {
+  const key = typeof scenarioKey === 'string' ? scenarioKey.trim().toUpperCase() : '';
+  return USER_CATEGORY_LABELS[key] ? key : '';
+}
+
+function userCategoryLabel(scenarioKey) {
+  const key = normalizeUserCategory(scenarioKey);
+  return USER_CATEGORY_LABELS[key] || '-';
+}
+
+function resolveUserStatus(stepKey) {
+  const step = typeof stepKey === 'string' ? stepKey.trim().toLowerCase() : '';
+  if (step === '3mo' || step === '1mo' || step === 'week') return '赴任前';
+  if (step === 'after1w') return '着任中';
+  return '';
+}
+
+function resolveUserReactionRate(item) {
+  if (Number.isFinite(Number(item && item.reactionRate))) {
+    const numeric = Number(item.reactionRate);
+    return numeric > 1 ? numeric / 100 : numeric;
+  }
+  const deliveryCount = Number(item && item.deliveryCount);
+  const clickCount = Number(item && item.clickCount);
+  if (!Number.isFinite(deliveryCount) || !Number.isFinite(clickCount) || deliveryCount <= 0) return null;
+  return clickCount / deliveryCount;
+}
+
+function formatUserReactionRate(item) {
+  return formatRatioPercent(resolveUserReactionRate(item));
+}
+
+function resolveUsersSortValue(item, key) {
+  if (key === 'category') return item && item.categoryLabel;
+  if (key === 'status') return item && item.statusLabel;
+  if (key === 'reactionRate') return resolveUserReactionRate(item);
+  if (key === 'createdAt') return item && item.createdAt;
+  return item ? item[key] : null;
+}
+
+function sortUsersSummaryItems(items) {
+  const list = Array.isArray(items) ? items.slice() : [];
+  const key = state.usersSummarySortKey || 'createdAt';
+  const valueType = USERS_SUMMARY_SORT_TYPES[key] || 'string';
+  const direction = state.usersSummarySortDir === 'asc' ? 'asc' : 'desc';
+  return list.sort((a, b) => {
+    const compared = compareSortValue(
+      resolveUsersSortValue(a, key),
+      resolveUsersSortValue(b, key),
+      valueType,
+      direction
+    );
+    if (compared !== 0) return compared;
+    return compareSortValue(a && a.lineUserId, b && b.lineUserId, 'string', 'asc');
+  });
+}
+
+function toSortMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.getTime();
+  }
+  return null;
+}
+
+function isSortUnset(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string' && value.trim().length === 0) return true;
+  return false;
+}
+
+function compareSortValue(baseA, baseB, valueType, direction) {
+  const dir = direction === 'asc' ? 1 : -1;
+  const aUnset = isSortUnset(baseA);
+  const bUnset = isSortUnset(baseB);
+  if (aUnset && bUnset) return 0;
+  if (aUnset) return 1;
+  if (bUnset) return -1;
+
+  if (valueType === 'date') {
+    const aMs = toSortMillis(baseA);
+    const bMs = toSortMillis(baseB);
+    const aMsUnset = !Number.isFinite(aMs);
+    const bMsUnset = !Number.isFinite(bMs);
+    if (aMsUnset && bMsUnset) return 0;
+    if (aMsUnset) return 1;
+    if (bMsUnset) return -1;
+    if (aMs === bMs) return 0;
+    return aMs > bMs ? dir : -dir;
+  }
+
+  if (valueType === 'number') {
+    const aNum = Number(baseA);
+    const bNum = Number(baseB);
+    const aNumUnset = !Number.isFinite(aNum);
+    const bNumUnset = !Number.isFinite(bNum);
+    if (aNumUnset && bNumUnset) return 0;
+    if (aNumUnset) return 1;
+    if (bNumUnset) return -1;
+    if (aNum === bNum) return 0;
+    return aNum > bNum ? dir : -dir;
+  }
+
+  const aText = String(baseA);
+  const bText = String(baseB);
+  const compared = aText.localeCompare(bText, 'ja', { sensitivity: 'base', numeric: true });
+  if (compared === 0) return 0;
+  return compared > 0 ? dir : -dir;
+}
+
+function toggleSortDirection(currentKey, nextKey, currentDirection) {
+  if (currentKey !== nextKey) return 'asc';
+  return currentDirection === 'asc' ? 'desc' : 'asc';
+}
+
+function cityPackRecordTypeLabel(value) {
+  const key = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return CITY_PACK_RECORD_TYPE_LABELS[key] || key || '-';
+}
+
+function resolveCityPackSortValue(item, key) {
+  if (key === 'recordType') return cityPackRecordTypeLabel(item && item.recordType);
+  if (key === 'createdAt') return item && item.createdAt;
+  if (key === 'updatedAt') return item && item.updatedAt;
+  return item ? item[key] : null;
+}
+
+function sortCityPackUnifiedItems(items) {
+  const list = Array.isArray(items) ? items.slice() : [];
+  const key = state.cityPackUnifiedSortKey || 'updatedAt';
+  const valueType = CITY_PACK_UNIFIED_SORT_TYPES[key] || 'string';
+  const direction = state.cityPackUnifiedSortDir === 'asc' ? 'asc' : 'desc';
+  return list.sort((a, b) => {
+    const compared = compareSortValue(
+      resolveCityPackSortValue(a, key),
+      resolveCityPackSortValue(b, key),
+      valueType,
+      direction
+    );
+    if (compared !== 0) return compared;
+    return compareSortValue(a && a.itemId, b && b.itemId, 'string', 'asc');
+  });
+}
+
+function buildCityPackUnifiedItems() {
+  const rows = [];
+  const addRow = (item) => {
+    rows.push({
+      recordType: item.recordType || '',
+      itemId: item.itemId || '',
+      lineUserId: item.lineUserId || '',
+      cityLabel: item.cityLabel || '',
+      status: item.status || '',
+      assignee: item.assignee || '',
+      createdAt: item.createdAt || null,
+      updatedAt: item.updatedAt || null,
+      kpiText: item.kpiText || '-',
+      kpiScore: Number.isFinite(Number(item.kpiScore)) ? Number(item.kpiScore) : null,
+      raw: item.raw || null
+    });
+  };
+
+  state.cityPackRequestItems.forEach((row) => {
+    const cityLabel = [row.regionCity, row.regionState].filter(Boolean).join(', ') || row.regionKey || '-';
+    const warningCount = Number.isFinite(Number(row.warningCount)) ? Number(row.warningCount) : 0;
+    const agingHours = Number.isFinite(Number(row.agingHours)) ? Number(row.agingHours) : null;
+    addRow({
+      recordType: 'request',
+      itemId: row.requestId || row.id || '',
+      lineUserId: row.lineUserId || '',
+      cityLabel,
+      status: row.status || '',
+      assignee: row.requestClass || '-',
+      createdAt: row.requestedAt || row.createdAt || row.lastReviewAt || null,
+      updatedAt: row.lastReviewAt || row.updatedAt || row.requestedAt || null,
+      kpiText: `warn:${warningCount} / aging:${agingHours != null ? agingHours : '-'}h`,
+      kpiScore: warningCount,
+      raw: row
+    });
+  });
+
+  state.cityPackFeedbackItems.forEach((row) => {
+    const cityLabel = [row.regionCity, row.regionState].filter(Boolean).join(', ') || row.regionKey || '-';
+    const score = row.status === 'resolved' ? 2 : row.status === 'triaged' ? 1 : 0;
+    addRow({
+      recordType: 'feedback',
+      itemId: row.feedbackId || row.id || '',
+      lineUserId: row.lineUserId || '',
+      cityLabel,
+      status: row.status || '',
+      assignee: row.packClass || '-',
+      createdAt: row.createdAt || row.resolvedAt || row.updatedAt || null,
+      updatedAt: row.updatedAt || row.resolvedAt || row.createdAt || null,
+      kpiText: `slot:${row.slotKey || '-'} / resolution:${row.resolution || '-'}`,
+      kpiScore: score,
+      raw: row
+    });
+  });
+
+  state.cityPackBulletinItems.forEach((row) => {
+    const deliveredCount = Number.isFinite(Number(row.deliveredCount)) ? Number(row.deliveredCount) : 0;
+    addRow({
+      recordType: 'bulletin',
+      itemId: row.bulletinId || row.id || '',
+      lineUserId: '',
+      cityLabel: row.cityPackId || '-',
+      status: row.status || '',
+      assignee: row.notificationId || '-',
+      createdAt: row.createdAt || row.approvedAt || row.sentAt || null,
+      updatedAt: row.updatedAt || row.sentAt || row.approvedAt || row.createdAt || null,
+      kpiText: `delivered:${deliveredCount}`,
+      kpiScore: deliveredCount,
+      raw: row
+    });
+  });
+
+  state.cityPackProposalItems.forEach((row) => {
+    const patchSize = row.proposalPatch && typeof row.proposalPatch === 'object'
+      ? Object.keys(row.proposalPatch).length
+      : 0;
+    addRow({
+      recordType: 'proposal',
+      itemId: row.proposalId || row.id || '',
+      lineUserId: '',
+      cityLabel: row.cityPackId || '-',
+      status: row.status || '',
+      assignee: row.cityPackId || '-',
+      createdAt: row.createdAt || row.approvedAt || row.updatedAt || null,
+      updatedAt: row.updatedAt || row.approvedAt || row.createdAt || null,
+      kpiText: `patchKeys:${patchSize}`,
+      kpiScore: patchSize,
+      raw: row
+    });
+  });
+
+  state.cityPackInboxItems.forEach((row) => {
+    const cityLabel = Array.isArray(row.usedBy) && row.usedBy.length ? String(row.usedBy[0]) : '-';
+    addRow({
+      recordType: 'review',
+      itemId: row.sourceRefId || '',
+      lineUserId: '',
+      cityLabel,
+      status: row.status || '',
+      assignee: row.recommendation || '-',
+      createdAt: row.validUntil || null,
+      updatedAt: row.validUntil || null,
+      kpiText: `priority:${row.priorityLevel || '-'}(${Number.isFinite(Number(row.priorityScore)) ? Number(row.priorityScore) : '-'}) / confidence:${Number.isFinite(Number(row.confidenceScore)) ? Number(row.confidenceScore) : '-'}`,
+      kpiScore: row.priorityScore,
+      raw: row
+    });
+  });
+
+  state.cityPackTemplateLibraryItems.forEach((row) => {
+    const traceScore = row.traceId ? String(row.traceId).length : 0;
+    addRow({
+      recordType: 'template',
+      itemId: row.id || '',
+      lineUserId: '',
+      cityLabel: row.name || '-',
+      status: row.status || '',
+      assignee: row.source || '-',
+      createdAt: row.createdAt || row.activatedAt || row.retiredAt || row.updatedAt || null,
+      updatedAt: row.updatedAt || row.activatedAt || row.retiredAt || row.createdAt || null,
+      kpiText: `schema:${row.schemaVersion || '-'} / trace:${row.traceId || '-'}`,
+      kpiScore: traceScore,
+      raw: row
+    });
+  });
+
+  return rows;
+}
+
+function applyCityPackUnifiedFilters() {
+  const idKeyword = (document.getElementById('city-pack-unified-filter-id')?.value || '').trim().toLowerCase();
+  const userKeyword = (document.getElementById('city-pack-unified-filter-user-id')?.value || '').trim().toLowerCase();
+  const cityKeyword = (document.getElementById('city-pack-unified-filter-city')?.value || '').trim().toLowerCase();
+  const status = (document.getElementById('city-pack-unified-filter-status')?.value || '').trim().toLowerCase();
+  const recordType = (document.getElementById('city-pack-unified-filter-type')?.value || '').trim().toLowerCase();
+  const createdFromMs = parseDateInputMs(document.getElementById('city-pack-unified-filter-date-from')?.value || '', false);
+  const createdToMs = parseDateInputMs(document.getElementById('city-pack-unified-filter-date-to')?.value || '', true);
+  const filtered = state.cityPackUnifiedItems.filter((item) => {
+    const itemId = String(item && item.itemId ? item.itemId : '').toLowerCase();
+    const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
+    const cityLabel = String(item && item.cityLabel ? item.cityLabel : '').toLowerCase();
+    const itemStatus = String(item && item.status ? item.status : '').toLowerCase();
+    const itemType = String(item && item.recordType ? item.recordType : '').toLowerCase();
+    if (idKeyword && !itemId.includes(idKeyword)) return false;
+    if (userKeyword && !lineUserId.includes(userKeyword)) return false;
+    if (cityKeyword && !cityLabel.includes(cityKeyword)) return false;
+    if (status && itemStatus !== status) return false;
+    if (recordType && itemType !== recordType) return false;
+    const createdAtMs = toSortMillis(item && item.createdAt);
+    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+    return true;
+  });
+  state.cityPackUnifiedFilteredItems = sortCityPackUnifiedItems(filtered);
+}
+
+function createUnifiedActionButton(label, handler) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    handler();
+  });
+  return button;
+}
+
+function renderCityPackUnifiedActionCell(item) {
+  const td = document.createElement('td');
+  td.className = 'unified-action-cell';
+  const group = document.createElement('div');
+  group.className = 'unified-action-group';
+  const type = item && item.recordType ? String(item.recordType) : '';
+  const row = item && item.raw ? item.raw : null;
+  if (type === 'request' && row) {
+    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackRequestAction('approve', row); }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackRequestAction('reject', row); }));
+    group.appendChild(createUnifiedActionButton('Changes', () => { void runCityPackRequestAction('request-changes', row); }));
+    group.appendChild(createUnifiedActionButton('Retry', () => { void runCityPackRequestAction('retry-job', row); }));
+    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackRequestAction('activate', row); }));
+  } else if (type === 'feedback' && row) {
+    group.appendChild(createUnifiedActionButton('Triage', () => { void runCityPackFeedbackAction('triage', row); }));
+    group.appendChild(createUnifiedActionButton('Resolve', () => { void runCityPackFeedbackAction('resolve', row); }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackFeedbackAction('reject', row); }));
+    group.appendChild(createUnifiedActionButton('Propose', () => { void runCityPackFeedbackAction('propose', row); }));
+  } else if (type === 'bulletin' && row) {
+    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackBulletinAction('approve', row); }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackBulletinAction('reject', row); }));
+    group.appendChild(createUnifiedActionButton('Send', () => { void runCityPackBulletinAction('send', row); }));
+  } else if (type === 'proposal' && row) {
+    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackProposalAction('approve', row); }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackProposalAction('reject', row); }));
+    group.appendChild(createUnifiedActionButton('Apply', () => { void runCityPackProposalAction('apply', row); }));
+  } else if (type === 'review' && row) {
+    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
+    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
+    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackSourceAction('replace', row); }));
+    group.appendChild(createUnifiedActionButton('Manual', () => { void runCityPackSourceAction('manual-only', row); }));
+  } else if (type === 'template' && row) {
+    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackTemplateLibraryAction('activate', row); }));
+    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackTemplateLibraryAction('retire', row); }));
+  }
+  td.appendChild(group);
+  return td;
+}
+
+function renderCityPackUnifiedRows() {
+  const tbody = document.getElementById('city-pack-unified-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  applyCityPackUnifiedFilters();
+  const items = state.cityPackUnifiedFilteredItems;
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 10;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      formatTimestampForList(item.createdAt),
+      item.itemId || '-',
+      item.lineUserId || '-',
+      item.cityLabel || '-',
+      cityPackRecordTypeLabel(item.recordType),
+      item.status || '-',
+      item.assignee || '-',
+      formatTimestampForList(item.updatedAt),
+      item.kpiText || '-'
+    ];
+    cols.forEach((value, idx) => {
+      const td = document.createElement('td');
+      if (idx === 8) td.classList.add('cell-num');
+      td.textContent = String(value);
+      tr.appendChild(td);
+    });
+    tr.appendChild(renderCityPackUnifiedActionCell(item));
+    tbody.appendChild(tr);
+  });
+}
+
+function refreshCityPackUnifiedRows() {
+  state.cityPackUnifiedItems = buildCityPackUnifiedItems();
+  renderCityPackUnifiedRows();
+}
+
+function resolveVendorRelatedCount(row) {
+  const numericKeys = ['relatedCount', 'usageCount', 'referenceCount', 'usedByCount'];
+  for (const key of numericKeys) {
+    const numeric = Number(row && row[key]);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  const listKeys = ['usedByNotificationIds', 'usedBy', 'notificationIds', 'references'];
+  for (const key of listKeys) {
+    if (Array.isArray(row && row[key])) return row[key].length;
+  }
+  return 0;
+}
+
+function resolveVendorSortValue(item, key) {
+  if (key === 'status') return item && item.status;
+  if (key === 'createdAt') return item && item.createdAt;
+  if (key === 'updatedAt') return item && item.updatedAt;
+  return item ? item[key] : null;
+}
+
+function sortVendorItems(items) {
+  const list = Array.isArray(items) ? items.slice() : [];
+  const key = state.vendorSortKey || 'createdAt';
+  const valueType = VENDOR_UNIFIED_SORT_TYPES[key] || 'string';
+  const direction = state.vendorSortDir === 'asc' ? 'asc' : 'desc';
+  return list.sort((a, b) => {
+    const compared = compareSortValue(
+      resolveVendorSortValue(a, key),
+      resolveVendorSortValue(b, key),
+      valueType,
+      direction
+    );
+    if (compared !== 0) return compared;
+    return compareSortValue(a && a.linkId, b && b.linkId, 'string', 'asc');
+  });
+}
+
+function applyVendorUnifiedFilters() {
+  const idKeyword = (document.getElementById('vendor-unified-filter-id')?.value || '').trim().toLowerCase();
+  const nameKeyword = (document.getElementById('vendor-unified-filter-name')?.value || '').trim().toLowerCase();
+  const status = (document.getElementById('vendor-unified-filter-status')?.value || '').trim().toUpperCase();
+  const categoryKeyword = (document.getElementById('vendor-unified-filter-category')?.value || '').trim().toLowerCase();
+  const createdFromMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-from')?.value || '', false);
+  const createdToMs = parseDateInputMs(document.getElementById('vendor-unified-filter-date-to')?.value || '', true);
+  const filtered = state.vendorItems.filter((item) => {
+    const linkId = String(item && item.linkId ? item.linkId : '').toLowerCase();
+    const vendorLabel = String(item && item.vendorLabel ? item.vendorLabel : '').toLowerCase();
+    const category = String(item && item.category ? item.category : '').toLowerCase();
+    const rowStatus = String(item && item.status ? item.status : '').toUpperCase();
+    if (idKeyword && !linkId.includes(idKeyword)) return false;
+    if (nameKeyword && !vendorLabel.includes(nameKeyword)) return false;
+    if (status && rowStatus !== status) return false;
+    if (categoryKeyword && !category.includes(categoryKeyword)) return false;
+    const createdAtMs = toSortMillis(item && item.createdAt);
+    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+    return true;
+  });
+  state.vendorUnifiedFilteredItems = sortVendorItems(filtered);
+}
+
+function runVendorActionForRow(action, row) {
+  if (!row || !row.linkId) return;
+  state.selectedVendorLinkId = row.linkId;
+  void runVendorAction(action);
+}
+
+function renderVendorUnifiedActionCell(item) {
+  const td = document.createElement('td');
+  td.className = 'unified-action-cell';
+  const group = document.createElement('div');
+  group.className = 'unified-action-group';
+  group.appendChild(createUnifiedActionButton('Edit', () => runVendorActionForRow('edit', item)));
+  group.appendChild(createUnifiedActionButton('Activate', () => runVendorActionForRow('activate', item)));
+  group.appendChild(createUnifiedActionButton('Disable', () => runVendorActionForRow('disable', item)));
+  td.appendChild(group);
+  return td;
+}
+
+function renderVendorUnifiedRows() {
+  const tbody = document.getElementById('vendor-unified-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  applyVendorUnifiedFilters();
+  const items = state.vendorUnifiedFilteredItems;
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      formatTimestampForList(item.createdAt),
+      item.linkId || '-',
+      item.vendorLabel || '-',
+      item.category || '-',
+      statusLabel(item.status === 'DEAD' ? 'DANGER' : item.status),
+      formatTimestampForList(item.updatedAt),
+      Number.isFinite(Number(item.relatedCount)) ? String(Number(item.relatedCount)) : '-'
+    ];
+    cols.forEach((value, idx) => {
+      const td = document.createElement('td');
+      if (idx === 6) td.classList.add('cell-num');
+      td.textContent = String(value);
+      tr.appendChild(td);
+    });
+    tr.appendChild(renderVendorUnifiedActionCell(item));
+    tr.addEventListener('click', () => {
+      state.selectedVendorLinkId = item.linkId || null;
+    });
+    tbody.appendChild(tr);
+  });
+}
+
 function renderComposerScenarioCompare(items) {
   const tbody = document.getElementById('composer-compare-rows');
   if (!tbody) return;
@@ -1746,12 +2396,21 @@ function normalizeVendorRow(item) {
   const row = item && typeof item === 'object' ? item : {};
   const fallbackHost = resolveHost(row.url);
   const healthState = row.healthState || (row.lastHealth && row.lastHealth.state) || 'UNKNOWN';
+  const createdAt = row.createdAt || row.insertedAt || row.firstSeenAt || row.updatedAt || (row.lastHealth && row.lastHealth.checkedAt) || null;
+  const updatedAt = row.updatedAt || (row.lastHealth && row.lastHealth.checkedAt) || row.checkedAt || row.createdAt || null;
+  const category = row.vendorCategory || row.category || row.vendorKey || fallbackHost || '-';
+  const relatedCount = resolveVendorRelatedCount(row);
   return {
     linkId: row.id || row.linkId || '-',
     vendorLabel: row.vendorLabel || fallbackHost || row.vendorKey || '-',
     vendorKey: row.vendorKey || fallbackHost || '-',
+    category,
+    status: healthState,
     healthState,
     checkedAt: row.checkedAt || (row.lastHealth && row.lastHealth.checkedAt) || row.updatedAt || null,
+    createdAt,
+    updatedAt,
+    relatedCount,
     url: row.url || null,
     raw: row
   };
@@ -3051,6 +3710,119 @@ async function loadReadModelData(options) {
   }
 }
 
+function normalizeUsersSummaryLimit(value, fallbackValue, maxValue) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallbackValue;
+  return Math.min(Math.floor(parsed), maxValue);
+}
+
+function mapUsersSummaryItem(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const scenarioKey = typeof row.scenarioKey === 'string' ? row.scenarioKey : '';
+  const stepKey = typeof row.stepKey === 'string' ? row.stepKey : '';
+  const deliveryCount = Number(row.deliveryCount);
+  const clickCount = Number(row.clickCount);
+  const mapped = {
+    lineUserId: typeof row.lineUserId === 'string' ? row.lineUserId : '',
+    createdAt: row.createdAt || null,
+    memberNumber: typeof row.memberNumber === 'string' ? row.memberNumber : '',
+    scenarioKey,
+    stepKey,
+    category: normalizeUserCategory(scenarioKey),
+    categoryLabel: userCategoryLabel(scenarioKey),
+    statusLabel: resolveUserStatus(stepKey),
+    deliveryCount: Number.isFinite(deliveryCount) ? deliveryCount : 0,
+    clickCount: Number.isFinite(clickCount) ? clickCount : 0,
+    reactionRate: resolveUserReactionRate(row)
+  };
+  return mapped;
+}
+
+function applyUsersSummaryFilters() {
+  const userIdKeyword = (document.getElementById('users-filter-line-user-id')?.value || '').trim().toLowerCase();
+  const createdFromMs = parseDateInputMs(document.getElementById('users-filter-created-from')?.value || '', false);
+  const createdToMs = parseDateInputMs(document.getElementById('users-filter-created-to')?.value || '', true);
+  const category = (document.getElementById('users-filter-category')?.value || '').trim().toUpperCase();
+  const status = (document.getElementById('users-filter-status')?.value || '').trim();
+  const filtered = state.usersSummaryItems.filter((item) => {
+    const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
+    if (userIdKeyword && !lineUserId.includes(userIdKeyword)) return false;
+    const createdAtMs = toSortMillis(item && item.createdAt);
+    if (createdFromMs && (!createdAtMs || createdAtMs < createdFromMs)) return false;
+    if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
+    if (category && String(item && item.category ? item.category : '') !== category) return false;
+    if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
+    return true;
+  });
+  state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
+}
+
+function renderUsersSummaryRows() {
+  const tbody = document.getElementById('users-summary-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  applyUsersSummaryFilters();
+  const items = state.usersSummaryFilteredItems;
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  items.forEach((item) => {
+    const tr = document.createElement('tr');
+    const cols = [
+      formatTimestampForList(item.createdAt),
+      item.lineUserId || '-',
+      item.memberNumber || '-',
+      item.categoryLabel || '-',
+      item.statusLabel || '-',
+      Number.isFinite(Number(item.deliveryCount)) ? String(item.deliveryCount) : '-',
+      Number.isFinite(Number(item.clickCount)) ? String(item.clickCount) : '-',
+      formatUserReactionRate(item)
+    ];
+    cols.forEach((value, idx) => {
+      const td = document.createElement('td');
+      if (idx === 5 || idx === 6 || idx === 7) td.classList.add('cell-num');
+      td.textContent = String(value);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+async function loadUsersSummary(options) {
+  const notify = Boolean(options && options.notify);
+  const limit = normalizeUsersSummaryLimit(document.getElementById('users-filter-limit')?.value, 200, 500);
+  const analyticsLimit = normalizeUsersSummaryLimit(document.getElementById('users-filter-analytics-limit')?.value, 1200, 2000);
+  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+  const query = new URLSearchParams({
+    limit: String(limit),
+    analyticsLimit: String(analyticsLimit),
+    fallbackMode: 'block',
+    fallbackOnEmpty: 'false'
+  });
+  try {
+    const res = await fetch(`/api/phase5/ops/users-summary?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    const items = Array.isArray(data.items) ? data.items : [];
+    state.usersSummaryItems = items.map((item) => mapUsersSummaryItem(item));
+    renderUsersSummaryRows();
+    setPaneUpdatedAt('read-model');
+    renderAllDecisionCards();
+    if (notify) showToast('ユーザー一覧を更新しました', 'ok');
+  } catch (_err) {
+    state.usersSummaryItems = [];
+    state.usersSummaryFilteredItems = [];
+    renderUsersSummaryRows();
+    if (notify) showToast('ユーザー一覧の取得に失敗しました', 'danger');
+  }
+}
+
 async function loadErrors(options) {
   const notify = options && options.notify;
   const traceId = ensureTraceInput('errors-trace');
@@ -3143,7 +3915,9 @@ async function loadMonitorInsights(options) {
 async function loadVendors(options) {
   const notify = options && options.notify;
   const traceId = ensureTraceInput('vendor-trace') || ensureTraceInput('monitor-trace');
-  const stateFilter = document.getElementById('vendor-state')?.value?.trim() || '';
+  const stateFilter = document.getElementById('vendor-unified-filter-status')?.value?.trim()
+    || document.getElementById('vendor-state')?.value?.trim()
+    || '';
   const limit = document.getElementById('vendor-limit')?.value || '50';
   const params = new URLSearchParams({ limit });
   if (stateFilter) params.set('state', stateFilter);
@@ -3155,12 +3929,14 @@ async function loadVendors(options) {
     const items = Array.isArray(data && data.items) ? data.items.map(normalizeVendorRow) : [];
     state.vendorItems = items;
     renderVendorRows(items);
+    renderVendorUnifiedRows();
     setPaneUpdatedAt('vendors');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.vendors.loaded', 'Vendor一覧を更新しました'), 'ok');
   } catch (_err) {
     state.vendorItems = [];
     renderVendorRows([]);
+    renderVendorUnifiedRows();
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.vendors.loadFail', 'Vendor一覧の取得に失敗しました'), 'danger');
   } finally {
@@ -3232,10 +4008,13 @@ async function loadCityPackRequests(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackRequestItems = items;
     renderCityPackRequestRows(items);
+    refreshCityPackUnifiedRows();
     setPaneUpdatedAt('city-pack');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.requestLoaded', 'Request一覧を取得しました'), 'ok');
   } catch (_err) {
+    state.cityPackRequestItems = [];
+    refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.requestLoadFail', 'Request一覧の取得に失敗しました'), 'danger');
     renderCityPackRequestRows([]);
   }
@@ -3260,12 +4039,19 @@ async function loadCityPackFeedback(options) {
       const items = Array.isArray(data.items) ? data.items : [];
       state.cityPackFeedbackItems = items;
       renderCityPackFeedbackRows(items);
+      refreshCityPackUnifiedRows();
       if (!state.selectedCityPackFeedbackId) renderCityPackFeedbackDetail(null);
       if (notify) showToast(t('ui.toast.cityPack.feedbackLoaded', 'Feedback一覧を取得しました'), 'ok');
-    } else if (notify) {
-      showToast(t('ui.toast.cityPack.feedbackLoadFail', 'Feedback一覧の取得に失敗しました'), 'danger');
+    } else {
+      state.cityPackFeedbackItems = [];
+      refreshCityPackUnifiedRows();
+      renderCityPackFeedbackRows([]);
+      if (notify) showToast(t('ui.toast.cityPack.feedbackLoadFail', 'Feedback一覧の取得に失敗しました'), 'danger');
     }
   } catch (_err) {
+    state.cityPackFeedbackItems = [];
+    refreshCityPackUnifiedRows();
+    renderCityPackFeedbackRows([]);
     if (notify) showToast(t('ui.toast.cityPack.feedbackLoadFail', 'Feedback一覧の取得に失敗しました'), 'danger');
   }
 }
@@ -3283,9 +4069,12 @@ async function loadCityPackBulletins(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackBulletinItems = items;
     renderCityPackBulletinRows(items);
+    refreshCityPackUnifiedRows();
     if (!state.selectedCityPackBulletinId) renderCityPackBulletinDetail(null);
     if (notify) showToast(t('ui.toast.cityPack.bulletinLoaded', 'Bulletin一覧を取得しました'), 'ok');
   } catch (_err) {
+    state.cityPackBulletinItems = [];
+    refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.bulletinLoadFail', 'Bulletin一覧の取得に失敗しました'), 'danger');
     renderCityPackBulletinRows([]);
   }
@@ -3304,9 +4093,12 @@ async function loadCityPackProposals(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackProposalItems = items;
     renderCityPackProposalRows(items);
+    refreshCityPackUnifiedRows();
     if (!state.selectedCityPackProposalId) renderCityPackProposalDetail(null);
     if (notify) showToast(t('ui.toast.cityPack.proposalLoaded', 'Proposal一覧を取得しました'), 'ok');
   } catch (_err) {
+    state.cityPackProposalItems = [];
+    refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.proposalLoadFail', 'Proposal一覧の取得に失敗しました'), 'danger');
     renderCityPackProposalRows([]);
   }
@@ -3325,12 +4117,18 @@ async function loadCityPackTemplateLibrary(options) {
       const items = Array.isArray(data.items) ? data.items : [];
       state.cityPackTemplateLibraryItems = items;
       renderCityPackTemplateLibraryRows(items);
+      refreshCityPackUnifiedRows();
       if (!state.selectedCityPackTemplateLibraryId) renderCityPackTemplateLibraryDetail(null);
       if (notify) showToast(t('ui.toast.cityPack.templateLibraryLoaded', 'Template一覧を取得しました'), 'ok');
-    } else if (notify) {
-      showToast(t('ui.toast.cityPack.templateLibraryLoadFail', 'Template一覧の取得に失敗しました'), 'danger');
+    } else {
+      state.cityPackTemplateLibraryItems = [];
+      refreshCityPackUnifiedRows();
+      renderCityPackTemplateLibraryRows([]);
+      if (notify) showToast(t('ui.toast.cityPack.templateLibraryLoadFail', 'Template一覧の取得に失敗しました'), 'danger');
     }
   } catch (_err) {
+    state.cityPackTemplateLibraryItems = [];
+    refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.templateLibraryLoadFail', 'Template一覧の取得に失敗しました'), 'danger');
     renderCityPackTemplateLibraryRows([]);
   }
@@ -3372,10 +4170,13 @@ async function loadCityPackReviewInbox(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackInboxItems = items;
     renderCityPackInboxRows(items);
+    refreshCityPackUnifiedRows();
     setPaneUpdatedAt('city-pack');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoaded', 'Review Inboxを取得しました'), 'ok');
   } catch (_err) {
+    state.cityPackInboxItems = [];
+    refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'), 'danger');
     renderCityPackInboxRows([]);
   }
@@ -4900,7 +5701,7 @@ function applyComposerSavedFilters() {
   const category = (document.getElementById('composer-saved-category')?.value || '').trim().toUpperCase();
   const scenarioKey = (document.getElementById('composer-saved-scenario')?.value || '').trim().toUpperCase();
   const stepKey = (document.getElementById('composer-saved-step')?.value || '').trim().toLowerCase();
-  state.composerSavedFilteredItems = state.composerSavedItems.filter((item) => {
+  const filtered = state.composerSavedItems.filter((item) => {
     const searchable = [item.title, item.body, item.ctaText].map((value) => String(value || '').toLowerCase()).join('\n');
     if (keyword && !searchable.includes(keyword)) return false;
     if (status && normalizeComposerSavedStatus(item.status) !== status) return false;
@@ -4910,6 +5711,90 @@ function applyComposerSavedFilters() {
     if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
     return true;
   });
+  state.composerSavedFilteredItems = sortComposerSavedItems(filtered);
+}
+
+function extractComposerLinkDomain(urlValue) {
+  const raw = typeof urlValue === 'string' ? urlValue.trim() : '';
+  if (!raw) return '-';
+  try {
+    const parsed = new URL(raw);
+    return parsed.hostname || '-';
+  } catch (_err) {
+    return '-';
+  }
+}
+
+function formatComposerLinkOption(item) {
+  const title = item && typeof (item.title || item.label) === 'string'
+    ? String(item.title || item.label).trim() || '-'
+    : '-';
+  const domain = extractComposerLinkDomain(item && item.url);
+  const id = item && typeof item.id === 'string' ? item.id : '-';
+  return `${title} / ${domain} / ${id}`;
+}
+
+function setComposerLinkRegistryOptions(items, selectedId) {
+  const select = document.getElementById('linkRegistryId');
+  if (!select) return;
+  const previous = typeof selectedId === 'string' ? selectedId : (select.value || '');
+  select.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Link Registryから選択';
+  select.appendChild(placeholder);
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const id = item && typeof item.id === 'string' ? item.id : '';
+    if (!id) return;
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = formatComposerLinkOption(item);
+    select.appendChild(option);
+  });
+  if (previous) select.value = previous;
+  if (select.value !== previous) select.value = '';
+}
+
+async function ensureComposerLinkRegistryOption(linkRegistryId) {
+  const id = typeof linkRegistryId === 'string' ? linkRegistryId.trim() : '';
+  if (!id) return;
+  const select = document.getElementById('linkRegistryId');
+  if (select && select.querySelector(`option[value="${id.replace(/"/g, '\\"')}"]`)) return;
+  const traceId = ensureTraceInput('traceId');
+  try {
+    const res = await fetch(`/api/admin/os/link-registry/${encodeURIComponent(id)}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || !data.ok || !data.item || !data.item.id) return;
+    const current = Array.isArray(state.composerLinkOptions) ? state.composerLinkOptions.slice() : [];
+    if (!current.some((item) => item && item.id === data.item.id)) current.push(data.item);
+    state.composerLinkOptions = current;
+    setComposerLinkRegistryOptions(current, id);
+    const select = document.getElementById('linkRegistryId');
+    if (select) select.value = id;
+    updateComposerSummary();
+    void loadComposerLinkPreview();
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+async function loadComposerLinkRegistryOptions(options) {
+  const notify = Boolean(options && options.notify);
+  const selectedId = options && typeof options.selectedId === 'string' ? options.selectedId : '';
+  const traceId = ensureTraceInput('traceId');
+  try {
+    const query = new URLSearchParams({ limit: '200' });
+    const res = await fetch(`/admin/link-registry?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || !data.ok) throw new Error((data && data.error) || 'failed');
+    const items = Array.isArray(data.items) ? data.items : [];
+    state.composerLinkOptions = items.filter((item) => item && typeof item.id === 'string' && item.id.trim());
+    setComposerLinkRegistryOptions(state.composerLinkOptions, selectedId);
+    if (notify) showToast('Link Registry一覧を更新しました', 'ok');
+  } catch (_err) {
+    setComposerLinkRegistryOptions([], selectedId);
+    if (notify) showToast('Link Registry一覧の取得に失敗しました', 'warn');
+  }
 }
 
 function loadComposerFormFromRow(row, duplicateMode) {
@@ -4918,7 +5803,11 @@ function loadComposerFormFromRow(row, duplicateMode) {
   document.getElementById('body').value = row.body || '';
   document.getElementById('ctaText').value = row.ctaText || '';
   document.getElementById('ctaText2').value = '';
-  document.getElementById('linkRegistryId').value = row.linkRegistryId || '';
+  const selectedLinkRegistryId = row.linkRegistryId || '';
+  document.getElementById('linkRegistryId').value = selectedLinkRegistryId;
+  if (selectedLinkRegistryId) {
+    void ensureComposerLinkRegistryOption(selectedLinkRegistryId);
+  }
   document.getElementById('notificationCategory').value = row.notificationCategory || 'SEQUENCE_GUIDANCE';
   document.getElementById('notificationType').value = normalizeComposerType(row.notificationType || 'STEP');
   document.getElementById('scenarioKey').value = row.scenarioKey || 'A';
@@ -4970,7 +5859,7 @@ function renderComposerSavedRows() {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 6;
+    td.colSpan = 9;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -4979,17 +5868,22 @@ function renderComposerSavedRows() {
   items.forEach((item) => {
     const tr = document.createElement('tr');
     if (state.composerSelectedNotificationId && state.composerSelectedNotificationId === item.id) tr.classList.add('row-active');
-    const targetCount = item && item.target && Number.isFinite(Number(item.target.limit)) ? Number(item.target.limit) : null;
+    const targetCount = resolveComposerSavedTargetCount(item);
+    const ctr = resolveComposerSavedCtr(item);
     const cells = [
       formatTimestampForList(item.createdAt),
       item.title || '-',
       composerStatusLabel(item.status),
+      composerCategoryLabel(item.notificationCategory),
+      scenarioLabel(item.scenarioKey),
+      stepLabel(item.stepKey),
       targetCount === null ? '-' : String(targetCount),
-      t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE')
+      formatRatioPercent(ctr)
     ];
     cells.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx >= 2) td.classList.add('cell-muted');
+      if (idx === 2 || idx === 3 || idx === 4 || idx === 5) td.classList.add('cell-muted');
+      if (idx === 6 || idx === 7) td.classList.add('cell-num');
       td.textContent = String(value);
       tr.appendChild(td);
     });
@@ -5264,7 +6158,6 @@ function setupComposerActions() {
     }
   });
 
-  let linkLookupTimer = null;
   ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'notificationType', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -5276,12 +6169,9 @@ function setupComposerActions() {
   });
   const linkRegistryInput = document.getElementById('linkRegistryId');
   if (linkRegistryInput) {
-    linkRegistryInput.addEventListener('input', () => {
+    linkRegistryInput.addEventListener('change', () => {
       updateComposerSummary();
-      if (linkLookupTimer) clearTimeout(linkLookupTimer);
-      linkLookupTimer = setTimeout(() => {
-        void loadComposerLinkPreview();
-      }, 220);
+      void loadComposerLinkPreview();
     });
   }
   const membersOnly = document.getElementById('membersOnly');
@@ -5295,9 +6185,23 @@ function setupComposerActions() {
       renderComposerSavedRows();
     });
   });
+  document.querySelectorAll('[data-composer-sort-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sortKey = btn.getAttribute('data-composer-sort-key');
+      if (!sortKey) return;
+      state.composerSavedSortDir = toggleSortDirection(
+        state.composerSavedSortKey,
+        sortKey,
+        state.composerSavedSortDir
+      );
+      state.composerSavedSortKey = sortKey;
+      renderComposerSavedRows();
+    });
+  });
 
   applyComposerTypeFields();
   updateComposerSummary();
+  void loadComposerLinkRegistryOptions({ notify: false });
   void loadComposerSavedNotifications({ notify: false });
   void loadComposerLinkPreview();
   void loadComposerSafetyContext();
@@ -5373,9 +6277,76 @@ function setupReadModelControls() {
     loadReadModelData({ notify: true });
   });
   if (document.getElementById('read-model-trace')) document.getElementById('read-model-trace').value = newTraceId();
+
+  document.getElementById('users-summary-reload')?.addEventListener('click', () => {
+    void loadUsersSummary({ notify: true });
+  });
+  ['users-filter-line-user-id', 'users-filter-created-from', 'users-filter-created-to', 'users-filter-category', 'users-filter-status'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(eventName, () => {
+      renderUsersSummaryRows();
+    });
+  });
+  ['users-filter-limit', 'users-filter-analytics-limit'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+      void loadUsersSummary({ notify: false });
+    });
+  });
+  document.querySelectorAll('[data-users-sort-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sortKey = btn.getAttribute('data-users-sort-key');
+      if (!sortKey) return;
+      state.usersSummarySortDir = toggleSortDirection(
+        state.usersSummarySortKey,
+        sortKey,
+        state.usersSummarySortDir
+      );
+      state.usersSummarySortKey = sortKey;
+      renderUsersSummaryRows();
+    });
+  });
 }
 
 function setupCityPackControls() {
+  document.getElementById('city-pack-unified-reload')?.addEventListener('click', () => {
+    void loadCityPackRequests({ notify: false });
+    void loadCityPackFeedback({ notify: false });
+    void loadCityPackBulletins({ notify: false });
+    void loadCityPackProposals({ notify: false });
+    void loadCityPackTemplateLibrary({ notify: false });
+    void loadCityPackReviewInbox({ notify: true });
+  });
+  ['city-pack-unified-filter-id', 'city-pack-unified-filter-user-id', 'city-pack-unified-filter-city', 'city-pack-unified-filter-date-from', 'city-pack-unified-filter-date-to'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      renderCityPackUnifiedRows();
+    });
+  });
+  ['city-pack-unified-filter-status', 'city-pack-unified-filter-type'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+      renderCityPackUnifiedRows();
+    });
+  });
+  document.querySelectorAll('[data-city-pack-sort-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sortKey = btn.getAttribute('data-city-pack-sort-key');
+      if (!sortKey) return;
+      state.cityPackUnifiedSortDir = toggleSortDirection(
+        state.cityPackUnifiedSortKey,
+        sortKey,
+        state.cityPackUnifiedSortDir
+      );
+      state.cityPackUnifiedSortKey = sortKey;
+      renderCityPackUnifiedRows();
+    });
+  });
   document.getElementById('city-pack-request-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: true });
   });
@@ -5513,6 +6484,33 @@ function setupCityPackControls() {
 
 function setupVendorControls() {
   if (document.getElementById('vendor-trace')) document.getElementById('vendor-trace').value = newTraceId();
+  document.getElementById('vendor-unified-reload')?.addEventListener('click', () => {
+    void loadVendors({ notify: true });
+  });
+  ['vendor-unified-filter-id', 'vendor-unified-filter-name', 'vendor-unified-filter-category', 'vendor-unified-filter-date-from', 'vendor-unified-filter-date-to'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      renderVendorUnifiedRows();
+    });
+  });
+  document.getElementById('vendor-unified-filter-status')?.addEventListener('change', () => {
+    renderVendorUnifiedRows();
+    void loadVendors({ notify: false });
+  });
+  document.querySelectorAll('[data-vendor-sort-key]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sortKey = btn.getAttribute('data-vendor-sort-key');
+      if (!sortKey) return;
+      state.vendorSortDir = toggleSortDirection(
+        state.vendorSortKey,
+        sortKey,
+        state.vendorSortDir
+      );
+      state.vendorSortKey = sortKey;
+      renderVendorUnifiedRows();
+    });
+  });
   document.getElementById('vendor-regen')?.addEventListener('click', () => {
     const el = document.getElementById('vendor-trace');
     if (el) el.value = newTraceId();
@@ -6001,6 +6999,7 @@ function setupLlmControls() {
   loadMonitorData({ notify: false });
   loadMonitorInsights({ notify: false });
   loadReadModelData({ notify: false });
+  loadUsersSummary({ notify: false });
   loadErrors({ notify: false });
   loadVendors({ notify: false });
   loadCityPackRequests({ notify: false });
