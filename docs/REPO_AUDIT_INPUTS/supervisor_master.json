@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T11:51:09-05:00",
-  "gitCommit": "438035f55ed5bb1ead89f984b9ce7fd83e475d28",
-  "branch": "HEAD",
-  "sourceDigest": "24d2c2eda6459d792e1e06dcf0ed08ea3fd95cc9b54b7b53897d4ad104255a84",
+  "generatedAt": "2026-02-23T16:44:44-05:00",
+  "gitCommit": "01cf4baaa805e7f194dd5cae86a2b5b0dc249097",
+  "branch": "codex/pr627-remotefix",
+  "sourceDigest": "dd12a174ee9f103679626dc13d8bd04d146f15006ecfc71e98e6250e680d06a7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
