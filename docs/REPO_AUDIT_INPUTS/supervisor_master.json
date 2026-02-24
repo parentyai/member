@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T11:01:42-05:00",
-  "gitCommit": "8d6aa5bf7c4bf83707b1ac327318d35be0f336ae",
-  "branch": "codex/webhook-stripe-secret-failsafe",
-  "sourceDigest": "5fc33067a20384c36b639fab036362fc3ac77ecc3f9d92cb5872c1db7e2c93c4",
+  "generatedAt": "2026-02-24T14:28:21-05:00",
+  "gitCommit": "2136f3637142410a3d69555a53794a8cd3645125",
+  "branch": "codex/journey-personalization-v1",
+  "sourceDigest": "ef3121063cf07bc2a936d3521cf069b33dbdf2bf49be0d713599548b5125b9f8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

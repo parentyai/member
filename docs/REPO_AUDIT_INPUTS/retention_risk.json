@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T15:29:41.970Z",
+  "generatedAt": "2026-02-24T19:30:39.087Z",
   "source": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
-  "sourceDigest": "c7e414ae1c1cce14c2f89fd6be63a727edec46b46924f16b98b5154e1c5e7a9e",
-  "collection_count": 51,
+  "sourceDigest": "be508fa02b73e4502da330793cdcc40273c14d83a8108bb427679ba4be29fab3",
+  "collection_count": 59,
   "undefined_retention_count": 0,
   "undefined_deletable_conditional_count": 0,
   "undefined_recomputable_count": 0,
