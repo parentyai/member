@@ -472,8 +472,56 @@ function setTraceToUrl(url, traceId) {
       && text.includes('.decision-details > summary');
   }
 
+  const DEFAULT_NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
+    operator: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
+    admin: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
+    developer: Object.freeze(['dashboard', 'notifications', 'users', 'catalog', 'developer'])
+  });
+
+  function normalizeRole(role) {
+    const value = typeof role === 'string' ? role.trim() : '';
+    if (value === 'admin' || value === 'developer') return value;
+    return 'operator';
+  }
+
+  function normalizeStringList(values) {
+    const list = Array.isArray(values) ? values : [];
+    const normalized = [];
+    list.forEach((item) => {
+      const next = typeof item === 'string' ? item.trim() : '';
+      if (!next) return;
+      if (!normalized.includes(next)) normalized.push(next);
+    });
+    return normalized;
+  }
+
+  function resolveVisibleGroupKeys(role, policy) {
+    const normalizedRole = normalizeRole(role);
+    const source = policy && typeof policy === 'object'
+      ? policy
+      : DEFAULT_NAV_GROUP_VISIBILITY_POLICY;
+    return normalizeStringList(source[normalizedRole]);
+  }
+
+  function isGroupVisible(role, groupKey, policy) {
+    const key = typeof groupKey === 'string' ? groupKey.trim() : '';
+    if (!key) return false;
+    return resolveVisibleGroupKeys(role, policy).includes(key);
+  }
+
+  function resolveAllowedPane(role, pane, panePolicy, fallback) {
+    const normalizedRole = normalizeRole(role);
+    const nextPane = typeof pane === 'string' ? pane.trim() : '';
+    const fallbackPane = typeof fallback === 'string' && fallback.trim() ? fallback.trim() : 'home';
+    const source = panePolicy && typeof panePolicy === 'object' ? panePolicy : {};
+    const allowed = normalizeStringList(source[normalizedRole]);
+    if (nextPane && allowed.includes(nextPane)) return nextPane;
+    if (allowed.includes(fallbackPane)) return fallbackPane;
+    return fallbackPane || 'home';
+  }
+
   function isRoleAllowed(role, allowList) {
-    const normalizedRole = typeof role === 'string' ? role : 'operator';
+    const normalizedRole = normalizeRole(role);
     const list = Array.isArray(allowList) ? allowList : [];
     if (!list.length) return true;
     return list.includes(normalizedRole);
@@ -532,6 +580,10 @@ function setTraceToUrl(url, traceId) {
       isNoFoldCssReady
     },
     navCore: {
+      normalizeRole,
+      resolveVisibleGroupKeys,
+      isGroupVisible,
+      resolveAllowedPane,
       isRoleAllowed
     }
   };

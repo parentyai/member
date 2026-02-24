@@ -10,10 +10,10 @@ test('phase636: role visibility keeps settings for all and developer nav for dev
 
   assert.ok(html.includes('id="nav-open-settings"'));
   assert.ok(!html.includes('id="nav-open-settings" data-role='));
-  assert.ok(html.includes('<div class="nav-group nav-group-developer" data-role="developer">'));
+  assert.ok(html.includes('class="nav-group nav-group-developer"'));
+  assert.ok(html.includes('data-role="developer"'));
 
   assert.ok(css.includes('.app-shell[data-role="operator"] [data-role="developer"],'));
   assert.ok(css.includes('.app-shell[data-role="admin"] [data-role="developer"]'));
   assert.ok(css.includes('display: none !important;'));
 });
-

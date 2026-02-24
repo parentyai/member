@@ -7,6 +7,25 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
+## /admin/app ナビ表示ポリシー（Phase637）
+左ナビの表示は Role に応じて固定される。運用変更で逸脱しないことを優先し、契約テストで維持する。
+
+| role | 左ナビ表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog` |
+| admin | `dashboard`, `notifications`, `users`, `catalog` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer` |
+
+補足:
+- `catalog` 配下に `settings` を主導線として置く（全Roleで表示）。
+- `communication` / `operations` は現状非表示（表示拡大は別改善）。
+- Topbar は Role スイッチ主体（開発メニュー再露出は回帰扱い）。
+
+運用確認（画面）:
+1) `/admin/app?pane=home` で role を operator / admin / developer に切替
+2) 上表どおりのグループ表示か確認
+3) 逸脱時は直近 UI PR を revert し、契約テスト失敗を確認して原因修正
+
 ## Daily Ops (ServicePhase1 / 運用OS v1)
 推奨順序（迷わないための一本道）。
 

@@ -24,6 +24,31 @@ UI表示（画面タイトル/見出し/画面名）は `docs/ADMIN_UI_DICTIONAR
 - 色意味は固定: 赤=要対応、黄=注意、緑=問題なし、灰=未設定/不明
 - パンくず: `ページ名 / 対象ID / 詳細`
 
+## /admin/app ナビ可視化ポリシー（Phase637）
+`/admin/app` の左ナビは、Roleごとに「表示グループ」を固定する。  
+このポリシーは UI 実装（`data-nav-group` / `data-nav-visible`）と契約テストで維持する。
+
+### グループ定義
+- `dashboard`
+- `notifications`
+- `users`
+- `catalog`（City Pack / Vendors / Settings）
+- `developer`
+- `communication`
+- `operations`
+
+### Role別可視化マトリクス
+| role | 表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog` |
+| admin | `dashboard`, `notifications`, `users`, `catalog` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer` |
+
+### 運用意図（固定）
+- `communication` と `operations` は現状非表示を維持する（導線拡大は別Phaseで扱う）。
+- `settings` は `catalog` 配下を主導線とする（全Roleで利用可能）。
+- Topbar は Role スイッチ主体を維持する（開発導線の再露出を避ける）。
+
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。
 本ドキュメントでは、ServicePhase を **管理UIで運用自走するための成熟度（運用OS）**として要求定義する。
