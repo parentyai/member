@@ -496,6 +496,21 @@ async function getUserOperationalSummary(params) {
       ? Math.round((llmBlockedToday / llmUsageToday) * 10000) / 10000
       : 0;
     const billingIntegrityState = resolveBillingIntegrityState(subscription, plan, subscriptionStatus);
+    const householdType = journeyProfile && journeyProfile.householdType
+      ? String(journeyProfile.householdType)
+      : null;
+    const journeyStage = journeySchedule && journeySchedule.stage
+      ? String(journeySchedule.stage)
+      : null;
+    const todoOpenCount = journeyStats && Number.isFinite(Number(journeyStats.openCount))
+      ? Number(journeyStats.openCount)
+      : 0;
+    const todoOverdueCount = journeyStats && Number.isFinite(Number(journeyStats.overdueCount))
+      ? Number(journeyStats.overdueCount)
+      : 0;
+    const nextTodoDueAt = journeyStats && journeyStats.nextDueAt
+      ? formatTimestamp(journeyStats.nextDueAt)
+      : null;
     return {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
@@ -526,7 +541,12 @@ async function getUserOperationalSummary(params) {
       llmBlockedCount,
       llmBlockedToday,
       llmBlockedRate,
-      billingIntegrityState
+      billingIntegrityState,
+      householdType,
+      journeyStage,
+      todoOpenCount,
+      todoOverdueCount,
+      nextTodoDueAt
     };
   });
   const computedAsOf = new Date().toISOString();

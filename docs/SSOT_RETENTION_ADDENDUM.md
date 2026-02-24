@@ -10,9 +10,9 @@
 | kind | count |
 | --- | --- |
 | aggregate | 10 |
-| config | 33 |
-| event | 4 |
-| evidence | 4 |
+| config | 34 |
+| event | 5 |
+| evidence | 5 |
 | transient | 2 |
 
 ## Collection方針

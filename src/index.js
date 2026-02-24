@@ -1270,6 +1270,36 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'POST' && pathname === '/internal/jobs/journey-todo-reminder') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleJourneyTodoReminderJob } = require('./routes/internal/journeyTodoReminderJob');
+      const body = await collectBody();
+      await handleJourneyTodoReminderJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (req.method === 'POST' && pathname === '/internal/jobs/user-context-snapshot-build') {
     let bytes = 0;
     const chunks = [];
@@ -1557,6 +1587,20 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/user-billing-detail') {
         await handleUserBillingDetail(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-policy/status') {
+        await handleJourneyPolicyStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-policy/plan') {
+        const body = await collectBody();
+        await handleJourneyPolicyPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-policy/set') {
+        const body = await collectBody();
+        await handleJourneyPolicySet(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/analyze') {

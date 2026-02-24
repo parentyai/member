@@ -42,6 +42,9 @@ function handleError(res, err) {
     message.includes('invalid fallbackOnEmpty') ||
     message.includes('invalid plan') ||
     message.includes('invalid subscriptionStatus') ||
+    message.includes('invalid householdType') ||
+    message.includes('invalid journeyStage') ||
+    message.includes('invalid todoState') ||
     message.includes('invalid billingIntegrity') ||
     message.includes('invalid quickFilter') ||
     message.includes('invalid sortKey') ||
@@ -167,7 +170,9 @@ function parseUsersSortKey(value) {
     'llmUsageToday',
     'tokensToday',
     'blockedRate',
-    'billingIntegrity'
+    'billingIntegrity',
+    'todoOpenCount',
+    'todoOverdueCount'
   ].includes(value)) {
     return value;
   }
@@ -248,6 +253,9 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
     const planRaw = url.searchParams.get('plan');
     const subscriptionStatusRaw = url.searchParams.get('subscriptionStatus');
+    const householdTypeRaw = url.searchParams.get('householdType');
+    const journeyStageRaw = url.searchParams.get('journeyStage');
+    const todoStateRaw = url.searchParams.get('todoState');
     const billingIntegrityRaw = url.searchParams.get('billingIntegrity');
     const quickFilterRaw = url.searchParams.get('quickFilter');
     const sortKeyRaw = url.searchParams.get('sortKey');
@@ -259,6 +267,9 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
     const plan = parsePlan(planRaw);
     const subscriptionStatus = parseSubscriptionStatus(subscriptionStatusRaw);
+    const householdType = parseHouseholdType(householdTypeRaw);
+    const journeyStage = parseJourneyStage(journeyStageRaw);
+    const todoState = parseTodoState(todoStateRaw);
     const billingIntegrity = parseBillingIntegrity(billingIntegrityRaw);
     const quickFilter = parseQuickFilter(quickFilterRaw);
     const sortKey = parseUsersSortKey(sortKeyRaw);
@@ -284,6 +295,15 @@ async function handleUsersSummaryFiltered(req, res) {
     if (subscriptionStatusRaw && !subscriptionStatus) {
       throw new Error('invalid subscriptionStatus');
     }
+    if (householdTypeRaw && !householdType) {
+      throw new Error('invalid householdType');
+    }
+    if (journeyStageRaw && !journeyStage) {
+      throw new Error('invalid journeyStage');
+    }
+    if (todoStateRaw && !todoState) {
+      throw new Error('invalid todoState');
+    }
     if (billingIntegrityRaw && !billingIntegrity) {
       throw new Error('invalid billingIntegrity');
     }
@@ -307,6 +327,9 @@ async function handleUsersSummaryFiltered(req, res) {
         reviewAgeDays,
         plan,
         subscriptionStatus,
+        householdType,
+        journeyStage,
+        todoState,
         billingIntegrity,
         quickFilter,
         sortKey,
@@ -349,6 +372,9 @@ async function handleUsersSummaryFiltered(req, res) {
       filters: {
         plan: plan || 'all',
         subscriptionStatus: subscriptionStatus || 'all',
+        householdType: householdType || 'all',
+        journeyStage: journeyStage || 'all',
+        todoState: todoState || 'all',
         billingIntegrity: billingIntegrity || 'all',
         quickFilter: quickFilter || 'all'
       },

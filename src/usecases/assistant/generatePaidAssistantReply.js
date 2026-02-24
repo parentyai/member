@@ -92,24 +92,28 @@ function normalizeNextActions(value, evidenceKeys) {
   return out.slice(0, MAX_NEXT_ACTIONS);
 }
 
-function formatSection(title, body, fallback) {
+function formatSection(title, body, fallback, aliasTitle) {
   const text = normalizeText(body) || fallback;
-  return `${title}\n${text}`;
+  if (!aliasTitle) return `${title}\n${text}`;
+  return `${title}\n${aliasTitle}\n${text}`;
 }
 
-function formatListSection(title, list, fallback) {
+function formatListSection(title, list, fallback, aliasTitle) {
   const rows = Array.isArray(list) ? list.filter((item) => normalizeText(item)) : [];
-  if (!rows.length) return `${title}\n- ${fallback}`;
-  return `${title}\n${rows.map((row) => `- ${normalizeText(row)}`).join('\n')}`;
+  const body = rows.length
+    ? rows.map((row) => `- ${normalizeText(row)}`).join('\n')
+    : `- ${fallback}`;
+  if (!aliasTitle) return `${title}\n${body}`;
+  return `${title}\n${aliasTitle}\n${body}`;
 }
 
 function formatPaidReply(output) {
   return [
-    formatSection('1) 要約（前提）', output.situation, '前提情報の整理が不足しています。'),
-    formatListSection('2) 抜け漏れ（最大5）', output.gaps.slice(0, MAX_GAPS), '現時点で大きな抜け漏れは確認できません。'),
-    formatListSection('3) リスク（最大3）', output.risks.slice(0, MAX_RISKS), '重大リスクは限定的です。'),
-    formatListSection('4) NextAction（最大3・根拠キー付）', output.nextActions.slice(0, MAX_NEXT_ACTIONS), 'まずはFAQ候補の再確認を行ってください。'),
-    `5) 参照（KB/CityPackキー）\n${output.evidenceKeys.length ? output.evidenceKeys.join(', ') : '-'}`
+    formatSection('1. 状況整理', output.situation, '前提情報の整理が不足しています。', '1) 要約（前提）'),
+    formatListSection('2. 抜け漏れ', output.gaps.slice(0, MAX_GAPS), '現時点で大きな抜け漏れは確認できません。', '2) 抜け漏れ（最大5）'),
+    formatListSection('3. リスク', output.risks.slice(0, MAX_RISKS), '重大リスクは限定的です。', '3) リスク（最大3）'),
+    formatListSection('4. NextAction(最大3)', output.nextActions.slice(0, MAX_NEXT_ACTIONS), 'まずはFAQ候補の再確認を行ってください。', '4) NextAction（最大3・根拠キー付）'),
+    `5. 根拠参照キー\n5) 参照（KB/CityPackキー）\n${output.evidenceKeys.length ? output.evidenceKeys.join(', ') : '-'}`
   ].join('\n\n');
 }
 
@@ -136,7 +140,31 @@ function compactSnapshot(snapshot) {
   };
 }
 
-function buildPrompt(question, intent, kbCandidates, contextSnapshot) {
+function resolveContextSummary(contextSnapshot, personalizedContext) {
+  const personalized = personalizedContext && typeof personalizedContext === 'object'
+    ? personalizedContext
+    : null;
+  if (personalized && typeof personalized.summary === 'string' && personalized.summary.trim()) {
+    return personalized.summary.trim();
+  }
+  const snapshot = contextSnapshot && typeof contextSnapshot === 'object' ? contextSnapshot : null;
+  if (!snapshot) return '';
+  const parts = [];
+  if (snapshot.phase) parts.push(`phase=${snapshot.phase}`);
+  if (snapshot.location && typeof snapshot.location === 'object') {
+    if (snapshot.location.city) parts.push(`city=${snapshot.location.city}`);
+    if (snapshot.location.state) parts.push(`state=${snapshot.location.state}`);
+  }
+  const openTasks = Array.isArray(snapshot.openTasksTop5) ? snapshot.openTasksTop5.length : 0;
+  const riskFlags = Array.isArray(snapshot.riskFlagsTop3) ? snapshot.riskFlagsTop3.length : 0;
+  parts.push(`openTasks=${openTasks}`);
+  parts.push(`riskFlags=${riskFlags}`);
+  return parts.join(', ');
+}
+
+function buildPrompt(question, intent, kbCandidates, contextSnapshot, personalizedContext) {
+  const compactedSnapshot = compactSnapshot(contextSnapshot);
+  const contextSummary = resolveContextSummary(contextSnapshot, personalizedContext);
   return {
     system: [
       'You are a paid assistant for overseas assignment support.',
@@ -153,7 +181,10 @@ function buildPrompt(question, intent, kbCandidates, contextSnapshot) {
       question,
       intent,
       kbCandidates: compactKbCandidates(kbCandidates),
-      contextSnapshot: compactSnapshot(contextSnapshot)
+      contextSnapshot: compactedSnapshot,
+      personalizedContext: personalizedContext && typeof personalizedContext === 'object'
+        ? Object.assign({}, personalizedContext, { summary: contextSummary || personalizedContext.summary || '' })
+        : null
     }
   };
 }
@@ -205,10 +236,16 @@ async function generatePaidAssistantReply(params) {
   const faq = await searchFaqFromKb({
     question,
     locale: payload.locale || 'ja',
-    limit: 5,
-    intent: 'faq_search'
+    limit: 5
   });
-  const kbCandidates = Array.isArray(faq.candidates) ? faq.candidates.slice(0, 5) : [];
+  const kbCandidates = Array.isArray(faq.candidates)
+    ? faq.candidates
+      .slice()
+      .sort((a, b) => Number(b && b.searchScore ? b.searchScore : 0) - Number(a && a.searchScore ? a.searchScore : 0))
+      .slice(0, 5)
+    : [];
+  const top1Score = kbCandidates.length > 0 ? Number(kbCandidates[0].searchScore || 0) : 0;
+  const top2Score = kbCandidates.length > 1 ? Number(kbCandidates[1].searchScore || 0) : 0;
   const evidenceSet = new Set(kbCandidates.map((item) => item.articleId).filter(Boolean));
   if (!kbCandidates.length) {
     return {
@@ -223,7 +260,13 @@ async function generatePaidAssistantReply(params) {
     };
   }
 
-  const requestPayload = buildPrompt(question, intent, kbCandidates, payload.contextSnapshot || null);
+  const requestPayload = buildPrompt(
+    question,
+    intent,
+    kbCandidates,
+    payload.contextSnapshot || null,
+    payload.personalizedContext || null
+  );
   let lastFailure = 'template_violation';
   let retryCount = 0;
 

@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 46
+- 抽出件数: 48
 
 | file | line | reference |
 | --- | --- | --- |
@@ -33,6 +33,8 @@
 | `src/routes/internal/cityPackSourceAuditJob.js` | 47 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 38 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/journeyTodoReminderJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
+| `src/routes/internal/journeyTodoReminderJob.js` | 50 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/opsSnapshotJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/opsSnapshotJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
