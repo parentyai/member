@@ -65,6 +65,10 @@ const ADMIN_HISTORY_SYNC_ENABLED = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ADMIN_HISTORY_SYNC_V1 : null,
   true
 );
+const ADMIN_NAV_ALL_ACCESSIBLE_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ADMIN_NAV_ALL_ACCESSIBLE_V1 : null,
+  true
+);
 
 const state = {
   dict: {},
@@ -433,6 +437,55 @@ function isRolloutEnabledForGroup(groupEl, role) {
   return allowList.includes(normalizeRoleValue(role));
 }
 
+function resolveAllowedPaneListForRole(role) {
+  const nextRole = normalizeRoleValue(role);
+  const panePolicy = resolvePanePolicy();
+  const source = Array.isArray(panePolicy[nextRole]) ? panePolicy[nextRole] : [];
+  const out = [];
+  source.forEach((pane) => {
+    const normalized = String(pane || '').trim();
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function dedupeNavEntriesByPane(entries) {
+  const list = Array.isArray(entries) ? entries : [];
+  const grouped = {};
+  list.forEach((entry, sourceIndex) => {
+    if (!entry || entry.visible !== true) return;
+    const pane = String(entry.pane || '').trim();
+    if (!pane) return;
+    if (!Array.isArray(grouped[pane])) grouped[pane] = [];
+    grouped[pane].push(Object.assign({}, entry, { sourceIndex }));
+  });
+  const keep = {};
+  Object.keys(grouped).forEach((pane) => {
+    const candidates = grouped[pane].slice().sort((left, right) => {
+      const leftPriority = Number.isFinite(Number(left.priority)) ? Number(left.priority) : 0;
+      const rightPriority = Number.isFinite(Number(right.priority)) ? Number(right.priority) : 0;
+      if (leftPriority !== rightPriority) return rightPriority - leftPriority;
+      return left.sourceIndex - right.sourceIndex;
+    });
+    if (!candidates.length) return;
+    const winner = candidates[0];
+    keep[winner.sourceIndex] = true;
+    candidates.forEach((candidate) => {
+      if (winner.groupKey && candidate.groupKey && winner.groupKey === candidate.groupKey) {
+        keep[candidate.sourceIndex] = true;
+      }
+    });
+  });
+  return list.map((entry, sourceIndex) => {
+    if (!entry || entry.visible !== true) return entry;
+    const pane = String(entry.pane || '').trim();
+    if (!pane) return entry;
+    if (keep[sourceIndex] === true) return entry;
+    return Object.assign({}, entry, { visible: false, dedupedByPane: true });
+  });
+}
+
 function collectNavItemsForCore() {
   const all = Array.from(document.querySelectorAll('.app-nav .nav-item[data-pane-target]'));
   return all.map((element, index) => {
@@ -447,6 +500,101 @@ function collectNavItemsForCore() {
       priority: Number(element.getAttribute('data-nav-priority') || 0)
     };
   });
+}
+
+function resolveVisibleNavEntries(role) {
+  const navCore = resolveCoreSlice('navCore');
+  const nextRole = normalizeRoleValue(role);
+  const navItems = collectNavItemsForCore();
+  if (ADMIN_NAV_ALL_ACCESSIBLE_V1) {
+    let evaluated;
+    if (navCore && typeof navCore.resolveVisibleNavItemsByAllowedPanes === 'function') {
+      evaluated = navCore.resolveVisibleNavItemsByAllowedPanes(navItems, nextRole, resolvePanePolicy(), {
+        useRollout: false,
+        rolloutEnabled: ADMIN_NAV_ROLLOUT_V1
+      });
+    } else {
+      const allowedPanes = resolveAllowedPaneListForRole(nextRole);
+      evaluated = navItems.map((entry) => {
+        const allowList = parseRoleAllowList(entry && entry.element ? entry.element.getAttribute('data-role-allow') : null);
+        const roleAllowed = !allowList.length || allowList.includes(nextRole);
+        const paneAllowed = allowedPanes.includes(entry.pane);
+        return Object.assign({}, entry, {
+          roleAllowed,
+          paneAllowed,
+          rolloutAllowed: true,
+          visible: roleAllowed && paneAllowed
+        });
+      });
+    }
+    if (navCore && typeof navCore.dedupeVisibleNavItemsByPane === 'function') {
+      return navCore.dedupeVisibleNavItemsByPane(evaluated, { preserveSameGroup: true });
+    }
+    return dedupeNavEntriesByPane(evaluated);
+  }
+  if (navCore && typeof navCore.resolveVisibleNavItems === 'function') {
+    return navCore.resolveVisibleNavItems(navItems, nextRole, {
+      groupPolicy: resolveNavGroupVisibilityPolicy(),
+      rolloutEnabled: ADMIN_NAV_ROLLOUT_V1
+    });
+  }
+  return navItems.map((entry) => {
+    const groupEl = entry.element ? entry.element.closest('.nav-group') : null;
+    const hiddenGroup = groupEl && groupEl.getAttribute('data-nav-visible') === 'false';
+    const allowList = parseRoleAllowList(entry.element ? entry.element.getAttribute('data-role-allow') : null);
+    const roleAllowed = !allowList.length || allowList.includes(nextRole);
+    const visible = !hiddenGroup && roleAllowed;
+    return Object.assign({}, entry, {
+      roleAllowed,
+      paneAllowed: true,
+      rolloutAllowed: true,
+      visible
+    });
+  });
+}
+
+function resolveVisibleGroupKeysFromEntries(role, entries) {
+  const navCore = resolveCoreSlice('navCore');
+  const nextRole = normalizeRoleValue(role);
+  const visible = [];
+  if (navCore && typeof navCore.resolveVisibleGroupsFromItems === 'function') {
+    visible.push(...navCore.resolveVisibleGroupsFromItems(entries || []));
+  } else {
+    (entries || []).forEach((entry) => {
+      if (!entry || entry.visible !== true) return;
+      const groupKey = String(entry.groupKey || '').trim();
+      if (!groupKey) return;
+      if (!visible.includes(groupKey)) visible.push(groupKey);
+    });
+  }
+  if (ADMIN_NAV_ALL_ACCESSIBLE_V1) {
+    const basePolicy = resolveNavGroupVisibilityPolicy();
+    const base = Array.isArray(basePolicy[nextRole]) ? basePolicy[nextRole] : [];
+    base.forEach((groupKey) => {
+      const normalized = String(groupKey || '').trim();
+      if (!normalized) return;
+      if (!visible.includes(normalized)) visible.push(normalized);
+    });
+  }
+  return visible;
+}
+
+function resolvePreferredNavEntry(role, pane, entries) {
+  const nextRole = normalizeRoleValue(role);
+  const nextPane = String(pane || '').trim();
+  if (!nextPane) return null;
+  const source = Array.isArray(entries) ? entries : resolveVisibleNavEntries(nextRole);
+  const candidates = source
+    .filter((entry) => entry && entry.visible === true && String(entry.pane || '').trim() === nextPane)
+    .sort((left, right) => {
+      const leftPriority = Number.isFinite(Number(left.priority)) ? Number(left.priority) : 0;
+      const rightPriority = Number.isFinite(Number(right.priority)) ? Number(right.priority) : 0;
+      if (leftPriority !== rightPriority) return rightPriority - leftPriority;
+      const leftIndex = Number.isFinite(Number(left.index)) ? Number(left.index) : 0;
+      const rightIndex = Number.isFinite(Number(right.index)) ? Number(right.index) : 0;
+      return leftIndex - rightIndex;
+    });
+  return candidates.length > 0 ? candidates[0] : null;
 }
 
 function applyBuildMetaBadge() {
@@ -938,9 +1086,21 @@ function applyRoleNavPolicy(role) {
   });
 }
 
-function applyNavGroupVisibilityPolicy(role) {
+function applyNavGroupVisibilityPolicy(role, entries) {
   const navCore = resolveCoreSlice('navCore');
   const nextRole = normalizeRoleValue(role);
+  if (ADMIN_NAV_ALL_ACCESSIBLE_V1) {
+    const evaluatedEntries = Array.isArray(entries) ? entries : resolveVisibleNavEntries(nextRole);
+    const visibleGroupKeys = resolveVisibleGroupKeysFromEntries(nextRole, evaluatedEntries);
+    document.querySelectorAll('.app-nav [data-nav-group]').forEach((groupEl) => {
+      const groupKey = String(groupEl.getAttribute('data-nav-group') || '').trim();
+      const visible = !groupKey || visibleGroupKeys.includes(groupKey);
+      groupEl.setAttribute('data-nav-visible', visible ? 'true' : 'false');
+      if (visible) groupEl.removeAttribute('aria-hidden');
+      else groupEl.setAttribute('aria-hidden', 'true');
+    });
+    return;
+  }
   const visiblePolicy = resolveNavGroupVisibilityPolicy();
   const isGroupVisibleByCore = navCore && typeof navCore.isGroupVisible === 'function'
     ? navCore.isGroupVisible
@@ -961,15 +1121,11 @@ function applyNavGroupVisibilityPolicy(role) {
   });
 }
 
-function applyNavItemVisibilityPolicy(role) {
+function applyNavItemVisibilityPolicy(role, entries) {
   const navCore = resolveCoreSlice('navCore');
   const nextRole = normalizeRoleValue(role);
-  const navItems = collectNavItemsForCore();
-  if (navCore && typeof navCore.resolveVisibleNavItems === 'function') {
-    const evaluated = navCore.resolveVisibleNavItems(navItems, nextRole, {
-      groupPolicy: resolveNavGroupVisibilityPolicy(),
-      rolloutEnabled: ADMIN_NAV_ROLLOUT_V1
-    });
+  const evaluated = Array.isArray(entries) ? entries : resolveVisibleNavEntries(nextRole);
+  if (Array.isArray(evaluated) && evaluated.length > 0) {
     evaluated.forEach((entry) => {
       if (!entry || !entry.element) return;
       const visible = entry.visible === true;
@@ -979,6 +1135,7 @@ function applyNavItemVisibilityPolicy(role) {
     });
     return;
   }
+  const navItems = collectNavItemsForCore();
   navItems.forEach((entry) => {
     if (!entry || !entry.element) return;
     const hiddenGroup = entry.element.closest('.nav-group[data-nav-visible="false"]');
@@ -1014,20 +1171,22 @@ function setRole(role, options) {
     btn.classList.toggle('is-active', btn.dataset.roleValue === nextRole);
   });
   applyRoleNavPolicy(nextRole);
-  applyNavGroupVisibilityPolicy(nextRole);
-  applyNavItemVisibilityPolicy(nextRole);
+  const visibleEntries = resolveVisibleNavEntries(nextRole);
+  applyNavGroupVisibilityPolicy(nextRole, visibleEntries);
+  applyNavItemVisibilityPolicy(nextRole, visibleEntries);
   const activePane = document.querySelector('.app-pane.is-active');
   const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : (state.activePane || 'home');
   let allowedPane = resolveAllowedPaneForRole(nextRole, paneKey, 'home');
-  if (paneKey && navCore && typeof navCore.resolveActiveNavItem === 'function') {
-    const visibleMatch = navCore.resolveActiveNavItem(collectNavItemsForCore(), allowedPane, nextRole, {
+  if (paneKey && ADMIN_NAV_ALL_ACCESSIBLE_V1) {
+    const visibleMatch = resolvePreferredNavEntry(nextRole, allowedPane, visibleEntries);
+    if (!visibleMatch || visibleMatch.pane !== allowedPane) allowedPane = 'home';
+  } else if (paneKey && navCore && typeof navCore.resolveActiveNavItem === 'function') {
+    const legacyVisibleMatch = navCore.resolveActiveNavItem(collectNavItemsForCore(), allowedPane, nextRole, {
       groupPolicy: resolveNavGroupVisibilityPolicy(),
       rolloutEnabled: ADMIN_NAV_ROLLOUT_V1,
       fallbackPane: 'home'
     });
-    if (!visibleMatch || visibleMatch.pane !== allowedPane) {
-      allowedPane = 'home';
-    }
+    if (!legacyVisibleMatch || legacyVisibleMatch.pane !== allowedPane) allowedPane = 'home';
   }
   if (paneKey && paneKey !== allowedPane) {
     renderGuardBanner({ error: opts.guardReason || 'ROLE_FORBIDDEN', recommendedPane: allowedPane });
@@ -1701,7 +1860,7 @@ function activatePane(target, options) {
   let nextPane = resolveAllowedPaneForRole(state.role, normalizedTarget, 'home');
   let paneBlocked = normalizedTarget !== nextPane;
   let guardReason = opts.guardReason || 'PANE_FORBIDDEN';
-  if (!paneBlocked && normalizedTarget !== 'home' && opts.allowHiddenRollout !== true) {
+  if (!ADMIN_NAV_ALL_ACCESSIBLE_V1 && !paneBlocked && normalizedTarget !== 'home' && opts.allowHiddenRollout !== true) {
     const paneEntries = collectNavItemsForCore().filter((entry) => entry.pane === normalizedTarget);
     if (paneEntries.length) {
       const rolloutVisible = paneEntries.some((entry) => {
@@ -1723,13 +1882,17 @@ function activatePane(target, options) {
       && opts.clickedButton.getAttribute('data-nav-item-visible') !== 'false') {
     activeButton = opts.clickedButton;
   }
+  if (!activeButton && ADMIN_NAV_ALL_ACCESSIBLE_V1) {
+    const resolved = resolvePreferredNavEntry(state.role, nextPane);
+    if (resolved && resolved.element) activeButton = resolved.element;
+  }
   if (!activeButton && navCore && typeof navCore.resolveActiveNavItem === 'function') {
-    const resolved = navCore.resolveActiveNavItem(collectNavItemsForCore(), nextPane, state.role, {
+    const legacyResolved = navCore.resolveActiveNavItem(collectNavItemsForCore(), nextPane, state.role, {
       groupPolicy: resolveNavGroupVisibilityPolicy(),
       rolloutEnabled: ADMIN_NAV_ROLLOUT_V1,
       fallbackPane: nextPane
     });
-    if (resolved && resolved.element) activeButton = resolved.element;
+    if (legacyResolved && legacyResolved.element) activeButton = legacyResolved.element;
   }
   if (!activeButton) {
     activeButton = navItems.find((element) => {

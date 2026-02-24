@@ -676,6 +676,92 @@ function setTraceToUrl(url, traceId) {
     });
   }
 
+  function resolveVisibleNavItemsByAllowedPanes(navItems, role, panePolicy, options) {
+    const list = Array.isArray(navItems) ? navItems : [];
+    const normalizedRole = normalizeRole(role);
+    const paneSource = panePolicy && typeof panePolicy === 'object'
+      ? panePolicy
+      : DEFAULT_NAV_PANE_POLICY;
+    const allowedPanes = normalizeStringList(paneSource[normalizedRole]);
+    const opts = options && typeof options === 'object' ? options : {};
+    return list.map((item, index) => {
+      const groupKey = item && item.groupKey ? String(item.groupKey).trim() : '';
+      const pane = item && item.pane ? String(item.pane).trim() : '';
+      const priority = Number.isFinite(Number(item && item.priority)) ? Number(item.priority) : 0;
+      const itemIndex = Number.isFinite(Number(item && item.index)) ? Number(item.index) : index;
+      const allowList = parseCsvList(item && item.allowList);
+      const roleAllowed = isRoleAllowed(normalizedRole, allowList);
+      const paneAllowed = pane.length > 0 && allowedPanes.includes(pane);
+      const rolloutAllowed = opts.useRollout === true
+        ? isNavRolloutAllowed(normalizedRole, item && item.rollout, opts.rolloutEnabled)
+        : true;
+      const visible = paneAllowed && roleAllowed && rolloutAllowed;
+      return Object.assign({}, item || {}, {
+        groupKey,
+        pane,
+        priority,
+        index: itemIndex,
+        roleAllowed,
+        paneAllowed,
+        rolloutAllowed,
+        visible
+      });
+    });
+  }
+
+  function dedupeVisibleNavItemsByPane(navItems, options) {
+    const list = Array.isArray(navItems) ? navItems : [];
+    const opts = options && typeof options === 'object' ? options : {};
+    const preserveSameGroup = opts.preserveSameGroup !== false;
+    const groups = {};
+    list.forEach((item, sourceIndex) => {
+      const pane = item && item.pane ? String(item.pane).trim() : '';
+      if (!pane || !item || item.visible !== true) return;
+      if (!Array.isArray(groups[pane])) groups[pane] = [];
+      groups[pane].push(Object.assign({}, item, { sourceIndex }));
+    });
+    const keepIndexMap = {};
+    Object.keys(groups).forEach((pane) => {
+      const entries = groups[pane].slice().sort((left, right) => {
+        const leftPriority = Number.isFinite(Number(left.priority)) ? Number(left.priority) : 0;
+        const rightPriority = Number.isFinite(Number(right.priority)) ? Number(right.priority) : 0;
+        if (leftPriority !== rightPriority) return rightPriority - leftPriority;
+        const leftIndex = Number.isFinite(Number(left.index)) ? Number(left.index) : left.sourceIndex;
+        const rightIndex = Number.isFinite(Number(right.index)) ? Number(right.index) : right.sourceIndex;
+        return leftIndex - rightIndex;
+      });
+      if (!entries.length) return;
+      const winner = entries[0];
+      keepIndexMap[winner.sourceIndex] = true;
+      if (preserveSameGroup) {
+        entries.forEach((entry) => {
+          if (entry.groupKey && winner.groupKey && entry.groupKey === winner.groupKey) {
+            keepIndexMap[entry.sourceIndex] = true;
+          }
+        });
+      }
+    });
+    return list.map((item, sourceIndex) => {
+      if (!item || item.visible !== true) return item;
+      const pane = item.pane ? String(item.pane).trim() : '';
+      if (!pane) return item;
+      if (keepIndexMap[sourceIndex] === true) return Object.assign({}, item, { dedupedByPane: false });
+      return Object.assign({}, item, { visible: false, dedupedByPane: true });
+    });
+  }
+
+  function resolveVisibleGroupsFromItems(navItems) {
+    const list = Array.isArray(navItems) ? navItems : [];
+    const out = [];
+    list.forEach((item) => {
+      if (!item || item.visible !== true) return;
+      const groupKey = item.groupKey ? String(item.groupKey).trim() : '';
+      if (!groupKey) return;
+      if (!out.includes(groupKey)) out.push(groupKey);
+    });
+    return out;
+  }
+
   function resolveActiveNavItem(navItems, pane, role, options) {
     const opts = options && typeof options === 'object' ? options : {};
     const normalizedRole = normalizeRole(role);
@@ -765,6 +851,9 @@ function setTraceToUrl(url, traceId) {
       isRoleAllowed,
       resolvePolicyHash,
       resolveVisibleNavItems,
+      resolveVisibleNavItemsByAllowedPanes,
+      dedupeVisibleNavItemsByPane,
+      resolveVisibleGroupsFromItems,
       resolveActiveNavItem,
       isNavRolloutAllowed,
       DEFAULT_NAV_PANE_POLICY,

@@ -52,6 +52,10 @@ function resolveAdminNavRolloutFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_NAV_ROLLOUT_V1', true);
 }
 
+function resolveAdminNavAllAccessibleFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1', true);
+}
+
 function resolveAdminRolePersistFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_ROLE_PERSIST', true);
 }
@@ -88,11 +92,12 @@ function buildAdminAppBootScript() {
   const foundationEnabled = resolveAdminUiFoundationFlag();
   const buildMetaEnabled = resolveAdminBuildMetaFlag();
   const navRolloutEnabled = resolveAdminNavRolloutFlag();
+  const navAllAccessibleEnabled = resolveAdminNavAllAccessibleFlag();
   const rolePersistEnabled = resolveAdminRolePersistFlag();
   const historySyncEnabled = resolveAdminHistorySyncFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {

@@ -66,6 +66,23 @@ Phase647 時点では、ロールアウト制御を前提に次の可視化を S
 - `settings` は `catalog` を主導線とし、`operations` 側は補助導線として残置する。
 - build/commit の表示は `window.ADMIN_APP_BUILD_META` で行い、欠損時は `NOT AVAILABLE` を表示する。
 
+## /admin/app ナビ可視化ポリシー（Phase648 更新・最新）
+Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示」を優先し、
+表示判定を pane 許可ポリシー（`NAV_POLICY` / `DEFAULT_NAV_PANE_POLICY`）基準に寄せる。
+
+### Role別可視化マトリクス（最新）
+| role | 表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| admin | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer`, `communication`, `operations` |
+
+### 判定ルール（最新）
+- `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=1`（既定）時は、Role別許可paneに対応する nav item を表示対象にする。
+- グループ表示は「可視 item が1件以上ある group」を優先し、`data-nav-visible` に反映する。
+- 同一paneが複数groupにある場合は `data-nav-priority` の高い導線を優先し、重複表示を抑制する（同一group内導線は維持）。
+- `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0` で Phase638–647 の判定経路へ即時ロールバックできる。
+
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。
 本ドキュメントでは、ServicePhase を **管理UIで運用自走するための成熟度（運用OS）**として要求定義する。
