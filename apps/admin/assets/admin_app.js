@@ -1383,6 +1383,8 @@ function renderRepoMapCategories(categories) {
   groups.forEach((group) => {
     const section = document.createElement('section');
     section.className = 'repo-map-category';
+    const categoryKey = group && typeof group.key === 'string' ? group.key : '';
+    const isNotifications = categoryKey === 'notifications';
 
     const heading = document.createElement('h3');
     heading.className = 'repo-map-category-title';
@@ -1416,10 +1418,30 @@ function renderRepoMapCategories(categories) {
       card.appendChild(cardHeader);
 
       const sections = [
-        { label: t('ui.label.repoMap.canDo', '今できること'), values: item && item.canDo },
-        { label: t('ui.label.repoMap.cannotDo', 'まだできないこと'), values: item && item.cannotDo },
-        { label: t('ui.label.repoMap.risks', 'リスク'), values: item && item.risks },
-        { label: t('ui.label.repoMap.nextActions', '次にやるべきこと'), values: item && item.nextActions }
+        {
+          label: isNotifications
+            ? t('ui.label.repoMap.notifications.canDo', t('ui.label.repoMap.canDo', '運用判定'))
+            : t('ui.label.repoMap.canDo', '運用判定'),
+          values: item && item.canDo
+        },
+        {
+          label: isNotifications
+            ? t('ui.label.repoMap.notifications.cannotDo', t('ui.label.repoMap.cannotDo', 'ブロッカー'))
+            : t('ui.label.repoMap.cannotDo', 'ブロッカー'),
+          values: item && item.cannotDo
+        },
+        {
+          label: isNotifications
+            ? t('ui.label.repoMap.notifications.risks', t('ui.label.repoMap.risks', '注意'))
+            : t('ui.label.repoMap.risks', '注意'),
+          values: item && item.risks
+        },
+        {
+          label: isNotifications
+            ? t('ui.label.repoMap.notifications.nextActions', t('ui.label.repoMap.nextActions', '次の一手'))
+            : t('ui.label.repoMap.nextActions', '次の一手'),
+          values: item && item.nextActions
+        }
       ];
       sections.forEach((entry) => {
         const values = Array.isArray(entry.values) ? entry.values.filter((v) => typeof v === 'string' && v.trim().length > 0) : [];
@@ -1440,11 +1462,11 @@ function renderRepoMapCategories(categories) {
 
       const related = Array.isArray(item && item.relatedFiles) ? item.relatedFiles : [];
       const relatedLabel = document.createElement('div');
-      relatedLabel.className = 'repo-map-card-subtitle';
+      relatedLabel.className = 'repo-map-card-subtitle repo-map-related-files-label';
       relatedLabel.textContent = t('ui.label.repoMap.relatedFiles', '関連ファイル');
       card.appendChild(relatedLabel);
       const relatedList = document.createElement('ul');
-      relatedList.className = 'repo-map-list mono-list';
+      relatedList.className = 'repo-map-list mono-list repo-map-related-files-list';
       if (!related.length) {
         const li = document.createElement('li');
         li.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');

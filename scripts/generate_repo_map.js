@@ -282,33 +282,66 @@ function readPackageVersion() {
   return 'NOT AVAILABLE';
 }
 
+function isNotificationOpsFeature(feature) {
+  const name = feature && typeof feature.feature === 'string' ? feature.feature : '';
+  return name === 'notifications' || name === 'osNotifications';
+}
+
 function buildCanDo(feature) {
+  if (isNotificationOpsFeature(feature)) {
+    return [
+      '判定: Kill SwitchがOFFなら送信できます。',
+      '判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。',
+      '確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。'
+    ].slice(0, 3);
+  }
   const rows = [];
-  if (feature.completion === 'completed') rows.push('管理画面とAPIから利用できます。');
+  if (feature.completion === 'completed') rows.push('運用で利用できます（管理画面/API）。');
   if (feature.trace_linked) rows.push('追跡IDで操作の流れを確認できます。');
-  if (feature.audit_linked) rows.push('変更履歴を監査ログで確認できます。');
-  if (feature.killSwitch_dependent) rows.push('全配信停止スイッチに連動して安全停止できます。');
+  if (feature.audit_linked) rows.push('監査ログで変更履歴を確認できます。');
+  if (feature.killSwitch_dependent) rows.push('Kill Switchに連動して安全停止できます。');
   if (!rows.length) rows.push('利用可否の判定情報が不足しています。');
   return rows.slice(0, 3);
 }
 
 function buildCannotDo(feature) {
+  if (isNotificationOpsFeature(feature)) {
+    return [
+      '停止条件: Kill SwitchがON（全配信停止）',
+      '停止条件: CTA未設定 / LinkRegistry未設定 / 直URL',
+      '停止条件: WARNリンク / 配信対象0件'
+    ].slice(0, 3);
+  }
   const rows = [];
-  if (feature.completion === 'legacy') rows.push('新規改善の対象ではありません（非推奨経路）。');
-  if (!Number.isFinite(feature.tests_count) || feature.tests_count <= 0) rows.push('自動テストが不足しており回帰検知が弱いです。');
+  if (feature.completion === 'legacy') rows.push('非推奨経路のため、新規改善の対象ではありません。');
+  if (!Number.isFinite(feature.tests_count) || feature.tests_count <= 0) rows.push('自動テストが不足しており、回帰検知が弱いです。');
   if (!feature.ssot_refs || feature.ssot_refs.length === 0) rows.push('この機能を説明するSSOT参照が不足しています。');
   if (!rows.length) rows.push('現時点で制約情報はありません。');
   return rows.slice(0, 3);
 }
 
 function buildRisks(feature) {
+  if (isNotificationOpsFeature(feature)) {
+    return [
+      'LinkRegistryがWARNのリンクは送信できません。',
+      '対象条件が厳しいと配信対象が0件になります。',
+      '送信前にプレビューで内容（リンク/文面）を確認してください。'
+    ].slice(0, 3);
+  }
   const rows = [];
   if (feature.completion === 'legacy') rows.push('旧経路のため、将来の変更で挙動差が発生しやすいです。');
-  if (!Number.isFinite(feature.tests_count) || feature.tests_count <= 0) rows.push('テスト不足のため不具合を早期検知できない可能性があります。');
+  if (!Number.isFinite(feature.tests_count) || feature.tests_count <= 0) rows.push('テスト不足のため、不具合を早期検知できない可能性があります。');
   return rows.slice(0, 3);
 }
 
 function buildNextActions(feature) {
+  if (isNotificationOpsFeature(feature)) {
+    return [
+      '作成画面でプレビュー→承認→送信。',
+      '送れない場合は Kill Switch と LinkRegistry を確認。',
+      '送信後は Monitor で結果を確認。'
+    ].slice(0, 3);
+  }
   const rows = [];
   if (feature.completion === 'legacy') rows.push('正本の機能へ導線を寄せ、利用停止計画を作成する。');
   if (!Number.isFinite(feature.tests_count) || feature.tests_count <= 0) rows.push('最小の契約テストを追加する。');
