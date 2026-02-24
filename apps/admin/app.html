@@ -11,7 +11,7 @@
       <aside class="app-nav">
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
-        <div class="nav-group nav-group-dashboard">
+        <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary">
           <div class="nav-group-label nav-group-label-dashboard" data-dict-key="ui.label.nav.group.dashboard">ダッシュボード</div>
           <button class="nav-item is-active" data-pane-target="home">
             <span class="nav-icon" aria-hidden="true">D</span>
@@ -19,7 +19,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-notifications">
+        <div class="nav-group nav-group-notifications" data-nav-group="notifications" data-nav-surface="primary">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.notifications">通知</div>
           <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-inputs">
             <span class="nav-icon" aria-hidden="true">N</span>
@@ -31,7 +31,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-users">
+        <div class="nav-group nav-group-users" data-nav-group="users" data-nav-surface="primary">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.users">ユーザー</div>
           <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-user-search">
             <span class="nav-icon" aria-hidden="true">U</span>
@@ -43,7 +43,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-communication">
+        <div class="nav-group nav-group-communication" data-nav-group="communication" data-nav-surface="hidden">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.communication">コミュニケーション</div>
           <button class="nav-item" data-pane-target="audit">
             <span class="nav-icon" aria-hidden="true">F</span>
@@ -55,7 +55,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-catalog">
+        <div class="nav-group nav-group-catalog" data-nav-group="catalog" data-nav-surface="primary">
           <button class="nav-item" data-pane-target="city-pack">
             <span class="nav-icon" aria-hidden="true">CP</span>
             <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
@@ -70,7 +70,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-developer" data-role="developer">
+        <div class="nav-group nav-group-developer" data-nav-group="developer" data-nav-surface="secondary" data-role="developer">
           <div class="nav-group-label" data-dict-key="ui.label.developer.menu">開発者</div>
           <button id="developer-open-map" type="button" class="nav-item">
             <span class="nav-icon" aria-hidden="true">RM</span>
@@ -102,7 +102,7 @@
           </button>
         </div>
 
-        <div class="nav-group nav-group-operations">
+        <div class="nav-group nav-group-operations" data-nav-group="operations" data-nav-surface="hidden">
           <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
           <button class="nav-item" data-pane-target="alerts">
             <span class="nav-icon" aria-hidden="true">!</span>

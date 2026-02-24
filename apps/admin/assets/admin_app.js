@@ -204,6 +204,12 @@ const NAV_POLICY = Object.freeze({
   developer: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
 });
 
+const NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
+  operator: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
+  admin: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
+  developer: Object.freeze(['dashboard', 'notifications', 'users', 'catalog', 'developer'])
+});
+
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
 const DASHBOARD_CARD_CONFIG = Object.freeze({
@@ -662,8 +668,11 @@ function applyDict() {
 }
 
 function applyRoleNavPolicy(role) {
-  const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
   const navCore = resolveCoreSlice('navCore');
+  const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
+    ? navCore.normalizeRole
+    : (value) => (value === 'admin' || value === 'developer' ? value : 'operator');
+  const nextRole = normalizeRole(role);
   const isAllowedByCore = navCore && typeof navCore.isRoleAllowed === 'function'
     ? navCore.isRoleAllowed
     : (targetRole, allowList) => {
@@ -680,14 +689,43 @@ function applyRoleNavPolicy(role) {
   });
 }
 
+function applyNavGroupVisibilityPolicy(role) {
+  const navCore = resolveCoreSlice('navCore');
+  const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
+    ? navCore.normalizeRole
+    : (value) => (value === 'admin' || value === 'developer' ? value : 'operator');
+  const nextRole = normalizeRole(role);
+  const isGroupVisibleByCore = navCore && typeof navCore.isGroupVisible === 'function'
+    ? navCore.isGroupVisible
+    : (targetRole, groupKey, policy) => {
+        const source = policy && typeof policy === 'object' ? policy : {};
+        const list = Array.isArray(source[targetRole]) ? source[targetRole] : [];
+        return list.includes(groupKey);
+      };
+  document.querySelectorAll('.app-nav [data-nav-group]').forEach((groupEl) => {
+    const groupKey = String(groupEl.getAttribute('data-nav-group') || '').trim();
+    const visible = groupKey
+      ? isGroupVisibleByCore(nextRole, groupKey, NAV_GROUP_VISIBILITY_POLICY)
+      : true;
+    groupEl.setAttribute('data-nav-visible', visible ? 'true' : 'false');
+    if (visible) groupEl.removeAttribute('aria-hidden');
+    else groupEl.setAttribute('aria-hidden', 'true');
+  });
+}
+
 function setRole(role) {
-  const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
+  const navCore = resolveCoreSlice('navCore');
+  const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
+    ? navCore.normalizeRole
+    : (value) => (value === 'admin' || value === 'developer' ? value : 'operator');
+  const nextRole = normalizeRole(role);
   state.role = nextRole;
   if (appShell) appShell.setAttribute('data-role', nextRole);
   document.querySelectorAll('.role-btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.roleValue === nextRole);
   });
   applyRoleNavPolicy(nextRole);
+  applyNavGroupVisibilityPolicy(nextRole);
   const activePane = document.querySelector('.app-pane.is-active');
   const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : '';
   const allowList = NAV_POLICY[nextRole] || NAV_POLICY.operator;
@@ -1353,19 +1391,40 @@ function normalizePaneTarget(target) {
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const normalizedTarget = normalizePaneTarget(target);
-  const allowList = NAV_POLICY[state.role] || NAV_POLICY.operator;
-  const nextPane = allowList.includes(normalizedTarget) ? normalizedTarget : 'home';
+  const navCore = resolveCoreSlice('navCore');
+  const resolveAllowedPaneByCore = navCore && typeof navCore.resolveAllowedPane === 'function'
+    ? navCore.resolveAllowedPane
+    : (role, pane, panePolicy, fallbackPane) => {
+        const targetRole = role === 'admin' || role === 'developer' ? role : 'operator';
+        const allowed = Array.isArray(panePolicy && panePolicy[targetRole]) ? panePolicy[targetRole] : [];
+        if (pane && allowed.includes(pane)) return pane;
+        return fallbackPane || 'home';
+      };
+  const nextPane = resolveAllowedPaneByCore(state.role, normalizedTarget, NAV_POLICY, 'home');
+  const navItems = Array.from(document.querySelectorAll('.nav-item'));
+  const isVisibleNavItem = (element) => {
+    if (!element) return false;
+    const hiddenGroup = element.closest('.nav-group[data-nav-visible="false"]');
+    return !hiddenGroup;
+  };
   if (opts.clickedButton) {
-    document.querySelectorAll('.nav-item').forEach((el) => {
+    navItems.forEach((el) => {
       el.classList.toggle('is-active', el === opts.clickedButton && el.dataset.paneTarget === nextPane);
     });
   } else {
     let activated = false;
-    document.querySelectorAll('.nav-item').forEach((el) => {
-      const shouldActivate = !activated && el.dataset.paneTarget === nextPane;
+    navItems.forEach((el) => {
+      const shouldActivate = !activated && isVisibleNavItem(el) && el.dataset.paneTarget === nextPane;
       el.classList.toggle('is-active', shouldActivate);
       if (shouldActivate) activated = true;
     });
+    if (!activated) {
+      navItems.forEach((el) => {
+        const shouldActivate = !activated && isVisibleNavItem(el) && el.dataset.paneTarget === 'home';
+        el.classList.toggle('is-active', shouldActivate);
+        if (shouldActivate) activated = true;
+      });
+    }
   }
   document.querySelectorAll('.app-pane').forEach((pane) => {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);

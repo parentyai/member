@@ -1605,6 +1605,14 @@ body.app-body {
   display: none;
 }
 
+.app-nav .nav-group[data-nav-visible="false"] {
+  display: none !important;
+}
+
+.app-nav .nav-group[data-nav-visible="true"] {
+  display: grid;
+}
+
 .nav-group-label {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-12);

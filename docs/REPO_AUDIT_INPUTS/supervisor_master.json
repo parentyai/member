@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T19:40:59-05:00",
-  "gitCommit": "ebb8ea23c7271c13c23b2465f90c9bb760978ab3",
-  "branch": "codex/phase636-admin-nav-policy",
-  "sourceDigest": "3a08638ccaddc74bb03a569af67a83d7819ff312f7e0d293941999e630e5fe2b",
+  "generatedAt": "2026-02-23T20:09:48-05:00",
+  "gitCommit": "fa20455563bddb8f01296c0f6bfdd3bc03c3711b",
+  "branch": "codex/phase637-nav-contract-hardening",
+  "sourceDigest": "87806bae7b4de86d82704fad98fec510a26b633cc6c68606b1b53f8dff5098a2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
