@@ -61,7 +61,11 @@ function formatPaidReply(output) {
   ].join('\n\n');
 }
 
-function buildPrompt(question, intent, kbCandidates) {
+function buildPrompt(question, intent, kbCandidates, personalizedContext) {
+  const context = personalizedContext && typeof personalizedContext === 'object'
+    ? personalizedContext
+    : null;
+  const contextSummary = context && typeof context.summary === 'string' ? context.summary : '';
   return {
     system: [
       'You are a paid assistant for member operations.',
@@ -69,12 +73,14 @@ function buildPrompt(question, intent, kbCandidates) {
       'Do not include direct URLs.',
       'Always include at least one evidenceKeys entry from provided kbCandidates.articleId.',
       `Allowed intent: ${intent}`,
-      `Schema: ${PAID_ASSISTANT_REPLY_SCHEMA_ID}`
+      `Schema: ${PAID_ASSISTANT_REPLY_SCHEMA_ID}`,
+      contextSummary ? `UserContext: ${contextSummary}` : ''
     ].join('\n'),
     input: {
       question,
       intent,
-      kbCandidates
+      kbCandidates,
+      personalizedContext: context
     }
   };
 }
@@ -124,7 +130,14 @@ async function generatePaidAssistantReply(params) {
 
   const intent = PAID_INTENTS.includes(payload.intent) ? payload.intent : classifyPaidIntent(question);
   const faq = await searchFaqFromKb({ question, locale: payload.locale || 'ja', limit: 5 });
-  const kbCandidates = Array.isArray(faq.candidates) ? faq.candidates.slice(0, 5) : [];
+  const kbCandidates = Array.isArray(faq.candidates)
+    ? faq.candidates
+      .slice()
+      .sort((a, b) => Number(b && b.searchScore ? b.searchScore : 0) - Number(a && a.searchScore ? a.searchScore : 0))
+      .slice(0, 5)
+    : [];
+  const top1Score = kbCandidates.length > 0 ? Number(kbCandidates[0].searchScore || 0) : 0;
+  const top2Score = kbCandidates.length > 1 ? Number(kbCandidates[1].searchScore || 0) : 0;
   const evidenceSet = new Set(kbCandidates.map((item) => item.articleId).filter(Boolean));
   if (!kbCandidates.length) {
     return {
@@ -132,14 +145,19 @@ async function generatePaidAssistantReply(params) {
       blockedReason: 'citation_missing',
       fallbackReplyText: faq.replyText,
       intent,
-      citations: []
+      citations: [],
+      top1Score,
+      top2Score,
+      retryCount: 0
     };
   }
 
-  const requestPayload = buildPrompt(question, intent, kbCandidates);
+  const requestPayload = buildPrompt(question, intent, kbCandidates, payload.personalizedContext || null);
   let lastFailure = 'template_violation';
+  let retryCount = 0;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    retryCount = attempt;
     try {
       const callResult = await invokeAssistant(adapter, requestPayload, payload.llmPolicy || null);
       const output = normalizeAssistantOutput(callResult.answer, intent);
@@ -163,7 +181,10 @@ async function generatePaidAssistantReply(params) {
         model: callResult.model,
         tokensIn: callResult.tokensIn,
         tokensOut: callResult.tokensOut,
-        citations: output.evidenceKeys
+        citations: output.evidenceKeys,
+        top1Score,
+        top2Score,
+        retryCount
       };
     } catch (err) {
       const message = err && err.message ? String(err.message) : 'llm_error';
@@ -176,7 +197,10 @@ async function generatePaidAssistantReply(params) {
     blockedReason: lastFailure,
     fallbackReplyText: faq.replyText,
     intent,
-    citations: faq.citations || []
+    citations: faq.citations || [],
+    top1Score,
+    top2Score,
+    retryCount: retryCount + 1
   };
 }
 

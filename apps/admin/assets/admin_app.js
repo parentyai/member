@@ -168,7 +168,7 @@ if (!ADMIN_TREND_UI_ENABLED) {
   state.vendorSortKey = 'createdAt';
 }
 
-const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
+const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
 const COMPOSER_SAVED_SORT_TYPES = Object.freeze({
   createdAt: 'date',
@@ -184,12 +184,17 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   createdAt: 'date',
   updatedAt: 'date',
   currentPeriodEnd: 'date',
+  nextTodoDueAt: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
   status: 'string',
+  householdType: 'string',
+  journeyStage: 'string',
   plan: 'string',
   subscriptionStatus: 'string',
+  todoOpenCount: 'number',
+  todoOverdueCount: 'number',
   deliveryCount: 'number',
   clickCount: 'number',
   reactionRate: 'number',
@@ -877,6 +882,9 @@ function readUsersSummaryListState() {
     status: getSelectValue('users-filter-status'),
     plan: getSelectValue('users-filter-plan'),
     subscriptionStatus: getSelectValue('users-filter-subscription-status'),
+    householdType: getSelectValue('users-filter-household-type'),
+    journeyStage: getSelectValue('users-filter-journey-stage'),
+    todoState: getSelectValue('users-filter-todo-state'),
     limit: getInputValue('users-filter-limit'),
     analyticsLimit: getInputValue('users-filter-analytics-limit'),
     sortKey: state.usersSummarySortKey,
@@ -950,6 +958,9 @@ function applyUsersSummaryListState(snapshot) {
   setSelectValue('users-filter-status', snapshot.status || '');
   setSelectValue('users-filter-plan', snapshot.plan || '');
   setSelectValue('users-filter-subscription-status', snapshot.subscriptionStatus || '');
+  setSelectValue('users-filter-household-type', snapshot.householdType || '');
+  setSelectValue('users-filter-journey-stage', snapshot.journeyStage || '');
+  setSelectValue('users-filter-todo-state', snapshot.todoState || '');
   if (snapshot.limit) setInputValue('users-filter-limit', snapshot.limit);
   if (snapshot.analyticsLimit) setInputValue('users-filter-analytics-limit', snapshot.analyticsLimit);
 }
@@ -2955,6 +2966,35 @@ function subscriptionStatusLabel(value) {
   return labels[status] || 'unknown';
 }
 
+function normalizeHouseholdType(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['single', 'couple', 'accompany1', 'accompany2'].includes(normalized)) return normalized;
+  return '';
+}
+
+function householdTypeLabel(value) {
+  const type = normalizeHouseholdType(value);
+  if (!type) return '-';
+  const labels = {
+    single: 'single',
+    couple: 'couple',
+    accompany1: 'accompany1',
+    accompany2: 'accompany2'
+  };
+  return labels[type] || type;
+}
+
+function normalizeJourneyStage(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return '';
+  return normalized;
+}
+
+function journeyStageLabel(value) {
+  const stage = normalizeJourneyStage(value);
+  return stage || '-';
+}
+
 function resolveUserReactionRate(item) {
   if (Number.isFinite(Number(item && item.reactionRate))) {
     const numeric = Number(item.reactionRate);
@@ -2973,11 +3013,16 @@ function formatUserReactionRate(item) {
 function resolveUsersSortValue(item, key) {
   if (key === 'category') return item && item.categoryLabel;
   if (key === 'status') return item && item.statusLabel;
+  if (key === 'householdType') return item && item.householdType;
+  if (key === 'journeyStage') return item && item.journeyStage;
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'reactionRate') return resolveUserReactionRate(item);
   if (key === 'updatedAt') return item && item.updatedAt;
   if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'nextTodoDueAt') return item && item.nextTodoDueAt;
+  if (key === 'todoOpenCount') return item && item.todoOpenCount;
+  if (key === 'todoOverdueCount') return item && item.todoOverdueCount;
   if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'createdAt') return item && item.createdAt;
   return item ? item[key] : null;
@@ -3764,7 +3809,7 @@ function renderComposerScenarioCompare(items) {
     current.clicked += clicked;
   });
   tbody.innerHTML = '';
-  ['A', 'C'].forEach((scenario) => {
+  ['A', 'B', 'C', 'D'].forEach((scenario) => {
     const row = stats.get(scenario);
     const tr = document.createElement('tr');
     const scenarioTd = document.createElement('td');
@@ -5223,8 +5268,12 @@ function mapUsersSummaryItem(item) {
   const llmUsage = Number(row.llmUsage);
   const llmTokenUsed = Number(row.llmTokenUsed);
   const llmBlockedCount = Number(row.llmBlockedCount);
+  const todoOpenCount = Number(row.todoOpenCount);
+  const todoOverdueCount = Number(row.todoOverdueCount);
   const plan = normalizeBillingPlan(row.plan);
   const subscriptionStatus = normalizeSubscriptionStatus(row.subscriptionStatus);
+  const householdType = normalizeHouseholdType(row.householdType);
+  const journeyStage = normalizeJourneyStage(row.journeyStage);
   const mapped = {
     lineUserId: typeof row.lineUserId === 'string' ? row.lineUserId : '',
     createdAt: row.createdAt || null,
@@ -5235,6 +5284,10 @@ function mapUsersSummaryItem(item) {
     category: normalizeUserCategory(scenarioKey),
     categoryLabel: userCategoryLabel(scenarioKey),
     statusLabel: resolveUserStatus(stepKey),
+    householdType,
+    householdTypeLabel: householdTypeLabel(householdType),
+    journeyStage,
+    journeyStageLabel: journeyStageLabel(journeyStage),
     plan,
     planLabel: planLabel(plan),
     subscriptionStatus,
@@ -5242,6 +5295,9 @@ function mapUsersSummaryItem(item) {
     currentPeriodEnd: row.currentPeriodEnd || null,
     subscriptionUpdatedAt: row.subscriptionUpdatedAt || null,
     lastStripeEventId: typeof row.lastStripeEventId === 'string' ? row.lastStripeEventId : '',
+    nextTodoDueAt: row.nextTodoDueAt || null,
+    todoOpenCount: Number.isFinite(todoOpenCount) ? todoOpenCount : 0,
+    todoOverdueCount: Number.isFinite(todoOverdueCount) ? todoOverdueCount : 0,
     llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
     llmTokenUsed: Number.isFinite(llmTokenUsed) ? llmTokenUsed : 0,
     llmBlockedCount: Number.isFinite(llmBlockedCount) ? llmBlockedCount : 0,
@@ -5262,6 +5318,11 @@ function applyUsersSummaryFilters() {
   const rawPlan = (document.getElementById('users-filter-plan')?.value || '').trim().toLowerCase();
   const subscriptionStatus = normalizeSubscriptionStatus(document.getElementById('users-filter-subscription-status')?.value || '');
   const rawSubscriptionStatus = (document.getElementById('users-filter-subscription-status')?.value || '').trim().toLowerCase();
+  const householdType = normalizeHouseholdType(document.getElementById('users-filter-household-type')?.value || '');
+  const rawHouseholdType = (document.getElementById('users-filter-household-type')?.value || '').trim().toLowerCase();
+  const journeyStage = normalizeJourneyStage(document.getElementById('users-filter-journey-stage')?.value || '');
+  const rawJourneyStage = (document.getElementById('users-filter-journey-stage')?.value || '').trim().toLowerCase();
+  const todoState = (document.getElementById('users-filter-todo-state')?.value || '').trim().toLowerCase();
   const filterCore = resolveCoreSlice('filterCore');
   const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
     ? filterCore.applyAndFilters(state.usersSummaryItems, [
@@ -5289,7 +5350,22 @@ function applyUsersSummaryFilters() {
         { type: 'equals', value: category, normalize: { trim: true, upper: true }, getValue: (item) => item && item.category },
         { type: 'equals', value: status, normalize: { trim: true }, getValue: (item) => item && item.statusLabel },
         { type: 'equals', value: rawPlan, normalize: { trim: true, lower: true }, getValue: (item) => item && item.plan },
-        { type: 'equals', value: rawSubscriptionStatus, normalize: { trim: true, lower: true }, getValue: (item) => item && item.subscriptionStatus }
+        { type: 'equals', value: rawSubscriptionStatus, normalize: { trim: true, lower: true }, getValue: (item) => item && item.subscriptionStatus },
+        { type: 'equals', value: rawHouseholdType, normalize: { trim: true, lower: true }, getValue: (item) => item && item.householdType },
+        { type: 'equals', value: rawJourneyStage, normalize: { trim: true, lower: true }, getValue: (item) => item && item.journeyStage },
+        {
+          type: 'predicate',
+          value: todoState,
+          predicate: (item, value) => {
+            if (!value) return true;
+            const openCount = Number(item && item.todoOpenCount);
+            const overdueCount = Number(item && item.todoOverdueCount);
+            if (value === 'open') return Number.isFinite(openCount) && openCount > 0;
+            if (value === 'overdue') return Number.isFinite(overdueCount) && overdueCount > 0;
+            if (value === 'none') return !Number.isFinite(openCount) || openCount <= 0;
+            return true;
+          }
+        }
       ])
     : state.usersSummaryItems.filter((item) => {
       const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
@@ -5301,6 +5377,13 @@ function applyUsersSummaryFilters() {
       if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
       if (rawPlan && String(item && item.plan ? item.plan : '') !== plan) return false;
       if (rawSubscriptionStatus && String(item && item.subscriptionStatus ? item.subscriptionStatus : '') !== subscriptionStatus) return false;
+      if (rawHouseholdType && String(item && item.householdType ? item.householdType : '') !== householdType) return false;
+      if (rawJourneyStage && String(item && item.journeyStage ? item.journeyStage : '') !== journeyStage) return false;
+      const openCount = Number(item && item.todoOpenCount);
+      const overdueCount = Number(item && item.todoOverdueCount);
+      if (todoState === 'open' && (!Number.isFinite(openCount) || openCount <= 0)) return false;
+      if (todoState === 'overdue' && (!Number.isFinite(overdueCount) || overdueCount <= 0)) return false;
+      if (todoState === 'none' && Number.isFinite(openCount) && openCount > 0) return false;
       return true;
     });
   state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
@@ -5315,6 +5398,9 @@ function buildUsersSummaryFilterChips() {
   const status = getSelectValue('users-filter-status');
   const plan = getSelectValue('users-filter-plan');
   const subscriptionStatus = getSelectValue('users-filter-subscription-status');
+  const householdType = getSelectValue('users-filter-household-type');
+  const journeyStage = getSelectValue('users-filter-journey-stage');
+  const todoState = getSelectValue('users-filter-todo-state');
   pushFilterChip(chips, 'ユーザーID', userId);
   pushFilterChip(chips, '登録期間 from', createdFrom);
   pushFilterChip(chips, '登録期間 to', createdTo);
@@ -5322,6 +5408,9 @@ function buildUsersSummaryFilterChips() {
   if (status) pushFilterChip(chips, 'ステータス', getSelectLabel('users-filter-status'));
   if (plan) pushFilterChip(chips, 'Plan', getSelectLabel('users-filter-plan'));
   if (subscriptionStatus) pushFilterChip(chips, '課金状態', getSelectLabel('users-filter-subscription-status'));
+  if (householdType) pushFilterChip(chips, '帯同属性', getSelectLabel('users-filter-household-type'));
+  if (journeyStage) pushFilterChip(chips, 'Journey段階', getSelectLabel('users-filter-journey-stage'));
+  if (todoState) pushFilterChip(chips, 'Todo状態', getSelectLabel('users-filter-todo-state'));
   return chips;
 }
 
@@ -5333,6 +5422,9 @@ function clearUsersSummaryFilters() {
   setSelectValue('users-filter-status', '');
   setSelectValue('users-filter-plan', '');
   setSelectValue('users-filter-subscription-status', '');
+  setSelectValue('users-filter-household-type', '');
+  setSelectValue('users-filter-journey-stage', '');
+  setSelectValue('users-filter-todo-state', '');
 }
 
 function setTextContent(id, value) {
@@ -5346,6 +5438,10 @@ function renderUsersSummaryBillingDetail(payload) {
   const lineUserId = detail && detail.lineUserId ? detail.lineUserId : state.usersSummarySelectedLineUserId;
   const billing = detail && detail.billing ? detail.billing : null;
   const usage = detail && detail.llmUsage ? detail.llmUsage : null;
+  const journey = detail && detail.journey ? detail.journey : null;
+  const journeyProfile = journey && journey.profile ? journey.profile : null;
+  const journeySchedule = journey && journey.schedule ? journey.schedule : null;
+  const journeyTodoStats = journey && journey.todoStats ? journey.todoStats : null;
   const lastStripeEvent = detail && detail.lastStripeEvent ? detail.lastStripeEvent : null;
   setTextContent('users-detail-line-user-id', lineUserId || '-');
   setTextContent('users-detail-plan', billing && billing.plan ? planLabel(billing.plan) : '-');
@@ -5356,6 +5452,14 @@ function renderUsersSummaryBillingDetail(payload) {
   setTextContent('users-detail-llm-token-used', usage && Number.isFinite(Number(usage.totalTokenUsed)) ? String(Number(usage.totalTokenUsed)) : '-');
   setTextContent('users-detail-llm-blocked-count', usage && Number.isFinite(Number(usage.blockedCount)) ? String(Number(usage.blockedCount)) : '-');
   setTextContent('users-detail-last-used-at', usage && usage.lastUsedAt ? formatTimestampForList(usage.lastUsedAt) : '-');
+  setTextContent('users-detail-journey-household-type', journeyProfile && journeyProfile.householdType ? householdTypeLabel(journeyProfile.householdType) : '-');
+  setTextContent('users-detail-journey-stage', journeySchedule && journeySchedule.stage ? journeyStageLabel(journeySchedule.stage) : '-');
+  setTextContent('users-detail-journey-departure-date', journeySchedule && journeySchedule.departureDate ? journeySchedule.departureDate : '-');
+  setTextContent('users-detail-journey-assignment-date', journeySchedule && journeySchedule.assignmentDate ? journeySchedule.assignmentDate : '-');
+  setTextContent('users-detail-journey-open-count', journeyTodoStats && Number.isFinite(Number(journeyTodoStats.openCount)) ? String(Number(journeyTodoStats.openCount)) : '-');
+  setTextContent('users-detail-journey-overdue-count', journeyTodoStats && Number.isFinite(Number(journeyTodoStats.overdueCount)) ? String(Number(journeyTodoStats.overdueCount)) : '-');
+  setTextContent('users-detail-journey-next-due-at', journeyTodoStats && journeyTodoStats.nextDueAt ? formatTimestampForList(journeyTodoStats.nextDueAt) : '-');
+  setTextContent('users-detail-journey-last-reminder-at', journeyTodoStats && journeyTodoStats.lastReminderAt ? formatTimestampForList(journeyTodoStats.lastReminderAt) : '-');
   const historyEl = document.getElementById('users-detail-blocked-history');
   if (historyEl) {
     historyEl.innerHTML = '';
@@ -5375,6 +5479,24 @@ function renderUsersSummaryBillingDetail(payload) {
   const eventType = lastStripeEvent && lastStripeEvent.eventType ? lastStripeEvent.eventType : '-';
   const eventStatus = lastStripeEvent && lastStripeEvent.status ? lastStripeEvent.status : '-';
   setTextContent('users-detail-last-stripe-event-type', `${eventType} / ${eventStatus}`);
+  const nextTodosEl = document.getElementById('users-detail-journey-next-todos');
+  if (nextTodosEl) {
+    nextTodosEl.innerHTML = '';
+    const nextTodos = journey && Array.isArray(journey.nextTodos) ? journey.nextTodos : [];
+    if (!nextTodos.length) {
+      nextTodosEl.textContent = '-';
+    } else {
+      nextTodos.slice(0, 5).forEach((entry) => {
+        const li = document.createElement('li');
+        const todoKey = entry && entry.todoKey ? String(entry.todoKey) : '-';
+        const title = entry && entry.title ? String(entry.title) : '-';
+        const dueDate = entry && entry.dueDate ? String(entry.dueDate) : '-';
+        const status = entry && entry.status ? String(entry.status) : '-';
+        li.textContent = `[${todoKey}] ${title} (${dueDate} / ${status})`;
+        nextTodosEl.appendChild(li);
+      });
+    }
+  }
 }
 
 async function loadUsersSummaryBillingDetail(lineUserId, options) {
@@ -5429,7 +5551,7 @@ function renderUsersSummaryRows() {
     state.usersSummarySelectedLineUserId = null;
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 13;
+    td.colSpan = 18;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -5445,9 +5567,14 @@ function renderUsersSummaryRows() {
       item.memberNumber || '-',
       item.categoryLabel || '-',
       item.statusLabel || '-',
+      item.householdTypeLabel || '-',
+      item.journeyStageLabel || '-',
       item.planLabel || '-',
       item.subscriptionStatusLabel || '-',
       formatTimestampForList(item.currentPeriodEnd),
+      formatTimestampForList(item.nextTodoDueAt),
+      Number.isFinite(Number(item.todoOpenCount)) ? String(item.todoOpenCount) : '-',
+      Number.isFinite(Number(item.todoOverdueCount)) ? String(item.todoOverdueCount) : '-',
       Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-',
       Number.isFinite(Number(item.deliveryCount)) ? String(item.deliveryCount) : '-',
       Number.isFinite(Number(item.clickCount)) ? String(item.clickCount) : '-',
@@ -5455,7 +5582,7 @@ function renderUsersSummaryRows() {
     ];
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 8 || idx === 9 || idx === 10 || idx === 11 || idx === 12) markNumericCell(td);
+      if (idx >= 12 && idx <= 17) markNumericCell(td);
       td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
@@ -5487,8 +5614,14 @@ async function loadUsersSummary(options) {
   });
   const plan = getSelectValue('users-filter-plan');
   const subscriptionStatus = getSelectValue('users-filter-subscription-status');
+  const householdType = getSelectValue('users-filter-household-type');
+  const journeyStage = getSelectValue('users-filter-journey-stage');
+  const todoState = getSelectValue('users-filter-todo-state');
   if (plan) query.set('plan', plan);
   if (subscriptionStatus) query.set('subscriptionStatus', subscriptionStatus);
+  if (householdType) query.set('householdType', householdType);
+  if (journeyStage) query.set('journeyStage', journeyStage);
+  if (todoState) query.set('todoState', todoState);
   try {
     const res = await fetch(`/api/phase5/ops/users-summary?${query.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
@@ -7265,7 +7398,7 @@ function buildComposerLocalSafetyIssues(payload) {
   }
   if (payload.notificationType === 'STEP') {
     if (!COMPOSER_ALLOWED_SCENARIOS.has(String(payload.scenarioKey || ''))) {
-      issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。AまたはCを選択してください。'));
+      issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。A/B/C/Dから選択してください。'));
     }
     if (!COMPOSER_ALLOWED_STEPS.has(String(payload.stepKey || ''))) {
       issues.push(t('ui.desc.composer.safety.step', 'ステップが不正です。定義済みステップを選択してください。'));
@@ -8078,7 +8211,10 @@ function setupReadModelControls() {
     'users-filter-category',
     'users-filter-status',
     'users-filter-plan',
-    'users-filter-subscription-status'
+    'users-filter-subscription-status',
+    'users-filter-household-type',
+    'users-filter-journey-stage',
+    'users-filter-todo-state'
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;

@@ -36,6 +36,17 @@
     ]
   },
   {
+    "collection": "billing_lifecycle_automation_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/billingLifecycleAutomationLogsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:9"
+    ]
+  },
+  {
     "collection": "checklists",
     "kind": "config",
     "recomputable": false,
@@ -201,6 +212,39 @@
     ]
   },
   {
+    "collection": "journey_reminder_runs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/journeyReminderRunsRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:24"
+    ]
+  },
+  {
+    "collection": "journey_todo_items",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyTodoItemsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:25"
+    ]
+  },
+  {
+    "collection": "journey_todo_stats",
+    "kind": "aggregate",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyTodoStatsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:26"
+    ]
+  },
+  {
     "collection": "link_registry",
     "kind": "config",
     "recomputable": false,
@@ -210,6 +254,17 @@
       "src/repos/firestore/linkRegistryRepo.js:14",
       "src/repos/firestore/linkRegistryRepo.js:23",
       "src/repos/firestore/linkRegistryRepo.js:31"
+    ]
+  },
+  {
+    "collection": "llm_quality_logs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/llmQualityLogsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:28"
     ]
   },
   {
@@ -454,6 +509,17 @@
     ]
   },
   {
+    "collection": "rich_menu_bindings",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuBindingsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:50"
+    ]
+  },
+  {
     "collection": "send_retry_queue",
     "kind": "config",
     "recomputable": false,
@@ -570,6 +636,28 @@
     "evidence": [
       "src/repos/firestore/userConsentsRepo.js:26",
       "src/repos/firestore/userConsentsRepo.js:43"
+    ]
+  },
+  {
+    "collection": "user_journey_profiles",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userJourneyProfilesRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:61"
+    ]
+  },
+  {
+    "collection": "user_journey_schedules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userJourneySchedulesRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:62"
     ]
   },
   {

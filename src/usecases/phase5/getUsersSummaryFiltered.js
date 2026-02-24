@@ -14,20 +14,31 @@ const SUBSCRIPTION_STATUS_FILTER_SET = new Set([
   'incomplete',
   'unknown'
 ]);
+const HOUSEHOLD_TYPE_FILTER_SET = new Set([
+  'single',
+  'couple',
+  'accompany1',
+  'accompany2'
+]);
 const SORT_KEY_TYPES = Object.freeze({
   createdAt: 'date',
   updatedAt: 'date',
   currentPeriodEnd: 'date',
+  nextTodoDueAt: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
   status: 'string',
+  householdType: 'string',
+  journeyStage: 'string',
   deliveryCount: 'number',
   clickCount: 'number',
   reactionRate: 'number',
   plan: 'string',
   subscriptionStatus: 'string',
-  llmUsage: 'number'
+  llmUsage: 'number',
+  todoOpenCount: 'number',
+  todoOverdueCount: 'number'
 });
 
 function toMillis(value) {
@@ -111,6 +122,28 @@ function normalizeSortDir(value) {
   return null;
 }
 
+function normalizeHouseholdTypeFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  return HOUSEHOLD_TYPE_FILTER_SET.has(normalized) ? normalized : null;
+}
+
+function normalizeJourneyStageFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  return normalized;
+}
+
+function normalizeTodoStateFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  if (['open', 'overdue', 'none'].includes(normalized)) return normalized;
+  return null;
+}
+
 function compareValues(baseA, baseB, valueType, direction) {
   const dir = direction === 'asc' ? 1 : -1;
   const aUnset = baseA === null || baseA === undefined || (typeof baseA === 'string' && baseA.trim().length === 0);
@@ -153,12 +186,17 @@ function compareValues(baseA, baseB, valueType, direction) {
 function resolveSortValue(item, key) {
   if (key === 'category') return item && item.categoryLabel;
   if (key === 'status') return item && item.statusLabel;
+  if (key === 'householdType') return item && item.householdType;
+  if (key === 'journeyStage') return item && item.journeyStage;
   if (key === 'reactionRate') return item && item.reactionRate;
   if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'nextTodoDueAt') return item && item.nextTodoDueAt;
   if (key === 'updatedAt') return item && item.updatedAt;
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'llmUsage') return item && item.llmUsage;
+  if (key === 'todoOpenCount') return item && item.todoOpenCount;
+  if (key === 'todoOverdueCount') return item && item.todoOverdueCount;
   return item ? item[key] : null;
 }
 
@@ -194,6 +232,9 @@ async function getUsersSummaryFiltered(params) {
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const planFilter = normalizePlanFilter(payload.plan);
   const subscriptionStatusFilter = normalizeSubscriptionStatusFilter(payload.subscriptionStatus);
+  const householdTypeFilter = normalizeHouseholdTypeFilter(payload.householdType);
+  const journeyStageFilter = normalizeJourneyStageFilter(payload.journeyStage);
+  const todoStateFilter = normalizeTodoStateFilter(payload.todoState);
   const enriched = baseItems.map((item) => {
     const stale = isStaleMemberNumber(item, nowMs);
     const checklistIncomplete = isChecklistIncomplete(item);
@@ -220,6 +261,23 @@ async function getUsersSummaryFiltered(params) {
     .filter((item) => {
       if (!subscriptionStatusFilter) return true;
       return String(item && item.subscriptionStatus ? item.subscriptionStatus : 'unknown') === subscriptionStatusFilter;
+    })
+    .filter((item) => {
+      if (!householdTypeFilter) return true;
+      return String(item && item.householdType ? item.householdType : '').toLowerCase() === householdTypeFilter;
+    })
+    .filter((item) => {
+      if (!journeyStageFilter) return true;
+      return String(item && item.journeyStage ? item.journeyStage : '').toLowerCase() === journeyStageFilter;
+    })
+    .filter((item) => {
+      if (!todoStateFilter) return true;
+      const openCount = Number(item && item.todoOpenCount);
+      const overdueCount = Number(item && item.todoOverdueCount);
+      if (todoStateFilter === 'open') return Number.isFinite(openCount) && openCount > 0;
+      if (todoStateFilter === 'overdue') return Number.isFinite(overdueCount) && overdueCount > 0;
+      if (todoStateFilter === 'none') return !Number.isFinite(openCount) || openCount <= 0;
+      return true;
     });
   const items = sortUsersSummary(filtered, payload.sortKey, payload.sortDir);
   if (!includeMeta) return items;

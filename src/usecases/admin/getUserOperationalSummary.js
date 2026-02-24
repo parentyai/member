@@ -15,6 +15,9 @@ const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
 const llmUsageStatsRepo = require('../../repos/firestore/llmUsageStatsRepo');
+const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
+const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
+const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
@@ -294,6 +297,15 @@ async function getUserOperationalSummary(params) {
   const usageStatsPromise = llmUsageStatsRepo.listUserUsageStatsByLineUserIds({
     lineUserIds: scopedLineUserIds
   }).catch(() => []);
+  const journeyProfilesPromise = userJourneyProfilesRepo.listUserJourneyProfilesByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
+  const journeySchedulesPromise = userJourneySchedulesRepo.listUserJourneySchedulesByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
+  const journeyTodoStatsPromise = journeyTodoStatsRepo.listUserJourneyTodoStatsByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
   const checklistsPromise = safeQuery(() => listChecklistsByScenarioStepPairs({
     pairs: checklistPairs,
     limit: analyticsLimit
@@ -318,13 +330,16 @@ async function getUserOperationalSummary(params) {
       toAt: queryRange.toAt
     }));
   }
-  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult, subscriptions, usageStats] = await Promise.all([
+  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult, subscriptions, usageStats, journeyProfiles, journeySchedules, journeyTodoStats] = await Promise.all([
     eventsPromise,
     checklistsPromise,
     userChecklistsPromise,
     deliveriesPromise,
     subscriptionsPromise,
-    usageStatsPromise
+    usageStatsPromise,
+    journeyProfilesPromise,
+    journeySchedulesPromise,
+    journeyTodoStatsPromise
   ]);
   let checklists = dedupeRowsById(checklistsResult.rows);
   let userChecklists = dedupeRowsById(userChecklistsResult.rows);
@@ -421,6 +436,9 @@ async function getUserOperationalSummary(params) {
   const deliveryStatsByUser = buildDeliveryStatsByUser(deliveries);
   const subscriptionByUser = buildKeyedMap(subscriptions, 'lineUserId');
   const usageByUser = buildKeyedMap(usageStats, 'lineUserId');
+  const journeyProfileByUser = buildKeyedMap(journeyProfiles, 'lineUserId');
+  const journeyScheduleByUser = buildKeyedMap(journeySchedules, 'lineUserId');
+  const journeyTodoStatsByUser = buildKeyedMap(journeyTodoStats, 'lineUserId');
 
   const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
@@ -440,6 +458,9 @@ async function getUserOperationalSummary(params) {
     const deliveryStats = deliveryStatsByUser.get(user.id) || { deliveryCount: 0, clickCount: 0 };
     const subscription = subscriptionByUser.get(user.id) || null;
     const usage = usageByUser.get(user.id) || null;
+    const journeyProfile = journeyProfileByUser.get(user.id) || null;
+    const journeySchedule = journeyScheduleByUser.get(user.id) || null;
+    const journeyStats = journeyTodoStatsByUser.get(user.id) || null;
     const deliveryCount = Number.isFinite(deliveryStats.deliveryCount) ? deliveryStats.deliveryCount : 0;
     const clickCount = Number.isFinite(deliveryStats.clickCount) ? deliveryStats.clickCount : 0;
     const lastReactionAt = latestClick
@@ -453,6 +474,15 @@ async function getUserOperationalSummary(params) {
     const llmUsage = usage && Number.isFinite(Number(usage.usageCount)) ? Number(usage.usageCount) : 0;
     const llmTokenUsed = usage && Number.isFinite(Number(usage.totalTokenUsed)) ? Number(usage.totalTokenUsed) : 0;
     const llmBlockedCount = usage && Number.isFinite(Number(usage.blockedCount)) ? Number(usage.blockedCount) : 0;
+    const householdType = journeyProfile && journeyProfile.householdType ? journeyProfile.householdType : null;
+    const journeyStage = journeySchedule && journeySchedule.stage ? journeySchedule.stage : null;
+    const todoOpenCount = journeyStats && Number.isFinite(Number(journeyStats.openCount))
+      ? Number(journeyStats.openCount)
+      : 0;
+    const todoOverdueCount = journeyStats && Number.isFinite(Number(journeyStats.overdueCount))
+      ? Number(journeyStats.overdueCount)
+      : 0;
+    const nextTodoDueAt = journeyStats && journeyStats.nextDueAt ? formatTimestamp(journeyStats.nextDueAt) : null;
     return {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
@@ -478,7 +508,12 @@ async function getUserOperationalSummary(params) {
       lastStripeEventId: subscription && subscription.lastEventId ? subscription.lastEventId : null,
       llmUsage,
       llmTokenUsed,
-      llmBlockedCount
+      llmBlockedCount,
+      householdType,
+      journeyStage,
+      todoOpenCount,
+      todoOverdueCount,
+      nextTodoDueAt
     };
   });
   const computedAsOf = new Date().toISOString();

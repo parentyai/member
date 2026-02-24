@@ -16,9 +16,11 @@ const { evaluateLLMBudget } = require('../usecases/billing/evaluateLlmBudget');
 const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
 const { searchFaqFromKb } = require('../usecases/faq/searchFaqFromKb');
 const {
-  classifyPaidIntent,
-  generatePaidAssistantReply
+  classifyPaidIntent
 } = require('../usecases/assistant/generatePaidAssistantReply');
+const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqReply');
+const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
+const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const {
   regionPrompt,
   regionDeclared,
@@ -158,7 +160,8 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const paid = await generatePaidAssistantReply({
+  const paid = await generatePaidFaqReply({
+    lineUserId,
     question: text,
     intent,
     locale: 'ja',
@@ -262,12 +265,46 @@ async function handleLineWebhook(options) {
       }
     }
 
+    if (event && event.type === 'postback') {
+      const replyToken = extractReplyToken(event);
+      const postbackData = event && event.postback && typeof event.postback.data === 'string'
+        ? event.postback.data
+        : '';
+      if (replyToken && postbackData) {
+        try {
+          const journey = await handleJourneyPostback({
+            lineUserId: userId,
+            data: postbackData
+          });
+          if (journey && journey.handled) {
+            await replyFn(replyToken, {
+              type: 'text',
+              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
+            });
+            continue;
+          }
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'error';
+          logger(`[webhook] requestId=${requestId} journey_postback=error message=${msg}`);
+        }
+      }
+    }
+
     // Membership declare command: "会員ID NN-NNNN"
     if (event && event.type === 'message') {
       const text = extractMessageText(event);
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
+          const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
+          if (journey && journey.handled) {
+            await replyFn(replyToken, {
+              type: 'text',
+              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
+            });
+            continue;
+          }
+
           if (isLlmConsentAcceptCommand(text)) {
             await recordUserLlmConsent({ lineUserId: userId, accepted: true, traceId: requestId, actor: userId });
             await replyFn(replyToken, { type: 'text', text: 'AI機能の利用に同意しました。' });

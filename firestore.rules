@@ -146,6 +146,44 @@ service cloud.firestore {
       allow read, write: if isAdmin() || isServiceAccount();
     }
 
+    match /llm_quality_logs/{docId} {
+      // Quality logs are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /user_journey_profiles/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /user_journey_schedules/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /journey_todo_items/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /journey_todo_stats/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /journey_reminder_runs/{runId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /billing_lifecycle_automation_logs/{docId} {
+      // Lifecycle automation logs are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /rich_menu_bindings/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
     match /automation_config/{docId} {
       allow read, write: if isAdmin() || isServiceAccount();
     }

@@ -234,6 +234,111 @@
         "service": "member",
         "route": "admin.os_alerts_summary"
       }
+    },
+    {
+      "id": "journey_todo_items_status_nextReminderAt_asc",
+      "collectionGroup": "journey_todo_items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextReminderAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 209
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 210
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 211
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-24",
+        "service": "member",
+        "route": "internal.journey_todo_reminder_job"
+      }
+    },
+    {
+      "id": "journey_todo_items_lineUserId_updatedAt_desc",
+      "collectionGroup": "journey_todo_items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 199
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 202
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-24",
+        "service": "member",
+        "route": "admin.os_user_billing_detail"
+      }
+    },
+    {
+      "id": "journey_todo_items_lineUserId_status_updatedAt_desc",
+      "collectionGroup": "journey_todo_items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 198
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 200
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+          "line": 202
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-24",
+        "service": "member",
+        "route": "line.todo_list"
+      }
     }
   ],
   "criticalContracts": [
@@ -344,6 +449,40 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPacks.js",
           "line": 160
+        }
+      ]
+    },
+    {
+      "contractId": "internal_journey_todo_reminder_job",
+      "routeOrUsecase": "POST /internal/jobs/journey-todo-reminder",
+      "requiredIndexIds": [
+        "journey_todo_items_status_nextReminderAt_asc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1258
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/usecases/journey/runJourneyTodoReminderJob.js",
+          "line": 113
+        }
+      ]
+    },
+    {
+      "contractId": "admin_os_user_billing_detail_journey",
+      "routeOrUsecase": "GET /api/admin/os/user-billing-detail",
+      "requiredIndexIds": [
+        "journey_todo_items_lineUserId_updatedAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1509
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/osUserBillingDetail.js",
+          "line": 39
         }
       ]
     }
