@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T06:14:43-05:00",
-  "gitCommit": "a16ac84e909f32bd51837f2e98575f6b97a390d4",
+  "generatedAt": "2026-02-24T10:29:58-05:00",
+  "gitCommit": "1b14326a9066a02b2a033b0b1238f0cdf68e52ab",
   "branch": "codex/llm-deploy-envvar-wirefix",
-  "sourceDigest": "6a15a37e49ef6f488e010b5ca64043055056a338d87d4929dcb9f36a1436036a",
+  "sourceDigest": "ab843596449b9778916d8e6638df741118e69f877d83243ef9e8ec29c8ebbb0c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
