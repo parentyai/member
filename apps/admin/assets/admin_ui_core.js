@@ -267,6 +267,63 @@
     return Object.assign({}, defaults || {}, storedState || {}, urlState || {});
   }
 
+  function parseRoleFromQuery(search, options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const key = typeof opts.key === 'string' && opts.key.trim() ? opts.key.trim() : 'role';
+    const parsed = parseSearchParams(search || '');
+    if (!Object.prototype.hasOwnProperty.call(parsed, key)) return null;
+    const role = parsed[key];
+    return normalizeRole(role);
+  }
+
+  function applyRoleToUrl(role, url, options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const key = typeof opts.key === 'string' && opts.key.trim() ? opts.key.trim() : 'role';
+    const nextRole = normalizeRole(role);
+    const baseUrl = globalScope && globalScope.location ? globalScope.location.href : 'http://localhost/admin/app';
+    const target = new URL(url || baseUrl, baseUrl);
+    target.searchParams.set(key, nextRole);
+    return `${target.pathname}?${target.searchParams.toString()}`.replace(/\?$/, '');
+  }
+
+  function saveRoleState(role, options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const storage = resolveStorage(opts.storage);
+    if (!storage || typeof storage.setItem !== 'function') return false;
+    const namespace = typeof opts.namespace === 'string' ? opts.namespace : 'admin.ui.role.';
+    const key = typeof opts.key === 'string' && opts.key.trim() ? opts.key.trim() : 'role';
+    try {
+      storage.setItem(`${namespace}${key}`, normalizeRole(role));
+      return true;
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function loadRoleState(options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const storage = resolveStorage(opts.storage);
+    if (!storage || typeof storage.getItem !== 'function') return null;
+    const namespace = typeof opts.namespace === 'string' ? opts.namespace : 'admin.ui.role.';
+    const key = typeof opts.key === 'string' && opts.key.trim() ? opts.key.trim() : 'role';
+    try {
+      const raw = storage.getItem(`${namespace}${key}`);
+      if (raw == null || raw === '') return null;
+      return normalizeRole(raw);
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function resolveRoleState(urlRole, storedRole, defaultRole) {
+    const fallbackRole = normalizeRole(defaultRole || 'operator');
+    const fromUrl = normalizeRole(urlRole || '');
+    if (urlRole && fromUrl) return fromUrl;
+    const fromStorage = normalizeRole(storedRole || '');
+    if (storedRole && fromStorage) return fromStorage;
+    return fallbackRole;
+  }
+
   const DOMAIN_LABELS = Object.freeze({
     scenario: Object.freeze({ A: 'A単身', B: 'B夫婦', C: 'C帯同1', D: 'D帯同2' }),
     step: Object.freeze({ '3mo': '3か月前', '1mo': '1か月前', week: '1週間前', after1w: '着任後1週間' }),
@@ -359,6 +416,15 @@
     if (lower.includes('unauthorized')) {
       return { cause: '認証が不足しています', impact: '操作を続行できません', action: '再ログインして再試行してください', tone: 'danger' };
     }
+    if (lower.includes('pane_forbidden')) {
+      return { cause: '選択した画面への遷移が許可されていません', impact: '現在のロールでは表示できない画面です', action: 'Roleを切り替えるか、許可された画面から操作してください', tone: 'warn' };
+    }
+    if (lower.includes('role_forbidden')) {
+      return { cause: 'Roleポリシーにより画面遷移が拒否されました', impact: '対象操作を続行できません', action: 'Roleを確認し、許可された画面に戻ってください', tone: 'warn' };
+    }
+    if (lower.includes('rollout_disabled')) {
+      return { cause: '段階ロールアウトが無効です', impact: '対象導線は一時的に閉じています', action: '管理者へロールアウト設定を確認してください', tone: 'warn' };
+    }
     if (lower.includes('forbidden')) {
       return { cause: 'CSRF/権限ガードに抵触しました', impact: '状態変更操作が拒否されました', action: '同一オリジンから操作をやり直してください', tone: 'danger' };
     }
@@ -370,6 +436,15 @@
     }
     if (lower.includes('confirm_token_mismatch') || lower.includes('confirmtoken')) {
       return { cause: '確認トークンが一致しません', impact: '危険操作を実行できません', action: 'planを再実行して最新トークンで再試行してください', tone: 'warn' };
+    }
+    if (lower.includes('pane_forbidden')) {
+      return { cause: '選択した画面への遷移が許可されていません', impact: '現在のロールでは表示できない画面です', action: 'Roleを切り替えるか、許可された画面から操作してください', tone: 'warn' };
+    }
+    if (lower.includes('role_forbidden')) {
+      return { cause: 'Roleポリシーにより画面遷移が拒否されました', impact: '対象操作を続行できません', action: 'Roleを確認し、許可された画面に戻ってください', tone: 'warn' };
+    }
+    if (lower.includes('rollout_disabled')) {
+      return { cause: '段階ロールアウトが無効です', impact: '対象導線は一時的に閉じています', action: '管理者へロールアウト設定を確認してください', tone: 'warn' };
     }
     return { cause: message || '不明なエラー', impact: '操作結果を確定できません', action: 'traceIdで監査ログを確認してください', tone: 'danger' };
   }
@@ -478,6 +553,18 @@ function setTraceToUrl(url, traceId) {
     developer: Object.freeze(['dashboard', 'notifications', 'users', 'catalog', 'developer'])
   });
 
+  const DEFAULT_NAV_PANE_POLICY = Object.freeze({
+    operator: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings']),
+    admin: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']),
+    developer: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'])
+  });
+
+  const DEFAULT_NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
+    operator: Object.freeze([]),
+    admin: Object.freeze(['communication', 'operations']),
+    developer: Object.freeze(['communication', 'operations'])
+  });
+
   function normalizeRole(role) {
     const value = typeof role === 'string' ? role.trim() : '';
     if (value === 'admin' || value === 'developer') return value;
@@ -527,6 +614,92 @@ function setTraceToUrl(url, traceId) {
     return list.includes(normalizedRole);
   }
 
+  function resolvePolicyHash(input) {
+    function normalizeValue(value) {
+      if (Array.isArray(value)) return value.map((entry) => normalizeValue(entry));
+      if (!value || typeof value !== 'object') return value;
+      const out = {};
+      Object.keys(value).sort().forEach((key) => {
+        out[key] = normalizeValue(value[key]);
+      });
+      return out;
+    }
+    const normalized = normalizeValue(input && typeof input === 'object' ? input : {});
+    const serialized = JSON.stringify(normalized);
+    let hash = 0;
+    for (let index = 0; index < serialized.length; index += 1) {
+      hash = (hash + serialized.charCodeAt(index) * (index + 1)) % 2147483647;
+    }
+    return `${serialized.length}:${hash}`;
+  }
+
+  function parseCsvList(value) {
+    if (Array.isArray(value)) return normalizeStringList(value);
+    if (typeof value !== 'string') return [];
+    return normalizeStringList(value.split(','));
+  }
+
+  function isNavRolloutAllowed(role, rollout, rolloutEnabled) {
+    const enabled = rolloutEnabled !== false;
+    const list = parseCsvList(rollout);
+    if (!list.length) return true;
+    if (!enabled) return false;
+    return list.includes(normalizeRole(role));
+  }
+
+  function resolveVisibleNavItems(navItems, role, options) {
+    const list = Array.isArray(navItems) ? navItems : [];
+    const opts = options && typeof options === 'object' ? options : {};
+    const normalizedRole = normalizeRole(role);
+    const groupPolicy = opts.groupPolicy && typeof opts.groupPolicy === 'object'
+      ? opts.groupPolicy
+      : DEFAULT_NAV_GROUP_VISIBILITY_POLICY;
+    return list.map((item, index) => {
+      const groupKey = item && item.groupKey ? String(item.groupKey).trim() : '';
+      const pane = item && item.pane ? String(item.pane).trim() : '';
+      const priority = Number.isFinite(Number(item && item.priority)) ? Number(item.priority) : 0;
+      const allowList = parseCsvList(item && item.allowList);
+      const groupVisible = groupKey ? isGroupVisible(normalizedRole, groupKey, groupPolicy) : true;
+      const roleAllowed = isRoleAllowed(normalizedRole, allowList);
+      const rolloutAllowed = isNavRolloutAllowed(normalizedRole, item && item.rollout, opts.rolloutEnabled);
+      const visible = groupVisible && roleAllowed && rolloutAllowed;
+      return Object.assign({}, item || {}, {
+        groupKey,
+        pane,
+        priority,
+        index,
+        roleAllowed,
+        rolloutAllowed,
+        groupVisible,
+        visible
+      });
+    });
+  }
+
+  function resolveActiveNavItem(navItems, pane, role, options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const normalizedRole = normalizeRole(role);
+    const currentPane = typeof pane === 'string' ? pane.trim() : '';
+    const visibleItems = resolveVisibleNavItems(navItems, normalizedRole, opts);
+    const matchPane = visibleItems
+      .filter((item) => item.visible && item.pane === currentPane)
+      .sort((left, right) => {
+        if (left.priority !== right.priority) return right.priority - left.priority;
+        return left.index - right.index;
+      });
+    if (matchPane.length > 0) return matchPane[0];
+    const fallbackPane = typeof opts.fallbackPane === 'string' && opts.fallbackPane.trim()
+      ? opts.fallbackPane.trim()
+      : 'home';
+    const fallbackMatch = visibleItems
+      .filter((item) => item.visible && item.pane === fallbackPane)
+      .sort((left, right) => {
+        if (left.priority !== right.priority) return right.priority - left.priority;
+        return left.index - right.index;
+      });
+    return fallbackMatch.length > 0 ? fallbackMatch[0] : null;
+  }
+
   const api = {
     tableCore: {
       NOT_AVAILABLE,
@@ -550,7 +723,12 @@ function setTraceToUrl(url, traceId) {
       applyListStateToUrl,
       saveListState,
       loadListState,
-      mergeStatePriority
+      mergeStatePriority,
+      parseRoleFromQuery,
+      applyRoleToUrl,
+      saveRoleState,
+      loadRoleState,
+      resolveRoleState
     },
     dictionaryCore: {
       resolveDomainLabel
@@ -584,7 +762,14 @@ function setTraceToUrl(url, traceId) {
       resolveVisibleGroupKeys,
       isGroupVisible,
       resolveAllowedPane,
-      isRoleAllowed
+      isRoleAllowed,
+      resolvePolicyHash,
+      resolveVisibleNavItems,
+      resolveActiveNavItem,
+      isNavRolloutAllowed,
+      DEFAULT_NAV_PANE_POLICY,
+      DEFAULT_NAV_GROUP_VISIBILITY_POLICY,
+      DEFAULT_NAV_GROUP_ROLLOUT_POLICY
     }
   };
 

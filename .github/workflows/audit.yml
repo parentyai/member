@@ -116,12 +116,26 @@ jobs:
         with:
           sarif_file: artifacts/audit/semgrep.sarif
 
+  nav-contract:
+    name: nav-contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run admin nav contract tests
+        run: npm run test:admin-nav-contract
+
   audit:
     runs-on: ubuntu-latest
     needs:
       - docs
       - firestore-indexes
       - audit-run
+      - nav-contract
     if: always()
     steps:
       - name: Aggregate required gate results
@@ -130,10 +144,12 @@ jobs:
           DOCS_RESULT="${{ needs.docs.result }}"
           INDEX_RESULT="${{ needs.firestore-indexes.result }}"
           AUDIT_RUN_RESULT="${{ needs.audit-run.result }}"
+          NAV_CONTRACT_RESULT="${{ needs.nav-contract.result }}"
           echo "docs=${DOCS_RESULT}"
           echo "firestore-indexes=${INDEX_RESULT}"
           echo "audit-run=${AUDIT_RUN_RESULT}"
-          if [ "${DOCS_RESULT}" != "success" ] || [ "${INDEX_RESULT}" != "success" ] || [ "${AUDIT_RUN_RESULT}" != "success" ]; then
+          echo "nav-contract=${NAV_CONTRACT_RESULT}"
+          if [ "${DOCS_RESULT}" != "success" ] || [ "${INDEX_RESULT}" != "success" ] || [ "${AUDIT_RUN_RESULT}" != "success" ] || [ "${NAV_CONTRACT_RESULT}" != "success" ]; then
             echo "::error title=Audit aggregate gate failed::At least one required upstream job failed or was skipped."
             exit 1
           fi

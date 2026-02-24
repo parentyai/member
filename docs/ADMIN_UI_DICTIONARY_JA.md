@@ -820,6 +820,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.label.role.developer": "開発",
   "ui.label.role.operator": "運用者",
   "ui.label.role.operatorMode": "運用",
+  "ui.label.build.meta": "Build",
   "ui.label.scenario": "シナリオ",
   "ui.label.settings.notice": "設定は管理者で操作",
   "ui.label.settings.toMaster": "設定画面へ",

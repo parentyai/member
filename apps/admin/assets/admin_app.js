@@ -38,6 +38,34 @@ const ADMIN_UI_CORE = ADMIN_UI_FOUNDATION_V1
   ? globalThis.AdminUiCore
   : null;
 
+function resolveFrontendFeatureFlag(rawValue, defaultValue) {
+  if (rawValue === true || rawValue === 1) return true;
+  if (rawValue === false || rawValue === 0) return false;
+  if (typeof rawValue === 'string') {
+    const normalized = rawValue.trim().toLowerCase();
+    if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+    if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  }
+  return defaultValue === true;
+}
+
+const ADMIN_BUILD_META_ENABLED = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_BUILD_META : null,
+  true
+);
+const ADMIN_NAV_ROLLOUT_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ADMIN_NAV_ROLLOUT_V1 : null,
+  true
+);
+const ADMIN_ROLE_PERSIST_ENABLED = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ADMIN_ROLE_PERSIST_V1 : null,
+  true
+);
+const ADMIN_HISTORY_SYNC_ENABLED = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ADMIN_HISTORY_SYNC_V1 : null,
+  true
+);
+
 const state = {
   dict: {},
   role: 'operator',
@@ -114,7 +142,11 @@ const state = {
   missingIndexSurfaceItems: [],
   missingIndexSurfaceMeta: null,
   productReadiness: null,
-  paneUpdatedAt: {}
+  paneUpdatedAt: {},
+  activePane: 'home',
+  buildMeta: null,
+  navPolicyHashCore: null,
+  navPolicyHashApp: null
 };
 
 if (!ADMIN_TREND_UI_ENABLED) {
@@ -210,6 +242,12 @@ const NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
   developer: Object.freeze(['dashboard', 'notifications', 'users', 'catalog', 'developer'])
 });
 
+const NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
+  operator: Object.freeze([]),
+  admin: Object.freeze(['communication', 'operations']),
+  developer: Object.freeze(['communication', 'operations'])
+});
+
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
 const DASHBOARD_CARD_CONFIG = Object.freeze({
@@ -234,6 +272,210 @@ function resolveCoreSlice(name) {
 function parseRoleAllowList(value) {
   if (!value) return [];
   return String(value).split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function parseCsvList(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  if (typeof value !== 'string') return [];
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeRoleValue(role) {
+  const navCore = resolveCoreSlice('navCore');
+  if (navCore && typeof navCore.normalizeRole === 'function') return navCore.normalizeRole(role);
+  return role === 'admin' || role === 'developer' ? role : 'operator';
+}
+
+function resolvePanePolicy() {
+  const navCore = resolveCoreSlice('navCore');
+  if (navCore && navCore.DEFAULT_NAV_PANE_POLICY && typeof navCore.DEFAULT_NAV_PANE_POLICY === 'object') {
+    return navCore.DEFAULT_NAV_PANE_POLICY;
+  }
+  return NAV_POLICY;
+}
+
+function resolveBaseGroupVisibilityPolicy() {
+  const navCore = resolveCoreSlice('navCore');
+  if (navCore && navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY && typeof navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY === 'object') {
+    return navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY;
+  }
+  return NAV_GROUP_VISIBILITY_POLICY;
+}
+
+function resolveNavGroupVisibilityPolicy() {
+  const base = resolveBaseGroupVisibilityPolicy();
+  const out = {};
+  ['operator', 'admin', 'developer'].forEach((role) => {
+    const baseList = Array.isArray(base[role]) ? base[role].slice() : [];
+    const rolloutList = ADMIN_NAV_ROLLOUT_V1 && Array.isArray(NAV_GROUP_ROLLOUT_POLICY[role]) ? NAV_GROUP_ROLLOUT_POLICY[role] : [];
+    const merged = [];
+    baseList.concat(rolloutList).forEach((groupKey) => {
+      const normalized = String(groupKey || '').trim();
+      if (!normalized) return;
+      if (!merged.includes(normalized)) merged.push(normalized);
+    });
+    out[role] = Object.freeze(merged);
+  });
+  return Object.freeze(out);
+}
+
+function resolveNavPolicyHashes() {
+  const navCore = resolveCoreSlice('navCore');
+  const appPolicyHashSource = { pane: resolvePanePolicy(), group: resolveNavGroupVisibilityPolicy() };
+  if (navCore && typeof navCore.resolvePolicyHash === 'function') {
+    const corePanePolicy = navCore.DEFAULT_NAV_PANE_POLICY && typeof navCore.DEFAULT_NAV_PANE_POLICY === 'object'
+      ? navCore.DEFAULT_NAV_PANE_POLICY
+      : NAV_POLICY;
+    const coreGroupBase = navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY && typeof navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY === 'object'
+      ? navCore.DEFAULT_NAV_GROUP_VISIBILITY_POLICY
+      : NAV_GROUP_VISIBILITY_POLICY;
+    const coreRollout = navCore.DEFAULT_NAV_GROUP_ROLLOUT_POLICY && typeof navCore.DEFAULT_NAV_GROUP_ROLLOUT_POLICY === 'object'
+      ? navCore.DEFAULT_NAV_GROUP_ROLLOUT_POLICY
+      : NAV_GROUP_ROLLOUT_POLICY;
+    const coreGroupPolicy = {};
+    ['operator', 'admin', 'developer'].forEach((role) => {
+      const base = Array.isArray(coreGroupBase[role]) ? coreGroupBase[role] : [];
+      const rollout = ADMIN_NAV_ROLLOUT_V1 && Array.isArray(coreRollout[role]) ? coreRollout[role] : [];
+      coreGroupPolicy[role] = base.concat(rollout);
+    });
+    const corePolicyHashSource = { pane: corePanePolicy, group: coreGroupPolicy };
+    return {
+      appHash: navCore.resolvePolicyHash(appPolicyHashSource),
+      coreHash: navCore.resolvePolicyHash(corePolicyHashSource)
+    };
+  }
+  const appHash = JSON.stringify(appPolicyHashSource);
+  return { appHash, coreHash: appHash };
+}
+
+function syncNavPolicyHashSentinel() {
+  const hashes = resolveNavPolicyHashes();
+  state.navPolicyHashApp = hashes.appHash;
+  state.navPolicyHashCore = hashes.coreHash;
+}
+
+function getRoleFromQueryFallback() {
+  try {
+    const currentUrl = new URL(globalThis.location.href);
+    const raw = currentUrl.searchParams.get('role');
+    if (!raw) return null;
+    return normalizeRoleValue(raw);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function resolveRoleFromPersistence(defaultRole) {
+  const fallbackRole = normalizeRoleValue(defaultRole || 'operator');
+  if (!ADMIN_ROLE_PERSIST_ENABLED) return fallbackRole;
+  const stateCore = resolveCoreSlice('stateCore');
+  if (!stateCore) return fallbackRole;
+  const urlRole = typeof stateCore.parseRoleFromQuery === 'function'
+    ? stateCore.parseRoleFromQuery(globalThis.location.search)
+    : getRoleFromQueryFallback();
+  const storedRole = typeof stateCore.loadRoleState === 'function'
+    ? stateCore.loadRoleState()
+    : null;
+  if (typeof stateCore.resolveRoleState === 'function') {
+    return normalizeRoleValue(stateCore.resolveRoleState(urlRole, storedRole, fallbackRole));
+  }
+  return normalizeRoleValue(urlRole || storedRole || fallbackRole);
+}
+
+function persistRoleState(nextRole) {
+  if (!ADMIN_ROLE_PERSIST_ENABLED) return;
+  const normalizedRole = normalizeRoleValue(nextRole);
+  const stateCore = resolveCoreSlice('stateCore');
+  if (stateCore && typeof stateCore.saveRoleState === 'function') {
+    stateCore.saveRoleState(normalizedRole);
+  }
+}
+
+function buildUrlWithPaneRole(nextPane, nextRole) {
+  const stateCore = resolveCoreSlice('stateCore');
+  let nextUrl;
+  if (ADMIN_ROLE_PERSIST_ENABLED && stateCore && typeof stateCore.applyRoleToUrl === 'function') {
+    nextUrl = stateCore.applyRoleToUrl(nextRole, globalThis.location.href);
+  } else {
+    const url = new URL(globalThis.location.href);
+    if (ADMIN_ROLE_PERSIST_ENABLED) url.searchParams.set('role', normalizeRoleValue(nextRole));
+    else url.searchParams.delete('role');
+    nextUrl = `${url.pathname}?${url.searchParams.toString()}`;
+  }
+  const urlObj = new URL(nextUrl, globalThis.location.origin);
+  if (nextPane) urlObj.searchParams.set('pane', String(nextPane));
+  return `${urlObj.pathname}?${urlObj.searchParams.toString()}`.replace(/\?$/, '');
+}
+
+function updateHistoryWithPaneRole(nextPane, nextRole, mode) {
+  if (!ADMIN_HISTORY_SYNC_ENABLED || !globalThis.history) return;
+  const historyMode = mode || 'replace';
+  const url = buildUrlWithPaneRole(nextPane, nextRole);
+  if (historyMode === 'push' && typeof globalThis.history.pushState === 'function') {
+    globalThis.history.pushState({ pane: nextPane, role: nextRole }, '', url);
+    return;
+  }
+  if (typeof globalThis.history.replaceState === 'function') {
+    globalThis.history.replaceState({ pane: nextPane, role: nextRole }, '', url);
+  }
+}
+
+function isRolloutEnabledForGroup(groupEl, role) {
+  if (!groupEl) return true;
+  const rollout = groupEl.getAttribute('data-nav-rollout');
+  const navCore = resolveCoreSlice('navCore');
+  if (navCore && typeof navCore.isNavRolloutAllowed === 'function') {
+    return navCore.isNavRolloutAllowed(role, rollout, ADMIN_NAV_ROLLOUT_V1);
+  }
+  const allowList = parseCsvList(rollout);
+  if (!allowList.length) return true;
+  if (!ADMIN_NAV_ROLLOUT_V1) return false;
+  return allowList.includes(normalizeRoleValue(role));
+}
+
+function collectNavItemsForCore() {
+  const all = Array.from(document.querySelectorAll('.app-nav .nav-item[data-pane-target]'));
+  return all.map((element, index) => {
+    const parentGroup = element.closest('[data-nav-group]');
+    return {
+      index,
+      element,
+      pane: String(element.getAttribute('data-pane-target') || '').trim(),
+      groupKey: parentGroup ? String(parentGroup.getAttribute('data-nav-group') || '').trim() : '',
+      allowList: parseRoleAllowList(element.getAttribute('data-role-allow')),
+      rollout: parentGroup ? parentGroup.getAttribute('data-nav-rollout') : null,
+      priority: Number(element.getAttribute('data-nav-priority') || 0)
+    };
+  });
+}
+
+function applyBuildMetaBadge() {
+  const badge = document.getElementById('topbar-build-meta');
+  const valueEl = document.getElementById('topbar-build-meta-value');
+  if (!badge || !valueEl) return;
+  if (!ADMIN_BUILD_META_ENABLED) {
+    badge.setAttribute('data-build-meta-state', 'hidden');
+    valueEl.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    return;
+  }
+  const meta = window && window.ADMIN_APP_BUILD_META && typeof window.ADMIN_APP_BUILD_META === 'object'
+    ? window.ADMIN_APP_BUILD_META
+    : null;
+  state.buildMeta = meta;
+  if (!meta) {
+    badge.setAttribute('data-build-meta-state', 'error');
+    valueEl.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+    return;
+  }
+  const commit = meta.commit ? String(meta.commit).slice(0, 8) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  const branch = meta.branch ? String(meta.branch) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  valueEl.textContent = `${commit}@${branch}`;
+  syncNavPolicyHashSentinel();
+  if (state.navPolicyHashApp && state.navPolicyHashCore && state.navPolicyHashApp !== state.navPolicyHashCore) {
+    badge.setAttribute('data-build-meta-state', 'warn');
+    return;
+  }
+  badge.setAttribute('data-build-meta-state', 'ok');
 }
 
 function resolveGuardBannerElement() {
@@ -268,9 +510,15 @@ function renderGuardBanner(rawError) {
   const cause = el.querySelector('[data-guard-field="cause"]');
   const impact = el.querySelector('[data-guard-field="impact"]');
   const action = el.querySelector('[data-guard-field="action"]');
+  const recommendedPane = rawError && typeof rawError === 'object' && rawError.recommendedPane
+    ? String(rawError.recommendedPane)
+    : '';
+  const actionText = recommendedPane
+    ? `${normalized.action || '-'}（推奨: ${recommendedPane}）`
+    : (normalized.action || '-');
   if (cause) cause.textContent = normalized.cause || '-';
   if (impact) impact.textContent = normalized.impact || '-';
-  if (action) action.textContent = normalized.action || '-';
+  if (action) action.textContent = actionText;
   el.classList.add('is-visible');
   el.classList.remove('is-danger', 'is-warn');
   if (normalized.tone === 'warn') el.classList.add('is-warn');
@@ -478,6 +726,7 @@ function hydrateListState() {
   applyCityPackUnifiedListState(resolveListStateFromPersistence('cityPackUnified', readCityPackUnifiedListState()));
   applyVendorUnifiedListState(resolveListStateFromPersistence('vendorUnified', readVendorUnifiedListState()));
   applyDashboardWindowState(resolveListStateFromPersistence('dashboardWindow', readDashboardWindowState()));
+  state.role = resolveRoleFromPersistence(state.role);
 }
 
 function showToast(message, tone) {
@@ -691,10 +940,8 @@ function applyRoleNavPolicy(role) {
 
 function applyNavGroupVisibilityPolicy(role) {
   const navCore = resolveCoreSlice('navCore');
-  const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
-    ? navCore.normalizeRole
-    : (value) => (value === 'admin' || value === 'developer' ? value : 'operator');
-  const nextRole = normalizeRole(role);
+  const nextRole = normalizeRoleValue(role);
+  const visiblePolicy = resolveNavGroupVisibilityPolicy();
   const isGroupVisibleByCore = navCore && typeof navCore.isGroupVisible === 'function'
     ? navCore.isGroupVisible
     : (targetRole, groupKey, policy) => {
@@ -704,40 +951,99 @@ function applyNavGroupVisibilityPolicy(role) {
       };
   document.querySelectorAll('.app-nav [data-nav-group]').forEach((groupEl) => {
     const groupKey = String(groupEl.getAttribute('data-nav-group') || '').trim();
-    const visible = groupKey
-      ? isGroupVisibleByCore(nextRole, groupKey, NAV_GROUP_VISIBILITY_POLICY)
+    const visibleByPolicy = groupKey
+      ? isGroupVisibleByCore(nextRole, groupKey, visiblePolicy)
       : true;
+    const visible = visibleByPolicy && isRolloutEnabledForGroup(groupEl, nextRole);
     groupEl.setAttribute('data-nav-visible', visible ? 'true' : 'false');
     if (visible) groupEl.removeAttribute('aria-hidden');
     else groupEl.setAttribute('aria-hidden', 'true');
   });
 }
 
-function setRole(role) {
+function applyNavItemVisibilityPolicy(role) {
   const navCore = resolveCoreSlice('navCore');
-  const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
-    ? navCore.normalizeRole
-    : (value) => (value === 'admin' || value === 'developer' ? value : 'operator');
-  const nextRole = normalizeRole(role);
+  const nextRole = normalizeRoleValue(role);
+  const navItems = collectNavItemsForCore();
+  if (navCore && typeof navCore.resolveVisibleNavItems === 'function') {
+    const evaluated = navCore.resolveVisibleNavItems(navItems, nextRole, {
+      groupPolicy: resolveNavGroupVisibilityPolicy(),
+      rolloutEnabled: ADMIN_NAV_ROLLOUT_V1
+    });
+    evaluated.forEach((entry) => {
+      if (!entry || !entry.element) return;
+      const visible = entry.visible === true;
+      entry.element.setAttribute('data-nav-item-visible', visible ? 'true' : 'false');
+      if (!visible) entry.element.setAttribute('aria-hidden', 'true');
+      else entry.element.removeAttribute('aria-hidden');
+    });
+    return;
+  }
+  navItems.forEach((entry) => {
+    if (!entry || !entry.element) return;
+    const hiddenGroup = entry.element.closest('.nav-group[data-nav-visible="false"]');
+    const allowList = parseRoleAllowList(entry.element.getAttribute('data-role-allow'));
+    const roleAllowed = !allowList.length || allowList.includes(nextRole);
+    const visible = !hiddenGroup && roleAllowed;
+    entry.element.setAttribute('data-nav-item-visible', visible ? 'true' : 'false');
+    if (!visible) entry.element.setAttribute('aria-hidden', 'true');
+    else entry.element.removeAttribute('aria-hidden');
+  });
+}
+
+function resolveAllowedPaneForRole(role, pane, fallbackPane) {
+  const navCore = resolveCoreSlice('navCore');
+  const nextRole = normalizeRoleValue(role);
+  const panePolicy = resolvePanePolicy();
+  if (navCore && typeof navCore.resolveAllowedPane === 'function') {
+    return navCore.resolveAllowedPane(nextRole, pane, panePolicy, fallbackPane || 'home');
+  }
+  const allowList = Array.isArray(panePolicy[nextRole]) ? panePolicy[nextRole] : [];
+  if (pane && allowList.includes(pane)) return pane;
+  return fallbackPane || 'home';
+}
+
+function setRole(role, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const navCore = resolveCoreSlice('navCore');
+  const nextRole = normalizeRoleValue(role);
   state.role = nextRole;
+  persistRoleState(nextRole);
   if (appShell) appShell.setAttribute('data-role', nextRole);
   document.querySelectorAll('.role-btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.roleValue === nextRole);
   });
   applyRoleNavPolicy(nextRole);
   applyNavGroupVisibilityPolicy(nextRole);
+  applyNavItemVisibilityPolicy(nextRole);
   const activePane = document.querySelector('.app-pane.is-active');
-  const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : '';
-  const allowList = NAV_POLICY[nextRole] || NAV_POLICY.operator;
-  if (paneKey && !allowList.includes(paneKey)) {
-    activatePane('home');
+  const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : (state.activePane || 'home');
+  let allowedPane = resolveAllowedPaneForRole(nextRole, paneKey, 'home');
+  if (paneKey && navCore && typeof navCore.resolveActiveNavItem === 'function') {
+    const visibleMatch = navCore.resolveActiveNavItem(collectNavItemsForCore(), allowedPane, nextRole, {
+      groupPolicy: resolveNavGroupVisibilityPolicy(),
+      rolloutEnabled: ADMIN_NAV_ROLLOUT_V1,
+      fallbackPane: 'home'
+    });
+    if (!visibleMatch || visibleMatch.pane !== allowedPane) {
+      allowedPane = 'home';
+    }
   }
+  if (paneKey && paneKey !== allowedPane) {
+    renderGuardBanner({ error: opts.guardReason || 'ROLE_FORBIDDEN', recommendedPane: allowedPane });
+    activatePane(allowedPane, { historyMode: 'replace', guardReason: 'ROLE_FORBIDDEN' });
+    return;
+  }
+  if (opts.syncHistory !== false) {
+    updateHistoryWithPaneRole(paneKey || 'home', nextRole, opts.historyMode || 'replace');
+  }
+  applyBuildMetaBadge();
 }
 
 function setupRoleSwitch() {
   document.querySelectorAll('.role-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      setRole(btn.dataset.roleValue);
+      setRole(btn.dataset.roleValue, { historyMode: 'push', syncHistory: true, guardReason: 'ROLE_FORBIDDEN' });
     });
   });
 }
@@ -748,7 +1054,7 @@ function setupNav() {
       const target = btn.dataset.paneTarget;
       if (!target) return;
       const scrollTarget = btn.dataset.scrollTarget || null;
-      activatePane(target, { scrollTarget, clickedButton: btn });
+      activatePane(target, { scrollTarget, clickedButton: btn, historyMode: 'push' });
     });
   });
 }
@@ -802,7 +1108,7 @@ function setupHomeControls() {
     });
   });
   document.getElementById('topbar-open-alerts')?.addEventListener('click', () => {
-    activatePane('alerts');
+    activatePane('alerts', { allowHiddenRollout: true, historyMode: 'push' });
     void loadAlertsSummary({ notify: false });
   });
   document.getElementById('home-run-test')?.addEventListener('click', () => {
@@ -1392,48 +1698,58 @@ function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const normalizedTarget = normalizePaneTarget(target);
   const navCore = resolveCoreSlice('navCore');
-  const resolveAllowedPaneByCore = navCore && typeof navCore.resolveAllowedPane === 'function'
-    ? navCore.resolveAllowedPane
-    : (role, pane, panePolicy, fallbackPane) => {
-        const targetRole = role === 'admin' || role === 'developer' ? role : 'operator';
-        const allowed = Array.isArray(panePolicy && panePolicy[targetRole]) ? panePolicy[targetRole] : [];
-        if (pane && allowed.includes(pane)) return pane;
-        return fallbackPane || 'home';
-      };
-  const nextPane = resolveAllowedPaneByCore(state.role, normalizedTarget, NAV_POLICY, 'home');
-  const navItems = Array.from(document.querySelectorAll('.nav-item'));
-  const isVisibleNavItem = (element) => {
-    if (!element) return false;
-    const hiddenGroup = element.closest('.nav-group[data-nav-visible="false"]');
-    return !hiddenGroup;
-  };
-  if (opts.clickedButton) {
-    navItems.forEach((el) => {
-      el.classList.toggle('is-active', el === opts.clickedButton && el.dataset.paneTarget === nextPane);
-    });
-  } else {
-    let activated = false;
-    navItems.forEach((el) => {
-      const shouldActivate = !activated && isVisibleNavItem(el) && el.dataset.paneTarget === nextPane;
-      el.classList.toggle('is-active', shouldActivate);
-      if (shouldActivate) activated = true;
-    });
-    if (!activated) {
-      navItems.forEach((el) => {
-        const shouldActivate = !activated && isVisibleNavItem(el) && el.dataset.paneTarget === 'home';
-        el.classList.toggle('is-active', shouldActivate);
-        if (shouldActivate) activated = true;
+  let nextPane = resolveAllowedPaneForRole(state.role, normalizedTarget, 'home');
+  let paneBlocked = normalizedTarget !== nextPane;
+  let guardReason = opts.guardReason || 'PANE_FORBIDDEN';
+  if (!paneBlocked && normalizedTarget !== 'home' && opts.allowHiddenRollout !== true) {
+    const paneEntries = collectNavItemsForCore().filter((entry) => entry.pane === normalizedTarget);
+    if (paneEntries.length) {
+      const rolloutVisible = paneEntries.some((entry) => {
+        const groupEl = entry.element ? entry.element.closest('[data-nav-group]') : null;
+        return isRolloutEnabledForGroup(groupEl, state.role);
       });
+      if (!rolloutVisible) {
+        paneBlocked = true;
+        guardReason = 'ROLLOUT_DISABLED';
+        nextPane = resolveAllowedPaneForRole(state.role, 'home', 'home');
+      }
     }
   }
+  const navItems = Array.from(document.querySelectorAll('.nav-item[data-pane-target]'));
+  let activeButton = null;
+  if (opts.clickedButton
+      && opts.clickedButton.dataset
+      && opts.clickedButton.dataset.paneTarget === nextPane
+      && opts.clickedButton.getAttribute('data-nav-item-visible') !== 'false') {
+    activeButton = opts.clickedButton;
+  }
+  if (!activeButton && navCore && typeof navCore.resolveActiveNavItem === 'function') {
+    const resolved = navCore.resolveActiveNavItem(collectNavItemsForCore(), nextPane, state.role, {
+      groupPolicy: resolveNavGroupVisibilityPolicy(),
+      rolloutEnabled: ADMIN_NAV_ROLLOUT_V1,
+      fallbackPane: nextPane
+    });
+    if (resolved && resolved.element) activeButton = resolved.element;
+  }
+  if (!activeButton) {
+    activeButton = navItems.find((element) => {
+      return element.getAttribute('data-nav-item-visible') !== 'false'
+        && element.dataset
+        && element.dataset.paneTarget === nextPane;
+    }) || null;
+  }
+  navItems.forEach((element) => {
+    element.classList.toggle('is-active', Boolean(activeButton && activeButton === element));
+  });
   document.querySelectorAll('.app-pane').forEach((pane) => {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
-  if (!opts.skipHistory && globalThis.history && typeof globalThis.history.replaceState === 'function') {
-    const nextUrl = new URL(globalThis.location.href);
-    nextUrl.searchParams.set('pane', nextPane);
-    globalThis.history.replaceState({}, '', `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
+  state.activePane = nextPane;
+  if (!opts.skipHistory) {
+    const mode = opts.historyMode || 'replace';
+    updateHistoryWithPaneRole(nextPane, state.role, mode);
   }
+  if (paneBlocked) renderGuardBanner({ error: guardReason, recommendedPane: nextPane });
   updatePageHeader(nextPane);
   expandPaneDetails(nextPane);
   if (opts.scrollTarget) {
@@ -1444,7 +1760,18 @@ function activatePane(target, options) {
 function activateInitialPane() {
   const currentUrl = new URL(globalThis.location.href);
   const pane = currentUrl.searchParams.get('pane');
-  activatePane(pane || 'home', { skipHistory: true });
+  activatePane(pane || 'home', { historyMode: 'replace' });
+}
+
+function setupHistorySync() {
+  if (!ADMIN_HISTORY_SYNC_ENABLED) return;
+  globalThis.addEventListener('popstate', () => {
+    const nextRole = resolveRoleFromPersistence(state.role || 'operator');
+    setRole(nextRole, { syncHistory: false });
+    const currentUrl = new URL(globalThis.location.href);
+    const pane = currentUrl.searchParams.get('pane') || 'home';
+    activatePane(pane, { skipHistory: true });
+  });
 }
 
 const PANE_SHORTCUTS = Object.freeze({
@@ -1488,7 +1815,7 @@ function setupPaneKeyboardShortcuts() {
     const pane = PANE_SHORTCUTS[key];
     if (!pane) return;
     event.preventDefault();
-    activatePane(pane);
+    activatePane(pane, { historyMode: 'push' });
     focusPaneDecisionCard(pane);
   });
 }
@@ -7943,6 +8270,7 @@ function setupLlmControls() {
 (async () => {
   await loadDict();
   applyDict();
+  applyBuildMetaBadge();
   hydrateListState();
   setupRoleSwitch();
   setupNav();
@@ -7959,9 +8287,10 @@ function setupLlmControls() {
   setupDecisionActions();
   setupAudit();
   setupLlmControls();
-  setRole(state.role);
+  setRole(state.role, { historyMode: 'replace', syncHistory: false });
   expandAllDetails();
   activateInitialPane();
+  setupHistorySync();
   setupPaneKeyboardShortcuts();
 
   loadMonitorData({ notify: false });
