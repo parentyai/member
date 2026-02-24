@@ -67,6 +67,34 @@ function requestJson(path, method, token, payload, extraOptions) {
   });
 }
 
+function requestWithoutBody(path, method, token, extraOptions) {
+  const requestOptions = {
+    hostname: LINE_API_HOST,
+    path,
+    method: method || 'POST',
+    headers: buildHeaders(token, extraOptions)
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(requestOptions, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ status: res.statusCode, body: data });
+        } else {
+          const err = new Error(`LINE API error: ${res.statusCode}`);
+          err.status = res.statusCode;
+          err.body = data;
+          reject(err);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 async function pushMessage(lineUserId, message, options) {
   if (!lineUserId) throw new Error('lineUserId required');
   const killSwitch = await resolveKillSwitch();
@@ -95,7 +123,35 @@ async function replyMessage(replyToken, message, options) {
   return requestJson('/v2/bot/message/reply', 'POST', token, payload, options);
 }
 
+async function linkRichMenuToUser(lineUserId, richMenuId, options) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  if (!richMenuId) throw new Error('richMenuId required');
+  const killSwitch = await resolveKillSwitch();
+  if (killSwitch) {
+    throw new Error('kill switch is ON');
+  }
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const encodedUserId = encodeURIComponent(String(lineUserId));
+  const encodedRichMenuId = encodeURIComponent(String(richMenuId));
+  const path = `/v2/bot/user/${encodedUserId}/richmenu/${encodedRichMenuId}`;
+  return requestWithoutBody(path, 'POST', token, options);
+}
+
+async function unlinkRichMenuFromUser(lineUserId, options) {
+  if (!lineUserId) throw new Error('lineUserId required');
+  const killSwitch = await resolveKillSwitch();
+  if (killSwitch) {
+    throw new Error('kill switch is ON');
+  }
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const encodedUserId = encodeURIComponent(String(lineUserId));
+  const path = `/v2/bot/user/${encodedUserId}/richmenu`;
+  return requestWithoutBody(path, 'DELETE', token, options);
+}
+
 module.exports = {
   pushMessage,
-  replyMessage
+  replyMessage,
+  linkRichMenuToUser,
+  unlinkRichMenuFromUser
 };

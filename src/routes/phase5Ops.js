@@ -151,10 +151,13 @@ function parseUsersSortKey(value) {
     'createdAt',
     'updatedAt',
     'currentPeriodEnd',
+    'nextTodoDueAt',
     'lineUserId',
     'memberNumber',
     'category',
     'status',
+    'householdType',
+    'journeyStage',
     'deliveryCount',
     'clickCount',
     'reactionRate',
@@ -174,6 +177,23 @@ function parseUsersSortKey(value) {
 function parseUsersSortDir(value) {
   if (value === null || value === undefined || value === '') return null;
   if (value === 'asc' || value === 'desc') return value;
+  return null;
+}
+
+function parseHouseholdType(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['single', 'couple', 'accompany1', 'accompany2'].includes(value)) return value;
+  return null;
+}
+
+function parseJourneyStage(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  return String(value).trim().toLowerCase() || null;
+}
+
+function parseTodoState(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['open', 'overdue', 'none'].includes(value)) return value;
   return null;
 }
 

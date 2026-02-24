@@ -655,9 +655,9 @@
                             <label for="scenarioKey" data-dict-key="ui.label.composer.scenario" data-dict-tip="ui.help.composer.scenario">シナリオ</label>
                             <select id="scenarioKey">
                               <option value="A" data-dict-key="ui.value.scenario.A">A単身</option>
-                              <option value="B" data-dict-key="ui.value.scenario.B" disabled>B夫婦（未対応）</option>
+                              <option value="B" data-dict-key="ui.value.scenario.B">B夫婦</option>
                               <option value="C" data-dict-key="ui.value.scenario.C">C帯同前</option>
-                              <option value="D" data-dict-key="ui.value.scenario.D" disabled>D帯同後（未対応）</option>
+                              <option value="D" data-dict-key="ui.value.scenario.D">D帯同後</option>
                             </select>
                           </div>
                           <div class="flex-1">
@@ -760,9 +760,9 @@
                         <select id="composer-saved-scenario">
                           <option value="" data-dict-key="ui.value.common.all">すべて</option>
                           <option value="A" data-dict-key="ui.value.scenario.A">A単身</option>
-                          <option value="B" data-dict-key="ui.value.scenario.B" disabled>B夫婦（未対応）</option>
+                          <option value="B" data-dict-key="ui.value.scenario.B">B夫婦</option>
                           <option value="C" data-dict-key="ui.value.scenario.C">C帯同前</option>
-                          <option value="D" data-dict-key="ui.value.scenario.D" disabled>D帯同後（未対応）</option>
+                          <option value="D" data-dict-key="ui.value.scenario.D">D帯同後</option>
                         </select>
                       </div>
                       <div class="flex-1">
@@ -2058,6 +2058,16 @@
                   <div class="note">最終利用: <span id="users-detail-last-used-at">-</span></div>
                   <div class="note">ブロック履歴</div>
                   <ul id="users-detail-blocked-history" class="repo-map-list mono-list"><li>-</li></ul>
+                  <div class="note">Journey 属性: <span id="users-detail-journey-household-type">-</span></div>
+                  <div class="note">Journey 段階: <span id="users-detail-journey-stage">-</span></div>
+                  <div class="note">渡航日: <span id="users-detail-journey-departure-date">-</span></div>
+                  <div class="note">着任日: <span id="users-detail-journey-assignment-date">-</span></div>
+                  <div class="note">Todo未完了: <span id="users-detail-journey-open-count">-</span></div>
+                  <div class="note">Todo期限超過: <span id="users-detail-journey-overdue-count">-</span></div>
+                  <div class="note">次Todo期限: <span id="users-detail-journey-next-due-at">-</span></div>
+                  <div class="note">次リマインド: <span id="users-detail-journey-last-reminder-at">-</span></div>
+                  <div class="note">Journey TODO（先頭5件）</div>
+                  <ul id="users-detail-journey-next-todos" class="repo-map-list mono-list"><li>-</li></ul>
                 </div>
               </div>
             </div>

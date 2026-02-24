@@ -286,6 +286,16 @@
 - C: 家族（子あり）CA赴任
 ※ B/Dは将来枠として定義してよいが、Phase0 UIには出さない。
 
+### 6.3.1-b Phase653 Addendum（Paid Personalization v1）
+- 課金後の運用では scenarioKey を `A/B/C/D` で扱う。
+- `householdType` は scenarioKey mirror として以下を採用する。
+  - `single -> A`
+  - `couple -> B`
+  - `accompany1 -> C`
+  - `accompany2 -> D`
+- 入力導線は `RichMenu -> Postback` および LINEコマンド（`属性:`, `渡航日:`, `着任日:`, `TODO一覧`, `TODO完了:`）を使用する。
+- 期限通知 cadence は `7日前/3日前/前日` を基本値として `opsConfig/journeyPolicy` で管理する。
+
 ### 6.3.2 ステップ（4ブロック固定）
 - 3mo（出発3か月前）
 - 1mo（出発1か月前）

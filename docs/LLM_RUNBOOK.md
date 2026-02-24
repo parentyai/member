@@ -155,3 +155,32 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1. `POST /api/admin/llm/config/set` `{ llmEnabled: false }` で LLM を無効化
 2. `LLM_FEATURE_FLAG` 環境変数を削除
 3. `audit_logs` で `blockedReason='llm_disabled'` が記録されることを確認
+
+## Phase653 Addendum（Paid FAQ品質 + Personalization）
+
+### 有料FAQ品質ゲート
+- 実装エントリ: `generatePaidFaqReply -> generatePaidAssistantReply -> guardLlmOutput`。
+- 品質ゲート:
+  - `PAID_FAQ_MIN_TOP1_SCORE`（既定 0）
+  - `PAID_FAQ_MIN_CITATION_COUNT`（既定 1）
+- 判定:
+  - citation不足 -> `blockedReason=citation_missing`
+  - 信頼度不足 -> `blockedReason=low_confidence`
+- ブロック時は LLM回答を返さず FAQ検索UXへ降格する。
+
+### 監査ログ
+- `llm_quality_logs`:
+  - `decision`, `blockedReason`, `top1Score`, `top2Score`, `citationCount`, `retryCount`
+- `llm_usage_logs`:
+  - plan/status/intent/decision/blockedReason/tokenUsed の監査を継続
+
+### Personalization文脈
+- `resolvePersonalizedLlmContext` で以下をプロンプト文脈に注入する:
+  - plan/subscriptionStatus
+  - householdType/scenarioKeyMirror
+  - journeyStage/departureDate/assignmentDate
+  - todoOpenCount/todoOverdueCount/nextTodoDueAt
+
+### 即時停止
+- `ENABLE_PAID_FAQ_QUALITY_V2=0`（品質ゲート経路を停止）
+- `opsConfig/llmPolicy.allowed_intents_pro=[]`（有料LLM利用停止）

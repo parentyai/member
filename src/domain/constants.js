@@ -9,7 +9,7 @@ const SCENARIO_KEYS = Object.freeze({
   D: 'D'
 });
 
-const PHASE0_SCENARIOS = Object.freeze(['A', 'C']);
+const PHASE0_SCENARIOS = Object.freeze(['A', 'B', 'C', 'D']);
 
 const STEP_KEYS = Object.freeze({
   THREE_MONTHS: '3mo',

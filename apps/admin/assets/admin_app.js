@@ -201,7 +201,7 @@ if (!ADMIN_TREND_UI_ENABLED) {
   state.vendorSortKey = 'createdAt';
 }
 
-const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'C']);
+const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
 const COMPOSER_SAVED_SORT_TYPES = Object.freeze({
   createdAt: 'date',
@@ -217,12 +217,17 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   createdAt: 'date',
   updatedAt: 'date',
   currentPeriodEnd: 'date',
+  nextTodoDueAt: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
   status: 'string',
+  householdType: 'string',
+  journeyStage: 'string',
   plan: 'string',
   subscriptionStatus: 'string',
+  todoOpenCount: 'number',
+  todoOverdueCount: 'number',
   deliveryCount: 'number',
   clickCount: 'number',
   reactionRate: 'number',
@@ -3169,6 +3174,35 @@ function subscriptionStatusLabel(value) {
   return labels[status] || 'unknown';
 }
 
+function normalizeHouseholdType(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['single', 'couple', 'accompany1', 'accompany2'].includes(normalized)) return normalized;
+  return '';
+}
+
+function householdTypeLabel(value) {
+  const type = normalizeHouseholdType(value);
+  if (!type) return '-';
+  const labels = {
+    single: 'single',
+    couple: 'couple',
+    accompany1: 'accompany1',
+    accompany2: 'accompany2'
+  };
+  return labels[type] || type;
+}
+
+function normalizeJourneyStage(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return '';
+  return normalized;
+}
+
+function journeyStageLabel(value) {
+  const stage = normalizeJourneyStage(value);
+  return stage || '-';
+}
+
 function resolveUserReactionRate(item) {
   if (Number.isFinite(Number(item && item.reactionRate))) {
     const numeric = Number(item.reactionRate);
@@ -3187,12 +3221,17 @@ function formatUserReactionRate(item) {
 function resolveUsersSortValue(item, key) {
   if (key === 'category') return item && item.categoryLabel;
   if (key === 'status') return item && item.statusLabel;
+  if (key === 'householdType') return item && item.householdType;
+  if (key === 'journeyStage') return item && item.journeyStage;
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'billingIntegrity') return item && item.billingIntegrityState;
   if (key === 'reactionRate') return resolveUserReactionRate(item);
   if (key === 'updatedAt') return item && item.updatedAt;
   if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'nextTodoDueAt') return item && item.nextTodoDueAt;
+  if (key === 'todoOpenCount') return item && item.todoOpenCount;
+  if (key === 'todoOverdueCount') return item && item.todoOverdueCount;
   if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'llmUsageToday') return item && item.llmUsageToday;
   if (key === 'tokensToday') return item && item.llmTokenUsedToday;
@@ -3982,7 +4021,7 @@ function renderComposerScenarioCompare(items) {
     current.clicked += clicked;
   });
   tbody.innerHTML = '';
-  ['A', 'C'].forEach((scenario) => {
+  ['A', 'B', 'C', 'D'].forEach((scenario) => {
     const row = stats.get(scenario);
     const tr = document.createElement('tr');
     const scenarioTd = document.createElement('td');
@@ -5460,6 +5499,10 @@ function mapUsersSummaryItem(item) {
     category: normalizeUserCategory(scenarioKey),
     categoryLabel: userCategoryLabel(scenarioKey),
     statusLabel: resolveUserStatus(stepKey),
+    householdType,
+    householdTypeLabel: householdTypeLabel(householdType),
+    journeyStage,
+    journeyStageLabel: journeyStageLabel(journeyStage),
     plan,
     planLabel: planLabel(plan),
     subscriptionStatus,
@@ -5467,6 +5510,9 @@ function mapUsersSummaryItem(item) {
     currentPeriodEnd: row.currentPeriodEnd || null,
     subscriptionUpdatedAt: row.subscriptionUpdatedAt || null,
     lastStripeEventId: typeof row.lastStripeEventId === 'string' ? row.lastStripeEventId : '',
+    nextTodoDueAt: row.nextTodoDueAt || null,
+    todoOpenCount: Number.isFinite(todoOpenCount) ? todoOpenCount : 0,
+    todoOverdueCount: Number.isFinite(todoOverdueCount) ? todoOverdueCount : 0,
     llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
     llmTokenUsed: Number.isFinite(llmTokenUsed) ? llmTokenUsed : 0,
     llmBlockedCount: Number.isFinite(llmBlockedCount) ? llmBlockedCount : 0,
@@ -5614,6 +5660,10 @@ function renderUsersSummaryBillingDetail(payload) {
   const lineUserId = detail && detail.lineUserId ? detail.lineUserId : state.usersSummarySelectedLineUserId;
   const billing = detail && detail.billing ? detail.billing : null;
   const usage = detail && detail.llmUsage ? detail.llmUsage : null;
+  const journey = detail && detail.journey ? detail.journey : null;
+  const journeyProfile = journey && journey.profile ? journey.profile : null;
+  const journeySchedule = journey && journey.schedule ? journey.schedule : null;
+  const journeyTodoStats = journey && journey.todoStats ? journey.todoStats : null;
   const lastStripeEvent = detail && detail.lastStripeEvent ? detail.lastStripeEvent : null;
   setTextContent('users-detail-line-user-id', lineUserId || '-');
   setTextContent('users-detail-plan', billing && billing.plan ? planLabel(billing.plan) : '-');
@@ -5624,6 +5674,14 @@ function renderUsersSummaryBillingDetail(payload) {
   setTextContent('users-detail-llm-token-used', usage && Number.isFinite(Number(usage.totalTokenUsed)) ? String(Number(usage.totalTokenUsed)) : '-');
   setTextContent('users-detail-llm-blocked-count', usage && Number.isFinite(Number(usage.blockedCount)) ? String(Number(usage.blockedCount)) : '-');
   setTextContent('users-detail-last-used-at', usage && usage.lastUsedAt ? formatTimestampForList(usage.lastUsedAt) : '-');
+  setTextContent('users-detail-journey-household-type', journeyProfile && journeyProfile.householdType ? householdTypeLabel(journeyProfile.householdType) : '-');
+  setTextContent('users-detail-journey-stage', journeySchedule && journeySchedule.stage ? journeyStageLabel(journeySchedule.stage) : '-');
+  setTextContent('users-detail-journey-departure-date', journeySchedule && journeySchedule.departureDate ? journeySchedule.departureDate : '-');
+  setTextContent('users-detail-journey-assignment-date', journeySchedule && journeySchedule.assignmentDate ? journeySchedule.assignmentDate : '-');
+  setTextContent('users-detail-journey-open-count', journeyTodoStats && Number.isFinite(Number(journeyTodoStats.openCount)) ? String(Number(journeyTodoStats.openCount)) : '-');
+  setTextContent('users-detail-journey-overdue-count', journeyTodoStats && Number.isFinite(Number(journeyTodoStats.overdueCount)) ? String(Number(journeyTodoStats.overdueCount)) : '-');
+  setTextContent('users-detail-journey-next-due-at', journeyTodoStats && journeyTodoStats.nextDueAt ? formatTimestampForList(journeyTodoStats.nextDueAt) : '-');
+  setTextContent('users-detail-journey-last-reminder-at', journeyTodoStats && journeyTodoStats.lastReminderAt ? formatTimestampForList(journeyTodoStats.lastReminderAt) : '-');
   const historyEl = document.getElementById('users-detail-blocked-history');
   if (historyEl) {
     historyEl.innerHTML = '';
@@ -5643,6 +5701,24 @@ function renderUsersSummaryBillingDetail(payload) {
   const eventType = lastStripeEvent && lastStripeEvent.eventType ? lastStripeEvent.eventType : '-';
   const eventStatus = lastStripeEvent && lastStripeEvent.status ? lastStripeEvent.status : '-';
   setTextContent('users-detail-last-stripe-event-type', `${eventType} / ${eventStatus}`);
+  const nextTodosEl = document.getElementById('users-detail-journey-next-todos');
+  if (nextTodosEl) {
+    nextTodosEl.innerHTML = '';
+    const nextTodos = journey && Array.isArray(journey.nextTodos) ? journey.nextTodos : [];
+    if (!nextTodos.length) {
+      nextTodosEl.textContent = '-';
+    } else {
+      nextTodos.slice(0, 5).forEach((entry) => {
+        const li = document.createElement('li');
+        const todoKey = entry && entry.todoKey ? String(entry.todoKey) : '-';
+        const title = entry && entry.title ? String(entry.title) : '-';
+        const dueDate = entry && entry.dueDate ? String(entry.dueDate) : '-';
+        const status = entry && entry.status ? String(entry.status) : '-';
+        li.textContent = `[${todoKey}] ${title} (${dueDate} / ${status})`;
+        nextTodosEl.appendChild(li);
+      });
+    }
+  }
 }
 
 async function loadUsersSummaryBillingDetail(lineUserId, options) {
@@ -7718,7 +7794,7 @@ function buildComposerLocalSafetyIssues(payload) {
   }
   if (payload.notificationType === 'STEP') {
     if (!COMPOSER_ALLOWED_SCENARIOS.has(String(payload.scenarioKey || ''))) {
-      issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。AまたはCを選択してください。'));
+      issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。A/B/C/Dから選択してください。'));
     }
     if (!COMPOSER_ALLOWED_STEPS.has(String(payload.stepKey || ''))) {
       issues.push(t('ui.desc.composer.safety.step', 'ステップが不正です。定義済みステップを選択してください。'));

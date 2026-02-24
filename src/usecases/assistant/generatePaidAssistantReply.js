@@ -146,7 +146,8 @@ function buildPrompt(question, intent, kbCandidates, contextSnapshot) {
       'Do not include direct URLs.',
       'Evidence keys must come from provided kbCandidates.articleId.',
       `Allowed intent: ${intent}`,
-      `Schema: ${PAID_ASSISTANT_REPLY_SCHEMA_ID}`
+      `Schema: ${PAID_ASSISTANT_REPLY_SCHEMA_ID}`,
+      contextSummary ? `UserContext: ${contextSummary}` : ''
     ].join('\n'),
     input: {
       question,
@@ -215,14 +216,19 @@ async function generatePaidAssistantReply(params) {
       blockedReason: 'citation_missing',
       fallbackReplyText: faq.replyText,
       intent,
-      citations: []
+      citations: [],
+      top1Score,
+      top2Score,
+      retryCount: 0
     };
   }
 
   const requestPayload = buildPrompt(question, intent, kbCandidates, payload.contextSnapshot || null);
   let lastFailure = 'template_violation';
+  let retryCount = 0;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    retryCount = attempt;
     try {
       const callResult = await invokeAssistant(adapter, requestPayload, payload.llmPolicy || null);
       const output = normalizeAssistantOutput(callResult.answer, intent);
@@ -246,7 +252,10 @@ async function generatePaidAssistantReply(params) {
         model: callResult.model,
         tokensIn: callResult.tokensIn,
         tokensOut: callResult.tokensOut,
-        citations: output.evidenceKeys
+        citations: output.evidenceKeys,
+        top1Score,
+        top2Score,
+        retryCount
       };
     } catch (err) {
       const message = err && err.message ? String(err.message) : 'llm_error';
@@ -259,7 +268,10 @@ async function generatePaidAssistantReply(params) {
     blockedReason: lastFailure,
     fallbackReplyText: faq.replyText,
     intent,
-    citations: faq.citations || []
+    citations: faq.citations || [],
+    top1Score,
+    top2Score,
+    retryCount: retryCount + 1
   };
 }
 

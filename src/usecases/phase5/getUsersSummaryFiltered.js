@@ -32,10 +32,13 @@ const SORT_KEY_TYPES = Object.freeze({
   createdAt: 'date',
   updatedAt: 'date',
   currentPeriodEnd: 'date',
+  nextTodoDueAt: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
   status: 'string',
+  householdType: 'string',
+  journeyStage: 'string',
   deliveryCount: 'number',
   clickCount: 'number',
   reactionRate: 'number',
@@ -185,8 +188,11 @@ function compareValues(baseA, baseB, valueType, direction) {
 function resolveSortValue(item, key) {
   if (key === 'category') return item && item.categoryLabel;
   if (key === 'status') return item && item.statusLabel;
+  if (key === 'householdType') return item && item.householdType;
+  if (key === 'journeyStage') return item && item.journeyStage;
   if (key === 'reactionRate') return item && item.reactionRate;
   if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'nextTodoDueAt') return item && item.nextTodoDueAt;
   if (key === 'updatedAt') return item && item.updatedAt;
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;

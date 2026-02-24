@@ -22,6 +22,7 @@
 | `audit_logs` | evidence | 365d | false | false |
 | `automation_config` | config | INDEFINITE | false | false |
 | `automation_runs` | config | INDEFINITE | false | false |
+| `billing_lifecycle_automation_logs` | evidence | INDEFINITE | false | false |
 | `checklists` | config | INDEFINITE | false | false |
 | `city_pack_bulletins` | config | INDEFINITE | false | false |
 | `city_pack_feedback` | config | INDEFINITE | false | false |
@@ -38,6 +39,7 @@
 | `faq_articles` | config | INDEFINITE | false | false |
 | `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |
+| `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
 | `notices` | config | INDEFINITE | false | false |
@@ -59,6 +61,7 @@
 | `phase2_runs` | aggregate | 90d | CONDITIONAL | true |
 | `phase22_kpi_snapshots` | config | INDEFINITE | false | false |
 | `redac_membership_links` | config | INDEFINITE | false | false |
+| `rich_menu_bindings` | config | INDEFINITE | false | false |
 | `send_retry_queue` | config | INDEFINITE | false | false |
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |

@@ -8,6 +8,7 @@ const stripeWebhookDeadLettersRepo = require('../../repos/firestore/stripeWebhoo
 const { createEvent } = require('../../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { mapStripeSubscriptionStatus } = require('./mapStripeSubscriptionStatus');
+const { handleBillingLifecycleAutomation } = require('./handleBillingLifecycleAutomation');
 
 const SUBSCRIPTION_EVENTS = new Set([
   'customer.subscription.created',
@@ -228,13 +229,32 @@ async function processStripeWebhookEvent(params) {
       }
     });
 
+    let automation = null;
+    try {
+      automation = await handleBillingLifecycleAutomation({
+        lineUserId,
+        stripeEventId: eventId,
+        prevStatus: existing && existing.status ? existing.status : 'unknown',
+        nextStatus: status,
+        prevPlan: existing && existing.plan ? existing.plan : resolvePlanFromStatus(existing && existing.status),
+        nextPlan: plan
+      });
+    } catch (_automationErr) {
+      automation = {
+        ok: false,
+        status: 'error',
+        reason: 'lifecycle_automation_failed'
+      };
+    }
+
     return {
       ok: true,
       status: 'processed',
       eventId,
       lineUserId,
       subscriptionStatus: status,
-      plan
+      plan,
+      automation
     };
   } catch (err) {
     const message = err && err.message ? String(err.message) : 'stripe_webhook_process_error';

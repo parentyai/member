@@ -36,6 +36,17 @@
     ]
   },
   {
+    "collection": "billing_lifecycle_automation_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/billingLifecycleAutomationLogsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:9"
+    ]
+  },
+  {
     "collection": "checklists",
     "kind": "config",
     "recomputable": false,
@@ -222,6 +233,17 @@
       "src/repos/firestore/linkRegistryRepo.js:14",
       "src/repos/firestore/linkRegistryRepo.js:23",
       "src/repos/firestore/linkRegistryRepo.js:31"
+    ]
+  },
+  {
+    "collection": "llm_quality_logs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/llmQualityLogsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:28"
     ]
   },
   {
@@ -463,6 +485,17 @@
       "src/repos/firestore/redacMembershipLinksRepo.js:11",
       "src/repos/firestore/redacMembershipLinksRepo.js:22",
       "src/repos/firestore/redacMembershipLinksRepo.js:36"
+    ]
+  },
+  {
+    "collection": "rich_menu_bindings",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuBindingsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:50"
     ]
   },
   {

@@ -15,6 +15,9 @@ const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
 const llmUsageStatsRepo = require('../../repos/firestore/llmUsageStatsRepo');
+const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
+const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
+const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
@@ -307,6 +310,15 @@ async function getUserOperationalSummary(params) {
   const usageStatsPromise = llmUsageStatsRepo.listUserUsageStatsByLineUserIds({
     lineUserIds: scopedLineUserIds
   }).catch(() => []);
+  const journeyProfilesPromise = userJourneyProfilesRepo.listUserJourneyProfilesByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
+  const journeySchedulesPromise = userJourneySchedulesRepo.listUserJourneySchedulesByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
+  const journeyTodoStatsPromise = journeyTodoStatsRepo.listUserJourneyTodoStatsByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
   const checklistsPromise = safeQuery(() => listChecklistsByScenarioStepPairs({
     pairs: checklistPairs,
     limit: analyticsLimit
@@ -331,13 +343,16 @@ async function getUserOperationalSummary(params) {
       toAt: queryRange.toAt
     }));
   }
-  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult, subscriptions, usageStats] = await Promise.all([
+  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult, subscriptions, usageStats, journeyProfiles, journeySchedules, journeyTodoStats] = await Promise.all([
     eventsPromise,
     checklistsPromise,
     userChecklistsPromise,
     deliveriesPromise,
     subscriptionsPromise,
-    usageStatsPromise
+    usageStatsPromise,
+    journeyProfilesPromise,
+    journeySchedulesPromise,
+    journeyTodoStatsPromise
   ]);
   let checklists = dedupeRowsById(checklistsResult.rows);
   let userChecklists = dedupeRowsById(userChecklistsResult.rows);
@@ -434,6 +449,9 @@ async function getUserOperationalSummary(params) {
   const deliveryStatsByUser = buildDeliveryStatsByUser(deliveries);
   const subscriptionByUser = buildKeyedMap(subscriptions, 'lineUserId');
   const usageByUser = buildKeyedMap(usageStats, 'lineUserId');
+  const journeyProfileByUser = buildKeyedMap(journeyProfiles, 'lineUserId');
+  const journeyScheduleByUser = buildKeyedMap(journeySchedules, 'lineUserId');
+  const journeyTodoStatsByUser = buildKeyedMap(journeyTodoStats, 'lineUserId');
 
   const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
@@ -453,6 +471,9 @@ async function getUserOperationalSummary(params) {
     const deliveryStats = deliveryStatsByUser.get(user.id) || { deliveryCount: 0, clickCount: 0 };
     const subscription = subscriptionByUser.get(user.id) || null;
     const usage = usageByUser.get(user.id) || null;
+    const journeyProfile = journeyProfileByUser.get(user.id) || null;
+    const journeySchedule = journeyScheduleByUser.get(user.id) || null;
+    const journeyStats = journeyTodoStatsByUser.get(user.id) || null;
     const deliveryCount = Number.isFinite(deliveryStats.deliveryCount) ? deliveryStats.deliveryCount : 0;
     const clickCount = Number.isFinite(deliveryStats.clickCount) ? deliveryStats.clickCount : 0;
     const lastReactionAt = latestClick

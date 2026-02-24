@@ -1444,6 +1444,11 @@ function createServer() {
     const { handleJourneyKpi } = require('./routes/admin/osJourneyKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
+    const {
+      handleStatus: handleJourneyPolicyStatus,
+      handlePlan: handleJourneyPolicyPlan,
+      handleSet: handleJourneyPolicySet
+    } = require('./routes/admin/journeyPolicyConfig');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
