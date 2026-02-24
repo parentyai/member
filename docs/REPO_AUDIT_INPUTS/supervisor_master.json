@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T20:39:37-05:00",
-  "gitCommit": "01b38850e7704ff5107d277a616400d6e7570a38",
-  "branch": "codex/phase638-647-admin-nav-roadmap",
-  "sourceDigest": "d23503f3698c082c65d41b2bdf8b08e805eed2428060a129a9fbf055be890dfc",
+  "generatedAt": "2026-02-23T21:15:20-05:00",
+  "gitCommit": "32305acaf318e6d931ffa2ac9f521bb7e4e90ca8",
+  "branch": "codex/phase648-nav-all-accessible",
+  "sourceDigest": "a285aa62c996659b1a144564b29edc88819f28d0733c241bb0f1731a1bc1f9ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -36,6 +36,24 @@
 - 緊急停止は `ENABLE_ADMIN_NAV_ROLLOUT_V1=0`。
 - build識別の表示停止は `ENABLE_ADMIN_BUILD_META=0`。
 
+## /admin/app ナビ表示ポリシー（Phase648 更新・最新）
+導線迷子の再発防止を優先し、Role別にアクセス可能なカテゴリを左ナビへ全表示する。
+
+| role | 左ナビ表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| admin | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer`, `communication`, `operations` |
+
+運用フラグ:
+- `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=1`（既定）で、Role別許可paneに対応するカテゴリを可視化。
+- 緊急停止は `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0`（旧判定経路へ戻す）。
+- build識別の表示停止は `ENABLE_ADMIN_BUILD_META=0`。
+
+補足:
+- 同一paneが複数groupにある場合、`data-nav-priority` の高い導線を優先して重複表示を抑制する。
+- `notifications` の create/list のような同一group内導線は維持する。
+
 ### nav回帰インシデント手順（追加）
 1) `/admin/app?pane=home&role=operator|admin|developer` で3ロールを確認。  
 2) 表示グループが上表と一致しない場合、`ENABLE_ADMIN_NAV_ROLLOUT_V1` の実値を確認。  
