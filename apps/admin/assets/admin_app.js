@@ -122,6 +122,7 @@ const state = {
   composerCurrentPlanHash: null,
   composerCurrentConfirmToken: null,
   composerKillSwitch: false,
+  repoMapKillSwitch: null,
   usersSummaryItems: [],
   usersSummaryFilteredItems: [],
   usersSummarySortKey: 'createdAt',
@@ -1417,12 +1418,24 @@ function renderRepoMapCategories(categories) {
       cardHeader.appendChild(status);
       card.appendChild(cardHeader);
 
+      const isNotificationSendCard = isNotifications && (item && (item.id === 'notifications' || item.id === 'osNotifications'));
+      const baseCanDo = Array.isArray(item && item.canDo) ? item.canDo : [];
+      const canDoValues = isNotificationSendCard
+        ? (() => {
+            const killSwitch = state.repoMapKillSwitch;
+            let verdict = '結論: 判定できません（Kill Switch未取得）';
+            if (killSwitch === true) verdict = '結論: 送信できません（Kill SwitchがON）';
+            else if (killSwitch === false) verdict = '結論: 送信できます（Kill SwitchはOFF）';
+            return [verdict].concat(baseCanDo);
+          })()
+        : baseCanDo;
+
       const sections = [
         {
           label: isNotifications
             ? t('ui.label.repoMap.notifications.canDo', t('ui.label.repoMap.canDo', '運用判定'))
             : t('ui.label.repoMap.canDo', '運用判定'),
-          values: item && item.canDo
+          values: canDoValues
         },
         {
           label: isNotifications
@@ -1752,9 +1765,20 @@ async function loadRepoMap(options) {
   const notify = !options || options.notify !== false;
   const traceId = newTraceId();
   try {
-    const res = await fetch('/api/admin/repo-map', { headers: buildHeaders({}, traceId) });
-    const data = await readJsonResponse(res);
+    const [repoRes, killRes] = await Promise.all([
+      fetch('/api/admin/repo-map', { headers: buildHeaders({}, traceId) }),
+      fetch('/api/admin/os/kill-switch/status', { headers: buildHeaders({}, traceId) })
+    ]);
+    const data = await readJsonResponse(repoRes);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'repo map load failed');
+
+    try {
+      const killData = await readJsonResponse(killRes);
+      state.repoMapKillSwitch = killData && killData.ok ? Boolean(killData.killSwitch) : null;
+    } catch (_err) {
+      state.repoMapKillSwitch = null;
+    }
+
     const repoMapCore = resolveCoreSlice('repoMapCore');
     const validation = repoMapCore && typeof repoMapCore.validateSchemaMin === 'function'
       ? repoMapCore.validateSchemaMin(data.repoMap || {})
@@ -1771,6 +1795,7 @@ async function loadRepoMap(options) {
     await loadLegacyStatus({ notify: false });
     if (notify) showToast(t('ui.toast.repoMap.reloadOk', 'Repo Mapを更新しました'), 'ok');
   } catch (_err) {
+    state.repoMapKillSwitch = null;
     renderRepoMapSchemaStatus({ ok: false, errors: ['load_failed'] });
     renderGuardBanner(_err && _err.message ? { error: _err.message } : { error: 'repo map load failed' });
     renderRepoMap({

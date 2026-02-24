@@ -27,7 +27,7 @@
 - docs/ACCEPTANCE_PHASE6.md
 - docs/TODO_PHASE6.md
 - docs/GUARDRAILS_PHASE6.md
-- docs/PHASE6_PLAN.md
+- docs/archive/phases/PHASE6_PLAN.md
 - Implementation files: UNKNOWN (to be defined per P6 tasks)
 
 ## Phase6 CLOSE Conditions (Evidence-based)

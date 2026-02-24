@@ -1,0 +1,2616 @@
+{
+  "version": 1,
+  "generatedBy": "scripts/generate_phase_path_map.js",
+  "entries": [
+    {
+      "fileName": "PHASE101_108_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE101_108_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE101_108_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE101_108_PLAN.md",
+      "legacyPath": "docs/PHASE101_108_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE101_108_PLAN.md"
+    },
+    {
+      "fileName": "PHASE117_124_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE117_124_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE117_124_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE117_124_PLAN.md",
+      "legacyPath": "docs/PHASE117_124_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE117_124_PLAN.md"
+    },
+    {
+      "fileName": "PHASE125_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE125_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE125_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE125_PLAN.md",
+      "legacyPath": "docs/PHASE125_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE125_PLAN.md"
+    },
+    {
+      "fileName": "PHASE126_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE126_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE126_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE126_PLAN.md",
+      "legacyPath": "docs/PHASE126_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE126_PLAN.md"
+    },
+    {
+      "fileName": "PHASE127_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE127_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE127_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE127_PLAN.md",
+      "legacyPath": "docs/PHASE127_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE127_PLAN.md"
+    },
+    {
+      "fileName": "PHASE128_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE128_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE128_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE128_PLAN.md",
+      "legacyPath": "docs/PHASE128_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE128_PLAN.md"
+    },
+    {
+      "fileName": "PHASE129_131_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE129_131_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE129_131_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE129_131_PLAN.md",
+      "legacyPath": "docs/PHASE129_131_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE129_131_PLAN.md"
+    },
+    {
+      "fileName": "PHASE132_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE132_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE132_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE132_PLAN.md",
+      "legacyPath": "docs/PHASE132_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE132_PLAN.md"
+    },
+    {
+      "fileName": "PHASE133_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE133_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE133_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE133_PLAN.md",
+      "legacyPath": "docs/PHASE133_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE133_PLAN.md"
+    },
+    {
+      "fileName": "PHASE134_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE134_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE134_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE134_PLAN.md",
+      "legacyPath": "docs/PHASE134_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE134_PLAN.md"
+    },
+    {
+      "fileName": "PHASE135_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE135_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE135_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE135_PLAN.md",
+      "legacyPath": "docs/PHASE135_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE135_PLAN.md"
+    },
+    {
+      "fileName": "PHASE136_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE136_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE136_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE136_PLAN.md",
+      "legacyPath": "docs/PHASE136_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE136_PLAN.md"
+    },
+    {
+      "fileName": "PHASE137_139_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE137_139_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE137_139_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE137_139_PLAN.md",
+      "legacyPath": "docs/PHASE137_139_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE137_139_PLAN.md"
+    },
+    {
+      "fileName": "PHASE13_OPERATIONS_HANDOFF.md",
+      "legacyPath": "docs/PHASE13_OPERATIONS_HANDOFF.md",
+      "archivePath": "docs/archive/phases/PHASE13_OPERATIONS_HANDOFF.md"
+    },
+    {
+      "fileName": "PHASE140_149_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE140_149_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE140_149_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE140_149_PLAN.md",
+      "legacyPath": "docs/PHASE140_149_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE140_149_PLAN.md"
+    },
+    {
+      "fileName": "PHASE150_159_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE150_159_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE150_159_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE150_159_PLAN.md",
+      "legacyPath": "docs/PHASE150_159_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE150_159_PLAN.md"
+    },
+    {
+      "fileName": "PHASE15_PRECONDITIONS.md",
+      "legacyPath": "docs/PHASE15_PRECONDITIONS.md",
+      "archivePath": "docs/archive/phases/PHASE15_PRECONDITIONS.md"
+    },
+    {
+      "fileName": "PHASE160_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE160_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE160_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE160_PLAN.md",
+      "legacyPath": "docs/PHASE160_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE160_PLAN.md"
+    },
+    {
+      "fileName": "PHASE16_PRECONDITIONS.md",
+      "legacyPath": "docs/PHASE16_PRECONDITIONS.md",
+      "archivePath": "docs/archive/phases/PHASE16_PRECONDITIONS.md"
+    },
+    {
+      "fileName": "PHASE170_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE170_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE170_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE171_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE171_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE171_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE172_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE172_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE172_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE173_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE173_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE173_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE174_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE174_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE174_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE175_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE175_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE175_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE176_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE176_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE176_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE177_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE177_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE177_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE178_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE178_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE178_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE179_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE179_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE179_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE180_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE180_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE180_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE181_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE181_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE181_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE182_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE182_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE182_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE183_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE183_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE183_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE184_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE184_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE184_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE185_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE185_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE185_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE186_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE186_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE186_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE187_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE187_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE187_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE187_PLAN.md",
+      "legacyPath": "docs/PHASE187_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE187_PLAN.md"
+    },
+    {
+      "fileName": "PHASE188_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE188_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE188_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE188_PLAN.md",
+      "legacyPath": "docs/PHASE188_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE188_PLAN.md"
+    },
+    {
+      "fileName": "PHASE189_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE189_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE189_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE189_PLAN.md",
+      "legacyPath": "docs/PHASE189_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE189_PLAN.md"
+    },
+    {
+      "fileName": "PHASE190_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE190_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE190_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE190_PLAN.md",
+      "legacyPath": "docs/PHASE190_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE190_PLAN.md"
+    },
+    {
+      "fileName": "PHASE191_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE191_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE191_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE191_PLAN.md",
+      "legacyPath": "docs/PHASE191_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE191_PLAN.md"
+    },
+    {
+      "fileName": "PHASE19_AUTONOMOUS_ENGINEER_PRECONDITIONS.md",
+      "legacyPath": "docs/PHASE19_AUTONOMOUS_ENGINEER_PRECONDITIONS.md",
+      "archivePath": "docs/archive/phases/PHASE19_AUTONOMOUS_ENGINEER_PRECONDITIONS.md"
+    },
+    {
+      "fileName": "PHASE19_AUTONOMOUS_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE19_AUTONOMOUS_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE19_AUTONOMOUS_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE200_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE200_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE200_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE200_PLAN.md",
+      "legacyPath": "docs/PHASE200_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE200_PLAN.md"
+    },
+    {
+      "fileName": "PHASE201_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE201_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE201_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE201_PLAN.md",
+      "legacyPath": "docs/PHASE201_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE201_PLAN.md"
+    },
+    {
+      "fileName": "PHASE202_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE202_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE202_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE202_PLAN.md",
+      "legacyPath": "docs/PHASE202_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE202_PLAN.md"
+    },
+    {
+      "fileName": "PHASE203_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE203_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE203_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE203_PLAN.md",
+      "legacyPath": "docs/PHASE203_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE203_PLAN.md"
+    },
+    {
+      "fileName": "PHASE204_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE204_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE204_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE204_PLAN.md",
+      "legacyPath": "docs/PHASE204_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE204_PLAN.md"
+    },
+    {
+      "fileName": "PHASE205_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE205_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE205_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE205_PLAN.md",
+      "legacyPath": "docs/PHASE205_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE205_PLAN.md"
+    },
+    {
+      "fileName": "PHASE206_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE206_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE206_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE206_PLAN.md",
+      "legacyPath": "docs/PHASE206_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE206_PLAN.md"
+    },
+    {
+      "fileName": "PHASE207_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE207_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE207_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE207_PLAN.md",
+      "legacyPath": "docs/PHASE207_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE207_PLAN.md"
+    },
+    {
+      "fileName": "PHASE208_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE208_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE208_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE208_PLAN.md",
+      "legacyPath": "docs/PHASE208_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE208_PLAN.md"
+    },
+    {
+      "fileName": "PHASE209_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE209_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE209_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE209_PLAN.md",
+      "legacyPath": "docs/PHASE209_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE209_PLAN.md"
+    },
+    {
+      "fileName": "PHASE20_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE20_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE20_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE210_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE210_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE210_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE210_PLAN.md",
+      "legacyPath": "docs/PHASE210_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE210_PLAN.md"
+    },
+    {
+      "fileName": "PHASE211_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE211_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE211_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE211_PLAN.md",
+      "legacyPath": "docs/PHASE211_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE211_PLAN.md"
+    },
+    {
+      "fileName": "PHASE212_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE212_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE212_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE212_PLAN.md",
+      "legacyPath": "docs/PHASE212_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE212_PLAN.md"
+    },
+    {
+      "fileName": "PHASE213_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE213_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE213_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE213_PLAN.md",
+      "legacyPath": "docs/PHASE213_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE213_PLAN.md"
+    },
+    {
+      "fileName": "PHASE214_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE214_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE214_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE214_PLAN.md",
+      "legacyPath": "docs/PHASE214_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE214_PLAN.md"
+    },
+    {
+      "fileName": "PHASE215_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE215_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE215_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE215_PLAN.md",
+      "legacyPath": "docs/PHASE215_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE215_PLAN.md"
+    },
+    {
+      "fileName": "PHASE216_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE216_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE216_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE216_PLAN.md",
+      "legacyPath": "docs/PHASE216_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE216_PLAN.md"
+    },
+    {
+      "fileName": "PHASE217_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE217_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE217_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE217_PLAN.md",
+      "legacyPath": "docs/PHASE217_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE217_PLAN.md"
+    },
+    {
+      "fileName": "PHASE218_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE218_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE218_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE218_PLAN.md",
+      "legacyPath": "docs/PHASE218_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE218_PLAN.md"
+    },
+    {
+      "fileName": "PHASE219_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE219_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE219_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE219_PLAN.md",
+      "legacyPath": "docs/PHASE219_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE219_PLAN.md"
+    },
+    {
+      "fileName": "PHASE21_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE21_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE21_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE21_PRECONDITIONS.md",
+      "legacyPath": "docs/PHASE21_PRECONDITIONS.md",
+      "archivePath": "docs/archive/phases/PHASE21_PRECONDITIONS.md"
+    },
+    {
+      "fileName": "PHASE21_SCOPE.md",
+      "legacyPath": "docs/PHASE21_SCOPE.md",
+      "archivePath": "docs/archive/phases/PHASE21_SCOPE.md"
+    },
+    {
+      "fileName": "PHASE220_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE220_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE220_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE220_PLAN.md",
+      "legacyPath": "docs/PHASE220_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE220_PLAN.md"
+    },
+    {
+      "fileName": "PHASE221_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE221_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE221_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE221_PLAN.md",
+      "legacyPath": "docs/PHASE221_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE221_PLAN.md"
+    },
+    {
+      "fileName": "PHASE222_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE222_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE222_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE222_PLAN.md",
+      "legacyPath": "docs/PHASE222_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE222_PLAN.md"
+    },
+    {
+      "fileName": "PHASE223_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE223_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE223_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE223_PLAN.md",
+      "legacyPath": "docs/PHASE223_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE223_PLAN.md"
+    },
+    {
+      "fileName": "PHASE224_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE224_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE224_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE224_PLAN.md",
+      "legacyPath": "docs/PHASE224_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE224_PLAN.md"
+    },
+    {
+      "fileName": "PHASE225_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE225_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE225_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE225_PLAN.md",
+      "legacyPath": "docs/PHASE225_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE225_PLAN.md"
+    },
+    {
+      "fileName": "PHASE226_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE226_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE226_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE226_PLAN.md",
+      "legacyPath": "docs/PHASE226_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE226_PLAN.md"
+    },
+    {
+      "fileName": "PHASE227_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE227_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE227_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE227_PLAN.md",
+      "legacyPath": "docs/PHASE227_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE227_PLAN.md"
+    },
+    {
+      "fileName": "PHASE228_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE228_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE228_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE228_PLAN.md",
+      "legacyPath": "docs/PHASE228_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE228_PLAN.md"
+    },
+    {
+      "fileName": "PHASE229_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE229_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE229_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE229_PLAN.md",
+      "legacyPath": "docs/PHASE229_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE229_PLAN.md"
+    },
+    {
+      "fileName": "PHASE22_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE22_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE22_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE22_PRECONDITIONS.md",
+      "legacyPath": "docs/PHASE22_PRECONDITIONS.md",
+      "archivePath": "docs/archive/phases/PHASE22_PRECONDITIONS.md"
+    },
+    {
+      "fileName": "PHASE230_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE230_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE230_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE230_PLAN.md",
+      "legacyPath": "docs/PHASE230_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE230_PLAN.md"
+    },
+    {
+      "fileName": "PHASE231_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE231_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE231_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE231_PLAN.md",
+      "legacyPath": "docs/PHASE231_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE231_PLAN.md"
+    },
+    {
+      "fileName": "PHASE232_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE232_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE232_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE232_PLAN.md",
+      "legacyPath": "docs/PHASE232_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE232_PLAN.md"
+    },
+    {
+      "fileName": "PHASE233_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE233_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE233_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE233_PLAN.md",
+      "legacyPath": "docs/PHASE233_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE233_PLAN.md"
+    },
+    {
+      "fileName": "PHASE234_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE234_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE234_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE234_PLAN.md",
+      "legacyPath": "docs/PHASE234_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE234_PLAN.md"
+    },
+    {
+      "fileName": "PHASE235_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE235_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE235_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE235_PLAN.md",
+      "legacyPath": "docs/PHASE235_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE235_PLAN.md"
+    },
+    {
+      "fileName": "PHASE236_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE236_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE236_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE236_PLAN.md",
+      "legacyPath": "docs/PHASE236_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE236_PLAN.md"
+    },
+    {
+      "fileName": "PHASE237_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE237_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE237_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE237_PLAN.md",
+      "legacyPath": "docs/PHASE237_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE237_PLAN.md"
+    },
+    {
+      "fileName": "PHASE238_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE238_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE238_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE238_PLAN.md",
+      "legacyPath": "docs/PHASE238_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE238_PLAN.md"
+    },
+    {
+      "fileName": "PHASE239_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE239_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE239_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE239_PLAN.md",
+      "legacyPath": "docs/PHASE239_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE239_PLAN.md"
+    },
+    {
+      "fileName": "PHASE23_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE23_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE23_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE23_RUNBOOK.md",
+      "legacyPath": "docs/PHASE23_RUNBOOK.md",
+      "archivePath": "docs/archive/phases/PHASE23_RUNBOOK.md"
+    },
+    {
+      "fileName": "PHASE240_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE240_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE240_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE240_PLAN.md",
+      "legacyPath": "docs/PHASE240_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE240_PLAN.md"
+    },
+    {
+      "fileName": "PHASE243_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE243_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE243_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE243_PLAN.md",
+      "legacyPath": "docs/PHASE243_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE243_PLAN.md"
+    },
+    {
+      "fileName": "PHASE244_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE244_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE244_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE244_PLAN.md",
+      "legacyPath": "docs/PHASE244_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE244_PLAN.md"
+    },
+    {
+      "fileName": "PHASE245_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE245_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE245_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE245_PLAN.md",
+      "legacyPath": "docs/PHASE245_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE245_PLAN.md"
+    },
+    {
+      "fileName": "PHASE246_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE246_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE246_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE246_PLAN.md",
+      "legacyPath": "docs/PHASE246_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE246_PLAN.md"
+    },
+    {
+      "fileName": "PHASE247_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE247_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE247_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE247_PLAN.md",
+      "legacyPath": "docs/PHASE247_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE247_PLAN.md"
+    },
+    {
+      "fileName": "PHASE248_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE248_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE248_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE248_PLAN.md",
+      "legacyPath": "docs/PHASE248_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE248_PLAN.md"
+    },
+    {
+      "fileName": "PHASE249_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE249_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE249_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE249_PLAN.md",
+      "legacyPath": "docs/PHASE249_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE249_PLAN.md"
+    },
+    {
+      "fileName": "PHASE24_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE24_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE24_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE24_PLAN.md",
+      "legacyPath": "docs/PHASE24_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE24_PLAN.md"
+    },
+    {
+      "fileName": "PHASE251_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE251_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE251_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE251_PLAN.md",
+      "legacyPath": "docs/PHASE251_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE251_PLAN.md"
+    },
+    {
+      "fileName": "PHASE252_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE252_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE252_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE252_PLAN.md",
+      "legacyPath": "docs/PHASE252_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE252_PLAN.md"
+    },
+    {
+      "fileName": "PHASE253_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE253_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE253_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE253_PLAN.md",
+      "legacyPath": "docs/PHASE253_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE253_PLAN.md"
+    },
+    {
+      "fileName": "PHASE254_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE254_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE254_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE254_PLAN.md",
+      "legacyPath": "docs/PHASE254_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE254_PLAN.md"
+    },
+    {
+      "fileName": "PHASE255_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE255_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE255_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE255_PLAN.md",
+      "legacyPath": "docs/PHASE255_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE255_PLAN.md"
+    },
+    {
+      "fileName": "PHASE256_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE256_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE256_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE256_PLAN.md",
+      "legacyPath": "docs/PHASE256_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE256_PLAN.md"
+    },
+    {
+      "fileName": "PHASE257_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE257_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE257_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE257_PLAN.md",
+      "legacyPath": "docs/PHASE257_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE257_PLAN.md"
+    },
+    {
+      "fileName": "PHASE258_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE258_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE258_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE258_PLAN.md",
+      "legacyPath": "docs/PHASE258_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE258_PLAN.md"
+    },
+    {
+      "fileName": "PHASE259_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE259_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE259_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE259_PLAN.md",
+      "legacyPath": "docs/PHASE259_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE259_PLAN.md"
+    },
+    {
+      "fileName": "PHASE25_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE25_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE25_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE25_PLAN.md",
+      "legacyPath": "docs/PHASE25_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE25_PLAN.md"
+    },
+    {
+      "fileName": "PHASE265_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE265_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE265_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE265_PLAN.md",
+      "legacyPath": "docs/PHASE265_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE265_PLAN.md"
+    },
+    {
+      "fileName": "PHASE266_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE266_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE266_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE266_PLAN.md",
+      "legacyPath": "docs/PHASE266_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE266_PLAN.md"
+    },
+    {
+      "fileName": "PHASE267_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE267_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE267_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE267_PLAN.md",
+      "legacyPath": "docs/PHASE267_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE267_PLAN.md"
+    },
+    {
+      "fileName": "PHASE268_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE268_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE268_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE268_PLAN.md",
+      "legacyPath": "docs/PHASE268_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE268_PLAN.md"
+    },
+    {
+      "fileName": "PHASE269_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE269_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE269_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE269_PLAN.md",
+      "legacyPath": "docs/PHASE269_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE269_PLAN.md"
+    },
+    {
+      "fileName": "PHASE26_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE26_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE26_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE26_PLAN.md",
+      "legacyPath": "docs/PHASE26_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE26_PLAN.md"
+    },
+    {
+      "fileName": "PHASE270_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE270_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE270_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE270_PLAN.md",
+      "legacyPath": "docs/PHASE270_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE270_PLAN.md"
+    },
+    {
+      "fileName": "PHASE271_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE271_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE271_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE271_PLAN.md",
+      "legacyPath": "docs/PHASE271_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE271_PLAN.md"
+    },
+    {
+      "fileName": "PHASE272_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE272_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE272_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE272_PLAN.md",
+      "legacyPath": "docs/PHASE272_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE272_PLAN.md"
+    },
+    {
+      "fileName": "PHASE273_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE273_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE273_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE273_PLAN.md",
+      "legacyPath": "docs/PHASE273_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE273_PLAN.md"
+    },
+    {
+      "fileName": "PHASE274_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE274_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE274_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE274_PLAN.md",
+      "legacyPath": "docs/PHASE274_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE274_PLAN.md"
+    },
+    {
+      "fileName": "PHASE275_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE275_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE275_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE275_PLAN.md",
+      "legacyPath": "docs/PHASE275_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE275_PLAN.md"
+    },
+    {
+      "fileName": "PHASE276_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE276_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE276_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE276_PLAN.md",
+      "legacyPath": "docs/PHASE276_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE276_PLAN.md"
+    },
+    {
+      "fileName": "PHASE277_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE277_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE277_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE277_PLAN.md",
+      "legacyPath": "docs/PHASE277_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE277_PLAN.md"
+    },
+    {
+      "fileName": "PHASE278_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE278_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE278_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE278_PLAN.md",
+      "legacyPath": "docs/PHASE278_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE278_PLAN.md"
+    },
+    {
+      "fileName": "PHASE279_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE279_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE279_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE279_PLAN.md",
+      "legacyPath": "docs/PHASE279_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE279_PLAN.md"
+    },
+    {
+      "fileName": "PHASE27_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE27_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE27_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE27_PLAN.md",
+      "legacyPath": "docs/PHASE27_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE27_PLAN.md"
+    },
+    {
+      "fileName": "PHASE280_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE280_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE280_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE280_PLAN.md",
+      "legacyPath": "docs/PHASE280_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE280_PLAN.md"
+    },
+    {
+      "fileName": "PHASE281_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE281_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE281_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE281_PLAN.md",
+      "legacyPath": "docs/PHASE281_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE281_PLAN.md"
+    },
+    {
+      "fileName": "PHASE282_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE282_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE282_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE282_PLAN.md",
+      "legacyPath": "docs/PHASE282_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE282_PLAN.md"
+    },
+    {
+      "fileName": "PHASE283_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE283_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE283_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE283_PLAN.md",
+      "legacyPath": "docs/PHASE283_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE283_PLAN.md"
+    },
+    {
+      "fileName": "PHASE284_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE284_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE284_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE284_PLAN.md",
+      "legacyPath": "docs/PHASE284_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE284_PLAN.md"
+    },
+    {
+      "fileName": "PHASE285_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE285_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE285_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE285_PLAN.md",
+      "legacyPath": "docs/PHASE285_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE285_PLAN.md"
+    },
+    {
+      "fileName": "PHASE286_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE286_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE286_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE286_PLAN.md",
+      "legacyPath": "docs/PHASE286_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE286_PLAN.md"
+    },
+    {
+      "fileName": "PHASE287_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE287_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE287_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE287_PLAN.md",
+      "legacyPath": "docs/PHASE287_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE287_PLAN.md"
+    },
+    {
+      "fileName": "PHASE288_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE288_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE288_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE288_PLAN.md",
+      "legacyPath": "docs/PHASE288_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE288_PLAN.md"
+    },
+    {
+      "fileName": "PHASE289_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE289_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE289_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE289_PLAN.md",
+      "legacyPath": "docs/PHASE289_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE289_PLAN.md"
+    },
+    {
+      "fileName": "PHASE28_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE28_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE28_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE28_PLAN.md",
+      "legacyPath": "docs/PHASE28_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE28_PLAN.md"
+    },
+    {
+      "fileName": "PHASE290_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE290_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE290_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE290_PLAN.md",
+      "legacyPath": "docs/PHASE290_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE290_PLAN.md"
+    },
+    {
+      "fileName": "PHASE291_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE291_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE291_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE291_PLAN.md",
+      "legacyPath": "docs/PHASE291_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE291_PLAN.md"
+    },
+    {
+      "fileName": "PHASE292_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE292_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE292_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE292_PLAN.md",
+      "legacyPath": "docs/PHASE292_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE292_PLAN.md"
+    },
+    {
+      "fileName": "PHASE293_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE293_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE293_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE293_PLAN.md",
+      "legacyPath": "docs/PHASE293_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE293_PLAN.md"
+    },
+    {
+      "fileName": "PHASE294_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE294_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE294_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE294_PLAN.md",
+      "legacyPath": "docs/PHASE294_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE294_PLAN.md"
+    },
+    {
+      "fileName": "PHASE295_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE295_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE295_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE295_PLAN.md",
+      "legacyPath": "docs/PHASE295_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE295_PLAN.md"
+    },
+    {
+      "fileName": "PHASE296_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE296_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE296_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE296_PLAN.md",
+      "legacyPath": "docs/PHASE296_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE296_PLAN.md"
+    },
+    {
+      "fileName": "PHASE297_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE297_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE297_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE297_PLAN.md",
+      "legacyPath": "docs/PHASE297_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE297_PLAN.md"
+    },
+    {
+      "fileName": "PHASE298_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE298_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE298_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE298_PLAN.md",
+      "legacyPath": "docs/PHASE298_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE298_PLAN.md"
+    },
+    {
+      "fileName": "PHASE299_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE299_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE299_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE299_PLAN.md",
+      "legacyPath": "docs/PHASE299_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE299_PLAN.md"
+    },
+    {
+      "fileName": "PHASE29_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE29_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE29_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE29_PLAN.md",
+      "legacyPath": "docs/PHASE29_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE29_PLAN.md"
+    },
+    {
+      "fileName": "PHASE300_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE300_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE300_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE300_PLAN.md",
+      "legacyPath": "docs/PHASE300_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE300_PLAN.md"
+    },
+    {
+      "fileName": "PHASE301_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE301_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE301_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE301_PLAN.md",
+      "legacyPath": "docs/PHASE301_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE301_PLAN.md"
+    },
+    {
+      "fileName": "PHASE302_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE302_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE302_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE302_PLAN.md",
+      "legacyPath": "docs/PHASE302_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE302_PLAN.md"
+    },
+    {
+      "fileName": "PHASE303_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE303_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE303_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE303_PLAN.md",
+      "legacyPath": "docs/PHASE303_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE303_PLAN.md"
+    },
+    {
+      "fileName": "PHASE304_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE304_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE304_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE305_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE305_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE305_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE305_PLAN.md",
+      "legacyPath": "docs/PHASE305_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE305_PLAN.md"
+    },
+    {
+      "fileName": "PHASE306_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE306_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE306_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE306_PLAN.md",
+      "legacyPath": "docs/PHASE306_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE306_PLAN.md"
+    },
+    {
+      "fileName": "PHASE307_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE307_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE307_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE307_PLAN.md",
+      "legacyPath": "docs/PHASE307_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE307_PLAN.md"
+    },
+    {
+      "fileName": "PHASE308_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE308_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE308_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE308_PLAN.md",
+      "legacyPath": "docs/PHASE308_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE308_PLAN.md"
+    },
+    {
+      "fileName": "PHASE309_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE309_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE309_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE309_PLAN.md",
+      "legacyPath": "docs/PHASE309_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE309_PLAN.md"
+    },
+    {
+      "fileName": "PHASE30_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE30_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE30_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE30_PLAN.md",
+      "legacyPath": "docs/PHASE30_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE30_PLAN.md"
+    },
+    {
+      "fileName": "PHASE310_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE310_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE310_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE310_PLAN.md",
+      "legacyPath": "docs/PHASE310_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE310_PLAN.md"
+    },
+    {
+      "fileName": "PHASE311_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE311_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE311_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE311_PLAN.md",
+      "legacyPath": "docs/PHASE311_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE311_PLAN.md"
+    },
+    {
+      "fileName": "PHASE312_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE312_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE312_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE312_PLAN.md",
+      "legacyPath": "docs/PHASE312_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE312_PLAN.md"
+    },
+    {
+      "fileName": "PHASE313_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE313_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE313_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE313_PLAN.md",
+      "legacyPath": "docs/PHASE313_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE313_PLAN.md"
+    },
+    {
+      "fileName": "PHASE314_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE314_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE314_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE314_PLAN.md",
+      "legacyPath": "docs/PHASE314_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE314_PLAN.md"
+    },
+    {
+      "fileName": "PHASE315_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE315_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE315_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE315_PLAN.md",
+      "legacyPath": "docs/PHASE315_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE315_PLAN.md"
+    },
+    {
+      "fileName": "PHASE316_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE316_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE316_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE316_PLAN.md",
+      "legacyPath": "docs/PHASE316_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE316_PLAN.md"
+    },
+    {
+      "fileName": "PHASE317_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE317_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE317_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE317_PLAN.md",
+      "legacyPath": "docs/PHASE317_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE317_PLAN.md"
+    },
+    {
+      "fileName": "PHASE318_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE318_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE318_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE318_PLAN.md",
+      "legacyPath": "docs/PHASE318_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE318_PLAN.md"
+    },
+    {
+      "fileName": "PHASE319_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE319_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE319_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE319_PLAN.md",
+      "legacyPath": "docs/PHASE319_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE319_PLAN.md"
+    },
+    {
+      "fileName": "PHASE31_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE31_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE31_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE31_PLAN.md",
+      "legacyPath": "docs/PHASE31_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE31_PLAN.md"
+    },
+    {
+      "fileName": "PHASE320_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE320_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE320_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE320_PLAN.md",
+      "legacyPath": "docs/PHASE320_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE320_PLAN.md"
+    },
+    {
+      "fileName": "PHASE321_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE321_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE321_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE321_PLAN.md",
+      "legacyPath": "docs/PHASE321_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE321_PLAN.md"
+    },
+    {
+      "fileName": "PHASE322_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE322_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE322_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE322_PLAN.md",
+      "legacyPath": "docs/PHASE322_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE322_PLAN.md"
+    },
+    {
+      "fileName": "PHASE323_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE323_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE323_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE323_PLAN.md",
+      "legacyPath": "docs/PHASE323_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE323_PLAN.md"
+    },
+    {
+      "fileName": "PHASE324_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE324_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE324_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE324_PLAN.md",
+      "legacyPath": "docs/PHASE324_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE324_PLAN.md"
+    },
+    {
+      "fileName": "PHASE325_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE325_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE325_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE325_PLAN.md",
+      "legacyPath": "docs/PHASE325_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE325_PLAN.md"
+    },
+    {
+      "fileName": "PHASE326_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE326_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE326_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE326_PLAN.md",
+      "legacyPath": "docs/PHASE326_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE326_PLAN.md"
+    },
+    {
+      "fileName": "PHASE327_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE327_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE327_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE327_PLAN.md",
+      "legacyPath": "docs/PHASE327_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE327_PLAN.md"
+    },
+    {
+      "fileName": "PHASE328_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE328_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE328_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE328_PLAN.md",
+      "legacyPath": "docs/PHASE328_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE328_PLAN.md"
+    },
+    {
+      "fileName": "PHASE329_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE329_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE329_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE329_PLAN.md",
+      "legacyPath": "docs/PHASE329_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE329_PLAN.md"
+    },
+    {
+      "fileName": "PHASE32_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE32_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE32_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE32_PLAN.md",
+      "legacyPath": "docs/PHASE32_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE32_PLAN.md"
+    },
+    {
+      "fileName": "PHASE330_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE330_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE330_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE330_PLAN.md",
+      "legacyPath": "docs/PHASE330_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE330_PLAN.md"
+    },
+    {
+      "fileName": "PHASE331_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE331_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE331_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE331_PLAN.md",
+      "legacyPath": "docs/PHASE331_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE331_PLAN.md"
+    },
+    {
+      "fileName": "PHASE332_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE332_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE332_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE332_PLAN.md",
+      "legacyPath": "docs/PHASE332_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE332_PLAN.md"
+    },
+    {
+      "fileName": "PHASE333_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE333_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE333_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE333_PLAN.md",
+      "legacyPath": "docs/PHASE333_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE333_PLAN.md"
+    },
+    {
+      "fileName": "PHASE334_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE334_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE334_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE334_PLAN.md",
+      "legacyPath": "docs/PHASE334_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE334_PLAN.md"
+    },
+    {
+      "fileName": "PHASE335_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE335_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE335_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE335_PLAN.md",
+      "legacyPath": "docs/PHASE335_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE335_PLAN.md"
+    },
+    {
+      "fileName": "PHASE336_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE336_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE336_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE336_PLAN.md",
+      "legacyPath": "docs/PHASE336_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE336_PLAN.md"
+    },
+    {
+      "fileName": "PHASE337_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE337_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE337_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE337_PLAN.md",
+      "legacyPath": "docs/PHASE337_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE337_PLAN.md"
+    },
+    {
+      "fileName": "PHASE338_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE338_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE338_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE338_PLAN.md",
+      "legacyPath": "docs/PHASE338_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE338_PLAN.md"
+    },
+    {
+      "fileName": "PHASE339_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE339_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE339_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE339_PLAN.md",
+      "legacyPath": "docs/PHASE339_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE339_PLAN.md"
+    },
+    {
+      "fileName": "PHASE33_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE33_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE33_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE33_PLAN.md",
+      "legacyPath": "docs/PHASE33_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE33_PLAN.md"
+    },
+    {
+      "fileName": "PHASE340_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE340_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE340_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE340_PLAN.md",
+      "legacyPath": "docs/PHASE340_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE340_PLAN.md"
+    },
+    {
+      "fileName": "PHASE341_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE341_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE341_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE341_PLAN.md",
+      "legacyPath": "docs/PHASE341_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE341_PLAN.md"
+    },
+    {
+      "fileName": "PHASE342_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE342_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE342_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE342_PLAN.md",
+      "legacyPath": "docs/PHASE342_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE342_PLAN.md"
+    },
+    {
+      "fileName": "PHASE343_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE343_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE343_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE343_PLAN.md",
+      "legacyPath": "docs/PHASE343_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE343_PLAN.md"
+    },
+    {
+      "fileName": "PHASE344_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE344_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE344_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE344_PLAN.md",
+      "legacyPath": "docs/PHASE344_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE344_PLAN.md"
+    },
+    {
+      "fileName": "PHASE345_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE345_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE345_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE345_PLAN.md",
+      "legacyPath": "docs/PHASE345_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE345_PLAN.md"
+    },
+    {
+      "fileName": "PHASE346_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE346_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE346_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE346_PLAN.md",
+      "legacyPath": "docs/PHASE346_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE346_PLAN.md"
+    },
+    {
+      "fileName": "PHASE347_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE347_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE347_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE347_PLAN.md",
+      "legacyPath": "docs/PHASE347_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE347_PLAN.md"
+    },
+    {
+      "fileName": "PHASE348_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE348_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE348_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE348_PLAN.md",
+      "legacyPath": "docs/PHASE348_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE348_PLAN.md"
+    },
+    {
+      "fileName": "PHASE349_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE349_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE349_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE349_PLAN.md",
+      "legacyPath": "docs/PHASE349_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE349_PLAN.md"
+    },
+    {
+      "fileName": "PHASE34_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE34_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE34_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE34_PLAN.md",
+      "legacyPath": "docs/PHASE34_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE34_PLAN.md"
+    },
+    {
+      "fileName": "PHASE350_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE350_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE350_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE350_PLAN.md",
+      "legacyPath": "docs/PHASE350_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE350_PLAN.md"
+    },
+    {
+      "fileName": "PHASE351_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE351_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE351_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE351_PLAN.md",
+      "legacyPath": "docs/PHASE351_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE351_PLAN.md"
+    },
+    {
+      "fileName": "PHASE352_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE352_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE352_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE352_PLAN.md",
+      "legacyPath": "docs/PHASE352_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE352_PLAN.md"
+    },
+    {
+      "fileName": "PHASE353_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE353_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE353_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE353_PLAN.md",
+      "legacyPath": "docs/PHASE353_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE353_PLAN.md"
+    },
+    {
+      "fileName": "PHASE354_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE354_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE354_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE354_PLAN.md",
+      "legacyPath": "docs/PHASE354_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE354_PLAN.md"
+    },
+    {
+      "fileName": "PHASE355_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE355_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE355_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE355_PLAN.md",
+      "legacyPath": "docs/PHASE355_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE355_PLAN.md"
+    },
+    {
+      "fileName": "PHASE356_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE356_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE356_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE356_PLAN.md",
+      "legacyPath": "docs/PHASE356_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE356_PLAN.md"
+    },
+    {
+      "fileName": "PHASE357_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE357_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE357_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE357_PLAN.md",
+      "legacyPath": "docs/PHASE357_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE357_PLAN.md"
+    },
+    {
+      "fileName": "PHASE358_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE358_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE358_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE358_PLAN.md",
+      "legacyPath": "docs/PHASE358_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE358_PLAN.md"
+    },
+    {
+      "fileName": "PHASE359_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE359_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE359_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE359_PLAN.md",
+      "legacyPath": "docs/PHASE359_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE359_PLAN.md"
+    },
+    {
+      "fileName": "PHASE35_39_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE35_39_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE35_39_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE35_39_PLAN.md",
+      "legacyPath": "docs/PHASE35_39_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE35_39_PLAN.md"
+    },
+    {
+      "fileName": "PHASE35_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE35_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE35_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE35_PLAN.md",
+      "legacyPath": "docs/PHASE35_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE35_PLAN.md"
+    },
+    {
+      "fileName": "PHASE360_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE360_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE360_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE360_PLAN.md",
+      "legacyPath": "docs/PHASE360_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE360_PLAN.md"
+    },
+    {
+      "fileName": "PHASE361_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE361_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE361_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE361_PLAN.md",
+      "legacyPath": "docs/PHASE361_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE361_PLAN.md"
+    },
+    {
+      "fileName": "PHASE362_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE362_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE362_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE362_PLAN.md",
+      "legacyPath": "docs/PHASE362_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE362_PLAN.md"
+    },
+    {
+      "fileName": "PHASE363_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE363_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE363_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE363_PLAN.md",
+      "legacyPath": "docs/PHASE363_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE363_PLAN.md"
+    },
+    {
+      "fileName": "PHASE364_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE364_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE364_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE364_PLAN.md",
+      "legacyPath": "docs/PHASE364_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE364_PLAN.md"
+    },
+    {
+      "fileName": "PHASE365_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE365_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE365_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE365_PLAN.md",
+      "legacyPath": "docs/PHASE365_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE365_PLAN.md"
+    },
+    {
+      "fileName": "PHASE366_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE366_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE366_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE366_PLAN.md",
+      "legacyPath": "docs/PHASE366_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE366_PLAN.md"
+    },
+    {
+      "fileName": "PHASE367_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE367_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE367_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE367_PLAN.md",
+      "legacyPath": "docs/PHASE367_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE367_PLAN.md"
+    },
+    {
+      "fileName": "PHASE368_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE368_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE368_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE368_PLAN.md",
+      "legacyPath": "docs/PHASE368_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE368_PLAN.md"
+    },
+    {
+      "fileName": "PHASE369_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE369_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE369_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE369_PLAN.md",
+      "legacyPath": "docs/PHASE369_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE369_PLAN.md"
+    },
+    {
+      "fileName": "PHASE36_39_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE36_39_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE36_39_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE36_39_PLAN.md",
+      "legacyPath": "docs/PHASE36_39_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE36_39_PLAN.md"
+    },
+    {
+      "fileName": "PHASE370_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE370_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE370_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE370_PLAN.md",
+      "legacyPath": "docs/PHASE370_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE370_PLAN.md"
+    },
+    {
+      "fileName": "PHASE371_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE371_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE371_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE371_PLAN.md",
+      "legacyPath": "docs/PHASE371_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE371_PLAN.md"
+    },
+    {
+      "fileName": "PHASE372_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE372_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE372_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE372_PLAN.md",
+      "legacyPath": "docs/PHASE372_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE372_PLAN.md"
+    },
+    {
+      "fileName": "PHASE373_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE373_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE373_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE373_PLAN.md",
+      "legacyPath": "docs/PHASE373_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE373_PLAN.md"
+    },
+    {
+      "fileName": "PHASE40_44_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE40_44_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE40_44_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE40_44_PLAN.md",
+      "legacyPath": "docs/PHASE40_44_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE40_44_PLAN.md"
+    },
+    {
+      "fileName": "PHASE45_49_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE45_49_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE45_49_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE45_49_PLAN.md",
+      "legacyPath": "docs/PHASE45_49_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE45_49_PLAN.md"
+    },
+    {
+      "fileName": "PHASE50_54_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE50_54_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE50_54_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE50_54_PLAN.md",
+      "legacyPath": "docs/PHASE50_54_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE50_54_PLAN.md"
+    },
+    {
+      "fileName": "PHASE573_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE573_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE573_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE573_PLAN.md",
+      "legacyPath": "docs/PHASE573_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE573_PLAN.md"
+    },
+    {
+      "fileName": "PHASE574_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE574_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE574_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE574_PLAN.md",
+      "legacyPath": "docs/PHASE574_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE574_PLAN.md"
+    },
+    {
+      "fileName": "PHASE575_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE575_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE575_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE575_PLAN.md",
+      "legacyPath": "docs/PHASE575_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE575_PLAN.md"
+    },
+    {
+      "fileName": "PHASE576_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE576_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE576_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE576_PLAN.md",
+      "legacyPath": "docs/PHASE576_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE576_PLAN.md"
+    },
+    {
+      "fileName": "PHASE577_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE577_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE577_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE577_PLAN.md",
+      "legacyPath": "docs/PHASE577_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE577_PLAN.md"
+    },
+    {
+      "fileName": "PHASE578_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE578_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE578_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE578_PLAN.md",
+      "legacyPath": "docs/PHASE578_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE578_PLAN.md"
+    },
+    {
+      "fileName": "PHASE579_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE579_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE579_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE579_PLAN.md",
+      "legacyPath": "docs/PHASE579_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE579_PLAN.md"
+    },
+    {
+      "fileName": "PHASE580_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE580_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE580_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE580_PLAN.md",
+      "legacyPath": "docs/PHASE580_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE580_PLAN.md"
+    },
+    {
+      "fileName": "PHASE581_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE581_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE581_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE581_PLAN.md",
+      "legacyPath": "docs/PHASE581_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE581_PLAN.md"
+    },
+    {
+      "fileName": "PHASE582_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE582_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE582_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE582_PLAN.md",
+      "legacyPath": "docs/PHASE582_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE582_PLAN.md"
+    },
+    {
+      "fileName": "PHASE583_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE583_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE583_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE583_PLAN.md",
+      "legacyPath": "docs/PHASE583_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE583_PLAN.md"
+    },
+    {
+      "fileName": "PHASE584_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE584_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE584_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE584_PLAN.md",
+      "legacyPath": "docs/PHASE584_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE584_PLAN.md"
+    },
+    {
+      "fileName": "PHASE585_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE585_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE585_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE585_PLAN.md",
+      "legacyPath": "docs/PHASE585_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE585_PLAN.md"
+    },
+    {
+      "fileName": "PHASE586_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE586_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE586_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE586_PLAN.md",
+      "legacyPath": "docs/PHASE586_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE586_PLAN.md"
+    },
+    {
+      "fileName": "PHASE587_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE587_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE587_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE587_PLAN.md",
+      "legacyPath": "docs/PHASE587_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE587_PLAN.md"
+    },
+    {
+      "fileName": "PHASE588_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE588_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE588_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE588_PLAN.md",
+      "legacyPath": "docs/PHASE588_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE588_PLAN.md"
+    },
+    {
+      "fileName": "PHASE589_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE589_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE589_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE589_PLAN.md",
+      "legacyPath": "docs/PHASE589_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE589_PLAN.md"
+    },
+    {
+      "fileName": "PHASE590_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE590_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE590_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE590_PLAN.md",
+      "legacyPath": "docs/PHASE590_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE590_PLAN.md"
+    },
+    {
+      "fileName": "PHASE591_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE591_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE591_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE591_PLAN.md",
+      "legacyPath": "docs/PHASE591_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE591_PLAN.md"
+    },
+    {
+      "fileName": "PHASE592_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE592_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE592_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE592_PLAN.md",
+      "legacyPath": "docs/PHASE592_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE592_PLAN.md"
+    },
+    {
+      "fileName": "PHASE593_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE593_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE593_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE593_PLAN.md",
+      "legacyPath": "docs/PHASE593_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE593_PLAN.md"
+    },
+    {
+      "fileName": "PHASE594_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE594_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE594_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE594_PLAN.md",
+      "legacyPath": "docs/PHASE594_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE594_PLAN.md"
+    },
+    {
+      "fileName": "PHASE595_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE595_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE595_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE595_PLAN.md",
+      "legacyPath": "docs/PHASE595_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE595_PLAN.md"
+    },
+    {
+      "fileName": "PHASE596_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE596_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE596_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE596_PLAN.md",
+      "legacyPath": "docs/PHASE596_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE596_PLAN.md"
+    },
+    {
+      "fileName": "PHASE60_64_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE60_64_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE60_64_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE60_64_PLAN.md",
+      "legacyPath": "docs/PHASE60_64_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE60_64_PLAN.md"
+    },
+    {
+      "fileName": "PHASE628_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE628_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE628_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE628_PLAN.md",
+      "legacyPath": "docs/PHASE628_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE628_PLAN.md"
+    },
+    {
+      "fileName": "PHASE629_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE629_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE629_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE629_PLAN.md",
+      "legacyPath": "docs/PHASE629_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE629_PLAN.md"
+    },
+    {
+      "fileName": "PHASE630_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE630_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE630_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE630_PLAN.md",
+      "legacyPath": "docs/PHASE630_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE630_PLAN.md"
+    },
+    {
+      "fileName": "PHASE631_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE631_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE631_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE632_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE632_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE632_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE633_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE633_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE633_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE65_69_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE65_69_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE65_69_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE65_69_PLAN.md",
+      "legacyPath": "docs/PHASE65_69_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE65_69_PLAN.md"
+    },
+    {
+      "fileName": "PHASE6_PLAN.md",
+      "legacyPath": "docs/PHASE6_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE6_PLAN.md"
+    },
+    {
+      "fileName": "PHASE70_74_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE70_74_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE70_74_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE70_74_PLAN.md",
+      "legacyPath": "docs/PHASE70_74_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE70_74_PLAN.md"
+    },
+    {
+      "fileName": "PHASE75_79_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE75_79_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE75_79_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE75_79_PLAN.md",
+      "legacyPath": "docs/PHASE75_79_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE75_79_PLAN.md"
+    },
+    {
+      "fileName": "PHASE80_84_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE80_84_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE80_84_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE80_84_PLAN.md",
+      "legacyPath": "docs/PHASE80_84_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE80_84_PLAN.md"
+    },
+    {
+      "fileName": "PHASE85_92_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE85_92_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE85_92_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE85_92_PLAN.md",
+      "legacyPath": "docs/PHASE85_92_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE85_92_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_CITY_PACK_REIMPLEMENT_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_CITY_PACK_REIMPLEMENT_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_CITY_PACK_REIMPLEMENT_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_CITY_PACK_REIMPLEMENT_PLAN.md",
+      "legacyPath": "docs/PHASE_CITY_PACK_REIMPLEMENT_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_CITY_PACK_REIMPLEMENT_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_CITY_PACK_REQUEST_FLOW_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_CITY_PACK_REQUEST_FLOW_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_CITY_PACK_REQUEST_FLOW_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_CITY_PACK_REQUEST_FLOW_PLAN.md",
+      "legacyPath": "docs/PHASE_CITY_PACK_REQUEST_FLOW_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_CITY_PACK_REQUEST_FLOW_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_REDESIGN_SNAPSHOT.md",
+      "legacyPath": "docs/PHASE_REDESIGN_SNAPSHOT.md",
+      "archivePath": "docs/archive/phases/PHASE_REDESIGN_SNAPSHOT.md"
+    },
+    {
+      "fileName": "PHASE_UI_A11Y_262_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_UI_A11Y_262_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_A11Y_262_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_UI_A11Y_262_PLAN.md",
+      "legacyPath": "docs/PHASE_UI_A11Y_262_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_A11Y_262_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_UI_DECISION_263_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_UI_DECISION_263_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_DECISION_263_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_UI_DECISION_263_PLAN.md",
+      "legacyPath": "docs/PHASE_UI_DECISION_263_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_DECISION_263_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_UI_MINIMAL_261_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_UI_MINIMAL_261_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_MINIMAL_261_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_UI_MINIMAL_261_PLAN.md",
+      "legacyPath": "docs/PHASE_UI_MINIMAL_261_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_MINIMAL_261_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_UI_REFORM_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_UI_REFORM_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_REFORM_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_UI_REFORM_PLAN.md",
+      "legacyPath": "docs/PHASE_UI_REFORM_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_REFORM_PLAN.md"
+    },
+    {
+      "fileName": "PHASE_UI_TABLE_264_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE_UI_TABLE_264_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_TABLE_264_EXECUTION_LOG.md"
+    },
+    {
+      "fileName": "PHASE_UI_TABLE_264_PLAN.md",
+      "legacyPath": "docs/PHASE_UI_TABLE_264_PLAN.md",
+      "archivePath": "docs/archive/phases/PHASE_UI_TABLE_264_PLAN.md"
+    }
+  ]
+}

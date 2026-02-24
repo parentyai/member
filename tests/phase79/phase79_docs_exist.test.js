@@ -5,13 +5,13 @@ const { readFileSync } = require('fs');
 const { test } = require('node:test');
 
 test('phase79: docs exist with required headings', () => {
-  const plan = readFileSync('docs/PHASE75_79_PLAN.md', 'utf8');
+  const plan = readFileSync('docs/archive/phases/PHASE75_79_PLAN.md', 'utf8');
   assert.ok(plan.includes('# PHASE75_79_PLAN'));
   assert.ok(plan.includes('Purpose'));
   assert.ok(plan.includes('Scope In'));
   assert.ok(plan.includes('Done Definition'));
 
-  const log = readFileSync('docs/PHASE75_79_EXECUTION_LOG.md', 'utf8');
+  const log = readFileSync('docs/archive/phases/PHASE75_79_EXECUTION_LOG.md', 'utf8');
   assert.ok(log.includes('# PHASE75_79_EXECUTION_LOG'));
   assert.ok(log.includes('main SHA'));
 

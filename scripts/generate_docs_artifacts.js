@@ -11,6 +11,10 @@ const TASKS = Object.freeze([
     script: path.join('scripts', 'generate_repo_map.js')
   },
   {
+    label: 'phase-path-map',
+    script: path.join('scripts', 'generate_phase_path_map.js')
+  },
+  {
     label: 'load-risk',
     script: path.join('scripts', 'generate_load_risk.js')
   },

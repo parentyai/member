@@ -7,8 +7,8 @@ const path = require('path');
 
 test('phase69: docs exist with headers', () => {
   const files = [
-    'docs/PHASE65_69_PLAN.md',
-    'docs/PHASE65_69_EXECUTION_LOG.md',
+    'docs/archive/phases/PHASE65_69_PLAN.md',
+    'docs/archive/phases/PHASE65_69_EXECUTION_LOG.md',
     'docs/RUNBOOK_SEGMENT_SEND.md'
   ];
 
