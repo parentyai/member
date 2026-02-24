@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T23:27:53-05:00",
-  "gitCommit": "c816733a0d0f7d8bcc5b3078c479a79597105e12",
-  "branch": "codex/phase649-repo-map-ops-judgement",
-  "sourceDigest": "1e0a240288b0752a26d755a0e0d583d3333a6143678424e28f89a1265ca7b615",
+  "generatedAt": "2026-02-24T00:34:14-05:00",
+  "gitCommit": "53b9b16f314f8678ab5f1c42b68f6b43b8bf86c8",
+  "branch": "codex/llm-workflow-gate-sync-20260224",
+  "sourceDigest": "f7bbf8bf11863b5853fecdc7f910a9e2fb03dcd6c1f7e2b8ad5b70371f4c6b62",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "65742c00962d8817092d245dc4ab424b883658cbd9239e799e2651bf0b8a34d0",
+      "sha256": "d88d05db2b5be88e69d055e8a09ad816b72b40daa5d9fd6f2c46b0f2164c53ec",
       "bytes": 292294
     },
     {
@@ -138,7 +138,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "515f1169d76044a5da7ad4e3c0f908fda5f895daa3702c634dfadb84874bdc1c",
+      "sha256": "dca6b59ac01c21bcdefc45c39966b53743be7277682db66450492453487a7eb2",
       "bytes": 2423
     }
   ],
