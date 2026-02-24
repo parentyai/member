@@ -41,6 +41,8 @@ env:
   PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
   FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
   STORAGE_BUCKET: ${{ vars.STORAGE_BUCKET }}
+  LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
+  OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
 
 jobs:
   dry-run:
