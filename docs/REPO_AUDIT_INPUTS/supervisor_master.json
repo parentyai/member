@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T14:28:21-05:00",
-  "gitCommit": "2136f3637142410a3d69555a53794a8cd3645125",
-  "branch": "codex/journey-personalization-v1",
-  "sourceDigest": "ef3121063cf07bc2a936d3521cf069b33dbdf2bf49be0d713599548b5125b9f8",
+  "generatedAt": "2026-02-24T18:26:40-05:00",
+  "gitCommit": "8853cb51588bb2e8dd1db098e5b668d43b85c5b2",
+  "branch": "codex/member-phase653-os-upgrade",
+  "sourceDigest": "e37718a1fcfbeefed1e3c0140554b50cb00b90ed35f20561706e2fb2edf742ea",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
