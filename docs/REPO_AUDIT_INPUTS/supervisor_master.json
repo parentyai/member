@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T22:45:52-05:00",
-  "gitCommit": "fe7ba7d91abdac85f64a621ce50c50d35d27d72d",
+  "generatedAt": "2026-02-23T23:27:53-05:00",
+  "gitCommit": "c816733a0d0f7d8bcc5b3078c479a79597105e12",
   "branch": "codex/phase649-repo-map-ops-judgement",
-  "sourceDigest": "c94cc9c897520b2a802a5b61a19fae14831ee08bfb58e855833324002ebb5d5c",
+  "sourceDigest": "14a98dd7db6a4a848021a27306d27d63bb1f3e150f730b2a9a8d4db4c8a45eba",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
