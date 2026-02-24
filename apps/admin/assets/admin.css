@@ -192,6 +192,34 @@ body {
   font-weight: 600;
 }
 
+.build-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 4px 8px;
+}
+
+.build-meta-badge[data-build-meta-state="warn"] {
+  border-color: #f2dfad;
+  background: var(--status-warn-bg);
+  color: var(--text-base);
+}
+
+.build-meta-badge[data-build-meta-state="hidden"] {
+  display: none;
+}
+
+.build-meta-badge[data-build-meta-state="error"] {
+  border-color: #f3c2bd;
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+}
+
 .app-pane {
   display: none;
 }
@@ -1611,6 +1639,14 @@ body.app-body {
 
 .app-nav .nav-group[data-nav-visible="true"] {
   display: grid;
+}
+
+.app-nav .nav-item[data-nav-item-visible="false"] {
+  display: none !important;
+}
+
+.app-nav .nav-item[data-nav-item-visible="true"] {
+  display: flex;
 }
 
 .nav-group-label {

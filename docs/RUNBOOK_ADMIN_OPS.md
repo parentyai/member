@@ -9,6 +9,7 @@
 
 ## /admin/app ナビ表示ポリシー（Phase637）
 左ナビの表示は Role に応じて固定される。運用変更で逸脱しないことを優先し、契約テストで維持する。
+この節は Phase637 の履歴であり、最新運用は後述の「Phase638–647 更新」を優先する。
 
 | role | 左ナビ表示グループ |
 | --- | --- |
@@ -20,6 +21,27 @@
 - `catalog` 配下に `settings` を主導線として置く（全Roleで表示）。
 - `communication` / `operations` は現状非表示（表示拡大は別改善）。
 - Topbar は Role スイッチ主体（開発メニュー再露出は回帰扱い）。
+
+## /admin/app ナビ表示ポリシー（Phase638–647 更新）
+運用時の既定表示は以下を最新とする。
+
+| role | 左ナビ表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog` |
+| admin | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer`, `communication`, `operations` |
+
+運用フラグ:
+- `ENABLE_ADMIN_NAV_ROLLOUT_V1=1`（既定）で admin/developer へ `communication` / `operations` を表示。
+- 緊急停止は `ENABLE_ADMIN_NAV_ROLLOUT_V1=0`。
+- build識別の表示停止は `ENABLE_ADMIN_BUILD_META=0`。
+
+### nav回帰インシデント手順（追加）
+1) `/admin/app?pane=home&role=operator|admin|developer` で3ロールを確認。  
+2) 表示グループが上表と一致しない場合、`ENABLE_ADMIN_NAV_ROLLOUT_V1` の実値を確認。  
+3) `window.ADMIN_APP_BUILD_META` の commit/branch を確認し、ローカル乖離を除外。  
+4) `npm run test:admin-nav-contract` を実行し、失敗契約を先に修復。  
+5) 緊急時はフラグ停止または対象PRをrevertし、再度契約テストで復旧確認。  
 
 運用確認（画面）:
 1) `/admin/app?pane=home` で role を operator / admin / developer に切替

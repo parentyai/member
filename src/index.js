@@ -35,6 +35,66 @@ function resolveAdminUiFoundationFlag() {
   return true;
 }
 
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  return defaultValue === true;
+}
+
+function resolveAdminBuildMetaFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_BUILD_META', true);
+}
+
+function resolveAdminNavRolloutFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_NAV_ROLLOUT_V1', true);
+}
+
+function resolveAdminRolePersistFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_ROLE_PERSIST', true);
+}
+
+function resolveAdminHistorySyncFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_HISTORY_SYNC', true);
+}
+
+function resolveAdminBuildMeta() {
+  const commitRaw = process.env.GIT_COMMIT_SHA
+    || process.env.SOURCE_COMMIT
+    || process.env.VERCEL_GIT_COMMIT_SHA
+    || process.env.K_REVISION
+    || 'local';
+  const branchRaw = process.env.GIT_BRANCH
+    || process.env.BRANCH_NAME
+    || process.env.VERCEL_GIT_COMMIT_REF
+    || process.env.K_SERVICE
+    || 'local';
+  const commit = String(commitRaw || '').trim() || 'local';
+  const branch = String(branchRaw || '').trim() || 'local';
+  return {
+    commit,
+    branch,
+    buildAt: new Date().toISOString(),
+    foundationEnabled: resolveAdminUiFoundationFlag(),
+    trendEnabled: String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0',
+    rolloutEnabled: resolveAdminNavRolloutFlag()
+  };
+}
+
+function buildAdminAppBootScript() {
+  const trendEnabled = String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0';
+  const foundationEnabled = resolveAdminUiFoundationFlag();
+  const buildMetaEnabled = resolveAdminBuildMetaFlag();
+  const navRolloutEnabled = resolveAdminNavRolloutFlag();
+  const rolePersistEnabled = resolveAdminRolePersistFlag();
+  const historySyncEnabled = resolveAdminHistorySyncFlag();
+  const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
+  const safeBuildMeta = JSON.stringify(buildMeta);
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+}
+
 function parseCookies(headerValue) {
   const out = {};
   if (typeof headerValue !== 'string' || headerValue.trim().length === 0) return out;
@@ -558,6 +618,21 @@ function createServer() {
       const js = fs.readFileSync(filePath, 'utf8');
       res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8' });
       res.end(js);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('error');
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
+    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
+    try {
+      const html = fs.readFileSync(filePath, 'utf8');
+      const bootScript = buildAdminAppBootScript();
+      const injected = html.replace('</head>', `${bootScript}</head>`);
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(injected);
     } catch (_err) {
       res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('error');

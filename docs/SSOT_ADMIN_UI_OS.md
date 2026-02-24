@@ -27,6 +27,7 @@ UI表示（画面タイトル/見出し/画面名）は `docs/ADMIN_UI_DICTIONAR
 ## /admin/app ナビ可視化ポリシー（Phase637）
 `/admin/app` の左ナビは、Roleごとに「表示グループ」を固定する。  
 このポリシーは UI 実装（`data-nav-group` / `data-nav-visible`）と契約テストで維持する。
+この節は Phase637 時点の履歴であり、最新運用は後述の「Phase638–647 更新」を優先する。
 
 ### グループ定義
 - `dashboard`
@@ -48,6 +49,22 @@ UI表示（画面タイトル/見出し/画面名）は `docs/ADMIN_UI_DICTIONAR
 - `communication` と `operations` は現状非表示を維持する（導線拡大は別Phaseで扱う）。
 - `settings` は `catalog` 配下を主導線とする（全Roleで利用可能）。
 - Topbar は Role スイッチ主体を維持する（開発導線の再露出を避ける）。
+
+## /admin/app ナビ可視化ポリシー（Phase638–647 更新）
+Phase647 時点では、ロールアウト制御を前提に次の可視化を SSOT とする。
+
+### Role別可視化マトリクス（最新）
+| role | 表示グループ |
+| --- | --- |
+| operator | `dashboard`, `notifications`, `users`, `catalog` |
+| admin | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
+| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer`, `communication`, `operations` |
+
+### ロールアウト制御（最新）
+- `communication` / `operations` は `data-nav-rollout="admin,developer"` で制御する。
+- 全体停止は `ENABLE_ADMIN_NAV_ROLLOUT_V1=0` で実施する（operator可視化は増えない）。
+- `settings` は `catalog` を主導線とし、`operations` 側は補助導線として残置する。
+- build/commit の表示は `window.ADMIN_APP_BUILD_META` で行い、欠損時は `NOT AVAILABLE` を表示する。
 
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。
