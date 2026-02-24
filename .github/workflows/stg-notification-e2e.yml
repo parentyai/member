@@ -43,6 +43,11 @@ on:
         required: false
         default: "true"
         type: string
+      expect_llm_enabled:
+        description: "Require LLM gate to report enabled and non-blocked llmStatus"
+        required: false
+        default: "true"
+        type: string
 
 permissions:
   contents: read
@@ -240,6 +245,10 @@ jobs:
 
           if [ "${{ github.event.inputs.fail_on_missing_audit_actions }}" = "true" ]; then
             ARGS+=(--fail-on-missing-audit-actions)
+          fi
+
+          if [ "${{ github.event.inputs.expect_llm_enabled }}" = "true" ]; then
+            ARGS+=(--expect-llm-enabled)
           fi
 
           if [ -n "${{ github.event.inputs.retry_queue_id }}" ]; then
