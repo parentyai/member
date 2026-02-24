@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T23:27:53-05:00",
-  "gitCommit": "c816733a0d0f7d8bcc5b3078c479a79597105e12",
-  "branch": "codex/phase649-repo-map-ops-judgement",
-  "sourceDigest": "1e0a240288b0752a26d755a0e0d583d3333a6143678424e28f89a1265ca7b615",
+  "generatedAt": "2026-02-24T00:36:51-05:00",
+  "gitCommit": "0df1bc7b877dc578be11bdca4926c49c9d9a59b4",
+  "branch": "HEAD",
+  "sourceDigest": "e4017abc2743776eec2e49bb4d2ab59893dd9de68a3dfb1d853ffb3415b95d88",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -138,7 +138,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "515f1169d76044a5da7ad4e3c0f908fda5f895daa3702c634dfadb84874bdc1c",
+      "sha256": "dca6b59ac01c21bcdefc45c39966b53743be7277682db66450492453487a7eb2",
       "bytes": 2423
     }
   ],
