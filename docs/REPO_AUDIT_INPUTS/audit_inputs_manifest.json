@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T10:29:58-05:00",
-  "gitCommit": "1b14326a9066a02b2a033b0b1238f0cdf68e52ab",
-  "branch": "codex/llm-deploy-envvar-wirefix",
-  "sourceDigest": "64b149c022e0120bd108508a0193d1ad4a5dd63cf32c401193313c8a4be36a73",
+  "generatedAt": "2026-02-24T11:01:42-05:00",
+  "gitCommit": "8d6aa5bf7c4bf83707b1ac327318d35be0f336ae",
+  "branch": "codex/webhook-stripe-secret-failsafe",
+  "sourceDigest": "390ff37b7f65fb339dc391a3d0cd82e86e62dfed352f3ca6fba721630a888d81",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -138,8 +138,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "95f24041b07d30941d1720c0e30f12724734822e115c50a5a33a17431865ff47",
-      "bytes": 2417
+      "sha256": "a5750891ce2915a12bc1375e1ecdc2ac7bff7d6ca04060a07bae2db78f458bd5",
+      "bytes": 2422
     }
   ],
   "diff_detection_rules": [

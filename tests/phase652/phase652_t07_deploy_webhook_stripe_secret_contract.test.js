@@ -8,11 +8,13 @@ function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
-test('phase652: deploy-webhook workflow wires STRIPE_WEBHOOK_SECRET in preflight, IAM and deploy', () => {
+test('phase652: deploy-webhook workflow gates STRIPE_WEBHOOK_SECRET wiring behind ENABLE_STRIPE_WEBHOOK', () => {
   const workflow = read('.github/workflows/deploy-webhook.yml');
+  assert.ok(workflow.includes('ENABLE_STRIPE_WEBHOOK'));
   assert.ok(workflow.includes('Validate required secrets exist'));
   assert.ok(workflow.includes('STRIPE_WEBHOOK_SECRET'));
   assert.ok(workflow.includes('Ensure runtime SA can access required secrets'));
   assert.ok(workflow.includes('gcloud secrets add-iam-policy-binding'));
   assert.ok(workflow.includes('STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest'));
+  assert.ok(workflow.includes('ENABLE_STRIPE_WEBHOOK is not true'));
 });

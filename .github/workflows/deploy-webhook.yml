@@ -36,6 +36,7 @@ env:
   DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
   ENV_NAME: ${{ vars.ENV_NAME }}
   FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+  ENABLE_STRIPE_WEBHOOK: ${{ vars.ENABLE_STRIPE_WEBHOOK }}
 
 jobs:
   deploy-webhook:
@@ -55,6 +56,7 @@ jobs:
       DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
       ENV_NAME: ${{ vars.ENV_NAME }}
       FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
+      ENABLE_STRIPE_WEBHOOK: ${{ vars.ENABLE_STRIPE_WEBHOOK }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -104,12 +106,24 @@ jobs:
 
       - name: Validate required secrets exist
         run: |
+          normalize_bool() {
+            case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | xargs)" in
+              1|true|yes|on) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
           REQUIRED_SECRETS=(
             LINE_CHANNEL_SECRET
             LINE_CHANNEL_ACCESS_TOKEN
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
-            STRIPE_WEBHOOK_SECRET
           )
+          if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
+            REQUIRED_SECRETS+=(STRIPE_WEBHOOK_SECRET)
+          else
+            echo "::notice title=Stripe webhook disabled::ENABLE_STRIPE_WEBHOOK is not true; STRIPE_WEBHOOK_SECRET existence check skipped."
+          fi
+
           MISSING=0
           VISIBILITY_SKIPPED=0
           for SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do
@@ -146,13 +160,26 @@ jobs:
 
       - name: Ensure runtime SA can access required secrets
         run: |
+          normalize_bool() {
+            case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | xargs)" in
+              1|true|yes|on) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
           RUNTIME_MEMBER="serviceAccount:${RUNTIME_SA_EMAIL}"
-          for SECRET_NAME in \
-            LINE_CHANNEL_SECRET \
-            LINE_CHANNEL_ACCESS_TOKEN \
-            REDAC_MEMBERSHIP_ID_HMAC_SECRET \
-            STRIPE_WEBHOOK_SECRET
-          do
+          REQUIRED_SECRETS=(
+            LINE_CHANNEL_SECRET
+            LINE_CHANNEL_ACCESS_TOKEN
+            REDAC_MEMBERSHIP_ID_HMAC_SECRET
+          )
+          if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
+            REQUIRED_SECRETS+=(STRIPE_WEBHOOK_SECRET)
+          else
+            echo "::notice title=Stripe webhook disabled::ENABLE_STRIPE_WEBHOOK is not true; STRIPE_WEBHOOK_SECRET IAM grant skipped."
+          fi
+
+          for SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do
             echo "Granting roles/secretmanager.secretAccessor on ${SECRET_NAME} to ${RUNTIME_MEMBER}"
             if gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
               --project "$GCP_PROJECT_ID" \
@@ -196,13 +223,31 @@ jobs:
 
       - name: Deploy image to Cloud Run (webhook)
         run: |
+          normalize_bool() {
+            case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | xargs)" in
+              1|true|yes|on) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
           WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
           IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"
+          SET_ENV_VARS="ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook"
+          SET_SECRETS="LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest"
+
+          if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
+            SET_ENV_VARS="${SET_ENV_VARS},ENABLE_STRIPE_WEBHOOK=1"
+            SET_SECRETS="${SET_SECRETS},STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest"
+          else
+            SET_ENV_VARS="${SET_ENV_VARS},ENABLE_STRIPE_WEBHOOK=0"
+            echo "::notice title=Stripe webhook disabled::Deploying webhook service without STRIPE_WEBHOOK_SECRET binding."
+          fi
+
           gcloud run deploy "$WEBHOOK_SERVICE_NAME" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --image "$IMAGE" \
             --allow-unauthenticated \
             --service-account "$RUNTIME_SA_EMAIL" \
-            --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook" \
-            --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest"
+            --set-env-vars "$SET_ENV_VARS" \
+            --set-secrets "$SET_SECRETS"
