@@ -4,6 +4,8 @@ const {
   OPS_EXPLANATION_SCHEMA_ID,
   NEXT_ACTION_CANDIDATES_SCHEMA_ID,
   FAQ_ANSWER_SCHEMA_ID,
+  PAID_ASSISTANT_REPLY_SCHEMA_ID,
+  PAID_ASSISTANT_INTENTS,
   ABSTRACT_ACTIONS
 } = require('./schemas');
 
@@ -12,6 +14,7 @@ const MAX_INTERPRETATIONS = 10;
 const MAX_NOTES = 10;
 const MAX_CANDIDATES = 3;
 const MAX_CITATIONS = 5;
+const MAX_PAID_LIST = 8;
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -216,6 +219,63 @@ function validateFaqAnswer(payload) {
   return errors;
 }
 
+function validatePaidAssistantReply(payload) {
+  const errors = [];
+  if (!isPlainObject(payload)) {
+    return ['payload must be object'];
+  }
+  if (payload.schemaId !== PAID_ASSISTANT_REPLY_SCHEMA_ID) {
+    errors.push('schemaId mismatch');
+  }
+  if (!isIsoDateString(payload.generatedAt)) {
+    errors.push('generatedAt invalid');
+  }
+  if (payload.advisoryOnly !== true) {
+    errors.push('advisoryOnly must be true');
+  }
+  if (!isNonEmptyString(payload.intent) || !PAID_ASSISTANT_INTENTS.includes(payload.intent)) {
+    errors.push('intent invalid');
+  }
+  if (!isNonEmptyString(payload.situation)) {
+    errors.push('situation invalid');
+  } else if (containsDirectUrl(payload.situation)) {
+    errors.push('situation direct_url_detected');
+  }
+  if (!Array.isArray(payload.gaps) || payload.gaps.length > MAX_PAID_LIST) {
+    errors.push('gaps invalid');
+  } else {
+    payload.gaps.forEach((item, idx) => {
+      if (!isNonEmptyString(item)) errors.push(`gaps[${idx}] invalid`);
+      if (containsDirectUrl(item)) errors.push(`gaps[${idx}] direct_url_detected`);
+    });
+  }
+  if (!Array.isArray(payload.risks) || payload.risks.length > MAX_PAID_LIST) {
+    errors.push('risks invalid');
+  } else {
+    payload.risks.forEach((item, idx) => {
+      if (!isNonEmptyString(item)) errors.push(`risks[${idx}] invalid`);
+      if (containsDirectUrl(item)) errors.push(`risks[${idx}] direct_url_detected`);
+    });
+  }
+  if (!Array.isArray(payload.nextActions) || payload.nextActions.length > MAX_CANDIDATES) {
+    errors.push('nextActions invalid');
+  } else {
+    payload.nextActions.forEach((item, idx) => {
+      if (!isNonEmptyString(item)) errors.push(`nextActions[${idx}] invalid`);
+      if (containsDirectUrl(item)) errors.push(`nextActions[${idx}] direct_url_detected`);
+    });
+  }
+  if (!Array.isArray(payload.evidenceKeys) || payload.evidenceKeys.length === 0 || payload.evidenceKeys.length > MAX_PAID_LIST) {
+    errors.push('evidenceKeys invalid');
+  } else {
+    payload.evidenceKeys.forEach((item, idx) => {
+      if (!isNonEmptyString(item)) errors.push(`evidenceKeys[${idx}] invalid`);
+      if (containsDirectUrl(item)) errors.push(`evidenceKeys[${idx}] direct_url_detected`);
+    });
+  }
+  return errors;
+}
+
 function validateSchema(schemaId, payload) {
   let errors = [];
   if (schemaId === OPS_EXPLANATION_SCHEMA_ID) {
@@ -224,6 +284,8 @@ function validateSchema(schemaId, payload) {
     errors = validateNextActionCandidates(payload);
   } else if (schemaId === FAQ_ANSWER_SCHEMA_ID) {
     errors = validateFaqAnswer(payload);
+  } else if (schemaId === PAID_ASSISTANT_REPLY_SCHEMA_ID) {
+    errors = validatePaidAssistantReply(payload);
   } else {
     errors = ['unknown schemaId'];
   }

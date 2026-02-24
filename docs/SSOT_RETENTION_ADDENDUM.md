@@ -9,11 +9,11 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 7 |
-| config | 31 |
-| event | 3 |
-| evidence | 3 |
-| transient | 1 |
+| aggregate | 8 |
+| config | 33 |
+| event | 4 |
+| evidence | 4 |
+| transient | 2 |
 
 ## Collection方針
 
@@ -37,6 +37,8 @@
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
+| `llm_usage_logs` | event | 180d | CONDITIONAL | true |
+| `llm_usage_stats` | aggregate | INDEFINITE | false | false |
 | `notices` | config | INDEFINITE | false | false |
 | `notification_deliveries` | event | 180d | CONDITIONAL | true |
 | `notification_templates` | config | INDEFINITE | false | false |
@@ -48,6 +50,7 @@
 | `ops_segments` | config | INDEFINITE | false | false |
 | `ops_state` | config | INDEFINITE | false | false |
 | `ops_states` | config | INDEFINITE | false | false |
+| `opsConfig` | config | INDEFINITE | false | false |
 | `phase18_cta_stats` | aggregate | 90d | CONDITIONAL | true |
 | `phase2_reports_checklist_pending` | aggregate | 90d | CONDITIONAL | true |
 | `phase2_reports_daily_events` | aggregate | 90d | CONDITIONAL | true |
@@ -59,8 +62,11 @@
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |
 | `source_refs` | config | INDEFINITE | false | false |
+| `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
+| `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
+| `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |

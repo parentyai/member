@@ -8,7 +8,7 @@
   "scripts": {
     "pretest": "npm run test:docs",
     "test": "node --test tests/**/*.test.js",
-    "test:admin-nav-contract": "node --test tests/phase633/*.test.js tests/phase635/*.test.js tests/phase636/*.test.js tests/phase637/*.test.js tests/phase638/*.test.js tests/phase639/*.test.js tests/phase640/*.test.js tests/phase641/*.test.js tests/phase642/*.test.js tests/phase643/*.test.js tests/phase644/*.test.js tests/phase645/*.test.js tests/phase646/*.test.js tests/phase647/*.test.js tests/phase648/*.test.js",
+    "test:admin-nav-contract": "node --test tests/phase633/*.test.js tests/phase635/*.test.js tests/phase636/*.test.js tests/phase637/*.test.js tests/phase638/*.test.js tests/phase639/*.test.js tests/phase640/*.test.js tests/phase641/*.test.js tests/phase642/*.test.js tests/phase643/*.test.js tests/phase644/*.test.js tests/phase645/*.test.js tests/phase646/*.test.js tests/phase647/*.test.js tests/phase648/*.test.js tests/phase651/*.test.js",
     "test:docs": "node tools/verify_docs.js",
     "seed:setup": "node tools/seed_templates_and_citypacks.js",
     "seed:purge": "node tools/seed_purge.js --seedRunId \"$SEED_RUN_ID\" --confirm SEED_DELETE",
@@ -20,6 +20,7 @@
     "start:member": "SERVICE_MODE=member node src/index.js",
     "start:track": "SERVICE_MODE=track node src/index.js",
     "start:webhook": "SERVICE_MODE=webhook node src/index.js",
+    "admin:preflight": "node tools/admin_local_preflight.js",
     "preflight": "node -e \"const fs=require('fs'); const pkg=require('./package.json'); if(!pkg.scripts||!pkg.scripts.start) throw new Error('missing scripts.start'); if(!fs.existsSync('src/index.js')) throw new Error('missing src/index.js'); console.log('preflight ok');\"",
     "verify:day": "node scripts/phase21_verify_day_window.js",
     "verify:phase21": "node scripts/phase21_verify_day_window.js --track-base-url \"$TRACK_BASE_URL\" --linkRegistryId \"$LINK_REGISTRY_ID\"",

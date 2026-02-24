@@ -413,6 +413,20 @@
     const message = String(raw || '').trim();
     const lower = message.toLowerCase();
 
+    if (lower.includes('local_preflight_unavailable')) {
+      return { cause: 'ローカル診断APIを取得できません', impact: '環境不備と実装不備の切り分けができません', action: '/api/admin/local-preflight を直接確認してください', tone: 'warn' };
+    }
+    if (lower.includes('local_prefight') || lower.includes('local_preflight')) {
+      return { cause: 'ローカル前提条件の確認で異常を検知しました', impact: 'Firestore依存APIの取得が失敗し、NOT AVAILABLE が表示されます', action: 'ローカル診断バナーの手順に従って認証設定を修正してください', tone: 'danger' };
+    }
+    if (lower.includes('credentials_path_invalid')
+      || lower.includes('credentials_path_not_file')
+      || lower.includes('firestore_credentials_error')) {
+      return { cause: 'Firestore認証情報を読み込めません', impact: 'Dashboard/Alerts/City Pack などのAPI取得が失敗します', action: 'GOOGLE_APPLICATION_CREDENTIALS を解除するか、有効な鍵ファイルへ修正してください', tone: 'danger' };
+    }
+    if (lower.includes('firestore_project_id_missing') || lower.includes('firestore_project_id_error')) {
+      return { cause: 'FIRESTORE_PROJECT_ID が不足または不正です', impact: '一部環境でFirestore接続先を確定できません', action: 'FIRESTORE_PROJECT_ID を設定し、プロセスを再起動してください', tone: 'warn' };
+    }
     if (lower.includes('unauthorized')) {
       return { cause: '認証が不足しています', impact: '操作を続行できません', action: '再ログインして再試行してください', tone: 'danger' };
     }

@@ -13,6 +13,8 @@ const {
 } = require('../../repos/firestore/analyticsReadRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
+const llmUsageStatsRepo = require('../../repos/firestore/llmUsageStatsRepo');
 const {
   resolveSnapshotReadMode,
   isSnapshotReadEnabled,
@@ -198,6 +200,17 @@ function collectLineUserIds(users) {
   return Array.from(new Set((users || []).map((user) => (user && user.id ? String(user.id).trim() : '')).filter(Boolean)));
 }
 
+function buildKeyedMap(rows, keyField) {
+  const out = new Map();
+  (rows || []).forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const key = typeof row[keyField] === 'string' ? row[keyField].trim() : '';
+    if (!key) return;
+    out.set(key, row);
+  });
+  return out;
+}
+
 function dedupeRowsById(rows) {
   const map = new Map();
   (rows || []).forEach((row) => {
@@ -275,6 +288,12 @@ async function getUserOperationalSummary(params) {
   const queryRange = resolveAnalyticsQueryRangeFromUsers(scopedUsers);
   const checklistPairs = collectScenarioStepPairs(scopedUsers);
   const scopedLineUserIds = collectLineUserIds(scopedUsers);
+  const subscriptionsPromise = userSubscriptionsRepo.listUserSubscriptionsByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
+  const usageStatsPromise = llmUsageStatsRepo.listUserUsageStatsByLineUserIds({
+    lineUserIds: scopedLineUserIds
+  }).catch(() => []);
   const checklistsPromise = safeQuery(() => listChecklistsByScenarioStepPairs({
     pairs: checklistPairs,
     limit: analyticsLimit
@@ -299,11 +318,13 @@ async function getUserOperationalSummary(params) {
       toAt: queryRange.toAt
     }));
   }
-  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult] = await Promise.all([
+  let [eventsResult, checklistsResult, userChecklistsResult, deliveriesResult, subscriptions, usageStats] = await Promise.all([
     eventsPromise,
     checklistsPromise,
     userChecklistsPromise,
-    deliveriesPromise
+    deliveriesPromise,
+    subscriptionsPromise,
+    usageStatsPromise
   ]);
   let checklists = dedupeRowsById(checklistsResult.rows);
   let userChecklists = dedupeRowsById(userChecklistsResult.rows);
@@ -398,6 +419,8 @@ async function getUserOperationalSummary(params) {
   const latestActionByUser = buildLatestActionByUser(events);
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
   const deliveryStatsByUser = buildDeliveryStatsByUser(deliveries);
+  const subscriptionByUser = buildKeyedMap(subscriptions, 'lineUserId');
+  const usageByUser = buildKeyedMap(usageStats, 'lineUserId');
 
   const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
@@ -415,15 +438,26 @@ async function getUserOperationalSummary(params) {
     const latestClick = latestReactionByUser.latestClick.get(user.id);
     const latestRead = latestReactionByUser.latestRead.get(user.id);
     const deliveryStats = deliveryStatsByUser.get(user.id) || { deliveryCount: 0, clickCount: 0 };
+    const subscription = subscriptionByUser.get(user.id) || null;
+    const usage = usageByUser.get(user.id) || null;
     const deliveryCount = Number.isFinite(deliveryStats.deliveryCount) ? deliveryStats.deliveryCount : 0;
     const clickCount = Number.isFinite(deliveryStats.clickCount) ? deliveryStats.clickCount : 0;
     const lastReactionAt = latestClick
       ? formatTimestamp(latestClick.value)
       : (latestRead ? formatTimestamp(latestRead.value) : null);
+    const subscriptionStatus = subscription && subscription.status ? subscription.status : 'unknown';
+    const currentPeriodEnd = subscription && subscription.currentPeriodEnd ? subscription.currentPeriodEnd : null;
+    const plan = subscription && subscription.plan === 'pro' && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
+      ? 'pro'
+      : 'free';
+    const llmUsage = usage && Number.isFinite(Number(usage.usageCount)) ? Number(usage.usageCount) : 0;
+    const llmTokenUsed = usage && Number.isFinite(Number(usage.totalTokenUsed)) ? Number(usage.totalTokenUsed) : 0;
+    const llmBlockedCount = usage && Number.isFinite(Number(usage.blockedCount)) ? Number(usage.blockedCount) : 0;
     return {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
       createdAtMs,
+      updatedAt: formatTimestamp((subscription && subscription.updatedAt) || data.updatedAt || data.createdAt),
       opsReviewLastReviewedAt: formatTimestamp(data.opsReviewLastReviewedAt),
       opsReviewLastReviewedBy: data.opsReviewLastReviewedBy || null,
       memberNumber,
@@ -436,7 +470,15 @@ async function getUserOperationalSummary(params) {
       lastReactionAt,
       deliveryCount,
       clickCount,
-      reactionRate: resolveReactionRate(clickCount, deliveryCount)
+      reactionRate: resolveReactionRate(clickCount, deliveryCount),
+      plan,
+      subscriptionStatus,
+      currentPeriodEnd,
+      subscriptionUpdatedAt: subscription && subscription.updatedAt ? formatTimestamp(subscription.updatedAt) : null,
+      lastStripeEventId: subscription && subscription.lastEventId ? subscription.lastEventId : null,
+      llmUsage,
+      llmTokenUsed,
+      llmBlockedCount
     };
   });
   const computedAsOf = new Date().toISOString();

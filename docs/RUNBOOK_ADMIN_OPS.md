@@ -54,6 +54,24 @@
 - 同一paneが複数groupにある場合、`data-nav-priority` の高い導線を優先して重複表示を抑制する。
 - `notifications` の create/list のような同一group内導線は維持する。
 
+## ローカル診断（Phase651）
+ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。
+
+### 実行コマンド
+1) `npm run admin:preflight`  
+2) `curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight`
+
+### 判定
+- `ready=true`: 実装/データ条件を確認する
+- `ready=false`: 先に認証環境を修復する
+  - `GOOGLE_APPLICATION_CREDENTIALS` の無効パス/非ファイルを解消
+  - `FIRESTORE_PROJECT_ID` を確認
+  - `gcloud auth application-default login` を再実行
+
+### フラグ
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=1`（既定）: UIバナーで原因/影響/操作を表示
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=0`: 診断経路を停止（既存挙動へ復帰）
+
 ### nav回帰インシデント手順（追加）
 1) `/admin/app?pane=home&role=operator|admin|developer` で3ロールを確認。  
 2) 表示グループが上表と一致しない場合、`ENABLE_ADMIN_NAV_ROLLOUT_V1` の実値を確認。  
@@ -202,3 +220,33 @@
 - audits: view / plan / execute / kill switch set
 - decisions: submit / execute（該当する場合）
 - timeline: DECIDE / EXECUTE（該当する場合）
+
+## Billing / LLM運用（Phase課金）
+
+### Stripe Webhook運用
+1) Webhookサービスは `SERVICE_MODE=webhook` で運用し、`/webhook/stripe` を受け付ける。  
+2) 異常イベントは `stripe_webhook_dead_letters` を確認する。  
+3) 再送時は `stripe_webhook_events/{eventId}` の `status` を確認し、`duplicate` / `stale_ignored` を許容する。  
+
+即時停止:
+- `ENABLE_STRIPE_WEBHOOK=0`
+
+### Plan Gate運用
+1) `user_subscriptions/{lineUserId}` の `status` を確認する。  
+2) `active|trialing` のみ Pro、`past_due|canceled|incomplete|unknown` は Free 扱い。  
+3) 不整合時は Free に降格される設計を維持する。  
+
+### LLM Policy運用（2段階）
+1) `GET /api/admin/llm/policy/status` で実効状態を確認。  
+2) `POST /api/admin/llm/policy/plan` で `planHash` と `confirmToken` を取得。  
+3) `POST /api/admin/llm/policy/set` で適用。  
+4) `audit_logs` で `llm_policy.plan` / `llm_policy.set` を追跡。  
+
+即時停止:
+- `opsConfig/llmPolicy.enabled=false`
+- 既存互換停止として `system_flags.phase0.llmEnabled=false`
+
+### Users / Dashboard観測
+- Users一覧: `plan` / `subscriptionStatus` / `currentPeriodEnd` / `llmUsage` で絞り込み・ソート。  
+- User detail API: `GET /api/admin/os/user-billing-detail?lineUserId=...`。  
+- Dashboard KPI: `pro_active_count`, `total_users`, `pro_ratio`, `llm_daily_usage_count`, `llm_avg_per_pro_user`, `llm_block_rate`。  

@@ -1910,6 +1910,20 @@ details:not([open]) > *:not(summary) {
   line-height: 1.5;
 }
 
+.admin-local-preflight-banner {
+  margin-top: var(--space-2);
+}
+
+.admin-local-preflight-banner.is-danger {
+  border-left-color: var(--status-danger);
+}
+
+.admin-local-preflight-banner.is-warn {
+  border-left-color: var(--status-warn);
+  border-color: #f2dfad;
+  background: var(--status-warn-bg);
+}
+
 .admin-guard-text-danger {
   color: var(--status-danger);
 }

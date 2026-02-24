@@ -213,6 +213,30 @@
     ]
   },
   {
+    "collection": "llm_usage_logs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/llmUsageLogsRepo.js:5",
+      "src/repos/firestore/llmUsageLogsRepo.js:35",
+      "src/repos/firestore/llmUsageLogsRepo.js:67"
+    ]
+  },
+  {
+    "collection": "llm_usage_stats",
+    "kind": "aggregate",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/llmUsageStatsRepo.js:5",
+      "src/repos/firestore/llmUsageStatsRepo.js:81",
+      "src/repos/firestore/llmUsageStatsRepo.js:100"
+    ]
+  },
+  {
     "collection": "notices",
     "kind": "config",
     "recomputable": false,
@@ -334,6 +358,18 @@
     "evidence": [
       "src/repos/firestore/opsStatesRepo.js:10",
       "src/repos/firestore/opsStatesRepo.js:19"
+    ]
+  },
+  {
+    "collection": "opsConfig",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/opsConfigRepo.js:5",
+      "src/repos/firestore/opsConfigRepo.js:129",
+      "src/repos/firestore/opsConfigRepo.js:142"
     ]
   },
   {
@@ -466,6 +502,30 @@
     ]
   },
   {
+    "collection": "stripe_webhook_dead_letters",
+    "kind": "transient",
+    "recomputable": true,
+    "retention": "30d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/stripeWebhookDeadLettersRepo.js:5",
+      "src/repos/firestore/stripeWebhookDeadLettersRepo.js:7",
+      "src/repos/firestore/stripeWebhookDeadLettersRepo.js:19"
+    ]
+  },
+  {
+    "collection": "stripe_webhook_events",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/stripeWebhookEventsRepo.js:5",
+      "src/repos/firestore/stripeWebhookEventsRepo.js:65",
+      "src/repos/firestore/stripeWebhookEventsRepo.js:103"
+    ]
+  },
+  {
     "collection": "system_flags",
     "kind": "config",
     "recomputable": false,
@@ -510,6 +570,18 @@
     "evidence": [
       "src/repos/firestore/userConsentsRepo.js:26",
       "src/repos/firestore/userConsentsRepo.js:43"
+    ]
+  },
+  {
+    "collection": "user_subscriptions",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userSubscriptionsRepo.js:6",
+      "src/repos/firestore/userSubscriptionsRepo.js:90",
+      "src/repos/firestore/userSubscriptionsRepo.js:99"
     ]
   },
   {

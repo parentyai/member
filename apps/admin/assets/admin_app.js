@@ -65,6 +65,10 @@ const ADMIN_HISTORY_SYNC_ENABLED = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ADMIN_HISTORY_SYNC_V1 : null,
   true
 );
+const ADMIN_LOCAL_PREFLIGHT_ENABLED = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1 : null,
+  true
+);
 const ADMIN_NAV_ALL_ACCESSIBLE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ADMIN_NAV_ALL_ACCESSIBLE_V1 : null,
   true
@@ -73,6 +77,7 @@ const ADMIN_NAV_ALL_ACCESSIBLE_V1 = resolveFrontendFeatureFlag(
 const state = {
   dict: {},
   role: 'operator',
+  localPreflight: null,
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
@@ -125,6 +130,8 @@ const state = {
   repoMapKillSwitch: null,
   usersSummaryItems: [],
   usersSummaryFilteredItems: [],
+  usersSummarySelectedLineUserId: null,
+  usersSummaryBillingDetail: null,
   usersSummarySortKey: 'createdAt',
   usersSummarySortDir: 'desc',
   vendorUnifiedFilteredItems: [],
@@ -175,13 +182,18 @@ const COMPOSER_SAVED_SORT_TYPES = Object.freeze({
 });
 const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   createdAt: 'date',
+  updatedAt: 'date',
+  currentPeriodEnd: 'date',
   lineUserId: 'string',
   memberNumber: 'string',
   category: 'string',
   status: 'string',
+  plan: 'string',
+  subscriptionStatus: 'string',
   deliveryCount: 'number',
   clickCount: 'number',
-  reactionRate: 'number'
+  reactionRate: 'number',
+  llmUsage: 'number'
 });
 const CITY_PACK_UNIFIED_SORT_TYPES = Object.freeze({
   createdAt: 'date',
@@ -261,7 +273,10 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   engagement: { kpiKeys: ['engagement'], unit: 'percent' },
   notifications: { kpiKeys: ['notifications', 'stepStates'], unit: 'count' },
   reaction: { kpiKeys: ['reaction', 'churnRate'], unit: 'percent' },
-  faq: { kpiKeys: ['faqUsage', 'ctrTrend'], unit: 'count' }
+  faq: { kpiKeys: ['faqUsage', 'ctrTrend'], unit: 'count' },
+  proRatio: { kpiKeys: ['pro_ratio'], unit: 'percent' },
+  llmUsage: { kpiKeys: ['llm_daily_usage_count'], unit: 'count' },
+  llmBlockRate: { kpiKeys: ['llm_block_rate'], unit: 'percent' }
 });
 
 function isFoundationCoreEnabled() {
@@ -675,6 +690,115 @@ function renderGuardBanner(rawError) {
   el.setAttribute('data-admin-guard', 'visible');
 }
 
+function resolveLocalPreflightBannerElement() {
+  return document.getElementById('admin-local-preflight-banner');
+}
+
+function clearLocalPreflightBanner() {
+  const el = resolveLocalPreflightBannerElement();
+  if (!el) return;
+  el.classList.remove('is-visible', 'is-danger', 'is-warn');
+  el.setAttribute('data-admin-local-preflight', 'hidden');
+  const cause = el.querySelector('[data-local-preflight-field="cause"]');
+  const impact = el.querySelector('[data-local-preflight-field="impact"]');
+  const action = el.querySelector('[data-local-preflight-field="action"]');
+  if (cause) cause.textContent = '-';
+  if (impact) impact.textContent = '-';
+  if (action) action.textContent = '-';
+}
+
+function normalizeLocalPreflightPayload(payload) {
+  const source = payload && typeof payload === 'object' ? payload : {};
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
+  const code = summary.code ? String(summary.code) : 'LOCAL_PREFLIGHT_NOT_READY';
+  const tone = summary.tone === 'warn' ? 'warn' : (summary.tone === 'ok' ? 'ok' : 'danger');
+  const checkedAt = source.checkedAt ? formatDateLabel(source.checkedAt) : t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  const cause = summary.cause
+    ? String(summary.cause)
+    : t('ui.desc.admin.localPreflight.defaultCause', 'ローカル前提条件を確認できませんでした。');
+  const impact = summary.impact
+    ? String(summary.impact)
+    : t('ui.desc.admin.localPreflight.defaultImpact', 'Firestore依存APIの取得が不安定になります。');
+  const actionBase = summary.action
+    ? String(summary.action)
+    : t('ui.desc.admin.localPreflight.defaultAction', '認証設定を確認して再試行してください。');
+  const action = `${actionBase} (${code} / checkedAt=${checkedAt})`;
+  return { code, tone, cause, impact, action };
+}
+
+function renderLocalPreflightBanner(payload) {
+  const el = resolveLocalPreflightBannerElement();
+  if (!el) return;
+  const normalized = normalizeLocalPreflightPayload(payload);
+  const cause = el.querySelector('[data-local-preflight-field="cause"]');
+  const impact = el.querySelector('[data-local-preflight-field="impact"]');
+  const action = el.querySelector('[data-local-preflight-field="action"]');
+  if (cause) cause.textContent = normalized.cause;
+  if (impact) impact.textContent = normalized.impact;
+  if (action) action.textContent = normalized.action;
+  el.classList.add('is-visible');
+  el.classList.remove('is-danger', 'is-warn');
+  if (normalized.tone === 'warn') el.classList.add('is-warn');
+  else el.classList.add('is-danger');
+  el.setAttribute('data-admin-local-preflight', 'visible');
+}
+
+function renderDataLoadFailureGuard(reasonCode, err) {
+  const message = err && err.message ? String(err.message) : String(reasonCode || 'error');
+  if (state.localPreflight && state.localPreflight.ready === false) {
+    const summary = state.localPreflight.summary && typeof state.localPreflight.summary === 'object'
+      ? state.localPreflight.summary
+      : {};
+    renderLocalPreflightBanner(state.localPreflight);
+    renderGuardBanner({ error: summary.code || 'LOCAL_PREFLIGHT_NOT_READY' });
+    return;
+  }
+  renderGuardBanner({ error: `${String(reasonCode || 'load_failed')}:${message}` });
+}
+
+async function loadLocalPreflight(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  if (!ADMIN_LOCAL_PREFLIGHT_ENABLED) {
+    state.localPreflight = { ready: true, summary: { code: 'LOCAL_PREFLIGHT_DISABLED', tone: 'ok' } };
+    clearLocalPreflightBanner();
+    return state.localPreflight;
+  }
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  try {
+    const res = await fetch('/api/admin/local-preflight', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'local preflight failed');
+    state.localPreflight = data;
+    if (data.ready === true) {
+      clearLocalPreflightBanner();
+      if (notify) showToast(t('ui.toast.localPreflight.ok', 'ローカル診断は正常です'), 'ok');
+      return data;
+    }
+    renderLocalPreflightBanner(data);
+    renderGuardBanner({ error: (data.summary && data.summary.code) || 'LOCAL_PREFLIGHT_NOT_READY' });
+    if (notify) showToast(t('ui.toast.localPreflight.notReady', 'ローカル診断で要対応が見つかりました'), 'warn');
+    return data;
+  } catch (_err) {
+    const fallback = {
+      ready: false,
+      checkedAt: new Date().toISOString(),
+      summary: {
+        code: 'LOCAL_PREFLIGHT_UNAVAILABLE',
+        tone: 'warn',
+        cause: t('ui.desc.admin.localPreflight.unavailableCause', 'ローカル診断APIの取得に失敗しました。'),
+        impact: t('ui.desc.admin.localPreflight.unavailableImpact', '環境不備と実装不備の切り分けができません。'),
+        action: t('ui.desc.admin.localPreflight.unavailableAction', '/api/admin/local-preflight を確認して再試行してください。')
+      }
+    };
+    state.localPreflight = fallback;
+    renderLocalPreflightBanner(fallback);
+    renderGuardBanner({ error: 'LOCAL_PREFLIGHT_UNAVAILABLE' });
+    if (notify) showToast(t('ui.toast.localPreflight.fail', 'ローカル診断の取得に失敗しました'), 'warn');
+    return fallback;
+  }
+}
+
 function runDangerActionGuard(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const message = opts.confirmKey
@@ -751,6 +875,8 @@ function readUsersSummaryListState() {
     createdTo: getInputValue('users-filter-created-to'),
     category: getSelectValue('users-filter-category'),
     status: getSelectValue('users-filter-status'),
+    plan: getSelectValue('users-filter-plan'),
+    subscriptionStatus: getSelectValue('users-filter-subscription-status'),
     limit: getInputValue('users-filter-limit'),
     analyticsLimit: getInputValue('users-filter-analytics-limit'),
     sortKey: state.usersSummarySortKey,
@@ -822,6 +948,8 @@ function applyUsersSummaryListState(snapshot) {
   setInputValue('users-filter-created-to', snapshot.createdTo || '');
   setSelectValue('users-filter-category', snapshot.category || '');
   setSelectValue('users-filter-status', snapshot.status || '');
+  setSelectValue('users-filter-plan', snapshot.plan || '');
+  setSelectValue('users-filter-subscription-status', snapshot.subscriptionStatus || '');
   if (snapshot.limit) setInputValue('users-filter-limit', snapshot.limit);
   if (snapshot.analyticsLimit) setInputValue('users-filter-analytics-limit', snapshot.analyticsLimit);
 }
@@ -2398,7 +2526,7 @@ async function loadAlertsSummary(options) {
   } catch (_err) {
     state.alertsSummary = { totals: { openAlerts: null, scheduledTodayCount: null }, items: [] };
     renderAlertsSummary(state.alertsSummary);
-    renderGuardBanner(_err && _err.message ? { error: _err.message } : { error: 'alerts summary failed' });
+    renderDataLoadFailureGuard('alerts_summary_failed', _err);
     await loadTopbarStatus();
     if (notify) showToast(t('ui.toast.alerts.reloadFail', '要対応一覧の取得に失敗しました'), 'danger');
   }
@@ -2420,6 +2548,9 @@ async function loadDashboardKpis(options) {
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
   state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
   renderDashboardKpis();
+  if (failed) {
+    renderDataLoadFailureGuard('dashboard_kpi_failed', new Error('dashboard kpi failed'));
+  }
   persistListStateToStorage('dashboardWindow', readDashboardWindowState());
   await loadTopbarStatus();
   if (notify) {
@@ -2794,6 +2925,36 @@ function resolveUserStatus(stepKey) {
   return '';
 }
 
+function normalizeBillingPlan(value) {
+  return String(value || '').trim().toLowerCase() === 'pro' ? 'pro' : 'free';
+}
+
+function planLabel(value) {
+  const plan = normalizeBillingPlan(value);
+  return plan === 'pro' ? 'Pro' : 'Free';
+}
+
+function normalizeSubscriptionStatus(value) {
+  const status = String(value || '').trim().toLowerCase();
+  if (['active', 'trialing', 'past_due', 'canceled', 'incomplete', 'unknown'].includes(status)) {
+    return status;
+  }
+  return 'unknown';
+}
+
+function subscriptionStatusLabel(value) {
+  const status = normalizeSubscriptionStatus(value);
+  const labels = {
+    active: 'active',
+    trialing: 'trialing',
+    past_due: 'past_due',
+    canceled: 'canceled',
+    incomplete: 'incomplete',
+    unknown: 'unknown'
+  };
+  return labels[status] || 'unknown';
+}
+
 function resolveUserReactionRate(item) {
   if (Number.isFinite(Number(item && item.reactionRate))) {
     const numeric = Number(item.reactionRate);
@@ -2812,7 +2973,12 @@ function formatUserReactionRate(item) {
 function resolveUsersSortValue(item, key) {
   if (key === 'category') return item && item.categoryLabel;
   if (key === 'status') return item && item.statusLabel;
+  if (key === 'plan') return item && item.plan;
+  if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'reactionRate') return resolveUserReactionRate(item);
+  if (key === 'updatedAt') return item && item.updatedAt;
+  if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'createdAt') return item && item.createdAt;
   return item ? item[key] : null;
 }
@@ -5054,15 +5220,31 @@ function mapUsersSummaryItem(item) {
   const stepKey = typeof row.stepKey === 'string' ? row.stepKey : '';
   const deliveryCount = Number(row.deliveryCount);
   const clickCount = Number(row.clickCount);
+  const llmUsage = Number(row.llmUsage);
+  const llmTokenUsed = Number(row.llmTokenUsed);
+  const llmBlockedCount = Number(row.llmBlockedCount);
+  const plan = normalizeBillingPlan(row.plan);
+  const subscriptionStatus = normalizeSubscriptionStatus(row.subscriptionStatus);
   const mapped = {
     lineUserId: typeof row.lineUserId === 'string' ? row.lineUserId : '',
     createdAt: row.createdAt || null,
+    updatedAt: row.updatedAt || null,
     memberNumber: typeof row.memberNumber === 'string' ? row.memberNumber : '',
     scenarioKey,
     stepKey,
     category: normalizeUserCategory(scenarioKey),
     categoryLabel: userCategoryLabel(scenarioKey),
     statusLabel: resolveUserStatus(stepKey),
+    plan,
+    planLabel: planLabel(plan),
+    subscriptionStatus,
+    subscriptionStatusLabel: subscriptionStatusLabel(subscriptionStatus),
+    currentPeriodEnd: row.currentPeriodEnd || null,
+    subscriptionUpdatedAt: row.subscriptionUpdatedAt || null,
+    lastStripeEventId: typeof row.lastStripeEventId === 'string' ? row.lastStripeEventId : '',
+    llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
+    llmTokenUsed: Number.isFinite(llmTokenUsed) ? llmTokenUsed : 0,
+    llmBlockedCount: Number.isFinite(llmBlockedCount) ? llmBlockedCount : 0,
     deliveryCount: Number.isFinite(deliveryCount) ? deliveryCount : 0,
     clickCount: Number.isFinite(clickCount) ? clickCount : 0,
     reactionRate: resolveUserReactionRate(row)
@@ -5076,6 +5258,10 @@ function applyUsersSummaryFilters() {
   const createdToMs = parseDateInputMs(document.getElementById('users-filter-created-to')?.value || '', true);
   const category = (document.getElementById('users-filter-category')?.value || '').trim().toUpperCase();
   const status = (document.getElementById('users-filter-status')?.value || '').trim();
+  const plan = normalizeBillingPlan(document.getElementById('users-filter-plan')?.value || '');
+  const rawPlan = (document.getElementById('users-filter-plan')?.value || '').trim().toLowerCase();
+  const subscriptionStatus = normalizeSubscriptionStatus(document.getElementById('users-filter-subscription-status')?.value || '');
+  const rawSubscriptionStatus = (document.getElementById('users-filter-subscription-status')?.value || '').trim().toLowerCase();
   const filterCore = resolveCoreSlice('filterCore');
   const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
     ? filterCore.applyAndFilters(state.usersSummaryItems, [
@@ -5101,7 +5287,9 @@ function applyUsersSummaryFilters() {
           }
         },
         { type: 'equals', value: category, normalize: { trim: true, upper: true }, getValue: (item) => item && item.category },
-        { type: 'equals', value: status, normalize: { trim: true }, getValue: (item) => item && item.statusLabel }
+        { type: 'equals', value: status, normalize: { trim: true }, getValue: (item) => item && item.statusLabel },
+        { type: 'equals', value: rawPlan, normalize: { trim: true, lower: true }, getValue: (item) => item && item.plan },
+        { type: 'equals', value: rawSubscriptionStatus, normalize: { trim: true, lower: true }, getValue: (item) => item && item.subscriptionStatus }
       ])
     : state.usersSummaryItems.filter((item) => {
       const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
@@ -5111,6 +5299,8 @@ function applyUsersSummaryFilters() {
       if (createdToMs && (!createdAtMs || createdAtMs > createdToMs)) return false;
       if (category && String(item && item.category ? item.category : '') !== category) return false;
       if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
+      if (rawPlan && String(item && item.plan ? item.plan : '') !== plan) return false;
+      if (rawSubscriptionStatus && String(item && item.subscriptionStatus ? item.subscriptionStatus : '') !== subscriptionStatus) return false;
       return true;
     });
   state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
@@ -5123,11 +5313,15 @@ function buildUsersSummaryFilterChips() {
   const createdTo = getInputValue('users-filter-created-to');
   const category = getSelectValue('users-filter-category');
   const status = getSelectValue('users-filter-status');
+  const plan = getSelectValue('users-filter-plan');
+  const subscriptionStatus = getSelectValue('users-filter-subscription-status');
   pushFilterChip(chips, 'ユーザーID', userId);
   pushFilterChip(chips, '登録期間 from', createdFrom);
   pushFilterChip(chips, '登録期間 to', createdTo);
   if (category) pushFilterChip(chips, 'カテゴリ', getSelectLabel('users-filter-category'));
   if (status) pushFilterChip(chips, 'ステータス', getSelectLabel('users-filter-status'));
+  if (plan) pushFilterChip(chips, 'Plan', getSelectLabel('users-filter-plan'));
+  if (subscriptionStatus) pushFilterChip(chips, '課金状態', getSelectLabel('users-filter-subscription-status'));
   return chips;
 }
 
@@ -5137,6 +5331,76 @@ function clearUsersSummaryFilters() {
   setInputValue('users-filter-created-to', '');
   setSelectValue('users-filter-category', '');
   setSelectValue('users-filter-status', '');
+  setSelectValue('users-filter-plan', '');
+  setSelectValue('users-filter-subscription-status', '');
+}
+
+function setTextContent(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = value == null || value === '' ? '-' : String(value);
+}
+
+function renderUsersSummaryBillingDetail(payload) {
+  const detail = payload && typeof payload === 'object' ? payload : null;
+  const lineUserId = detail && detail.lineUserId ? detail.lineUserId : state.usersSummarySelectedLineUserId;
+  const billing = detail && detail.billing ? detail.billing : null;
+  const usage = detail && detail.llmUsage ? detail.llmUsage : null;
+  const lastStripeEvent = detail && detail.lastStripeEvent ? detail.lastStripeEvent : null;
+  setTextContent('users-detail-line-user-id', lineUserId || '-');
+  setTextContent('users-detail-plan', billing && billing.plan ? planLabel(billing.plan) : '-');
+  setTextContent('users-detail-subscription-status', billing && billing.status ? subscriptionStatusLabel(billing.status) : '-');
+  setTextContent('users-detail-current-period-end', billing && billing.currentPeriodEnd ? formatTimestampForList(billing.currentPeriodEnd) : '-');
+  setTextContent('users-detail-last-stripe-event', billing && billing.lastEventId ? billing.lastEventId : '-');
+  setTextContent('users-detail-llm-usage-count', usage && Number.isFinite(Number(usage.usageCount)) ? String(Number(usage.usageCount)) : '-');
+  setTextContent('users-detail-llm-token-used', usage && Number.isFinite(Number(usage.totalTokenUsed)) ? String(Number(usage.totalTokenUsed)) : '-');
+  setTextContent('users-detail-llm-blocked-count', usage && Number.isFinite(Number(usage.blockedCount)) ? String(Number(usage.blockedCount)) : '-');
+  setTextContent('users-detail-last-used-at', usage && usage.lastUsedAt ? formatTimestampForList(usage.lastUsedAt) : '-');
+  const historyEl = document.getElementById('users-detail-blocked-history');
+  if (historyEl) {
+    historyEl.innerHTML = '';
+    const history = usage && Array.isArray(usage.blockedHistory) ? usage.blockedHistory : [];
+    if (!history.length) {
+      historyEl.textContent = '-';
+    } else {
+      history.slice(0, 5).forEach((entry) => {
+        const li = document.createElement('li');
+        const reason = entry && entry.blockedReason ? String(entry.blockedReason) : 'unknown';
+        const createdAt = entry && entry.createdAt ? formatTimestampForList(entry.createdAt) : '-';
+        li.textContent = `${reason} (${createdAt})`;
+        historyEl.appendChild(li);
+      });
+    }
+  }
+  const eventType = lastStripeEvent && lastStripeEvent.eventType ? lastStripeEvent.eventType : '-';
+  const eventStatus = lastStripeEvent && lastStripeEvent.status ? lastStripeEvent.status : '-';
+  setTextContent('users-detail-last-stripe-event-type', `${eventType} / ${eventStatus}`);
+}
+
+async function loadUsersSummaryBillingDetail(lineUserId, options) {
+  const normalized = typeof lineUserId === 'string' ? lineUserId.trim() : '';
+  if (!normalized) {
+    state.usersSummarySelectedLineUserId = null;
+    state.usersSummaryBillingDetail = null;
+    renderUsersSummaryBillingDetail(null);
+    return;
+  }
+  const notify = Boolean(options && options.notify);
+  state.usersSummarySelectedLineUserId = normalized;
+  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+  try {
+    const query = new URLSearchParams({ lineUserId: normalized });
+    const res = await fetch(`/api/admin/os/user-billing-detail?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.usersSummaryBillingDetail = data;
+    renderUsersSummaryBillingDetail(data);
+    if (notify) showToast('ユーザー詳細を更新しました', 'ok');
+  } catch (_err) {
+    state.usersSummaryBillingDetail = null;
+    renderUsersSummaryBillingDetail({ lineUserId: normalized });
+    if (notify) showToast('ユーザー詳細の取得に失敗しました', 'danger');
+  }
 }
 
 function renderUsersSummaryRows() {
@@ -5162,31 +5426,47 @@ function renderUsersSummaryRows() {
   });
   persistListStateToStorage('usersSummary', readUsersSummaryListState());
   if (!items.length) {
+    state.usersSummarySelectedLineUserId = null;
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = 13;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderUsersSummaryBillingDetail(null);
     return;
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
     const cols = [
       formatTimestampForList(item.createdAt),
+      formatTimestampForList(item.updatedAt),
       item.lineUserId || '-',
       item.memberNumber || '-',
       item.categoryLabel || '-',
       item.statusLabel || '-',
+      item.planLabel || '-',
+      item.subscriptionStatusLabel || '-',
+      formatTimestampForList(item.currentPeriodEnd),
+      Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-',
       Number.isFinite(Number(item.deliveryCount)) ? String(item.deliveryCount) : '-',
       Number.isFinite(Number(item.clickCount)) ? String(item.clickCount) : '-',
       formatUserReactionRate(item)
     ];
     cols.forEach((value, idx) => {
       const td = document.createElement('td');
-      if (idx === 5 || idx === 6 || idx === 7) markNumericCell(td);
+      if (idx === 8 || idx === 9 || idx === 10 || idx === 11 || idx === 12) markNumericCell(td);
       td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
+    });
+    tr.classList.add('clickable-row');
+    if (state.usersSummarySelectedLineUserId && state.usersSummarySelectedLineUserId === item.lineUserId) {
+      tr.classList.add('row-active');
+    }
+    tr.addEventListener('click', () => {
+      tbody.querySelectorAll('tr').forEach((node) => node.classList.remove('row-active'));
+      tr.classList.add('row-active');
+      void loadUsersSummaryBillingDetail(item.lineUserId, { notify: false });
     });
     tbody.appendChild(tr);
   });
@@ -5201,8 +5481,14 @@ async function loadUsersSummary(options) {
     limit: String(limit),
     analyticsLimit: String(analyticsLimit),
     fallbackMode: 'block',
-    fallbackOnEmpty: 'false'
+    fallbackOnEmpty: 'false',
+    sortKey: state.usersSummarySortKey || 'createdAt',
+    sortDir: state.usersSummarySortDir || 'desc'
   });
+  const plan = getSelectValue('users-filter-plan');
+  const subscriptionStatus = getSelectValue('users-filter-subscription-status');
+  if (plan) query.set('plan', plan);
+  if (subscriptionStatus) query.set('subscriptionStatus', subscriptionStatus);
   try {
     const res = await fetch(`/api/phase5/ops/users-summary?${query.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
@@ -5210,13 +5496,24 @@ async function loadUsersSummary(options) {
     const items = Array.isArray(data.items) ? data.items : [];
     state.usersSummaryItems = items.map((item) => mapUsersSummaryItem(item));
     renderUsersSummaryRows();
+    const selected = state.usersSummarySelectedLineUserId
+      && state.usersSummaryItems.some((item) => item.lineUserId === state.usersSummarySelectedLineUserId)
+      ? state.usersSummarySelectedLineUserId
+      : (state.usersSummaryItems[0] && state.usersSummaryItems[0].lineUserId ? state.usersSummaryItems[0].lineUserId : '');
+    if (selected) {
+      await loadUsersSummaryBillingDetail(selected, { notify: false });
+    } else {
+      renderUsersSummaryBillingDetail(null);
+    }
     setPaneUpdatedAt('read-model');
     renderAllDecisionCards();
     if (notify) showToast('ユーザー一覧を更新しました', 'ok');
   } catch (_err) {
     state.usersSummaryItems = [];
     state.usersSummaryFilteredItems = [];
+    state.usersSummarySelectedLineUserId = null;
     renderUsersSummaryRows();
+    renderUsersSummaryBillingDetail(null);
     if (notify) showToast('ユーザー一覧の取得に失敗しました', 'danger');
   }
 }
@@ -5638,6 +5935,7 @@ async function loadCityPackKpi(options) {
     if (notify) showToast(t('ui.toast.cityPack.kpiLoaded', 'City Pack KPIを更新しました'), 'ok');
   } catch (_err) {
     renderCityPackKpi(null);
+    renderDataLoadFailureGuard('city_pack_kpi_failed', _err);
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.kpiLoadFail', 'City Pack KPIの取得に失敗しました'), 'danger');
   }
@@ -6457,6 +6755,7 @@ async function loadSnapshotHealth(options) {
   } catch (_err) {
     state.snapshotHealthItems = [];
     renderSnapshotHealth([]);
+    renderDataLoadFailureGuard('snapshot_health_failed', _err);
     if (notify) showToast(t('ui.toast.maintenance.snapshotHealth.reloadFail', 'Snapshot健全性の取得に失敗しました'), 'danger');
   }
 }
@@ -6824,6 +7123,7 @@ async function loadProductReadiness(options) {
     state.productReadiness = null;
     renderProductReadiness(null);
     renderCityPackCompositionDiagnostics();
+    renderDataLoadFailureGuard('product_readiness_failed', _err);
     if (notify) showToast(t('ui.toast.maintenance.productReadiness.reloadFail', 'Product Readiness 判定の取得に失敗しました'), 'danger');
   }
 }
@@ -7771,7 +8071,15 @@ function setupReadModelControls() {
   document.getElementById('users-summary-reload')?.addEventListener('click', () => {
     void loadUsersSummary({ notify: true });
   });
-  ['users-filter-line-user-id', 'users-filter-created-from', 'users-filter-created-to', 'users-filter-category', 'users-filter-status'].forEach((id) => {
+  [
+    'users-filter-line-user-id',
+    'users-filter-created-from',
+    'users-filter-created-to',
+    'users-filter-category',
+    'users-filter-status',
+    'users-filter-plan',
+    'users-filter-subscription-status'
+  ].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
@@ -8300,6 +8608,8 @@ function parseLlmEnabled(value) {
 
 let llmConfigPlanHash = null;
 let llmConfigConfirmToken = null;
+let llmPolicyPlanHash = null;
+let llmPolicyConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();
@@ -8455,6 +8765,115 @@ async function setLlmConfig() {
   }
 }
 
+function parseNumberField(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return parsed;
+}
+
+function parseIntentCsv(value) {
+  if (typeof value !== 'string') return [];
+  return Array.from(new Set(value.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean)));
+}
+
+function buildPolicyPayloadFromForm() {
+  return {
+    enabled: parseLlmEnabled(document.getElementById('llm-policy-enabled')?.value) === true,
+    model: (document.getElementById('llm-policy-model')?.value || '').trim() || 'gpt-4o-mini',
+    temperature: parseNumberField(document.getElementById('llm-policy-temperature')?.value, 0.2),
+    top_p: parseNumberField(document.getElementById('llm-policy-top-p')?.value, 1),
+    max_output_tokens: Math.floor(parseNumberField(document.getElementById('llm-policy-max-output-tokens')?.value, 600)),
+    per_user_daily_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-daily-limit')?.value, 20)),
+    per_user_token_budget: Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-token-budget')?.value, 12000)),
+    global_qps_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-global-qps-limit')?.value, 5)),
+    cache_ttl_sec: Math.floor(parseNumberField(document.getElementById('llm-policy-cache-ttl-sec')?.value, 120)),
+    allowed_intents_free: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-free')?.value || ''),
+    allowed_intents_pro: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-pro')?.value || ''),
+    safety_mode: (document.getElementById('llm-policy-safety-mode')?.value || '').trim() || 'strict'
+  };
+}
+
+function applyPolicyForm(policy) {
+  const payload = policy && typeof policy === 'object' ? policy : {};
+  setSelectValue('llm-policy-enabled', payload.enabled === true ? 'true' : 'false');
+  setInputValue('llm-policy-model', payload.model || 'gpt-4o-mini');
+  setInputValue('llm-policy-temperature', String(Number.isFinite(Number(payload.temperature)) ? Number(payload.temperature) : 0.2));
+  setInputValue('llm-policy-top-p', String(Number.isFinite(Number(payload.top_p)) ? Number(payload.top_p) : 1));
+  setInputValue('llm-policy-max-output-tokens', String(Number.isFinite(Number(payload.max_output_tokens)) ? Number(payload.max_output_tokens) : 600));
+  setInputValue('llm-policy-per-user-daily-limit', String(Number.isFinite(Number(payload.per_user_daily_limit)) ? Number(payload.per_user_daily_limit) : 20));
+  setInputValue('llm-policy-per-user-token-budget', String(Number.isFinite(Number(payload.per_user_token_budget)) ? Number(payload.per_user_token_budget) : 12000));
+  setInputValue('llm-policy-global-qps-limit', String(Number.isFinite(Number(payload.global_qps_limit)) ? Number(payload.global_qps_limit) : 5));
+  setInputValue('llm-policy-cache-ttl-sec', String(Number.isFinite(Number(payload.cache_ttl_sec)) ? Number(payload.cache_ttl_sec) : 120));
+  setInputValue('llm-policy-allowed-intents-free', Array.isArray(payload.allowed_intents_free) ? payload.allowed_intents_free.join(',') : 'faq_search');
+  setInputValue('llm-policy-allowed-intents-pro', Array.isArray(payload.allowed_intents_pro) ? payload.allowed_intents_pro.join(',') : 'faq_search');
+  setSelectValue('llm-policy-safety-mode', payload.safety_mode || 'strict');
+}
+
+async function loadLlmPolicyStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('llm-trace');
+  try {
+    const res = await fetch('/api/admin/llm/policy/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-policy-status', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyPolicyForm(data.llmPolicy || {});
+    setTextContent('llm-policy-effective-enabled', data.effectiveEnabled === true ? 'true' : 'false');
+    if (notify) showToast('LLMポリシー状態を取得しました', 'ok');
+  } catch (_err) {
+    setTextContent('llm-policy-effective-enabled', '-');
+    if (notify) showToast('LLMポリシー状態の取得に失敗しました', 'danger');
+  }
+}
+
+async function planLlmPolicy() {
+  const traceId = ensureTraceInput('llm-trace');
+  const policy = buildPolicyPayloadFromForm();
+  try {
+    const data = await postJson('/api/admin/llm/policy/plan', { policy }, traceId);
+    renderLlmResult('llm-policy-plan-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    llmPolicyPlanHash = data.planHash || null;
+    llmPolicyConfirmToken = data.confirmToken || null;
+    if (data.llmPolicy) applyPolicyForm(data.llmPolicy);
+    showToast('LLMポリシー計画を作成しました', 'ok');
+  } catch (_err) {
+    showToast('LLMポリシー計画の作成に失敗しました', 'danger');
+  }
+}
+
+async function setLlmPolicy() {
+  if (!llmPolicyPlanHash || !llmPolicyConfirmToken) {
+    renderLlmResult('llm-policy-set-result', { ok: false, error: 'plan required' });
+    showToast('LLMポリシー適用には先に計画が必要です', 'warn');
+    return;
+  }
+  const guardedTrace = runDangerActionGuard({
+    confirmFallback: 'LLMポリシーを適用しますか？',
+    traceInputId: 'llm-trace',
+    cancelMessage: 'LLMポリシー適用を中止しました'
+  });
+  if (guardedTrace === null) return;
+  const traceId = guardedTrace || ensureTraceInput('llm-trace');
+  const policy = buildPolicyPayloadFromForm();
+  try {
+    const data = await postJson('/api/admin/llm/policy/set', {
+      policy,
+      planHash: llmPolicyPlanHash,
+      confirmToken: llmPolicyConfirmToken
+    }, traceId);
+    renderLlmResult('llm-policy-set-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    llmPolicyPlanHash = null;
+    llmPolicyConfirmToken = null;
+    if (data.llmPolicy) applyPolicyForm(data.llmPolicy);
+    await loadLlmPolicyStatus({ notify: false });
+    showToast('LLMポリシーを適用しました', 'ok');
+  } catch (_err) {
+    showToast('LLMポリシーの適用に失敗しました', 'danger');
+  }
+}
+
 function setupLlmControls() {
   document.getElementById('llm-regen')?.addEventListener('click', () => {
     const el = document.getElementById('llm-trace');
@@ -8474,7 +8893,17 @@ function setupLlmControls() {
   document.getElementById('llm-config-reload')?.addEventListener('click', loadLlmConfigStatus);
   document.getElementById('llm-config-plan')?.addEventListener('click', planLlmConfig);
   document.getElementById('llm-config-set')?.addEventListener('click', setLlmConfig);
+  document.getElementById('llm-policy-reload')?.addEventListener('click', () => {
+    void loadLlmPolicyStatus({ notify: true });
+  });
+  document.getElementById('llm-policy-plan')?.addEventListener('click', () => {
+    void planLlmPolicy();
+  });
+  document.getElementById('llm-policy-set')?.addEventListener('click', () => {
+    void setLlmPolicy();
+  });
   loadLlmConfigStatus();
+  void loadLlmPolicyStatus({ notify: false });
 }
 
 (async () => {
@@ -8502,6 +8931,7 @@ function setupLlmControls() {
   activateInitialPane();
   setupHistorySync();
   setupPaneKeyboardShortcuts();
+  await loadLocalPreflight({ notify: false });
 
   loadMonitorData({ notify: false });
   loadMonitorInsights({ notify: false });

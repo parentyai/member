@@ -10,7 +10,7 @@
 - duplicate groups: 6
 - missing-index fallback points: 0
 - full-scan hotspots: 0
-- lifecycle collections: 45
+- lifecycle collections: 51
 - unreachable frozen targets: 20
 
 ## 実施フェーズ
