@@ -212,6 +212,11 @@
           <div class="admin-guard-line"><strong>影響:</strong> <span data-guard-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-guard-field="action">-</span></div>
         </div>
+        <div id="admin-local-preflight-banner" class="alert-banner admin-local-preflight-banner" data-admin-local-preflight="hidden" role="status" aria-live="polite">
+          <div class="admin-guard-line"><strong>原因:</strong> <span data-local-preflight-field="cause">-</span></div>
+          <div class="admin-guard-line"><strong>影響:</strong> <span data-local-preflight-field="impact">-</span></div>
+          <div class="admin-guard-line"><strong>操作:</strong> <span data-local-preflight-field="action">-</span></div>
+        </div>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">
           <div class="decision-card" id="home-decision-card">
@@ -368,6 +373,66 @@
                   </div>
                   <div id="dashboard-kpi-faq-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-faq-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="proRatio">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">Pro比率</div>
+                    <select id="dashboard-window-proRatio" class="select-inline dashboard-window-select" data-dashboard-metric="proRatio">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-proRatio-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-proRatio-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-proRatio-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-proRatio-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-proRatio-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="llmUsage">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">LLM利用件数</div>
+                    <select id="dashboard-window-llmUsage" class="select-inline dashboard-window-select" data-dashboard-metric="llmUsage">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-llmUsage-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-llmUsage-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-llmUsage-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-llmUsage-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-llmUsage-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="llmBlockRate">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">LLMブロック率</div>
+                    <select id="dashboard-window-llmBlockRate" class="select-inline dashboard-window-select" data-dashboard-metric="llmBlockRate">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-llmBlockRate-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-llmBlockRate-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-llmBlockRate-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-llmBlockRate-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-llmBlockRate-note" class="dashboard-kpi-note">-</div>
                 </div>
               </div>
               <div class="task-card-list dashboard-shortcuts">
@@ -1802,6 +1867,26 @@
                         </select>
                       </div>
                       <div class="flex-1">
+                        <label for="users-filter-plan">Plan</label>
+                        <select id="users-filter-plan">
+                          <option value="">all</option>
+                          <option value="free">free</option>
+                          <option value="pro">pro</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
+                        <label for="users-filter-subscription-status">課金状態</label>
+                        <select id="users-filter-subscription-status">
+                          <option value="">all</option>
+                          <option value="active">active</option>
+                          <option value="trialing">trialing</option>
+                          <option value="past_due">past_due</option>
+                          <option value="canceled">canceled</option>
+                          <option value="incomplete">incomplete</option>
+                          <option value="unknown">unknown</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
                         <label for="users-filter-limit">件数</label>
                         <input id="users-filter-limit" type="number" min="1" max="500" value="200" class="input-sm" />
                       </div>
@@ -1825,10 +1910,15 @@
                     <thead>
                       <tr>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="createdAt">登録日</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="updatedAt">更新日</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">ユーザーID</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="plan">Plan</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
+                        <th><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">LLM利用</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
                         <th><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
@@ -1869,6 +1959,23 @@
                 <div class="panel-title" data-dict-key="ui.label.readModel.summaryTip">先に見る3項目</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.readModel.tip1">要対応（反応率が低い通知）を最初に確認します。</div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title">ユーザー詳細（課金/LLM）</div>
+                <div class="panel-body">
+                  <div class="note">lineUserId: <span id="users-detail-line-user-id">-</span></div>
+                  <div class="note">Plan: <span id="users-detail-plan">-</span></div>
+                  <div class="note">課金状態: <span id="users-detail-subscription-status">-</span></div>
+                  <div class="note">currentPeriodEnd: <span id="users-detail-current-period-end">-</span></div>
+                  <div class="note">最終Stripeイベント: <span id="users-detail-last-stripe-event">-</span></div>
+                  <div class="note">Stripe種別/状態: <span id="users-detail-last-stripe-event-type">-</span></div>
+                  <div class="note">LLM使用回数: <span id="users-detail-llm-usage-count">-</span></div>
+                  <div class="note">LLMトークン使用量: <span id="users-detail-llm-token-used">-</span></div>
+                  <div class="note">LLMブロック回数: <span id="users-detail-llm-blocked-count">-</span></div>
+                  <div class="note">最終利用: <span id="users-detail-last-used-at">-</span></div>
+                  <div class="note">ブロック履歴</div>
+                  <ul id="users-detail-blocked-history" class="repo-map-list mono-list"><li>-</li></ul>
                 </div>
               </div>
             </div>
@@ -2416,6 +2523,83 @@
                   <details class="section">
                     <summary data-dict-key="ui.label.llm.config.setResult">適用結果</summary>
                     <pre id="llm-config-set-result">-</pre>
+                  </details>
+                  <hr />
+                  <label>LLMポリシー有効</label>
+                  <select id="llm-policy-enabled">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                  <div class="input-grid">
+                    <div>
+                      <label>model</label>
+                      <input id="llm-policy-model" value="gpt-4o-mini" />
+                    </div>
+                    <div>
+                      <label>temperature</label>
+                      <input id="llm-policy-temperature" type="number" step="0.1" min="0" max="2" value="0.2" />
+                    </div>
+                    <div>
+                      <label>top_p</label>
+                      <input id="llm-policy-top-p" type="number" step="0.1" min="0" max="1" value="1" />
+                    </div>
+                    <div>
+                      <label>max_output_tokens</label>
+                      <input id="llm-policy-max-output-tokens" type="number" step="1" min="32" max="4096" value="600" />
+                    </div>
+                    <div>
+                      <label>per_user_daily_limit</label>
+                      <input id="llm-policy-per-user-daily-limit" type="number" step="1" min="0" max="2000" value="20" />
+                    </div>
+                    <div>
+                      <label>per_user_token_budget</label>
+                      <input id="llm-policy-per-user-token-budget" type="number" step="1" min="0" max="500000" value="12000" />
+                    </div>
+                    <div>
+                      <label>global_qps_limit</label>
+                      <input id="llm-policy-global-qps-limit" type="number" step="1" min="0" max="1000" value="5" />
+                    </div>
+                    <div>
+                      <label>cache_ttl_sec</label>
+                      <input id="llm-policy-cache-ttl-sec" type="number" step="1" min="0" max="86400" value="120" />
+                    </div>
+                    <div>
+                      <label>allowed_intents_free(csv)</label>
+                      <input id="llm-policy-allowed-intents-free" value="faq_search" />
+                    </div>
+                    <div>
+                      <label>allowed_intents_pro(csv)</label>
+                      <input id="llm-policy-allowed-intents-pro" value="situation_analysis,gap_check,timeline_build,next_action_generation,risk_alert,faq_search" />
+                    </div>
+                    <div>
+                      <label>safety_mode</label>
+                      <select id="llm-policy-safety-mode">
+                        <option value="strict">strict</option>
+                        <option value="balanced">balanced</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label>effectiveEnabled</label>
+                      <div id="llm-policy-effective-enabled">-</div>
+                    </div>
+                  </div>
+                  <div class="row row-top">
+                    <button id="llm-policy-reload" type="button">ポリシー状態</button>
+                    <button id="llm-policy-plan" type="button">ポリシー計画</button>
+                    <button id="llm-policy-set" type="button">ポリシー適用</button>
+                  </div>
+                  <details class="section">
+                    <summary>ポリシー状態</summary>
+                    <pre id="llm-policy-status">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary>ポリシー計画結果</summary>
+                    <pre id="llm-policy-plan-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary>ポリシー適用結果</summary>
+                    <pre id="llm-policy-set-result">-</pre>
                   </details>
                 </div>
               </div>

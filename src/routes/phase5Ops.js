@@ -39,7 +39,11 @@ function handleError(res, err) {
     message.includes('invalid limit') ||
     message.includes('invalid snapshotMode') ||
     message.includes('invalid fallbackMode') ||
-    message.includes('invalid fallbackOnEmpty')
+    message.includes('invalid fallbackOnEmpty') ||
+    message.includes('invalid plan') ||
+    message.includes('invalid subscriptionStatus') ||
+    message.includes('invalid sortKey') ||
+    message.includes('invalid sortDir')
   ) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
@@ -96,6 +100,55 @@ function parseFallbackOnEmpty(value) {
   return null;
 }
 
+function parsePlan(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (value === 'free' || value === 'pro') return value;
+  return null;
+}
+
+function parseSubscriptionStatus(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if ([
+    'active',
+    'trialing',
+    'past_due',
+    'canceled',
+    'incomplete',
+    'unknown'
+  ].includes(value)) {
+    return value;
+  }
+  return null;
+}
+
+function parseUsersSortKey(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if ([
+    'createdAt',
+    'updatedAt',
+    'currentPeriodEnd',
+    'lineUserId',
+    'memberNumber',
+    'category',
+    'status',
+    'deliveryCount',
+    'clickCount',
+    'reactionRate',
+    'plan',
+    'subscriptionStatus',
+    'llmUsage'
+  ].includes(value)) {
+    return value;
+  }
+  return null;
+}
+
+function parseUsersSortDir(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (value === 'asc' || value === 'desc') return value;
+  return null;
+}
+
 function resolveHeader(req, key) {
   if (!req || !req.headers) return null;
   const value = req.headers[key];
@@ -145,11 +198,19 @@ async function handleUsersSummaryFiltered(req, res) {
     const snapshotModeRaw = url.searchParams.get('snapshotMode');
     const fallbackModeRaw = url.searchParams.get('fallbackMode');
     const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
+    const planRaw = url.searchParams.get('plan');
+    const subscriptionStatusRaw = url.searchParams.get('subscriptionStatus');
+    const sortKeyRaw = url.searchParams.get('sortKey');
+    const sortDirRaw = url.searchParams.get('sortDir');
     const limit = parsePositiveInt(limitRaw, 1, 500);
     const analyticsLimit = parsePositiveInt(analyticsLimitRaw, 1, 3000);
     const snapshotMode = parseSnapshotMode(snapshotModeRaw);
     const fallbackMode = parseFallbackMode(fallbackModeRaw);
     const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
+    const plan = parsePlan(planRaw);
+    const subscriptionStatus = parseSubscriptionStatus(subscriptionStatusRaw);
+    const sortKey = parseUsersSortKey(sortKeyRaw);
+    const sortDir = parseUsersSortDir(sortDirRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
       throw new Error('invalid reviewAgeDays');
     }
@@ -165,12 +226,31 @@ async function handleUsersSummaryFiltered(req, res) {
     if (fallbackOnEmptyRaw && fallbackOnEmpty === null) {
       throw new Error('invalid fallbackOnEmpty');
     }
+    if (planRaw && !plan) {
+      throw new Error('invalid plan');
+    }
+    if (subscriptionStatusRaw && !subscriptionStatus) {
+      throw new Error('invalid subscriptionStatus');
+    }
+    if (sortKeyRaw && !sortKey) {
+      throw new Error('invalid sortKey');
+    }
+    if (sortDirRaw && !sortDir) {
+      throw new Error('invalid sortDir');
+    }
+    if (sortDir && !sortKey) {
+      throw new Error('invalid sortKey');
+    }
     const [summary, opsState] = await Promise.all([
       getUsersSummaryFiltered(Object.assign({}, range, {
         needsAttention,
         stale,
         unreviewed,
         reviewAgeDays,
+        plan,
+        subscriptionStatus,
+        sortKey,
+        sortDir,
         limit,
         analyticsLimit,
         snapshotMode,
@@ -205,7 +285,15 @@ async function handleUsersSummaryFiltered(req, res) {
       fallbackUsed: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackUsed') ? meta.fallbackUsed : false,
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
       fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : [],
-      fallbackOnEmpty
+      fallbackOnEmpty,
+      filters: {
+        plan: plan || 'all',
+        subscriptionStatus: subscriptionStatus || 'all'
+      },
+      sort: {
+        sortKey: sortKey || null,
+        sortDir: sortDir || null
+      }
     }));
   } catch (err) {
     handleError(res, err);

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T01:27:12-05:00",
-  "gitCommit": "543b4e75041060f270a9a2f9e3c9fcda760caa00",
-  "branch": "codex/llm-e2e-runner-sync-20260224",
-  "sourceDigest": "0be770c7683babe7036cf650d8b8ff627f985bf0d953ffe1ea29de1efa66ca5f",
+  "generatedAt": "2026-02-24T10:29:58-05:00",
+  "gitCommit": "1b14326a9066a02b2a033b0b1238f0cdf68e52ab",
+  "branch": "codex/llm-deploy-envvar-wirefix",
+  "sourceDigest": "ab843596449b9778916d8e6638df741118e69f877d83243ef9e8ec29c8ebbb0c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

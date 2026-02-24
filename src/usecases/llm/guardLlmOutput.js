@@ -61,6 +61,16 @@ function guardNextActionOutput(payload) {
   return { ok: true };
 }
 
+function guardPaidAssistantOutput(payload) {
+  const candidate = isPlainObject(payload) ? payload : null;
+  if (!candidate) return { ok: false, blockedReason: 'template_violation' };
+  const evidenceKeys = Array.isArray(candidate.evidenceKeys) ? candidate.evidenceKeys : [];
+  if (!evidenceKeys.length) return { ok: false, blockedReason: 'citation_missing' };
+  const allStrings = evidenceKeys.every((item) => typeof item === 'string' && item.trim().length > 0);
+  if (!allStrings) return { ok: false, blockedReason: 'citation_missing' };
+  return { ok: true };
+}
+
 async function guardLlmOutput(params, deps) {
   const payload = params || {};
   const purpose = payload.purpose;
@@ -78,6 +88,12 @@ async function guardLlmOutput(params, deps) {
     if (purpose === 'next_actions' && schemaErrors.some((item) => typeof item === 'string' && item.includes('.action invalid'))) {
       return { ok: false, blockedReason: 'invalid_action', schemaErrors };
     }
+    if (purpose === 'paid_assistant' && schemaErrors.some((item) => typeof item === 'string' && item.includes('evidenceKeys'))) {
+      return { ok: false, blockedReason: 'citation_missing', schemaErrors };
+    }
+    if (purpose === 'paid_assistant') {
+      return { ok: false, blockedReason: 'template_violation', schemaErrors };
+    }
     return { ok: false, blockedReason: 'invalid_schema', schemaErrors };
   }
 
@@ -94,6 +110,18 @@ async function guardLlmOutput(params, deps) {
   if (purpose === 'next_actions') {
     const result = guardNextActionOutput(output);
     if (!result.ok) return result;
+  }
+
+  if (purpose === 'paid_assistant') {
+    const result = guardPaidAssistantOutput(output);
+    if (!result.ok) return result;
+    const allowedEvidenceKeys = Array.isArray(payload.allowedEvidenceKeys) ? payload.allowedEvidenceKeys : [];
+    if (allowedEvidenceKeys.length > 0) {
+      const allowed = new Set(allowedEvidenceKeys.map((item) => String(item || '').trim()).filter(Boolean));
+      const evidenceKeys = output && Array.isArray(output.evidenceKeys) ? output.evidenceKeys : [];
+      const allIncluded = evidenceKeys.every((item) => allowed.has(String(item || '').trim()));
+      if (!allIncluded) return { ok: false, blockedReason: 'citation_missing' };
+    }
   }
 
   return { ok: true, schemaErrors: null };

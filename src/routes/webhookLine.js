@@ -10,6 +10,15 @@ const { replyMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
+const llmClient = require('../infra/llmClient');
+const { resolvePlan } = require('../usecases/billing/planGate');
+const { evaluateLLMBudget } = require('../usecases/billing/evaluateLlmBudget');
+const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
+const { searchFaqFromKb } = require('../usecases/faq/searchFaqFromKb');
+const {
+  classifyPaidIntent,
+  generatePaidAssistantReply
+} = require('../usecases/assistant/generatePaidAssistantReply');
 const {
   regionPrompt,
   regionDeclared,
@@ -87,6 +96,119 @@ function isLlmConsentAcceptCommand(text) {
 function isLlmConsentRevokeCommand(text) {
   const raw = typeof text === 'string' ? text.trim() : '';
   return raw === 'AI拒否' || raw === 'LLM拒否';
+}
+
+function normalizeReplyText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function trimForLineMessage(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return '';
+  return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
+}
+
+async function replyWithFaqFallback(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const faq = await searchFaqFromKb({
+    question: payload.text,
+    locale: 'ja',
+    limit: 3
+  });
+  const replyText = trimForLineMessage(faq.replyText) || 'FAQ候補を取得できませんでした。';
+  await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+  return faq;
+}
+
+async function handleAssistantMessage(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const lineUserId = payload.lineUserId;
+  const text = normalizeReplyText(payload.text);
+  if (!lineUserId || !text || !payload.replyToken || typeof payload.replyFn !== 'function') {
+    return { handled: false };
+  }
+
+  const planInfo = await resolvePlan(lineUserId);
+  const intent = classifyPaidIntent(text);
+  const budget = await evaluateLLMBudget(lineUserId, {
+    intent,
+    tokenEstimate: 0,
+    planInfo
+  });
+
+  if (!budget.allowed || planInfo.plan !== 'pro') {
+    const fallback = await replyWithFaqFallback(payload);
+    await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent,
+      decision: 'blocked',
+      blockedReason: budget.blockedReason || 'plan_free',
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0
+    });
+    return {
+      handled: true,
+      mode: 'free',
+      fallback,
+      blockedReason: budget.blockedReason || 'plan_free'
+    };
+  }
+
+  const paid = await generatePaidAssistantReply({
+    question: text,
+    intent,
+    locale: 'ja',
+    llmAdapter: llmClient,
+    llmPolicy: budget.policy
+  });
+
+  if (!paid.ok) {
+    const fallback = await replyWithFaqFallback(payload);
+    await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent,
+      decision: 'blocked',
+      blockedReason: paid.blockedReason || 'llm_error',
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: budget.policy && budget.policy.model
+    });
+    return {
+      handled: true,
+      mode: 'fallback',
+      fallback,
+      blockedReason: paid.blockedReason || 'llm_error'
+    };
+  }
+
+  const replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
+  await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+
+  await recordLlmUsage({
+    userId: lineUserId,
+    plan: planInfo.plan,
+    subscriptionStatus: planInfo.status,
+    intent,
+    decision: 'allow',
+    blockedReason: null,
+    tokensIn: paid.tokensIn || 0,
+    tokensOut: paid.tokensOut || 0,
+    tokenUsed: (paid.tokensIn || 0) + (paid.tokensOut || 0),
+    model: paid.model || (budget.policy && budget.policy.model)
+  });
+
+  return {
+    handled: true,
+    mode: 'paid',
+    blockedReason: null
+  };
 }
 
 async function handleLineWebhook(options) {
@@ -227,6 +349,20 @@ async function handleLineWebhook(options) {
               await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
               continue;
             }
+          }
+
+          const assistant = await handleAssistantMessage({
+            lineUserId: userId,
+            text,
+            replyToken,
+            replyFn,
+            requestId
+          });
+          if (assistant && assistant.handled) {
+            const mode = assistant.mode || 'unknown';
+            const blockedReason = assistant.blockedReason || '-';
+            logger(`[webhook] requestId=${requestId} llm_assistant mode=${mode} blockedReason=${blockedReason} lineUserId=${userId}`);
+            continue;
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';

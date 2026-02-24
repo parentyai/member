@@ -83,6 +83,23 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 - 同一paneが複数groupにある場合は `data-nav-priority` の高い導線を優先し、重複表示を抑制する（同一group内導線は維持）。
 - `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0` で Phase638–647 の判定経路へ即時ロールバックできる。
 
+## /admin/app ローカル診断ポリシー（Phase651）
+`/admin/app` は `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1`（既定ON）でローカル前提条件診断を有効化する。
+
+### 診断I/F（additive）
+- `GET /api/admin/local-preflight` を追加し、read-only でローカル前提条件を返す。
+- `window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1` を boot script へ注入する。
+- UIは `ready=false` の場合、原因/影響/操作をバナー表示する。
+
+### 判定対象
+- `GOOGLE_APPLICATION_CREDENTIALS` が有効ファイルか
+- `FIRESTORE_PROJECT_ID` の設定有無
+- Firestore read-only probe（`listCollections`）の成否
+
+### 運用意図
+- `NOT AVAILABLE` の原因を「実装未完了」と「環境不備」に分離して提示する。
+- 既存API/Firestoreスキーマは変更しない（診断は read-only）。
+
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。
 本ドキュメントでは、ServicePhase を **管理UIで運用自走するための成熟度（運用OS）**として要求定義する。

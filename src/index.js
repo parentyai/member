@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { handleLineWebhook } = require('./routes/webhookLine');
+const { handleStripeWebhook } = require('./routes/webhookStripe');
 const { resolvePathProtection } = require('./domain/security/protectionMatrix');
 
 const PORT = Number(process.env.PORT || 8080);
@@ -64,6 +65,10 @@ function resolveAdminHistorySyncFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_HISTORY_SYNC', true);
 }
 
+function resolveAdminLocalPreflightFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_LOCAL_PREFLIGHT_V1', true);
+}
+
 function resolveAdminBuildMeta() {
   const commitRaw = process.env.GIT_COMMIT_SHA
     || process.env.SOURCE_COMMIT
@@ -95,9 +100,10 @@ function buildAdminAppBootScript() {
   const navAllAccessibleEnabled = resolveAdminNavAllAccessibleFlag();
   const rolePersistEnabled = resolveAdminRolePersistFlag();
   const historySyncEnabled = resolveAdminHistorySyncFlag();
+  const localPreflightEnabled = resolveAdminLocalPreflightFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
@@ -300,6 +306,48 @@ function handleWebhook(req, res) {
   });
 }
 
+function handleStripeWebhookRoute(req, res) {
+  const requestId = getRequestId(req);
+  const signature = req.headers['stripe-signature'];
+
+  let bytes = 0;
+  const chunks = [];
+  let tooLarge = false;
+
+  req.on('data', (chunk) => {
+    if (tooLarge) return;
+    bytes += chunk.length;
+    if (bytes > MAX_BODY_BYTES) {
+      tooLarge = true;
+      console.log(`[stripe_webhook] requestId=${requestId} reject=payload-too-large`);
+      res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('payload too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+
+  req.on('end', async () => {
+    if (tooLarge) return;
+    const body = Buffer.concat(chunks).toString('utf8');
+    try {
+      const result = await handleStripeWebhook({
+        signature: typeof signature === 'string' ? signature : '',
+        body,
+        requestId,
+        logger: (msg) => console.log(msg)
+      });
+      res.writeHead(result.status, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(result.body);
+    } catch (_err) {
+      console.log(`[stripe_webhook] requestId=${requestId} reject=exception`);
+      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('server error');
+    }
+  });
+}
+
 function handleTrackClickRoute(req, res) {
   let bytes = 0;
   const chunks = [];
@@ -364,6 +412,10 @@ function createServer() {
       handleWebhook(req, res);
       return;
     }
+    if (req.method === 'POST' && (pathname === '/webhook/stripe' || pathname === '/webhook/stripe/')) {
+      handleStripeWebhookRoute(req, res);
+      return;
+    }
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('not found');
     return;
@@ -417,6 +469,11 @@ function createServer() {
 
   if (req.method === 'POST' && (pathname === '/webhook/line' || pathname === '/webhook/line/')) {
     handleWebhook(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && (pathname === '/webhook/stripe' || pathname === '/webhook/stripe/')) {
+    handleStripeWebhookRoute(req, res);
     return;
   }
 
@@ -741,6 +798,17 @@ function createServer() {
   if (req.method === 'GET' && pathname === '/admin/implementation-targets') {
     const { handleImplementationTargets } = require('./routes/admin/implementationTargets');
     handleImplementationTargets(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/api/admin/local-preflight' || pathname === '/api/admin/local-preflight/')) {
+    if (!resolveAdminLocalPreflightFlag()) {
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'not found' }));
+      return;
+    }
+    const { handleLocalPreflight } = require('./routes/admin/localPreflight');
+    handleLocalPreflight(req, res);
     return;
   }
 
@@ -1294,6 +1362,7 @@ function createServer() {
       handleSendExecute
     } = require('./routes/admin/osNotifications');
     const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
+    const { handleUserBillingDetail } = require('./routes/admin/osUserBillingDetail');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
     let bytes = 0;
@@ -1400,6 +1469,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/dashboard/kpi') {
         await handleDashboardKpi(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/user-billing-detail') {
+        await handleUserBillingDetail(req, res);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/view') {
@@ -1528,6 +1601,11 @@ function createServer() {
       handlePlan: handleLlmConfigPlan,
       handleSet: handleLlmConfigSet
     } = require('./routes/admin/llmConfig');
+    const {
+      handleStatus: handleLlmPolicyStatus,
+      handlePlan: handleLlmPolicyPlan,
+      handleSet: handleLlmPolicySet
+    } = require('./routes/admin/llmPolicyConfig');
     const { handleAdminLlmFaqAnswer } = require('./routes/admin/llmFaq');
     const llmClient = require('./infra/llmClient');
     const {
@@ -1570,6 +1648,20 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/llm/config/set') {
         const body = await collectBody();
         await handleLlmConfigSet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/llm/policy/status') {
+        await handleLlmPolicyStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/policy/plan') {
+        const body = await collectBody();
+        await handleLlmPolicyPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/llm/policy/set') {
+        const body = await collectBody();
+        await handleLlmPolicySet(req, res, body);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {

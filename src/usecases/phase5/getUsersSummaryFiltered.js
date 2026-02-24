@@ -5,6 +5,30 @@ const { sortUsersSummaryStable } = require('./sortUsersSummaryStable');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
+const PLAN_FILTER_SET = new Set(['free', 'pro']);
+const SUBSCRIPTION_STATUS_FILTER_SET = new Set([
+  'active',
+  'trialing',
+  'past_due',
+  'canceled',
+  'incomplete',
+  'unknown'
+]);
+const SORT_KEY_TYPES = Object.freeze({
+  createdAt: 'date',
+  updatedAt: 'date',
+  currentPeriodEnd: 'date',
+  lineUserId: 'string',
+  memberNumber: 'string',
+  category: 'string',
+  status: 'string',
+  deliveryCount: 'number',
+  clickCount: 'number',
+  reactionRate: 'number',
+  plan: 'string',
+  subscriptionStatus: 'string',
+  llmUsage: 'number'
+});
 
 function toMillis(value) {
   if (!value) return null;
@@ -60,6 +84,100 @@ function filterByReviewAge(item, reviewAgeDays, nowMs) {
   return nowMs - reviewedMs >= reviewAgeDays * DAY_MS;
 }
 
+function normalizePlanFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  return PLAN_FILTER_SET.has(normalized) ? normalized : null;
+}
+
+function normalizeSubscriptionStatusFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  return SUBSCRIPTION_STATUS_FILTER_SET.has(normalized) ? normalized : null;
+}
+
+function normalizeSortKey(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return Object.prototype.hasOwnProperty.call(SORT_KEY_TYPES, normalized) ? normalized : null;
+}
+
+function normalizeSortDir(value) {
+  if (value === 'asc') return 'asc';
+  if (value === 'desc') return 'desc';
+  return null;
+}
+
+function compareValues(baseA, baseB, valueType, direction) {
+  const dir = direction === 'asc' ? 1 : -1;
+  const aUnset = baseA === null || baseA === undefined || (typeof baseA === 'string' && baseA.trim().length === 0);
+  const bUnset = baseB === null || baseB === undefined || (typeof baseB === 'string' && baseB.trim().length === 0);
+  if (aUnset && bUnset) return 0;
+  if (aUnset) return 1;
+  if (bUnset) return -1;
+
+  if (valueType === 'date') {
+    const aMs = toMillis(baseA);
+    const bMs = toMillis(baseB);
+    const aMsUnset = !Number.isFinite(aMs);
+    const bMsUnset = !Number.isFinite(bMs);
+    if (aMsUnset && bMsUnset) return 0;
+    if (aMsUnset) return 1;
+    if (bMsUnset) return -1;
+    if (aMs === bMs) return 0;
+    return aMs > bMs ? dir : -dir;
+  }
+
+  if (valueType === 'number') {
+    const aNum = Number(baseA);
+    const bNum = Number(baseB);
+    const aNumUnset = !Number.isFinite(aNum);
+    const bNumUnset = !Number.isFinite(bNum);
+    if (aNumUnset && bNumUnset) return 0;
+    if (aNumUnset) return 1;
+    if (bNumUnset) return -1;
+    if (aNum === bNum) return 0;
+    return aNum > bNum ? dir : -dir;
+  }
+
+  const aText = String(baseA);
+  const bText = String(baseB);
+  const compared = aText.localeCompare(bText, 'ja', { sensitivity: 'base', numeric: true });
+  if (compared === 0) return 0;
+  return compared > 0 ? dir : -dir;
+}
+
+function resolveSortValue(item, key) {
+  if (key === 'category') return item && item.categoryLabel;
+  if (key === 'status') return item && item.statusLabel;
+  if (key === 'reactionRate') return item && item.reactionRate;
+  if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
+  if (key === 'updatedAt') return item && item.updatedAt;
+  if (key === 'plan') return item && item.plan;
+  if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
+  if (key === 'llmUsage') return item && item.llmUsage;
+  return item ? item[key] : null;
+}
+
+function sortUsersSummary(items, sortKey, sortDir) {
+  const key = normalizeSortKey(sortKey);
+  const dir = normalizeSortDir(sortDir);
+  if (!key || !dir) {
+    return sortUsersSummaryStable(items);
+  }
+  const valueType = SORT_KEY_TYPES[key] || 'string';
+  const list = Array.isArray(items) ? items.slice() : [];
+  list.sort((a, b) => {
+    const compared = compareValues(resolveSortValue(a, key), resolveSortValue(b, key), valueType, dir);
+    if (compared !== 0) return compared;
+    return compareValues(a && a.lineUserId, b && b.lineUserId, 'string', 'asc');
+  });
+  return list;
+}
+
 async function getUsersSummaryFiltered(params) {
   const payload = params || {};
   const includeMeta = payload.includeMeta === true;
@@ -74,6 +192,8 @@ async function getUsersSummaryFiltered(params) {
   const baseItems = Array.isArray(summary) ? summary : (Array.isArray(summary && summary.items) ? summary.items : []);
   const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
+  const planFilter = normalizePlanFilter(payload.plan);
+  const subscriptionStatusFilter = normalizeSubscriptionStatusFilter(payload.subscriptionStatus);
   const enriched = baseItems.map((item) => {
     const stale = isStaleMemberNumber(item, nowMs);
     const checklistIncomplete = isChecklistIncomplete(item);
@@ -92,8 +212,16 @@ async function getUsersSummaryFiltered(params) {
     .filter((item) => filterByNeedsAttention(item, payload.needsAttention))
     .filter((item) => filterByStale(item, payload.stale))
     .filter((item) => filterByUnreviewed(item, payload.unreviewed))
-    .filter((item) => filterByReviewAge(item, payload.reviewAgeDays, nowMs));
-  const items = sortUsersSummaryStable(filtered);
+    .filter((item) => filterByReviewAge(item, payload.reviewAgeDays, nowMs))
+    .filter((item) => {
+      if (!planFilter) return true;
+      return String(item && item.plan ? item.plan : 'free') === planFilter;
+    })
+    .filter((item) => {
+      if (!subscriptionStatusFilter) return true;
+      return String(item && item.subscriptionStatus ? item.subscriptionStatus : 'unknown') === subscriptionStatusFilter;
+    });
+  const items = sortUsersSummary(filtered, payload.sortKey, payload.sortDir);
   if (!includeMeta) return items;
   return {
     items,

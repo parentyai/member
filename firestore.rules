@@ -116,6 +116,36 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /opsConfig/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /user_subscriptions/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /stripe_webhook_events/{eventId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /stripe_webhook_dead_letters/{docId} {
+      // Dead letters are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /llm_usage_logs/{docId} {
+      // Usage logs are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /llm_usage_stats/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
     match /automation_config/{docId} {
       allow read, write: if isAdmin() || isServiceAccount();
     }

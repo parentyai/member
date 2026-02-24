@@ -4,6 +4,8 @@ const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
+const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
+const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
   resolveSnapshotReadMode,
@@ -123,6 +125,11 @@ function ratioLabel(numerator, denominator) {
   return `${numerator} / ${denominator} (${percent}%)`;
 }
 
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return '0%';
+  return `${Math.round(value * 10) / 10}%`;
+}
+
 function simpleMetric(valueLabel, series, note) {
   return {
     available: true,
@@ -225,6 +232,26 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
 
   const normalizedUsers = users.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
   const normalizedNotifications = notifications.map((row) => Object.assign({ id: row && row.id }, row && row.data ? row.data : row));
+  const lineUserIds = normalizedUsers
+    .map((row) => (row && row.id ? String(row.id).trim() : ''))
+    .filter(Boolean);
+  const [subscriptions, llmUsageLogs] = await Promise.all([
+    userSubscriptionsRepo.listUserSubscriptionsByLineUserIds({ lineUserIds }).catch(() => []),
+    llmUsageLogsRepo.listLlmUsageLogsByCreatedAtRange({
+      fromAt: queryRange.fromAt,
+      toAt: queryRange.toAt,
+      limit: Math.max(200, Math.min(scanLimit * 4, 5000))
+    }).catch(() => [])
+  ]);
+  const proActiveCount = (subscriptions || []).filter((item) => {
+    const status = String(item && item.status ? item.status : 'unknown').toLowerCase();
+    return status === 'active' || status === 'trialing';
+  }).length;
+  const totalUsers = normalizedUsers.length;
+  const proRatioPercent = totalUsers > 0 ? (proActiveCount / totalUsers) * 100 : 0;
+  const proActiveSeries = buckets.map(() => proActiveCount);
+  const totalUsersSeries = buckets.map(() => totalUsers);
+  const proRatioSeries = buckets.map(() => Math.round(proRatioPercent * 10) / 10);
 
   const registrationsSeries = countByBuckets(normalizedUsers, (row) => toMillis(row && row.createdAt), buckets);
   const registrationTotal = registrationsSeries.reduce((sum, value) => sum + value, 0);
@@ -300,6 +327,37 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
 
   const warnCount = links.filter((row) => row && row.lastHealth && row.lastHealth.state === 'WARN').length;
   const killSwitchWarnSeries = buckets.map(() => warnCount + (killSwitch ? 1 : 0));
+  const llmUsageSeries = buckets.map((bucket) => {
+    let count = 0;
+    llmUsageLogs.forEach((row) => {
+      const createdAt = toMillis(row && row.createdAt);
+      if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
+      count += 1;
+    });
+    return count;
+  });
+  const llmBlockedSeries = buckets.map((bucket) => {
+    let count = 0;
+    llmUsageLogs.forEach((row) => {
+      const createdAt = toMillis(row && row.createdAt);
+      if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
+      const decision = String(row && row.decision ? row.decision : '').toLowerCase();
+      if (decision !== 'allow') count += 1;
+    });
+    return count;
+  });
+  const llmBlockRateSeries = buckets.map((_, index) => {
+    const total = llmUsageSeries[index];
+    const blocked = llmBlockedSeries[index];
+    if (!Number.isFinite(total) || total <= 0) return 0;
+    return Math.round((blocked / total) * 1000) / 10;
+  });
+  const llmAvgPerProSeries = buckets.map((_, index) => {
+    const total = llmUsageSeries[index];
+    if (!Number.isFinite(total) || total <= 0 || proActiveCount <= 0) return 0;
+    return Math.round((total / proActiveCount) * 100) / 100;
+  });
+  const llmUsageTotal = llmUsageSeries.reduce((sum, value) => sum + value, 0);
 
   const notificationsMetric = simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`);
   const reactionMetric = simpleMetric(
@@ -333,6 +391,20 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     stepStates: notificationsMetric,
     churnRate: reactionMetric,
     ctrTrend: consultMetric,
+    pro_active_count: simpleMetric(String(proActiveCount), proActiveSeries, 'active/trialingのProユーザー数'),
+    total_users: simpleMetric(String(totalUsers), totalUsersSeries, '対象ユーザー総数'),
+    pro_ratio: simpleMetric(formatPercent(proRatioPercent), proRatioSeries, 'Proユーザー比率'),
+    llm_daily_usage_count: simpleMetric(String(llmUsageTotal), llmUsageSeries, 'LLM利用件数（window集計）'),
+    llm_avg_per_pro_user: simpleMetric(
+      proActiveCount > 0 ? String(llmAvgPerProSeries[llmAvgPerProSeries.length - 1] || 0) : '0',
+      llmAvgPerProSeries,
+      'Proユーザーあたり平均LLM利用件数'
+    ),
+    llm_block_rate: simpleMetric(
+      formatPercent(llmBlockRateSeries[llmBlockRateSeries.length - 1] || 0),
+      llmBlockRateSeries,
+      'LLMブロック率'
+    ),
     cityPackUsage: links.length
       ? simpleMetric(`${warnCount}${killSwitch ? ' + KillSwitch ON' : ''}`, killSwitchWarnSeries, 'WARNリンク数 + KillSwitch状態')
       : notAvailable('link_registryが未設定のため取得できません')
@@ -359,6 +431,12 @@ function buildNotAvailableKpis(note) {
     stepStates: notAvailable(message),
     churnRate: notAvailable(message),
     ctrTrend: notAvailable(message),
+    pro_active_count: notAvailable(message),
+    total_users: notAvailable(message),
+    pro_ratio: notAvailable(message),
+    llm_daily_usage_count: notAvailable(message),
+    llm_avg_per_pro_user: notAvailable(message),
+    llm_block_rate: notAvailable(message),
     cityPackUsage: notAvailable(message)
   };
 }

@@ -22,6 +22,21 @@ function resolveModel(env) {
   return DEFAULT_MODEL;
 }
 
+function resolveRequestModel(payload, env) {
+  if (payload && typeof payload.model === 'string' && payload.model.trim()) {
+    return payload.model.trim();
+  }
+  return resolveModel(env);
+}
+
+function resolveNumberParam(value, fallback, min, max) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num < min || num > max) return fallback;
+  return num;
+}
+
 function buildMessages(system, input) {
   return [
     { role: 'system', content: String(system || '') },
@@ -31,11 +46,20 @@ function buildMessages(system, input) {
 
 async function callOpenAi(payload, env) {
   const apiKey = resolveApiKey(env);
-  const model = resolveModel(env);
-  const body = JSON.stringify({
+  const model = resolveRequestModel(payload, env);
+  const temperature = resolveNumberParam(payload && payload.temperature, null, 0, 2);
+  const topP = resolveNumberParam(payload && payload.top_p, null, 0, 1);
+  const maxOutputTokens = resolveNumberParam(payload && payload.max_output_tokens, null, 1, 4096);
+  const requestPayload = {
     model,
     messages: buildMessages(payload.system, payload.input),
     response_format: { type: 'json_object' }
+  };
+  if (temperature !== null) requestPayload.temperature = temperature;
+  if (topP !== null) requestPayload.top_p = topP;
+  if (maxOutputTokens !== null) requestPayload.max_tokens = Math.floor(maxOutputTokens);
+  const body = JSON.stringify({
+    ...requestPayload
   });
 
   const fetchFn = (env && env._fetchFn) || fetch;
@@ -66,7 +90,11 @@ async function callOpenAi(payload, env) {
     throw new Error('llm_api_error: response is not valid JSON');
   }
 
-  return { answer, model: (data && data.model) || model };
+  return {
+    answer,
+    model: (data && data.model) || model,
+    usage: data && data.usage ? data.usage : null
+  };
 }
 
 async function answerFaq(payload, env) {

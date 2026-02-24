@@ -108,6 +108,7 @@ jobs:
             LINE_CHANNEL_SECRET
             LINE_CHANNEL_ACCESS_TOKEN
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
+            STRIPE_WEBHOOK_SECRET
           )
           MISSING=0
           VISIBILITY_SKIPPED=0
@@ -149,7 +150,8 @@ jobs:
           for SECRET_NAME in \
             LINE_CHANNEL_SECRET \
             LINE_CHANNEL_ACCESS_TOKEN \
-            REDAC_MEMBERSHIP_ID_HMAC_SECRET
+            REDAC_MEMBERSHIP_ID_HMAC_SECRET \
+            STRIPE_WEBHOOK_SECRET
           do
             echo "Granting roles/secretmanager.secretAccessor on ${SECRET_NAME} to ${RUNTIME_MEMBER}"
             if gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
@@ -203,4 +205,4 @@ jobs:
             --allow-unauthenticated \
             --service-account "$RUNTIME_SA_EMAIL" \
             --set-env-vars "ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook" \
-            --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest"
+            --set-secrets "LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest,STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest"
