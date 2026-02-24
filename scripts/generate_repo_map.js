@@ -290,8 +290,8 @@ function isNotificationOpsFeature(feature) {
 function buildCanDo(feature) {
   if (isNotificationOpsFeature(feature)) {
     return [
-      '判定: Kill SwitchがOFFなら送信できます。',
-      '判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。',
+      '送信は安全チェックを通したものだけ実行されます。',
+      'チェック: Kill Switch / CTA / LinkRegistry / 直URL / WARNリンク / 配信対象',
       '確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。'
     ].slice(0, 3);
   }
@@ -456,7 +456,7 @@ function buildOperationalLayer() {
         entryRoute: '/admin/app?pane=audit',
         evidence: [
           '/Users/parentyai.com/Projects/Member/src/index.js:566',
-          '/Users/parentyai.com/Projects/Member/docs/PHASE24_PLAN.md:16'
+          '/Users/parentyai.com/Projects/Member/docs/archive/phases/PHASE24_PLAN.md:16'
         ]
       }
     ]

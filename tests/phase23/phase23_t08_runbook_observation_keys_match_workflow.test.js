@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const runbook = readFileSync('docs/PHASE23_RUNBOOK.md', 'utf8');
+const runbook = readFileSync('docs/archive/phases/PHASE23_RUNBOOK.md', 'utf8');
 const dryrun = readFileSync('.github/workflows/phase22-scheduled-dryrun.yml', 'utf8');
 const write = readFileSync('.github/workflows/phase22-scheduled-write.yml', 'utf8');
 

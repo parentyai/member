@@ -8,7 +8,7 @@
 ## Evidence Log
 | Item | Status | Evidence | Notes |
 | --- | --- | --- | --- |
-| Operations Handoff exists | PASS | docs/PHASE13_OPERATIONS_HANDOFF.md | docs-only |
+| Operations Handoff exists | PASS | docs/archive/phases/PHASE13_OPERATIONS_HANDOFF.md | docs-only |
 
 ## Phase13 実テスト Evidence
 - 実行日時: 2026-02-01 01:26:07 UTC

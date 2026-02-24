@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const runbook = readFileSync('docs/PHASE23_RUNBOOK.md', 'utf8');
+const runbook = readFileSync('docs/archive/phases/PHASE23_RUNBOOK.md', 'utf8');
 
 function parseTables(contents) {
   const lines = contents.split(/\r?\n/).map((line) => line.trim());

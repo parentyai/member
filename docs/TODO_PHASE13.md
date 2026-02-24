@@ -5,9 +5,9 @@
   - Purpose: 通常運用手順の固定
   - Completion Criteria: handoff ドキュメントが存在する
   - Dependencies: Phase12 CLOSE
-  - Edit Files: docs/PHASE13_OPERATIONS_HANDOFF.md
+  - Edit Files: docs/archive/phases/PHASE13_OPERATIONS_HANDOFF.md
   - Tests: Not applicable (docs-only)
-  - Evidence: docs/PHASE13_OPERATIONS_HANDOFF.md
+  - Evidence: docs/archive/phases/PHASE13_OPERATIONS_HANDOFF.md
   - Risks: 運用逸脱
 
 ## In Progress

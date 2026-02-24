@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "scope": [
+    "tests",
+    "scripts",
+    "src",
+    "docs",
+    ".github"
+  ],
+  "legacyPhaseReferenceCount": 598,
+  "ssotIndexPhaseRowCount": 284,
+  "checks": {
+    "testDocsScript": "npm run test:docs",
+    "docsArtifactsCheck": "npm run docs-artifacts:check",
+    "fullTest": "npm test"
+  }
+}

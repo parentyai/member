@@ -14,7 +14,7 @@
   - docs/SSOT_PHASE13.md
   - docs/TODO_PHASE13.md
   - docs/ACCEPTANCE_PHASE13.md
-  - docs/PHASE13_OPERATIONS_HANDOFF.md
+  - docs/archive/phases/PHASE13_OPERATIONS_HANDOFF.md
 
 ## 非対象（実テスト開始に影響しない範囲）
 - Phase1〜Phase11 の過去設計/台帳/証跡（実テスト開始に直接影響しない）

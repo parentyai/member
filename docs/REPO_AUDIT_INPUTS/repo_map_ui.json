@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "539f15a283bdd4101fef091f8a5913760f6e651d",
+      "hash": "c0cd06d67583f7ef8d644facc6c5e6915d811c83",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 867
+    "testCount": 870
   },
   "systemOverview": {
     "what": [
@@ -30,8 +30,8 @@
           "nameJa": "通知機能（notifications）",
           "status": "実装済み",
           "canDo": [
-            "判定: Kill SwitchがOFFなら送信できます。",
-            "判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。",
+            "送信は安全チェックを通したものだけ実行されます。",
+            "チェック: Kill Switch / CTA / LinkRegistry / 直URL / WARNリンク / 配信対象",
             "確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。"
           ],
           "cannotDo": [
@@ -340,8 +340,8 @@
           "nameJa": "通知作成・承認・送信",
           "status": "実装済み",
           "canDo": [
-            "判定: Kill SwitchがOFFなら送信できます。",
-            "判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。",
+            "送信は安全チェックを通したものだけ実行されます。",
+            "チェック: Kill Switch / CTA / LinkRegistry / 直URL / WARNリンク / 配信対象",
             "確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。"
           ],
           "cannotDo": [
@@ -2787,7 +2787,7 @@
           "entryRoute": "/admin/app?pane=audit",
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/index.js:566",
-            "/Users/parentyai.com/Projects/Member/docs/PHASE24_PLAN.md:16"
+            "/Users/parentyai.com/Projects/Member/docs/archive/phases/PHASE24_PLAN.md:16"
           ]
         }
       ]
@@ -2809,8 +2809,8 @@
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
-                "判定: Kill SwitchがOFFなら送信できます。",
-                "判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。",
+                "送信は安全チェックを通したものだけ実行されます。",
+                "チェック: Kill Switch / CTA / LinkRegistry / 直URL / WARNリンク / 配信対象",
                 "確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。"
               ],
               "cannotDo": [
@@ -3263,8 +3263,8 @@
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
-                "判定: Kill SwitchがOFFなら送信できます。",
-                "判定: CTA/LinkRegistry/配信対象をチェックし、NGなら送信しません。",
+                "送信は安全チェックを通したものだけ実行されます。",
+                "チェック: Kill Switch / CTA / LinkRegistry / 直URL / WARNリンク / 配信対象",
                 "確認: 送信前はプレビュー、送信後は追跡IDと配信ログで確認できます。"
               ],
               "cannotDo": [

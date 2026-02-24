@@ -77,8 +77,8 @@ gh workflow run stg-notification-e2e.yml --ref main \
 
 ## Execution Log Rule (fixed)
 - 証跡の記録先は次のいずれかに統一する:
-  - 既存ログ追記: `docs/PHASE170_EXECUTION_LOG.md`
-  - 新規ログ作成: `docs/PHASE_C_STG_E2E_YYYY-MM-DD.md`
+  - 既存ログ追記: `docs/archive/phases/PHASE170_EXECUTION_LOG.md`
+  - 新規ログ作成: `docs/archive/phases/PHASE_C_STG_E2E_YYYY-MM-DD.md`
 - 各実行ごとに必須で残す:
   - `UTC`（ISO8601）
   - `main SHA`（`git rev-parse origin/main`）
@@ -97,7 +97,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 ## Evidence Capture
 - 各操作で `x-trace-id` を固定して送る
 - `GET /api/admin/trace?traceId=<id>&limit=50` で bundle を回収
-- `docs/PHASE170_EXECUTION_LOG.md` へ以下を追記:
+- `docs/archive/phases/PHASE170_EXECUTION_LOG.md` へ以下を追記:
   - traceId
   - requestId
   - expected
