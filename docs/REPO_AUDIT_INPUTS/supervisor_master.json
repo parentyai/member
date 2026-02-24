@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T18:26:34-05:00",
-  "gitCommit": "3efaf450df8c1e3060f67bbe2d81a0862cf99d8f",
-  "branch": "HEAD",
-  "sourceDigest": "fb779b5e823650e6e44afb405ee1fbccb021d1bdb5941548a5096e949494248a",
+  "generatedAt": "2026-02-23T19:14:22-05:00",
+  "gitCommit": "45fe76de8bdb236d03a259035bfe1ab9b9c9ccce",
+  "branch": "codex/seed-citypack-setup",
+  "sourceDigest": "ef73dfc3224a9bcde6db39f34abbb9d746a94d7e3509ead33f91b94c74ec9e51",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
