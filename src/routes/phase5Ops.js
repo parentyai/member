@@ -42,6 +42,9 @@ function handleError(res, err) {
     message.includes('invalid fallbackOnEmpty') ||
     message.includes('invalid plan') ||
     message.includes('invalid subscriptionStatus') ||
+    message.includes('invalid householdType') ||
+    message.includes('invalid journeyStage') ||
+    message.includes('invalid todoState') ||
     message.includes('invalid sortKey') ||
     message.includes('invalid sortDir')
   ) {
@@ -127,16 +130,21 @@ function parseUsersSortKey(value) {
     'createdAt',
     'updatedAt',
     'currentPeriodEnd',
+    'nextTodoDueAt',
     'lineUserId',
     'memberNumber',
     'category',
     'status',
+    'householdType',
+    'journeyStage',
     'deliveryCount',
     'clickCount',
     'reactionRate',
     'plan',
     'subscriptionStatus',
-    'llmUsage'
+    'llmUsage',
+    'todoOpenCount',
+    'todoOverdueCount'
   ].includes(value)) {
     return value;
   }
@@ -146,6 +154,23 @@ function parseUsersSortKey(value) {
 function parseUsersSortDir(value) {
   if (value === null || value === undefined || value === '') return null;
   if (value === 'asc' || value === 'desc') return value;
+  return null;
+}
+
+function parseHouseholdType(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['single', 'couple', 'accompany1', 'accompany2'].includes(value)) return value;
+  return null;
+}
+
+function parseJourneyStage(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  return String(value).trim().toLowerCase() || null;
+}
+
+function parseTodoState(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['open', 'overdue', 'none'].includes(value)) return value;
   return null;
 }
 
@@ -200,6 +225,9 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
     const planRaw = url.searchParams.get('plan');
     const subscriptionStatusRaw = url.searchParams.get('subscriptionStatus');
+    const householdTypeRaw = url.searchParams.get('householdType');
+    const journeyStageRaw = url.searchParams.get('journeyStage');
+    const todoStateRaw = url.searchParams.get('todoState');
     const sortKeyRaw = url.searchParams.get('sortKey');
     const sortDirRaw = url.searchParams.get('sortDir');
     const limit = parsePositiveInt(limitRaw, 1, 500);
@@ -209,6 +237,9 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
     const plan = parsePlan(planRaw);
     const subscriptionStatus = parseSubscriptionStatus(subscriptionStatusRaw);
+    const householdType = parseHouseholdType(householdTypeRaw);
+    const journeyStage = parseJourneyStage(journeyStageRaw);
+    const todoState = parseTodoState(todoStateRaw);
     const sortKey = parseUsersSortKey(sortKeyRaw);
     const sortDir = parseUsersSortDir(sortDirRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
@@ -232,6 +263,15 @@ async function handleUsersSummaryFiltered(req, res) {
     if (subscriptionStatusRaw && !subscriptionStatus) {
       throw new Error('invalid subscriptionStatus');
     }
+    if (householdTypeRaw && !householdType) {
+      throw new Error('invalid householdType');
+    }
+    if (journeyStageRaw && !journeyStage) {
+      throw new Error('invalid journeyStage');
+    }
+    if (todoStateRaw && !todoState) {
+      throw new Error('invalid todoState');
+    }
     if (sortKeyRaw && !sortKey) {
       throw new Error('invalid sortKey');
     }
@@ -249,6 +289,9 @@ async function handleUsersSummaryFiltered(req, res) {
         reviewAgeDays,
         plan,
         subscriptionStatus,
+        householdType,
+        journeyStage,
+        todoState,
         sortKey,
         sortDir,
         limit,
@@ -286,10 +329,13 @@ async function handleUsersSummaryFiltered(req, res) {
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
       fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : [],
       fallbackOnEmpty,
-      filters: {
-        plan: plan || 'all',
-        subscriptionStatus: subscriptionStatus || 'all'
-      },
+        filters: {
+          plan: plan || 'all',
+          subscriptionStatus: subscriptionStatus || 'all',
+          householdType: householdType || 'all',
+          journeyStage: journeyStage || 'all',
+          todoState: todoState || 'all'
+        },
       sort: {
         sortKey: sortKey || null,
         sortDir: sortDir || null

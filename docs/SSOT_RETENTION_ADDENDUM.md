@@ -9,10 +9,10 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 8 |
-| config | 33 |
-| event | 4 |
-| evidence | 4 |
+| aggregate | 9 |
+| config | 37 |
+| event | 6 |
+| evidence | 5 |
 | transient | 2 |
 
 ## Collection方針
@@ -22,6 +22,7 @@
 | `audit_logs` | evidence | 365d | false | false |
 | `automation_config` | config | INDEFINITE | false | false |
 | `automation_runs` | config | INDEFINITE | false | false |
+| `billing_lifecycle_automation_logs` | evidence | INDEFINITE | false | false |
 | `checklists` | config | INDEFINITE | false | false |
 | `city_pack_bulletins` | config | INDEFINITE | false | false |
 | `city_pack_feedback` | config | INDEFINITE | false | false |
@@ -36,7 +37,11 @@
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
+| `journey_reminder_runs` | event | 180d | CONDITIONAL | true |
+| `journey_todo_items` | config | INDEFINITE | false | false |
+| `journey_todo_stats` | aggregate | INDEFINITE | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
+| `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
 | `notices` | config | INDEFINITE | false | false |
@@ -58,6 +63,7 @@
 | `phase2_runs` | aggregate | 90d | CONDITIONAL | true |
 | `phase22_kpi_snapshots` | config | INDEFINITE | false | false |
 | `redac_membership_links` | config | INDEFINITE | false | false |
+| `rich_menu_bindings` | config | INDEFINITE | false | false |
 | `send_retry_queue` | config | INDEFINITE | false | false |
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |
@@ -68,5 +74,7 @@
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
+| `user_journey_profiles` | config | INDEFINITE | false | false |
+| `user_journey_schedules` | config | INDEFINITE | false | false |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |
