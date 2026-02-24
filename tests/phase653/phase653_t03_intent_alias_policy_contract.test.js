@@ -54,7 +54,7 @@ function createResCapture() {
 test('phase653: llm policy accepts next_action + per_user_daily_token_budget aliases and canonicalizes', async () => {
   const restoreEnv = withEnv({
     LLM_FEATURE_FLAG: 'true',
-    OPS_CONFIRM_TOKEN_SECRET: 'phase653_alias_secret',
+    OPS_CONFIRM_TOKEN_SECRET: 't',
     ENABLE_INTENT_ALIAS_V1: '1'
   });
   const db = createDbStub();
