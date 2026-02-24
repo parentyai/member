@@ -23,6 +23,9 @@ test('phase182: deploy workflow preflight validates required vars and secrets', 
   assert.match(contents, /PUBLIC_BASE_URL/, 'deploy.yml: PUBLIC_BASE_URL required var check missing');
   assert.match(contents, /STORAGE_BUCKET/, 'deploy.yml: STORAGE_BUCKET required var check missing');
   assert.match(contents, /OPS_CONFIRM_TOKEN_SECRET/, 'deploy.yml: OPS_CONFIRM_TOKEN_SECRET secret check missing');
+  assert.match(contents, /OPENAI_API_KEY/, 'deploy.yml: OPENAI_API_KEY secret check missing');
+  assert.match(contents, /LLM_FEATURE_FLAG/, 'deploy.yml: LLM_FEATURE_FLAG env wiring missing');
+  assert.match(contents, /OPENAI_MODEL/, 'deploy.yml: OPENAI_MODEL env wiring missing');
 });
 
 test('phase182: deploy-webhook workflow preflight validates required vars and secrets', () => {

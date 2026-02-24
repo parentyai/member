@@ -84,11 +84,39 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 ## Phase Next-1 Ops
 
 ### LLM を有効化する手順
-1. OPENAI_API_KEY を Secret Manager にセット（コードに書かない）
-2. `LLM_FEATURE_FLAG=true` を App Engine / Cloud Run 環境変数にセット
-3. `POST /api/admin/llm/config/set` `{ llmEnabled: true, lawfulBasis: '...', consentVerified: true, crossBorder: true }`
-4. `GET /api/admin/llm/config/status` で `effectiveEnabled: true` を確認
-5. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認
+1. Secret Manager に `OPENAI_API_KEY` を登録（コードに書かない）。
+2. `deploy.yml` の member デプロイが `OPENAI_API_KEY=OPENAI_API_KEY:latest` を runtime secret として参照できる状態にする。
+3. GitHub Environment Variables を設定する。
+   - `stg`: `LLM_FEATURE_FLAG=true`, `OPENAI_MODEL=gpt-4o-mini`
+   - `prod`: `LLM_FEATURE_FLAG=false`, `OPENAI_MODEL=gpt-4o-mini`（stg検証完了まで維持）
+4. stg へ deploy 後、以下で config 適用:
+   - `POST /api/admin/llm/config/plan`
+   - `POST /api/admin/llm/config/set`
+5. `GET /api/admin/llm/config/status` で `effectiveEnabled: true` を確認。
+6. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認。
+
+### LLM Config 適用 JSON（固定デフォルト）
+`legitimate_interest / consentVerified=false / crossBorder=true` を固定値として使う。
+
+```json
+{
+  "llmEnabled": true,
+  "llmPolicy": {
+    "lawfulBasis": "legitimate_interest",
+    "consentVerified": false,
+    "crossBorder": true
+  }
+}
+```
+
+plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡す。
+
+### stg先行 -> prod 昇格手順
+1. stg で `llmEnabled=true` を適用。
+2. `stg-notification-e2e.yml` を `expect_llm_enabled=true` で実行し、`llm_gate` を含む固定順シナリオを PASS させる。
+3. stg の trace/audit 証跡（`llm_config.status.view`, `llm_disclaimer_rendered`）を添付してレビュー。
+4. prod の `LLM_FEATURE_FLAG=true` へ切替。
+5. prod deploy 実施後、prod でも同一 `llmPolicy` を適用し `effectiveEnabled=true` を確認。
 
 ### LLM を停止する手順（緊急時）
 1. `POST /api/admin/llm/config/set` `{ llmEnabled: false }`

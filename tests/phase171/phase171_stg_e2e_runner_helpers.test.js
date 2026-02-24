@@ -19,6 +19,7 @@ test('phase171: parseArgs reads env defaults and supports skip flags', () => {
     'tools/run_stg_notification_e2e_checklist.js',
     '--skip-segment',
     '--allow-skip',
+    '--expect-llm-enabled',
     '--trace-prefix',
     'trace-custom'
   ], {
@@ -30,7 +31,20 @@ test('phase171: parseArgs reads env defaults and supports skip flags', () => {
   assert.strictEqual(args.baseUrl, 'http://127.0.0.1:18080');
   assert.strictEqual(args.skipSegment, true);
   assert.strictEqual(args.allowSkip, true);
+  assert.strictEqual(args.expectLlmEnabled, true);
   assert.strictEqual(args.tracePrefix, 'trace-custom');
+});
+
+test('phase171: parseArgs supports E2E_EXPECT_LLM_ENABLED env default', () => {
+  const args = parseArgs([
+    'node',
+    'tools/run_stg_notification_e2e_checklist.js'
+  ], {
+    ADMIN_OS_TOKEN: 'token_x',
+    E2E_EXPECT_LLM_ENABLED: '1'
+  });
+
+  assert.strictEqual(args.expectLlmEnabled, true);
 });
 
 test('phase171: parseArgs requires admin token', () => {

@@ -22,7 +22,9 @@ test('phase633: stg e2e runner defines fixed six admin readiness endpoints', () 
 test('phase633: product readiness scenario still runs before segment scenario', () => {
   const src = fs.readFileSync(path.join(process.cwd(), 'tools', 'run_stg_notification_e2e_checklist.js'), 'utf8');
   const readinessCall = "runScenario(ctx, 'product_readiness_gate'";
+  const llmGateCall = "runScenario(ctx, 'llm_gate'";
   const segmentCall = "runScenario(ctx, 'segment'";
-  assert.ok(src.indexOf(readinessCall) < src.indexOf(segmentCall), 'product readiness gate must run before segment');
+  assert.ok(src.indexOf(readinessCall) < src.indexOf(llmGateCall), 'product readiness gate must run before llm gate');
+  assert.ok(src.indexOf(llmGateCall) < src.indexOf(segmentCall), 'llm gate must run before segment');
   assert.ok(src.includes('adminReadinessChecks'));
 });

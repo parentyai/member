@@ -8,6 +8,7 @@ const { getRequiredAuditActionsForScenario } = require('../../tools/run_stg_noti
 test('phase631: required audit action map covers all fixed e2e scenarios', () => {
   const expected = {
     product_readiness_gate: ['product_readiness.view'],
+    llm_gate: ['llm_config.status.view', 'llm_disclaimer_rendered'],
     segment: ['segment_send.plan', 'segment_send.dry_run', 'segment_send.execute'],
     retry_queue: ['retry_queue.plan', 'retry_queue.execute'],
     kill_switch_block: ['kill_switch.plan', 'kill_switch.set', 'retry_queue.execute'],

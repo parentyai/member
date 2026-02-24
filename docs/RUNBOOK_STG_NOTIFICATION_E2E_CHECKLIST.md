@@ -14,6 +14,7 @@ stg 実測を毎回同じ順番で実施し、traceId で証跡化するため�
 npm run ops:stg-e2e -- \
   --base-url http://127.0.0.1:18080 \
   --admin-token "$ADMIN_OS_TOKEN" \
+  --expect-llm-enabled \
   --actor ops_stg_e2e \
   --fetch-route-errors \
   --fail-on-route-errors \
@@ -36,7 +37,8 @@ gh workflow run stg-notification-e2e.yml --ref main \
   -f actor=ops_stg_e2e \
   -f route_error_limit=20 \
   -f trace_limit=100 \
-  -f fail_on_missing_audit_actions=true
+  -f fail_on_missing_audit_actions=true \
+  -f expect_llm_enabled=true
 ```
 
 - 実行 workflow: `.github/workflows/stg-notification-e2e.yml`
@@ -56,6 +58,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `fail-on-route-errors`: route_error が1件でも出たシナリオを FAIL 扱いにする（`fetch-route-errors` を暗黙有効化）
 - `trace_limit`: trace bundle 取得件数（`/api/admin/trace?limit`）を 1-500 で指定
 - `fail_on_missing_audit_actions`: シナリオごとの必須 audit action 欠落を FAIL 扱いにする（推奨 true）
+- `expect_llm_enabled`: LLM gate で `effectiveEnabled=true` と非ブロック `llmStatus` を要求する（推奨 true）
 
 ## Checklist (fixed order)
 1. Product Readiness Gate（管理API 6本）:
@@ -65,10 +68,15 @@ gh workflow run stg-notification-e2e.yml --ref main \
    - `/api/admin/struct-drift/backfill-runs` が HTTP 200
    - `/api/admin/os/alerts/summary` が HTTP 200
    - `/api/admin/city-packs` が HTTP 200
-2. Segment Send: `plan -> dry-run -> execute`
-3. Retry Queue: `plan -> retry`
-4. Kill Switch: ON時に send 系が全ブロックされる
-5. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
+2. LLM Gate:
+   - `/api/admin/llm/config/status` が HTTP 200
+   - `expect_llm_enabled=true` の場合、`llmEnabled=true` / `envLlmFeatureFlag=true` / `effectiveEnabled=true`
+   - `/api/admin/llm/ops-explain?lineUserId=<resolved_or_fallback>` が HTTP 200
+   - `expect_llm_enabled=true` の場合、`llmStatus` が `disabled` / `llm_disabled` / `adapter_missing` / `OPENAI_API_KEY is not set` / `consent_missing` 以外
+3. Segment Send: `plan -> dry-run -> execute`
+4. Retry Queue: `plan -> retry`
+5. Kill Switch: ON時に send 系が全ブロックされる
+6. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
 
 ## Run Cadence
 - 推奨: main への通知制御系マージごとに 1 回 + 週次 1 回
@@ -136,7 +144,7 @@ notes: <optional>
 - `audits/decisions/timeline` が欠損しない
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
-- 5シナリオすべての `result` が記録されている（PASS/FAIL問わず）
+- 6シナリオすべての `result` が記録されている（PASS/FAIL問わず）
 
 ## Latest Mainline Evidence (W7)
 - date: `2026-02-23`

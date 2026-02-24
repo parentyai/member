@@ -17,6 +17,7 @@ test('phase631: parseArgs accepts strict audit action and trace limit options', 
     '--project-id',
     'member-485303',
     '--fail-on-missing-audit-actions',
+    '--expect-llm-enabled',
     '--trace-limit',
     '250'
   ], {
@@ -24,6 +25,7 @@ test('phase631: parseArgs accepts strict audit action and trace limit options', 
   });
 
   assert.strictEqual(args.failOnMissingAuditActions, true);
+  assert.strictEqual(args.expectLlmEnabled, true);
   assert.strictEqual(args.traceLimit, 250);
 });
 
