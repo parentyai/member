@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T00:34:14-05:00",
-  "gitCommit": "53b9b16f314f8678ab5f1c42b68f6b43b8bf86c8",
-  "branch": "codex/llm-workflow-gate-sync-20260224",
-  "sourceDigest": "f7bbf8bf11863b5853fecdc7f910a9e2fb03dcd6c1f7e2b8ad5b70371f4c6b62",
+  "generatedAt": "2026-02-24T00:36:51-05:00",
+  "gitCommit": "0df1bc7b877dc578be11bdca4926c49c9d9a59b4",
+  "branch": "HEAD",
+  "sourceDigest": "e4017abc2743776eec2e49bb4d2ab59893dd9de68a3dfb1d853ffb3415b95d88",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "d88d05db2b5be88e69d055e8a09ad816b72b40daa5d9fd6f2c46b0f2164c53ec",
+      "sha256": "65742c00962d8817092d245dc4ab424b883658cbd9239e799e2651bf0b8a34d0",
       "bytes": 292294
     },
     {
