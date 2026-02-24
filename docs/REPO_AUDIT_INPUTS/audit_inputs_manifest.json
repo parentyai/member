@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T21:15:20-05:00",
-  "gitCommit": "32305acaf318e6d931ffa2ac9f521bb7e4e90ca8",
-  "branch": "codex/phase648-nav-all-accessible",
-  "sourceDigest": "0d74d5ce4d99979b40e7dedae042b34e96b7d6d2775d3d72ade2226ffe20cb60",
+  "generatedAt": "2026-02-23T22:24:20-05:00",
+  "gitCommit": "d73b2d45f7cc4f44cd85386f5a20c05d080acf3b",
+  "branch": "codex/phase649-repo-map-ops-judgement",
+  "sourceDigest": "7f024860cf24ec07fd53818e28735a7c4c4be560ce72f09d07a5695a793a1f82",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -113,8 +113,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "39163f7940a00c40ca98489d261a099d8857971e090f9431ef7e6346bc48e243",
-      "bytes": 288099
+      "sha256": "e96669e47ae8b187ecf8d0a1eebdff828bc444b1025017d75e4489e8473aa7bf",
+      "bytes": 292203
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
@@ -133,8 +133,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "db3e2eaeb3b91112c39ef15f4d38b8cb875a5eebeac3f3b80aa41248bf17ab5b",
-      "bytes": 2419
+      "sha256": "6e44b6861e7a37f45629070cfcea2b308490999ac00d13bd84c924946f141067",
+      "bytes": 2423
     }
   ],
   "diff_detection_rules": [

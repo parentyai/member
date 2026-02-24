@@ -2018,6 +2018,11 @@ details:not([open]) > *:not(summary) {
   gap: var(--space-1);
 }
 
+.repo-map-related-files-label,
+.repo-map-related-files-list {
+  display: none;
+}
+
 .mono-list {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: var(--font-12);
