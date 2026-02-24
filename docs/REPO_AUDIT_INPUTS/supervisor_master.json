@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-23T19:14:22-05:00",
-  "gitCommit": "45fe76de8bdb236d03a259035bfe1ab9b9c9ccce",
-  "branch": "codex/seed-citypack-setup",
-  "sourceDigest": "ef73dfc3224a9bcde6db39f34abbb9d746a94d7e3509ead33f91b94c74ec9e51",
+  "generatedAt": "2026-02-23T19:40:59-05:00",
+  "gitCommit": "ebb8ea23c7271c13c23b2465f90c9bb760978ab3",
+  "branch": "codex/phase636-admin-nav-policy",
+  "sourceDigest": "3a08638ccaddc74bb03a569af67a83d7819ff312f7e0d293941999e630e5fe2b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
