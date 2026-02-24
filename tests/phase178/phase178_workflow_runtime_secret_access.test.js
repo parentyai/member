@@ -26,6 +26,7 @@ test('phase178: deploy workflow grants runtime SA secret accessor for member sec
   assert.match(contents, /TRACK_TOKEN_SECRET/, 'deploy.yml: TRACK_TOKEN_SECRET missing');
   assert.match(contents, /REDAC_MEMBERSHIP_ID_HMAC_SECRET/, 'deploy.yml: REDAC_MEMBERSHIP_ID_HMAC_SECRET missing');
   assert.match(contents, /OPS_CONFIRM_TOKEN_SECRET/, 'deploy.yml: OPS_CONFIRM_TOKEN_SECRET missing');
+  assert.match(contents, /OPENAI_API_KEY/, 'deploy.yml: OPENAI_API_KEY missing');
 });
 
 test('phase178: deploy-webhook workflow grants runtime SA secret accessor for webhook secrets', () => {

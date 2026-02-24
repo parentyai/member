@@ -14,6 +14,9 @@ test('phase631: workflow exposes trace_limit and fail_on_missing_audit_actions i
   assert.ok(text.includes('fail_on_missing_audit_actions:'));
   assert.ok(text.includes('description: "Fail run when required audit actions are missing from trace bundle"'));
   assert.ok(text.includes('default: "true"'));
+  assert.ok(text.includes('expect_llm_enabled:'));
+  assert.ok(text.includes('description: "Require LLM gate to report enabled and non-blocked llmStatus"'));
+  assert.ok(text.includes('default: "true"'));
 });
 
 test('phase631: workflow passes trace limit and strict audit gate flags to runner', () => {
@@ -22,4 +25,6 @@ test('phase631: workflow passes trace limit and strict audit gate flags to runne
   assert.ok(text.includes('--trace-limit "${{ github.event.inputs.trace_limit }}"'));
   assert.ok(text.includes('ARGS+=(--fail-on-missing-audit-actions)'));
   assert.ok(text.includes('github.event.inputs.fail_on_missing_audit_actions'));
+  assert.ok(text.includes('ARGS+=(--expect-llm-enabled)'));
+  assert.ok(text.includes('github.event.inputs.expect_llm_enabled'));
 });

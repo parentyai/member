@@ -19,6 +19,7 @@ const SEGMENT_ACCEPTABLE_EXECUTE_REASONS = new Set([
 
 const SCENARIO_REQUIRED_AUDIT_ACTIONS = Object.freeze({
   product_readiness_gate: ['product_readiness.view'],
+  llm_gate: ['llm_config.status.view', 'llm_disclaimer_rendered'],
   segment: ['segment_send.plan', 'segment_send.dry_run', 'segment_send.execute'],
   retry_queue: ['retry_queue.plan', 'retry_queue.execute'],
   kill_switch_block: ['kill_switch.plan', 'kill_switch.set', 'retry_queue.execute'],
@@ -32,6 +33,14 @@ const ADMIN_READINESS_ENDPOINTS = Object.freeze([
   { key: 'structDriftBackfillRuns', endpoint: '/api/admin/struct-drift/backfill-runs', label: 'struct-drift/backfill-runs' },
   { key: 'osAlertsSummary', endpoint: '/api/admin/os/alerts/summary', label: 'os-alerts-summary' },
   { key: 'cityPacks', endpoint: '/api/admin/city-packs', label: 'city-packs' }
+]);
+
+const LLM_BLOCKED_STATUSES_WHEN_EXPECTED_ENABLED = new Set([
+  'disabled',
+  'llm_disabled',
+  'adapter_missing',
+  'OPENAI_API_KEY is not set',
+  'consent_missing'
 ]);
 
 function readValue(argv, index, label) {
@@ -111,6 +120,7 @@ function parseArgs(argv, env) {
     skipRetry: sourceEnv.E2E_SKIP_RETRY === '1',
     skipKillSwitch: sourceEnv.E2E_SKIP_KILLSWITCH === '1',
     skipComposerCap: sourceEnv.E2E_SKIP_COMPOSER_CAP === '1',
+    expectLlmEnabled: sourceEnv.E2E_EXPECT_LLM_ENABLED === '1',
     outFile: sourceEnv.E2E_OUT_FILE || '',
     mdOutFile: sourceEnv.E2E_MD_OUT_FILE || ''
   };
@@ -151,6 +161,10 @@ function parseArgs(argv, env) {
     }
     if (arg === '--skip-composer-cap') {
       opts.skipComposerCap = true;
+      continue;
+    }
+    if (arg === '--expect-llm-enabled') {
+      opts.expectLlmEnabled = true;
       continue;
     }
 
@@ -1323,6 +1337,65 @@ async function runProductReadinessScenario(ctx, traceId) {
   };
 }
 
+async function runLlmGateScenario(ctx, opts, traceId) {
+  const expectLlmEnabled = Boolean(opts && opts.expectLlmEnabled === true);
+  const statusResp = await apiRequest(ctx, 'GET', '/api/admin/llm/config/status', traceId);
+  const statusBody = requireHttpOk(statusResp, 'llm config status');
+
+  if (expectLlmEnabled) {
+    const llmEnabledOk = statusBody.llmEnabled === true;
+    const envFlagOk = statusBody.envLlmFeatureFlag === true;
+    const effectiveOk = statusBody.effectiveEnabled === true;
+    if (!llmEnabledOk || !envFlagOk || !effectiveOk) {
+      return {
+        status: 'FAIL',
+        reason: `llm_gate_status_not_enabled:llmEnabled=${statusBody.llmEnabled === true ? 'true' : 'false'}:envLlmFeatureFlag=${statusBody.envLlmFeatureFlag === true ? 'true' : 'false'}:effectiveEnabled=${statusBody.effectiveEnabled === true ? 'true' : 'false'}`,
+        steps: {
+          llmConfigStatus: summarizeResponse(statusResp)
+        }
+      };
+    }
+  }
+
+  const seedResult = await resolveUserSeed(ctx, `${traceId}-llm-seed`);
+  const lineUserId = seedResult && seedResult.seed && typeof seedResult.seed.lineUserId === 'string' && seedResult.seed.lineUserId.trim().length > 0
+    ? seedResult.seed.lineUserId.trim()
+    : 'U_E2E_LLM_PROBE';
+  const lineUserIdSource = lineUserId === 'U_E2E_LLM_PROBE' ? 'fallback_static' : 'auto_user_seed';
+
+  const explainResp = await apiRequest(
+    ctx,
+    'GET',
+    `/api/admin/llm/ops-explain?lineUserId=${encodeURIComponent(lineUserId)}`,
+    traceId
+  );
+  const explainBody = requireHttpOk(explainResp, 'llm ops explain');
+  const llmStatus = explainBody && typeof explainBody.llmStatus === 'string' ? explainBody.llmStatus.trim() : '';
+
+  if (expectLlmEnabled && (!llmStatus || LLM_BLOCKED_STATUSES_WHEN_EXPECTED_ENABLED.has(llmStatus))) {
+    return {
+      status: 'FAIL',
+      reason: `llm_gate_status_blocked:${llmStatus || 'missing'}`,
+      lineUserId,
+      lineUserIdSource,
+      steps: {
+        llmConfigStatus: summarizeResponse(statusResp),
+        llmOpsExplain: summarizeResponse(explainResp)
+      }
+    };
+  }
+
+  return {
+    status: 'PASS',
+    lineUserId,
+    lineUserIdSource,
+    steps: {
+      llmConfigStatus: summarizeResponse(statusResp),
+      llmOpsExplain: summarizeResponse(explainResp)
+    }
+  };
+}
+
 function evaluateExitCode(results, allowSkip) {
   const items = Array.isArray(results) ? results : [];
   const hasFail = items.some((item) => item && item.status === 'FAIL');
@@ -1477,6 +1550,7 @@ async function runAll(opts) {
 
   try {
     scenarios.push(await runScenario(ctx, 'product_readiness_gate', (traceId) => runProductReadinessScenario(ctx, traceId)));
+    scenarios.push(await runScenario(ctx, 'llm_gate', (traceId) => runLlmGateScenario(ctx, opts, traceId)));
     scenarios.push(await runScenario(ctx, 'segment', (traceId) => runSegmentScenario(ctx, opts, traceId)));
     scenarios.push(await runScenario(ctx, 'retry_queue', (traceId) => runRetryScenario(ctx, opts, traceId)));
     scenarios.push(await runScenario(ctx, 'kill_switch_block', (traceId) => runKillSwitchScenario(ctx, opts, traceId)));
