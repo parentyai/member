@@ -69,6 +69,18 @@ const ADMIN_LOCAL_PREFLIGHT_ENABLED = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1 : null,
   true
 );
+const ADMIN_NO_COLLAPSE_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_NO_COLLAPSE_V1 : null,
+  true
+);
+const ADMIN_TOP_SUMMARY_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_TOP_SUMMARY_V1 : null,
+  false
+);
+const ADMIN_USERS_STRIPE_LAYOUT_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1 : null,
+  true
+);
 const ADMIN_NAV_ALL_ACCESSIBLE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ADMIN_NAV_ALL_ACCESSIBLE_V1 : null,
   true
@@ -134,11 +146,32 @@ const state = {
   usersSummaryBillingDetail: null,
   usersSummarySortKey: 'createdAt',
   usersSummarySortDir: 'desc',
+  usersSummaryQuickFilter: 'all',
+  usersSummaryAnalyze: null,
+  usersSummaryVisibleColumns: [
+    'createdAt',
+    'updatedAt',
+    'lineUserId',
+    'memberNumber',
+    'category',
+    'status',
+    'plan',
+    'subscriptionStatus',
+    'billingIntegrity',
+    'currentPeriodEnd',
+    'llmUsageToday',
+    'tokensToday',
+    'blockedRate',
+    'deliveryCount',
+    'clickCount',
+    'reactionRate'
+  ],
   vendorUnifiedFilteredItems: [],
   vendorSortKey: 'updatedAt',
   vendorSortDir: 'desc',
   dashboardKpis: null,
   dashboardCacheByMonths: {},
+  dashboardJourneyKpi: null,
   topbarStatus: null,
   alertsSummary: null,
   repoMap: null,
@@ -193,7 +226,11 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   deliveryCount: 'number',
   clickCount: 'number',
   reactionRate: 'number',
-  llmUsage: 'number'
+  llmUsage: 'number',
+  llmUsageToday: 'number',
+  tokensToday: 'number',
+  blockedRate: 'number',
+  billingIntegrity: 'string'
 });
 const CITY_PACK_UNIFIED_SORT_TYPES = Object.freeze({
   createdAt: 'date',
@@ -229,6 +266,33 @@ const USER_CATEGORY_LABELS = Object.freeze({
   C: 'C帯同1',
   D: 'D帯同2'
 });
+const USERS_QUICK_FILTER_LABELS = Object.freeze({
+  all: 'All',
+  pro_active: 'Pro(active)',
+  free: 'Free',
+  trialing: 'Trialing',
+  past_due: 'Past_due',
+  canceled: 'Canceled',
+  unknown: 'Unknown'
+});
+const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
+  'createdAt',
+  'updatedAt',
+  'lineUserId',
+  'memberNumber',
+  'category',
+  'status',
+  'plan',
+  'subscriptionStatus',
+  'billingIntegrity',
+  'currentPeriodEnd',
+  'llmUsageToday',
+  'tokensToday',
+  'blockedRate',
+  'deliveryCount',
+  'clickCount',
+  'reactionRate'
+]);
 const PANE_HEADER_MAP = Object.freeze({
   home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
   alerts: { titleKey: 'ui.label.alerts.title', subtitleKey: 'ui.desc.page.alerts' },
@@ -267,6 +331,9 @@ const NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
 
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
+const POLICY_INTENT_ALIASES = Object.freeze({
+  next_action: 'next_action_generation'
+});
 const DASHBOARD_CARD_CONFIG = Object.freeze({
   registrations: { kpiKeys: ['registrations'], unit: 'count' },
   membership: { kpiKeys: ['membership'], unit: 'percent' },
@@ -275,6 +342,7 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   reaction: { kpiKeys: ['reaction', 'churnRate'], unit: 'percent' },
   faq: { kpiKeys: ['faqUsage', 'ctrTrend'], unit: 'count' },
   proRatio: { kpiKeys: ['pro_ratio'], unit: 'percent' },
+  proActive: { kpiKeys: ['pro_active_count'], unit: 'count' },
   llmUsage: { kpiKeys: ['llm_daily_usage_count'], unit: 'count' },
   llmBlockRate: { kpiKeys: ['llm_block_rate'], unit: 'percent' }
 });
@@ -877,6 +945,9 @@ function readUsersSummaryListState() {
     status: getSelectValue('users-filter-status'),
     plan: getSelectValue('users-filter-plan'),
     subscriptionStatus: getSelectValue('users-filter-subscription-status'),
+    billingIntegrity: getSelectValue('users-filter-billing-integrity'),
+    quickFilter: state.usersSummaryQuickFilter || 'all',
+    visibleColumns: (Array.isArray(state.usersSummaryVisibleColumns) ? state.usersSummaryVisibleColumns : USERS_SUMMARY_COLUMN_KEYS).join(','),
     limit: getInputValue('users-filter-limit'),
     analyticsLimit: getInputValue('users-filter-analytics-limit'),
     sortKey: state.usersSummarySortKey,
@@ -950,6 +1021,19 @@ function applyUsersSummaryListState(snapshot) {
   setSelectValue('users-filter-status', snapshot.status || '');
   setSelectValue('users-filter-plan', snapshot.plan || '');
   setSelectValue('users-filter-subscription-status', snapshot.subscriptionStatus || '');
+  setSelectValue('users-filter-billing-integrity', snapshot.billingIntegrity || '');
+  state.usersSummaryQuickFilter = snapshot.quickFilter && USERS_QUICK_FILTER_LABELS[snapshot.quickFilter]
+    ? snapshot.quickFilter
+    : 'all';
+  if (snapshot.visibleColumns) {
+    const parsed = String(snapshot.visibleColumns)
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => USERS_SUMMARY_COLUMN_KEYS.includes(item));
+    if (parsed.length) {
+      state.usersSummaryVisibleColumns = Array.from(new Set(parsed));
+    }
+  }
   if (snapshot.limit) setInputValue('users-filter-limit', snapshot.limit);
   if (snapshot.analyticsLimit) setInputValue('users-filter-analytics-limit', snapshot.analyticsLimit);
 }
@@ -1380,6 +1464,66 @@ function expandAllDetails() {
   });
 }
 
+function enforceNoCollapseUi() {
+  if (!ADMIN_NO_COLLAPSE_V1) return;
+  if (typeof document === 'undefined' || !document.documentElement) return;
+  document.documentElement.classList.add('admin-no-collapse-v1');
+  document.querySelectorAll('details').forEach((el) => {
+    el.open = true;
+    if (el.dataset.noCollapseBound === '1') return;
+    el.dataset.noCollapseBound = '1';
+    el.addEventListener('toggle', () => {
+      if (!el.open) el.open = true;
+    });
+    const summaryEl = el.querySelector('summary');
+    if (summaryEl) {
+      summaryEl.setAttribute('aria-disabled', 'true');
+      summaryEl.setAttribute('tabindex', '-1');
+    }
+  });
+}
+
+function applyTopSummaryVisibility() {
+  const summaryLine = document.getElementById('topbar-summary-line')
+    || document.querySelector('.top-summary-line');
+  if (!summaryLine) return;
+  if (ADMIN_TOP_SUMMARY_V1) {
+    summaryLine.classList.remove('is-hidden-by-flag');
+    summaryLine.removeAttribute('aria-hidden');
+    return;
+  }
+  summaryLine.classList.add('is-hidden-by-flag');
+  summaryLine.setAttribute('aria-hidden', 'true');
+}
+
+function applyUsersStripeLayoutVisibility() {
+  const quickFilters = document.getElementById('users-summary-quick-filters');
+  const analyzeBtn = document.getElementById('users-summary-analyze');
+  const exportBtn = document.getElementById('users-summary-export');
+  const editColumnsBtn = document.getElementById('users-summary-edit-columns');
+  const columnsPanel = document.getElementById('users-summary-columns-panel');
+  const billingIntegritySelect = document.getElementById('users-filter-billing-integrity');
+  const billingIntegrityWrap = billingIntegritySelect && billingIntegritySelect.closest('.flex-1');
+
+  if (ADMIN_USERS_STRIPE_LAYOUT_V1) {
+    if (quickFilters) quickFilters.classList.remove('is-hidden-by-flag');
+    if (analyzeBtn) analyzeBtn.classList.remove('is-hidden-by-flag');
+    if (exportBtn) exportBtn.classList.remove('is-hidden-by-flag');
+    if (editColumnsBtn) editColumnsBtn.classList.remove('is-hidden-by-flag');
+    if (columnsPanel) columnsPanel.classList.remove('is-hidden-by-flag');
+    if (billingIntegrityWrap) billingIntegrityWrap.classList.remove('is-hidden-by-flag');
+    return;
+  }
+
+  state.usersSummaryQuickFilter = 'all';
+  if (quickFilters) quickFilters.classList.add('is-hidden-by-flag');
+  if (analyzeBtn) analyzeBtn.classList.add('is-hidden-by-flag');
+  if (exportBtn) exportBtn.classList.add('is-hidden-by-flag');
+  if (editColumnsBtn) editColumnsBtn.classList.add('is-hidden-by-flag');
+  if (columnsPanel) columnsPanel.classList.add('is-hidden-by-flag');
+  if (billingIntegrityWrap) billingIntegrityWrap.classList.add('is-hidden-by-flag');
+}
+
 function scrollToPaneAnchor(targetId) {
   if (!targetId) return;
   const target = document.getElementById(targetId);
@@ -1404,6 +1548,9 @@ function setupHomeControls() {
   });
   document.getElementById('dashboard-reload')?.addEventListener('click', () => {
     void loadDashboardKpis({ notify: true });
+  });
+  document.getElementById('dashboard-journey-kpi-reload')?.addEventListener('click', () => {
+    void loadDashboardJourneyKpi({ notify: true });
   });
   document.querySelectorAll('.dashboard-window-select').forEach((el) => {
     el.addEventListener('change', () => {
@@ -2439,6 +2586,72 @@ function renderDashboardKpis() {
   });
 }
 
+function renderDashboardJourneyKpi() {
+  const payload = state.dashboardJourneyKpi && typeof state.dashboardJourneyKpi === 'object'
+    ? state.dashboardJourneyKpi
+    : null;
+  const retentionEl = document.getElementById('dashboard-journey-retention');
+  const phaseEl = document.getElementById('dashboard-journey-phase-completion');
+  const nextActionEl = document.getElementById('dashboard-journey-next-action-rate');
+  const conversionEl = document.getElementById('dashboard-journey-pro-conversion');
+  const churnEl = document.getElementById('dashboard-journey-churn');
+  const rawEl = document.getElementById('dashboard-journey-kpi-result');
+
+  if (!payload) {
+    if (retentionEl) retentionEl.textContent = '-';
+    if (phaseEl) phaseEl.textContent = '-';
+    if (nextActionEl) nextActionEl.textContent = '-';
+    if (conversionEl) conversionEl.textContent = '-';
+    if (churnEl) churnEl.textContent = '-';
+    if (rawEl) rawEl.textContent = '-';
+    return;
+  }
+
+  const retention = payload.retention && typeof payload.retention === 'object' ? payload.retention : {};
+  if (retentionEl) {
+    retentionEl.textContent = [
+      `7:${formatRatioPercent(retention.d7)}`,
+      `30:${formatRatioPercent(retention.d30)}`,
+      `60:${formatRatioPercent(retention.d60)}`,
+      `90:${formatRatioPercent(retention.d90)}`
+    ].join(' / ');
+  }
+  if (phaseEl) phaseEl.textContent = formatRatioPercent(payload.phaseCompletionRate);
+  if (nextActionEl) nextActionEl.textContent = formatRatioPercent(payload.nextActionExecutionRate);
+  if (conversionEl) conversionEl.textContent = formatRatioPercent(payload.proConversionRate);
+
+  const churn = payload.churnReasonRatio && typeof payload.churnReasonRatio === 'object'
+    ? payload.churnReasonRatio
+    : {};
+  if (churnEl) {
+    churnEl.textContent = [
+      `blocked:${formatRatioPercent(churn.blocked)}`,
+      `value_gap:${formatRatioPercent(churn.value_gap)}`,
+      `cost:${formatRatioPercent(churn.cost)}`,
+      `status_change:${formatRatioPercent(churn.status_change)}`
+    ].join(' / ');
+  }
+  if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
+}
+
+async function loadDashboardJourneyKpi(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  try {
+    const res = await fetch('/api/admin/os/journey-kpi', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.dashboardJourneyKpi = data.kpi || null;
+    renderDashboardJourneyKpi();
+    if (notify) showToast('Journey KPIを更新しました', 'ok');
+  } catch (_err) {
+    state.dashboardJourneyKpi = null;
+    renderDashboardJourneyKpi();
+    if (notify) showToast('Journey KPIの取得に失敗しました', 'danger');
+  }
+}
+
 async function fetchDashboardKpiByMonths(windowMonths, traceId) {
   const key = String(normalizeDashboardWindow(windowMonths));
   if (state.dashboardCacheByMonths[key]) return state.dashboardCacheByMonths[key];
@@ -2548,6 +2761,7 @@ async function loadDashboardKpis(options) {
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
   state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
   renderDashboardKpis();
+  await loadDashboardJourneyKpi({ notify: false });
   if (failed) {
     renderDataLoadFailureGuard('dashboard_kpi_failed', new Error('dashboard kpi failed'));
   }
@@ -2975,10 +3189,14 @@ function resolveUsersSortValue(item, key) {
   if (key === 'status') return item && item.statusLabel;
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
+  if (key === 'billingIntegrity') return item && item.billingIntegrityState;
   if (key === 'reactionRate') return resolveUserReactionRate(item);
   if (key === 'updatedAt') return item && item.updatedAt;
   if (key === 'currentPeriodEnd') return item && item.currentPeriodEnd;
   if (key === 'llmUsage') return item && item.llmUsage;
+  if (key === 'llmUsageToday') return item && item.llmUsageToday;
+  if (key === 'tokensToday') return item && item.llmTokenUsedToday;
+  if (key === 'blockedRate') return item && item.llmBlockedRate;
   if (key === 'createdAt') return item && item.createdAt;
   return item ? item[key] : null;
 }
@@ -5223,8 +5441,15 @@ function mapUsersSummaryItem(item) {
   const llmUsage = Number(row.llmUsage);
   const llmTokenUsed = Number(row.llmTokenUsed);
   const llmBlockedCount = Number(row.llmBlockedCount);
+  const llmUsageToday = Number(row.llmUsageToday);
+  const llmTokenUsedToday = Number(row.llmTokenUsedToday);
+  const llmBlockedToday = Number(row.llmBlockedToday);
+  const llmBlockedRate = Number(row.llmBlockedRate);
   const plan = normalizeBillingPlan(row.plan);
   const subscriptionStatus = normalizeSubscriptionStatus(row.subscriptionStatus);
+  const billingIntegrityState = typeof row.billingIntegrityState === 'string' && row.billingIntegrityState.trim()
+    ? row.billingIntegrityState.trim().toLowerCase()
+    : 'unknown';
   const mapped = {
     lineUserId: typeof row.lineUserId === 'string' ? row.lineUserId : '',
     createdAt: row.createdAt || null,
@@ -5245,6 +5470,11 @@ function mapUsersSummaryItem(item) {
     llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
     llmTokenUsed: Number.isFinite(llmTokenUsed) ? llmTokenUsed : 0,
     llmBlockedCount: Number.isFinite(llmBlockedCount) ? llmBlockedCount : 0,
+    llmUsageToday: Number.isFinite(llmUsageToday) ? llmUsageToday : 0,
+    llmTokenUsedToday: Number.isFinite(llmTokenUsedToday) ? llmTokenUsedToday : 0,
+    llmBlockedToday: Number.isFinite(llmBlockedToday) ? llmBlockedToday : 0,
+    llmBlockedRate: Number.isFinite(llmBlockedRate) ? llmBlockedRate : 0,
+    billingIntegrityState,
     deliveryCount: Number.isFinite(deliveryCount) ? deliveryCount : 0,
     clickCount: Number.isFinite(clickCount) ? clickCount : 0,
     reactionRate: resolveUserReactionRate(row)
@@ -5262,6 +5492,8 @@ function applyUsersSummaryFilters() {
   const rawPlan = (document.getElementById('users-filter-plan')?.value || '').trim().toLowerCase();
   const subscriptionStatus = normalizeSubscriptionStatus(document.getElementById('users-filter-subscription-status')?.value || '');
   const rawSubscriptionStatus = (document.getElementById('users-filter-subscription-status')?.value || '').trim().toLowerCase();
+  const billingIntegrity = (document.getElementById('users-filter-billing-integrity')?.value || '').trim().toLowerCase();
+  const quickFilter = state.usersSummaryQuickFilter || 'all';
   const filterCore = resolveCoreSlice('filterCore');
   const filtered = filterCore && typeof filterCore.applyAndFilters === 'function'
     ? filterCore.applyAndFilters(state.usersSummaryItems, [
@@ -5289,7 +5521,25 @@ function applyUsersSummaryFilters() {
         { type: 'equals', value: category, normalize: { trim: true, upper: true }, getValue: (item) => item && item.category },
         { type: 'equals', value: status, normalize: { trim: true }, getValue: (item) => item && item.statusLabel },
         { type: 'equals', value: rawPlan, normalize: { trim: true, lower: true }, getValue: (item) => item && item.plan },
-        { type: 'equals', value: rawSubscriptionStatus, normalize: { trim: true, lower: true }, getValue: (item) => item && item.subscriptionStatus }
+        { type: 'equals', value: rawSubscriptionStatus, normalize: { trim: true, lower: true }, getValue: (item) => item && item.subscriptionStatus },
+        { type: 'equals', value: billingIntegrity, normalize: { trim: true, lower: true }, getValue: (item) => item && item.billingIntegrityState },
+        {
+          type: 'predicate',
+          value: quickFilter,
+          predicate: (item, mode) => {
+            if (!mode || mode === 'all') return true;
+            const rowPlan = String(item && item.plan ? item.plan : 'free');
+            const rowStatus = String(item && item.subscriptionStatus ? item.subscriptionStatus : 'unknown');
+            const rowIntegrity = String(item && item.billingIntegrityState ? item.billingIntegrityState : 'unknown');
+            if (mode === 'pro_active') return rowPlan === 'pro' && (rowStatus === 'active' || rowStatus === 'trialing');
+            if (mode === 'free') return rowPlan === 'free';
+            if (mode === 'trialing') return rowStatus === 'trialing';
+            if (mode === 'past_due') return rowStatus === 'past_due';
+            if (mode === 'canceled') return rowStatus === 'canceled';
+            if (mode === 'unknown') return rowStatus === 'unknown' || rowIntegrity === 'unknown' || rowIntegrity === 'conflict';
+            return true;
+          }
+        }
       ])
     : state.usersSummaryItems.filter((item) => {
       const lineUserId = String(item && item.lineUserId ? item.lineUserId : '').toLowerCase();
@@ -5301,6 +5551,17 @@ function applyUsersSummaryFilters() {
       if (status && String(item && item.statusLabel ? item.statusLabel : '') !== status) return false;
       if (rawPlan && String(item && item.plan ? item.plan : '') !== plan) return false;
       if (rawSubscriptionStatus && String(item && item.subscriptionStatus ? item.subscriptionStatus : '') !== subscriptionStatus) return false;
+      if (billingIntegrity && String(item && item.billingIntegrityState ? item.billingIntegrityState : 'unknown') !== billingIntegrity) return false;
+      if (quickFilter === 'pro_active' && !(item && item.plan === 'pro' && (item.subscriptionStatus === 'active' || item.subscriptionStatus === 'trialing'))) return false;
+      if (quickFilter === 'free' && !(item && item.plan === 'free')) return false;
+      if (quickFilter === 'trialing' && !(item && item.subscriptionStatus === 'trialing')) return false;
+      if (quickFilter === 'past_due' && !(item && item.subscriptionStatus === 'past_due')) return false;
+      if (quickFilter === 'canceled' && !(item && item.subscriptionStatus === 'canceled')) return false;
+      if (quickFilter === 'unknown') {
+        const rowStatus = String(item && item.subscriptionStatus ? item.subscriptionStatus : 'unknown');
+        const rowIntegrity = String(item && item.billingIntegrityState ? item.billingIntegrityState : 'unknown');
+        if (rowStatus !== 'unknown' && rowIntegrity !== 'unknown' && rowIntegrity !== 'conflict') return false;
+      }
       return true;
     });
   state.usersSummaryFilteredItems = sortUsersSummaryItems(filtered);
@@ -5315,6 +5576,8 @@ function buildUsersSummaryFilterChips() {
   const status = getSelectValue('users-filter-status');
   const plan = getSelectValue('users-filter-plan');
   const subscriptionStatus = getSelectValue('users-filter-subscription-status');
+  const billingIntegrity = getSelectValue('users-filter-billing-integrity');
+  const quickFilter = state.usersSummaryQuickFilter || 'all';
   pushFilterChip(chips, 'ユーザーID', userId);
   pushFilterChip(chips, '登録期間 from', createdFrom);
   pushFilterChip(chips, '登録期間 to', createdTo);
@@ -5322,6 +5585,8 @@ function buildUsersSummaryFilterChips() {
   if (status) pushFilterChip(chips, 'ステータス', getSelectLabel('users-filter-status'));
   if (plan) pushFilterChip(chips, 'Plan', getSelectLabel('users-filter-plan'));
   if (subscriptionStatus) pushFilterChip(chips, '課金状態', getSelectLabel('users-filter-subscription-status'));
+  if (billingIntegrity) pushFilterChip(chips, '課金整合', getSelectLabel('users-filter-billing-integrity'));
+  if (quickFilter !== 'all') pushFilterChip(chips, 'Quick', USERS_QUICK_FILTER_LABELS[quickFilter] || quickFilter);
   return chips;
 }
 
@@ -5333,6 +5598,9 @@ function clearUsersSummaryFilters() {
   setSelectValue('users-filter-status', '');
   setSelectValue('users-filter-plan', '');
   setSelectValue('users-filter-subscription-status', '');
+  setSelectValue('users-filter-billing-integrity', '');
+  state.usersSummaryQuickFilter = 'all';
+  state.usersSummaryAnalyze = null;
 }
 
 function setTextContent(id, value) {
@@ -5403,10 +5671,85 @@ async function loadUsersSummaryBillingDetail(lineUserId, options) {
   }
 }
 
+function resolveUsersSummaryVisibleColumns() {
+  const current = Array.isArray(state.usersSummaryVisibleColumns)
+    ? state.usersSummaryVisibleColumns.filter((item) => USERS_SUMMARY_COLUMN_KEYS.includes(item))
+    : [];
+  if (current.length) return current;
+  return USERS_SUMMARY_COLUMN_KEYS.slice();
+}
+
+function isUsersColumnVisible(columnKey) {
+  return resolveUsersSummaryVisibleColumns().includes(columnKey);
+}
+
+function syncUsersSummaryQuickFilterUi() {
+  document.querySelectorAll('[data-users-quick-filter]').forEach((btn) => {
+    const key = btn.getAttribute('data-users-quick-filter');
+    if (!key) return;
+    if ((state.usersSummaryQuickFilter || 'all') === key) {
+      btn.classList.add('is-active');
+    } else {
+      btn.classList.remove('is-active');
+    }
+  });
+}
+
+function syncUsersSummaryColumnEditorUi() {
+  const visible = new Set(resolveUsersSummaryVisibleColumns());
+  document.querySelectorAll('[data-users-column-toggle]').forEach((input) => {
+    const key = input.getAttribute('data-users-column-toggle');
+    if (!key) return;
+    input.checked = visible.has(key);
+  });
+}
+
+function applyUsersSummaryColumnVisibility() {
+  const visible = new Set(resolveUsersSummaryVisibleColumns());
+  const table = document.querySelector('.users-summary-table');
+  if (!table) return;
+  table.querySelectorAll('[data-users-col]').forEach((el) => {
+    const key = el.getAttribute('data-users-col');
+    if (!key) return;
+    if (visible.has(key)) el.classList.remove('is-col-hidden');
+    else el.classList.add('is-col-hidden');
+  });
+}
+
+function renderUsersSummaryAnalyzeResult() {
+  const el = document.getElementById('users-summary-analyze-result');
+  if (!el) return;
+  const payload = state.usersSummaryAnalyze && typeof state.usersSummaryAnalyze === 'object'
+    ? state.usersSummaryAnalyze
+    : null;
+  if (!payload) {
+    el.textContent = 'Analyze: 操作待ち';
+    return;
+  }
+  const ratio = Number.isFinite(Number(payload.proActiveRatio)) ? `${Math.round(Number(payload.proActiveRatio) * 1000) / 10}%` : '-';
+  const unknownRatio = Number.isFinite(Number(payload.unknownRatio)) ? `${Math.round(Number(payload.unknownRatio) * 1000) / 10}%` : '-';
+  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio})`;
+}
+
+function createUsersSummaryBadge(text, className) {
+  const span = document.createElement('span');
+  span.className = `users-badge ${className || ''}`.trim();
+  span.textContent = text;
+  return span;
+}
+
+function formatBlockedRateValue(value) {
+  if (!Number.isFinite(Number(value))) return '-';
+  return `${Math.round(Number(value) * 1000) / 10}%`;
+}
+
 function renderUsersSummaryRows() {
   const tbody = document.getElementById('users-summary-rows');
   if (!tbody) return;
   tbody.innerHTML = '';
+  syncUsersSummaryQuickFilterUi();
+  syncUsersSummaryColumnEditorUi();
+  renderUsersSummaryAnalyzeResult();
   applyUsersSummaryFilters();
   applySortUiState({
     root: document.getElementById('pane-read-model'),
@@ -5424,41 +5767,84 @@ function renderUsersSummaryRows() {
     totalCount: state.usersSummaryItems.length,
     activeCount: chips.length
   });
+  applyUsersSummaryColumnVisibility();
   persistListStateToStorage('usersSummary', readUsersSummaryListState());
+  const visibleColumns = resolveUsersSummaryVisibleColumns();
   if (!items.length) {
     state.usersSummarySelectedLineUserId = null;
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 13;
+    td.colSpan = visibleColumns.length || USERS_SUMMARY_COLUMN_KEYS.length;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
     renderUsersSummaryBillingDetail(null);
     return;
   }
+
+  const numericColumnKeys = new Set([
+    'currentPeriodEnd',
+    'llmUsageToday',
+    'tokensToday',
+    'blockedRate',
+    'deliveryCount',
+    'clickCount',
+    'reactionRate'
+  ]);
+
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    const cols = [
-      formatTimestampForList(item.createdAt),
-      formatTimestampForList(item.updatedAt),
-      item.lineUserId || '-',
-      item.memberNumber || '-',
-      item.categoryLabel || '-',
-      item.statusLabel || '-',
-      item.planLabel || '-',
-      item.subscriptionStatusLabel || '-',
-      formatTimestampForList(item.currentPeriodEnd),
-      Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-',
-      Number.isFinite(Number(item.deliveryCount)) ? String(item.deliveryCount) : '-',
-      Number.isFinite(Number(item.clickCount)) ? String(item.clickCount) : '-',
-      formatUserReactionRate(item)
-    ];
-    cols.forEach((value, idx) => {
+    const isUnknownRow = item.subscriptionStatus === 'unknown'
+      || item.billingIntegrityState === 'unknown'
+      || item.billingIntegrityState === 'conflict';
+    if (isUnknownRow) tr.classList.add('users-row-unknown');
+
+    USERS_SUMMARY_COLUMN_KEYS.forEach((columnKey) => {
       const td = document.createElement('td');
-      if (idx === 8 || idx === 9 || idx === 10 || idx === 11 || idx === 12) markNumericCell(td);
+      td.setAttribute('data-users-col', columnKey);
+      if (numericColumnKeys.has(columnKey)) markNumericCell(td);
+
+      if (columnKey === 'subscriptionStatus') {
+        const status = item.subscriptionStatus || 'unknown';
+        const badgeClass = status === 'unknown' ? 'users-badge-unknown' : (status === 'past_due' ? 'users-badge-warn' : '');
+        td.appendChild(createUsersSummaryBadge(item.subscriptionStatusLabel || status, badgeClass));
+        tr.appendChild(td);
+        return;
+      }
+      if (columnKey === 'plan') {
+        const badgeClass = item.plan === 'pro' ? 'users-badge-pro' : '';
+        td.appendChild(createUsersSummaryBadge(item.planLabel || item.plan || '-', badgeClass));
+        tr.appendChild(td);
+        return;
+      }
+      if (columnKey === 'billingIntegrity') {
+        const integrity = item.billingIntegrityState || 'unknown';
+        const badgeClass = integrity === 'conflict'
+          ? 'users-badge-conflict'
+          : (integrity === 'unknown' ? 'users-badge-unknown' : 'users-badge-ok');
+        td.appendChild(createUsersSummaryBadge(integrity, badgeClass));
+        tr.appendChild(td);
+        return;
+      }
+
+      let value = '-';
+      if (columnKey === 'createdAt') value = formatTimestampForList(item.createdAt);
+      else if (columnKey === 'updatedAt') value = formatTimestampForList(item.updatedAt);
+      else if (columnKey === 'lineUserId') value = item.lineUserId || '-';
+      else if (columnKey === 'memberNumber') value = item.memberNumber || '-';
+      else if (columnKey === 'category') value = item.categoryLabel || '-';
+      else if (columnKey === 'status') value = item.statusLabel || '-';
+      else if (columnKey === 'currentPeriodEnd') value = formatTimestampForList(item.currentPeriodEnd);
+      else if (columnKey === 'llmUsageToday') value = Number.isFinite(Number(item.llmUsageToday)) ? String(item.llmUsageToday) : '-';
+      else if (columnKey === 'tokensToday') value = Number.isFinite(Number(item.llmTokenUsedToday)) ? String(item.llmTokenUsedToday) : '-';
+      else if (columnKey === 'blockedRate') value = formatBlockedRateValue(item.llmBlockedRate);
+      else if (columnKey === 'deliveryCount') value = Number.isFinite(Number(item.deliveryCount)) ? String(item.deliveryCount) : '-';
+      else if (columnKey === 'clickCount') value = Number.isFinite(Number(item.clickCount)) ? String(item.clickCount) : '-';
+      else if (columnKey === 'reactionRate') value = formatUserReactionRate(item);
       td.textContent = toUnifiedDisplay(value, '-');
       tr.appendChild(td);
     });
+
     tr.classList.add('clickable-row');
     if (state.usersSummarySelectedLineUserId && state.usersSummarySelectedLineUserId === item.lineUserId) {
       tr.classList.add('row-active');
@@ -5470,13 +5856,10 @@ function renderUsersSummaryRows() {
     });
     tbody.appendChild(tr);
   });
+  applyUsersSummaryColumnVisibility();
 }
 
-async function loadUsersSummary(options) {
-  const notify = Boolean(options && options.notify);
-  const limit = normalizeUsersSummaryLimit(document.getElementById('users-filter-limit')?.value, 200, 500);
-  const analyticsLimit = normalizeUsersSummaryLimit(document.getElementById('users-filter-analytics-limit')?.value, 1200, 2000);
-  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+function buildUsersSummaryQuery(limit, analyticsLimit) {
   const query = new URLSearchParams({
     limit: String(limit),
     analyticsLimit: String(analyticsLimit),
@@ -5487,8 +5870,76 @@ async function loadUsersSummary(options) {
   });
   const plan = getSelectValue('users-filter-plan');
   const subscriptionStatus = getSelectValue('users-filter-subscription-status');
+  const billingIntegrity = getSelectValue('users-filter-billing-integrity');
+  const quickFilter = state.usersSummaryQuickFilter || 'all';
   if (plan) query.set('plan', plan);
   if (subscriptionStatus) query.set('subscriptionStatus', subscriptionStatus);
+  if (billingIntegrity) query.set('billingIntegrity', billingIntegrity);
+  if (quickFilter && quickFilter !== 'all') query.set('quickFilter', quickFilter);
+  return query;
+}
+
+function updateUsersSummaryVisibleColumnsFromInputs() {
+  const selected = [];
+  document.querySelectorAll('[data-users-column-toggle]').forEach((input) => {
+    const key = input.getAttribute('data-users-column-toggle');
+    if (!key || !USERS_SUMMARY_COLUMN_KEYS.includes(key)) return;
+    if (input.checked) selected.push(key);
+  });
+  state.usersSummaryVisibleColumns = selected.length ? selected : USERS_SUMMARY_COLUMN_KEYS.slice();
+  renderUsersSummaryRows();
+}
+
+async function loadUsersSummaryAnalyze(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const limit = normalizeUsersSummaryLimit(document.getElementById('users-filter-limit')?.value, 200, 500);
+  const analyticsLimit = normalizeUsersSummaryLimit(document.getElementById('users-filter-analytics-limit')?.value, 1200, 2000);
+  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+  const query = buildUsersSummaryQuery(limit, analyticsLimit);
+  try {
+    const res = await fetch(`/api/admin/os/users-summary/analyze?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.usersSummaryAnalyze = data.analyze || null;
+    renderUsersSummaryAnalyzeResult();
+    if (notify) showToast('Analyze を更新しました', 'ok');
+  } catch (_err) {
+    state.usersSummaryAnalyze = null;
+    renderUsersSummaryAnalyzeResult();
+    if (notify) showToast('Analyze の取得に失敗しました', 'danger');
+  }
+}
+
+async function exportUsersSummaryCsv() {
+  const limit = normalizeUsersSummaryLimit(document.getElementById('users-filter-limit')?.value, 200, 500);
+  const analyticsLimit = normalizeUsersSummaryLimit(document.getElementById('users-filter-analytics-limit')?.value, 1200, 2000);
+  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+  const query = buildUsersSummaryQuery(limit, analyticsLimit);
+  try {
+    const res = await fetch(`/api/admin/os/users-summary/export?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    if (!res.ok) throw new Error(`status_${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `users_summary_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    showToast('CSVを出力しました', 'ok');
+  } catch (_err) {
+    showToast('CSV出力に失敗しました', 'danger');
+  }
+}
+
+async function loadUsersSummary(options) {
+  const notify = Boolean(options && options.notify);
+  const limit = normalizeUsersSummaryLimit(document.getElementById('users-filter-limit')?.value, 200, 500);
+  const analyticsLimit = normalizeUsersSummaryLimit(document.getElementById('users-filter-analytics-limit')?.value, 1200, 2000);
+  const traceId = ensureTraceInput('read-model-trace') || ensureTraceInput('monitor-trace') || newTraceId();
+  const query = buildUsersSummaryQuery(limit, analyticsLimit);
   try {
     const res = await fetch(`/api/phase5/ops/users-summary?${query.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
@@ -5496,6 +5947,7 @@ async function loadUsersSummary(options) {
     const items = Array.isArray(data.items) ? data.items : [];
     state.usersSummaryItems = items.map((item) => mapUsersSummaryItem(item));
     renderUsersSummaryRows();
+    void loadUsersSummaryAnalyze({ notify: false });
     const selected = state.usersSummarySelectedLineUserId
       && state.usersSummaryItems.some((item) => item.lineUserId === state.usersSummarySelectedLineUserId)
       ? state.usersSummarySelectedLineUserId
@@ -5512,6 +5964,7 @@ async function loadUsersSummary(options) {
     state.usersSummaryItems = [];
     state.usersSummaryFilteredItems = [];
     state.usersSummarySelectedLineUserId = null;
+    state.usersSummaryAnalyze = null;
     renderUsersSummaryRows();
     renderUsersSummaryBillingDetail(null);
     if (notify) showToast('ユーザー一覧の取得に失敗しました', 'danger');
@@ -8078,7 +8531,8 @@ function setupReadModelControls() {
     'users-filter-category',
     'users-filter-status',
     'users-filter-plan',
-    'users-filter-subscription-status'
+    'users-filter-subscription-status',
+    'users-filter-billing-integrity'
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -8089,7 +8543,34 @@ function setupReadModelControls() {
   });
   document.getElementById('users-summary-clear')?.addEventListener('click', () => {
     clearUsersSummaryFilters();
+    syncUsersSummaryQuickFilterUi();
     renderUsersSummaryRows();
+    void loadUsersSummary({ notify: false });
+  });
+  document.getElementById('users-summary-analyze')?.addEventListener('click', () => {
+    void loadUsersSummaryAnalyze({ notify: true });
+  });
+  document.getElementById('users-summary-export')?.addEventListener('click', () => {
+    void exportUsersSummaryCsv();
+  });
+  document.getElementById('users-summary-edit-columns')?.addEventListener('click', () => {
+    const panel = document.getElementById('users-summary-columns-panel');
+    if (!panel) return;
+    panel.classList.toggle('is-hidden');
+  });
+  document.querySelectorAll('[data-users-column-toggle]').forEach((input) => {
+    input.addEventListener('change', () => {
+      updateUsersSummaryVisibleColumnsFromInputs();
+    });
+  });
+  document.querySelectorAll('[data-users-quick-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const quickFilter = btn.getAttribute('data-users-quick-filter') || 'all';
+      state.usersSummaryQuickFilter = quickFilter;
+      syncUsersSummaryQuickFilterUi();
+      renderUsersSummaryRows();
+      void loadUsersSummary({ notify: false });
+    });
   });
   ['users-filter-limit', 'users-filter-analytics-limit'].forEach((id) => {
     const el = document.getElementById(id);
@@ -8773,10 +9254,18 @@ function parseNumberField(value, fallback) {
 
 function parseIntentCsv(value) {
   if (typeof value !== 'string') return [];
-  return Array.from(new Set(value.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean)));
+  return Array.from(new Set(
+    value.split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+      .map((intent) => (Object.prototype.hasOwnProperty.call(POLICY_INTENT_ALIASES, intent)
+        ? POLICY_INTENT_ALIASES[intent]
+        : intent))
+  ));
 }
 
 function buildPolicyPayloadFromForm() {
+  const perUserTokenBudget = Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-token-budget')?.value, 12000));
   return {
     enabled: parseLlmEnabled(document.getElementById('llm-policy-enabled')?.value) === true,
     model: (document.getElementById('llm-policy-model')?.value || '').trim() || 'gpt-4o-mini',
@@ -8784,7 +9273,8 @@ function buildPolicyPayloadFromForm() {
     top_p: parseNumberField(document.getElementById('llm-policy-top-p')?.value, 1),
     max_output_tokens: Math.floor(parseNumberField(document.getElementById('llm-policy-max-output-tokens')?.value, 600)),
     per_user_daily_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-daily-limit')?.value, 20)),
-    per_user_token_budget: Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-token-budget')?.value, 12000)),
+    per_user_token_budget: perUserTokenBudget,
+    per_user_daily_token_budget: perUserTokenBudget,
     global_qps_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-global-qps-limit')?.value, 5)),
     cache_ttl_sec: Math.floor(parseNumberField(document.getElementById('llm-policy-cache-ttl-sec')?.value, 120)),
     allowed_intents_free: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-free')?.value || ''),
@@ -8801,7 +9291,10 @@ function applyPolicyForm(policy) {
   setInputValue('llm-policy-top-p', String(Number.isFinite(Number(payload.top_p)) ? Number(payload.top_p) : 1));
   setInputValue('llm-policy-max-output-tokens', String(Number.isFinite(Number(payload.max_output_tokens)) ? Number(payload.max_output_tokens) : 600));
   setInputValue('llm-policy-per-user-daily-limit', String(Number.isFinite(Number(payload.per_user_daily_limit)) ? Number(payload.per_user_daily_limit) : 20));
-  setInputValue('llm-policy-per-user-token-budget', String(Number.isFinite(Number(payload.per_user_token_budget)) ? Number(payload.per_user_token_budget) : 12000));
+  const perUserTokenBudget = Number.isFinite(Number(payload.per_user_token_budget))
+    ? Number(payload.per_user_token_budget)
+    : (Number.isFinite(Number(payload.per_user_daily_token_budget)) ? Number(payload.per_user_daily_token_budget) : 12000);
+  setInputValue('llm-policy-per-user-token-budget', String(perUserTokenBudget));
   setInputValue('llm-policy-global-qps-limit', String(Number.isFinite(Number(payload.global_qps_limit)) ? Number(payload.global_qps_limit) : 5));
   setInputValue('llm-policy-cache-ttl-sec', String(Number.isFinite(Number(payload.cache_ttl_sec)) ? Number(payload.cache_ttl_sec) : 120));
   setInputValue('llm-policy-allowed-intents-free', Array.isArray(payload.allowed_intents_free) ? payload.allowed_intents_free.join(',') : 'faq_search');
@@ -8823,6 +9316,23 @@ async function loadLlmPolicyStatus(options) {
   } catch (_err) {
     setTextContent('llm-policy-effective-enabled', '-');
     if (notify) showToast('LLMポリシー状態の取得に失敗しました', 'danger');
+  }
+}
+
+async function loadLlmUsageSummary(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('llm-trace');
+  const windowDays = Math.max(1, Math.min(90, Math.floor(parseNumberField(document.getElementById('llm-usage-window-days')?.value, 7))));
+  try {
+    const res = await fetch(`/api/admin/os/llm-usage/summary?windowDays=${encodeURIComponent(String(windowDays))}&limit=20`, {
+      headers: buildHeaders({}, traceId)
+    });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-usage-summary-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('LLM usage集計を取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('LLM usage集計の取得に失敗しました', 'danger');
   }
 }
 
@@ -8902,14 +9412,20 @@ function setupLlmControls() {
   document.getElementById('llm-policy-set')?.addEventListener('click', () => {
     void setLlmPolicy();
   });
+  document.getElementById('llm-usage-summary-reload')?.addEventListener('click', () => {
+    void loadLlmUsageSummary({ notify: true });
+  });
   loadLlmConfigStatus();
   void loadLlmPolicyStatus({ notify: false });
+  void loadLlmUsageSummary({ notify: false });
 }
 
 (async () => {
   await loadDict();
   applyDict();
   applyBuildMetaBadge();
+  applyTopSummaryVisibility();
+  applyUsersStripeLayoutVisibility();
   hydrateListState();
   setupRoleSwitch();
   setupNav();
@@ -8928,6 +9444,7 @@ function setupLlmControls() {
   setupLlmControls();
   setRole(state.role, { historyMode: 'replace', syncHistory: false });
   expandAllDetails();
+  enforceNoCollapseUi();
   activateInitialPane();
   setupHistorySync();
   setupPaneKeyboardShortcuts();

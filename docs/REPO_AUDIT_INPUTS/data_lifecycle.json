@@ -201,6 +201,18 @@
     ]
   },
   {
+    "collection": "journey_kpi_daily",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "90d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/journeyKpiDailyRepo.js:5",
+      "src/repos/firestore/journeyKpiDailyRepo.js:90",
+      "src/usecases/journey/aggregateJourneyKpis.js:263"
+    ]
+  },
+  {
     "collection": "link_registry",
     "kind": "config",
     "recomputable": false,
@@ -570,6 +582,18 @@
     "evidence": [
       "src/repos/firestore/userConsentsRepo.js:26",
       "src/repos/firestore/userConsentsRepo.js:43"
+    ]
+  },
+  {
+    "collection": "user_context_snapshots",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "90d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/userContextSnapshotsRepo.js:5",
+      "src/repos/firestore/userContextSnapshotsRepo.js:127",
+      "src/repos/firestore/userContextSnapshotsRepo.js:138"
     ]
   },
   {

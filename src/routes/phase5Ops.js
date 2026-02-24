@@ -42,6 +42,8 @@ function handleError(res, err) {
     message.includes('invalid fallbackOnEmpty') ||
     message.includes('invalid plan') ||
     message.includes('invalid subscriptionStatus') ||
+    message.includes('invalid billingIntegrity') ||
+    message.includes('invalid quickFilter') ||
     message.includes('invalid sortKey') ||
     message.includes('invalid sortDir')
   ) {
@@ -121,6 +123,28 @@ function parseSubscriptionStatus(value) {
   return null;
 }
 
+function parseBillingIntegrity(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['ok', 'unknown', 'conflict'].includes(value)) return value;
+  return null;
+}
+
+function parseQuickFilter(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if ([
+    'all',
+    'pro_active',
+    'free',
+    'trialing',
+    'past_due',
+    'canceled',
+    'unknown'
+  ].includes(value)) {
+    return value;
+  }
+  return null;
+}
+
 function parseUsersSortKey(value) {
   if (value === null || value === undefined || value === '') return null;
   if ([
@@ -136,7 +160,11 @@ function parseUsersSortKey(value) {
     'reactionRate',
     'plan',
     'subscriptionStatus',
-    'llmUsage'
+    'llmUsage',
+    'llmUsageToday',
+    'tokensToday',
+    'blockedRate',
+    'billingIntegrity'
   ].includes(value)) {
     return value;
   }
@@ -200,6 +228,8 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
     const planRaw = url.searchParams.get('plan');
     const subscriptionStatusRaw = url.searchParams.get('subscriptionStatus');
+    const billingIntegrityRaw = url.searchParams.get('billingIntegrity');
+    const quickFilterRaw = url.searchParams.get('quickFilter');
     const sortKeyRaw = url.searchParams.get('sortKey');
     const sortDirRaw = url.searchParams.get('sortDir');
     const limit = parsePositiveInt(limitRaw, 1, 500);
@@ -209,6 +239,8 @@ async function handleUsersSummaryFiltered(req, res) {
     const fallbackOnEmpty = parseFallbackOnEmpty(fallbackOnEmptyRaw);
     const plan = parsePlan(planRaw);
     const subscriptionStatus = parseSubscriptionStatus(subscriptionStatusRaw);
+    const billingIntegrity = parseBillingIntegrity(billingIntegrityRaw);
+    const quickFilter = parseQuickFilter(quickFilterRaw);
     const sortKey = parseUsersSortKey(sortKeyRaw);
     const sortDir = parseUsersSortDir(sortDirRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
@@ -232,6 +264,12 @@ async function handleUsersSummaryFiltered(req, res) {
     if (subscriptionStatusRaw && !subscriptionStatus) {
       throw new Error('invalid subscriptionStatus');
     }
+    if (billingIntegrityRaw && !billingIntegrity) {
+      throw new Error('invalid billingIntegrity');
+    }
+    if (quickFilterRaw && !quickFilter) {
+      throw new Error('invalid quickFilter');
+    }
     if (sortKeyRaw && !sortKey) {
       throw new Error('invalid sortKey');
     }
@@ -249,6 +287,8 @@ async function handleUsersSummaryFiltered(req, res) {
         reviewAgeDays,
         plan,
         subscriptionStatus,
+        billingIntegrity,
+        quickFilter,
         sortKey,
         sortDir,
         limit,
@@ -288,7 +328,9 @@ async function handleUsersSummaryFiltered(req, res) {
       fallbackOnEmpty,
       filters: {
         plan: plan || 'all',
-        subscriptionStatus: subscriptionStatus || 'all'
+        subscriptionStatus: subscriptionStatus || 'all',
+        billingIntegrity: billingIntegrity || 'all',
+        quickFilter: quickFilter || 'all'
       },
       sort: {
         sortKey: sortKey || null,

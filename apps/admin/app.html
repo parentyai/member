@@ -150,7 +150,7 @@
         <header class="app-topbar">
           <div class="top-metric top-metric-wide">
             <div class="top-label" data-dict-key="ui.label.nav.home">ダッシュボード</div>
-            <div class="top-summary-line">
+            <div id="topbar-summary-line" class="top-summary-line">
               <span class="top-summary-item">
                 <span data-dict-key="ui.label.top.registered">登録者数</span>:
                 <strong id="topbar-registered-count">-</strong>
@@ -394,6 +394,26 @@
                   <div id="dashboard-kpi-proRatio-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-proRatio-note" class="dashboard-kpi-note">-</div>
                 </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="proActive">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">有料ユーザー数</div>
+                    <select id="dashboard-window-proActive" class="select-inline dashboard-window-select" data-dashboard-metric="proActive">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-proActive-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-proActive-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-proActive-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-proActive-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-proActive-note" class="dashboard-kpi-note">-</div>
+                </div>
                 <div class="dashboard-kpi-card" data-dashboard-card="llmUsage">
                   <div class="dashboard-kpi-header">
                     <div class="dashboard-kpi-title">LLM利用件数</div>
@@ -433,6 +453,22 @@
                   </div>
                   <div id="dashboard-kpi-llmBlockRate-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-llmBlockRate-note" class="dashboard-kpi-note">-</div>
+                </div>
+              </div>
+              <div class="panel dashboard-journey-panel">
+                <div class="panel-title">Retention / LTV</div>
+                <div class="panel-body">
+                  <div class="row row-top">
+                    <button id="dashboard-journey-kpi-reload" type="button">Journey KPI更新</button>
+                  </div>
+                  <div class="dashboard-journey-grid">
+                    <div class="note">Retention 7/30/60/90: <strong id="dashboard-journey-retention">-</strong></div>
+                    <div class="note">Phase完了率: <strong id="dashboard-journey-phase-completion">-</strong></div>
+                    <div class="note">NextAction実行率: <strong id="dashboard-journey-next-action-rate">-</strong></div>
+                    <div class="note">Pro conversion: <strong id="dashboard-journey-pro-conversion">-</strong></div>
+                    <div class="note">Churn ratio: <strong id="dashboard-journey-churn">-</strong></div>
+                  </div>
+                  <pre id="dashboard-journey-kpi-result">-</pre>
                 </div>
               </div>
               <div class="task-card-list dashboard-shortcuts">
@@ -1887,6 +1923,15 @@
                         </select>
                       </div>
                       <div class="flex-1">
+                        <label for="users-filter-billing-integrity">課金整合</label>
+                        <select id="users-filter-billing-integrity">
+                          <option value="">all</option>
+                          <option value="ok">ok</option>
+                          <option value="unknown">unknown</option>
+                          <option value="conflict">conflict</option>
+                        </select>
+                      </div>
+                      <div class="flex-1">
                         <label for="users-filter-limit">件数</label>
                         <input id="users-filter-limit" type="number" min="1" max="500" value="200" class="input-sm" />
                       </div>
@@ -1898,6 +1943,40 @@
                   </div>
                   <div class="row row-top">
                     <button id="users-summary-reload" type="button">更新</button>
+                    <button id="users-summary-analyze" type="button">Analyze</button>
+                    <button id="users-summary-export" type="button">Export CSV</button>
+                    <button id="users-summary-edit-columns" type="button">Edit columns</button>
+                  </div>
+                  <div id="users-summary-quick-filters" class="users-quick-filters">
+                    <button type="button" class="users-quick-filter-pill is-active" data-users-quick-filter="all">All</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="pro_active">Pro(active)</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="free">Free</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="trialing">Trialing</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="past_due">Past_due</button>
+                    <button type="button" class="users-quick-filter-pill" data-users-quick-filter="canceled">Canceled</button>
+                    <button type="button" class="users-quick-filter-pill users-quick-filter-pill-unknown" data-users-quick-filter="unknown">Unknown</button>
+                  </div>
+                  <div id="users-summary-columns-panel" class="users-columns-panel is-hidden">
+                    <div class="users-columns-panel-title">表示列</div>
+                    <div class="users-columns-grid">
+                      <label><input type="checkbox" data-users-column-toggle="createdAt" checked /> 登録日</label>
+                      <label><input type="checkbox" data-users-column-toggle="updatedAt" checked /> 更新日</label>
+                      <label><input type="checkbox" data-users-column-toggle="lineUserId" checked /> ユーザーID</label>
+                      <label><input type="checkbox" data-users-column-toggle="memberNumber" checked /> 会員番号</label>
+                      <label><input type="checkbox" data-users-column-toggle="category" checked /> カテゴリ</label>
+                      <label><input type="checkbox" data-users-column-toggle="status" checked /> ステータス</label>
+                      <label><input type="checkbox" data-users-column-toggle="plan" checked /> Plan</label>
+                      <label><input type="checkbox" data-users-column-toggle="subscriptionStatus" checked /> 課金状態</label>
+                      <label><input type="checkbox" data-users-column-toggle="billingIntegrity" checked /> 整合</label>
+                      <label><input type="checkbox" data-users-column-toggle="currentPeriodEnd" checked /> 期限</label>
+                      <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> usageToday</label>
+                      <label><input type="checkbox" data-users-column-toggle="tokensToday" checked /> tokensToday</label>
+                      <label><input type="checkbox" data-users-column-toggle="blockedRate" checked /> blockedRate</label>
+                      <label><input type="checkbox" data-users-column-toggle="deliveryCount" checked /> 配信数</label>
+                      <label><input type="checkbox" data-users-column-toggle="clickCount" checked /> クリック数</label>
+                      <label><input type="checkbox" data-users-column-toggle="reactionRate" checked /> 反応率</label>
+                    </div>
+                    <div id="users-summary-analyze-result" class="note">Analyze: 操作待ち</div>
                   </div>
                   <div class="filter-bar trend-ui-only">
                     <div class="filter-chips" id="users-summary-filter-chips"></div>
@@ -1909,19 +1988,22 @@
                   <table class="table-compact users-summary-table">
                     <thead>
                       <tr>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="createdAt">登録日</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="updatedAt">更新日</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">ユーザーID</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="plan">Plan</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">LLM利用</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
-                        <th><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
+                        <th data-users-col="createdAt"><button type="button" class="table-sort-btn" data-users-sort-key="createdAt">登録日</button></th>
+                        <th data-users-col="updatedAt"><button type="button" class="table-sort-btn" data-users-sort-key="updatedAt">更新日</button></th>
+                        <th data-users-col="lineUserId"><button type="button" class="table-sort-btn" data-users-sort-key="lineUserId">ユーザーID</button></th>
+                        <th data-users-col="memberNumber"><button type="button" class="table-sort-btn" data-users-sort-key="memberNumber">会員番号</button></th>
+                        <th data-users-col="category"><button type="button" class="table-sort-btn" data-users-sort-key="category">カテゴリ</button></th>
+                        <th data-users-col="status"><button type="button" class="table-sort-btn" data-users-sort-key="status">ステータス</button></th>
+                        <th data-users-col="plan"><button type="button" class="table-sort-btn" data-users-sort-key="plan">Plan</button></th>
+                        <th data-users-col="subscriptionStatus"><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
+                        <th data-users-col="billingIntegrity"><button type="button" class="table-sort-btn" data-users-sort-key="billingIntegrity">整合</button></th>
+                        <th data-users-col="currentPeriodEnd"><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
+                        <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">usageToday</button></th>
+                        <th data-users-col="tokensToday"><button type="button" class="table-sort-btn" data-users-sort-key="tokensToday">tokensToday</button></th>
+                        <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">blockedRate</button></th>
+                        <th data-users-col="deliveryCount"><button type="button" class="table-sort-btn" data-users-sort-key="deliveryCount" data-dict-tip="ui.help.table.deliveryCount">配信数</button></th>
+                        <th data-users-col="clickCount"><button type="button" class="table-sort-btn" data-users-sort-key="clickCount" data-dict-tip="ui.help.table.clickCount">クリック数</button></th>
+                        <th data-users-col="reactionRate"><button type="button" class="table-sort-btn" data-users-sort-key="reactionRate" data-dict-tip="ui.help.readModel.ctr">反応率</button></th>
                       </tr>
                     </thead>
                     <tbody id="users-summary-rows"></tbody>
@@ -2552,7 +2634,7 @@
                       <input id="llm-policy-per-user-daily-limit" type="number" step="1" min="0" max="2000" value="20" />
                     </div>
                     <div>
-                      <label>per_user_token_budget</label>
+                      <label>per_user_daily_token_budget (alias: per_user_token_budget)</label>
                       <input id="llm-policy-per-user-token-budget" type="number" step="1" min="0" max="500000" value="12000" />
                     </div>
                     <div>
@@ -2601,6 +2683,13 @@
                     <summary>ポリシー適用結果</summary>
                     <pre id="llm-policy-set-result">-</pre>
                   </details>
+                  <hr />
+                  <div class="row row-top">
+                    <label for="llm-usage-window-days">usage window(days)</label>
+                    <input id="llm-usage-window-days" type="number" min="1" max="90" value="7" class="input-sm" />
+                    <button id="llm-usage-summary-reload" type="button">LLM usage集計</button>
+                  </div>
+                  <pre id="llm-usage-summary-result">-</pre>
                 </div>
               </div>
             </div>

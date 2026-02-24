@@ -14,8 +14,12 @@ const llmClient = require('../infra/llmClient');
 const { resolvePlan } = require('../usecases/billing/planGate');
 const { evaluateLLMBudget } = require('../usecases/billing/evaluateLlmBudget');
 const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
-const { searchFaqFromKb } = require('../usecases/faq/searchFaqFromKb');
+const { evaluateLlmAvailability } = require('../usecases/assistant/llmAvailabilityGate');
+const { getUserContextSnapshot } = require('../usecases/context/getUserContextSnapshot');
+const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
+const { createEvent } = require('../repos/firestore/eventsRepo');
 const {
+  detectExplicitPaidIntent,
   classifyPaidIntent,
   generatePaidAssistantReply
 } = require('../usecases/assistant/generatePaidAssistantReply');
@@ -103,22 +107,55 @@ function normalizeReplyText(value) {
   return value.trim();
 }
 
+function parseJourneyPhaseCommand(text) {
+  const raw = normalizeReplyText(text).toLowerCase();
+  if (!raw) return null;
+  const match = raw.match(/^(?:phase|フェーズ)\s*[:：]?\s*(pre|arrival|settled|extend|return)$/i);
+  if (!match) return null;
+  return match[1].toLowerCase();
+}
+
+function parseNextActionCompletedCommand(text) {
+  const raw = normalizeReplyText(text);
+  if (!raw) return null;
+  const match = raw.match(/^(?:done|完了)\s*[:：]?\s*(.+)$/i);
+  if (!match) return null;
+  const key = normalizeReplyText(match[1]).toLowerCase().replace(/\s+/g, '_');
+  return key || null;
+}
+
 function trimForLineMessage(value) {
   const text = normalizeReplyText(value);
   if (!text) return '';
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
-async function replyWithFaqFallback(params) {
+async function appendJourneyEventBestEffort(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
+  const type = typeof payload.type === 'string' ? payload.type.trim() : '';
+  if (!lineUserId || !type) return;
+  try {
+    await createEvent(Object.assign({}, payload, {
+      lineUserId,
+      type,
+      createdAt: payload.createdAt || new Date().toISOString()
+    }));
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+async function replyWithFreeRetrieval(params) {
   const payload = params && typeof params === 'object' ? params : {};
-  const faq = await searchFaqFromKb({
+  const retrieval = await generateFreeRetrievalReply({
+    lineUserId: payload.lineUserId,
     question: payload.text,
-    locale: 'ja',
-    limit: 3
+    locale: 'ja'
   });
-  const replyText = trimForLineMessage(faq.replyText) || 'FAQ候補を取得できませんでした。';
+  const replyText = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
-  return faq;
+  return retrieval;
 }
 
 async function handleAssistantMessage(params) {
@@ -130,49 +167,110 @@ async function handleAssistantMessage(params) {
   }
 
   const planInfo = await resolvePlan(lineUserId);
-  const intent = classifyPaidIntent(text);
-  const budget = await evaluateLLMBudget(lineUserId, {
-    intent,
-    tokenEstimate: 0,
-    planInfo
-  });
+  const explicitPaidIntent = detectExplicitPaidIntent(text);
+  const paidIntent = classifyPaidIntent(text);
 
-  if (!budget.allowed || planInfo.plan !== 'pro') {
-    const fallback = await replyWithFaqFallback(payload);
+  if (planInfo.plan !== 'pro') {
+    const fallback = await replyWithFreeRetrieval(payload);
+    if (explicitPaidIntent) {
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'pro_prompted',
+        intent: explicitPaidIntent,
+        summary: text.slice(0, 120),
+        createdAt: new Date().toISOString()
+      });
+    }
     await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
-      intent,
+      intent: 'faq_search',
       decision: 'blocked',
-      blockedReason: budget.blockedReason || 'plan_free',
+      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only',
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0
     });
     return {
       handled: true,
-      mode: 'free',
+      mode: 'free_retrieval',
       fallback,
-      blockedReason: budget.blockedReason || 'plan_free'
+      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only'
     };
   }
 
-  const paid = await generatePaidAssistantReply({
-    question: text,
-    intent,
-    locale: 'ja',
-    llmAdapter: llmClient,
-    llmPolicy: budget.policy
+  const budget = await evaluateLLMBudget(lineUserId, {
+    intent: paidIntent,
+    tokenEstimate: 0,
+    planInfo
   });
 
-  if (!paid.ok) {
-    const fallback = await replyWithFaqFallback(payload);
+  if (!budget.allowed) {
+    const fallback = await replyWithFreeRetrieval(payload);
     await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
-      intent,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason: budget.blockedReason || 'plan_gate_blocked',
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0
+    });
+    return {
+      handled: true,
+      mode: 'gate_blocked',
+      fallback,
+      blockedReason: budget.blockedReason || 'plan_gate_blocked'
+    };
+  }
+
+  const availability = await evaluateLlmAvailability({ policy: budget.policy });
+  if (!availability.available) {
+    const fallback = await replyWithFreeRetrieval(payload);
+    await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason: availability.reason || 'llm_unavailable',
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: budget.policy && budget.policy.model
+    });
+    return {
+      handled: true,
+      mode: 'llm_unavailable_fallback',
+      fallback,
+      blockedReason: availability.reason || 'llm_unavailable'
+    };
+  }
+
+  const snapshotResult = await getUserContextSnapshot({
+    lineUserId,
+    maxAgeHours: 24 * 14
+  }).catch(() => ({ ok: false, reason: 'snapshot_unavailable' }));
+
+  const paid = await generatePaidAssistantReply({
+    question: text,
+    intent: paidIntent,
+    locale: 'ja',
+    llmAdapter: llmClient,
+    llmPolicy: budget.policy,
+    contextSnapshot: snapshotResult && snapshotResult.ok ? snapshotResult.snapshot : null
+  });
+
+  if (!paid.ok) {
+    const fallback = await replyWithFreeRetrieval(payload);
+    await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
       decision: 'blocked',
       blockedReason: paid.blockedReason || 'llm_error',
       tokensIn: 0,
@@ -195,13 +293,24 @@ async function handleAssistantMessage(params) {
     userId: lineUserId,
     plan: planInfo.plan,
     subscriptionStatus: planInfo.status,
-    intent,
+    intent: paidIntent,
     decision: 'allow',
     blockedReason: null,
     tokensIn: paid.tokensIn || 0,
     tokensOut: paid.tokensOut || 0,
     tokenUsed: (paid.tokensIn || 0) + (paid.tokensOut || 0),
     model: paid.model || (budget.policy && budget.policy.model)
+  });
+
+  await appendJourneyEventBestEffort({
+    lineUserId,
+    type: 'next_action_shown',
+    intent: paidIntent,
+    phase: snapshotResult && snapshotResult.ok && snapshotResult.snapshot ? snapshotResult.snapshot.phase : null,
+    nextActions: paid && paid.output ? paid.output.nextActions : [],
+    evidenceKeys: paid && paid.output ? paid.output.evidenceKeys : [],
+    summary: paid && paid.output ? paid.output.situation : null,
+    createdAt: new Date().toISOString()
   });
 
   return {
@@ -349,6 +458,32 @@ async function handleLineWebhook(options) {
               await replyFn(replyToken, { type: 'text', text: regionAlreadySet() });
               continue;
             }
+          }
+
+          const phaseCommand = parseJourneyPhaseCommand(text);
+          if (phaseCommand) {
+            await appendJourneyEventBestEffort({
+              lineUserId: userId,
+              type: 'user_phase_changed',
+              toPhase: phaseCommand,
+              summary: text.slice(0, 120),
+              createdAt: new Date().toISOString()
+            });
+            await replyFn(replyToken, { type: 'text', text: `フェーズ更新を記録しました: ${phaseCommand}` });
+            continue;
+          }
+
+          const doneKey = parseNextActionCompletedCommand(text);
+          if (doneKey) {
+            await appendJourneyEventBestEffort({
+              lineUserId: userId,
+              type: 'next_action_completed',
+              nextActions: [{ key: doneKey, status: 'done' }],
+              summary: text.slice(0, 120),
+              createdAt: new Date().toISOString()
+            });
+            await replyFn(replyToken, { type: 'text', text: `完了を記録しました: ${doneKey}` });
+            continue;
           }
 
           const assistant = await handleAssistantMessage({

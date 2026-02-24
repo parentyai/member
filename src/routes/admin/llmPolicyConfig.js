@@ -41,6 +41,34 @@ function confirmTokenData(planHash) {
   };
 }
 
+function buildCandidatePolicy(basePolicy, policyPatch) {
+  const patch = policyPatch && typeof policyPatch === 'object' ? policyPatch : {};
+  const candidate = Object.assign({}, basePolicy, patch);
+  if (
+    Object.prototype.hasOwnProperty.call(patch, 'per_user_daily_token_budget')
+    && !Object.prototype.hasOwnProperty.call(patch, 'per_user_token_budget')
+  ) {
+    candidate.per_user_token_budget = patch.per_user_daily_token_budget;
+  }
+  return candidate;
+}
+
+function resolveCanonicalizationInfo(sourcePolicy, normalized) {
+  const src = sourcePolicy && typeof sourcePolicy === 'object' ? sourcePolicy : {};
+  const listHasAlias = (value) => Array.isArray(value) && value.some((item) => String(item || '').trim().toLowerCase() === 'next_action');
+  const freeAliasInput = listHasAlias(src.allowed_intents_free);
+  const proAliasInput = listHasAlias(src.allowed_intents_pro);
+  const tokenBudgetAliasInput = Object.prototype.hasOwnProperty.call(src, 'per_user_daily_token_budget')
+    && !Object.prototype.hasOwnProperty.call(src, 'per_user_token_budget');
+  return {
+    intentAliasApplied: freeAliasInput || proAliasInput,
+    intentAliasAppliedFree: freeAliasInput,
+    intentAliasAppliedPro: proAliasInput,
+    tokenBudgetAliasApplied: tokenBudgetAliasInput,
+    normalizedPolicy: normalized
+  };
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -93,13 +121,14 @@ async function handlePlan(req, res, body) {
   const basePolicy = await opsConfigRepo.getLlmPolicy();
   const candidate = payload.policy === undefined
     ? basePolicy
-    : Object.assign({}, basePolicy, payload.policy && typeof payload.policy === 'object' ? payload.policy : {});
+    : buildCandidatePolicy(basePolicy, payload.policy);
   const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
   if (!normalized) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'invalid llmPolicy', traceId, requestId }));
     return;
   }
+  const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
 
   const planHash = computePlanHash(normalized);
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
@@ -113,7 +142,8 @@ async function handlePlan(req, res, body) {
     requestId,
     payloadSummary: {
       planHash,
-      llmPolicy: normalized
+      llmPolicy: normalized,
+      canonicalization
     }
   });
 
@@ -123,6 +153,7 @@ async function handlePlan(req, res, body) {
     traceId,
     requestId,
     llmPolicy: normalized,
+    canonicalization,
     planHash,
     confirmToken,
     serverTime: new Date().toISOString()
@@ -140,13 +171,14 @@ async function handleSet(req, res, body) {
   const basePolicy = await opsConfigRepo.getLlmPolicy();
   const candidate = payload.policy === undefined
     ? basePolicy
-    : Object.assign({}, basePolicy, payload.policy && typeof payload.policy === 'object' ? payload.policy : {});
+    : buildCandidatePolicy(basePolicy, payload.policy);
   const normalized = opsConfigRepo.normalizeLlmPolicy(candidate);
   if (!normalized) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'invalid llmPolicy', traceId, requestId }));
     return;
   }
+  const canonicalization = resolveCanonicalizationInfo(payload.policy, normalized);
 
   const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
   const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
@@ -169,7 +201,8 @@ async function handleSet(req, res, body) {
         ok: false,
         reason: 'plan_hash_mismatch',
         expectedPlanHash,
-        planHash
+        planHash,
+        canonicalization
       }
     });
     res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
@@ -206,7 +239,8 @@ async function handleSet(req, res, body) {
     requestId,
     payloadSummary: {
       ok: true,
-      llmPolicy: saved
+      llmPolicy: saved,
+      canonicalization
     }
   });
 
@@ -216,6 +250,7 @@ async function handleSet(req, res, body) {
     traceId,
     requestId,
     llmPolicy: saved,
+    canonicalization,
     serverTime: new Date().toISOString()
   }));
 }

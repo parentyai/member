@@ -14,6 +14,15 @@ function normalizeStatus(value) {
   return mapStripeSubscriptionStatus(value);
 }
 
+function normalizeIntentName(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  if (typeof opsConfigRepo.normalizeIntentToken === 'function') {
+    return opsConfigRepo.normalizeIntentToken(raw);
+  }
+  return raw;
+}
+
 function isProEligible(status) {
   return PRO_STATUSES.has(normalizeStatus(status));
 }
@@ -58,7 +67,7 @@ async function resolveAllowedIntent(plan, params) {
   const allowedIntents = normalizedPlan === 'pro' ? pro : free;
   return {
     plan: normalizedPlan,
-    allowedIntents: Array.from(new Set(allowedIntents.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean))),
+    allowedIntents: Array.from(new Set(allowedIntents.map((item) => normalizeIntentName(item)).filter(Boolean))),
     policy
   };
 }
@@ -66,6 +75,7 @@ async function resolveAllowedIntent(plan, params) {
 module.exports = {
   PRO_STATUSES,
   isProEligible,
+  normalizeIntentName,
   resolvePlan,
   resolveAllowedIntent
 };

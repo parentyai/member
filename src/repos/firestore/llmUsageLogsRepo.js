@@ -47,6 +47,9 @@ async function appendLlmUsageLog(params) {
     costEstimate: Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null,
     decision: normalizeString(payload.decision, 'blocked'),
     blockedReason: payload.blockedReason === null ? null : normalizeString(payload.blockedReason, null),
+    blockedReasonCategory: payload.blockedReasonCategory === null
+      ? null
+      : normalizeString(payload.blockedReasonCategory, null),
     model: typeof payload.model === 'string' && payload.model.trim() ? payload.model.trim() : null,
     createdAt: payload.createdAt || serverTimestamp()
   };

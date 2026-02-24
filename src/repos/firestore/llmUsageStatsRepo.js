@@ -51,6 +51,7 @@ function normalizeStats(lineUserId, data) {
     dailyDate: typeof payload.dailyDate === 'string' && payload.dailyDate.trim() ? payload.dailyDate.trim() : null,
     dailyUsageCount: toNumber(payload.dailyUsageCount, 0),
     dailyTokenUsed: toNumber(payload.dailyTokenUsed, 0),
+    dailyBlockedCount: toNumber(payload.dailyBlockedCount, 0),
     blockedHistory: Array.isArray(payload.blockedHistory) ? payload.blockedHistory.slice(0, 10) : [],
     updatedAt: payload.updatedAt || null
   };
@@ -121,6 +122,7 @@ async function incrementUserUsageStats(params) {
     const resetDaily = current.dailyDate !== dailyDate;
     const nextDailyUsage = (resetDaily ? 0 : current.dailyUsageCount) + 1;
     const nextDailyTokens = (resetDaily ? 0 : current.dailyTokenUsed) + tokenUsed;
+    const nextDailyBlocked = (resetDaily ? 0 : current.dailyBlockedCount) + (shouldCountAsBlocked(decision) ? 1 : 0);
 
     const nextBlockedHistory = Array.isArray(current.blockedHistory) ? current.blockedHistory.slice() : [];
     if (shouldCountAsBlocked(decision) && blockedReason) {
@@ -138,6 +140,7 @@ async function incrementUserUsageStats(params) {
       dailyDate,
       dailyUsageCount: nextDailyUsage,
       dailyTokenUsed: nextDailyTokens,
+      dailyBlockedCount: nextDailyBlocked,
       blockedHistory: nextBlockedHistory.slice(0, 10),
       updatedAt: payload.updatedAt || serverTimestamp()
     };

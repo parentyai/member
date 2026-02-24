@@ -250,3 +250,23 @@
 - Users一覧: `plan` / `subscriptionStatus` / `currentPeriodEnd` / `llmUsage` で絞り込み・ソート。  
 - User detail API: `GET /api/admin/os/user-billing-detail?lineUserId=...`。  
 - Dashboard KPI: `pro_active_count`, `total_users`, `pro_ratio`, `llm_daily_usage_count`, `llm_avg_per_pro_user`, `llm_block_rate`。  
+
+### Users Stripe運用導線（Phase653 add-only）
+1) Users画面の quick filter を使う（`All / Pro(active) / Free / Trialing / Past_due / Canceled / Unknown`）。  
+2) `Analyze` で `proActiveRatio/unknownRatio` を確認する。  
+3) `Export CSV` は PII マスク済み（`lineUserIdMasked/memberNumberMasked`）を出力する。  
+4) `Unknown/Conflict` を優先対応し、`/api/admin/trace?traceId=...` で証跡確認する。  
+
+API:
+- `GET /api/admin/os/users-summary/analyze`
+- `GET /api/admin/os/users-summary/export`
+- `GET /api/admin/os/llm-usage/summary`
+
+### Journey KPI運用（Retention/LTV）
+1) `GET /api/admin/os/journey-kpi` で最新KPIを取得する。  
+2) 日次バッチは `POST /internal/jobs/journey-kpi-build` を実行する（internal token必須）。  
+3) Dashboard の `Retention / LTV` パネルで `7/30/60/90`、`NextAction実行率`、`Pro conversion` を確認する。  
+
+即時停止:
+- `ENABLE_JOURNEY_KPI=0`
+- `ENABLE_USER_CONTEXT_SNAPSHOT=0`

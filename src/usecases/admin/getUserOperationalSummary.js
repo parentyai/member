@@ -181,6 +181,19 @@ function resolveReactionRate(clickCount, deliveryCount) {
   return Math.round((clickCount / deliveryCount) * 10000) / 10000;
 }
 
+function resolveBillingIntegrityState(subscription, plan, subscriptionStatus) {
+  if (!subscription) return 'unknown';
+  const status = String(subscriptionStatus || 'unknown');
+  if (status === 'unknown') return 'unknown';
+  const rawPlan = String(subscription.plan || '').toLowerCase();
+  const activeLike = status === 'active' || status === 'trialing';
+  if (rawPlan === 'pro' && !activeLike) return 'conflict';
+  if (rawPlan === 'free' && activeLike) return 'conflict';
+  if (!rawPlan) return 'unknown';
+  if (plan === 'free' && activeLike) return 'conflict';
+  return 'ok';
+}
+
 function collectScenarioStepPairs(users) {
   const pairSet = new Set();
   (users || []).forEach((user) => {
@@ -453,6 +466,15 @@ async function getUserOperationalSummary(params) {
     const llmUsage = usage && Number.isFinite(Number(usage.usageCount)) ? Number(usage.usageCount) : 0;
     const llmTokenUsed = usage && Number.isFinite(Number(usage.totalTokenUsed)) ? Number(usage.totalTokenUsed) : 0;
     const llmBlockedCount = usage && Number.isFinite(Number(usage.blockedCount)) ? Number(usage.blockedCount) : 0;
+    const llmUsageToday = usage && Number.isFinite(Number(usage.dailyUsageCount)) ? Number(usage.dailyUsageCount) : 0;
+    const llmTokenUsedToday = usage && Number.isFinite(Number(usage.dailyTokenUsed)) ? Number(usage.dailyTokenUsed) : 0;
+    const llmBlockedToday = usage && Number.isFinite(Number(usage.dailyBlockedCount))
+      ? Number(usage.dailyBlockedCount)
+      : Math.min(llmUsageToday, llmBlockedCount);
+    const llmBlockedRate = llmUsageToday > 0
+      ? Math.round((llmBlockedToday / llmUsageToday) * 10000) / 10000
+      : 0;
+    const billingIntegrityState = resolveBillingIntegrityState(subscription, plan, subscriptionStatus);
     return {
       lineUserId: user.id,
       createdAt: formatTimestamp(data.createdAt),
@@ -477,8 +499,13 @@ async function getUserOperationalSummary(params) {
       subscriptionUpdatedAt: subscription && subscription.updatedAt ? formatTimestamp(subscription.updatedAt) : null,
       lastStripeEventId: subscription && subscription.lastEventId ? subscription.lastEventId : null,
       llmUsage,
+      llmUsageToday,
       llmTokenUsed,
-      llmBlockedCount
+      llmTokenUsedToday,
+      llmBlockedCount,
+      llmBlockedToday,
+      llmBlockedRate,
+      billingIntegrityState
     };
   });
   const computedAsOf = new Date().toISOString();

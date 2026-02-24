@@ -20,6 +20,7 @@ const RETENTION_POLICY = Object.freeze({
   'events': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'faq_answer_logs': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'faq_articles': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
+  'journey_kpi_daily': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
   'link_registry': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'llm_usage_logs': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'llm_usage_stats': Object.freeze({ kind: 'aggregate', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
@@ -52,6 +53,7 @@ const RETENTION_POLICY = Object.freeze({
   'templates_v': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'user_checklists': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'user_consents': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
+  'user_context_snapshots': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
   'user_subscriptions': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'users': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
 });

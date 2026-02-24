@@ -64,10 +64,24 @@ function guardNextActionOutput(payload) {
 function guardPaidAssistantOutput(payload) {
   const candidate = isPlainObject(payload) ? payload : null;
   if (!candidate) return { ok: false, blockedReason: 'template_violation' };
+  if (typeof candidate.situation !== 'string' || candidate.situation.trim().length === 0) {
+    return { ok: false, blockedReason: 'template_violation' };
+  }
+  const gaps = Array.isArray(candidate.gaps) ? candidate.gaps : [];
+  const risks = Array.isArray(candidate.risks) ? candidate.risks : [];
+  const nextActions = Array.isArray(candidate.nextActions) ? candidate.nextActions : [];
+  if (gaps.length > 5 || risks.length > 3 || nextActions.length > 3) {
+    return { ok: false, blockedReason: 'section_limit_exceeded' };
+  }
   const evidenceKeys = Array.isArray(candidate.evidenceKeys) ? candidate.evidenceKeys : [];
   if (!evidenceKeys.length) return { ok: false, blockedReason: 'citation_missing' };
   const allStrings = evidenceKeys.every((item) => typeof item === 'string' && item.trim().length > 0);
   if (!allStrings) return { ok: false, blockedReason: 'citation_missing' };
+  const invalidActionLine = nextActions.some((item) => {
+    if (typeof item !== 'string' || item.trim().length === 0) return true;
+    return !/根拠\s*[:：]/.test(item);
+  });
+  if (invalidActionLine) return { ok: false, blockedReason: 'citation_missing' };
   return { ok: true };
 }
 

@@ -64,6 +64,26 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 - killSwitch は LINE 送信停止用。LLM 停止は `llmEnabled` と `LLM_FEATURE_FLAG` の二重ゲートで行う。
 - LLM は read-only / advisory-only。Firestore への自動書き込みや運用確定は禁止。
 
+## Phase653 運用追記（Free/Pro 分離）
+- Free (`plan=free`) は Retrieval のみ（`faq_search`）で運用する。  
+- Pro (`active|trialing`) のみ LLM intent (`situation_analysis/gap_check/timeline_build/next_action_generation/risk_alert`) を許可する。  
+- Proでも `budget/rate/outage/policy_disabled/template_violation/citation_missing` は Retrieval へ降格する。  
+- `next_action` は alias として受理し、内部 canonical は `next_action_generation` とする。  
+
+## LLM Usage 可視化
+- `GET /api/admin/os/llm-usage/summary?windowDays=7` で `calls/tokens/blockedRate/blockReasons/topUsers` を確認する。  
+- blocked率急増時は以下の順で切り分ける。  
+  1) `opsConfig/llmPolicy.enabled`  
+  2) `system_flags.phase0.llmEnabled`  
+  3) `LLM_FEATURE_FLAG`  
+  4) `LLM_OUTAGE_MODE`  
+
+## 即時ロールバック（優先順）
+1) `opsConfig/llmPolicy.enabled=false`  
+2) `allowed_intents_pro=[]`  
+3) `LLM_OUTAGE_MODE=true`（障害演習/緊急退避）  
+4) `LLM_FEATURE_FLAG=false`  
+
 ## Phase248 Add-only Taxonomy
 - `blockedReasonCategory` の共通カテゴリ:
   - `NO_KB_MATCH`

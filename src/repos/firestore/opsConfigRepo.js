@@ -12,6 +12,9 @@ const KNOWN_INTENTS = Object.freeze([
   'next_action_generation',
   'risk_alert'
 ]);
+const INTENT_ALIASES = Object.freeze({
+  next_action: 'next_action_generation'
+});
 
 const DEFAULT_LLM_POLICY = Object.freeze({
   enabled: false,
@@ -52,13 +55,28 @@ function normalizeNumber(value, fallback, min, max) {
   return num;
 }
 
+function resolveIntentAliasEnabled() {
+  const raw = process.env.ENABLE_INTENT_ALIAS_V1;
+  if (typeof raw !== 'string') return true;
+  const normalized = raw.trim().toLowerCase();
+  return !(normalized === '0' || normalized === 'false' || normalized === 'off');
+}
+
+function normalizeIntentToken(value) {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return '';
+  if (resolveIntentAliasEnabled() && Object.prototype.hasOwnProperty.call(INTENT_ALIASES, normalized)) {
+    return INTENT_ALIASES[normalized];
+  }
+  return normalized;
+}
+
 function normalizeIntentList(value, fallback) {
   if (value === null || value === undefined) return fallback.slice();
   if (!Array.isArray(value)) return null;
   const out = [];
   value.forEach((item) => {
-    if (typeof item !== 'string') return;
-    const normalized = item.trim().toLowerCase();
+    const normalized = normalizeIntentToken(item);
     if (!normalized) return;
     if (!KNOWN_INTENTS.includes(normalized)) return;
     if (!out.includes(normalized)) out.push(normalized);
@@ -86,7 +104,10 @@ function normalizeLlmPolicy(input) {
   const topP = normalizeNumber(input.top_p, DEFAULT_LLM_POLICY.top_p, 0, 1);
   const maxOutputTokens = normalizeNumber(input.max_output_tokens, DEFAULT_LLM_POLICY.max_output_tokens, 32, 4096);
   const perUserDailyLimit = normalizeNumber(input.per_user_daily_limit, DEFAULT_LLM_POLICY.per_user_daily_limit, 0, 2000);
-  const perUserTokenBudget = normalizeNumber(input.per_user_token_budget, DEFAULT_LLM_POLICY.per_user_token_budget, 0, 500000);
+  const perUserTokenBudgetInput = Object.prototype.hasOwnProperty.call(input, 'per_user_token_budget')
+    ? input.per_user_token_budget
+    : input.per_user_daily_token_budget;
+  const perUserTokenBudget = normalizeNumber(perUserTokenBudgetInput, DEFAULT_LLM_POLICY.per_user_token_budget, 0, 500000);
   const globalQpsLimit = normalizeNumber(input.global_qps_limit, DEFAULT_LLM_POLICY.global_qps_limit, 0, 1000);
   const cacheTtlSec = normalizeNumber(input.cache_ttl_sec, DEFAULT_LLM_POLICY.cache_ttl_sec, 0, 86400);
   const allowedFree = normalizeIntentList(input.allowed_intents_free, DEFAULT_LLM_POLICY.allowed_intents_free);
@@ -155,6 +176,8 @@ module.exports = {
   COLLECTION,
   DOC_ID,
   KNOWN_INTENTS,
+  INTENT_ALIASES,
+  normalizeIntentToken,
   DEFAULT_LLM_POLICY,
   normalizeLlmPolicy,
   getLlmPolicy,

@@ -9,7 +9,7 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 8 |
+| aggregate | 10 |
 | config | 33 |
 | event | 4 |
 | evidence | 4 |
@@ -36,6 +36,7 @@
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
+| `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
@@ -68,5 +69,6 @@
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
+| `user_context_snapshots` | aggregate | 90d | CONDITIONAL | true |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |

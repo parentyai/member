@@ -13,6 +13,10 @@
 - Direct URL detection and block.
 - KillSwitch separation (LLM flag vs send stop).
 - Schema validation and fail-closed fallback.
+- Free/Pro server gate (`resolvePlan + isIntentAllowed + budget/rate`)。
+- External text is treated as data, never as executable instruction.
+- Paid template guard (`5 sections`, `gaps<=5`, `risks<=3`, `nextActions<=3`, citation required).
+- Snapshot-only context input (`user_context_snapshots`) to reduce prompt blast radius.
 
 ## Residual Risks
 - Misleading explanations even when safe.
@@ -21,3 +25,4 @@
 ## Audit Points
 - traceId request/response linkage.
 - audit_logs append-only record for LLM events.
+- `llm_usage_logs` stores `plan/status/intent/decision/blockedReason/blockedReasonCategory/tokens/model`.
