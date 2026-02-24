@@ -53,7 +53,10 @@ function withEnv(patch) {
 }
 
 test('phase652: llm policy status/plan/set supports two-step confirmation and mismatch guards', async () => {
-  const restoreEnv = withEnv({ LLM_FEATURE_FLAG: 'true' });
+  const restoreEnv = withEnv({
+    LLM_FEATURE_FLAG: 'true',
+    OPS_CONFIRM_TOKEN_SECRET: 'phase652_confirm_secret'
+  });
   const db = createDbStub();
   setDbForTest(db);
   setServerTimestampForTest('SERVER_TIMESTAMP');
