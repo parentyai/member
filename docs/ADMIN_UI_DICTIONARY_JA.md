@@ -117,11 +117,13 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 - scenarioKey は `A` / `B` / `C` / `D` を運用対象とする（Composer保存一覧を含む）。
 - 表示ラベルは `A単身` / `B夫婦` / `C帯同1` / `D帯同2` を基準に統一する。
 - Journey属性の mirror として `householdType(single|couple|accompany1|accompany2)` を扱う。
+- LLM運用パネルは `LLM usage Export CSV` 操作を持つ（CSVは `userIdMasked` のみ）。
 
 根拠:
 - `/Users/parentyai.com/Projects/Member/src/domain/constants.js:5-16`
 - `/Users/parentyai.com/Projects/Member/apps/admin/app.html:620-729`
 - `/Users/parentyai.com/Projects/Member/apps/admin/assets/admin_ui_core.js:328`
+- `/Users/parentyai.com/Projects/Member/apps/admin/app.html:2698-2702`
 
 ## 通知集計/配信結果 表示項目（Read Model / Monitor）
 - targetCount: 通知送信 plan で算出された対象人数

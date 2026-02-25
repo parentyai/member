@@ -1471,6 +1471,7 @@ function createServer() {
     const { handleUsersSummaryAnalyze } = require('./routes/admin/osUsersSummaryAnalyze');
     const { handleUsersSummaryExport } = require('./routes/admin/osUsersSummaryExport');
     const { handleLlmUsageSummary } = require('./routes/admin/osLlmUsageSummary');
+    const { handleLlmUsageExport } = require('./routes/admin/osLlmUsageExport');
     const { handleJourneyKpi } = require('./routes/admin/osJourneyKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
@@ -1613,6 +1614,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/llm-usage/summary') {
         await handleLlmUsageSummary(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/llm-usage/export') {
+        await handleLlmUsageExport(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-kpi') {

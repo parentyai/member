@@ -43,6 +43,13 @@ function normalizeReason(value) {
   return text || 'none';
 }
 
+function maskLineUserId(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return '';
+  if (text.length <= 6) return `${text.slice(0, 1)}***${text.slice(-1)}`;
+  return `${text.slice(0, 3)}***${text.slice(-2)}`;
+}
+
 function buildDailySeries(rows, windowDays) {
   const list = [];
   const now = new Date();
@@ -109,6 +116,45 @@ function buildTopUsers(rows, limit) {
     .slice(0, limit);
 }
 
+function buildPlanBreakdown(rows) {
+  const base = {
+    free: { calls: 0, tokens: 0, blocked: 0, blockedRate: 0 },
+    pro: { calls: 0, tokens: 0, blocked: 0, blockedRate: 0 },
+    other: { calls: 0, tokens: 0, blocked: 0, blockedRate: 0 }
+  };
+  (rows || []).forEach((row) => {
+    const plan = String(row && row.plan ? row.plan : '').toLowerCase();
+    const key = plan === 'free' || plan === 'pro' ? plan : 'other';
+    const target = base[key];
+    target.calls += 1;
+    target.tokens += Number.isFinite(Number(row && row.tokenUsed)) ? Number(row.tokenUsed) : 0;
+    const decision = String(row && row.decision ? row.decision : '').toLowerCase();
+    if (decision !== 'allow') target.blocked += 1;
+  });
+  Object.keys(base).forEach((key) => {
+    const target = base[key];
+    target.blockedRate = target.calls > 0 ? Math.round((target.blocked / target.calls) * 10000) / 10000 : 0;
+  });
+  return base;
+}
+
+function buildDecisionBreakdown(rows) {
+  const map = new Map();
+  (rows || []).forEach((row) => {
+    const decision = String(row && row.decision ? row.decision : 'unknown').toLowerCase() || 'unknown';
+    map.set(decision, (map.get(decision) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .map(([decision, count]) => ({ decision, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function buildMaskedTopUsers(rows, limit) {
+  return buildTopUsers(rows, limit).map((row) => Object.assign({}, row, {
+    userIdMasked: maskLineUserId(row.userId)
+  }));
+}
+
 async function handleLlmUsageSummary(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -149,7 +195,10 @@ async function handleLlmUsageSummary(req, res) {
       proAvgUsage,
       byDay: buildDailySeries(rows, windowDays),
       blockedReasons: buildReasonBreakdown(rows),
-      topUsers: buildTopUsers(rows, limit)
+      topUsers: buildTopUsers(rows, limit),
+      maskedTopUsers: buildMaskedTopUsers(rows, limit),
+      byPlan: buildPlanBreakdown(rows),
+      byDecision: buildDecisionBreakdown(rows)
     };
 
     await appendAuditLog({
@@ -192,5 +241,9 @@ module.exports = {
   handleLlmUsageSummary,
   buildDailySeries,
   buildReasonBreakdown,
-  buildTopUsers
+  buildTopUsers,
+  buildMaskedTopUsers,
+  buildPlanBreakdown,
+  buildDecisionBreakdown,
+  maskLineUserId
 };

@@ -173,6 +173,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `decision`, `blockedReason`, `top1Score`, `top2Score`, `citationCount`, `retryCount`
 - `llm_usage_logs`:
   - plan/status/intent/decision/blockedReason/tokenUsed の監査を継続
+- `audit_logs`:
+  - `action=llm_gate.decision`
+  - `payloadSummary.plan/status/intent/decision/blockedReason/tokenUsed/costEstimate/model`
 
 ### Personalization文脈
 - `resolvePersonalizedLlmContext` で以下をプロンプト文脈に注入する:
@@ -183,4 +186,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 
 ### 即時停止
 - `ENABLE_PAID_FAQ_QUALITY_V2=0`（品質ゲート経路を停止）
+- `ENABLE_SNAPSHOT_ONLY_CONTEXT_V1=0`（snapshot strict境界を解除）
 - `opsConfig/llmPolicy.allowed_intents_pro=[]`（有料LLM利用停止）
+
+### Admin運用補助
+- `GET /api/admin/os/llm-usage/export` で masked CSV を取得できる。  
+  `userIdMasked` 以外の識別子を運用用途で再復元しないこと。

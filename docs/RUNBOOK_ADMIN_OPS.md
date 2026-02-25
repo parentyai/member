@@ -261,11 +261,16 @@ API:
 - `GET /api/admin/os/users-summary/analyze`
 - `GET /api/admin/os/users-summary/export`
 - `GET /api/admin/os/llm-usage/summary`
+- `GET /api/admin/os/llm-usage/export`（CSV / userIdマスク済み）
 
 ### Journey KPI運用（Retention/LTV）
 1) `GET /api/admin/os/journey-kpi` で最新KPIを取得する。  
 2) 日次バッチは `POST /internal/jobs/journey-kpi-build` を実行する（internal token必須）。  
 3) Dashboard の `Retention / LTV` パネルで `7/30/60/90`、`NextAction実行率`、`Pro conversion` を確認する。  
+4) 定期実行は workflow で運用する。  
+   - `.github/workflows/journey-kpi-build.yml` -> `/internal/jobs/journey-kpi-build`  
+   - `.github/workflows/user-context-snapshot-build.yml` -> `/internal/jobs/user-context-snapshot-build`  
+5) `llm_usage` エクスポートは `x-actor` 必須、CSVは `userIdMasked` のみ利用する。  
 
 即時停止:
 - `ENABLE_JOURNEY_KPI=0`

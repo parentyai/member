@@ -10,7 +10,11 @@ const {
 } = require('../../src/routes/admin/osUsersSummaryExport');
 const {
   buildReasonBreakdown,
-  buildTopUsers
+  buildTopUsers,
+  buildPlanBreakdown,
+  buildDecisionBreakdown,
+  buildMaskedTopUsers,
+  maskLineUserId: maskLlmUsageUserId
 } = require('../../src/routes/admin/osLlmUsageSummary');
 
 function loadWithStubbedSummary(summaryItems) {
@@ -150,4 +154,15 @@ test('phase653: llm usage summary helpers aggregate block reasons and top users'
   assert.equal(topUsers[0].calls, 2);
   assert.equal(topUsers[0].tokens, 30);
   assert.equal(topUsers[1].blocked, 2);
+
+  const byPlan = buildPlanBreakdown(rows);
+  assert.equal(byPlan.pro.calls, 2);
+  assert.equal(byPlan.free.blocked, 2);
+
+  const byDecision = buildDecisionBreakdown(rows);
+  assert.equal(byDecision[0].decision, 'blocked');
+  assert.equal(byDecision[0].count, 3);
+
+  const maskedTop = buildMaskedTopUsers(rows, 5);
+  assert.equal(maskedTop[0].userIdMasked, maskLlmUsageUserId('U1'));
 });

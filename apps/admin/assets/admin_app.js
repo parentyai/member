@@ -9412,6 +9412,33 @@ async function loadLlmUsageSummary(options) {
   }
 }
 
+async function exportLlmUsageCsv() {
+  const traceId = ensureTraceInput('llm-trace');
+  const windowDays = Math.max(1, Math.min(90, Math.floor(parseNumberField(document.getElementById('llm-usage-window-days')?.value, 7))));
+  try {
+    const query = new URLSearchParams({
+      windowDays: String(windowDays),
+      limit: '100'
+    });
+    const res = await fetch(`/api/admin/os/llm-usage/export?${query.toString()}`, {
+      headers: buildHeaders({}, traceId)
+    });
+    if (!res.ok) throw new Error(`http_${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `llm_usage_summary_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    showToast('LLM usage CSVを出力しました', 'ok');
+  } catch (_err) {
+    showToast('LLM usage CSVの出力に失敗しました', 'danger');
+  }
+}
+
 async function planLlmPolicy() {
   const traceId = ensureTraceInput('llm-trace');
   const policy = buildPolicyPayloadFromForm();
@@ -9490,6 +9517,9 @@ function setupLlmControls() {
   });
   document.getElementById('llm-usage-summary-reload')?.addEventListener('click', () => {
     void loadLlmUsageSummary({ notify: true });
+  });
+  document.getElementById('llm-usage-export')?.addEventListener('click', () => {
+    void exportLlmUsageCsv();
   });
   loadLlmConfigStatus();
   void loadLlmPolicyStatus({ notify: false });

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T18:26:40-05:00",
-  "gitCommit": "8853cb51588bb2e8dd1db098e5b668d43b85c5b2",
-  "branch": "codex/member-phase653-os-upgrade",
-  "sourceDigest": "e37718a1fcfbeefed1e3c0140554b50cb00b90ed35f20561706e2fb2edf742ea",
+  "generatedAt": "2026-02-24T19:45:39-05:00",
+  "gitCommit": "d01eeaa7332f907e8f72891c4eb425c268a85b97",
+  "branch": "codex/member-paid-personalization-v1-finish",
+  "sourceDigest": "f821c560e6ae2e7ffc2c13073fb1a5cb965c0e402a2d64ec393d97884dd2985b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

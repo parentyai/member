@@ -18,6 +18,7 @@ const { evaluateLlmAvailability } = require('../usecases/assistant/llmAvailabili
 const { getUserContextSnapshot } = require('../usecases/context/getUserContextSnapshot');
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
+const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const {
   detectExplicitPaidIntent,
   classifyPaidIntent,
@@ -133,6 +134,52 @@ function trimForLineMessage(value) {
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
+}
+
+function resolvePaidFaqQualityEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_PAID_FAQ_QUALITY_V2', true);
+}
+
+function resolveSnapshotOnlyContextEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_SNAPSHOT_ONLY_CONTEXT_V1', false);
+}
+
+async function appendLlmGateDecisionBestEffort(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
+  if (!lineUserId) return;
+  try {
+    await appendAuditLog({
+      actor: 'line_webhook',
+      action: 'llm_gate.decision',
+      entityType: 'llm_gate',
+      entityId: lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      payloadSummary: {
+        lineUserId,
+        plan: payload.plan || 'free',
+        status: payload.status || 'unknown',
+        intent: payload.intent || 'faq_search',
+        decision: payload.decision || 'blocked',
+        blockedReason: payload.blockedReason || null,
+        tokenUsed: Number.isFinite(Number(payload.tokenUsed)) ? Number(payload.tokenUsed) : 0,
+        costEstimate: Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null,
+        model: payload.model || null
+      }
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
 async function appendJourneyEventBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -172,6 +219,10 @@ async function handleAssistantMessage(params) {
   const planInfo = await resolvePlan(lineUserId);
   const explicitPaidIntent = detectExplicitPaidIntent(text);
   const paidIntent = classifyPaidIntent(text);
+  const traceId = typeof payload.requestId === 'string' && payload.requestId.trim()
+    ? payload.requestId.trim()
+    : null;
+  const requestId = traceId;
 
   if (planInfo.plan !== 'pro') {
     const fallback = await replyWithFreeRetrieval(payload);
@@ -184,7 +235,7 @@ async function handleAssistantMessage(params) {
         createdAt: new Date().toISOString()
       });
     }
-    await recordLlmUsage({
+    const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
@@ -194,6 +245,18 @@ async function handleAssistantMessage(params) {
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only',
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      traceId,
+      requestId
     });
     return {
       handled: true,
@@ -211,88 +274,184 @@ async function handleAssistantMessage(params) {
 
   if (!budget.allowed) {
     const fallback = await replyWithFreeRetrieval(payload);
-    await recordLlmUsage({
+    const blockedReason = budget.blockedReason || 'plan_gate_blocked';
+    const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
       intent: paidIntent,
       decision: 'blocked',
-      blockedReason: budget.blockedReason || 'plan_gate_blocked',
+      blockedReason,
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      traceId,
+      requestId
     });
     return {
       handled: true,
       mode: 'gate_blocked',
       fallback,
-      blockedReason: budget.blockedReason || 'plan_gate_blocked'
+      blockedReason
     };
   }
 
   const availability = await evaluateLlmAvailability({ policy: budget.policy });
   if (!availability.available) {
     const fallback = await replyWithFreeRetrieval(payload);
-    await recordLlmUsage({
+    const blockedReason = availability.reason || 'llm_unavailable';
+    const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
       intent: paidIntent,
       decision: 'blocked',
-      blockedReason: availability.reason || 'llm_unavailable',
+      blockedReason,
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0,
       model: budget.policy && budget.policy.model
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      traceId,
+      requestId
     });
     return {
       handled: true,
       mode: 'llm_unavailable_fallback',
       fallback,
-      blockedReason: availability.reason || 'llm_unavailable'
+      blockedReason
     };
   }
 
+  const snapshotStrictMode = resolveSnapshotOnlyContextEnabled();
   const snapshotResult = await getUserContextSnapshot({
     lineUserId,
     maxAgeHours: 24 * 14
   }).catch(() => ({ ok: false, reason: 'snapshot_unavailable' }));
-
-  const paid = await generatePaidAssistantReply({
-    question: text,
-    intent: paidIntent,
-    locale: 'ja',
-    llmAdapter: llmClient,
-    llmPolicy: budget.policy,
-    contextSnapshot: snapshotResult && snapshotResult.ok ? snapshotResult.snapshot : null
-  });
-
-  if (!paid.ok) {
+  if (snapshotStrictMode && (!snapshotResult || snapshotResult.ok !== true || snapshotResult.stale === true)) {
+    const blockedReason = snapshotResult && snapshotResult.ok === true && snapshotResult.stale === true
+      ? 'snapshot_stale'
+      : 'snapshot_unavailable';
     const fallback = await replyWithFreeRetrieval(payload);
-    await recordLlmUsage({
+    const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
       subscriptionStatus: planInfo.status,
       intent: paidIntent,
       decision: 'blocked',
-      blockedReason: paid.blockedReason || 'llm_error',
+      blockedReason,
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0,
       model: budget.policy && budget.policy.model
     });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      traceId,
+      requestId
+    });
+    return {
+      handled: true,
+      mode: 'snapshot_blocked_fallback',
+      fallback,
+      blockedReason
+    };
+  }
+
+  const qualityEnabled = resolvePaidFaqQualityEnabled();
+  const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
+    ? snapshotResult.snapshot
+    : null;
+  const paid = qualityEnabled
+    ? await generatePaidFaqReply({
+      lineUserId,
+      question: text,
+      intent: paidIntent,
+      locale: 'ja',
+      llmAdapter: llmClient,
+      llmPolicy: budget.policy,
+      contextSnapshot,
+      skipPersonalizedContext: snapshotStrictMode === true
+    })
+    : await generatePaidAssistantReply({
+      question: text,
+      intent: paidIntent,
+      locale: 'ja',
+      llmAdapter: llmClient,
+      llmPolicy: budget.policy,
+      contextSnapshot
+    });
+
+  if (!paid.ok) {
+    const fallback = await replyWithFreeRetrieval(payload);
+    const blockedReason = paid.blockedReason || 'llm_error';
+    const usage = await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason,
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: budget.policy && budget.policy.model
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'blocked',
+      blockedReason,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      traceId,
+      requestId
+    });
     return {
       handled: true,
       mode: 'fallback',
       fallback,
-      blockedReason: paid.blockedReason || 'llm_error'
+      blockedReason
     };
   }
 
   const replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
-  await recordLlmUsage({
+  const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
+  const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,
     subscriptionStatus: planInfo.status,
@@ -301,8 +460,21 @@ async function handleAssistantMessage(params) {
     blockedReason: null,
     tokensIn: paid.tokensIn || 0,
     tokensOut: paid.tokensOut || 0,
-    tokenUsed: (paid.tokensIn || 0) + (paid.tokensOut || 0),
+    tokenUsed,
     model: paid.model || (budget.policy && budget.policy.model)
+  });
+  await appendLlmGateDecisionBestEffort({
+    lineUserId,
+    plan: planInfo.plan,
+    status: planInfo.status,
+    intent: paidIntent,
+    decision: 'allow',
+    blockedReason: null,
+    tokenUsed,
+    costEstimate: usage && usage.costEstimate,
+    model: paid.model || (budget.policy && budget.policy.model),
+    traceId,
+    requestId
   });
 
   await appendJourneyEventBestEffort({
