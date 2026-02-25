@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T23:27:22-05:00",
-  "gitCommit": "195590c90eeb94822253ec9ce951869f196885f6",
-  "branch": "codex/w5-checklist-scenario-key-canonicalization",
-  "sourceDigest": "f25c105e2a9db70a7ad77d721a9ff90bfdf2dea8782a4cf04ef1930dccaef83d",
+  "generatedAt": "2026-02-24T23:48:04-05:00",
+  "gitCommit": "dd046a9cc0c475d6cf80b6aa9567322355e6db86",
+  "branch": "codex/monitor-insights-stg-e2e-monitoring",
+  "sourceDigest": "2bc4ff0596f7265334fe1f2b59573ad55f96c705981648d109686995ea07a977",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
