@@ -6287,6 +6287,329 @@ function setJsonTextResult(id, payload) {
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function setRichMenuRowsEmpty(tbody, colSpan) {
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+  td.colSpan = colSpan;
+  td.textContent = '-';
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+function formatRichMenuTarget(target) {
+  const value = target && typeof target === 'object' ? target : {};
+  const parts = [];
+  if (value.planTier) parts.push(`plan=${value.planTier}`);
+  if (value.phaseId) parts.push(`phase=${value.phaseId}`);
+  if (value.locale) parts.push(`locale=${value.locale}`);
+  return parts.length ? parts.join(', ') : '-';
+}
+
+function renderRichMenuTemplates(templates) {
+  const tbody = document.getElementById('rich-menu-template-rows');
+  const rows = Array.isArray(templates) ? templates : [];
+  if (!tbody) return;
+  if (!rows.length) {
+    setRichMenuRowsEmpty(tbody, 5);
+    return;
+  }
+  tbody.innerHTML = '';
+  rows.slice(0, 200).forEach((item) => {
+    const tr = document.createElement('tr');
+    const values = [
+      item && item.templateId ? item.templateId : '-',
+      item && item.kind ? item.kind : '-',
+      item && item.status ? item.status : '-',
+      formatRichMenuTarget(item && item.target),
+      item && item.lineMeta && item.lineMeta.richMenuId ? item.lineMeta.richMenuId : '-'
+    ];
+    values.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value || '-';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function summarizeRichMenuRun(item) {
+  const summary = item && item.summary && typeof item.summary === 'object' ? item.summary : {};
+  return `total=${summary.total || 0}, ok=${summary.okCount || 0}, applied=${summary.appliedCount || 0}, error=${summary.errorCount || 0}`;
+}
+
+function renderRichMenuRuns(runs) {
+  const tbody = document.getElementById('rich-menu-run-rows');
+  const rows = Array.isArray(runs) ? runs : [];
+  if (!tbody) return;
+  if (!rows.length) {
+    setRichMenuRowsEmpty(tbody, 5);
+    return;
+  }
+  tbody.innerHTML = '';
+  rows.slice(0, 50).forEach((item) => {
+    const tr = document.createElement('tr');
+    const values = [
+      item && item.runId ? item.runId : '-',
+      item && item.action ? item.action : '-',
+      item && item.mode ? item.mode : '-',
+      summarizeRichMenuRun(item),
+      item && item.createdAt ? formatDateLabel(item.createdAt) : '-'
+    ];
+    values.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value || '-';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderRichMenuPolicySummary(statusPayload) {
+  const el = document.getElementById('rich-menu-policy-summary');
+  if (!el) return;
+  const payload = statusPayload && typeof statusPayload === 'object' ? statusPayload : {};
+  const policy = payload.policy && typeof payload.policy === 'object' ? payload.policy : {};
+  const globalKillSwitch = payload.globalKillSwitch === true ? 'ON' : 'OFF';
+  const enabled = policy.enabled === true ? 'ON' : 'OFF';
+  const updateEnabled = policy.updateEnabled === true ? 'ON' : 'OFF';
+  const cooldown = Number.isFinite(Number(policy.cooldownSeconds)) ? Number(policy.cooldownSeconds) : '-';
+  const maxPerMinute = Number.isFinite(Number(policy.maxAppliesPerMinute)) ? Number(policy.maxAppliesPerMinute) : '-';
+  el.textContent = `policy.enabled=${enabled}, policy.updateEnabled=${updateEnabled}, cooldownSeconds=${cooldown}, maxAppliesPerMinute=${maxPerMinute}, globalKillSwitch=${globalKillSwitch}`;
+}
+
+function resolveRichMenuReferenceLineUserId() {
+  const previewInput = document.getElementById('rich-menu-preview-line-user-id');
+  const explicit = previewInput && typeof previewInput.value === 'string' ? previewInput.value.trim() : '';
+  if (explicit) return explicit;
+  const monitorInput = document.getElementById('monitor-user-line-user-id');
+  return monitorInput && typeof monitorInput.value === 'string' ? monitorInput.value.trim() : '';
+}
+
+function resolveDefaultRichMenuPayload(action) {
+  const lineUserId = resolveRichMenuReferenceLineUserId() || 'U_EXAMPLE';
+  if (action === 'set_policy') {
+    return {
+      policy: {
+        enabled: true,
+        updateEnabled: true,
+        defaultTemplateId: 'default_ja',
+        fallbackTemplateId: 'default_ja',
+        cooldownSeconds: 21600,
+        maxAppliesPerMinute: 60,
+        maxTargetsPerApply: 200,
+        allowLegacyJourneyPolicyFallback: true
+      }
+    };
+  }
+  if (action === 'upsert_template') {
+    return {
+      template: {
+        templateId: 'default_ja',
+        kind: 'default',
+        status: 'active',
+        target: { planTier: null, phaseId: null, locale: 'ja' },
+        layout: {
+          size: 'large',
+          areas: [
+            {
+              label: '今日やること',
+              bounds: { x: 0, y: 0, width: 2500, height: 843 },
+              actionType: 'postback',
+              actionPayload: { data: 'open:today' }
+            }
+          ]
+        },
+        lineMeta: { richMenuId: '', aliasId: null }
+      }
+    };
+  }
+  if (action === 'upsert_phase_profile') {
+    return {
+      phaseProfile: {
+        phaseId: 'arrival',
+        status: 'active',
+        label: '到着',
+        journeyStageMatchers: ['arrived']
+      }
+    };
+  }
+  if (action === 'upsert_rule') {
+    return {
+      rule: {
+        ruleId: 'plan_phase_paid_arrival_ja',
+        kind: 'combined',
+        status: 'active',
+        templateId: 'paid_arrival_ja',
+        priority: 1000,
+        target: { planTier: 'paid', phaseId: 'arrival', locale: 'ja' }
+      }
+    };
+  }
+  if (action === 'set_manual_override') {
+    return { lineUserId, templateId: 'paid_arrival_ja' };
+  }
+  if (action === 'clear_manual_override') {
+    return { lineUserId };
+  }
+  if (action === 'rollback') {
+    return { lineUserIds: [lineUserId], dryRun: true };
+  }
+  return { lineUserIds: [lineUserId], dryRun: true };
+}
+
+function readRichMenuActionPayloadEditor() {
+  const input = document.getElementById('rich-menu-action-payload-json');
+  const raw = input && typeof input.value === 'string' ? input.value.trim() : '';
+  if (!raw) return {};
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('payload_json_invalid');
+  }
+  return parsed;
+}
+
+function writeRichMenuActionPayloadEditor(payload) {
+  const input = document.getElementById('rich-menu-action-payload-json');
+  if (!input) return;
+  input.value = JSON.stringify(payload || {}, null, 2);
+}
+
+function resolveRichMenuAction() {
+  const action = document.getElementById('rich-menu-action-select')?.value || '';
+  return String(action || '').trim();
+}
+
+function applyRichMenuPlanTokens(planHash, confirmToken) {
+  richMenuPlanHash = planHash || null;
+  richMenuConfirmToken = confirmToken || null;
+  setTextContent('rich-menu-plan-hash', richMenuPlanHash || '-');
+  setTextContent('rich-menu-confirm-token', richMenuConfirmToken ? 'set' : '-');
+}
+
+async function loadRichMenuStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/rich-menu/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('rich-menu-status-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderRichMenuPolicySummary(data);
+    renderRichMenuTemplates(data.templates || []);
+    renderRichMenuRuns(data.runs || []);
+    if (notify) showToast('Rich Menu statusを取得しました', 'ok');
+  } catch (_err) {
+    renderRichMenuPolicySummary({});
+    renderRichMenuTemplates([]);
+    renderRichMenuRuns([]);
+    if (notify) showToast('Rich Menu statusの取得に失敗しました', 'danger');
+  }
+}
+
+async function loadRichMenuHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/rich-menu/history?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('rich-menu-history-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderRichMenuRuns(data.runs || []);
+    if (notify) showToast('Rich Menu historyを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Rich Menu historyの取得に失敗しました', 'danger');
+  }
+}
+
+async function runRichMenuResolvePreview() {
+  const lineUserId = resolveRichMenuReferenceLineUserId();
+  if (!lineUserId) {
+    showToast('Rich Menu resolve-previewにはLINEユーザーIDが必要です', 'warn');
+    return;
+  }
+  const planTier = document.getElementById('rich-menu-preview-plan-tier')?.value?.trim() || '';
+  const journeyStage = document.getElementById('rich-menu-preview-journey-stage')?.value?.trim() || '';
+  const phaseId = document.getElementById('rich-menu-preview-phase-id')?.value?.trim() || '';
+  const traceId = ensureTraceInput('monitor-trace');
+  const payload = { lineUserId };
+  if (planTier) payload.planTier = planTier;
+  if (journeyStage) payload.journeyStage = journeyStage;
+  if (phaseId) payload.phaseId = phaseId;
+  try {
+    const data = await postJson('/api/admin/os/rich-menu/resolve-preview', payload, traceId);
+    setJsonTextResult('rich-menu-preview-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    showToast('Rich Menu resolve-previewを取得しました', 'ok');
+  } catch (_err) {
+    showToast('Rich Menu resolve-previewの取得に失敗しました', 'danger');
+  }
+}
+
+async function planRichMenuAction() {
+  const action = resolveRichMenuAction();
+  if (!action) {
+    showToast('Rich Menu actionを選択してください', 'warn');
+    return;
+  }
+  let payload;
+  try {
+    payload = readRichMenuActionPayloadEditor();
+  } catch (_err) {
+    showToast('Rich Menu payload JSONが不正です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/rich-menu/plan', { action, payload }, traceId);
+    setJsonTextResult('rich-menu-plan-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyRichMenuPlanTokens(data.planHash, data.confirmToken);
+    showToast('Rich Menu planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Rich Menu planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setRichMenuAction() {
+  if (!richMenuPlanHash || !richMenuConfirmToken) {
+    setJsonTextResult('rich-menu-set-result', { ok: false, error: 'plan required' });
+    showToast('Rich Menu setには先にplanが必要です', 'warn');
+    return;
+  }
+  const action = resolveRichMenuAction();
+  let payload;
+  try {
+    payload = readRichMenuActionPayloadEditor();
+  } catch (_err) {
+    showToast('Rich Menu payload JSONが不正です', 'warn');
+    return;
+  }
+  const approved = window.confirm(`Rich Menu action=${action} を適用しますか？`);
+  if (!approved) {
+    showToast('Rich Menu設定の適用を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/rich-menu/set', {
+      action,
+      payload,
+      planHash: richMenuPlanHash,
+      confirmToken: richMenuConfirmToken
+    }, traceId);
+    setJsonTextResult('rich-menu-set-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyRichMenuPlanTokens(null, null);
+    await loadRichMenuStatus({ notify: false });
+    await loadRichMenuHistory({ notify: false });
+    showToast('Rich Menu設定を適用しました', 'ok');
+  } catch (_err) {
+    showToast('Rich Menu設定の適用に失敗しました', 'danger');
+  }
+}
+
 function resolveJourneyGraphLineUserId() {
   const explicit = document.getElementById('journey-graph-line-user-id')?.value?.trim();
   if (explicit) return explicit;
@@ -9071,6 +9394,25 @@ function setupMonitorControls() {
   document.getElementById('journey-graph-filter-domain')?.addEventListener('change', () => {
     void loadJourneyGraphRuntime({ notify: false });
   });
+  document.getElementById('rich-menu-status-reload')?.addEventListener('click', () => {
+    void loadRichMenuStatus({ notify: true });
+  });
+  document.getElementById('rich-menu-history')?.addEventListener('click', () => {
+    void loadRichMenuHistory({ notify: true });
+  });
+  document.getElementById('rich-menu-resolve-preview')?.addEventListener('click', () => {
+    void runRichMenuResolvePreview();
+  });
+  document.getElementById('rich-menu-plan')?.addEventListener('click', () => {
+    void planRichMenuAction();
+  });
+  document.getElementById('rich-menu-set')?.addEventListener('click', () => {
+    void setRichMenuAction();
+  });
+  document.getElementById('rich-menu-action-select')?.addEventListener('change', () => {
+    const action = resolveRichMenuAction();
+    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(action));
+  });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
   if (document.getElementById('journey-graph-line-user-id') && document.getElementById('monitor-user-line-user-id')) {
     const monitorLineUserId = document.getElementById('monitor-user-line-user-id').value || '';
@@ -9078,8 +9420,17 @@ function setupMonitorControls() {
       document.getElementById('journey-graph-line-user-id').value = monitorLineUserId.trim();
     }
   }
+  const richMenuPreviewLineUserId = document.getElementById('rich-menu-preview-line-user-id');
+  if (richMenuPreviewLineUserId && !richMenuPreviewLineUserId.value.trim()) {
+    richMenuPreviewLineUserId.value = resolveRichMenuReferenceLineUserId();
+  }
+  if (document.getElementById('rich-menu-action-payload-json')) {
+    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(resolveRichMenuAction() || 'set_policy'));
+  }
   void loadJourneyGraphStatus({ notify: false });
   void loadJourneyGraphHistory({ notify: false });
+  void loadRichMenuStatus({ notify: false });
+  void loadRichMenuHistory({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -9678,6 +10029,8 @@ let llmPolicyPlanHash = null;
 let llmPolicyConfirmToken = null;
 let journeyGraphPlanHash = null;
 let journeyGraphConfirmToken = null;
+let richMenuPlanHash = null;
+let richMenuConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();

@@ -344,3 +344,31 @@ API:
 - `ENABLE_JOURNEY_DAG_CATALOG_V1=0`
 - `ENABLE_JOURNEY_DAG_UI_V1=0`
 - `ENABLE_JOURNEY_RULE_ENGINE_V1=0`
+
+## Phase663 Addendum（LINE Rich Menu運用）
+
+### Rich Menu status / preview
+1) `/admin/app?pane=monitor` の `Rich Menu Ops（admin）` で `status` を実行。  
+2) policy と template/rule/run の一覧を確認する。  
+3) `resolve-preview` で対象ユーザーの解決結果（source/templateId/richMenuId）を確認する。  
+
+### Rich Menu plan / set（2段階）
+1) action と payload JSON を入力する。  
+2) `plan` 実行で `planHash` / `confirmToken` を取得する。  
+3) `set` 実行で適用する。  
+4) `history` で run evidence を確認する。  
+
+### 最小安全運用（stg）
+1) `set_policy` で `enabled=true`, `updateEnabled=true`, `defaultTemplateId`, `fallbackTemplateId` を設定。  
+2) `upsert_template` / `upsert_phase_profile` / `upsert_rule` を投入。  
+3) `apply` はまず `dryRun=true` で実行し、対象数と block理由を確認。  
+4) 問題がなければ限定 `lineUserIds` で `apply(dryRun=false)` を実行。  
+5) `audit_logs` で `rich_menu.plan|set|resolve_preview|history.view|status.view` を追跡。  
+
+### rollback / kill switch
+- rollback:
+  - action=`rollback` + `lineUserIds[]` で `previousTemplateId` へ戻す。  
+- Rich Menu専用停止:
+  - action=`set_policy`, payload=`{ updateEnabled: false, ... }`  
+- 全体停止（最終）:
+  - 既存 kill switch を使用する。  

@@ -23,6 +23,12 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
 | notifications | config | INDEFINITE | NO | NO |
 | users | config | INDEFINITE | NO | NO |
 | link_registry | config | INDEFINITE | NO | NO |
+| rich_menu_templates | config | INDEFINITE | NO | NO |
+| rich_menu_phase_profiles | config | INDEFINITE | NO | NO |
+| rich_menu_assignment_rules | config | INDEFINITE | NO | NO |
+| rich_menu_bindings | config | INDEFINITE | NO | NO |
+| rich_menu_rollout_runs | evidence | 365d | NO | NO |
+| rich_menu_rate_buckets | transient | 30d | CONDITIONAL | YES |
 | city_packs | config | INDEFINITE | NO | NO |
 | source_refs | config | INDEFINITE | NO | NO |
 | source_evidence | config | INDEFINITE | NO | NO |
@@ -66,4 +72,4 @@ Retention 方針（add-only）。本ドキュメントは削除実行の承認�
 ## Policy Source (Add-only)
 - 実行時ポリシー定義: `src/domain/retention/retentionPolicy.js`
 - 監査入力との突合基準: `docs/REPO_AUDIT_INPUTS/data_lifecycle.json`
-- coverage: 44 collections（2026-02-21 時点）
+- coverage: 62 collections（2026-02-25 時点）

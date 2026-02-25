@@ -171,6 +171,19 @@ Firestore missing-index fallback を段階的に無効化するための最小�
 - Query:
   - `doc(lineUserId).get()`（lineUserIdごとの分割読み取り）
 
+### 22) Rich Menu Admin Routes（Phase663 add-only）
+- Source:
+  - `src/repos/firestore/richMenuTemplatesRepo.js`
+  - `src/repos/firestore/richMenuAssignmentRulesRepo.js`
+  - `src/repos/firestore/richMenuRolloutRunsRepo.js`
+- Query:
+  - `orderBy('updatedAt','desc')`（templates）
+  - `orderBy('priority','desc')`（rules）
+  - `orderBy('createdAt','desc')`（runs）
+- Note:
+  - 現行実装は where + orderBy の複合条件を追加していないため、新規 composite index は必須化しない。
+  - status絞り込みは post-filter（アプリ側）で行う。
+
 ## 運用ルール
 - 新規 fallback catch を追加する場合は、`tests/phase307/phase307_index_fallback_drift.test.js` に反映すること。
 - full-scan を許容する場合は、理由と期限を execution log に残すこと。

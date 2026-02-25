@@ -342,3 +342,80 @@ Typical fields:
 
 Notes:
 - 既存 `status=open|completed|skipped` の意味は変更しない。
+
+## Phase663 Add-only Collections（LINE Rich Menu）
+
+### rich_menu_templates/{templateId}
+Purpose: Rich Menu テンプレ契約（kind/target/layout/version）を保持する。  
+Typical fields:
+- `templateId`
+- `kind` (`default|phase|plan|combined`)
+- `target` (`planTier|phaseId|locale`)
+- `layout` (`size`, `areas[]`)
+- `status` (`draft|active|deprecated`)
+- `lineMeta` (`richMenuId`, `aliasId`, `imageAssetPath`)
+- `version`
+- `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+
+### rich_menu_phase_profiles/{phaseId}
+Purpose: Journey stage と Rich Menu phase の写像を保持する。  
+Typical fields:
+- `phaseId` (`pre_departure|arrival|launch|stabilize|repatriation`)
+- `status`
+- `journeyStageMatchers[]`
+- `label`, `description`
+- `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+
+### rich_menu_assignment_rules/{ruleId}
+Purpose: plan/phase/combined の割当ルールを保持する。  
+Typical fields:
+- `ruleId`
+- `kind` (`default|phase|plan|combined`)
+- `status`
+- `templateId`
+- `priority`
+- `target` (`planTier|phaseId|locale`)
+- `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+
+### rich_menu_rollout_runs/{runId}
+Purpose: dry-run/apply/rollback の run evidence を保持する。  
+Typical fields:
+- `runId`
+- `action`, `mode`
+- `actor`, `traceId`, `requestId`
+- `lineUserIds[]`
+- `summary`, `results[]`
+- `createdAt`, `updatedAt`
+
+### rich_menu_rate_buckets/{yyyyMMddHHmm}
+Purpose: 分単位の apply rate-limit カウンタ。  
+Typical fields:
+- `bucketId`
+- `count`
+- `maxCount`
+- `lastActor`, `lastTraceId`
+- `createdAt`, `updatedAt`
+
+### opsConfig/richMenuPolicy（doc）
+Purpose: Rich Menu運用ポリシー（kill switch/cooldown/fallback）を保持する。  
+Typical fields:
+- `enabled`
+- `updateEnabled`
+- `defaultTemplateId`
+- `fallbackTemplateId`
+- `cooldownSeconds`
+- `maxAppliesPerMinute`
+- `maxTargetsPerApply`
+- `allowLegacyJourneyPolicyFallback`
+- `updatedAt`, `updatedBy`
+
+### rich_menu_bindings/{lineUserId}（add-only fields）
+- `currentTemplateId`
+- `previousTemplateId`
+- `resolvedRuleId`
+- `planTier`
+- `phaseId`
+- `lastApplyResult`
+- `lastTraceId`
+- `nextEligibleAt`
+- `manualOverrideTemplateId`
