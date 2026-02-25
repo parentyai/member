@@ -22,6 +22,19 @@ npm run ops:stg-e2e -- \
   --trace-limit 100 \
   --project-id member-485303 \
   --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
+
+# 管理トークンをファイルから読み込む場合
+npm run ops:stg-e2e -- \
+  --base-url http://127.0.0.1:18080 \
+  --admin-token-file "$ADMIN_OS_TOKEN_FILE" \
+  --expect-llm-enabled \
+  --actor ops_stg_e2e \
+  --fetch-route-errors \
+  --fail-on-route-errors \
+  --fail-on-missing-audit-actions \
+  --trace-limit 100 \
+  --project-id member-485303 \
+  --md-out docs/PHASE_C_STG_E2E_$(date +%F).md
 ```
 
 - 出力(JSON): `artifacts/stg-notification-e2e/stg-notification-e2e-*.json`
@@ -49,6 +62,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `ADMIN_OS_TOKEN`: 管理APIトークン
 
 ### Optional Inputs
+- `ADMIN_OS_TOKEN_FILE` / `E2E_ADMIN_TOKEN_FILE`: 管理APIトークンを保存したファイル
 - `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー（未指定時は `status=active` を自動解決）
 - `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決）
 - `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
@@ -59,6 +73,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `trace_limit`: trace bundle 取得件数（`/api/admin/trace?limit`）を 1-500 で指定
 - `fail_on_missing_audit_actions`: シナリオごとの必須 audit action 欠落を FAIL 扱いにする（推奨 true）
 - `expect_llm_enabled`: LLM gate で `effectiveEnabled=true` と非ブロック `llmStatus` を要求する（推奨 true）
+- `--admin-token-file`: `ADMIN_OS_TOKEN` の代替。`ADMIN_OS_TOKEN` が空文字の場合のみ使用される
 
 ## Checklist (fixed order)
 1. Product Readiness Gate（管理API 7本）:
