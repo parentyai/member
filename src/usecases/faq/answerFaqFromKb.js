@@ -409,7 +409,6 @@ async function answerFaqFromKb(params, deps) {
   const traceId = typeof payload.traceId === 'string' && payload.traceId.trim().length > 0 ? payload.traceId.trim() : null;
   const requestId = typeof payload.requestId === 'string' && payload.requestId.trim().length > 0 ? payload.requestId.trim() : null;
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0 ? payload.actor.trim() : 'unknown';
-  const disclaimer = getDisclaimer('faq');
 
   const locale = normalizeLocale(payload.locale);
   const intent = normalizeIntent(payload.intent);
@@ -425,6 +424,7 @@ async function answerFaqFromKb(params, deps) {
     : (deps ? async () => Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY) : systemFlagsRepo.getLlmPolicy);
   const dbEnabled = await getLlmEnabled();
   const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
+  const disclaimer = getDisclaimer('faq', { policy: llmPolicy });
   const llmEnabled = Boolean(envEnabled && dbEnabled);
 
   const kbRepo = deps && deps.faqArticlesRepo ? deps.faqArticlesRepo : faqArticlesRepo;

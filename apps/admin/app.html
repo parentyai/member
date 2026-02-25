@@ -929,6 +929,115 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title">Journey Map / Rule Editor</div>
+                <div class="panel-body">
+                  <details class="section" open>
+                    <summary>Journey Map（runtime）</summary>
+                    <div class="row">
+                      <label class="flex-1">LINEユーザーID
+                        <input type="text" id="journey-graph-line-user-id" />
+                      </label>
+                      <label>件数
+                        <input type="number" id="journey-graph-limit" class="input-sm" min="1" max="500" value="100" />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>phase
+                        <input type="text" id="journey-graph-filter-phase" class="input-inline input-sm" placeholder="P1" />
+                      </label>
+                      <label>domain
+                        <input type="text" id="journey-graph-filter-domain" class="input-inline input-sm" placeholder="legal" />
+                      </label>
+                      <label>state
+                        <select id="journey-graph-filter-state" class="select-inline">
+                          <option value="">all</option>
+                          <option value="planned">planned</option>
+                          <option value="in_progress">in_progress</option>
+                          <option value="done">done</option>
+                          <option value="blocked">blocked</option>
+                          <option value="snoozed">snoozed</option>
+                          <option value="skipped">skipped</option>
+                        </select>
+                      </label>
+                      <label>plan
+                        <select id="journey-graph-filter-plan" class="select-inline">
+                          <option value="">all</option>
+                          <option value="all">all</option>
+                          <option value="pro">pro</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row row-top">
+                      <button id="journey-graph-runtime-reload" type="button">runtime更新</button>
+                      <button id="journey-graph-runtime-history" type="button">runtime履歴</button>
+                    </div>
+                    <div id="journey-graph-runtime-summary" class="note">-</div>
+                    <div class="journey-map-grid">
+                      <div>
+                        <div class="note">依存エッジ</div>
+                        <ul id="journey-graph-edge-list" class="journey-edge-list"><li>-</li></ul>
+                      </div>
+                      <div>
+                        <div class="table-scroll">
+                          <table class="table-compact">
+                            <thead>
+                              <tr>
+                                <th>node</th>
+                                <th>phase</th>
+                                <th>domain</th>
+                                <th>state</th>
+                                <th>plan</th>
+                                <th>dependsOn</th>
+                              </tr>
+                            </thead>
+                            <tbody id="journey-graph-node-rows"></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    <details class="section">
+                      <summary>runtime raw</summary>
+                      <pre id="journey-graph-runtime-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>runtime history</summary>
+                      <pre id="journey-graph-runtime-history-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section" open>
+                    <summary>Rule Editor（catalog plan/set）</summary>
+                    <div class="row row-top">
+                      <button id="journey-graph-status-reload" type="button">status</button>
+                      <button id="journey-graph-plan" type="button">plan</button>
+                      <button id="journey-graph-set" type="button">set</button>
+                      <button id="journey-graph-history" type="button">history</button>
+                    </div>
+                    <div class="note">
+                      planHash: <span id="journey-graph-plan-hash">-</span>
+                      / confirmToken: <span id="journey-graph-confirm-token">-</span>
+                    </div>
+                    <label>journeyGraphCatalog JSON</label>
+                    <textarea id="journey-graph-catalog-json" rows="16" class="input-mono"></textarea>
+                    <details class="section">
+                      <summary>catalog status</summary>
+                      <pre id="journey-graph-status-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>catalog plan</summary>
+                      <pre id="journey-graph-plan-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>catalog set</summary>
+                      <pre id="journey-graph-set-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>catalog history</summary>
+                      <pre id="journey-graph-history-result">-</pre>
+                    </details>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.insights">クリック分析（7日/30日）</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.monitor.insights">配信実績からベンダー別反応率、AB状況、FAQ参照Topを表示します。</div>
@@ -2777,6 +2886,10 @@
                       <input id="llm-policy-allowed-intents-pro" value="situation_analysis,gap_check,timeline_build,next_action_generation,risk_alert,faq_search" />
                     </div>
                     <div>
+                      <label>forbidden_domains(csv)</label>
+                      <input id="llm-policy-forbidden-domains" value="" />
+                    </div>
+                    <div>
                       <label>safety_mode</label>
                       <select id="llm-policy-safety-mode">
                         <option value="strict">strict</option>
@@ -2787,6 +2900,14 @@
                     <div>
                       <label>effectiveEnabled</label>
                       <div id="llm-policy-effective-enabled">-</div>
+                    </div>
+                    <div>
+                      <label>disclaimer_templates(json)</label>
+                      <textarea id="llm-policy-disclaimer-templates" rows="6" class="input-mono"></textarea>
+                    </div>
+                    <div>
+                      <label>output_constraints(json)</label>
+                      <textarea id="llm-policy-output-constraints" rows="6" class="input-mono"></textarea>
                     </div>
                   </div>
                   <div class="row row-top">

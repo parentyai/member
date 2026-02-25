@@ -71,18 +71,21 @@ async function recomputeJourneyTaskGraph(params, deps) {
     const savedTodo = await todoRepo.patchJourneyTodoItem(lineUserId, node.todoKey, {
       progressState: node.progressState,
       graphStatus: node.graphStatus,
+      journeyState: node.journeyState,
       dependsOn: node.dependsOn,
       blocks: node.blocks,
       priority: node.priority,
       riskLevel: node.riskLevel,
       lockReasons: node.lockReasons,
-      graphEvaluatedAt: evaluated.evaluatedAt
+      graphEvaluatedAt: evaluated.evaluatedAt,
+      stateUpdatedAt: evaluated.evaluatedAt
     });
     patchedNodes.push(Object.assign({}, node, {
       title: savedTodo && savedTodo.title ? savedTodo.title : node.title,
       status: savedTodo && savedTodo.status ? savedTodo.status : node.status,
       dueAt: savedTodo && savedTodo.dueAt ? savedTodo.dueAt : node.dueAt,
-      dueDate: savedTodo && savedTodo.dueDate ? savedTodo.dueDate : node.dueDate
+      dueDate: savedTodo && savedTodo.dueDate ? savedTodo.dueDate : node.dueDate,
+      journeyState: savedTodo && savedTodo.journeyState ? savedTodo.journeyState : node.journeyState
     }));
   }
 
@@ -94,11 +97,13 @@ async function recomputeJourneyTaskGraph(params, deps) {
     status: resolveTaskNodeStatus(node),
     progressState: node.progressState,
     graphStatus: node.graphStatus,
+    journeyState: node.journeyState,
     dueAt: node.dueAt,
     dueDate: node.dueDate,
     dependsOn: node.dependsOn,
     blocks: node.blocks,
     lockReasons: node.lockReasons,
+    unresolvedDependsOn: Array.isArray(node.unresolvedDependsOn) ? node.unresolvedDependsOn : [],
     priority: node.priority,
     riskLevel: node.riskLevel,
     riskScore: node.riskScore,

@@ -24,7 +24,14 @@ function serializePolicy(policy) {
     cache_ttl_sec: payload.cache_ttl_sec,
     allowed_intents_free: Array.isArray(payload.allowed_intents_free) ? payload.allowed_intents_free : [],
     allowed_intents_pro: Array.isArray(payload.allowed_intents_pro) ? payload.allowed_intents_pro : [],
-    safety_mode: payload.safety_mode
+    safety_mode: payload.safety_mode,
+    forbidden_domains: Array.isArray(payload.forbidden_domains) ? payload.forbidden_domains : [],
+    disclaimer_templates: payload.disclaimer_templates && typeof payload.disclaimer_templates === 'object'
+      ? payload.disclaimer_templates
+      : {},
+    output_constraints: payload.output_constraints && typeof payload.output_constraints === 'object'
+      ? payload.output_constraints
+      : {}
   });
 }
 

@@ -9,6 +9,40 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function resolveOutputConstraints(input) {
+  const payload = isPlainObject(input) ? input : {};
+  const parseIntInRange = (value, fallback, min, max) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    const floored = Math.floor(num);
+    if (floored < min || floored > max) return fallback;
+    return floored;
+  };
+  const parseBool = (value, fallback) => {
+    if (value === true || value === false) return value;
+    return fallback;
+  };
+  return {
+    maxNextActions: parseIntInRange(payload.max_next_actions, 3, 0, 3),
+    maxGaps: parseIntInRange(payload.max_gaps, 5, 0, 10),
+    maxRisks: parseIntInRange(payload.max_risks, 3, 0, 10),
+    requireEvidence: parseBool(payload.require_evidence, true),
+    forbidDirectUrl: parseBool(payload.forbid_direct_url, true)
+  };
+}
+
+function resolveForbiddenDomains(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    if (typeof item !== 'string') return;
+    const normalized = item.trim().toLowerCase();
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
 async function guardFaqOutput(payload, options) {
   const candidate = isPlainObject(payload) ? payload : null;
   if (!candidate) return { ok: false, blockedReason: 'invalid_schema' };
@@ -18,7 +52,7 @@ async function guardFaqOutput(payload, options) {
     return { ok: false, blockedReason: 'citations_required' };
   }
 
-  if (containsDirectUrl(candidate.answer)) {
+  if (options.forbidDirectUrl !== false && containsDirectUrl(candidate.answer)) {
     return { ok: false, blockedReason: 'direct_url_forbidden' };
   }
 
@@ -61,27 +95,44 @@ function guardNextActionOutput(payload) {
   return { ok: true };
 }
 
-function guardPaidAssistantOutput(payload) {
+function guardPaidAssistantOutput(payload, options) {
   const candidate = isPlainObject(payload) ? payload : null;
   if (!candidate) return { ok: false, blockedReason: 'template_violation' };
+  const constraints = resolveOutputConstraints(options && options.outputConstraints);
   if (typeof candidate.situation !== 'string' || candidate.situation.trim().length === 0) {
     return { ok: false, blockedReason: 'template_violation' };
   }
   const gaps = Array.isArray(candidate.gaps) ? candidate.gaps : [];
   const risks = Array.isArray(candidate.risks) ? candidate.risks : [];
   const nextActions = Array.isArray(candidate.nextActions) ? candidate.nextActions : [];
-  if (gaps.length > 5 || risks.length > 3 || nextActions.length > 3) {
+  if (
+    gaps.length > constraints.maxGaps
+    || risks.length > constraints.maxRisks
+    || nextActions.length > constraints.maxNextActions
+  ) {
     return { ok: false, blockedReason: 'section_limit_exceeded' };
   }
   const evidenceKeys = Array.isArray(candidate.evidenceKeys) ? candidate.evidenceKeys : [];
-  if (!evidenceKeys.length) return { ok: false, blockedReason: 'citation_missing' };
-  const allStrings = evidenceKeys.every((item) => typeof item === 'string' && item.trim().length > 0);
-  if (!allStrings) return { ok: false, blockedReason: 'citation_missing' };
+  if (constraints.requireEvidence) {
+    if (!evidenceKeys.length) return { ok: false, blockedReason: 'citation_missing' };
+    const allStrings = evidenceKeys.every((item) => typeof item === 'string' && item.trim().length > 0);
+    if (!allStrings) return { ok: false, blockedReason: 'citation_missing' };
+  }
   const invalidActionLine = nextActions.some((item) => {
     if (typeof item !== 'string' || item.trim().length === 0) return true;
     return !/根拠\s*[:：]/.test(item);
   });
-  if (invalidActionLine) return { ok: false, blockedReason: 'citation_missing' };
+  if (constraints.requireEvidence && invalidActionLine) return { ok: false, blockedReason: 'citation_missing' };
+  if (constraints.forbidDirectUrl) {
+    const allText = [
+      candidate.situation,
+      ...(Array.isArray(candidate.gaps) ? candidate.gaps : []),
+      ...(Array.isArray(candidate.risks) ? candidate.risks : []),
+      ...(Array.isArray(candidate.nextActions) ? candidate.nextActions : [])
+    ].filter((item) => typeof item === 'string');
+    const hasDirectUrl = allText.some((item) => containsDirectUrl(item));
+    if (hasDirectUrl) return { ok: false, blockedReason: 'direct_url_forbidden' };
+  }
   return { ok: true };
 }
 
@@ -90,6 +141,17 @@ async function guardLlmOutput(params, deps) {
   const purpose = payload.purpose;
   const schemaId = payload.schemaId;
   const output = payload.output;
+  const policyOutputConstraints = isPlainObject(payload.policy)
+    ? payload.policy.output_constraints
+    : null;
+  const outputConstraints = resolveOutputConstraints(payload.outputConstraints || policyOutputConstraints);
+  const forbiddenDomains = resolveForbiddenDomains(
+    payload.forbiddenDomains || (isPlainObject(payload.policy) ? payload.policy.forbidden_domains : null)
+  );
+  const intent = typeof payload.intent === 'string' ? payload.intent.trim().toLowerCase() : '';
+  if (intent && forbiddenDomains.includes(intent)) {
+    return { ok: false, blockedReason: 'forbidden_domain' };
+  }
   const schemaCheck = validateSchema(schemaId, output);
   if (!schemaCheck.ok) {
     const schemaErrors = Array.isArray(schemaCheck.errors) ? schemaCheck.errors : [];
@@ -114,6 +176,7 @@ async function guardLlmOutput(params, deps) {
   if (purpose === 'faq') {
     const result = await guardFaqOutput(output, {
       requireCitations: payload.requireCitations !== false,
+      forbidDirectUrl: outputConstraints.forbidDirectUrl,
       allowedSourceIds: payload.allowedSourceIds,
       checkWarnLinks: payload.checkWarnLinks === true,
       linkRegistryRepo: deps && deps.linkRegistryRepo ? deps.linkRegistryRepo : null
@@ -127,7 +190,7 @@ async function guardLlmOutput(params, deps) {
   }
 
   if (purpose === 'paid_assistant') {
-    const result = guardPaidAssistantOutput(output);
+    const result = guardPaidAssistantOutput(output, { outputConstraints });
     if (!result.ok) return result;
     const allowedEvidenceKeys = Array.isArray(payload.allowedEvidenceKeys) ? payload.allowedEvidenceKeys : [];
     if (allowedEvidenceKeys.length > 0) {

@@ -322,3 +322,23 @@ Notes:
 - before_count / after_count
 - verification_command_and_result
 - rollback_or_restore_plan
+
+## Phase662 Add-only Collections
+
+### journey_graph_change_logs
+Purpose: Journey Graph Catalog の plan/set 設定履歴を監査保存する。  
+Typical fields:
+- `actor`, `traceId`, `requestId`
+- `planHash`
+- `catalog`（適用時スナップショット）
+- `summary`（enabled/schemaVersion/nodeCount/edgeCount）
+- `createdAt`, `updatedAt`
+
+### journey_todo_items（add-only fields）
+- `journeyState`
+- `phaseKey`, `domainKey`, `planTier`
+- `snoozeUntil`, `lastSignal`
+- `stateEvidenceRef`, `stateUpdatedAt`
+
+Notes:
+- 既存 `status=open|completed|skipped` の意味は変更しない。

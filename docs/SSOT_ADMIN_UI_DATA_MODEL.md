@@ -76,3 +76,46 @@ ServicePhase は機能解禁の上位概念であり、Preset は “出し方/�
 - `docs/SSOT_SERVICE_PHASES.md`
 - `docs/SSOT_NOTIFICATION_PRESETS.md`
 - `docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md`
+
+## Phase662 Add-only Data Contract（Journey DAG / LLM Policy）
+
+### opsConfig: Journey Graph Catalog
+- document: `opsConfig/journeyGraphCatalog`
+- fields:
+  - `enabled` (boolean)
+  - `schemaVersion` (number)
+  - `nodes[]`
+  - `edges[]`
+  - `ruleSet`（通知頻度/停止/分岐）
+  - `planUnlocks`（`free`/`pro`）
+
+### Journey Graph Change Logs
+- collection: `journey_graph_change_logs`
+- fields:
+  - `actor`, `traceId`, `requestId`
+  - `planHash`
+  - `catalog`（適用時スナップショット）
+  - `summary`（nodeCount/edgeCount 等）
+  - `createdAt`, `updatedAt`
+
+### journey_todo_items add-only fields
+- `journeyState`（`planned|in_progress|done|blocked|snoozed|skipped`）
+- `phaseKey`, `domainKey`, `planTier`
+- `snoozeUntil`, `lastSignal`
+- `stateEvidenceRef`, `stateUpdatedAt`
+
+注意:
+- 既存 `status=open|completed|skipped` の意味は変更しない。
+- 既存API互換を維持し、追加fieldは補助レイヤとして扱う。
+
+### opsConfig/llmPolicy add-only fields
+- `forbidden_domains[]`
+- `disclaimer_templates{...}`
+- `output_constraints{ max_next_actions, max_gaps, max_risks, require_evidence, forbid_direct_url }`
+
+### reaction-v2 event contract (add-only)
+- endpoint: `POST /api/phase37/deliveries/reaction-v2`
+- actions: `open|save|snooze|none|redeem|response`
+- related evidence:
+  - `audit_logs.action=DELIVERY_REACTION_V2`
+  - `events.type=journey_reaction`

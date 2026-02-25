@@ -4,6 +4,7 @@ const TASK_NODE_STATUS = Object.freeze(['not_started', 'in_progress', 'done', 'l
 const PROGRESS_STATES = Object.freeze(['not_started', 'in_progress']);
 const GRAPH_STATES = Object.freeze(['actionable', 'locked', 'done']);
 const RISK_LEVELS = Object.freeze(['low', 'medium', 'high']);
+const JOURNEY_STATES = Object.freeze(['planned', 'in_progress', 'done', 'blocked', 'snoozed', 'skipped']);
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -44,6 +45,12 @@ function normalizeGraphState(value) {
   return 'actionable';
 }
 
+function normalizeJourneyState(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (JOURNEY_STATES.includes(normalized)) return normalized;
+  return 'planned';
+}
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
@@ -66,6 +73,12 @@ function toIso(value) {
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
 
+function isSnoozed(node, nowMs) {
+  const snoozeAt = toMillis(node && node.snoozeUntil);
+  if (!Number.isFinite(snoozeAt)) return false;
+  return snoozeAt > nowMs;
+}
+
 function normalizeTodoStatus(value) {
   const normalized = normalizeText(value).toLowerCase();
   if (normalized === 'completed' || normalized === 'skipped' || normalized === 'open') return normalized;
@@ -85,23 +98,31 @@ function normalizeNode(item) {
   const status = normalizeTodoStatus(payload.status);
   const progressState = normalizeProgressState(payload.progressState);
   const graphStatus = normalizeGraphState(payload.graphStatus);
+  const journeyState = normalizeJourneyState(payload.journeyState);
   const dueAt = toIso(payload.dueAt || payload.dueDate || payload.due);
+  const snoozeUntil = toIso(payload.snoozeUntil);
   const dependsOn = normalizeArray(payload.dependsOn || payload.depends_on);
   const blocks = normalizeArray(payload.blocks);
   const lockReasons = normalizeArray(payload.lockReasons);
+  const dependencyReasonMap = payload.dependencyReasonMap && typeof payload.dependencyReasonMap === 'object' && !Array.isArray(payload.dependencyReasonMap)
+    ? payload.dependencyReasonMap
+    : {};
   return {
     todoKey,
     title: normalizeText(payload.title),
     status,
     progressState,
     graphStatus,
+    journeyState,
     dueAt,
     dueDate: dueAt ? dueAt.slice(0, 10) : null,
+    snoozeUntil,
     dependsOn,
     blocks,
     priority: normalizePriority(payload.priority),
     riskLevel: normalizeRiskLevel(payload.riskLevel),
     lockReasons,
+    dependencyReasonMap,
     riskScore: 0
   };
 }
@@ -212,25 +233,53 @@ function evaluateGraph(todoItems, options) {
   const nodes = Array.from(nodeMap.values()).map((node) => {
     const next = Object.assign({}, node);
     const done = isTodoDone(next);
+    const snoozed = isSnoozed(next, nowMs);
     if (done) {
       next.graphStatus = 'done';
       next.lockReasons = [];
+      next.journeyState = next.status === 'skipped' ? 'skipped' : 'done';
     } else {
       const lockReasons = [];
       const unresolvedDeps = [];
+      const unresolvedDepsWithReason = [];
       next.dependsOn.forEach((depKey) => {
         const dep = nodeMap.get(depKey);
         if (!dep) {
           lockReasons.push(`依存タスク未登録:${depKey}`);
+          unresolvedDepsWithReason.push({
+            todoKey: depKey,
+            reasonType: 'prerequisite',
+            reasonLabel: '依存タスク未登録'
+          });
           return;
         }
-        if (!isTodoDone(dep)) unresolvedDeps.push(depKey);
+        if (!isTodoDone(dep)) {
+          unresolvedDeps.push(depKey);
+          const depReason = next.dependencyReasonMap && typeof next.dependencyReasonMap[depKey] === 'string'
+            ? normalizeText(next.dependencyReasonMap[depKey])
+            : '';
+          unresolvedDepsWithReason.push({
+            todoKey: depKey,
+            reasonType: depReason || 'prerequisite',
+            reasonLabel: depReason || null
+          });
+        }
       });
       if (unresolvedDeps.length > 0) {
         lockReasons.push(`依存未完了:${unresolvedDeps.join(',')}`);
       }
       next.graphStatus = lockReasons.length > 0 ? 'locked' : 'actionable';
       next.lockReasons = lockReasons;
+      next.unresolvedDependsOn = unresolvedDepsWithReason;
+      if (snoozed) {
+        next.journeyState = 'snoozed';
+      } else if (next.graphStatus === 'locked') {
+        next.journeyState = 'blocked';
+      } else if (next.progressState === 'in_progress') {
+        next.journeyState = 'in_progress';
+      } else {
+        next.journeyState = 'planned';
+      }
     }
 
     const blockedBy = reverseBlocks.get(next.todoKey);
@@ -259,6 +308,7 @@ function evaluateGraph(todoItems, options) {
       priority: node.priority,
       riskLevel: node.riskLevel,
       riskScore: node.riskScore,
+      journeyState: node.journeyState,
       dependsOn: node.dependsOn,
       blocks: node.blocks
     }));
@@ -274,6 +324,7 @@ function evaluateGraph(todoItems, options) {
 
 function resolveTaskNodeStatus(node) {
   const payload = node && typeof node === 'object' ? node : {};
+  if (payload.journeyState === 'snoozed') return 'locked';
   if (payload.graphStatus === 'done') return 'done';
   if (payload.graphStatus === 'locked') return 'locked';
   return payload.progressState === 'in_progress' ? 'in_progress' : 'not_started';
@@ -284,10 +335,12 @@ module.exports = {
   PROGRESS_STATES,
   GRAPH_STATES,
   RISK_LEVELS,
+  JOURNEY_STATES,
   normalizePriority,
   normalizeRiskLevel,
   normalizeProgressState,
   normalizeGraphState,
+  normalizeJourneyState,
   normalizeTodoStatus,
   isTodoDone,
   evaluateGraph,

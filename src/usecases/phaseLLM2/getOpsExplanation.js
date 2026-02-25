@@ -303,7 +303,7 @@ async function getOpsExplanation(params, deps) {
   const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
   const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
-  const disclaimer = getDisclaimer('ops_explain');
+  const disclaimer = getDisclaimer('ops_explain', { policy: llmPolicy });
 
   const consoleResult = payload.consoleResult
     ? payload.consoleResult

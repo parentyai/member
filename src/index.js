@@ -1510,6 +1510,16 @@ function createServer() {
       handlePlan: handleJourneyPolicyPlan,
       handleSet: handleJourneyPolicySet
     } = require('./routes/admin/journeyPolicyConfig');
+    const {
+      handleStatus: handleJourneyGraphStatus,
+      handlePlan: handleJourneyGraphPlan,
+      handleSet: handleJourneyGraphSet,
+      handleHistory: handleJourneyGraphHistory
+    } = require('./routes/admin/journeyGraphCatalogConfig');
+    const {
+      handleRuntime: handleJourneyGraphRuntime,
+      handleRuntimeHistory: handleJourneyGraphRuntimeHistory
+    } = require('./routes/admin/journeyGraphRuntime');
     const { handleHistory: handleLlmPolicyHistory } = require('./routes/admin/llmPolicyConfig');
     let bytes = 0;
     const chunks = [];
@@ -1633,6 +1643,32 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/journey-policy/set') {
         const body = await collectBody();
         await handleJourneyPolicySet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/status') {
+        await handleJourneyGraphStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-graph/plan') {
+        const body = await collectBody();
+        await handleJourneyGraphPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-graph/set') {
+        const body = await collectBody();
+        await handleJourneyGraphSet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/history') {
+        await handleJourneyGraphHistory(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime') {
+        await handleJourneyGraphRuntime(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime/history') {
+        await handleJourneyGraphRuntimeHistory(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/analyze') {
@@ -2382,6 +2418,7 @@ function createServer() {
 
   if (pathname.startsWith('/api/phase37/deliveries')) {
     const { handleMarkRead, handleMarkClick } = require('./routes/phase37DeliveryReactions');
+    const { handleReactionV2 } = require('./routes/phase37DeliveryReactionsV2');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -2411,6 +2448,11 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/phase37/deliveries/mark-click') {
         const body = await collectBody();
         await handleMarkClick(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase37/deliveries/reaction-v2') {
+        const body = await collectBody();
+        await handleReactionV2(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });

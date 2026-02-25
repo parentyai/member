@@ -12,7 +12,7 @@
 | aggregate | 10 |
 | config | 34 |
 | event | 5 |
-| evidence | 5 |
+| evidence | 6 |
 | transient | 2 |
 
 ## Collection方針
@@ -37,6 +37,7 @@
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
+| `journey_graph_change_logs` | evidence | 365d | false | false |
 | `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |

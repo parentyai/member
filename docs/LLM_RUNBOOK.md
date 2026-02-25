@@ -226,3 +226,20 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 2) `ENABLE_TASK_GRAPH_V1=0`  
 3) `opsConfig/llmPolicy.allowed_intents_pro=[]`  
 4) `opsConfig/llmPolicy.enabled=false`  
+
+## Phase662 Addendum（Policy拡張）
+
+### add-only policy fields
+- `forbidden_domains[]`
+- `disclaimer_templates{}`
+- `output_constraints{ max_next_actions, max_gaps, max_risks, require_evidence, forbid_direct_url }`
+
+### 適用ポイント
+- FAQ/Ops/NextAction の disclaimer は `disclaimer_templates` を優先する。
+- Paid assistant は `output_constraints` に従って出力上限を制約する。
+- 禁止領域は `forbidden_domains` で判定し、`blockedReason=forbidden_domain` で安全降格する。
+
+### 運用確認
+1) `GET /api/admin/llm/policy/status` で設定反映を確認。  
+2) `POST /api/admin/llm/policy/plan` -> `set` の2段階で適用。  
+3) `GET /api/admin/os/llm-policy/history` で変更証跡を確認。  

@@ -28,7 +28,22 @@ const DEFAULT_LLM_POLICY = Object.freeze({
   cache_ttl_sec: 120,
   allowed_intents_free: ['faq_search'],
   allowed_intents_pro: ['situation_analysis', 'gap_check', 'timeline_build', 'next_action_generation', 'risk_alert', 'faq_search'],
-  safety_mode: 'strict'
+  safety_mode: 'strict',
+  forbidden_domains: [],
+  disclaimer_templates: Object.freeze({
+    generic: '提案情報です。最終判断は運用担当が行ってください。',
+    faq: 'この回答は公式FAQ（KB）に基づく要約です。個別事情により異なる場合があります。',
+    ops_explain: '提案です。自動実行は行いません。最終判断は運用担当が行ってください。',
+    next_actions: '提案候補です。実行手順の確定は決定論レイヤで行ってください。',
+    paid_assistant: '提案です。契約・法務・税務の最終判断は専門家確認のうえで行ってください。'
+  }),
+  output_constraints: Object.freeze({
+    max_next_actions: 3,
+    max_gaps: 5,
+    max_risks: 3,
+    require_evidence: true,
+    forbid_direct_url: true
+  })
 });
 
 function normalizeBoolean(value, fallback) {
@@ -84,12 +99,68 @@ function normalizeIntentList(value, fallback) {
   return out;
 }
 
+function normalizeLowercaseStringList(value, fallback) {
+  if (value === null || value === undefined) return fallback.slice();
+  if (!Array.isArray(value)) return null;
+  const out = [];
+  value.forEach((item) => {
+    if (typeof item !== 'string') return;
+    const normalized = item.trim().toLowerCase();
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
 function normalizeSafetyMode(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== 'string') return null;
   const normalized = value.trim().toLowerCase();
   if (['strict', 'balanced', 'relaxed'].includes(normalized)) return normalized;
   return null;
+}
+
+function normalizeDisclaimerTemplates(value, fallback) {
+  const base = fallback && typeof fallback === 'object' ? fallback : DEFAULT_LLM_POLICY.disclaimer_templates;
+  if (value === null || value === undefined) return Object.assign({}, base);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out = {};
+  const keys = Array.from(new Set(Object.keys(base).concat(Object.keys(value))));
+  keys.forEach((key) => {
+    const field = typeof key === 'string' ? key.trim().toLowerCase() : '';
+    if (!field) return;
+    if (!/^[a-z0-9_]{1,64}$/.test(field)) return;
+    const candidate = Object.prototype.hasOwnProperty.call(value, key) ? value[key] : base[key];
+    if (typeof candidate !== 'string') return;
+    const text = candidate.trim();
+    if (!text) return;
+    out[field] = text.slice(0, 800);
+  });
+  const fallbackKeys = Object.keys(base);
+  const missingRequired = fallbackKeys.some((key) => !out[key]);
+  if (missingRequired) return null;
+  return out;
+}
+
+function normalizeOutputConstraints(value, fallback) {
+  const base = fallback && typeof fallback === 'object' ? fallback : DEFAULT_LLM_POLICY.output_constraints;
+  if (value === null || value === undefined) return Object.assign({}, base);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+
+  const maxNextActions = normalizeNumber(value.max_next_actions, base.max_next_actions, 0, 3);
+  const maxGaps = normalizeNumber(value.max_gaps, base.max_gaps, 0, 10);
+  const maxRisks = normalizeNumber(value.max_risks, base.max_risks, 0, 10);
+  const requireEvidence = normalizeBoolean(value.require_evidence, base.require_evidence);
+  const forbidDirectUrl = normalizeBoolean(value.forbid_direct_url, base.forbid_direct_url);
+  if ([maxNextActions, maxGaps, maxRisks, requireEvidence, forbidDirectUrl].includes(null)) return null;
+
+  return {
+    max_next_actions: Math.floor(maxNextActions),
+    max_gaps: Math.floor(maxGaps),
+    max_risks: Math.floor(maxRisks),
+    require_evidence: requireEvidence,
+    forbid_direct_url: forbidDirectUrl
+  };
 }
 
 function normalizeLlmPolicy(input) {
@@ -113,6 +184,15 @@ function normalizeLlmPolicy(input) {
   const allowedFree = normalizeIntentList(input.allowed_intents_free, DEFAULT_LLM_POLICY.allowed_intents_free);
   const allowedPro = normalizeIntentList(input.allowed_intents_pro, DEFAULT_LLM_POLICY.allowed_intents_pro);
   const safetyMode = normalizeSafetyMode(input.safety_mode, DEFAULT_LLM_POLICY.safety_mode);
+  const forbiddenDomains = normalizeLowercaseStringList(input.forbidden_domains, DEFAULT_LLM_POLICY.forbidden_domains);
+  const disclaimerTemplates = normalizeDisclaimerTemplates(
+    input.disclaimer_templates,
+    DEFAULT_LLM_POLICY.disclaimer_templates
+  );
+  const outputConstraints = normalizeOutputConstraints(
+    input.output_constraints,
+    DEFAULT_LLM_POLICY.output_constraints
+  );
 
   if ([
     enabled,
@@ -126,7 +206,10 @@ function normalizeLlmPolicy(input) {
     cacheTtlSec,
     allowedFree,
     allowedPro,
-    safetyMode
+    safetyMode,
+    forbiddenDomains,
+    disclaimerTemplates,
+    outputConstraints
   ].includes(null)) {
     return null;
   }
@@ -143,7 +226,10 @@ function normalizeLlmPolicy(input) {
     cache_ttl_sec: Math.floor(cacheTtlSec),
     allowed_intents_free: allowedFree,
     allowed_intents_pro: allowedPro,
-    safety_mode: safetyMode
+    safety_mode: safetyMode,
+    forbidden_domains: forbiddenDomains,
+    disclaimer_templates: disclaimerTemplates,
+    output_constraints: outputConstraints
   };
 }
 

@@ -217,7 +217,7 @@ async function getNextActionCandidates(params, deps) {
   const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
   const llmEnabled = Boolean(envEnabled && dbEnabled);
   const nowIso = new Date().toISOString();
-  const disclaimer = getDisclaimer('next_actions');
+  const disclaimer = getDisclaimer('next_actions', { policy: llmPolicy });
 
   const consoleResult = payload.consoleResult
     ? payload.consoleResult

@@ -188,3 +188,22 @@ MUST:
   - `rate_limit` -> `global_qps_limit`
 - LLM Policy変更履歴 API を追加する。  
   - `GET /api/admin/os/llm-policy/history`
+
+## Phase662 Add-only UI Contract（Journey DAG / LLM Policy拡張）
+- Monitor pane に Journey DAG 運用セクションを追加する（既存paneを維持した add-only）。
+  - Journey Map（runtime参照）
+  - Rule Editor（catalog plan/set）
+- Admin OS API（add-only）:
+  - `GET /api/admin/os/journey-graph/status`
+  - `POST /api/admin/os/journey-graph/plan`
+  - `POST /api/admin/os/journey-graph/set`
+  - `GET /api/admin/os/journey-graph/history`
+  - `GET /api/admin/os/journey-graph/runtime`
+  - `GET /api/admin/os/journey-graph/runtime/history`
+- 配信反応 API（互換維持の add-only）:
+  - `POST /api/phase37/deliveries/reaction-v2`
+  - 既存 `mark-read/mark-click` は維持する。
+- LLM Policy は以下を add-only で扱う。
+  - `forbidden_domains`
+  - `disclaimer_templates`
+  - `output_constraints`
