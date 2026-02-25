@@ -1,0 +1,146 @@
+name: User context snapshot build
+
+on:
+  schedule:
+    - cron: "50 21 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run in dry-run mode"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      limit:
+        description: "Optional max users"
+        required: false
+        default: "300"
+        type: string
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  user-context-snapshot:
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: user-context-snapshot-build
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Resolve service URL
+        id: service_url
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe \"$SERVICE_NAME\" --project \"$GCP_PROJECT_ID\" --region \"$GCP_REGION\" --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          echo "service_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Auth proxy id token
+        id: proxy_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.service_url.outputs.service_url }}
+          create_credentials_file: false
+
+      - name: Resolve CITY_PACK_JOB_TOKEN
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            echo "::add-mask::$CITY_PACK_JOB_TOKEN"
+            echo "CITY_PACK_JOB_TOKEN=$CITY_PACK_JOB_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=CITY_PACK_JOB_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::CITY_PACK_JOB_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CITY_PACK_JOB_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Invoke user context snapshot build job
+        env:
+          PROXY_ID_TOKEN: ${{ steps.proxy_auth.outputs.id_token }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/user-context-snapshot-build
+          OUT_FILE="artifacts/user-context-snapshot-build/response.json"
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --token "$PROXY_ID_TOKEN" \
+            --port 18082 >/tmp/user-context-snapshot-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18082/healthz" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18082 did not become ready"
+            tail -n 80 /tmp/user-context-snapshot-proxy.log || true
+            exit 1
+          fi
+
+          DRY_RUN="${INPUT_DRY_RUN:-false}"
+          if [ "$DRY_RUN" != "true" ]; then
+            DRY_RUN="false"
+          fi
+          LIMIT_VALUE="${INPUT_LIMIT:-300}"
+          BODY="{\"dryRun\":$DRY_RUN,\"limit\":$LIMIT_VALUE}"
+
+          curl -sS -X POST "http://127.0.0.1:18082/internal/jobs/user-context-snapshot-build" \
+            -H "content-type: application/json" \
+            -H "x-city-pack-job-token: $CITY_PACK_JOB_TOKEN" \
+            -d "$BODY" > "$OUT_FILE"
+
+          cat "$OUT_FILE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-context-snapshot-build-${{ github.run_id }}
+          path: artifacts/user-context-snapshot-build
+          if-no-files-found: warn

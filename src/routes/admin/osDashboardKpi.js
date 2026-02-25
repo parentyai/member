@@ -6,6 +6,7 @@ const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsSnapshotsRepo = require('../../repos/firestore/opsSnapshotsRepo');
 const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
+const journeyKpiDailyRepo = require('../../repos/firestore/journeyKpiDailyRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
   resolveSnapshotReadMode,
@@ -130,6 +131,11 @@ function formatPercent(value) {
   return `${Math.round(value * 10) / 10}%`;
 }
 
+function ratioToPercent(value) {
+  if (!Number.isFinite(Number(value))) return 0;
+  return Math.round(Number(value) * 1000) / 10;
+}
+
 function simpleMetric(valueLabel, series, note) {
   return {
     available: true,
@@ -235,13 +241,14 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
   const lineUserIds = normalizedUsers
     .map((row) => (row && row.id ? String(row.id).trim() : ''))
     .filter(Boolean);
-  const [subscriptions, llmUsageLogs] = await Promise.all([
+  const [subscriptions, llmUsageLogs, latestJourneyKpi] = await Promise.all([
     userSubscriptionsRepo.listUserSubscriptionsByLineUserIds({ lineUserIds }).catch(() => []),
     llmUsageLogsRepo.listLlmUsageLogsByCreatedAtRange({
       fromAt: queryRange.fromAt,
       toAt: queryRange.toAt,
       limit: Math.max(200, Math.min(scanLimit * 4, 5000))
-    }).catch(() => [])
+    }).catch(() => []),
+    journeyKpiDailyRepo.getLatestJourneyKpiDaily().catch(() => null)
   ]);
   const proActiveCount = (subscriptions || []).filter((item) => {
     const status = String(item && item.status ? item.status : 'unknown').toLowerCase();
@@ -358,6 +365,27 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     return Math.round((total / proActiveCount) * 100) / 100;
   });
   const llmUsageTotal = llmUsageSeries.reduce((sum, value) => sum + value, 0);
+  const journeyRetentionD30Ratio = latestJourneyKpi && latestJourneyKpi.retention
+    ? Number(latestJourneyKpi.retention.d30)
+    : NaN;
+  const journeyNextActionExecutionRatio = latestJourneyKpi
+    ? Number(latestJourneyKpi.nextActionExecutionRate)
+    : NaN;
+  const journeyProConversionRatio = latestJourneyKpi
+    ? Number(latestJourneyKpi.proConversionRate)
+    : NaN;
+  const journeyChurnBlockedRatio = latestJourneyKpi && latestJourneyKpi.churnReasonRatio
+    ? Number(latestJourneyKpi.churnReasonRatio.blocked)
+    : NaN;
+  const journeyRetentionD30Percent = ratioToPercent(journeyRetentionD30Ratio);
+  const journeyNextActionExecutionPercent = ratioToPercent(journeyNextActionExecutionRatio);
+  const journeyProConversionPercent = ratioToPercent(journeyProConversionRatio);
+  const journeyChurnBlockedPercent = ratioToPercent(journeyChurnBlockedRatio);
+  const hasJourneyKpi = Boolean(latestJourneyKpi);
+  const journeyRetentionD30Series = buckets.map(() => journeyRetentionD30Percent);
+  const journeyNextActionExecutionSeries = buckets.map(() => journeyNextActionExecutionPercent);
+  const journeyProConversionSeries = buckets.map(() => journeyProConversionPercent);
+  const journeyChurnBlockedSeries = buckets.map(() => journeyChurnBlockedPercent);
 
   const notificationsMetric = simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`);
   const reactionMetric = simpleMetric(
@@ -405,6 +433,18 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
       llmBlockRateSeries,
       'LLMブロック率'
     ),
+    journey_retention_d30: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyRetentionD30Percent), journeyRetentionD30Series, 'Journey D30継続率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
+    journey_next_action_execution_rate: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyNextActionExecutionPercent), journeyNextActionExecutionSeries, 'Journey NextAction実行率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
+    journey_pro_conversion_rate: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyProConversionPercent), journeyProConversionSeries, 'Journey Pro転換率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
+    journey_churn_blocked_ratio: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyChurnBlockedPercent), journeyChurnBlockedSeries, 'Journey Churn(ブロック起因)比率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
     cityPackUsage: links.length
       ? simpleMetric(`${warnCount}${killSwitch ? ' + KillSwitch ON' : ''}`, killSwitchWarnSeries, 'WARNリンク数 + KillSwitch状態')
       : notAvailable('link_registryが未設定のため取得できません')
@@ -437,6 +477,10 @@ function buildNotAvailableKpis(note) {
     llm_daily_usage_count: notAvailable(message),
     llm_avg_per_pro_user: notAvailable(message),
     llm_block_rate: notAvailable(message),
+    journey_retention_d30: notAvailable(message),
+    journey_next_action_execution_rate: notAvailable(message),
+    journey_pro_conversion_rate: notAvailable(message),
+    journey_churn_blocked_ratio: notAvailable(message),
     cityPackUsage: notAvailable(message)
   };
 }

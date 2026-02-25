@@ -8,9 +8,11 @@ async function generatePaidFaqReply(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const qualityRepo = resolvedDeps.llmQualityLogsRepo || llmQualityLogsRepo;
-
-  const personalizedContext = payload.personalizedContext
-    || await resolvePersonalizedLlmContext({ lineUserId: payload.lineUserId || payload.userId }, resolvedDeps);
+  const skipPersonalizedContext = payload.skipPersonalizedContext === true;
+  const personalizedContext = skipPersonalizedContext
+    ? null
+    : (payload.personalizedContext
+      || await resolvePersonalizedLlmContext({ lineUserId: payload.lineUserId || payload.userId }, resolvedDeps));
 
   const result = await generatePaidAssistantReply(Object.assign({}, payload, {
     personalizedContext

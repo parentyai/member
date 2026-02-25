@@ -192,6 +192,7 @@ async function processStripeWebhookEvent(params) {
     const plan = resolvePlanFromStatus(status);
     const wasPro = existing && resolvePlanFromStatus(existing.status) === 'pro';
     const nowPro = plan === 'pro';
+    const prevStatus = existing && existing.status ? mapStripeSubscriptionStatus(existing.status) : 'unknown';
 
     await userSubscriptionsRepo.upsertUserSubscription(lineUserId, {
       plan,
@@ -213,6 +214,17 @@ async function processStripeWebhookEvent(params) {
         lineUserId,
         type: 'pro_converted',
         subscriptionStatus: status,
+        eventId,
+        eventType
+      });
+    }
+    if (prevStatus !== status && (status === 'past_due' || status === 'canceled' || status === 'incomplete')) {
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'churn_reason',
+        reason: status === 'past_due' ? 'cost' : 'status_change',
+        previousStatus: prevStatus,
+        nextStatus: status,
         eventId,
         eventType
       });
