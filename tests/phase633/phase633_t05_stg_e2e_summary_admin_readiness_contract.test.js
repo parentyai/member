@@ -29,6 +29,9 @@ test('phase633: markdown summary renders admin readiness checks for product_read
             ok: true,
             resultRows: 2,
             matchedDeliveryCount: 2,
+            readLimitUsed: 1000,
+            fallbackUsed: false,
+            fallbackBlocked: false,
             dataSource: 'delivery-ops',
             asOf: '2026-02-25T00:00:00.000Z',
             freshnessMinutes: 1.25
@@ -47,4 +50,7 @@ test('phase633: markdown summary renders admin readiness checks for product_read
   assert.ok(markdown.includes('source=delivery-ops'));
   assert.ok(markdown.includes('asOf=2026-02-25T00:00:00.000Z'));
   assert.ok(markdown.includes('freshness=1.25'));
+  assert.ok(markdown.includes('readLimit=1000'));
+  assert.ok(markdown.includes('fallbackUsed=false'));
+  assert.ok(markdown.includes('fallbackBlocked=false'));
 });

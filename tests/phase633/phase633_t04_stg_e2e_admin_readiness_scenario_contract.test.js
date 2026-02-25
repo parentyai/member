@@ -18,6 +18,7 @@ test('phase633: stg e2e runner defines fixed seven admin readiness endpoints', (
     '/api/admin/monitor-insights?windowDays=7',
     '/api/admin/city-packs'
   ]);
+  assert.ok(endpoints.includes('/api/admin/monitor-insights?windowDays=7'));
 });
 
 test('phase633: product readiness scenario still runs before segment scenario', () => {

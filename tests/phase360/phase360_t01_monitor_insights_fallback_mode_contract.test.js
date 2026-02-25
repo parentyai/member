@@ -54,6 +54,8 @@ test('phase360: fallbackOnEmpty=false の場合、fallbackMode=block で not_ava
     assert.strictEqual(body.dataSource, 'not_available');
     assert.strictEqual(body.fallbackUsed, false);
     assert.strictEqual(body.fallbackBlocked, true);
+    assert.strictEqual(body.asOf, null);
+    assert.strictEqual(body.freshnessMinutes, null);
     assert.strictEqual(body.note, 'NOT AVAILABLE');
   } finally {
     clearDbForTest();

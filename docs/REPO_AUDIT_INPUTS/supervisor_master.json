@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T23:48:04-05:00",
-  "gitCommit": "dd046a9cc0c475d6cf80b6aa9567322355e6db86",
+  "generatedAt": "2026-02-24T23:52:08-05:00",
+  "gitCommit": "4ca6d860a920bd3e6b0cb8ac752838bbd838c9e5",
   "branch": "codex/monitor-insights-stg-e2e-monitoring",
-  "sourceDigest": "2bc4ff0596f7265334fe1f2b59573ad55f96c705981648d109686995ea07a977",
+  "sourceDigest": "2b921c5debe20f8879a95d8da4a4a5c16909a6ff6689d1c6da237b5841746a36",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
