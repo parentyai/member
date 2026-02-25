@@ -22,9 +22,10 @@ async function getChecklistWithStatus(params) {
     step: payload.step,
     limit: payload.limit
   });
+  const scenarioKey = base && typeof base === 'object' ? (base.scenarioKey || base.scenario || null) : null;
 
   if (!base.checklists || base.checklists.length === 0) {
-    return { scenario: base.scenario, step: base.step, items: [] };
+    return { scenarioKey, scenario: base.scenario, step: base.step, items: [] };
   }
 
   const completedEntries = await userChecklistsRepo.listUserChecklists({
@@ -55,7 +56,7 @@ async function getChecklistWithStatus(params) {
     }
   }
 
-  return { scenario: base.scenario, step: base.step, items };
+  return { scenarioKey, scenario: base.scenario, step: base.step, items };
 }
 
 module.exports = {

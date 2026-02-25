@@ -4152,6 +4152,111 @@ function renderFaqReferenceRows(items) {
   });
 }
 
+function normalizeMonitorLimit(value, fallbackValue, maxValue) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallbackValue;
+  return Math.min(Math.floor(parsed), maxValue);
+}
+
+function formatMonitorFreshness(minutes) {
+  if (!Number.isFinite(minutes) || minutes < 0) return '-';
+  if (minutes < 1) {
+    const seconds = Math.max(1, Math.round(minutes * 60));
+    return `${seconds}秒`;
+  }
+  return `${Math.round(minutes * 10) / 10}分`;
+}
+
+function setMonitorBadge(el, value, tone) {
+  if (!el) return;
+  el.classList.remove('badge-ok', 'badge-warn', 'badge-danger');
+  const state = tone === 'ok' ? 'badge-ok' : (tone === 'warn' ? 'badge-warn' : 'badge-danger');
+  if (state) el.classList.add(state);
+  el.textContent = value;
+}
+
+function setMonitorSummaryValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = value == null || value === '' ? '-' : String(value);
+}
+
+function renderMonitorInsightsFailure(traceId, requestInfo, error) {
+  const rawPayload = {
+    ok: false,
+    request: requestInfo,
+    traceId,
+    error: error && error.message ? error.message : 'unknown'
+  };
+  renderVendorCtrRows([]);
+  renderFaqReferenceRows([]);
+  const abSummaryEl = document.getElementById('monitor-ab-summary');
+  if (abSummaryEl) abSummaryEl.textContent = t('ui.desc.monitor.abNone', 'AB比較データはありません。');
+  const diagnosticsEl = document.getElementById('monitor-insights-diagnostics');
+  if (diagnosticsEl) diagnosticsEl.textContent = rawPayload.error;
+  setMonitorSummaryValue('monitor-insights-source', '-');
+  setMonitorSummaryValue('monitor-insights-result-rows', '-');
+  setMonitorSummaryValue('monitor-insights-matched-delivery', '-');
+  setMonitorSummaryValue('monitor-insights-read-limit-used', '-');
+  setMonitorSummaryValue('monitor-insights-as-of', '-');
+  setMonitorSummaryValue('monitor-insights-freshness', '-');
+  setMonitorSummaryValue('monitor-insights-trace-id', traceId || '-');
+  setMonitorBadge(document.getElementById('monitor-insights-fallback-used'), t('ui.value.boolean.no', 'いいえ'), 'warn');
+  setMonitorBadge(document.getElementById('monitor-insights-fallback-blocked'), t('ui.value.boolean.no', 'いいえ'), 'warn');
+  const raw = document.getElementById('monitor-insights-raw');
+  if (raw) raw.textContent = JSON.stringify(rawPayload, null, 2);
+  state.monitorInsights = null;
+}
+
+function renderMonitorInsightsDiagnostics(payload, traceId) {
+  const data = payload && typeof payload === 'object' ? payload : null;
+  const diagnostics = data && data.diagnostics && typeof data.diagnostics === 'object' ? data.diagnostics : null;
+  const source = data ? (data.source || data.dataSource || '-') : '-';
+  const resultRows = data && Number.isFinite(Number(data.resultRows)) ? data.resultRows : '-';
+  const matchedDeliveryCount = data && Number.isFinite(Number(data.matchedDeliveryCount)) ? data.matchedDeliveryCount : '-';
+  const readLimitUsed = data && Number.isFinite(Number(data.readLimitUsed)) ? data.readLimitUsed : '-';
+  const asOf = data && data.asOf ? data.asOf : null;
+  const freshness = Number.isFinite(data && data.freshnessMinutes)
+    ? data.freshnessMinutes
+    : (Number.isFinite(diagnostics && diagnostics.freshnessMinutes) ? diagnostics.freshnessMinutes : '-');
+  const isEmpty = Number.isFinite(Number(resultRows)) ? Number(resultRows) <= 0 : false;
+
+  setMonitorSummaryValue('monitor-insights-source', source);
+  setMonitorSummaryValue('monitor-insights-result-rows', resultRows);
+  setMonitorSummaryValue('monitor-insights-matched-delivery', matchedDeliveryCount);
+  setMonitorSummaryValue('monitor-insights-read-limit-used', readLimitUsed);
+
+  const asOfLabel = asOf ? new Date(asOf).toISOString() : '-';
+  setMonitorSummaryValue('monitor-insights-as-of', asOfLabel);
+  setMonitorSummaryValue('monitor-insights-freshness', formatMonitorFreshness(freshness));
+  setMonitorSummaryValue('monitor-insights-trace-id', (data && data.traceId) || traceId || '-');
+
+  const fallbackUsed = !!(data && data.fallbackUsed);
+  const fallbackBlocked = !!(data && data.fallbackBlocked);
+  const usedText = fallbackUsed ? t('ui.value.boolean.yes', 'はい') : t('ui.value.boolean.no', 'いいえ');
+  const blockedText = fallbackBlocked ? t('ui.value.boolean.yes', 'はい') : t('ui.value.boolean.no', 'いいえ');
+  setMonitorBadge(document.getElementById('monitor-insights-fallback-used'), usedText, fallbackUsed ? 'ok' : 'warn');
+  setMonitorBadge(document.getElementById('monitor-insights-fallback-blocked'), blockedText, fallbackBlocked ? 'danger' : 'ok');
+
+  const notes = [];
+  if (isEmpty) notes.push(t('ui.desc.monitor.insightsEmpty', '表示対象データがありません'));
+  if (data && data.note) notes.push(`note=${data.note}`);
+  if (data && Array.isArray(data.fallbackSourceTrace) && data.fallbackSourceTrace.length > 0) {
+    notes.push(`fallbackSources=${data.fallbackSourceTrace.join(' > ')}`);
+  }
+  if (data && Array.isArray(data.fallbackSources) && data.fallbackSources.length > 0) {
+    notes.push(`fallbackSourcesLegacy=${data.fallbackSources.join(' > ')}`);
+  }
+  if (diagnostics && typeof diagnostics.fallback === 'object') {
+    notes.push(`fallback=used:${diagnostics.fallback.used};blocked:${diagnostics.fallback.blocked}`);
+  }
+  const diagnosticsEl = document.getElementById('monitor-insights-diagnostics');
+  if (diagnosticsEl) diagnosticsEl.textContent = notes.length > 0 ? notes.join(' / ') : t('ui.label.common.empty', 'データなし');
+
+  const raw = document.getElementById('monitor-insights-raw');
+  if (raw) raw.textContent = JSON.stringify(data, null, 2);
+}
+
 function resolveHost(value) {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
@@ -6148,11 +6253,43 @@ async function loadMonitorUserDeliveries(options) {
 async function loadMonitorInsights(options) {
   const notify = options && options.notify;
   const windowDays = document.getElementById('monitor-window-days')?.value || '7';
+  const snapshotMode = document.getElementById('monitor-insights-snapshot-mode')?.value || 'prefer';
+  const fallbackMode = document.getElementById('monitor-insights-fallback-mode')?.value || 'allow';
+  const fallbackOnEmpty = document.getElementById('monitor-insights-fallback-on-empty')?.value || 'true';
+  const readLimit = normalizeMonitorLimit(document.getElementById('monitor-insights-read-limit')?.value, 1000, 5000);
+  const limit = normalizeMonitorLimit(document.getElementById('monitor-insights-limit')?.value, 10, 100);
   const traceId = ensureTraceInput('monitor-trace');
-  const params = new URLSearchParams({ windowDays, limit: '10', traceId });
+  const diagnosticsEl = document.getElementById('monitor-insights-diagnostics');
+  const raw = document.getElementById('monitor-insights-raw');
+  if (diagnosticsEl) diagnosticsEl.textContent = t('ui.desc.monitor.insightsLoading', 'クリック分析を取得しています');
+  if (raw) raw.textContent = '-';
+  const params = new URLSearchParams({
+    windowDays,
+    snapshotMode,
+    fallbackMode,
+    fallbackOnEmpty,
+    readLimit: String(readLimit),
+    limit: String(limit),
+    traceId
+  });
+  const requestInfo = {
+    endpoint: '/api/admin/monitor-insights',
+    query: {
+      windowDays,
+      snapshotMode,
+      fallbackMode,
+      fallbackOnEmpty,
+      readLimit,
+      limit
+    }
+  };
   try {
     const res = await fetch(`/api/admin/monitor-insights?${params.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await res.json();
+    if (!data || data.ok !== true) {
+      const reason = data && typeof data.error === 'string' ? data.error : `status_${res.status}`;
+      throw new Error(reason);
+    }
     state.monitorInsights = data;
     renderVendorCtrRows(Array.isArray(data && data.vendorCtrTop) ? data.vendorCtrTop : []);
     renderFaqReferenceRows(Array.isArray(data && data.faqReferenceTop) ? data.faqReferenceTop : []);
@@ -6165,8 +6302,10 @@ async function loadMonitorInsights(options) {
         abEl.textContent = `${ab.ctaA || '-'} ${t('ui.label.monitor.ab.vs', 'vs')} ${ab.ctaB || '-'} / ΔCTR ${typeof ab.deltaCTR === 'number' ? `${Math.round(ab.deltaCTR * 1000) / 10}%` : '-'}`;
       }
     }
+    renderMonitorInsightsDiagnostics(data, traceId);
     if (notify) showToast(t('ui.toast.monitor.insightsLoaded', 'クリック分析を更新しました'), 'ok');
-  } catch (_err) {
+  } catch (err) {
+    renderMonitorInsightsFailure(traceId, requestInfo, err);
     if (notify) showToast(t('ui.toast.monitor.insightsLoadFail', 'クリック分析の取得に失敗しました'), 'danger');
   }
 }
@@ -8594,6 +8733,21 @@ function setupMonitorControls() {
     loadMonitorInsights({ notify: true });
   });
   document.getElementById('monitor-window-days')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-insights-snapshot-mode')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-insights-fallback-mode')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-insights-fallback-on-empty')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-insights-read-limit')?.addEventListener('change', () => {
+    loadMonitorInsights({ notify: false });
+  });
+  document.getElementById('monitor-insights-limit')?.addEventListener('change', () => {
     loadMonitorInsights({ notify: false });
   });
   document.getElementById('monitor-open-trace')?.addEventListener('click', async () => {

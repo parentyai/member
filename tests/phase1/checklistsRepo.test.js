@@ -42,3 +42,28 @@ test('checklistsRepo: create -> get -> list', async () => {
   assert.strictEqual(list.length, 1);
   assert.strictEqual(list[0].id, created.id);
 });
+
+test('checklistsRepo: list supports scenarioKey precedence with legacy scenario fallback', async () => {
+  await checklistsRepo.createChecklist({
+    scenarioKey: 'B',
+    scenario: 'A',
+    step: '3mo',
+    items: [{ itemId: 'i1', title: 'legacy-first', linkRegistryId: 'L1', order: 1 }]
+  });
+  await checklistsRepo.createChecklist({
+    scenario: 'A',
+    step: '3mo',
+    items: [{ itemId: 'i2', title: 'legacy-only', linkRegistryId: 'L2', order: 1 }]
+  });
+
+  const listByScenarioKey = await checklistsRepo.listChecklists({ scenarioKey: 'B', step: '3mo' });
+  assert.strictEqual(listByScenarioKey.length, 1);
+  assert.strictEqual(listByScenarioKey[0].scenarioKey, 'B');
+
+  const listByLegacyScenario = await checklistsRepo.listChecklists({ scenario: 'A', step: '3mo' });
+  assert.strictEqual(listByLegacyScenario.length, 2);
+  const matchedByScenarioKey = listByLegacyScenario.filter((item) => item.scenarioKey === 'B');
+  const matchedByLegacy = listByLegacyScenario.filter((item) => item.scenarioKey === undefined || item.scenarioKey === '');
+  assert.strictEqual(matchedByScenarioKey.length, 1);
+  assert.strictEqual(matchedByLegacy.length, 1);
+});

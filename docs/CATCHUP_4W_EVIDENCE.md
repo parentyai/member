@@ -120,6 +120,83 @@
   - `docs/REPO_AUDIT_INPUTS/structure_risk.json`
   - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
 
+## W5.1 Checklist Path Canonicalization (2026-02-25T03:04:37Z)
+- scope:
+  - `getChecklistForUser` を `scenarioKey` 優先解決へ移行（legacy alias 維持）
+  - `getChecklistWithStatus` へ `scenarioKey` add-only 出力を追加
+  - naming drift inventory から checklist/usecase 系の完了分を反映
+- command results:
+  - `node --test tests/phase661/*.test.js` PASS (3/3)
+  - `node --test tests/phase1/getChecklistForUser.test.js tests/phase1/smoke.test.js` PASS (3/3)
+  - `npm run structure-risk:generate` PASS
+  - `npm run cleanup:generate` PASS
+  - `npm run docs-artifacts:generate` PASS
+  - `npm run audit-inputs:generate` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `7 -> 4`
+  - `legacy_repos_count`: `6` (unchanged)
+  - `active_legacy_repo_imports_count`: `0` (unchanged)
+- related artifacts:
+  - `docs/REPO_AUDIT_INPUTS/design_ai_meta.json`
+  - `docs/REPO_AUDIT_INPUTS/structure_risk.json`
+
+## W5.2 Naming Drift 4件 クローズ (2026-02-25T03:19:16Z)
+- scope:
+  - `src/repos/firestore/checklistsRepo.js`
+  - `src/repos/firestore/scenarioReportsRepo.js`
+  - `src/usecases/phase2/runAutomation.js`
+  - `src/repos/firestore/phase2ReportsRepo.js`（legacy forwarderを明示）
+  - `tests/phase662/phase662_t01_scenario_reports_repo_scenario_key_contract.test.js`
+- command results:
+  - `node --test tests/phase1/checklistsRepo.test.js` PASS
+  - `node --test tests/phase2/runAutomation.test.js` PASS
+  - `node --test tests/phase662/phase662_t01_scenario_reports_repo_scenario_key_contract.test.js` PASS
+  - `npm run catchup:drift-check` PASS
+  - `npm run catchup:gate:pr` PASS
+  - `npm run catchup:gate:full` PASS
+  - `npm test` PASS (1406)
+  - `npm run test:trace-smoke` PASS
+  - `npm run test:ops-smoke` PASS
+  - `npm run firestore-indexes:check -- --contracts-only` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `4 -> 0`
+  - `legacy_repos_count`: `6`（維持）
+  - `active_legacy_repo_imports_count`: `0`（維持）
+- related artifacts:
+  - `docs/TRACE_SMOKE_EVIDENCE.md`（追加）
+  - `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md`（3.3進捗反映）
+  - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`（legacy 4→0）
+  - `docs/REPO_AUDIT_INPUTS/structure_risk.json`（`naming_drift.scenario` 0）
+  - `docs/REPO_AUDIT_INPUTS/design_ai_meta.json`（4件対象を削除）
+- trace hash:
+  - `0907840126c2088cc9138a2ab904be4582b51f86`
+  - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
+
+## W5.3 残件4 legacy alias identity 固定 (2026-02-25T03:25:00Z)
+- scope:
+  - `tests/phase315/phase315_t04_legacy_alias_identity_contract.test.js`
+  - `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md`（3.4進捗反映）
+  - `docs/REPO_AUDIT_INPUTS/repo_map_ui.json`（`testCount`更新）
+  - `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json`（生成証跡更新）
+- command results:
+  - `node --test tests/phase315/*.test.js` PASS (8/8)
+  - `npm run structure-risk:check` PASS
+  - `npm run repo-map:generate` PASS
+  - `npm run audit-inputs:generate` PASS
+  - `npm run catchup:gate:pr` PASS
+  - `npm run catchup:gate:full` PASS
+  - `npm test` PASS (1407/1407)
+  - `npm run test:trace-smoke` PASS
+  - `npm run test:ops-smoke` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `0`（維持）
+  - `legacy_repos_count`: `6`（維持）
+  - `active_legacy_repo_imports_count`: `0`（維持）
+- related artifacts:
+  - `docs/TRACE_SMOKE_EVIDENCE.md`（追加）
+  - `docs/REPO_AUDIT_INPUTS/repo_map_ui.json`
+  - `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json`
+
 ## Log Template (copy)
 ```text
 date_utc: YYYY-MM-DDTHH:mm:ssZ

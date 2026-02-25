@@ -61,12 +61,13 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `expect_llm_enabled`: LLM gate で `effectiveEnabled=true` と非ブロック `llmStatus` を要求する（推奨 true）
 
 ## Checklist (fixed order)
-1. Product Readiness Gate（管理API 6本）:
+1. Product Readiness Gate（管理API 7本）:
    - `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true` / `checks.structureRisk.activeLegacyRepoImports=0`
    - `/api/admin/read-path-fallback-summary` が HTTP 200
    - `/api/admin/retention-runs` が HTTP 200
    - `/api/admin/struct-drift/backfill-runs` が HTTP 200
    - `/api/admin/os/alerts/summary` が HTTP 200
+   - `/api/admin/monitor-insights?windowDays=7` が HTTP 200
    - `/api/admin/city-packs` が HTTP 200
 2. LLM Gate:
    - `/api/admin/llm/config/status` が HTTP 200

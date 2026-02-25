@@ -5,7 +5,7 @@
 
 | field | count | paths |
 | --- | --- | --- |
-| scenario (legacy) | 7 | `src/repos/firestore/checklistsRepo.js`<br>`src/repos/firestore/phase2ReportsRepo.js`<br>`src/repos/firestore/scenarioReportsRepo.js`<br>`src/repos/firestore/usersPhase1Repo.js`<br>`src/usecases/checklists/getChecklistForUser.js`<br>`src/usecases/checklists/getChecklistWithStatus.js`<br>`src/usecases/phase2/runAutomation.js` |
+| scenario (legacy) | 0 |  |
 | scenarioKey (canonical) | 22 | `src/repos/firestore/notificationsRepo.js`<br>`src/repos/firestore/usersRepo.js`<br>`src/routes/admin/monitorInsights.js`<br>`src/routes/admin/notificationDeliveries.js`<br>`src/routes/admin/notifications.js`<br>`src/routes/admin/opsOverview.js`<br>`src/routes/admin/osNotifications.js`<br>`src/routes/admin/readModel.js`<br>`src/routes/admin/userTimeline.js`<br>`src/usecases/admin/getNotificationOperationalSummary.js`<br>`src/usecases/admin/getNotificationReadModel.js`<br>`src/usecases/admin/getUserOperationalSummary.js`<br>`src/usecases/adminOs/executeNotificationSend.js`<br>`src/usecases/adminOs/planNotificationSend.js`<br>`src/usecases/notifications/createNotification.js`<br>`src/usecases/notifications/sendNotification.js`<br>`src/usecases/phase117/resolveAutomationTargets.js`<br>`src/usecases/phase140/getNotificationHealthSummary.js`<br>`src/usecases/phase33/executeOpsNextAction.js`<br>`src/usecases/phase5/getUserStateSummary.js`<br>`src/usecases/users/declareRedacMembershipIdFromLine.js`<br>`src/usecases/users/ensureUser.js` |
 
 ## 移行方針
