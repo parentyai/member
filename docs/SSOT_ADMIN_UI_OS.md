@@ -90,11 +90,34 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 - `GET /api/admin/local-preflight` を追加し、read-only でローカル前提条件を返す。
 - `window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1` を boot script へ注入する。
 - UIは `ready=false` の場合、原因/影響/操作をバナー表示する。
+- `summary` へ add-only で以下を返す:
+  - `category`
+  - `recoveryActionCode`
+  - `recoveryCommands[]`
+  - `primaryCheckKey`
+  - `rawHint`
+  - `retriable`
+- `checks.firestoreProbe.classification` は以下を返す:
+  - `ADC_REAUTH_REQUIRED`
+  - `FIRESTORE_TIMEOUT`
+  - `FIRESTORE_NETWORK_ERROR`
+  - `FIRESTORE_PERMISSION_ERROR`
+  - `FIRESTORE_UNKNOWN`
 
 ### 判定対象
 - `GOOGLE_APPLICATION_CREDENTIALS` が有効ファイルか
 - `FIRESTORE_PROJECT_ID` の設定有無
 - Firestore read-only probe（`listCollections`）の成否
+
+### UI復旧導線（Phase664）
+- preflight異常時は `admin-local-preflight-banner` を一次表示とし、汎用 `admin-guard-banner` は重複表示しない。
+- バナー内で以下を提供する:
+  - `再診断`
+  - `コマンドコピー`
+  - `監査ログへ移動`
+  - 診断詳細（checks JSON）
+- preflight未復旧時は `degraded` モードで初期Firestore依存ロードを抑止し、Dashboard KPIは `BLOCKED` 表示に統一する。
+- preflight復旧時は初期ロードを自動再開する。
 
 ### 運用意図
 - `NOT AVAILABLE` の原因を「実装未完了」と「環境不備」に分離して提示する。

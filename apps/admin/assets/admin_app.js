@@ -90,6 +90,15 @@ const state = {
   dict: {},
   role: 'operator',
   localPreflight: null,
+  recoveryUx: {
+    mode: 'normal',
+    blockingReasonCode: null,
+    lastCheckedAt: null,
+    commands: [],
+    canRetry: false,
+    suppressedGuard: false,
+    pendingBootstrapLoads: false
+  },
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
@@ -195,6 +204,22 @@ const state = {
   navPolicyHashCore: null,
   navPolicyHashApp: null
 };
+
+const LOCAL_PREFLIGHT_CODE_SET = new Set([
+  'LOCAL_PREFLIGHT_NOT_READY',
+  'LOCAL_PREFLIGHT_UNAVAILABLE',
+  'FIRESTORE_PROBE_FAILED',
+  'FIRESTORE_CREDENTIALS_ERROR',
+  'FIRESTORE_PROJECT_ID_ERROR',
+  'FIRESTORE_PERMISSION_ERROR',
+  'ADC_REAUTH_REQUIRED',
+  'FIRESTORE_TIMEOUT',
+  'FIRESTORE_NETWORK_ERROR',
+  'FIRESTORE_UNKNOWN',
+  'CREDENTIALS_PATH_INVALID',
+  'CREDENTIALS_PATH_NOT_FILE',
+  'FIRESTORE_PROJECT_ID_MISSING'
+]);
 
 if (!ADMIN_TREND_UI_ENABLED) {
   if (typeof document !== 'undefined' && document.documentElement) {
@@ -740,6 +765,51 @@ function resolveGuardBannerElement() {
   return document.getElementById('admin-guard-banner');
 }
 
+function normalizeGuardErrorCode(rawError) {
+  if (rawError && typeof rawError === 'object') {
+    const raw = rawError.error || rawError.reason || rawError.code || rawError.message || '';
+    return String(raw || '').split(':')[0].trim().toUpperCase();
+  }
+  return String(rawError || '').split(':')[0].trim().toUpperCase();
+}
+
+function isLocalPreflightCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  if (!normalized) return false;
+  return LOCAL_PREFLIGHT_CODE_SET.has(normalized);
+}
+
+function isLocalPreflightBlockingDataLoads() {
+  return Boolean(
+    ADMIN_LOCAL_PREFLIGHT_ENABLED
+    && state.localPreflight
+    && state.localPreflight.ready === false
+  );
+}
+
+function shouldSuppressGenericGuard(rawError) {
+  const code = normalizeGuardErrorCode(rawError);
+  if (!code) return false;
+  return isLocalPreflightBlockingDataLoads() && isLocalPreflightCode(code);
+}
+
+function applyRecoveryUxFromPreflight(payload) {
+  const source = payload && typeof payload === 'object' ? payload : {};
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
+  const commands = Array.isArray(summary.recoveryCommands)
+    ? summary.recoveryCommands.map((entry) => String(entry || '').trim()).filter((entry) => entry)
+    : [];
+  const blocked = source.ready === false;
+  state.recoveryUx = Object.assign({}, state.recoveryUx, {
+    mode: blocked ? 'degraded' : 'normal',
+    blockingReasonCode: blocked ? String(summary.code || 'LOCAL_PREFLIGHT_NOT_READY') : null,
+    lastCheckedAt: source.checkedAt || null,
+    commands,
+    canRetry: summary.retriable !== false,
+    suppressedGuard: blocked
+  });
+}
+
 function clearGuardBanner() {
   const el = resolveGuardBannerElement();
   if (!el) return;
@@ -754,6 +824,11 @@ function clearGuardBanner() {
 }
 
 function renderGuardBanner(rawError) {
+  if (shouldSuppressGenericGuard(rawError)) {
+    state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: true });
+    clearGuardBanner();
+    return;
+  }
   const el = resolveGuardBannerElement();
   if (!el) return;
   const guardCore = resolveCoreSlice('fetchGuardCore');
@@ -782,6 +857,7 @@ function renderGuardBanner(rawError) {
   if (normalized.tone === 'warn') el.classList.add('is-warn');
   else el.classList.add('is-danger');
   el.setAttribute('data-admin-guard', 'visible');
+  state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: false });
 }
 
 function resolveLocalPreflightBannerElement() {
@@ -796,9 +872,19 @@ function clearLocalPreflightBanner() {
   const cause = el.querySelector('[data-local-preflight-field="cause"]');
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
+  const rawHint = el.querySelector('[data-local-preflight-field="rawHint"]');
+  const commandList = document.getElementById('local-preflight-command-list');
+  const checksJson = document.getElementById('local-preflight-checks-json');
+  const checksDetails = document.getElementById('local-preflight-checks');
+  const copyBtn = document.getElementById('local-preflight-copy-commands');
   if (cause) cause.textContent = '-';
   if (impact) impact.textContent = '-';
   if (action) action.textContent = '-';
+  if (rawHint) rawHint.textContent = '-';
+  if (commandList) commandList.textContent = '-';
+  if (checksJson) checksJson.textContent = '-';
+  if (checksDetails) checksDetails.open = false;
+  if (copyBtn) copyBtn.disabled = true;
 }
 
 function normalizeLocalPreflightPayload(payload) {
@@ -816,8 +902,18 @@ function normalizeLocalPreflightPayload(payload) {
   const actionBase = summary.action
     ? String(summary.action)
     : t('ui.desc.admin.localPreflight.defaultAction', '認証設定を確認して再試行してください。');
+  const rawHint = summary.rawHint
+    ? String(summary.rawHint)
+    : t('ui.desc.admin.localPreflight.rawHintEmpty', '追加ヒントはありません。');
+  const commands = Array.isArray(summary.recoveryCommands)
+    ? summary.recoveryCommands.map((entry) => String(entry || '').trim()).filter((entry) => entry.length > 0)
+    : [];
+  const primaryCheckKey = summary.primaryCheckKey ? String(summary.primaryCheckKey) : null;
+  const recoveryActionCode = summary.recoveryActionCode ? String(summary.recoveryActionCode) : null;
+  const category = summary.category ? String(summary.category) : null;
+  const retriable = summary.retriable !== false;
   const action = `${actionBase} (${code} / checkedAt=${checkedAt})`;
-  return { code, tone, cause, impact, action };
+  return { code, tone, cause, impact, action, rawHint, commands, primaryCheckKey, recoveryActionCode, category, retriable };
 }
 
 function renderLocalPreflightBanner(payload) {
@@ -827,24 +923,31 @@ function renderLocalPreflightBanner(payload) {
   const cause = el.querySelector('[data-local-preflight-field="cause"]');
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
+  const rawHint = el.querySelector('[data-local-preflight-field="rawHint"]');
+  const commandList = document.getElementById('local-preflight-command-list');
+  const checksJson = document.getElementById('local-preflight-checks-json');
+  const copyBtn = document.getElementById('local-preflight-copy-commands');
   if (cause) cause.textContent = normalized.cause;
   if (impact) impact.textContent = normalized.impact;
   if (action) action.textContent = normalized.action;
+  if (rawHint) rawHint.textContent = normalized.rawHint;
+  if (commandList) commandList.textContent = normalized.commands.length ? normalized.commands.join('\n') : '-';
+  if (checksJson) checksJson.textContent = JSON.stringify((payload && payload.checks) || {}, null, 2);
+  if (copyBtn) copyBtn.disabled = normalized.commands.length === 0;
   el.classList.add('is-visible');
   el.classList.remove('is-danger', 'is-warn');
   if (normalized.tone === 'warn') el.classList.add('is-warn');
   else el.classList.add('is-danger');
   el.setAttribute('data-admin-local-preflight', 'visible');
+  applyRecoveryUxFromPreflight(payload);
 }
 
 function renderDataLoadFailureGuard(reasonCode, err) {
   const message = err && err.message ? String(err.message) : String(reasonCode || 'error');
   if (state.localPreflight && state.localPreflight.ready === false) {
-    const summary = state.localPreflight.summary && typeof state.localPreflight.summary === 'object'
-      ? state.localPreflight.summary
-      : {};
     renderLocalPreflightBanner(state.localPreflight);
-    renderGuardBanner({ error: summary.code || 'LOCAL_PREFLIGHT_NOT_READY' });
+    clearGuardBanner();
+    state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: true });
     return;
   }
   renderGuardBanner({ error: `${String(reasonCode || 'load_failed')}:${message}` });
@@ -853,8 +956,12 @@ function renderDataLoadFailureGuard(reasonCode, err) {
 async function loadLocalPreflight(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
+  const reloadOnRecover = opts.reloadOnRecover === true;
+  const wasBlocking = isLocalPreflightBlockingDataLoads();
   if (!ADMIN_LOCAL_PREFLIGHT_ENABLED) {
     state.localPreflight = { ready: true, summary: { code: 'LOCAL_PREFLIGHT_DISABLED', tone: 'ok' } };
+    applyRecoveryUxFromPreflight(state.localPreflight);
+    state.recoveryUx = Object.assign({}, state.recoveryUx, { pendingBootstrapLoads: false });
     clearLocalPreflightBanner();
     return state.localPreflight;
   }
@@ -864,13 +971,19 @@ async function loadLocalPreflight(options) {
     const data = await readJsonResponse(res);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'local preflight failed');
     state.localPreflight = data;
+    applyRecoveryUxFromPreflight(data);
     if (data.ready === true) {
       clearLocalPreflightBanner();
+      clearGuardBanner();
+      if (wasBlocking || reloadOnRecover || state.recoveryUx.pendingBootstrapLoads === true) {
+        await runInitialDataLoads({ notify: false, source: 'local_preflight_recovered' });
+      }
       if (notify) showToast(t('ui.toast.localPreflight.ok', 'ローカル診断は正常です'), 'ok');
       return data;
     }
     renderLocalPreflightBanner(data);
-    renderGuardBanner({ error: (data.summary && data.summary.code) || 'LOCAL_PREFLIGHT_NOT_READY' });
+    clearGuardBanner();
+    state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: true });
     if (notify) showToast(t('ui.toast.localPreflight.notReady', 'ローカル診断で要対応が見つかりました'), 'warn');
     return data;
   } catch (_err) {
@@ -880,17 +993,123 @@ async function loadLocalPreflight(options) {
       summary: {
         code: 'LOCAL_PREFLIGHT_UNAVAILABLE',
         tone: 'warn',
+        category: 'unknown',
         cause: t('ui.desc.admin.localPreflight.unavailableCause', 'ローカル診断APIの取得に失敗しました。'),
         impact: t('ui.desc.admin.localPreflight.unavailableImpact', '環境不備と実装不備の切り分けができません。'),
-        action: t('ui.desc.admin.localPreflight.unavailableAction', '/api/admin/local-preflight を確認して再試行してください。')
+        action: t('ui.desc.admin.localPreflight.unavailableAction', '/api/admin/local-preflight を確認して再試行してください。'),
+        recoveryActionCode: 'CHECK_FIRESTORE_UNKNOWN',
+        recoveryCommands: [
+          'npm run admin:preflight',
+          'curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight'
+        ],
+        primaryCheckKey: 'firestoreProbe',
+        rawHint: String(_err && _err.message ? _err.message : 'local preflight fetch failed'),
+        retriable: true
       }
     };
     state.localPreflight = fallback;
+    applyRecoveryUxFromPreflight(fallback);
     renderLocalPreflightBanner(fallback);
-    renderGuardBanner({ error: 'LOCAL_PREFLIGHT_UNAVAILABLE' });
+    clearGuardBanner();
+    state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: true });
     if (notify) showToast(t('ui.toast.localPreflight.fail', 'ローカル診断の取得に失敗しました'), 'warn');
     return fallback;
   }
+}
+
+async function copyLocalPreflightCommands() {
+  const commands = state.recoveryUx && Array.isArray(state.recoveryUx.commands)
+    ? state.recoveryUx.commands
+    : [];
+  const payload = commands.join('\n').trim();
+  if (!payload) {
+    showToast(t('ui.toast.localPreflight.copyEmpty', 'コピー対象の復旧コマンドがありません'), 'warn');
+    return;
+  }
+  const copied = await copyTextToClipboardBestEffort(payload);
+  showToast(
+    copied
+      ? t('ui.toast.localPreflight.copyOk', '復旧コマンドをコピーしました')
+      : t('ui.toast.localPreflight.copyFail', 'コマンドコピーに失敗しました'),
+    copied ? 'ok' : 'danger'
+  );
+}
+
+function openLocalPreflightAuditPane() {
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace && typeof auditTrace.value === 'string' && !auditTrace.value.trim()) {
+    auditTrace.value = traceId;
+  }
+  activatePane('audit', { historyMode: 'push', syncHistory: true });
+}
+
+async function rerunLocalPreflightFromUi() {
+  const wasBlocking = isLocalPreflightBlockingDataLoads();
+  const data = await loadLocalPreflight({ notify: true, reloadOnRecover: true });
+  if (wasBlocking && data && data.ready === true) {
+    showToast(t('ui.toast.localPreflight.recovered', 'ローカル診断の復旧を確認し、データ読込を再開しました'), 'ok');
+  }
+}
+
+async function runInitialDataLoads(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  if (isLocalPreflightBlockingDataLoads()) {
+    state.recoveryUx = Object.assign({}, state.recoveryUx, {
+      mode: 'degraded',
+      pendingBootstrapLoads: true
+    });
+    state.dashboardKpis = null;
+    state.dashboardJourneyKpi = null;
+    renderDashboardKpis();
+    renderDashboardJourneyKpi();
+    clearGuardBanner();
+    await loadTopbarStatus();
+    void loadRepoMap({ notify: false });
+    renderAllDecisionCards();
+    if (notify) {
+      showToast(t('ui.toast.localPreflight.blockedLoads', 'ローカル診断が未復旧のためデータ取得を停止中です'), 'warn');
+    }
+    return;
+  }
+  state.recoveryUx = Object.assign({}, state.recoveryUx, {
+    mode: 'normal',
+    pendingBootstrapLoads: false,
+    suppressedGuard: false
+  });
+  loadMonitorData({ notify: false });
+  loadMonitorInsights({ notify: false });
+  loadReadModelData({ notify: false });
+  loadUsersSummary({ notify: false });
+  loadErrors({ notify: false });
+  loadVendors({ notify: false });
+  loadCityPackRequests({ notify: false });
+  loadCityPackFeedback({ notify: false });
+  loadCityPackBulletins({ notify: false });
+  loadCityPackProposals({ notify: false });
+  loadCityPackTemplateLibrary({ notify: false });
+  loadCityPackReviewInbox({ notify: false });
+  loadCityPackKpi({ notify: false });
+  loadCityPackMetrics({ notify: false });
+  loadCityPackAuditRuns({ notify: false });
+  loadCityPackComposition({ notify: false });
+  loadDashboardKpis({ notify: false });
+  loadAlertsSummary({ notify: false });
+  loadRepoMap({ notify: false });
+  renderAllDecisionCards();
+}
+
+function setupLocalPreflightControls() {
+  document.getElementById('local-preflight-recheck')?.addEventListener('click', () => {
+    void rerunLocalPreflightFromUi();
+  });
+  document.getElementById('local-preflight-copy-commands')?.addEventListener('click', () => {
+    void copyLocalPreflightCommands();
+  });
+  document.getElementById('local-preflight-open-audit')?.addEventListener('click', () => {
+    openLocalPreflightAuditPane();
+  });
 }
 
 function runDangerActionGuard(options) {
@@ -1124,6 +1343,36 @@ function showToast(message, tone) {
     toastEl.className = 'toast';
     toastEl.textContent = '';
   }, 2200);
+}
+
+async function copyTextToClipboardBestEffort(text) {
+  const value = String(text || '');
+  if (!value) return false;
+  if (typeof navigator !== 'undefined'
+    && navigator.clipboard
+    && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (_err) {
+      // fall through
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', 'readonly');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand('copy'); // eslint-disable-line no-restricted-properties
+  } catch (_err) {
+    copied = false;
+  }
+  document.body.removeChild(textarea);
+  return copied;
 }
 
 function t(key, fallback) {
@@ -2548,6 +2797,15 @@ function renderDashboardMetricCard(metricKey, payload) {
   const config = DASHBOARD_CARD_CONFIG[metricKey];
   if (!currentEl || !previousEl || !noteEl || !config) return;
 
+  if (state.recoveryUx && state.recoveryUx.mode === 'degraded') {
+    currentEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+    previousEl.textContent = '-';
+    noteEl.textContent = t('ui.desc.dashboard.blockedByLocalPreflight', 'ローカル診断が未復旧のため取得を停止中です');
+    renderDashboardLineChartSvg(metricKey, [], config.unit);
+    renderDashboardDelta(metricKey, NaN, NaN, config.unit);
+    return;
+  }
+
   const metric = resolveDashboardMetric(payload, metricKey);
   if (!metric || metric.available !== true) {
     currentEl.textContent = t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
@@ -2626,6 +2884,17 @@ function renderDashboardJourneyKpi() {
   const rawEl = document.getElementById('dashboard-journey-kpi-result');
 
   if (!payload) {
+    if (state.recoveryUx && state.recoveryUx.mode === 'degraded') {
+      if (retentionEl) retentionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (phaseEl) phaseEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (taskCompletionEl) taskCompletionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (dependencyBlockEl) dependencyBlockEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (nextActionEl) nextActionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (conversionEl) conversionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (churnEl) churnEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (rawEl) rawEl.textContent = t('ui.desc.dashboard.blockedByLocalPreflight', 'ローカル診断が未復旧のため取得を停止中です');
+      return;
+    }
     if (retentionEl) retentionEl.textContent = '-';
     if (phaseEl) phaseEl.textContent = '-';
     if (taskCompletionEl) taskCompletionEl.textContent = '-';
@@ -2780,6 +3049,15 @@ async function loadAlertsSummary(options) {
 
 async function loadDashboardKpis(options) {
   const notify = !options || options.notify !== false;
+  if (isLocalPreflightBlockingDataLoads()) {
+    state.dashboardKpis = null;
+    state.dashboardJourneyKpi = null;
+    renderDashboardKpis();
+    renderDashboardJourneyKpi();
+    await loadTopbarStatus();
+    if (notify) showToast(t('ui.toast.localPreflight.blockedLoads', 'ローカル診断が未復旧のためデータ取得を停止中です'), 'warn');
+    return;
+  }
   const traceId = ensureTraceInput('traceId') || newTraceId();
   const monthsNeeded = Array.from(new Set(Object.keys(DASHBOARD_CARD_CONFIG).map((metricKey) => getDashboardWindowMonths(metricKey))));
   let failed = false;
@@ -10501,6 +10779,7 @@ function setupLlmControls() {
   setupNav();
   setupHeaderActions();
   setupDeveloperMenu();
+  setupLocalPreflightControls();
   setupHomeControls();
   setupComposerActions();
   setupMonitorControls();
@@ -10519,25 +10798,5 @@ function setupLlmControls() {
   setupHistorySync();
   setupPaneKeyboardShortcuts();
   await loadLocalPreflight({ notify: false });
-
-  loadMonitorData({ notify: false });
-  loadMonitorInsights({ notify: false });
-  loadReadModelData({ notify: false });
-  loadUsersSummary({ notify: false });
-  loadErrors({ notify: false });
-  loadVendors({ notify: false });
-  loadCityPackRequests({ notify: false });
-  loadCityPackFeedback({ notify: false });
-  loadCityPackBulletins({ notify: false });
-  loadCityPackProposals({ notify: false });
-  loadCityPackTemplateLibrary({ notify: false });
-  loadCityPackReviewInbox({ notify: false });
-  loadCityPackKpi({ notify: false });
-  loadCityPackMetrics({ notify: false });
-  loadCityPackAuditRuns({ notify: false });
-  loadCityPackComposition({ notify: false });
-  loadDashboardKpis({ notify: false });
-  loadAlertsSummary({ notify: false });
-  loadRepoMap({ notify: false });
-  renderAllDecisionCards();
+  await runInitialDataLoads({ notify: false, source: 'bootstrap' });
 })();

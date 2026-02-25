@@ -25,7 +25,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_SERVICE_PHASES.md`（ServicePhase 1〜4 定義 / scope / guardrails）
 - `docs/SSOT_NOTIFICATION_PRESETS.md`（NotificationPreset A/B/C 定義 / guardrails）
 - `docs/SSOT_SERVICE_PHASE_X_PRESET_MATRIX.md`（ServicePhase × Preset 許可範囲マトリクス）
-- `docs/SSOT_ADMIN_UI_OS.md`（管理UI=運用OS 定義 / IA / 監査ポイント。UI表示は辞書準拠）
+- `docs/SSOT_ADMIN_UI_OS.md`（管理UI=運用OS 定義 / IA / 監査ポイント。UI表示は辞書準拠 / local preflight recovery UX）
 - `docs/SSOT_ADMIN_UI_DATA_MODEL.md`（運用OSの編集対象 / draft-active ルール）
 - `docs/ADMIN_UI_REDESIGN_2026_PLAN.md`（管理UI再設計・構造・実装計画）
 - `docs/ADMIN_MANUAL_JA.md`（非エンジニア向け運用マニュアル）

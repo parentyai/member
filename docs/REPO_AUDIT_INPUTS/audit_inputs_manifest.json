@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T08:47:24-05:00",
-  "gitCommit": "4afb9a4fb2015960daaa0a2a8652259b59a31ddd",
-  "branch": "codex/rich-menu-ssot-lock",
-  "sourceDigest": "649820d8ac65b7783d147ec6cbc16e41537563c82c0514209ef9119a750ad7c4",
+  "generatedAt": "2026-02-25T12:28:34-05:00",
+  "gitCommit": "f0bbb5223ab99fdd270297a8e29f08ad365b6bc2",
+  "branch": "main",
+  "sourceDigest": "5d9aa66f7f32dd82b46c691d15b161170f8c365ac6034d84070b246a1fd25f92",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "719b87bb2d066413bd93535587bd31b1295f026b088a449e94a32943077ba7a0",
+      "sha256": "4b16220a840afe3e2493f4f637369bf3a988ae2dbd0100946018b9738290070a",
       "bytes": 292294
     },
     {
@@ -138,8 +138,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "94b26feedaa31fb1dfda5b8654c64eb5376c7e7a23a53e9c41f4d035fd7e0fed",
-      "bytes": 2411
+      "sha256": "8ab2609f3b23e88abb63ffc85733e674b64a2537449a0802f82298aa6aac6071",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

@@ -68,6 +68,17 @@
   - `FIRESTORE_PROJECT_ID` を確認
   - `gcloud auth application-default login` を再実行
 
+### UI復旧フロー（Phase664）
+1) `/admin/app` 上部の local preflight バナーで `再診断` を実行  
+2) バナーの `復旧コマンド` から必要コマンドを `コマンドコピー`  
+3) 実行後に再度 `再診断`  
+4) 必要時は `監査ログへ移動` で trace を突合  
+5) preflight が復旧したら Dashboard / Alerts などの初期ロードは自動再開される
+
+補足:
+- preflight未復旧時は degraded モードになり、Dashboard KPIは `BLOCKED` 表示になる。
+- preflight異常時は汎用ガードバナーを重複表示しない。
+
 ### フラグ
 - `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=1`（既定）: UIバナーで原因/影響/操作を表示
 - `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=0`: 診断経路を停止（既存挙動へ復帰）
