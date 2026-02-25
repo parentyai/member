@@ -23,6 +23,11 @@ on:
         required: false
         default: ""
         type: string
+      admin_token_file:
+        description: "Optional file path for admin token. Takes precedence when provided."
+        required: false
+        default: ""
+        type: string
       actor:
         description: "x-actor used in audit logs"
         required: false
@@ -139,6 +144,10 @@ jobs:
       - name: Validate required secret exists
         run: |
           set -euo pipefail
+          if [ -n "${{ github.event.inputs.admin_token_file }}" ]; then
+            echo "::notice title=Secret preflight skipped::admin_token_file input is provided."
+            exit 0
+          fi
           if [ -n "${ADMIN_OS_TOKEN:-}" ]; then
             echo "::notice title=Secret preflight skipped::ADMIN_OS_TOKEN provided via GitHub secrets."
             exit 0
@@ -167,6 +176,14 @@ jobs:
       - name: Resolve ADMIN_OS_TOKEN
         run: |
           set -euo pipefail
+          if [ -n "${{ github.event.inputs.admin_token_file }}" ]; then
+            if [ ! -r "${{ github.event.inputs.admin_token_file }}" ]; then
+              echo "::error title=admin token file unreadable::${{ github.event.inputs.admin_token_file }}"
+              exit 1
+            fi
+            echo "::notice title=Admin token source::Using admin token file from workflow input."
+            exit 0
+          fi
           if [ -n "${ADMIN_OS_TOKEN:-}" ]; then
             echo "::notice title=Admin token source::Using ADMIN_OS_TOKEN from GitHub secrets."
             echo "::add-mask::$ADMIN_OS_TOKEN"
@@ -226,7 +243,6 @@ jobs:
 
           ARGS=(
             --base-url "http://127.0.0.1:18080"
-            --admin-token "$ADMIN_OS_TOKEN"
             --actor "${{ github.event.inputs.actor }}"
             --project-id "$GCP_PROJECT_ID"
             --fetch-route-errors
@@ -238,6 +254,11 @@ jobs:
             --out-file "$JSON_OUT"
             --md-out "$MD_OUT"
           )
+          if [ -n "${{ github.event.inputs.admin_token_file }}" ]; then
+            ARGS+=(--admin-token-file "${{ github.event.inputs.admin_token_file }}")
+          elif [ -n "${ADMIN_OS_TOKEN:-}" ]; then
+            ARGS+=(--admin-token "$ADMIN_OS_TOKEN")
+          fi
 
           if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
             ARGS+=(--internal-job-token "$CITY_PACK_JOB_TOKEN")

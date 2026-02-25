@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T23:27:22-05:00",
-  "gitCommit": "195590c90eeb94822253ec9ce951869f196885f6",
-  "branch": "codex/w5-checklist-scenario-key-canonicalization",
-  "sourceDigest": "94352bb961158cee87168e7f05e0fc5211b2aafa5151cef865cd0f58de0cd555",
+  "generatedAt": "2026-02-24T23:48:04-05:00",
+  "gitCommit": "dd046a9cc0c475d6cf80b6aa9567322355e6db86",
+  "branch": "codex/monitor-insights-stg-e2e-monitoring",
+  "sourceDigest": "211d5fcf3678a5675e404927f5b310ec7d450b737f39510964d977863c9ee7f0",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -138,8 +138,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "4873502559b93ec6d7398ef187368f2b2546bf7651d1b96a0f7c39f33f9ccefd",
-      "bytes": 2434
+      "sha256": "9a295643bca2b871891168f5163b0b966405785a22084daccb4a1014ed173a07",
+      "bytes": 2427
     }
   ],
   "diff_detection_rules": [
