@@ -6,6 +6,7 @@ const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const usersPhase1Repo = require('../../repos/firestore/usersPhase1Repo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
+const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { computeNotificationDeliveryId } = require('../../domain/deliveryId');
 
@@ -22,8 +23,9 @@ async function sendNotificationPhase1(params) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
+  const scenarioKey = normalizeScenarioKey(notification);
 
-  if (!notification.scenario) {
+  if (!scenarioKey) {
     throw new Error('scenario required');
   }
   if (!notification.linkRegistryId) {
@@ -42,7 +44,7 @@ async function sendNotificationPhase1(params) {
     payload.killSwitch
   );
 
-  const users = await usersPhase1Repo.listUsersByScenario(notification.scenario, payload.limit);
+  const users = await usersPhase1Repo.listUsersByScenario(scenarioKey, payload.limit);
   if (!users.length) throw new Error('no recipients');
 
   const pushFn = payload.pushFn || pushMessage;

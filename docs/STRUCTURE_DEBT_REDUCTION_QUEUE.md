@@ -40,6 +40,17 @@
 2. write path は `scenarioKey` のみ
 3. legacy path の新規追加は禁止
 
+## 3.1 Progress (2026-02-25 / W5 kickoff)
+- 完了:
+  - `src/usecases/notifications/createNotificationPhase1.js`
+  - `src/usecases/notifications/sendNotificationPhase1.js`
+- 変更要点:
+  - read: `scenarioKey` 優先、legacy `scenario` fallback
+  - write: `scenarioKey` canonical write
+- 結果:
+  - `naming_drift_scenario_count` は `9 -> 7` に改善
+  - `legacy_repos_count=6` / `active_legacy_repo_imports_count=0` は維持
+
 ## 4. Gate Rules
 - `npm run structure-risk:check` をPRで必須化
 - 予算基準は `docs/STRUCTURE_BUDGETS.md` の最新 baseline を採用

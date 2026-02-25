@@ -2,6 +2,7 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const {
   validateSingleCta,
   validateLinkRequired,
@@ -21,8 +22,12 @@ function requireField(name, value) {
 async function createNotificationPhase1(data) {
   const payload = data || {};
   const message = payload.message || {};
+  const scenarioKey = normalizeScenarioKey({
+    scenarioKey: payload.scenarioKey,
+    scenario: payload.scenario
+  });
 
-  requireField('scenario', payload.scenario);
+  requireField('scenarioKey', scenarioKey);
   requireField('step', payload.step);
   requireField('linkRegistryId', payload.linkRegistryId);
   requireField('message.title', message.title);
@@ -39,7 +44,7 @@ async function createNotificationPhase1(data) {
   validateWarnLinkBlock(linkEntry);
 
   const record = {
-    scenario: payload.scenario,
+    scenarioKey,
     step: payload.step,
     message: {
       title: message.title,

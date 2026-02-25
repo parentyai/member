@@ -100,6 +100,26 @@
   - `artifacts/gh-runs/22379499260/stg-notification-e2e-22379499260/stg-notification-e2e-20260225022959.json`
   - `artifacts/gh-runs/22379499260/stg-notification-e2e-22379499260/stg-notification-e2e-20260225022959.md`
 
+## W5 Kickoff: Structure Debt Compression (2026-02-25T02:59:15Z)
+- scope:
+  - `createNotificationPhase1` を `scenarioKey` canonical write に移行
+  - `sendNotificationPhase1` を `scenarioKey` 優先解決に移行
+  - `usersPhase1Repo` を canonical + legacy merge read に移行
+- command results:
+  - `node --test tests/phase660/*.test.js` PASS (5/5)
+  - `npm run catchup:drift-check` PASS
+  - `npm test` PASS (1400/1400)
+  - `npm run test:trace-smoke` PASS
+  - `npm run test:ops-smoke` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `9 -> 7`
+  - `legacy_repos_count`: `6` (unchanged)
+  - `active_legacy_repo_imports_count`: `0` (unchanged)
+- related artifacts:
+  - `docs/REPO_AUDIT_INPUTS/design_ai_meta.json`
+  - `docs/REPO_AUDIT_INPUTS/structure_risk.json`
+  - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
+
 ## Log Template (copy)
 ```text
 date_utc: YYYY-MM-DDTHH:mm:ssZ
