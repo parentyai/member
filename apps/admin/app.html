@@ -941,6 +941,35 @@
                     </label>
                     <button id="monitor-insights-reload" type="button" data-dict-key="ui.label.monitor.insightsReload">分析を更新</button>
                   </div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.monitor.snapshotMode" data-dict-tip="ui.help.monitor.snapshotMode">スナップショット
+                      <select id="monitor-insights-snapshot-mode" class="select-inline">
+                        <option value="prefer" data-dict-key="ui.value.monitor.snapshotMode.prefer">prefer</option>
+                        <option value="require" data-dict-key="ui.value.monitor.snapshotMode.require">require</option>
+                        <option value="disabled" data-dict-key="ui.value.monitor.snapshotMode.disabled">disabled</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.monitor.fallbackMode" data-dict-tip="ui.help.monitor.fallbackMode">フォールバック
+                      <select id="monitor-insights-fallback-mode" class="select-inline">
+                        <option value="allow" data-dict-key="ui.value.monitor.fallbackMode.allow">allow</option>
+                        <option value="block" data-dict-key="ui.value.monitor.fallbackMode.block">block</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.monitor.fallbackOnEmpty" data-dict-tip="ui.help.monitor.fallbackOnEmpty">No fallback時
+                      <select id="monitor-insights-fallback-on-empty" class="select-inline">
+                        <option value="true" data-dict-key="ui.value.monitor.fallbackOnEmpty.true">true</option>
+                        <option value="false" data-dict-key="ui.value.monitor.fallbackOnEmpty.false">false</option>
+                      </select>
+                    </label>
+                    <label data-dict-key="ui.label.monitor.readLimit" data-dict-tip="ui.help.monitor.readLimit">上限（生データ）
+                      <input type="number" id="monitor-insights-read-limit" min="1" max="5000" value="1000" class="input-inline input-sm" />
+                    </label>
+                  </div>
+                  <div class="row">
+                    <label data-dict-key="ui.label.monitor.limit" data-dict-tip="ui.help.monitor.limit">表示上限
+                      <input type="number" id="monitor-insights-limit" min="1" max="100" value="10" class="input-inline input-sm" />
+                    </label>
+                  </div>
 	                  <div class="grid">
 	                    <details class="table-section section" open>
 	                      <summary data-dict-key="ui.label.monitor.vendorCtr">ベンダー別CTR Top</summary>
@@ -974,6 +1003,40 @@
 	                      </div>
 	                    </details>
 	                  </div>
+                  <div class="panel">
+                    <div class="panel-title" data-dict-key="ui.label.monitor.insightsDiagnostics">診断情報</div>
+                    <div class="panel-body">
+                      <div id="monitor-insights-diagnostics" class="note">-</div>
+                      <div class="note">
+                        <span data-dict-key="ui.label.monitor.dataSource">データ取得元</span>:
+                        <span id="monitor-insights-source">-</span>
+                      </div>
+                      <div class="note">
+                        <span data-dict-key="ui.label.monitor.traceSummary">表示</span>:
+                        <span data-dict-key="ui.label.monitor.resultRows">結果</span>=<span id="monitor-insights-result-rows">-</span>,
+                        <span data-dict-key="ui.label.monitor.matchedDeliveryCount">一致</span>=<span id="monitor-insights-matched-delivery">-</span>,
+                        <span data-dict-key="ui.label.monitor.readLimitUsed">読取上限</span>=<span id="monitor-insights-read-limit-used">-</span>
+                      </div>
+                      <div class="note">
+                        <span data-dict-key="ui.label.monitor.asOf">取得時刻</span>:
+                        <span id="monitor-insights-as-of">-</span>
+                        (<span id="monitor-insights-freshness">-</span>)
+                      </div>
+                      <div class="note">
+                        <span data-dict-key="ui.label.monitor.fallback">フォールバック</span>:
+                        <span id="monitor-insights-fallback-used" class="badge">-</span>
+                        <span id="monitor-insights-fallback-blocked" class="badge">-</span>
+                      </div>
+                      <div class="note">
+                        <span data-dict-key="ui.label.traceId">traceId</span>:
+                        <span id="monitor-insights-trace-id">-</span>
+                      </div>
+                      <details>
+                        <summary data-dict-key="ui.label.monitor.insightsRaw">Monitor Insights RAW</summary>
+                        <pre id="monitor-insights-raw">-</pre>
+                      </details>
+                    </div>
+                  </div>
 	                </div>
 	              </div>
 

@@ -7,7 +7,7 @@ const { test } = require('node:test');
 
 const { ADMIN_READINESS_ENDPOINTS } = require('../../tools/run_stg_notification_e2e_checklist');
 
-test('phase633: stg e2e runner defines fixed six admin readiness endpoints', () => {
+test('phase633: stg e2e runner defines fixed seven admin readiness endpoints', () => {
   const endpoints = ADMIN_READINESS_ENDPOINTS.map((item) => item.endpoint);
   assert.deepStrictEqual(endpoints, [
     '/api/admin/product-readiness',
@@ -15,6 +15,7 @@ test('phase633: stg e2e runner defines fixed six admin readiness endpoints', () 
     '/api/admin/retention-runs',
     '/api/admin/struct-drift/backfill-runs',
     '/api/admin/os/alerts/summary',
+    '/api/admin/monitor-insights?windowDays=7',
     '/api/admin/city-packs'
   ]);
 });

@@ -113,4 +113,12 @@ test('phase321: monitor insights excludes out-of-window delivery when bounded se
   assert.ok(Array.isArray(body.ctrTop));
   assert.ok(body.ctrTop.some((row) => row.notificationId === recentNotification.id));
   assert.ok(!body.ctrTop.some((row) => row.notificationId === oldNotification.id));
+  assert.ok(typeof body.asOf === 'string' && body.asOf.length > 0);
+  const asOfMillis = Date.parse(body.asOf);
+  assert.ok(Number.isFinite(asOfMillis));
+  const ageMs = Date.now() - asOfMillis;
+  assert.ok(ageMs >= 0);
+  assert.ok(typeof body.freshnessMinutes === 'number');
+  assert.ok(Number.isFinite(body.freshnessMinutes));
+  assert.ok(body.freshnessMinutes >= 0);
 });

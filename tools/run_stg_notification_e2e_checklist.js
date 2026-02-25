@@ -32,6 +32,7 @@ const ADMIN_READINESS_ENDPOINTS = Object.freeze([
   { key: 'retentionRuns', endpoint: '/api/admin/retention-runs', label: 'retention-runs' },
   { key: 'structDriftBackfillRuns', endpoint: '/api/admin/struct-drift/backfill-runs', label: 'struct-drift/backfill-runs' },
   { key: 'osAlertsSummary', endpoint: '/api/admin/os/alerts/summary', label: 'os-alerts-summary' },
+  { key: 'monitorInsights', endpoint: '/api/admin/monitor-insights?windowDays=7', label: 'monitor-insights' },
   { key: 'cityPacks', endpoint: '/api/admin/city-packs', label: 'city-packs' }
 ]);
 
