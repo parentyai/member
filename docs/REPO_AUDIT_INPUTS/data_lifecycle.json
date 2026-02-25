@@ -212,6 +212,18 @@
     ]
   },
   {
+    "collection": "journey_branch_queue",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/journeyBranchQueueRepo.js:7",
+      "src/repos/firestore/journeyBranchQueueRepo.js:172",
+      "src/usecases/journey/runJourneyBranchDispatchJob.js:65"
+    ]
+  },
+  {
     "collection": "journey_graph_change_logs",
     "kind": "evidence",
     "recomputable": false,

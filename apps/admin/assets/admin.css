@@ -341,8 +341,51 @@ body {
   font-size: var(--font-12);
 }
 
+.journey-rule-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.journey-rule-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: #fbfcff;
+  box-shadow: var(--shadow-card);
+}
+
+.journey-rule-panel .panel-title {
+  font-size: var(--font-12);
+  margin-bottom: var(--space-2);
+}
+
+.journey-rule-panel input[type="text"],
+.journey-rule-panel input[type="number"] {
+  width: 100%;
+}
+
+.journey-rule-panel .table-scroll {
+  max-height: 260px;
+}
+
+.journey-rule-panel .table-compact td {
+  vertical-align: middle;
+}
+
+.journey-rule-panel .table-compact input[type="text"],
+.journey-rule-panel .table-compact input[type="number"] {
+  min-width: 110px;
+}
+
 @media (max-width: 960px) {
   .journey-map-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-rule-editor-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T13:50:31-05:00",
-  "gitCommit": "a2049ee5770ea1a71ebe41c86197b174a6d43311",
-  "branch": "main",
-  "sourceDigest": "8660badff1084085da149aeec7e18efe054a57f0ac023bce84615d25c8f8b676",
+  "generatedAt": "2026-02-25T18:44:58-05:00",
+  "gitCommit": "39fddabbe88ced079e1add69eb72e7e3e735b2da",
+  "branch": "codex/journey-dag-branching-v1",
+  "sourceDigest": "a56dcd77ca1aabeacbd598fa2281d6bc80aee3c79d2f494b179ce4c2bf4922a9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -2,6 +2,7 @@
 
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const taskNodesRepo = require('../../repos/firestore/taskNodesRepo');
+const journeyGraphCatalogRepo = require('../../repos/firestore/journeyGraphCatalogRepo');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
@@ -68,9 +69,32 @@ function toRuntimeNode(item) {
   };
 }
 
-function buildEdges(nodes) {
+function buildCatalogEdgeMap(catalogEdges) {
+  const map = new Map();
+  (Array.isArray(catalogEdges) ? catalogEdges : []).forEach((edge) => {
+    if (!edge || typeof edge !== 'object') return;
+    const from = String(edge.from || '').trim();
+    const to = String(edge.to || '').trim();
+    if (!from || !to) return;
+    const marker = `${from}|${to}`;
+    map.set(marker, {
+      reasonType: typeof edge.reasonType === 'string' && edge.reasonType.trim()
+        ? edge.reasonType.trim()
+        : 'prerequisite',
+      reasonLabel: typeof edge.reasonLabel === 'string' && edge.reasonLabel.trim()
+        ? edge.reasonLabel.trim()
+        : null,
+      required: edge.required !== false
+    });
+  });
+  return map;
+}
+
+function buildEdges(nodes, catalogEdges) {
   const out = [];
   const seen = new Set();
+  const catalogEdgeMap = buildCatalogEdgeMap(catalogEdges);
+  const nodeKeys = new Set((Array.isArray(nodes) ? nodes : []).map((node) => String(node && node.todoKey ? node.todoKey : '').trim()).filter(Boolean));
   (Array.isArray(nodes) ? nodes : []).forEach((node) => {
     const deps = Array.isArray(node.dependsOn) ? node.dependsOn : [];
     deps.forEach((dep) => {
@@ -80,11 +104,35 @@ function buildEdges(nodes) {
       const marker = `${from}|${to}`;
       if (seen.has(marker)) return;
       seen.add(marker);
+      const edgeMeta = catalogEdgeMap.get(marker);
       out.push({
         from,
         to,
-        reasonType: 'prerequisite'
+        reasonType: edgeMeta && edgeMeta.reasonType ? edgeMeta.reasonType : 'prerequisite',
+        reasonLabel: edgeMeta ? edgeMeta.reasonLabel : null,
+        required: edgeMeta ? edgeMeta.required !== false : true
       });
+    });
+  });
+  (Array.isArray(catalogEdges) ? catalogEdges : []).forEach((edge) => {
+    if (!edge || typeof edge !== 'object') return;
+    const from = String(edge.from || '').trim();
+    const to = String(edge.to || '').trim();
+    if (!from || !to) return;
+    if (!nodeKeys.has(to)) return;
+    const marker = `${from}|${to}`;
+    if (seen.has(marker)) return;
+    seen.add(marker);
+    out.push({
+      from,
+      to,
+      reasonType: typeof edge.reasonType === 'string' && edge.reasonType.trim()
+        ? edge.reasonType.trim()
+        : 'prerequisite',
+      reasonLabel: typeof edge.reasonLabel === 'string' && edge.reasonLabel.trim()
+        ? edge.reasonLabel.trim()
+        : null,
+      required: edge.required !== false
     });
   });
   return out;
@@ -121,13 +169,17 @@ async function handleRuntime(req, res) {
     plan: parseFilter(req, 'plan')
   };
 
-  const [todos, taskNodes] = await Promise.all([
+  const [todos, taskNodes, journeyGraphCatalog] = await Promise.all([
     journeyTodoItemsRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit }),
-    taskNodesRepo.listTaskNodesByLineUserId({ lineUserId, limit }).catch(() => [])
+    taskNodesRepo.listTaskNodesByLineUserId({ lineUserId, limit }).catch(() => []),
+    journeyGraphCatalogRepo.getJourneyGraphCatalog().catch(() => null)
   ]);
   const todoNodes = todos.map((item) => toRuntimeNode(item));
   const filteredNodes = applyRuntimeFilter(todoNodes, filters);
-  const edges = buildEdges(filteredNodes);
+  const catalogEdges = journeyGraphCatalog && Array.isArray(journeyGraphCatalog.edges)
+    ? journeyGraphCatalog.edges
+    : [];
+  const edges = buildEdges(filteredNodes, catalogEdges);
 
   await appendAuditLog({
     actor,
@@ -156,9 +208,16 @@ async function handleRuntime(req, res) {
     taskNodes,
     summary: {
       totalNodes: filteredNodes.length,
+      totalEdges: edges.length,
+      requiredEdges: edges.filter((edge) => edge.required !== false).length,
+      optionalEdges: edges.filter((edge) => edge.required === false).length,
       done: filteredNodes.filter((node) => node.journeyState === 'done').length,
       blocked: filteredNodes.filter((node) => node.journeyState === 'blocked').length,
       snoozed: filteredNodes.filter((node) => node.journeyState === 'snoozed').length
+    },
+    catalog: {
+      enabled: journeyGraphCatalog && journeyGraphCatalog.enabled === true,
+      schemaVersion: journeyGraphCatalog && journeyGraphCatalog.schemaVersion ? journeyGraphCatalog.schemaVersion : null
     }
   }));
 }

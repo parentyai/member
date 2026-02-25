@@ -19,6 +19,7 @@ const { getUserContextSnapshot } = require('../usecases/context/getUserContextSn
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const journeyGraphCatalogRepo = require('../repos/firestore/journeyGraphCatalogRepo');
 const {
   detectExplicitPaidIntent,
   classifyPaidIntent,
@@ -158,6 +159,32 @@ function resolveTaskGraphEnabled() {
 
 function resolveProPredictiveActionsEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PRO_PREDICTIVE_ACTIONS_V1', false);
+}
+
+function clampMaxNextActions(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, Math.min(3, Math.floor(parsed)));
+}
+
+function resolvePlanTier(planInfo) {
+  if (planInfo && planInfo.plan === 'pro') return 'pro';
+  return 'free';
+}
+
+async function resolveMaxNextActionsCapFromJourneyCatalog(planInfo) {
+  const planTier = resolvePlanTier(planInfo);
+  try {
+    const catalog = await journeyGraphCatalogRepo.getJourneyGraphCatalog();
+    if (!catalog || catalog.enabled !== true) return null;
+    const unlock = catalog.planUnlocks && typeof catalog.planUnlocks === 'object'
+      ? catalog.planUnlocks[planTier]
+      : null;
+    if (!unlock || typeof unlock !== 'object') return null;
+    return clampMaxNextActions(unlock.maxNextActions);
+  } catch (_err) {
+    return null;
+  }
 }
 
 function isDependencyHintIntent(text) {
@@ -490,6 +517,7 @@ async function handleAssistantMessage(params) {
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
+  const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
   const paid = qualityEnabled
     ? await generatePaidFaqReply({
       lineUserId,
@@ -499,6 +527,7 @@ async function handleAssistantMessage(params) {
       llmAdapter: llmClient,
       llmPolicy: budget.policy,
       contextSnapshot,
+      maxNextActionsCap,
       skipPersonalizedContext: snapshotStrictMode === true
     })
     : await generatePaidAssistantReply({
@@ -507,7 +536,8 @@ async function handleAssistantMessage(params) {
       locale: 'ja',
       llmAdapter: llmClient,
       llmPolicy: budget.policy,
-      contextSnapshot
+      contextSnapshot,
+      maxNextActionsCap
     });
 
   if (!paid.ok) {

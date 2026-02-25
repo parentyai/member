@@ -1300,6 +1300,36 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'POST' && pathname === '/internal/jobs/journey-branch-dispatch') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleJourneyBranchDispatchJob } = require('./routes/internal/journeyBranchDispatchJob');
+      const body = await collectBody();
+      await handleJourneyBranchDispatchJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (req.method === 'POST' && pathname === '/internal/jobs/user-context-snapshot-build') {
     let bytes = 0;
     const chunks = [];
@@ -1520,6 +1550,7 @@ function createServer() {
       handleRuntime: handleJourneyGraphRuntime,
       handleRuntimeHistory: handleJourneyGraphRuntimeHistory
     } = require('./routes/admin/journeyGraphRuntime');
+    const { handleStatus: handleJourneyGraphBranchQueueStatus } = require('./routes/admin/journeyGraphBranchQueue');
     const {
       handleStatus: handleRichMenuStatus,
       handlePlan: handleRichMenuPlan,
@@ -1676,6 +1707,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime/history') {
         await handleJourneyGraphRuntimeHistory(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/branch-queue/status') {
+        await handleJourneyGraphBranchQueueStatus(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/status') {

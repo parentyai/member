@@ -93,6 +93,19 @@ function normalizeStringList(value) {
   return out;
 }
 
+function normalizeDependencyReasonMap(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out = {};
+  Object.keys(value).forEach((key) => {
+    const depKey = normalizeString(key, '');
+    if (depKey === null || depKey === '') return;
+    const reason = normalizeString(value[key], '');
+    if (reason === null || reason === '') return;
+    out[depKey] = reason;
+  });
+  return out;
+}
+
 function normalizeProgressState(value, fallback) {
   const normalized = normalizeString(value, fallback || 'not_started');
   if (normalized === null || normalized === '') return 'not_started';
@@ -201,6 +214,7 @@ function normalizeTodoItem(docId, data) {
     priority,
     riskLevel,
     lockReasons: normalizeStringList(payload.lockReasons),
+    dependencyReasonMap: normalizeDependencyReasonMap(payload.dependencyReasonMap),
     graphEvaluatedAt: toIso(payload.graphEvaluatedAt),
     reminderOffsetsDays: normalizeReminderOffsetsDays(payload.reminderOffsetsDays, DEFAULT_REMINDER_OFFSETS) || DEFAULT_REMINDER_OFFSETS.slice(),
     remindedOffsetsDays: normalizeReminderOffsetsDays(payload.remindedOffsetsDays, []) || [],

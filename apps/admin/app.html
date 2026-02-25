@@ -1030,8 +1030,105 @@
                       planHash: <span id="journey-graph-plan-hash">-</span>
                       / confirmToken: <span id="journey-graph-confirm-token">-</span>
                     </div>
+                    <div class="journey-rule-editor-grid">
+                      <div class="panel journey-rule-panel">
+                        <div class="panel-title">Plan Unlocks（quick）</div>
+                        <div class="row">
+                          <label>free maxNextActions
+                            <input type="number" id="journey-graph-plan-unlock-free-max" class="input-inline input-sm" min="0" max="3" value="1" />
+                          </label>
+                          <label>pro maxNextActions
+                            <input type="number" id="journey-graph-plan-unlock-pro-max" class="input-inline input-sm" min="0" max="3" value="3" />
+                          </label>
+                        </div>
+                        <div class="row">
+                          <label class="flex-1">free includePlanTiers(csv)
+                            <input type="text" id="journey-graph-plan-unlock-free-tiers" class="input-inline input-sm" value="all" />
+                          </label>
+                          <label class="flex-1">pro includePlanTiers(csv)
+                            <input type="text" id="journey-graph-plan-unlock-pro-tiers" class="input-inline input-sm" value="all,pro" />
+                          </label>
+                        </div>
+                        <button id="journey-graph-plan-unlock-apply" type="button">plan unlock反映</button>
+                      </div>
+                      <div class="panel journey-rule-panel">
+                        <div class="panel-title">Edge ON/OFF（required）</div>
+                        <div class="table-scroll">
+                          <table class="table-compact">
+                            <thead>
+                              <tr>
+                                <th>required</th>
+                                <th>from</th>
+                                <th>to</th>
+                                <th>reasonType</th>
+                                <th>reasonLabel</th>
+                                <th>signal</th>
+                              </tr>
+                            </thead>
+                            <tbody id="journey-graph-edge-editor-rows"></tbody>
+                          </table>
+                        </div>
+                        <button id="journey-graph-edge-editor-apply" type="button">edge変更をJSONへ反映</button>
+                      </div>
+                      <div class="panel journey-rule-panel">
+                        <div class="panel-title">Reaction Branches（quick）</div>
+                        <div class="table-scroll">
+                          <table class="table-compact">
+                            <thead>
+                              <tr>
+                                <th>enabled</th>
+                                <th>ruleId</th>
+                                <th>priority</th>
+                                <th>actions(csv)</th>
+                                <th>plans(csv)</th>
+                                <th>nextTemplateId</th>
+                                <th>queue</th>
+                              </tr>
+                            </thead>
+                            <tbody id="journey-graph-branch-editor-rows"></tbody>
+                          </table>
+                        </div>
+                        <button id="journey-graph-branch-editor-apply" type="button">branch変更をJSONへ反映</button>
+                      </div>
+                    </div>
                     <label>journeyGraphCatalog JSON</label>
                     <textarea id="journey-graph-catalog-json" rows="16" class="input-mono"></textarea>
+                    <details class="section" open>
+                      <summary>branch queue status</summary>
+                      <div class="row">
+                        <label>status
+                          <select id="journey-graph-branch-queue-status-filter" class="select-inline">
+                            <option value="">all</option>
+                            <option value="pending">pending</option>
+                            <option value="sent">sent</option>
+                            <option value="failed">failed</option>
+                            <option value="skipped">skipped</option>
+                          </select>
+                        </label>
+                        <label class="flex-1">LINEユーザーID（任意）
+                          <input type="text" id="journey-graph-branch-queue-line-user-id" />
+                        </label>
+                        <button id="journey-graph-branch-queue-reload" type="button">branch queue更新</button>
+                      </div>
+                      <div id="journey-graph-branch-queue-summary" class="note">-</div>
+                      <div class="table-scroll">
+                        <table class="table-compact">
+                          <thead>
+                            <tr>
+                              <th>id</th>
+                              <th>status</th>
+                              <th>lineUserId</th>
+                              <th>deliveryId</th>
+                              <th>ruleId</th>
+                              <th>nextAttemptAt</th>
+                              <th>dispatch</th>
+                            </tr>
+                          </thead>
+                          <tbody id="journey-graph-branch-queue-rows"></tbody>
+                        </table>
+                      </div>
+                      <pre id="journey-graph-branch-queue-result">-</pre>
+                    </details>
                     <details class="section">
                       <summary>catalog status</summary>
                       <pre id="journey-graph-status-result">-</pre>

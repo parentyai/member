@@ -370,6 +370,138 @@
         "service": "member",
         "route": "line.task_graph_summary"
       }
+    },
+    {
+      "id": "journey_branch_queue_status_nextAttemptAt_asc",
+      "collectionGroup": "journey_branch_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextAttemptAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 177
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 180
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-25",
+        "service": "member",
+        "route": "internal.journey_branch_dispatch_job"
+      }
+    },
+    {
+      "id": "journey_branch_queue_status_createdAt_desc",
+      "collectionGroup": "journey_branch_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 165
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 167
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-25",
+        "service": "member",
+        "route": "admin.journey_graph_branch_queue_status"
+      }
+    },
+    {
+      "id": "journey_branch_queue_lineUserId_createdAt_desc",
+      "collectionGroup": "journey_branch_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 166
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 167
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-25",
+        "service": "member",
+        "route": "admin.journey_graph_branch_queue_status"
+      }
+    },
+    {
+      "id": "journey_branch_queue_status_lineUserId_createdAt_desc",
+      "collectionGroup": "journey_branch_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 165
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 166
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyBranchQueueRepo.js",
+          "line": 167
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-25",
+        "service": "member",
+        "route": "admin.journey_graph_branch_queue_status"
+      }
     }
   ],
   "criticalContracts": [
@@ -531,6 +663,42 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskNodesRepo.js",
           "line": 186
+        }
+      ]
+    },
+    {
+      "contractId": "internal_journey_branch_dispatch_job",
+      "routeOrUsecase": "POST /internal/jobs/journey-branch-dispatch",
+      "requiredIndexIds": [
+        "journey_branch_queue_status_nextAttemptAt_asc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1303
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/usecases/journey/runJourneyBranchDispatchJob.js",
+          "line": 65
+        }
+      ]
+    },
+    {
+      "contractId": "admin_journey_graph_branch_queue_status",
+      "routeOrUsecase": "GET /api/admin/os/journey-graph/branch-queue/status",
+      "requiredIndexIds": [
+        "journey_branch_queue_status_createdAt_desc",
+        "journey_branch_queue_lineUserId_createdAt_desc",
+        "journey_branch_queue_status_lineUserId_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1712
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/journeyGraphBranchQueue.js",
+          "line": 45
         }
       ]
     }

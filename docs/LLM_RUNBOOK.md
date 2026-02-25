@@ -243,3 +243,21 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1) `GET /api/admin/llm/policy/status` で設定反映を確認。  
 2) `POST /api/admin/llm/policy/plan` -> `set` の2段階で適用。  
 3) `GET /api/admin/os/llm-policy/history` で変更証跡を確認。  
+
+## Phase664 Addendum（Plan Unlock cap連動）
+
+### maxNextActions の実効上限
+- Paid assistant の next actions 上限は次の小さい方を採用する。  
+  - `opsConfig/llmPolicy.output_constraints.max_next_actions`
+  - `opsConfig/journeyGraphCatalog.planUnlocks.<free|pro>.maxNextActions`
+- `plan=free` は `planUnlocks.free.maxNextActions`、`plan=pro` は `planUnlocks.pro.maxNextActions` を参照する。  
+- 既定運用は Free=1, Pro=3 を推奨し、運用変更は `journey-graph plan -> set` で実施する。  
+
+### 監査確認
+- `audit_logs.action=llm_gate.decision` の payload で `decision/blockedReason` を確認する。  
+- Next actions が空のときは拒否UXへフォールバックし、回答を強行しない。  
+
+### 即時停止
+1) `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=0`（有料補助導線停止）  
+2) `opsConfig/llmPolicy.output_constraints.max_next_actions=0`（出力上限を強制停止）  
+3) `opsConfig/llmPolicy.enabled=false`（LLM全停止）  

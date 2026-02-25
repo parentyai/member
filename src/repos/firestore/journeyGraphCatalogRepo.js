@@ -6,8 +6,10 @@ const COLLECTION = 'opsConfig';
 const DOC_ID = 'journeyGraphCatalog';
 const MAX_NODE_COUNT = 1200;
 const MAX_EDGE_COUNT = 4000;
+const MAX_REACTION_BRANCH_COUNT = 300;
 
 const ALLOWED_PLAN_TIERS = Object.freeze(['all', 'pro']);
+const ALLOWED_RUNTIME_PLAN_TIERS = Object.freeze(['free', 'pro']);
 const ALLOWED_JOURNEY_STATES = Object.freeze(['planned', 'in_progress', 'done', 'blocked', 'snoozed', 'skipped']);
 const ALLOWED_EDGE_REASON_TYPES = Object.freeze([
   'prerequisite',
@@ -17,6 +19,7 @@ const ALLOWED_EDGE_REASON_TYPES = Object.freeze([
   'reaction_branch',
   'custom'
 ]);
+const ALLOWED_REACTION_ACTIONS = Object.freeze(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
 const DEFAULT_JOURNEY_GRAPH_CATALOG = Object.freeze({
   enabled: false,
@@ -32,6 +35,7 @@ const DEFAULT_JOURNEY_GRAPH_CATALOG = Object.freeze({
     }),
     stopSignals: ['redeem', 'response'],
     signalReminderOffsets: Object.freeze({}),
+    reactionBranches: Object.freeze([]),
     minIntervalHoursByPlan: Object.freeze({
       free: 24,
       pro: 12
@@ -154,6 +158,126 @@ function normalizeSignalReminderOffsets(value) {
   return out;
 }
 
+function normalizeReactionTodoCreateItem(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const todoKey = normalizeText(value.todoKey || value.nodeKey || value.id, '');
+  if (!todoKey) return null;
+  const planTier = normalizePlanTier(value.planTier, 'all');
+  if (!planTier) return null;
+  const journeyState = normalizeJourneyState(value.journeyState || value.defaultJourneyState || 'planned', 'planned');
+  if (!journeyState) return null;
+  return {
+    todoKey,
+    title: normalizeText(value.title || value.task, todoKey),
+    phaseKey: normalizeText(value.phaseKey || value.phase, null),
+    domainKey: normalizeText(value.domainKey || value.domain, null),
+    planTier,
+    dependsOn: normalizeStringList(value.dependsOn || value.prereq),
+    dueAt: normalizeText(value.dueAt, null),
+    priority: normalizeInteger(value.priority, 3, 1, 5) || 3,
+    riskLevel: normalizeText(value.riskLevel, 'medium') || 'medium',
+    journeyState
+  };
+}
+
+function normalizeReactionTodoPatch(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out = {};
+  const journeyState = value.journeyState === undefined
+    ? null
+    : normalizeJourneyState(value.journeyState, 'planned');
+  if (journeyState) out.journeyState = journeyState;
+  const snoozeUntil = normalizeText(value.snoozeUntil, null);
+  if (snoozeUntil) out.snoozeUntil = snoozeUntil;
+  const phaseKey = normalizeText(value.phaseKey, null);
+  if (phaseKey) out.phaseKey = phaseKey;
+  const domainKey = normalizeText(value.domainKey, null);
+  if (domainKey) out.domainKey = domainKey;
+  return out;
+}
+
+function normalizeReactionBranchMatch(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const actions = normalizeStringList(value.actions || value.action, {
+    lower: true,
+    allowed: ALLOWED_REACTION_ACTIONS
+  });
+  const planTiers = normalizeStringList(value.planTiers || value.planTier, {
+    lower: true,
+    allowed: ALLOWED_RUNTIME_PLAN_TIERS
+  });
+  const notificationGroups = normalizeStringList(value.notificationGroups || value.notificationGroup, { lower: true });
+  const todoKeys = normalizeStringList(value.todoKeys || value.todoKey);
+  const domainKeys = normalizeStringList(value.domainKeys || value.domainKey, { lower: true });
+  const phaseKeys = normalizeStringList(value.phaseKeys || value.phaseKey, { lower: true });
+  if (!actions.length) return null;
+  return {
+    actions,
+    planTiers,
+    notificationGroups,
+    todoKeys,
+    domainKeys,
+    phaseKeys
+  };
+}
+
+function normalizeReactionBranchEffect(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const nextTemplateId = normalizeText(value.nextTemplateId, null);
+  const todoCreate = Array.isArray(value.todoCreate)
+    ? value.todoCreate.map((item) => normalizeReactionTodoCreateItem(item)).filter(Boolean)
+    : [];
+  const todoPatch = normalizeReactionTodoPatch(value.todoPatch);
+  const nodeUnlockKeys = normalizeStringList(value.nodeUnlockKeys || value.nodeUnlock || value.unlockTodoKeys);
+  const queueDispatch = normalizeBoolean(value.queueDispatch, true);
+  if (queueDispatch === null) return null;
+  return {
+    nextTemplateId,
+    todoCreate,
+    todoPatch,
+    nodeUnlockKeys,
+    queueDispatch
+  };
+}
+
+function normalizeReactionBranch(value, index) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const ruleId = normalizeText(value.ruleId || value.id, `reaction_branch_${index + 1}`);
+  if (!ruleId) return null;
+  const enabled = normalizeBoolean(value.enabled, true);
+  const priority = normalizeInteger(value.priority, 1000, 0, 100000);
+  const match = normalizeReactionBranchMatch(value.match || value.when || {});
+  const effect = normalizeReactionBranchEffect(value.effect || {});
+  if (enabled === null || priority === null || !match || !effect) return null;
+  return {
+    ruleId,
+    enabled,
+    priority,
+    match,
+    effect
+  };
+}
+
+function normalizeReactionBranches(value, fallback) {
+  const source = value === null || value === undefined ? fallback : value;
+  if (!Array.isArray(source)) return null;
+  const out = [];
+  const seen = new Set();
+  source.forEach((item, index) => {
+    const normalized = normalizeReactionBranch(item, index);
+    if (!normalized) return;
+    if (seen.has(normalized.ruleId)) return;
+    seen.add(normalized.ruleId);
+    out.push(normalized);
+  });
+  out.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return a.ruleId.localeCompare(b.ruleId, 'ja');
+  });
+  if (out.length > MAX_REACTION_BRANCH_COUNT) return null;
+  return out;
+}
+
 function normalizeRuleSet(value, fallback) {
   const base = fallback && typeof fallback === 'object' ? fallback : cloneDefault().ruleSet;
   const raw = value === null || value === undefined ? base : value;
@@ -161,6 +285,7 @@ function normalizeRuleSet(value, fallback) {
   const stopSignals = normalizeStringList(raw.stopSignals, { lower: true });
   const notificationGroups = normalizeNotificationGroups(raw.notificationGroups, base.notificationGroups);
   const signalReminderOffsets = normalizeSignalReminderOffsets(raw.signalReminderOffsets);
+  const reactionBranches = normalizeReactionBranches(raw.reactionBranches, base.reactionBranches);
   const minIntervalHoursByPlan = {
     free: normalizeInteger(
       raw.minIntervalHoursByPlan && raw.minIntervalHoursByPlan.free,
@@ -193,12 +318,13 @@ function normalizeRuleSet(value, fallback) {
 
   if (Object.values(minIntervalHoursByPlan).includes(null)) return null;
   if (Object.values(maxRemindersByPlan).includes(null)) return null;
-  if (notificationGroups === null || globalDailyCap === null) return null;
+  if (notificationGroups === null || reactionBranches === null || globalDailyCap === null) return null;
 
   return {
     notificationGroups,
     stopSignals,
     signalReminderOffsets,
+    reactionBranches,
     minIntervalHoursByPlan,
     maxRemindersByPlan,
     globalDailyCap
@@ -387,9 +513,12 @@ module.exports = {
   DOC_ID,
   MAX_NODE_COUNT,
   MAX_EDGE_COUNT,
+  MAX_REACTION_BRANCH_COUNT,
   ALLOWED_PLAN_TIERS,
+  ALLOWED_RUNTIME_PLAN_TIERS,
   ALLOWED_JOURNEY_STATES,
   ALLOWED_EDGE_REASON_TYPES,
+  ALLOWED_REACTION_ACTIONS,
   DEFAULT_JOURNEY_GRAPH_CATALOG,
   normalizeJourneyGraphCatalog,
   getJourneyGraphCatalog,

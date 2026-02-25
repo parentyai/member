@@ -165,6 +165,18 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 - `/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:12-21`
 - `/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:11-33`
 
+### Phase664 Addendum（Journey Branch Queue運用語彙）
+- monitor内 Rule Editor で以下の語彙を固定する。
+  - `Branch queue status`
+  - `Queueを更新`
+  - `pending / sent / failed / skipped`
+  - `Journey Branch Rules`
+- 配信ログの補助項目（add-only）:
+  - `branchRuleId`
+  - `branchMatchedRuleIds`
+  - `branchQueuedAt`
+  - `branchDispatchStatus`
+
 ## Admin_UI_Master_Dictionary v2.0 の所在確認結果
 - 検索1: `rg -n "Admin_UI_Master_Dictionary" /Users/parentyai.com/Projects/Member/docs` → 未検出
 - 検索2: `rg -n "Admin_UI_Master_Dictionary" /Users/parentyai.com/Projects/Member` → 未検出
