@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T20:30:24-05:00",
-  "gitCommit": "24cdc492a7b8238fb4161b582d19f010858c83d5",
-  "branch": "codex/phase654-task-graph-os",
-  "sourceDigest": "01ec1d3f54e151506504a5fa2b7c477c1064627c1e32c17faf0266adbbfd5b9a",
+  "generatedAt": "2026-02-24T20:35:34-05:00",
+  "gitCommit": "ce88be9822df824bfb8863f796225eee1ee50024",
+  "branch": "main",
+  "sourceDigest": "2fb6256d3046cfb9fe4e7a46badafb28182816365a17defffb9c71cd9c770844",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "f762568aef1b543acb53029df23e1e7e5c0ff2c1f740f2e3f7752778bf85aa24",
+      "sha256": "654e9d30835add2b065dc8dc8f8ce18c3b9c1f8f5ed069862a0fb634e80765bc",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "a472955826cf8e88cff31a6d0df84fb4b575d11fed112518f11b81ed32faa736",
+      "sha256": "f9615875948a1da4996555572e4878f04c4d3d4d955b7e6698866316e85fa9e5",
       "bytes": 487
     },
     {
@@ -118,12 +118,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "51adfa204f9654810649e9861ed474b4bd5783b87d45e3f2bc890bce48de281e",
+      "sha256": "a17cb1e107ce47c7fb24f294bc61e2944efd7fb748b4f7311fde94116996d8f5",
       "bytes": 292294
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "9bf27fa90d1c773dbb20946a37799341c334f53b761d8e9cae03014eb0463163",
+      "sha256": "4f977d7145d353ec4ef2ff293feb686a53ac3266acd70ca4fb960cbc9bb2ece8",
       "bytes": 740
     },
     {
@@ -133,13 +133,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "997f2d26334716850ecc74cee91d55c5ae8d4ec2308c28548205c714568ca5c4",
+      "sha256": "91e5b65c8ebc01bea221dff2a14d49d027d1c4a29822222fe474892b283226ab",
       "bytes": 3681
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "35097b892fdde6fb6c4036ca7d0f4e571b409dc5f313ea9d062a2fc580ada148",
-      "bytes": 2414
+      "sha256": "7e2e3acb884da2cf798158aa02bbe73ca1e40f6d2459f3d12c746d8d5b582ff8",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

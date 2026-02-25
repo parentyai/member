@@ -13,6 +13,10 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/RUNBOOK_ADMIN_OPS.md`（管理UI運用OSの日次/事故対応 runbook）
 - `docs/RUNBOOK_DEPLOY_ENVIRONMENTS.md`（stg/prod 分離デプロイ runbook）
 - `docs/RUNBOOK_STG_NOTIFICATION_E2E_CHECKLIST.md`（stg 通知実測チェックリスト）
+- `docs/CATCHUP_4W_EXECUTION_OS.md`（4週間キャッチアップの実行OS）
+- `docs/CATCHUP_4W_EVIDENCE.md`（4週間キャッチアップの証跡台帳）
+- `docs/CATCHUP_W4_DESIGN_READINESS_CHECKLIST.md`（W4デザイン着手準備チェックリスト）
+- `docs/CATCHUP_GO_DECISION_PACKAGE.md`（キャッチアップ完了のGo/No-Go判定パッケージ）
 - `docs/EXECUTION_LOG_TEMPLATE_STG_NOTIFICATION.md`（stg 通知実測ログテンプレート）
 - `docs/DATA_MAP.md`（データ保存先 / 保持 / 削除責務の定義）
 - `docs/TRACE_SMOKE_EVIDENCE.md`（trace smoke 実行証跡の追記ログ）
@@ -64,6 +68,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）
 - `docs/RUNBOOK_STRUCT_DRIFT_BACKFILL.md`（構造ドリフト補正ジョブの運用手順）
 - `docs/RUNBOOK_RETENTION_APPLY.md`（Retention applyジョブのstg運用手順）
+- `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md`（構造負債の優先圧縮キュー）
+- `docs/RUNBOOK_CRITICAL_CONTRACT_GUARD.md`（W3クリティカル契約ガード運用）
 - `tests/phase596/*`（productReadiness threshold 契約テスト）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
 - `docs/REPO_AUDIT_INPUTS/missing_index_surface.json`（missing-index fallback surface 集計）
