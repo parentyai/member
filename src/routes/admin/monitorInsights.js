@@ -54,6 +54,19 @@ function parseFallbackOnEmpty(value) {
   return null;
 }
 
+function buildReadLimitWarning(sourceLength, payloadSummaryLength, readLimitUsed) {
+  if (!Number.isFinite(sourceLength) || sourceLength < 0) return null;
+  if (!Number.isFinite(readLimitUsed) || readLimitUsed <= 0) return null;
+  const reached = Math.floor(sourceLength) >= Math.floor(readLimitUsed);
+  if (!reached) return null;
+  return {
+    type: 'readLimitWarning',
+    readLimitUsed,
+    deliveredCount: Math.floor(sourceLength),
+    matchedDeliveryCount: Math.max(0, Math.floor(payloadSummaryLength || 0))
+  };
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -119,21 +132,24 @@ async function handleMonitorInsights(req, res) {
   const actor = resolveActor(req);
   const nowMs = Date.now();
   const sinceMs = nowMs - (windowDays * MS_PER_DAY);
+  const windowStartDate = new Date(sinceMs);
+  const windowEndDate = new Date(nowMs);
 
   try {
+    const fallbackSources = [];
+    const fallbackSourceTrace = [];
+    let noteDiagnostics = null;
     let all = await listNotificationDeliveriesBySentAtRange({
       limit: readLimit,
-      fromAt: new Date(sinceMs),
-      toAt: new Date(nowMs)
+      fromAt: windowStartDate,
+      toAt: windowEndDate
     });
     let dataSource = 'range';
-    let note = null;
     let fallbackUsed = false;
     let fallbackBlockedFlag = false;
-    const fallbackSources = [];
     if (!all.length && isSnapshotRequired(snapshotMode)) {
       dataSource = 'not_available';
-      note = 'NOT AVAILABLE';
+      noteDiagnostics = 'NOT AVAILABLE';
       fallbackBlockedFlag = true;
     } else if (!all.length) {
       if (!fallbackBlocked && fallbackOnEmpty) {
@@ -143,20 +159,26 @@ async function handleMonitorInsights(req, res) {
         dataSource = 'fallback_bounded';
         fallbackUsed = true;
         fallbackSources.push('listNotificationDeliveriesBySentAtRange:fallback');
+        fallbackSourceTrace.push('listNotificationDeliveriesBySentAtRange:fallback');
       } else {
         dataSource = 'not_available';
-        note = 'NOT AVAILABLE';
+        noteDiagnostics = 'NOT AVAILABLE';
         fallbackBlockedFlag = true;
       }
     }
-    const asOf = dataSource === 'not_available' ? null : new Date().toISOString();
-    const freshnessMinutes = null;
+    const asOf = dataSource === 'not_available' ? null : windowEndDate.toISOString();
+    const freshnessMinutes = asOf ? Math.max(0, (Date.now() - new Date(asOf).getTime()) / (60 * 1000)) : null;
+    const readLimitUsed = readLimit;
     const deliveries = all
       .map((item) => Object.assign({ id: item.id }, item.data || {}))
       .filter((item) => {
         const sentMs = toMillis(item.sentAt || item.deliveredAt);
         return sentMs >= sinceMs;
       });
+    const resultRows = deliveries.length;
+    const matchedDeliveryCount = deliveries.length;
+    const readLimitNote = buildReadLimitWarning(all.length, resultRows, readLimitUsed);
+    const note = noteDiagnostics || readLimitNote;
 
     const notificationIds = Array.from(new Set(deliveries.map((item) => item.notificationId).filter(Boolean)));
     const notificationMap = new Map();
@@ -253,9 +275,19 @@ async function handleMonitorInsights(req, res) {
           snapshotMode,
           fallbackMode,
           fallbackOnEmpty,
+          snapshotModeRaw: snapshotModeRaw || null,
+          fallbackModeRaw: fallbackModeRaw || null,
+          fallbackOnEmptyRaw: fallbackOnEmptyRaw || null,
+          readLimitUsed,
+          windowStart: windowStartDate.toISOString(),
+          windowEnd: windowEndDate.toISOString(),
+          resultRows,
+          matchedDeliveryCount,
+          readLimit,
           dataSource,
           deliveries: deliveries.length,
-          vendorCount: vendorCtrTop.length
+          vendorCount: vendorCtrTop.length,
+          readLimitDiagnostics: readLimitNote
         }
       });
       if (fallbackUsed || fallbackBlockedFlag) {
@@ -270,9 +302,15 @@ async function handleMonitorInsights(req, res) {
             fallbackUsed,
             fallbackBlocked: fallbackBlockedFlag,
             fallbackSources,
+            fallbackSourceTrace,
             snapshotMode,
             fallbackMode,
             fallbackOnEmpty,
+            windowStart: windowStartDate.toISOString(),
+            windowEnd: windowEndDate.toISOString(),
+            readLimitUsed,
+            resultRows,
+            matchedDeliveryCount,
             dataSource,
             readLimit
           }
@@ -283,27 +321,52 @@ async function handleMonitorInsights(req, res) {
     }
 
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
-      ok: true,
-      serverTime: new Date().toISOString(),
-      traceId,
-      windowDays,
-      snapshotMode,
-      fallbackMode,
-      fallbackOnEmpty,
-      dataSource,
-      source: dataSource,
-      asOf,
-      freshnessMinutes,
-      note,
-      fallbackUsed,
-      fallbackBlocked: fallbackBlockedFlag,
-      fallbackSources,
-      vendorCtrTop,
-      ctrTop,
-      abSnapshot,
-      faqReferenceTop
-    }));
+      res.end(JSON.stringify({
+        ok: true,
+        serverTime: new Date().toISOString(),
+        traceId,
+        windowDays,
+        windowStart: windowStartDate.toISOString(),
+        windowEnd: windowEndDate.toISOString(),
+        readLimitUsed,
+        resultRows,
+        matchedDeliveryCount,
+        snapshotMode,
+        snapshotModeRaw: snapshotModeRaw || null,
+        fallbackMode,
+        fallbackModeRaw: fallbackModeRaw || null,
+        fallbackOnEmpty,
+        fallbackOnEmptyRaw: fallbackOnEmptyRaw || null,
+        fallbackSourceTrace,
+        dataSource,
+        source: dataSource,
+        asOf,
+        freshnessMinutes,
+        note,
+        fallbackUsed,
+        fallbackBlocked: fallbackBlockedFlag,
+        fallbackSources,
+        diagnostics: {
+          asOf,
+          freshnessMinutes,
+          windowStart: windowStartDate.toISOString(),
+          windowEnd: windowEndDate.toISOString(),
+          readLimitUsed,
+          resultRows,
+          matchedDeliveryCount,
+          source: dataSource,
+          note: readLimitNote,
+          fallback: {
+            used: fallbackUsed,
+            blocked: fallbackBlockedFlag,
+            sources: fallbackSourceTrace
+          }
+        },
+        vendorCtrTop,
+        ctrTop,
+        abSnapshot,
+        faqReferenceTop
+      }));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });

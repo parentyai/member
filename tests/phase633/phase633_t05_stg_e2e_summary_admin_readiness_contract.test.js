@@ -22,7 +22,8 @@ test('phase633: markdown summary renders admin readiness checks for product_read
         traceId: 'trace-stg-e2e-product-readiness-1',
         adminReadinessChecks: [
           { endpoint: '/api/admin/product-readiness', status: 200, ok: true },
-          { endpoint: '/api/admin/read-path-fallback-summary', status: 200, ok: true }
+          { endpoint: '/api/admin/read-path-fallback-summary', status: 200, ok: true },
+          { endpoint: '/api/admin/monitor-insights?windowDays=7', status: 200, ok: true }
         ]
       }
     ]
@@ -31,4 +32,5 @@ test('phase633: markdown summary renders admin readiness checks for product_read
   assert.ok(markdown.includes('admin readiness checks'));
   assert.ok(markdown.includes('/api/admin/product-readiness: status=200 ok=true'));
   assert.ok(markdown.includes('/api/admin/read-path-fallback-summary: status=200 ok=true'));
+  assert.ok(markdown.includes('/api/admin/monitor-insights?windowDays=7: status=200 ok=true'));
 });

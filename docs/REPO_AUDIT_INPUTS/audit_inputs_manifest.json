@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T22:19:39-05:00",
-  "gitCommit": "69c2d17f98c8b0b139b46d78e67e31b9addb462d",
+  "generatedAt": "2026-02-24T23:27:22-05:00",
+  "gitCommit": "195590c90eeb94822253ec9ce951869f196885f6",
   "branch": "codex/w5-checklist-scenario-key-canonicalization",
-  "sourceDigest": "312184aedc2f002094418087b7dccb8877977cf37e1fd39115d36fdeed9e09bc",
+  "sourceDigest": "94352bb961158cee87168e7f05e0fc5211b2aafa5151cef865cd0f58de0cd555",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "acf547a66d427d3d104ec79a7a23f433262b4969437ffce4cca18b6ff027cf4a",
+      "sha256": "5eb5c60063815e45c816a0dff2e1ab16e5ef3632ffbe48aa80374ba888281cee",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "cce1db378d8de290b0fa6fa7b5388e705294466d2cbcf36498b6290a9b0e720f",
+      "sha256": "5243ad0553df36b20dff62d02fd7e2fd299bbb0a4a9dedb71cbbe6471d9ad142",
       "bytes": 487
     },
     {
@@ -138,7 +138,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "ed6405e717a452bf58b8d746095fe1ea167a22ff51fab578477cd9d72e73b041",
+      "sha256": "4873502559b93ec6d7398ef187368f2b2546bf7651d1b96a0f7c39f33f9ccefd",
       "bytes": 2434
     }
   ],
