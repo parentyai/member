@@ -9,7 +9,7 @@
 ## 1. Current Snapshot
 - legacy_repos_count: `6`
 - merge_candidates_count: `6`
-- naming_drift_scenario_count: `9`
+- naming_drift_scenario_count: `0`
 - unresolved_dynamic_dep_count: `0`
 - active_legacy_repo_imports_count: `0`
 
@@ -62,6 +62,19 @@
 - 結果:
   - `naming_drift_scenario_count` は `7 -> 4` に改善
   - 残対象は `checklistsRepo / phase2ReportsRepo / scenarioReportsRepo / runAutomation`
+
+## 3.3 Progress (2026-02-25 / W5.2)
+- 完了:
+  - `src/repos/firestore/checklistsRepo.js`
+  - `src/repos/firestore/scenarioReportsRepo.js`
+  - `src/usecases/phase2/runAutomation.js`
+  - `src/repos/firestore/phase2ReportsRepo.js`（legacy forwarderで直接DB依存を排除）
+- 変更要点:
+  - read: `scenarioKey` 優先、legacy `scenario` fallback
+  - write: `scenarioKey` canonical write（legacy `scenario` の受け取りのみ）
+- 結果:
+  - `naming_drift_scenario_count` は `4 -> 0` に改善
+  - `legacy_repos_count=6` / `active_legacy_repo_imports_count=0` は維持
 
 ## 4. Gate Rules
 - `npm run structure-risk:check` をPRで必須化

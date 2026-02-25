@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-02-25T03:04:37.281Z",
+  "generatedAt": "2026-02-25T03:17:33.878Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "bcf3f2a3c3f8d7b76533d99131b156f9d4736d8d7ab206ab2cb142eba9be657d",
+  "sourceDigest": "d206d982ba6c1d31031b8655cdfd1a0e15e0d8ff326fdf645585805b793385a6",
   "canonical_repos_count": 22,
   "legacy_repos_count": 6,
   "merge_candidates_count": 6,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
-  "naming_drift_scenario_count": 4,
+  "naming_drift_scenario_count": 0,
   "naming_drift_scenarioKey_count": 22,
   "canonical_repos": [
     "analyticsReadRepo",
@@ -69,12 +69,7 @@
   ],
   "unresolved_dynamic_dep": [],
   "naming_drift": {
-    "scenario": [
-      "src/repos/firestore/checklistsRepo.js",
-      "src/repos/firestore/phase2ReportsRepo.js",
-      "src/repos/firestore/scenarioReportsRepo.js",
-      "src/usecases/phase2/runAutomation.js"
-    ],
+    "scenario": [],
     "scenarioKey": [
       "src/repos/firestore/notificationsRepo.js",
       "src/repos/firestore/usersRepo.js",

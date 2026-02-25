@@ -15,6 +15,7 @@ const {
   upsertChecklistPendingReport
 } = require('../../repos/firestore/scenarioReportsRepo');
 const { upsertRun } = require('../../repos/firestore/scenarioRunsRepo');
+const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const DEFAULT_ANALYTICS_LIMIT = 1000;
 const MAX_ANALYTICS_LIMIT = 5000;
@@ -108,7 +109,7 @@ function collectScenarioStepPairsFromUsers(users) {
   const pairs = [];
   (users || []).forEach((user) => {
     const data = user && user.data ? user.data : (user || {});
-    const scenario = typeof data.scenarioKey === 'string' ? data.scenarioKey.trim() : '';
+    const scenario = normalizeScenarioKey(data);
     const step = typeof data.stepKey === 'string' ? data.stepKey.trim() : '';
     if (!scenario || !step) return;
     const key = `${scenario}__${step}`;
@@ -256,7 +257,7 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
 
     const userScenario = new Map();
     for (const user of users) {
-      const scenario = user.data && user.data.scenario;
+      const scenario = normalizeScenarioKey(user && user.data ? user.data : (user || {}));
       if (scenario) userScenario.set(user.id, scenario);
     }
 
@@ -304,7 +305,7 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       const data = checklist.data || {};
       const items = Array.isArray(data.items) ? data.items : [];
       checklistMap.set(checklist.id, {
-        scenario: data.scenario,
+        scenario: normalizeScenarioKey(data),
         step: data.step,
         itemsCount: items.length
       });
@@ -360,15 +361,15 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       });
 
       for (const [scenario, counts] of dailyCounts.entries()) {
-        await upsertDailyEventReport({ date: targetDate, scenario, counts, runId });
+        await upsertDailyEventReport({ date: targetDate, scenarioKey: scenario, counts, runId });
       }
       for (const [scenario, counts] of weeklyCounts.entries()) {
-        await upsertWeeklyEventReport({ weekStart: targetWeekStart, scenario, counts, runId });
+        await upsertWeeklyEventReport({ weekStart: targetWeekStart, scenarioKey: scenario, counts, runId });
       }
       for (const report of pendingByScenarioStep.values()) {
         await upsertChecklistPendingReport({
           date: targetDate,
-          scenario: report.scenario,
+          scenarioKey: report.scenario,
           step: report.step,
           totalTargets: report.totalTargets,
           completedCount: report.completedCount,
