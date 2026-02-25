@@ -2055,6 +2055,62 @@ details:not([open]) > *:not(summary) {
   background: var(--status-warn-bg);
 }
 
+.admin-local-preflight-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.admin-local-preflight-actions .secondary-btn {
+  min-width: 140px;
+}
+
+.admin-local-preflight-commands {
+  margin-top: var(--space-2);
+}
+
+.admin-local-preflight-commands-title {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+#local-preflight-command-list {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: var(--font-12);
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: var(--surface-strong);
+}
+
+.admin-local-preflight-checks {
+  margin-top: var(--space-2);
+}
+
+.admin-local-preflight-checks > summary {
+  cursor: pointer;
+  font-size: var(--font-12);
+  color: var(--text-muted);
+}
+
+#local-preflight-checks-json {
+  margin-top: var(--space-1);
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: var(--font-12);
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: var(--surface-strong);
+}
+
 .admin-guard-text-danger {
   color: var(--status-danger);
 }

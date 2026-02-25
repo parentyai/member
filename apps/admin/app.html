@@ -216,6 +216,20 @@
           <div class="admin-guard-line"><strong>原因:</strong> <span data-local-preflight-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-local-preflight-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-local-preflight-field="action">-</span></div>
+          <div class="admin-guard-line"><strong>ヒント:</strong> <span data-local-preflight-field="rawHint">-</span></div>
+          <div class="admin-local-preflight-actions">
+            <button id="local-preflight-recheck" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.recheck">再診断</button>
+            <button id="local-preflight-copy-commands" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.copyCommands">コマンドコピー</button>
+            <button id="local-preflight-open-audit" type="button" class="secondary-btn" data-dict-key="ui.label.admin.localPreflight.openAudit">監査ログへ移動</button>
+          </div>
+          <div class="admin-local-preflight-commands">
+            <div class="admin-local-preflight-commands-title" data-dict-key="ui.label.admin.localPreflight.commands">復旧コマンド</div>
+            <pre id="local-preflight-command-list">-</pre>
+          </div>
+          <details id="local-preflight-checks" class="admin-local-preflight-checks">
+            <summary data-dict-key="ui.label.admin.localPreflight.checks">診断詳細</summary>
+            <pre id="local-preflight-checks-json">-</pre>
+          </details>
         </div>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">

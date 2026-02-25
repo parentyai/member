@@ -416,6 +416,24 @@
     if (lower.includes('local_preflight_unavailable')) {
       return { cause: 'ローカル診断APIを取得できません', impact: '環境不備と実装不備の切り分けができません', action: '/api/admin/local-preflight を直接確認してください', tone: 'warn' };
     }
+    if (lower.includes('adc_reauth_required')) {
+      return { cause: 'ADC認証の再実行が必要です', impact: 'Firestore依存APIの取得が失敗します', action: 'gcloud auth application-default login を実行して再診断してください', tone: 'danger' };
+    }
+    if (lower.includes('firestore_timeout')) {
+      return { cause: 'Firestore接続がタイムアウトしました', impact: 'ダッシュボード/監視の取得が停止します', action: 'ネットワークまたは認証状態を確認して再診断してください', tone: 'danger' };
+    }
+    if (lower.includes('firestore_network_error')) {
+      return { cause: 'Firestore到達性に問題があります', impact: 'Firestore依存APIが断続的に失敗します', action: '接続環境を確認し、ローカル診断を再実行してください', tone: 'danger' };
+    }
+    if (lower.includes('firestore_permission_error')) {
+      return { cause: 'Firestoreアクセス権限が不足しています', impact: '管理画面のFirestore依存操作が拒否されます', action: '利用中アカウントのIAM権限を確認して再診断してください', tone: 'danger' };
+    }
+    if (lower.includes('firestore_unknown')) {
+      return { cause: 'Firestore接続で未分類エラーを検知しました', impact: '原因が判別できず復旧判断が遅れます', action: 'ローカル診断の詳細ヒントを確認して再実行してください', tone: 'warn' };
+    }
+    if (lower.includes('firestore_probe_failed')) {
+      return { cause: 'Firestore read-only診断が失敗しました', impact: 'Firestore依存APIの取得が失敗し、NOT AVAILABLE が表示されます', action: 'ローカル診断バナーの復旧コマンドを実行して再診断してください', tone: 'danger' };
+    }
     if (lower.includes('local_prefight') || lower.includes('local_preflight')) {
       return { cause: 'ローカル前提条件の確認で異常を検知しました', impact: 'Firestore依存APIの取得が失敗し、NOT AVAILABLE が表示されます', action: 'ローカル診断バナーの手順に従って認証設定を修正してください', tone: 'danger' };
     }
