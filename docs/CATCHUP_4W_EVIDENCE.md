@@ -172,6 +172,31 @@
   - `0907840126c2088cc9138a2ab904be4582b51f86`
   - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
 
+## W5.3 残件4 legacy alias identity 固定 (2026-02-25T03:25:00Z)
+- scope:
+  - `tests/phase315/phase315_t04_legacy_alias_identity_contract.test.js`
+  - `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md`（3.4進捗反映）
+  - `docs/REPO_AUDIT_INPUTS/repo_map_ui.json`（`testCount`更新）
+  - `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json`（生成証跡更新）
+- command results:
+  - `node --test tests/phase315/*.test.js` PASS (8/8)
+  - `npm run structure-risk:check` PASS
+  - `npm run repo-map:generate` PASS
+  - `npm run audit-inputs:generate` PASS
+  - `npm run catchup:gate:pr` PASS
+  - `npm run catchup:gate:full` PASS
+  - `npm test` PASS (1407/1407)
+  - `npm run test:trace-smoke` PASS
+  - `npm run test:ops-smoke` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `0`（維持）
+  - `legacy_repos_count`: `6`（維持）
+  - `active_legacy_repo_imports_count`: `0`（維持）
+- related artifacts:
+  - `docs/TRACE_SMOKE_EVIDENCE.md`（追加）
+  - `docs/REPO_AUDIT_INPUTS/repo_map_ui.json`
+  - `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json`
+
 ## Log Template (copy)
 ```text
 date_utc: YYYY-MM-DDTHH:mm:ssZ

@@ -76,6 +76,20 @@
   - `naming_drift_scenario_count` は `4 -> 0` に改善
   - `legacy_repos_count=6` / `active_legacy_repo_imports_count=0` は維持
 
+## 3.4 Progress (2026-02-25 / W5.3)
+- 完了（対象4件）:
+  - `src/repos/firestore/phase2RunsRepo.js`
+  - `src/repos/firestore/phase18StatsRepo.js`
+  - `src/repos/firestore/phase22KpiSnapshotsReadRepo.js`
+  - `src/repos/firestore/phase22KpiSnapshotsRepo.js`
+- 追加固定項目:
+  - `tests/phase315/phase315_t04_legacy_alias_identity_contract.test.js`
+- 変更要点:
+  - legacy alias が canonical と同一モジュール参照を持つことを固定化
+  - export キーが一致し、将来の差異回帰を早期検知
+- 残件影響:
+  - `legacy_repos_count=6` / `active_legacy_repo_imports_count=0` / `naming_drift_scenario=0` は維持
+
 ## 4. Gate Rules
 - `npm run structure-risk:check` をPRで必須化
 - 予算基準は `docs/STRUCTURE_BUDGETS.md` の最新 baseline を採用

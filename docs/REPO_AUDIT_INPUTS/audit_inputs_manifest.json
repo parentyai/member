@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T22:06:04-05:00",
-  "gitCommit": "0907840126c2088cc9138a2ab904be4582b51f86",
+  "generatedAt": "2026-02-24T22:19:39-05:00",
+  "gitCommit": "69c2d17f98c8b0b139b46d78e67e31b9addb462d",
   "branch": "codex/w5-checklist-scenario-key-canonicalization",
-  "sourceDigest": "3d97be2d20eeb4b412314775ba6d951c0bb64c892a634fb366ef1e0440f6f011",
+  "sourceDigest": "312184aedc2f002094418087b7dccb8877977cf37e1fd39115d36fdeed9e09bc",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "c335b9a166ba565c5e7ce2731be1e6e64b2dc07e1f572069675510a48cc51f12",
+      "sha256": "6237ca319755cde827f09aca563989b60d104ce02a6e99346b1cf54aa9765522",
       "bytes": 292294
     },
     {
