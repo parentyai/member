@@ -170,9 +170,10 @@ function scoreArticle(article, tokens, intent, context) {
     score += bm25(tf, docLength, avgDocLength);
   }
   if (typeof intent === 'string' && intent.trim().length > 0) {
-    const allowed = normalizeStringArray(article.allowedIntents);
+    const intentUpper = String(intent).trim().toUpperCase();
+    const allowed = normalizeStringArray(article.allowedIntents).map((item) => item.toUpperCase());
     if (allowed.length === 0) return score;
-    if (allowed.includes(intent)) score += 3;
+    if (allowed.includes(intentUpper)) score += 3;
     else score -= 1000;
   }
   return score;

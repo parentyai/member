@@ -45,6 +45,8 @@ function handleError(res, err) {
     message.includes('invalid householdType') ||
     message.includes('invalid journeyStage') ||
     message.includes('invalid todoState') ||
+    message.includes('invalid billingIntegrity') ||
+    message.includes('invalid quickFilter') ||
     message.includes('invalid sortKey') ||
     message.includes('invalid sortDir')
   ) {
@@ -124,6 +126,28 @@ function parseSubscriptionStatus(value) {
   return null;
 }
 
+function parseBillingIntegrity(value) {
+  if (value === null || value === undefined || value === '' || value === 'all') return null;
+  if (['ok', 'unknown', 'conflict'].includes(value)) return value;
+  return null;
+}
+
+function parseQuickFilter(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if ([
+    'all',
+    'pro_active',
+    'free',
+    'trialing',
+    'past_due',
+    'canceled',
+    'unknown'
+  ].includes(value)) {
+    return value;
+  }
+  return null;
+}
+
 function parseUsersSortKey(value) {
   if (value === null || value === undefined || value === '') return null;
   if ([
@@ -143,6 +167,10 @@ function parseUsersSortKey(value) {
     'plan',
     'subscriptionStatus',
     'llmUsage',
+    'llmUsageToday',
+    'tokensToday',
+    'blockedRate',
+    'billingIntegrity',
     'todoOpenCount',
     'todoOverdueCount'
   ].includes(value)) {
@@ -228,6 +256,8 @@ async function handleUsersSummaryFiltered(req, res) {
     const householdTypeRaw = url.searchParams.get('householdType');
     const journeyStageRaw = url.searchParams.get('journeyStage');
     const todoStateRaw = url.searchParams.get('todoState');
+    const billingIntegrityRaw = url.searchParams.get('billingIntegrity');
+    const quickFilterRaw = url.searchParams.get('quickFilter');
     const sortKeyRaw = url.searchParams.get('sortKey');
     const sortDirRaw = url.searchParams.get('sortDir');
     const limit = parsePositiveInt(limitRaw, 1, 500);
@@ -240,6 +270,8 @@ async function handleUsersSummaryFiltered(req, res) {
     const householdType = parseHouseholdType(householdTypeRaw);
     const journeyStage = parseJourneyStage(journeyStageRaw);
     const todoState = parseTodoState(todoStateRaw);
+    const billingIntegrity = parseBillingIntegrity(billingIntegrityRaw);
+    const quickFilter = parseQuickFilter(quickFilterRaw);
     const sortKey = parseUsersSortKey(sortKeyRaw);
     const sortDir = parseUsersSortDir(sortDirRaw);
     if (reviewAgeRaw && !reviewAgeDays) {
@@ -272,6 +304,12 @@ async function handleUsersSummaryFiltered(req, res) {
     if (todoStateRaw && !todoState) {
       throw new Error('invalid todoState');
     }
+    if (billingIntegrityRaw && !billingIntegrity) {
+      throw new Error('invalid billingIntegrity');
+    }
+    if (quickFilterRaw && !quickFilter) {
+      throw new Error('invalid quickFilter');
+    }
     if (sortKeyRaw && !sortKey) {
       throw new Error('invalid sortKey');
     }
@@ -292,6 +330,8 @@ async function handleUsersSummaryFiltered(req, res) {
         householdType,
         journeyStage,
         todoState,
+        billingIntegrity,
+        quickFilter,
         sortKey,
         sortDir,
         limit,
@@ -329,13 +369,15 @@ async function handleUsersSummaryFiltered(req, res) {
       fallbackBlocked: meta && Object.prototype.hasOwnProperty.call(meta, 'fallbackBlocked') ? meta.fallbackBlocked : false,
       fallbackSources: meta && Array.isArray(meta.fallbackSources) ? meta.fallbackSources : [],
       fallbackOnEmpty,
-        filters: {
-          plan: plan || 'all',
-          subscriptionStatus: subscriptionStatus || 'all',
-          householdType: householdType || 'all',
-          journeyStage: journeyStage || 'all',
-          todoState: todoState || 'all'
-        },
+      filters: {
+        plan: plan || 'all',
+        subscriptionStatus: subscriptionStatus || 'all',
+        householdType: householdType || 'all',
+        journeyStage: journeyStage || 'all',
+        todoState: todoState || 'all',
+        billingIntegrity: billingIntegrity || 'all',
+        quickFilter: quickFilter || 'all'
+      },
       sort: {
         sortKey: sortKey || null,
         sortDir: sortDir || null

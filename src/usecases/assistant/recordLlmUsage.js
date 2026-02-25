@@ -29,6 +29,40 @@ function estimateCost(model, tokensIn, tokensOut) {
   return Number(total.toFixed(8));
 }
 
+function classifyBlockedReasonCategory(reason) {
+  const normalized = typeof reason === 'string' ? reason.trim().toLowerCase() : '';
+  if (!normalized) return null;
+  if (
+    normalized.includes('daily_limit')
+    || normalized.includes('token_budget')
+    || normalized.includes('qps')
+    || normalized.includes('budget')
+  ) {
+    return 'budget';
+  }
+  if (normalized.includes('plan') || normalized.includes('intent_not_allowed')) {
+    return 'plan';
+  }
+  if (
+    normalized.includes('citation')
+    || normalized.includes('template')
+    || normalized.includes('section_limit')
+    || normalized.includes('invalid_schema')
+  ) {
+    return 'quality';
+  }
+  if (
+    normalized.includes('timeout')
+    || normalized.includes('llm_error')
+    || normalized.includes('outage')
+    || normalized.includes('disabled')
+    || normalized.includes('adapter_missing')
+  ) {
+    return 'availability';
+  }
+  return 'other';
+}
+
 async function recordLlmUsage(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const tokensIn = Math.max(0, toNumber(payload.tokensIn, 0));
@@ -39,6 +73,7 @@ async function recordLlmUsage(params) {
     ? Number(payload.costEstimate)
     : estimateCost(model, tokensIn, tokensOut);
   const createdAt = payload.createdAt || new Date().toISOString();
+  const blockedReasonCategory = payload.blockedReasonCategory || classifyBlockedReasonCategory(payload.blockedReason);
 
   const logResult = await llmUsageLogsRepo.appendLlmUsageLog({
     userId: payload.userId,
@@ -47,6 +82,7 @@ async function recordLlmUsage(params) {
     subscriptionStatus: payload.subscriptionStatus,
     decision: payload.decision,
     blockedReason: payload.blockedReason || null,
+    blockedReasonCategory: blockedReasonCategory || null,
     tokensIn,
     tokensOut,
     tokenUsed,
@@ -69,6 +105,7 @@ async function recordLlmUsage(params) {
     ok: true,
     logId: logResult && logResult.id ? logResult.id : null,
     costEstimate,
+    blockedReasonCategory: blockedReasonCategory || null,
     stats
   };
 }

@@ -4,7 +4,7 @@ const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsConfigRepo = require('../../repos/firestore/opsConfigRepo');
 const llmUsageStatsRepo = require('../../repos/firestore/llmUsageStatsRepo');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
-const { resolvePlan, resolveAllowedIntent } = require('./planGate');
+const { resolvePlan, resolveAllowedIntent, normalizeIntentName } = require('./planGate');
 
 const GLOBAL_QPS_WINDOW_MS = 1000;
 const globalRequestTimestamps = [];
@@ -40,7 +40,7 @@ function buildBlockedDecision(base, reason) {
 async function evaluateLLMBudget(lineUserId, params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const intent = typeof payload.intent === 'string' && payload.intent.trim() ? payload.intent.trim().toLowerCase() : 'faq_search';
+  const intent = normalizeIntentName(payload.intent || 'faq_search') || 'faq_search';
   const tokenEstimate = Math.max(0, toNumber(payload.tokenEstimate, 0));
   const planInfo = payload.planInfo || await resolvePlan(lineUserId, resolvedDeps);
   const policy = payload.policy || await (resolvedDeps.opsConfigRepo || opsConfigRepo).getLlmPolicy();
@@ -86,7 +86,10 @@ async function evaluateLLMBudget(lineUserId, params, deps) {
       return buildBlockedDecision(base, 'daily_limit_exceeded');
     }
 
-    const tokenBudget = toNumber(policy.per_user_token_budget, 0);
+    const tokenBudgetSource = Object.prototype.hasOwnProperty.call(policy, 'per_user_token_budget')
+      ? policy.per_user_token_budget
+      : policy.per_user_daily_token_budget;
+    const tokenBudget = toNumber(tokenBudgetSource, 0);
     if (tokenBudget > 0 && (toNumber(stats.dailyTokenUsed, 0) + tokenEstimate) > tokenBudget) {
       return buildBlockedDecision(base, 'token_budget_exceeded');
     }

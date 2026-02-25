@@ -14,7 +14,9 @@ const MAX_INTERPRETATIONS = 10;
 const MAX_NOTES = 10;
 const MAX_CANDIDATES = 3;
 const MAX_CITATIONS = 5;
-const MAX_PAID_LIST = 8;
+const MAX_PAID_GAPS = 5;
+const MAX_PAID_RISKS = 3;
+const MAX_PAID_EVIDENCE = 8;
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -241,7 +243,7 @@ function validatePaidAssistantReply(payload) {
   } else if (containsDirectUrl(payload.situation)) {
     errors.push('situation direct_url_detected');
   }
-  if (!Array.isArray(payload.gaps) || payload.gaps.length > MAX_PAID_LIST) {
+  if (!Array.isArray(payload.gaps) || payload.gaps.length > MAX_PAID_GAPS) {
     errors.push('gaps invalid');
   } else {
     payload.gaps.forEach((item, idx) => {
@@ -249,7 +251,7 @@ function validatePaidAssistantReply(payload) {
       if (containsDirectUrl(item)) errors.push(`gaps[${idx}] direct_url_detected`);
     });
   }
-  if (!Array.isArray(payload.risks) || payload.risks.length > MAX_PAID_LIST) {
+  if (!Array.isArray(payload.risks) || payload.risks.length > MAX_PAID_RISKS) {
     errors.push('risks invalid');
   } else {
     payload.risks.forEach((item, idx) => {
@@ -265,7 +267,7 @@ function validatePaidAssistantReply(payload) {
       if (containsDirectUrl(item)) errors.push(`nextActions[${idx}] direct_url_detected`);
     });
   }
-  if (!Array.isArray(payload.evidenceKeys) || payload.evidenceKeys.length === 0 || payload.evidenceKeys.length > MAX_PAID_LIST) {
+  if (!Array.isArray(payload.evidenceKeys) || payload.evidenceKeys.length === 0 || payload.evidenceKeys.length > MAX_PAID_EVIDENCE) {
     errors.push('evidenceKeys invalid');
   } else {
     payload.evidenceKeys.forEach((item, idx) => {

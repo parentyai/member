@@ -69,6 +69,18 @@ function resolveAdminLocalPreflightFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_LOCAL_PREFLIGHT_V1', true);
 }
 
+function resolveAdminNoCollapseFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_NO_COLLAPSE_V1', true);
+}
+
+function resolveAdminTopSummaryFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_TOP_SUMMARY_V1', false);
+}
+
+function resolveAdminUsersStripeLayoutFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1', true);
+}
+
 function resolveAdminBuildMeta() {
   const commitRaw = process.env.GIT_COMMIT_SHA
     || process.env.SOURCE_COMMIT
@@ -101,9 +113,12 @@ function buildAdminAppBootScript() {
   const rolePersistEnabled = resolveAdminRolePersistFlag();
   const historySyncEnabled = resolveAdminHistorySyncFlag();
   const localPreflightEnabled = resolveAdminLocalPreflightFlag();
+  const noCollapseEnabled = resolveAdminNoCollapseFlag();
+  const topSummaryEnabled = resolveAdminTopSummaryFlag();
+  const usersStripeLayoutEnabled = resolveAdminUsersStripeLayoutFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
@@ -1285,6 +1300,66 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'POST' && pathname === '/internal/jobs/user-context-snapshot-build') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleUserContextSnapshotJob } = require('./routes/internal/userContextSnapshotJob');
+      const body = await collectBody();
+      await handleUserContextSnapshotJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/journey-kpi-build') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleJourneyKpiBuildJob } = require('./routes/internal/journeyKpiBuildJob');
+      const body = await collectBody();
+      await handleJourneyKpiBuildJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {
     const { handleAdminTraceSearch } = require('./routes/admin/traceSearch');
     handleAdminTraceSearch(req, res);
@@ -1393,6 +1468,10 @@ function createServer() {
     } = require('./routes/admin/osNotifications');
     const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
     const { handleUserBillingDetail } = require('./routes/admin/osUserBillingDetail');
+    const { handleUsersSummaryAnalyze } = require('./routes/admin/osUsersSummaryAnalyze');
+    const { handleUsersSummaryExport } = require('./routes/admin/osUsersSummaryExport');
+    const { handleLlmUsageSummary } = require('./routes/admin/osLlmUsageSummary');
+    const { handleJourneyKpi } = require('./routes/admin/osJourneyKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
     const { handleView } = require('./routes/admin/osView');
     const {
@@ -1522,6 +1601,22 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/journey-policy/set') {
         const body = await collectBody();
         await handleJourneyPolicySet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/analyze') {
+        await handleUsersSummaryAnalyze(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/export') {
+        await handleUsersSummaryExport(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/llm-usage/summary') {
+        await handleLlmUsageSummary(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-kpi') {
+        await handleJourneyKpi(req, res);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/view') {

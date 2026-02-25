@@ -212,36 +212,15 @@
     ]
   },
   {
-    "collection": "journey_reminder_runs",
-    "kind": "event",
+    "collection": "journey_kpi_daily",
+    "kind": "aggregate",
     "recomputable": true,
-    "retention": "180d",
+    "retention": "90d",
     "deletable": "CONDITIONAL",
     "evidence": [
-      "src/repos/firestore/journeyReminderRunsRepo.js:7",
-      "src/domain/retention/retentionPolicy.js:24"
-    ]
-  },
-  {
-    "collection": "journey_todo_items",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/journeyTodoItemsRepo.js:5",
-      "src/domain/retention/retentionPolicy.js:25"
-    ]
-  },
-  {
-    "collection": "journey_todo_stats",
-    "kind": "aggregate",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/journeyTodoStatsRepo.js:5",
-      "src/domain/retention/retentionPolicy.js:26"
+      "src/repos/firestore/journeyKpiDailyRepo.js:5",
+      "src/repos/firestore/journeyKpiDailyRepo.js:90",
+      "src/usecases/journey/aggregateJourneyKpis.js:263"
     ]
   },
   {
@@ -639,25 +618,15 @@
     ]
   },
   {
-    "collection": "user_journey_profiles",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
+    "collection": "user_context_snapshots",
+    "kind": "aggregate",
+    "recomputable": true,
+    "retention": "90d",
+    "deletable": "CONDITIONAL",
     "evidence": [
-      "src/repos/firestore/userJourneyProfilesRepo.js:5",
-      "src/domain/retention/retentionPolicy.js:61"
-    ]
-  },
-  {
-    "collection": "user_journey_schedules",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/userJourneySchedulesRepo.js:5",
-      "src/domain/retention/retentionPolicy.js:62"
+      "src/repos/firestore/userContextSnapshotsRepo.js:5",
+      "src/repos/firestore/userContextSnapshotsRepo.js:127",
+      "src/repos/firestore/userContextSnapshotsRepo.js:138"
     ]
   },
   {

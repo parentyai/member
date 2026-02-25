@@ -20,6 +20,20 @@ const HOUSEHOLD_TYPE_FILTER_SET = new Set([
   'accompany1',
   'accompany2'
 ]);
+const BILLING_INTEGRITY_FILTER_SET = new Set([
+  'ok',
+  'unknown',
+  'conflict'
+]);
+const QUICK_FILTER_SET = new Set([
+  'all',
+  'pro_active',
+  'free',
+  'trialing',
+  'past_due',
+  'canceled',
+  'unknown'
+]);
 const SORT_KEY_TYPES = Object.freeze({
   createdAt: 'date',
   updatedAt: 'date',
@@ -37,6 +51,10 @@ const SORT_KEY_TYPES = Object.freeze({
   plan: 'string',
   subscriptionStatus: 'string',
   llmUsage: 'number',
+  llmUsageToday: 'number',
+  tokensToday: 'number',
+  blockedRate: 'number',
+  billingIntegrity: 'string',
   todoOpenCount: 'number',
   todoOverdueCount: 'number'
 });
@@ -144,6 +162,20 @@ function normalizeTodoStateFilter(value) {
   return null;
 }
 
+function normalizeBillingIntegrityFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'all') return null;
+  return BILLING_INTEGRITY_FILTER_SET.has(normalized) ? normalized : null;
+}
+
+function normalizeQuickFilter(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  return QUICK_FILTER_SET.has(normalized) ? normalized : null;
+}
+
 function compareValues(baseA, baseB, valueType, direction) {
   const dir = direction === 'asc' ? 1 : -1;
   const aUnset = baseA === null || baseA === undefined || (typeof baseA === 'string' && baseA.trim().length === 0);
@@ -195,9 +227,27 @@ function resolveSortValue(item, key) {
   if (key === 'plan') return item && item.plan;
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'llmUsage') return item && item.llmUsage;
+  if (key === 'llmUsageToday') return item && item.llmUsageToday;
+  if (key === 'tokensToday') return item && item.llmTokenUsedToday;
+  if (key === 'blockedRate') return item && item.llmBlockedRate;
+  if (key === 'billingIntegrity') return item && item.billingIntegrityState;
   if (key === 'todoOpenCount') return item && item.todoOpenCount;
   if (key === 'todoOverdueCount') return item && item.todoOverdueCount;
   return item ? item[key] : null;
+}
+
+function filterByQuickFilter(item, quickFilter) {
+  if (!quickFilter || quickFilter === 'all') return true;
+  const plan = String(item && item.plan ? item.plan : 'free');
+  const status = String(item && item.subscriptionStatus ? item.subscriptionStatus : 'unknown');
+  const integrity = String(item && item.billingIntegrityState ? item.billingIntegrityState : 'unknown');
+  if (quickFilter === 'pro_active') return plan === 'pro' && (status === 'active' || status === 'trialing');
+  if (quickFilter === 'free') return plan === 'free';
+  if (quickFilter === 'trialing') return status === 'trialing';
+  if (quickFilter === 'past_due') return status === 'past_due';
+  if (quickFilter === 'canceled') return status === 'canceled';
+  if (quickFilter === 'unknown') return status === 'unknown' || integrity === 'unknown' || integrity === 'conflict';
+  return true;
 }
 
 function sortUsersSummary(items, sortKey, sortDir) {
@@ -235,6 +285,8 @@ async function getUsersSummaryFiltered(params) {
   const householdTypeFilter = normalizeHouseholdTypeFilter(payload.householdType);
   const journeyStageFilter = normalizeJourneyStageFilter(payload.journeyStage);
   const todoStateFilter = normalizeTodoStateFilter(payload.todoState);
+  const billingIntegrityFilter = normalizeBillingIntegrityFilter(payload.billingIntegrity);
+  const quickFilter = normalizeQuickFilter(payload.quickFilter);
   const enriched = baseItems.map((item) => {
     const stale = isStaleMemberNumber(item, nowMs);
     const checklistIncomplete = isChecklistIncomplete(item);
@@ -278,6 +330,11 @@ async function getUsersSummaryFiltered(params) {
       if (todoStateFilter === 'overdue') return Number.isFinite(overdueCount) && overdueCount > 0;
       if (todoStateFilter === 'none') return !Number.isFinite(openCount) || openCount <= 0;
       return true;
+    })
+    .filter((item) => filterByQuickFilter(item, quickFilter))
+    .filter((item) => {
+      if (!billingIntegrityFilter) return true;
+      return String(item && item.billingIntegrityState ? item.billingIntegrityState : 'unknown') === billingIntegrityFilter;
     });
   const items = sortUsersSummary(filtered, payload.sortKey, payload.sortDir);
   if (!includeMeta) return items;

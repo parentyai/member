@@ -29,12 +29,14 @@ async function searchFaqFromKb(params) {
   const question = normalizeText(payload.question);
   const locale = normalizeText(payload.locale) || 'ja';
   const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? Math.min(payload.limit, 5) : 3;
+  const requestedIntent = normalizeText(payload.intent || 'FAQ') || 'FAQ';
+  const intent = requestedIntent.toLowerCase() === 'faq_search' ? 'FAQ' : requestedIntent;
 
   const rows = await faqArticlesRepo.searchActiveArticles({
     query: question,
     locale,
     limit,
-    intent: 'FAQ'
+    intent
   });
 
   const candidates = (Array.isArray(rows) ? rows : []).map((row) => ({

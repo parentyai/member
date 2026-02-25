@@ -9,9 +9,9 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 9 |
-| config | 37 |
-| event | 6 |
+| aggregate | 10 |
+| config | 34 |
+| event | 5 |
 | evidence | 5 |
 | transient | 2 |
 
@@ -37,9 +37,7 @@
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
-| `journey_reminder_runs` | event | 180d | CONDITIONAL | true |
-| `journey_todo_items` | config | INDEFINITE | false | false |
-| `journey_todo_stats` | aggregate | INDEFINITE | false | false |
+| `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
@@ -74,7 +72,6 @@
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
-| `user_journey_profiles` | config | INDEFINITE | false | false |
-| `user_journey_schedules` | config | INDEFINITE | false | false |
+| `user_context_snapshots` | aggregate | 90d | CONDITIONAL | true |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |

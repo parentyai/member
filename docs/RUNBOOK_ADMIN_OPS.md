@@ -251,33 +251,22 @@
 - User detail API: `GET /api/admin/os/user-billing-detail?lineUserId=...`。  
 - Dashboard KPI: `pro_active_count`, `total_users`, `pro_ratio`, `llm_daily_usage_count`, `llm_avg_per_pro_user`, `llm_block_rate`。  
 
-## Journey運用（Paid Personalization v1）
+### Users Stripe運用導線（Phase653 add-only）
+1) Users画面の quick filter を使う（`All / Pro(active) / Free / Trialing / Past_due / Canceled / Unknown`）。  
+2) `Analyze` で `proActiveRatio/unknownRatio` を確認する。  
+3) `Export CSV` は PII マスク済み（`lineUserIdMasked/memberNumberMasked`）を出力する。  
+4) `Unknown/Conflict` を優先対応し、`/api/admin/trace?traceId=...` で証跡確認する。  
 
-### Journey Policy運用（2段階）
-1) `GET /api/admin/os/journey-policy/status` で実効状態を確認する。  
-2) `POST /api/admin/os/journey-policy/plan` で `planHash` / `confirmToken` を取得する。  
-3) `POST /api/admin/os/journey-policy/set` で適用する。  
-4) `audit_logs` で `journey_policy.plan` / `journey_policy.set` を追跡する。  
+API:
+- `GET /api/admin/os/users-summary/analyze`
+- `GET /api/admin/os/users-summary/export`
+- `GET /api/admin/os/llm-usage/summary`
+
+### Journey KPI運用（Retention/LTV）
+1) `GET /api/admin/os/journey-kpi` で最新KPIを取得する。  
+2) 日次バッチは `POST /internal/jobs/journey-kpi-build` を実行する（internal token必須）。  
+3) Dashboard の `Retention / LTV` パネルで `7/30/60/90`、`NextAction実行率`、`Pro conversion` を確認する。  
 
 即時停止:
-- `opsConfig/journeyPolicy.enabled=false`
-- `ENABLE_JOURNEY_REMINDER_JOB=0`
-
-### Journey Reminderジョブ運用
-1) internal job: `POST /internal/jobs/journey-todo-reminder`（`x-journey-job-token` 必須）。  
-2) 定期実行は `.github/workflows/journey-todo-reminder.yml` で管理する。  
-3) 実行結果は `journey_reminder_runs/{runId}` で `scanned/sent/skipped/failed` を確認する。  
-4) 重複送信は `journey_todo_items.remindedOffsetsDays` と `nextReminderAt` で抑止される。  
-
-緊急停止:
-- `ENABLE_JOURNEY_REMINDER_JOB=0`
-- `system_flags.phase0.killSwitch=true`（LINE送信全停止）
-
-### Lifecycle自動化（Stripe連動）
-1) Stripe status 更新後に `billing_lifecycle_automation_logs` を確認し、`actionsApplied` を監査する。  
-2) 自動実行アクション: `todo_sync`, `rich_menu`, `upgrade/downgrade message`。  
-3) downgrade（`past_due|canceled|incomplete|unknown`）は Free 体験へ自動降格する。  
-
-緊急停止:
-- `ENABLE_BILLING_LIFECYCLE_AUTOMATION=0`
-- `ENABLE_RICH_MENU_DYNAMIC=0`
+- `ENABLE_JOURNEY_KPI=0`
+- `ENABLE_USER_CONTEXT_SNAPSHOT=0`

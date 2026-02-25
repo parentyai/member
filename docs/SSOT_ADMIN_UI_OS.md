@@ -159,3 +159,14 @@ MUST:
   - `kill_switch.plan`
   - `kill_switch.set`
   - `template.*` / `link_registry.*`（既存アクションを利用）
+
+## Phase653 Add-only UI Contract
+- 折り畳み禁止: `ENABLE_ADMIN_NO_COLLAPSE_V1=1` で `details` は常時 open。  
+- 上部常時サマリー非表示: `ENABLE_ADMIN_TOP_SUMMARY_V1=0` を既定とする。  
+- Users 画面は Stripe運用導線を持つ。  
+  - quick filters (`all/pro_active/free/trialing/past_due/canceled/unknown`)  
+  - analyze / export / edit columns  
+  - `billingIntegrityState=unknown|conflict` を強調表示  
+  - URL query で filter/sort/columns を再現可能にする  
+- Dashboard は `pro_active_count` カードと `Retention/LTV` パネルを表示する。  
+- LLM運用は `llm policy` の2段階更新に加え `llm usage summary` を表示する。  

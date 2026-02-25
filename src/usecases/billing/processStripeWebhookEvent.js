@@ -5,6 +5,8 @@ const crypto = require('crypto');
 const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
 const stripeWebhookEventsRepo = require('../../repos/firestore/stripeWebhookEventsRepo');
 const stripeWebhookDeadLettersRepo = require('../../repos/firestore/stripeWebhookDeadLettersRepo');
+const { createEvent } = require('../../repos/firestore/eventsRepo');
+const { appendAuditLog } = require('../audit/appendAuditLog');
 const { mapStripeSubscriptionStatus } = require('./mapStripeSubscriptionStatus');
 const { handleBillingLifecycleAutomation } = require('./handleBillingLifecycleAutomation');
 
@@ -71,6 +73,33 @@ async function moveToDeadLetter(params) {
   });
 }
 
+async function appendStripeAudit(action, payload) {
+  try {
+    await appendAuditLog({
+      actor: 'stripe_webhook',
+      action,
+      entityType: 'billing_subscription',
+      entityId: payload && payload.entityId ? payload.entityId : 'stripe_webhook',
+      requestId: payload && payload.requestId ? payload.requestId : null,
+      payloadSummary: payload && payload.payloadSummary ? payload.payloadSummary : {}
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+async function appendJourneyEventBestEffort(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  if (!payload.lineUserId || !payload.type) return;
+  try {
+    await createEvent(Object.assign({}, payload, {
+      createdAt: payload.createdAt || new Date().toISOString()
+    }));
+  } catch (_err) {
+    // best effort only
+  }
+}
+
 async function processStripeWebhookEvent(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const event = payload.event && typeof payload.event === 'object' ? payload.event : null;
@@ -89,6 +118,16 @@ async function processStripeWebhookEvent(params) {
     stripeEventCreated: resolveStripeEventCreatedAt(event)
   });
   if (!reserved.created) {
+    await appendStripeAudit('webhook_replay', {
+      entityId: eventId,
+      requestId,
+      payloadSummary: {
+        eventId,
+        eventType,
+        status: 'duplicate',
+        replay: true
+      }
+    });
     return { ok: true, status: 'duplicate', eventId };
   }
 
@@ -134,11 +173,25 @@ async function processStripeWebhookEvent(params) {
         status: 'stale_ignored',
         userId: lineUserId
       });
+      await appendStripeAudit('sub_conflict', {
+        entityId: lineUserId,
+        requestId,
+        payloadSummary: {
+          eventId,
+          eventType,
+          lineUserId,
+          reason: 'stale_ignored',
+          existingEventMs,
+          incomingEventMs
+        }
+      });
       return { ok: true, status: 'stale_ignored', eventId, lineUserId };
     }
 
     const status = mapStripeSubscriptionStatus(subscriptionPayload.status);
     const plan = resolvePlanFromStatus(status);
+    const wasPro = existing && resolvePlanFromStatus(existing.status) === 'pro';
+    const nowPro = plan === 'pro';
 
     await userSubscriptionsRepo.upsertUserSubscription(lineUserId, {
       plan,
@@ -154,6 +207,26 @@ async function processStripeWebhookEvent(params) {
       status: 'processed',
       userId: lineUserId,
       errorCode: null
+    });
+    if (!wasPro && nowPro) {
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'pro_converted',
+        subscriptionStatus: status,
+        eventId,
+        eventType
+      });
+    }
+    await appendStripeAudit('sub_updated', {
+      entityId: lineUserId,
+      requestId,
+      payloadSummary: {
+        eventId,
+        eventType,
+        lineUserId,
+        status,
+        plan
+      }
     });
 
     let automation = null;
