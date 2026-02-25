@@ -2,6 +2,7 @@
 
 const { pushMessage } = require('../../infra/lineClient');
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
+const journeyGraphCatalogRepo = require('../../repos/firestore/journeyGraphCatalogRepo');
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const journeyReminderRunsRepo = require('../../repos/firestore/journeyReminderRunsRepo');
@@ -31,11 +32,39 @@ function resolveReminderJobEnabled() {
   return !(normalized === '0' || normalized === 'false' || normalized === 'off');
 }
 
-function resolveTriggeredOffset(item, nowIso) {
+function resolveJourneyRuleEngineEnabled() {
+  const raw = process.env.ENABLE_JOURNEY_RULE_ENGINE_V1;
+  if (typeof raw !== 'string') return false;
+  const normalized = raw.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'on';
+}
+
+function normalizeSignal(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function resolveRuleSet(catalog) {
+  const payload = catalog && typeof catalog === 'object' ? catalog : {};
+  return payload.ruleSet && typeof payload.ruleSet === 'object' ? payload.ruleSet : {};
+}
+
+function resolveSignalOffsets(item, ruleSet) {
+  const signal = normalizeSignal(item && item.lastSignal);
+  const map = ruleSet && typeof ruleSet.signalReminderOffsets === 'object'
+    ? ruleSet.signalReminderOffsets
+    : null;
+  if (signal && map && Array.isArray(map[signal]) && map[signal].length > 0) {
+    return map[signal];
+  }
+  return Array.isArray(item && item.reminderOffsetsDays) ? item.reminderOffsetsDays : [7, 3, 1];
+}
+
+function resolveTriggeredOffset(item, nowIso, ruleSet) {
   const dueMs = Date.parse(item && item.dueAt ? item.dueAt : '');
   const nowMs = Date.parse(nowIso || new Date().toISOString());
   if (!Number.isFinite(dueMs) || !Number.isFinite(nowMs)) return null;
-  const offsets = Array.isArray(item && item.reminderOffsetsDays) ? item.reminderOffsetsDays : [7, 3, 1];
+  const offsets = resolveSignalOffsets(item, ruleSet);
   const reminded = new Set(Array.isArray(item && item.remindedOffsetsDays) ? item.remindedOffsetsDays.map((value) => Number(value)) : []);
   const matched = offsets
     .map((value) => Number(value))
@@ -45,6 +74,51 @@ function resolveTriggeredOffset(item, nowIso) {
     .sort((a, b) => b.remindMs - a.remindMs);
   if (!matched.length) return null;
   return matched[0].offset;
+}
+
+function parseIso(value) {
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function shouldSkipByRuleSet(item, plan, nowIso, ruleSet, perUserState) {
+  const nowMs = parseIso(nowIso || new Date().toISOString());
+  if (!Number.isFinite(nowMs)) return { skip: false };
+  const signal = normalizeSignal(item && item.lastSignal);
+  const stopSignals = Array.isArray(ruleSet && ruleSet.stopSignals) ? ruleSet.stopSignals.map((entry) => normalizeSignal(entry)) : [];
+  if (signal && stopSignals.includes(signal)) return { skip: true, reason: 'stopped_by_signal' };
+
+  const snoozeMs = parseIso(item && item.snoozeUntil);
+  if (Number.isFinite(snoozeMs) && snoozeMs > nowMs) return { skip: true, reason: 'snoozed' };
+
+  const planTier = plan === 'pro' ? 'pro' : 'free';
+  const minIntervalHoursByPlan = ruleSet && ruleSet.minIntervalHoursByPlan && typeof ruleSet.minIntervalHoursByPlan === 'object'
+    ? ruleSet.minIntervalHoursByPlan
+    : {};
+  const minIntervalHours = Number(minIntervalHoursByPlan[planTier]);
+  const lastReminderAtMs = parseIso(item && item.lastReminderAt);
+  if (Number.isFinite(minIntervalHours) && minIntervalHours > 0 && Number.isFinite(lastReminderAtMs)) {
+    const minIntervalMs = minIntervalHours * 60 * 60 * 1000;
+    if ((nowMs - lastReminderAtMs) < minIntervalMs) return { skip: true, reason: 'frequency_limited' };
+  }
+
+  const maxRemindersByPlan = ruleSet && ruleSet.maxRemindersByPlan && typeof ruleSet.maxRemindersByPlan === 'object'
+    ? ruleSet.maxRemindersByPlan
+    : {};
+  const maxReminders = Number(maxRemindersByPlan[planTier]);
+  const reminderCount = Number(item && item.reminderCount);
+  if (Number.isFinite(maxReminders) && maxReminders >= 0 && Number.isFinite(reminderCount) && reminderCount >= maxReminders) {
+    return { skip: true, reason: 'max_reminders_reached' };
+  }
+
+  const globalDailyCap = Number(ruleSet && ruleSet.globalDailyCap);
+  if (Number.isFinite(globalDailyCap) && globalDailyCap >= 0) {
+    const state = perUserState || {};
+    const sentToday = Number.isFinite(Number(state.sentToday)) ? Number(state.sentToday) : 0;
+    if (sentToday >= globalDailyCap) return { skip: true, reason: 'global_daily_cap' };
+  }
+
+  return { skip: false };
 }
 
 function buildReminderMessage(item) {
@@ -67,10 +141,18 @@ async function runJourneyTodoReminderJob(params, deps) {
   const runsRepo = resolvedDeps.journeyReminderRunsRepo || journeyReminderRunsRepo;
   const pushFn = resolvedDeps.pushMessage || pushMessage;
   const planResolver = resolvedDeps.resolvePlan || resolvePlan;
+  const catalogRepo = resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo;
 
   const dryRun = normalizeBoolean(payload.dryRun, false);
   const nowIso = payload.now || new Date().toISOString();
   const policy = payload.journeyPolicy || await policyRepo.getJourneyPolicy();
+  const ruleEngineEnabled = resolveJourneyRuleEngineEnabled();
+  const journeyGraphCatalog = ruleEngineEnabled
+    ? await (payload.journeyGraphCatalog || catalogRepo.getJourneyGraphCatalog()).catch(() => null)
+    : null;
+  const ruleSet = journeyGraphCatalog && journeyGraphCatalog.enabled === true
+    ? resolveRuleSet(journeyGraphCatalog)
+    : {};
   const maxPerRun = normalizeLimit(policy && policy.reminder_max_per_run, 200, 5000);
   const limit = normalizeLimit(payload.limit, maxPerRun, maxPerRun);
 
@@ -111,6 +193,7 @@ async function runJourneyTodoReminderJob(params, deps) {
   let skippedCount = 0;
   let failedCount = 0;
   const errorSample = [];
+  const perUserRuntime = new Map();
 
   const items = await todoRepo.listDueJourneyTodoItems({
     beforeAt: nowIso,
@@ -135,15 +218,23 @@ async function runJourneyTodoReminderJob(params, deps) {
         }
       }
 
+      const planInfo = await planResolver(lineUserId);
+      const plan = planInfo && planInfo.plan === 'pro' ? 'pro' : 'free';
       if (policy.paid_only_reminders === true) {
-        const planInfo = await planResolver(lineUserId);
-        if (!planInfo || planInfo.plan !== 'pro') {
+        if (!planInfo || plan !== 'pro') {
           skippedCount += 1;
           continue;
         }
       }
 
-      const triggeredOffset = resolveTriggeredOffset(item, nowIso);
+      const userState = perUserRuntime.get(lineUserId) || { sentToday: 0 };
+      const ruleDecision = shouldSkipByRuleSet(item, plan, nowIso, ruleSet, userState);
+      if (ruleDecision.skip) {
+        skippedCount += 1;
+        continue;
+      }
+
+      const triggeredOffset = resolveTriggeredOffset(item, nowIso, ruleSet);
       if (triggeredOffset === null) {
         skippedCount += 1;
         continue;
@@ -158,7 +249,7 @@ async function runJourneyTodoReminderJob(params, deps) {
         const reminderCount = Number.isFinite(Number(item.reminderCount)) ? Number(item.reminderCount) + 1 : 1;
         const nextReminderAt = computeNextReminderAt(
           item.dueAt,
-          item.reminderOffsetsDays,
+          resolveSignalOffsets(item, ruleSet),
           remindedOffsetsDays,
           nowIso
         );
@@ -168,12 +259,15 @@ async function runJourneyTodoReminderJob(params, deps) {
           reminderCount,
           lastReminderAt: nowIso,
           nextReminderAt,
+          journeyState: 'in_progress',
+          stateUpdatedAt: nowIso,
           source: 'journey_reminder_job'
         });
         await refreshJourneyTodoStats(lineUserId, resolvedDeps, nowIso);
       }
 
       sentCount += 1;
+      perUserRuntime.set(lineUserId, { sentToday: userState.sentToday + 1 });
     } catch (err) {
       failedCount += 1;
       if (errorSample.length < 20) {

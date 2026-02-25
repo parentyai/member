@@ -10,6 +10,8 @@ const ALLOWED_STATUS = Object.freeze(['open', 'completed', 'skipped']);
 const ALLOWED_PROGRESS_STATE = Object.freeze(['not_started', 'in_progress']);
 const ALLOWED_GRAPH_STATUS = Object.freeze(['actionable', 'locked', 'done']);
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
+const ALLOWED_JOURNEY_STATE = Object.freeze(['planned', 'in_progress', 'done', 'blocked', 'snoozed', 'skipped']);
+const ALLOWED_PLAN_TIER = Object.freeze(['all', 'pro']);
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -124,6 +126,28 @@ function normalizeRiskLevel(value, fallback) {
   return lowered;
 }
 
+function normalizeJourneyState(value, fallback) {
+  const normalized = normalizeString(value, fallback || 'planned');
+  if (normalized === null || normalized === '') return 'planned';
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_JOURNEY_STATE.includes(lowered)) return null;
+  return lowered;
+}
+
+function normalizePlanTier(value, fallback) {
+  const normalized = normalizeString(value, fallback || 'all');
+  if (normalized === null || normalized === '') return 'all';
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_PLAN_TIER.includes(lowered)) return null;
+  return lowered;
+}
+
+function normalizeSignal(value, fallback) {
+  const normalized = normalizeString(value, fallback || null);
+  if (normalized === null || normalized === '') return null;
+  return normalized.toLowerCase();
+}
+
 function normalizeReminderOffsetsDays(values, fallback) {
   const raw = values === null || values === undefined ? fallback : values;
   if (!Array.isArray(raw)) return null;
@@ -149,8 +173,13 @@ function normalizeTodoItem(docId, data) {
     || (done ? 'in_progress' : 'not_started');
   const graphStatus = normalizeGraphStatus(payload.graphStatus, done ? 'done' : 'actionable')
     || (done ? 'done' : 'actionable');
+  const journeyState = normalizeJourneyState(
+    payload.journeyState,
+    status === 'completed' ? 'done' : (status === 'skipped' ? 'skipped' : 'planned')
+  ) || (status === 'completed' ? 'done' : (status === 'skipped' ? 'skipped' : 'planned'));
   const priority = normalizePriority(payload.priority, 3) || 3;
   const riskLevel = normalizeRiskLevel(payload.riskLevel, 'medium') || 'medium';
+  const planTier = normalizePlanTier(payload.planTier, 'all') || 'all';
   return {
     id: docId,
     lineUserId,
@@ -163,6 +192,10 @@ function normalizeTodoItem(docId, data) {
     status,
     progressState,
     graphStatus,
+    journeyState,
+    phaseKey: normalizeString(payload.phaseKey, null),
+    domainKey: normalizeString(payload.domainKey, null),
+    planTier,
     dependsOn: normalizeStringList(payload.dependsOn || payload.depends_on),
     blocks: normalizeStringList(payload.blocks),
     priority,
@@ -174,6 +207,10 @@ function normalizeTodoItem(docId, data) {
     nextReminderAt: toIso(payload.nextReminderAt),
     lastReminderAt: toIso(payload.lastReminderAt),
     reminderCount: Number.isFinite(Number(payload.reminderCount)) ? Math.max(0, Math.floor(Number(payload.reminderCount))) : 0,
+    snoozeUntil: toIso(payload.snoozeUntil),
+    lastSignal: normalizeSignal(payload.lastSignal, null),
+    stateEvidenceRef: normalizeString(payload.stateEvidenceRef, null),
+    stateUpdatedAt: toIso(payload.stateUpdatedAt),
     sourceTemplateVersion: normalizeString(payload.sourceTemplateVersion, null),
     completedAt: toIso(payload.completedAt),
     createdAt: payload.createdAt || null,
@@ -212,9 +249,13 @@ async function upsertJourneyTodoItem(lineUserId, todoKey, patch) {
   if (payload.graphStatus !== undefined && normalizeGraphStatus(payload.graphStatus, null) === null) throw new Error('invalid graphStatus');
   if (payload.priority !== undefined && normalizePriority(payload.priority, null) === null) throw new Error('invalid priority');
   if (payload.riskLevel !== undefined && normalizeRiskLevel(payload.riskLevel, null) === null) throw new Error('invalid riskLevel');
+  if (payload.journeyState !== undefined && normalizeJourneyState(payload.journeyState, null) === null) throw new Error('invalid journeyState');
+  if (payload.planTier !== undefined && normalizePlanTier(payload.planTier, null) === null) throw new Error('invalid planTier');
   if (payload.dueDate !== undefined && payload.dueDate !== null && payload.dueDate !== '' && !normalized.dueDate) throw new Error('invalid dueDate');
   if (payload.dueAt !== undefined && payload.dueAt !== null && payload.dueAt !== '' && !normalized.dueAt) throw new Error('invalid dueAt');
   if (payload.nextReminderAt !== undefined && payload.nextReminderAt !== null && payload.nextReminderAt !== '' && !normalized.nextReminderAt) throw new Error('invalid nextReminderAt');
+  if (payload.snoozeUntil !== undefined && payload.snoozeUntil !== null && payload.snoozeUntil !== '' && !normalized.snoozeUntil) throw new Error('invalid snoozeUntil');
+  if (payload.stateUpdatedAt !== undefined && payload.stateUpdatedAt !== null && payload.stateUpdatedAt !== '' && !normalized.stateUpdatedAt) throw new Error('invalid stateUpdatedAt');
 
   const db = getDb();
   await db.collection(COLLECTION).doc(docId).set(Object.assign({}, normalized, {
@@ -300,6 +341,8 @@ module.exports = {
   ALLOWED_PROGRESS_STATE,
   ALLOWED_GRAPH_STATUS,
   ALLOWED_RISK_LEVEL,
+  ALLOWED_JOURNEY_STATE,
+  ALLOWED_PLAN_TIER,
   buildTodoDocId,
   parseTodoDocId,
   normalizeTodoItem,

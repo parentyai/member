@@ -6,6 +6,7 @@ const COLLECTION = 'notification_deliveries';
 const DEFAULT_BACKFILL_LIMIT = 200;
 const MAX_BACKFILL_LIMIT = 1000;
 const BACKFILL_SAMPLE_LIMIT = 20;
+const REACTION_ACTIONS_V2 = Object.freeze(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
 function resolveTimestamp(at) {
   // Allow explicit null when callers want to indicate "not set yet".
@@ -97,6 +98,19 @@ function normalizeCategoryList(values) {
     out.push(normalized);
   }
   return out;
+}
+
+function normalizeReactionActionV2(value) {
+  if (typeof value !== 'string') return '';
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return '';
+  return REACTION_ACTIONS_V2.includes(normalized) ? normalized : '';
+}
+
+function normalizeOptionalIso(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = toDate(value);
+  return parsed ? parsed.toISOString() : null;
 }
 
 async function queryCount(query) {
@@ -255,6 +269,44 @@ async function markClick(deliveryId, at) {
   const docRef = db.collection(COLLECTION).doc(deliveryId);
   await docRef.set({ clickAt: resolveTimestamp(at) }, { merge: true });
   return { id: deliveryId };
+}
+
+async function markReactionV2(deliveryId, action, options) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const normalizedAction = normalizeReactionActionV2(action);
+  if (!normalizedAction) throw new Error('invalid action');
+  const payload = options && typeof options === 'object' ? options : {};
+  const at = resolveTimestamp(payload.at);
+  const patch = {
+    lastSignal: normalizedAction,
+    lastSignalAt: at
+  };
+  if (normalizedAction === 'open') {
+    patch.openAt = at;
+    patch.readAt = at;
+  } else if (normalizedAction === 'save') {
+    patch.savedAt = at;
+  } else if (normalizedAction === 'snooze') {
+    patch.snoozedAt = at;
+    const snoozeUntil = normalizeOptionalIso(payload.snoozeUntil);
+    if (snoozeUntil) patch.snoozeUntil = snoozeUntil;
+  } else if (normalizedAction === 'none') {
+    patch.noReactionAt = at;
+  } else if (normalizedAction === 'redeem') {
+    patch.redeemedAt = at;
+  } else if (normalizedAction === 'response') {
+    patch.respondedAt = at;
+    if (typeof payload.responseText === 'string' && payload.responseText.trim()) {
+      patch.responseText = payload.responseText.trim().slice(0, 2000);
+    }
+  }
+  if (typeof payload.traceId === 'string' && payload.traceId.trim()) {
+    patch.lastSignalTraceId = payload.traceId.trim();
+  }
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(deliveryId);
+  await docRef.set(patch, { merge: true });
+  return getDelivery(deliveryId);
 }
 
 async function listDeliveriesByUser(lineUserId, limit) {
@@ -582,6 +634,7 @@ module.exports = {
   getDelivery,
   markRead,
   markClick,
+  markReactionV2,
   listDeliveriesByUser,
   listDeliveriesByNotificationId,
   countDeliveredByUserSince,

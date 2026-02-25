@@ -344,6 +344,20 @@ const DASHBOARD_DEFAULT_WINDOW = 1;
 const POLICY_INTENT_ALIASES = Object.freeze({
   next_action: 'next_action_generation'
 });
+const LLM_POLICY_DEFAULT_DISCLAIMER_TEMPLATES = Object.freeze({
+  generic: '提案情報です。最終判断は運用担当が行ってください。',
+  faq: 'この回答は公式FAQ（KB）に基づく要約です。個別事情により異なる場合があります。',
+  ops_explain: '提案です。自動実行は行いません。最終判断は運用担当が行ってください。',
+  next_actions: '提案候補です。実行手順の確定は決定論レイヤで行ってください。',
+  paid_assistant: '提案です。契約・法務・税務の最終判断は専門家確認のうえで行ってください。'
+});
+const LLM_POLICY_DEFAULT_OUTPUT_CONSTRAINTS = Object.freeze({
+  max_next_actions: 3,
+  max_gaps: 5,
+  max_risks: 3,
+  require_evidence: true,
+  forbid_direct_url: true
+});
 const DASHBOARD_CARD_CONFIG = Object.freeze({
   registrations: { kpiKeys: ['registrations'], unit: 'count' },
   membership: { kpiKeys: ['membership'], unit: 'percent' },
@@ -6267,6 +6281,250 @@ async function loadMonitorUserDeliveries(options) {
   }
 }
 
+function setJsonTextResult(id, payload) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = JSON.stringify(payload || {}, null, 2);
+}
+
+function resolveJourneyGraphLineUserId() {
+  const explicit = document.getElementById('journey-graph-line-user-id')?.value?.trim();
+  if (explicit) return explicit;
+  const monitorInput = document.getElementById('monitor-user-line-user-id')?.value?.trim();
+  return monitorInput || '';
+}
+
+function renderJourneyGraphRuntime(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const nodes = Array.isArray(payload.nodes) ? payload.nodes : [];
+  const edges = Array.isArray(payload.edges) ? payload.edges : [];
+  const summaryEl = document.getElementById('journey-graph-runtime-summary');
+  if (summaryEl) {
+    const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+    summaryEl.textContent = `nodes=${nodes.length} / edges=${edges.length} / done=${summary.done || 0} / blocked=${summary.blocked || 0} / snoozed=${summary.snoozed || 0}`;
+  }
+  const edgeListEl = document.getElementById('journey-graph-edge-list');
+  if (edgeListEl) {
+    edgeListEl.innerHTML = '';
+    if (!edges.length) {
+      const li = document.createElement('li');
+      li.textContent = '-';
+      edgeListEl.appendChild(li);
+    } else {
+      edges.slice(0, 500).forEach((edge) => {
+        const li = document.createElement('li');
+        const from = edge && edge.from ? edge.from : '-';
+        const to = edge && edge.to ? edge.to : '-';
+        const reason = edge && edge.reasonType ? edge.reasonType : 'prerequisite';
+        li.textContent = `${from} -> ${to} (${reason})`;
+        edgeListEl.appendChild(li);
+      });
+    }
+  }
+  const nodeRowsEl = document.getElementById('journey-graph-node-rows');
+  if (nodeRowsEl) {
+    nodeRowsEl.innerHTML = '';
+    if (!nodes.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 6;
+      td.textContent = '-';
+      tr.appendChild(td);
+      nodeRowsEl.appendChild(tr);
+    } else {
+      nodes.slice(0, 500).forEach((node) => {
+        const tr = document.createElement('tr');
+        const values = [
+          node && node.todoKey ? node.todoKey : '-',
+          node && node.phaseKey ? node.phaseKey : '-',
+          node && node.domainKey ? node.domainKey : '-',
+          node && node.journeyState ? node.journeyState : '-',
+          node && node.planTier ? node.planTier : '-',
+          Array.isArray(node && node.dependsOn) ? node.dependsOn.join(',') : '-'
+        ];
+        values.forEach((value, index) => {
+          const td = document.createElement('td');
+          if (index === 5) td.className = 'cell-muted';
+          td.textContent = value || '-';
+          tr.appendChild(td);
+        });
+        nodeRowsEl.appendChild(tr);
+      });
+    }
+  }
+  setJsonTextResult('journey-graph-runtime-result', payload);
+}
+
+function readJourneyGraphCatalogEditor() {
+  const input = document.getElementById('journey-graph-catalog-json');
+  const raw = input && typeof input.value === 'string' ? input.value.trim() : '';
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('catalog_json_invalid');
+  }
+  return parsed;
+}
+
+function writeJourneyGraphCatalogEditor(catalog) {
+  const input = document.getElementById('journey-graph-catalog-json');
+  if (!input) return;
+  input.value = JSON.stringify(catalog || {}, null, 2);
+}
+
+function applyJourneyGraphPlanTokens(planHash, confirmToken) {
+  journeyGraphPlanHash = planHash || null;
+  journeyGraphConfirmToken = confirmToken || null;
+  setTextContent('journey-graph-plan-hash', journeyGraphPlanHash || '-');
+  setTextContent('journey-graph-confirm-token', journeyGraphConfirmToken ? 'set' : '-');
+}
+
+async function loadJourneyGraphStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/journey-graph/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-graph-status-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    writeJourneyGraphCatalogEditor(data.journeyGraphCatalog || {});
+    if (notify) showToast('Journey Graph statusを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Journey Graph statusの取得に失敗しました', 'danger');
+  }
+}
+
+async function planJourneyGraphCatalog() {
+  const traceId = ensureTraceInput('monitor-trace');
+  let catalog = null;
+  try {
+    catalog = readJourneyGraphCatalogEditor();
+  } catch (_err) {
+    showToast('Journey Graph catalog JSONが不正です', 'warn');
+    return;
+  }
+  try {
+    const data = await postJson('/api/admin/os/journey-graph/plan', { catalog }, traceId);
+    setJsonTextResult('journey-graph-plan-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyJourneyGraphPlanTokens(data.planHash, data.confirmToken);
+    if (data.journeyGraphCatalog) writeJourneyGraphCatalogEditor(data.journeyGraphCatalog);
+    showToast('Journey Graph planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Graph planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setJourneyGraphCatalog() {
+  if (!journeyGraphPlanHash || !journeyGraphConfirmToken) {
+    setJsonTextResult('journey-graph-set-result', { ok: false, error: 'plan required' });
+    showToast('Journey Graph setには先にplanが必要です', 'warn');
+    return;
+  }
+  let catalog = null;
+  try {
+    catalog = readJourneyGraphCatalogEditor();
+  } catch (_err) {
+    showToast('Journey Graph catalog JSONが不正です', 'warn');
+    return;
+  }
+  const approved = window.confirm('Journey Graph設定を適用しますか？');
+  if (!approved) {
+    showToast('Journey Graph設定の適用を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/journey-graph/set', {
+      catalog,
+      planHash: journeyGraphPlanHash,
+      confirmToken: journeyGraphConfirmToken
+    }, traceId);
+    setJsonTextResult('journey-graph-set-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyJourneyGraphPlanTokens(null, null);
+    if (data.journeyGraphCatalog) writeJourneyGraphCatalogEditor(data.journeyGraphCatalog);
+    await loadJourneyGraphStatus({ notify: false });
+    await loadJourneyGraphHistory({ notify: false });
+    showToast('Journey Graph設定を適用しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Graph設定の適用に失敗しました', 'danger');
+  }
+}
+
+async function loadJourneyGraphHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/journey-graph/history?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-graph-history-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('Journey Graph historyを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Journey Graph historyの取得に失敗しました', 'danger');
+  }
+}
+
+async function loadJourneyGraphRuntime(options) {
+  const notify = Boolean(options && options.notify);
+  const lineUserId = resolveJourneyGraphLineUserId();
+  if (!lineUserId) {
+    if (notify) showToast('Journey runtime取得にはLINEユーザーIDが必要です', 'warn');
+    renderJourneyGraphRuntime({});
+    return;
+  }
+  const limit = normalizeMonitorLimit(document.getElementById('journey-graph-limit')?.value, 100, 500);
+  const phase = document.getElementById('journey-graph-filter-phase')?.value?.trim() || '';
+  const domain = document.getElementById('journey-graph-filter-domain')?.value?.trim() || '';
+  const stateValue = document.getElementById('journey-graph-filter-state')?.value?.trim() || '';
+  const plan = document.getElementById('journey-graph-filter-plan')?.value?.trim() || '';
+  const traceId = ensureTraceInput('monitor-trace');
+  const query = new URLSearchParams({
+    lineUserId,
+    limit: String(limit)
+  });
+  if (phase) query.set('phase', phase);
+  if (domain) query.set('domain', domain);
+  if (stateValue) query.set('state', stateValue);
+  if (plan) query.set('plan', plan);
+  try {
+    const res = await fetch(`/api/admin/os/journey-graph/runtime?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderJourneyGraphRuntime(data);
+    if (notify) showToast('Journey runtimeを取得しました', 'ok');
+  } catch (_err) {
+    renderJourneyGraphRuntime({});
+    if (notify) showToast('Journey runtimeの取得に失敗しました', 'danger');
+  }
+}
+
+async function loadJourneyGraphRuntimeHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const lineUserId = resolveJourneyGraphLineUserId();
+  if (!lineUserId) {
+    if (notify) showToast('Journey runtime履歴取得にはLINEユーザーIDが必要です', 'warn');
+    return;
+  }
+  const limit = normalizeMonitorLimit(document.getElementById('journey-graph-limit')?.value, 100, 500);
+  const traceId = ensureTraceInput('monitor-trace');
+  const query = new URLSearchParams({
+    lineUserId,
+    limit: String(limit)
+  });
+  try {
+    const res = await fetch(`/api/admin/os/journey-graph/runtime/history?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-graph-runtime-history-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('Journey runtime履歴を取得しました', 'ok');
+  } catch (_err) {
+    setJsonTextResult('journey-graph-runtime-history-result', { ok: false, error: 'fetch error' });
+    if (notify) showToast('Journey runtime履歴の取得に失敗しました', 'danger');
+  }
+}
+
 async function loadMonitorInsights(options) {
   const notify = options && options.notify;
   const windowDays = document.getElementById('monitor-window-days')?.value || '7';
@@ -8744,6 +9002,10 @@ function setupMonitorControls() {
     loadMonitorData({ notify: true });
   });
   document.getElementById('monitor-user-search')?.addEventListener('click', () => {
+    const runtimeLineUserIdEl = document.getElementById('journey-graph-line-user-id');
+    if (runtimeLineUserIdEl && !runtimeLineUserIdEl.value.trim()) {
+      runtimeLineUserIdEl.value = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
+    }
     loadMonitorUserDeliveries({ notify: true });
   });
   document.getElementById('monitor-insights-reload')?.addEventListener('click', () => {
@@ -8776,7 +9038,48 @@ function setupMonitorControls() {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
   });
+  document.getElementById('journey-graph-runtime-reload')?.addEventListener('click', () => {
+    void loadJourneyGraphRuntime({ notify: true });
+  });
+  document.getElementById('journey-graph-runtime-history')?.addEventListener('click', () => {
+    void loadJourneyGraphRuntimeHistory({ notify: true });
+  });
+  document.getElementById('journey-graph-status-reload')?.addEventListener('click', () => {
+    void loadJourneyGraphStatus({ notify: true });
+  });
+  document.getElementById('journey-graph-plan')?.addEventListener('click', () => {
+    void planJourneyGraphCatalog();
+  });
+  document.getElementById('journey-graph-set')?.addEventListener('click', () => {
+    void setJourneyGraphCatalog();
+  });
+  document.getElementById('journey-graph-history')?.addEventListener('click', () => {
+    void loadJourneyGraphHistory({ notify: true });
+  });
+  document.getElementById('journey-graph-filter-state')?.addEventListener('change', () => {
+    void loadJourneyGraphRuntime({ notify: false });
+  });
+  document.getElementById('journey-graph-filter-plan')?.addEventListener('change', () => {
+    void loadJourneyGraphRuntime({ notify: false });
+  });
+  document.getElementById('journey-graph-line-user-id')?.addEventListener('change', () => {
+    void loadJourneyGraphRuntime({ notify: false });
+  });
+  document.getElementById('journey-graph-filter-phase')?.addEventListener('change', () => {
+    void loadJourneyGraphRuntime({ notify: false });
+  });
+  document.getElementById('journey-graph-filter-domain')?.addEventListener('change', () => {
+    void loadJourneyGraphRuntime({ notify: false });
+  });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
+  if (document.getElementById('journey-graph-line-user-id') && document.getElementById('monitor-user-line-user-id')) {
+    const monitorLineUserId = document.getElementById('monitor-user-line-user-id').value || '';
+    if (!document.getElementById('journey-graph-line-user-id').value.trim()) {
+      document.getElementById('journey-graph-line-user-id').value = monitorLineUserId.trim();
+    }
+  }
+  void loadJourneyGraphStatus({ notify: false });
+  void loadJourneyGraphHistory({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -9373,6 +9676,8 @@ let llmConfigPlanHash = null;
 let llmConfigConfirmToken = null;
 let llmPolicyPlanHash = null;
 let llmPolicyConfirmToken = null;
+let journeyGraphPlanHash = null;
+let journeyGraphConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();
@@ -9546,11 +9851,40 @@ function parseIntentCsv(value) {
   ));
 }
 
+function parseSimpleCsv(value) {
+  if (typeof value !== 'string') return [];
+  return Array.from(new Set(
+    value
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  ));
+}
+
+function parseJsonTextAreaValue(raw, fallback) {
+  const text = typeof raw === 'string' ? raw.trim() : '';
+  if (!text) return fallback;
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('invalid_json_object');
+  }
+  return parsed;
+}
+
 function buildPolicyPayloadFromForm() {
   const maxTokens = Math.floor(parseNumberField(document.getElementById('llm-policy-max-output-tokens')?.value, 600));
   const perUserLimit = Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-daily-limit')?.value, 20));
   const rateLimit = Math.floor(parseNumberField(document.getElementById('llm-policy-global-qps-limit')?.value, 5));
   const perUserTokenBudget = Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-token-budget')?.value, 12000));
+  const forbiddenDomains = parseSimpleCsv(document.getElementById('llm-policy-forbidden-domains')?.value || '');
+  const disclaimerTemplates = parseJsonTextAreaValue(
+    document.getElementById('llm-policy-disclaimer-templates')?.value || '',
+    LLM_POLICY_DEFAULT_DISCLAIMER_TEMPLATES
+  );
+  const outputConstraints = parseJsonTextAreaValue(
+    document.getElementById('llm-policy-output-constraints')?.value || '',
+    LLM_POLICY_DEFAULT_OUTPUT_CONSTRAINTS
+  );
   return {
     enabled: parseLlmEnabled(document.getElementById('llm-policy-enabled')?.value) === true,
     model: (document.getElementById('llm-policy-model')?.value || '').trim() || 'gpt-4o-mini',
@@ -9567,7 +9901,10 @@ function buildPolicyPayloadFromForm() {
     cache_ttl_sec: Math.floor(parseNumberField(document.getElementById('llm-policy-cache-ttl-sec')?.value, 120)),
     allowed_intents_free: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-free')?.value || ''),
     allowed_intents_pro: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-pro')?.value || ''),
-    safety_mode: (document.getElementById('llm-policy-safety-mode')?.value || '').trim() || 'strict'
+    safety_mode: (document.getElementById('llm-policy-safety-mode')?.value || '').trim() || 'strict',
+    forbidden_domains: forbiddenDomains,
+    disclaimer_templates: disclaimerTemplates,
+    output_constraints: outputConstraints
   };
 }
 
@@ -9587,7 +9924,16 @@ function applyPolicyForm(policy) {
   setInputValue('llm-policy-cache-ttl-sec', String(Number.isFinite(Number(payload.cache_ttl_sec)) ? Number(payload.cache_ttl_sec) : 120));
   setInputValue('llm-policy-allowed-intents-free', Array.isArray(payload.allowed_intents_free) ? payload.allowed_intents_free.join(',') : 'faq_search');
   setInputValue('llm-policy-allowed-intents-pro', Array.isArray(payload.allowed_intents_pro) ? payload.allowed_intents_pro.join(',') : 'faq_search');
+  setInputValue('llm-policy-forbidden-domains', Array.isArray(payload.forbidden_domains) ? payload.forbidden_domains.join(',') : '');
   setSelectValue('llm-policy-safety-mode', payload.safety_mode || 'strict');
+  const disclaimerTemplates = payload.disclaimer_templates && typeof payload.disclaimer_templates === 'object'
+    ? payload.disclaimer_templates
+    : LLM_POLICY_DEFAULT_DISCLAIMER_TEMPLATES;
+  const outputConstraints = payload.output_constraints && typeof payload.output_constraints === 'object'
+    ? payload.output_constraints
+    : LLM_POLICY_DEFAULT_OUTPUT_CONSTRAINTS;
+  setInputValue('llm-policy-disclaimer-templates', JSON.stringify(disclaimerTemplates, null, 2));
+  setInputValue('llm-policy-output-constraints', JSON.stringify(outputConstraints, null, 2));
 }
 
 function formatPolicyHistoryForDisplay(items) {
@@ -9603,7 +9949,9 @@ function formatPolicyHistoryForDisplay(items) {
       max_tokens: policy.max_output_tokens,
       per_user_limit: policy.per_user_daily_limit,
       rate_limit: policy.global_qps_limit,
-      safety_mode: policy.safety_mode
+      safety_mode: policy.safety_mode,
+      forbidden_domains: policy.forbidden_domains,
+      output_constraints: policy.output_constraints
     };
   }), null, 2);
 }
@@ -9687,7 +10035,13 @@ async function exportLlmUsageCsv() {
 
 async function planLlmPolicy() {
   const traceId = ensureTraceInput('llm-trace');
-  const policy = buildPolicyPayloadFromForm();
+  let policy;
+  try {
+    policy = buildPolicyPayloadFromForm();
+  } catch (_err) {
+    showToast('LLMポリシーJSON入力が不正です', 'warn');
+    return;
+  }
   try {
     const data = await postJson('/api/admin/llm/policy/plan', { policy }, traceId);
     renderLlmResult('llm-policy-plan-result', data);
@@ -9714,7 +10068,13 @@ async function setLlmPolicy() {
   });
   if (guardedTrace === null) return;
   const traceId = guardedTrace || ensureTraceInput('llm-trace');
-  const policy = buildPolicyPayloadFromForm();
+  let policy;
+  try {
+    policy = buildPolicyPayloadFromForm();
+  } catch (_err) {
+    showToast('LLMポリシーJSON入力が不正です', 'warn');
+    return;
+  }
   try {
     const data = await postJson('/api/admin/llm/policy/set', {
       policy,

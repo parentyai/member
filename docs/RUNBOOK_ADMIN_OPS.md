@@ -316,3 +316,31 @@ API:
 - `ENABLE_TASK_GRAPH_UI_V1=0`（UI表示停止）
 - `ENABLE_CONTEXT_SNAPSHOT_V2=0`（再圧縮経路停止）
 - `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=0`（Proの依存補足停止）
+
+## Phase662 Addendum（Journey DAG運用）
+
+### Journey Graph Catalog（2段階）
+1) `GET /api/admin/os/journey-graph/status` で現行設定を取得。  
+2) `POST /api/admin/os/journey-graph/plan` で `planHash` / `confirmToken` を取得。  
+3) `POST /api/admin/os/journey-graph/set` で適用。  
+4) `GET /api/admin/os/journey-graph/history` で変更履歴を確認。  
+
+### Journey Map runtime
+- `GET /api/admin/os/journey-graph/runtime?lineUserId=...`  
+- `GET /api/admin/os/journey-graph/runtime/history?lineUserId=...`  
+- 監査確認:
+  - `journey_graph.runtime.view`
+  - `journey_graph.runtime.history.view`
+
+### 配信反応v2（互換維持）
+- `POST /api/phase37/deliveries/reaction-v2`
+- action:
+  - `open|save|snooze|none|redeem|response`
+- 監査確認:
+  - `DELIVERY_REACTION_V2`
+  - `events.type=journey_reaction`
+
+### 即時停止フラグ（Phase662）
+- `ENABLE_JOURNEY_DAG_CATALOG_V1=0`
+- `ENABLE_JOURNEY_DAG_UI_V1=0`
+- `ENABLE_JOURNEY_RULE_ENGINE_V1=0`

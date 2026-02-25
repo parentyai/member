@@ -6,6 +6,7 @@ const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
+const { syncJourneyDagCatalogToTodos } = require('./syncJourneyDagCatalogToTodos');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -213,6 +214,7 @@ async function syncJourneyTodoPlan(params, deps) {
   const scheduleRepo = resolvedDeps.userJourneySchedulesRepo || userJourneySchedulesRepo;
   const policyRepo = resolvedDeps.journeyPolicyRepo || journeyPolicyRepo;
   const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
+  const syncDagCatalogToTodos = resolvedDeps.syncJourneyDagCatalogToTodos || syncJourneyDagCatalogToTodos;
 
   const [profile, schedule, policy] = await Promise.all([
     payload.profile || profileRepo.getUserJourneyProfile(lineUserId),
@@ -292,13 +294,28 @@ async function syncJourneyTodoPlan(params, deps) {
   }, resolvedDeps).catch(() => ({ ok: false, reason: 'graph_recompute_failed' }));
 
   const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps, nowIso);
+  let dagSync = null;
+  if (typeof syncDagCatalogToTodos === 'function') {
+    dagSync = await syncDagCatalogToTodos({
+      lineUserId,
+      source: payload.source || 'journey_sync',
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      now: nowIso,
+      skipStatsRefresh: true
+    }, Object.assign({}, resolvedDeps, { refreshJourneyTodoStats })).catch((err) => ({
+      ok: false,
+      reason: err && err.message ? String(err.message) : 'dag_catalog_sync_failed'
+    }));
+  }
   return {
     ok: true,
     lineUserId,
     syncedCount,
     stage: resolveStage(schedule),
     stats,
-    graph
+    graph,
+    dagSync
   };
 }
 

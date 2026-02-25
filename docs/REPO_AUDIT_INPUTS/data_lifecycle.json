@@ -212,6 +212,18 @@
     ]
   },
   {
+    "collection": "journey_graph_change_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyGraphChangeLogsRepo.js:7",
+      "src/repos/firestore/journeyGraphChangeLogsRepo.js:57",
+      "src/repos/firestore/journeyGraphChangeLogsRepo.js:76"
+    ]
+  },
+  {
     "collection": "journey_kpi_daily",
     "kind": "aggregate",
     "recomputable": true,
