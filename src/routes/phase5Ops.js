@@ -168,6 +168,7 @@ function parseUsersSortKey(value) {
     'subscriptionStatus',
     'llmUsage',
     'llmUsageToday',
+    'todoProgressRate',
     'tokensToday',
     'blockedRate',
     'billingIntegrity',

@@ -3,6 +3,7 @@
 const usersRepo = require('../../repos/firestore/usersRepo');
 const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const userContextSnapshotsRepo = require('../../repos/firestore/userContextSnapshotsRepo');
+const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const MAX_EVENTS = 200;
@@ -166,6 +167,102 @@ function resolveLastSummary(events) {
   return '';
 }
 
+function parseTodoRiskFlags(todoItems) {
+  const out = [];
+  const seen = new Set();
+  (todoItems || []).forEach((item) => {
+    if (!item || item.status !== 'open') return;
+    if (item.graphStatus === 'locked') {
+      const key = `dependency_locked:${item.todoKey || 'task'}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(key);
+      }
+    }
+    if (String(item.riskLevel || '').toLowerCase() === 'high') {
+      const key = `high_risk:${item.todoKey || 'task'}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(key);
+      }
+    }
+  });
+  return out;
+}
+
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
+  if (typeof value === 'number' && Number.isFinite(value)) return value > 1000000000000 ? value : value * 1000;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date.getTime();
+  }
+  return null;
+}
+
+function resolveTodoRiskScore(item) {
+  const payload = item && typeof item === 'object' ? item : {};
+  const explicit = Number(payload.riskScore);
+  if (Number.isFinite(explicit) && explicit >= 0) return explicit;
+  let score = 0;
+  if (payload.graphStatus === 'locked') score += 100;
+  const dueMs = toMillis(payload.dueAt);
+  if (Number.isFinite(dueMs)) {
+    const nowMs = Date.now();
+    if (dueMs <= nowMs) score += 80;
+    else if (dueMs <= nowMs + (3 * 24 * 60 * 60 * 1000)) score += 50;
+    else if (dueMs <= nowMs + (7 * 24 * 60 * 60 * 1000)) score += 20;
+  }
+  const priority = Number(payload.priority);
+  if (Number.isFinite(priority)) score += Math.max(1, Math.min(5, Math.floor(priority))) * 10;
+  const riskLevel = normalizeText(payload.riskLevel).toLowerCase();
+  if (riskLevel === 'high') score += 25;
+  if (riskLevel === 'medium') score += 10;
+  return score;
+}
+
+function buildTopOpenTasksFromTodos(todoItems) {
+  return (Array.isArray(todoItems) ? todoItems : [])
+    .filter((item) => item && item.status === 'open')
+    .map((item) => ({
+      key: parseActionKey(item.todoKey || item.key || item.title),
+      due: toIso(item.dueAt || item.dueDate),
+      status: item.graphStatus === 'locked'
+        ? 'locked'
+        : (item.progressState === 'in_progress' ? 'in_progress' : 'open'),
+      title: normalizeText(item.title || item.todoKey),
+      riskScore: resolveTodoRiskScore(item)
+    }))
+    .filter((item) => item.key)
+    .sort((a, b) => {
+      if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
+      const dueA = toMillis(a.due);
+      const dueB = toMillis(b.due);
+      if (Number.isFinite(dueA) && Number.isFinite(dueB) && dueA !== dueB) return dueA - dueB;
+      return a.key.localeCompare(b.key, 'ja');
+    })
+    .slice(0, MAX_TASKS)
+    .map((item) => ({
+      key: item.key,
+      due: item.due,
+      status: item.status
+    }));
+}
+
+function buildShortSummary(snapshot) {
+  const payload = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const phase = normalizeText(payload.phase) || 'pre';
+  const city = payload.location && payload.location.city ? String(payload.location.city) : 'unknown';
+  const openCount = Array.isArray(payload.topOpenTasks) ? payload.topOpenTasks.length : 0;
+  const riskCount = Array.isArray(payload.riskFlags) ? payload.riskFlags.length : 0;
+  return `phase=${phase}, city=${city}, openTasks=${openCount}, risks=${riskCount}`;
+}
+
 function countDropped(rawCount, keptCount) {
   const raw = Number(rawCount);
   const kept = Number(keptCount);
@@ -199,6 +296,7 @@ async function buildUserContextSnapshot(params, deps) {
   const users = resolvedDeps.usersRepo || usersRepo;
   const readRepo = resolvedDeps.analyticsReadRepo || analyticsReadRepo;
   const snapshots = resolvedDeps.userContextSnapshotsRepo || userContextSnapshotsRepo;
+  const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
 
   const user = await users.getUser(lineUserId);
   if (!user) {
@@ -209,14 +307,33 @@ async function buildUserContextSnapshot(params, deps) {
     };
   }
 
+  let eventsFailed = false;
   const events = await readRepo.listEventsByLineUserIdAndCreatedAtRange({
     lineUserId,
     limit: MAX_EVENTS
-  }).catch(() => []);
+  }).catch(() => {
+    eventsFailed = true;
+    return [];
+  });
+  let todoQueryFailed = false;
+  const todoItems = await todoRepo.listJourneyTodoItemsByLineUserId({
+    lineUserId,
+    limit: 200
+  }).catch(() => {
+    todoQueryFailed = true;
+    return [];
+  });
 
   const prioritiesRaw = parsePriorities(user);
   const tasksRaw = buildTasksFromEvents(events);
   const risksRaw = buildRiskFlagsFromEvents(events);
+  const todoBasedTasks = buildTopOpenTasksFromTodos(todoItems);
+  const todoRiskFlagsRaw = parseTodoRiskFlags(todoItems);
+  const mergedRiskFlags = risksRaw.concat(todoRiskFlagsRaw).filter(Boolean);
+  const riskFlagsUnique = [];
+  mergedRiskFlags.forEach((item) => {
+    if (!riskFlagsUnique.includes(item)) riskFlagsUnique.push(item);
+  });
 
   const snapshot = {
     lineUserId,
@@ -227,15 +344,21 @@ async function buildUserContextSnapshot(params, deps) {
     openTasksTop5: tasksRaw.slice(0, MAX_TASKS),
     riskFlagsTop3: risksRaw.slice(0, MAX_RISKS),
     lastSummary: resolveLastSummary(events),
+    topOpenTasks: todoBasedTasks.slice(0, MAX_TASKS),
+    riskFlags: riskFlagsUnique.slice(0, MAX_TASKS),
+    shortSummary: '',
     sourceUpdatedAt: toIso(user.updatedAt || user.createdAt),
     snapshotVersion: 1,
     updatedAt: payload.updatedAt || new Date().toISOString()
   };
+  snapshot.shortSummary = buildShortSummary(snapshot);
 
   const droppedSummary = {
     priorities: countDropped(prioritiesRaw.length, snapshot.priorities.length),
     openTasksTop5: countDropped(tasksRaw.length, snapshot.openTasksTop5.length),
-    riskFlagsTop3: countDropped(risksRaw.length, snapshot.riskFlagsTop3.length)
+    riskFlagsTop3: countDropped(risksRaw.length, snapshot.riskFlagsTop3.length),
+    topOpenTasks: countDropped(todoBasedTasks.length, snapshot.topOpenTasks.length),
+    riskFlags: countDropped(riskFlagsUnique.length, snapshot.riskFlags.length)
   };
 
   if (payload.write !== false) {
@@ -265,6 +388,46 @@ async function buildUserContextSnapshot(params, deps) {
       payloadSummary: {
         lineUserId,
         droppedSummary
+      }
+    });
+  }
+
+  if (droppedSummary.topOpenTasks > 0 || droppedSummary.riskFlags > 0 || payload.recompressed === true) {
+    await appendSnapshotAudit('snapshot_trimmed', {
+      actor: payload.actor || 'snapshot_job',
+      lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      payloadSummary: {
+        lineUserId,
+        droppedSummary
+      }
+    });
+  }
+
+  if (payload.recompressed === true) {
+    await appendSnapshotAudit('snapshot_recompressed', {
+      actor: payload.actor || 'snapshot_job',
+      lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      payloadSummary: {
+        lineUserId,
+        updatedAt: snapshot.updatedAt
+      }
+    });
+  }
+
+  if (eventsFailed || todoQueryFailed) {
+    await appendSnapshotAudit('snapshot_build_fallback', {
+      actor: payload.actor || 'snapshot_job',
+      lineUserId,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      payloadSummary: {
+        lineUserId,
+        eventsFailed,
+        todoQueryFailed
       }
     });
   }

@@ -128,14 +128,20 @@ function compactKbCandidates(rows) {
 
 function compactSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return null;
+  const openTasks = Array.isArray(snapshot.topOpenTasks) ? snapshot.topOpenTasks : snapshot.openTasksTop5;
+  const riskFlags = Array.isArray(snapshot.riskFlags) ? snapshot.riskFlags : snapshot.riskFlagsTop3;
+  const summary = normalizeText(snapshot.shortSummary || snapshot.lastSummary);
   return {
     phase: snapshot.phase || 'pre',
     location: snapshot.location || {},
     family: snapshot.family || {},
     priorities: Array.isArray(snapshot.priorities) ? snapshot.priorities.slice(0, 3) : [],
-    openTasksTop5: Array.isArray(snapshot.openTasksTop5) ? snapshot.openTasksTop5.slice(0, 5) : [],
-    riskFlagsTop3: Array.isArray(snapshot.riskFlagsTop3) ? snapshot.riskFlagsTop3.slice(0, 3) : [],
-    lastSummary: normalizeText(snapshot.lastSummary).slice(0, 500),
+    topOpenTasks: Array.isArray(snapshot.topOpenTasks) ? snapshot.topOpenTasks.slice(0, 5) : [],
+    riskFlags: Array.isArray(snapshot.riskFlags) ? snapshot.riskFlags.slice(0, 5) : [],
+    shortSummary: summary.slice(0, 500),
+    openTasksTop5: Array.isArray(openTasks) ? openTasks.slice(0, 5) : [],
+    riskFlagsTop3: Array.isArray(riskFlags) ? riskFlags.slice(0, 3) : [],
+    lastSummary: summary.slice(0, 500),
     updatedAt: snapshot.updatedAt || null
   };
 }
@@ -155,8 +161,12 @@ function resolveContextSummary(contextSnapshot, personalizedContext) {
     if (snapshot.location.city) parts.push(`city=${snapshot.location.city}`);
     if (snapshot.location.state) parts.push(`state=${snapshot.location.state}`);
   }
-  const openTasks = Array.isArray(snapshot.openTasksTop5) ? snapshot.openTasksTop5.length : 0;
-  const riskFlags = Array.isArray(snapshot.riskFlagsTop3) ? snapshot.riskFlagsTop3.length : 0;
+  const openTasks = Array.isArray(snapshot.topOpenTasks)
+    ? snapshot.topOpenTasks.length
+    : (Array.isArray(snapshot.openTasksTop5) ? snapshot.openTasksTop5.length : 0);
+  const riskFlags = Array.isArray(snapshot.riskFlags)
+    ? snapshot.riskFlags.length
+    : (Array.isArray(snapshot.riskFlagsTop3) ? snapshot.riskFlagsTop3.length : 0);
   parts.push(`openTasks=${openTasks}`);
   parts.push(`riskFlags=${riskFlags}`);
   return parts.join(', ');

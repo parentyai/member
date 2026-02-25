@@ -29,6 +29,12 @@ function toCommandText(action) {
   if (action.action === 'todo_complete') {
     return `TODO完了:${action.todoKey || ''}`;
   }
+  if (action.action === 'todo_in_progress') {
+    return `TODO進行中:${action.todoKey || ''}`;
+  }
+  if (action.action === 'todo_not_started') {
+    return `TODO未着手:${action.todoKey || ''}`;
+  }
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }

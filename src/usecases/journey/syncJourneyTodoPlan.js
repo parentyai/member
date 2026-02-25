@@ -5,6 +5,7 @@ const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySched
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
+const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,25 +51,37 @@ function buildBaseTodoTemplates() {
       todoKey: 'visa_documents',
       title: '必要書類（ビザ/在留関連）の最終確認',
       anchor: 'departure',
-      offsetDays: -21
+      offsetDays: -21,
+      dependsOn: [],
+      priority: 5,
+      riskLevel: 'high'
     },
     {
       todoKey: 'housing_setup',
       title: '住居・ライフライン準備の確定',
       anchor: 'departure',
-      offsetDays: -14
+      offsetDays: -14,
+      dependsOn: ['visa_documents'],
+      priority: 4,
+      riskLevel: 'high'
     },
     {
       todoKey: 'departure_final_check',
       title: '出発前最終チェック',
       anchor: 'departure',
-      offsetDays: -7
+      offsetDays: -7,
+      dependsOn: ['visa_documents', 'housing_setup'],
+      priority: 5,
+      riskLevel: 'high'
     },
     {
       todoKey: 'arrival_registration',
       title: '着任後の登録手続き',
       anchor: 'assignment',
-      offsetDays: 3
+      offsetDays: 3,
+      dependsOn: ['departure_final_check'],
+      priority: 3,
+      riskLevel: 'medium'
     }
   ];
 }
@@ -80,7 +93,10 @@ function buildHouseholdTodoTemplates(householdType) {
       todoKey: 'family_support_plan',
       title: '帯同家族向けの生活準備確認',
       anchor: 'departure',
-      offsetDays: -10
+      offsetDays: -10,
+      dependsOn: ['housing_setup'],
+      priority: 4,
+      riskLevel: 'medium'
     }
   ];
 }
@@ -139,19 +155,30 @@ async function refreshJourneyTodoStats(lineUserId, deps, nowIso) {
   const list = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 500 });
 
   let openCount = 0;
+  let totalCount = 0;
+  let completedCount = 0;
+  let lockedCount = 0;
+  let actionableCount = 0;
   let overdueCount = 0;
   let dueIn7DaysCount = 0;
   let nextDueAt = null;
   let lastReminderAt = null;
 
   list.forEach((item) => {
+    totalCount += 1;
     const dueMs = Date.parse(item && item.dueAt ? item.dueAt : '');
     const reminderMs = Date.parse(item && item.lastReminderAt ? item.lastReminderAt : '');
     if (Number.isFinite(reminderMs) && (!lastReminderAt || reminderMs > Date.parse(lastReminderAt))) {
       lastReminderAt = new Date(reminderMs).toISOString();
     }
-    if (!item || item.status !== 'open') return;
+    if (!item || (item.status !== 'open' && item.status !== 'completed' && item.status !== 'skipped')) return;
+    if (item.status === 'completed' || item.status === 'skipped') {
+      completedCount += 1;
+      return;
+    }
     openCount += 1;
+    if (item.graphStatus === 'locked') lockedCount += 1;
+    if (item.graphStatus === 'actionable') actionableCount += 1;
     if (Number.isFinite(dueMs)) {
       if (dueMs < nowMs) overdueCount += 1;
       if (dueMs >= nowMs && dueMs <= (nowMs + 7 * DAY_MS)) dueIn7DaysCount += 1;
@@ -163,6 +190,12 @@ async function refreshJourneyTodoStats(lineUserId, deps, nowIso) {
 
   return statsRepo.upsertUserJourneyTodoStats(lineUserId, {
     openCount,
+    totalCount,
+    completedCount,
+    lockedCount,
+    actionableCount,
+    completionRate: totalCount > 0 ? completedCount / totalCount : 0,
+    dependencyBlockRate: openCount > 0 ? lockedCount / openCount : 0,
     overdueCount,
     dueIn7DaysCount,
     nextDueAt,
@@ -190,6 +223,13 @@ async function syncJourneyTodoPlan(params, deps) {
   const departureDate = toIsoDate(schedule && schedule.departureDate);
   const assignmentDate = toIsoDate(schedule && schedule.assignmentDate);
   if (!departureDate && !assignmentDate) {
+    const graph = await recomputeJourneyTaskGraph({
+      lineUserId,
+      actor: payload.source || 'journey_sync',
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      failOnCycle: false
+    }, resolvedDeps).catch(() => ({ ok: false, reason: 'graph_recompute_failed' }));
     const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps, payload.now);
     return {
       ok: true,
@@ -197,7 +237,8 @@ async function syncJourneyTodoPlan(params, deps) {
       syncedCount: 0,
       stage: resolveStage(schedule),
       skippedReason: 'schedule_missing',
-      stats
+      stats,
+      graph
     };
   }
 
@@ -225,6 +266,13 @@ async function syncJourneyTodoPlan(params, deps) {
       dueDate: due.dueDate,
       dueAt: due.dueAt,
       status: existing && (existing.status === 'completed' || existing.status === 'skipped') ? existing.status : 'open',
+      progressState: existing && existing.progressState ? existing.progressState : 'not_started',
+      graphStatus: existing && existing.graphStatus ? existing.graphStatus : 'actionable',
+      dependsOn: Array.isArray(template.dependsOn) ? template.dependsOn : [],
+      blocks: Array.isArray(template.blocks) ? template.blocks : [],
+      priority: Number.isFinite(Number(template.priority)) ? Number(template.priority) : 3,
+      riskLevel: template.riskLevel || 'medium',
+      lockReasons: existing && Array.isArray(existing.lockReasons) ? existing.lockReasons : [],
       reminderOffsetsDays: reminderOffsets,
       remindedOffsetsDays,
       nextReminderAt,
@@ -235,13 +283,22 @@ async function syncJourneyTodoPlan(params, deps) {
     syncedCount += 1;
   }
 
+  const graph = await recomputeJourneyTaskGraph({
+    lineUserId,
+    actor: payload.source || 'journey_sync',
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    failOnCycle: false
+  }, resolvedDeps).catch(() => ({ ok: false, reason: 'graph_recompute_failed' }));
+
   const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps, nowIso);
   return {
     ok: true,
     lineUserId,
     syncedCount,
     stage: resolveStage(schedule),
-    stats
+    stats,
+    graph
   };
 }
 

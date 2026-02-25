@@ -27,6 +27,7 @@ const {
 const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqReply');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
+const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
 const {
   regionPrompt,
   regionDeclared,
@@ -151,6 +152,97 @@ function resolveSnapshotOnlyContextEnabled() {
   return resolveBooleanEnvFlag('ENABLE_SNAPSHOT_ONLY_CONTEXT_V1', false);
 }
 
+function resolveTaskGraphEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_TASK_GRAPH_V1', false);
+}
+
+function resolveProPredictiveActionsEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_PRO_PREDICTIVE_ACTIONS_V1', false);
+}
+
+function isDependencyHintIntent(text) {
+  const normalized = normalizeReplyText(text).toLowerCase();
+  if (!normalized) return false;
+  return /todo|依存|ロック|タスク|next action|次の行動/.test(normalized);
+}
+
+function toMillis(value) {
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
+  if (typeof value === 'number' && Number.isFinite(value)) return value > 1000000000000 ? value : value * 1000;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date.getTime();
+  }
+  return null;
+}
+
+async function loadTaskGraphSummary(lineUserId) {
+  if (!resolveTaskGraphEnabled()) return null;
+  if (!lineUserId || typeof lineUserId !== 'string') return null;
+  try {
+    const nodes = await taskNodesRepo.listTaskNodesByLineUserId({ lineUserId, limit: 200 });
+    const actionable = nodes
+      .filter((node) => node && node.status !== 'done' && node.graphStatus !== 'locked')
+      .sort((a, b) => {
+        const scoreA = Number(a && a.riskScore);
+        const scoreB = Number(b && b.riskScore);
+        if (Number.isFinite(scoreA) && Number.isFinite(scoreB) && scoreA !== scoreB) return scoreB - scoreA;
+        const dueA = toMillis(a && a.dueAt);
+        const dueB = toMillis(b && b.dueAt);
+        if (Number.isFinite(dueA) && Number.isFinite(dueB) && dueA !== dueB) return dueA - dueB;
+        return String(a && a.todoKey ? a.todoKey : '').localeCompare(String(b && b.todoKey ? b.todoKey : ''), 'ja');
+      })
+      .slice(0, 3);
+    const locked = nodes.filter((node) => node && node.graphStatus === 'locked');
+    return {
+      total: nodes.length,
+      lockedCount: locked.length,
+      actionableTop3: actionable,
+      lockedReasons: locked
+        .flatMap((node) => (Array.isArray(node && node.lockReasons) ? node.lockReasons : []))
+        .filter(Boolean)
+        .slice(0, 3)
+    };
+  } catch (_err) {
+    return null;
+  }
+}
+
+function buildFreeDependencyHint(graphSummary) {
+  const graph = graphSummary && typeof graphSummary === 'object' ? graphSummary : null;
+  if (!graph || graph.lockedCount <= 0) return '';
+  const lines = [`依存ロック中タスク: ${graph.lockedCount}件`];
+  if (Array.isArray(graph.lockedReasons) && graph.lockedReasons.length) {
+    lines.push(`ロック理由: ${graph.lockedReasons.join(' / ')}`);
+  }
+  return lines.join('\n');
+}
+
+function buildProDependencyAddendum(graphSummary) {
+  const graph = graphSummary && typeof graphSummary === 'object' ? graphSummary : null;
+  if (!graph) return '';
+  const lines = ['補足（依存グラフ）'];
+  lines.push(`ロック中: ${graph.lockedCount || 0}件`);
+  if (Array.isArray(graph.lockedReasons) && graph.lockedReasons.length) {
+    lines.push(`主要ロック理由: ${graph.lockedReasons.join(' / ')}`);
+  }
+  if (Array.isArray(graph.actionableTop3) && graph.actionableTop3.length) {
+    lines.push('次アクション候補(最大3):');
+    graph.actionableTop3.slice(0, 3).forEach((item, index) => {
+      const key = item && item.todoKey ? item.todoKey : `task_${index + 1}`;
+      const title = item && item.title ? item.title : key;
+      const due = item && item.dueDate ? item.dueDate : '-';
+      lines.push(`${index + 1}. ${title} [${key}] (期限:${due})`);
+    });
+  }
+  return lines.join('\n');
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -203,7 +295,9 @@ async function replyWithFreeRetrieval(params) {
     question: payload.text,
     locale: 'ja'
   });
-  const replyText = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
+  const extra = normalizeReplyText(payload.extraText || '');
+  const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
+  const replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
   return retrieval;
 }
@@ -225,7 +319,12 @@ async function handleAssistantMessage(params) {
   const requestId = traceId;
 
   if (planInfo.plan !== 'pro') {
-    const fallback = await replyWithFreeRetrieval(payload);
+    const dependencyHint = isDependencyHintIntent(text)
+      ? buildFreeDependencyHint(await loadTaskGraphSummary(lineUserId))
+      : '';
+    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+      extraText: dependencyHint
+    }));
     if (explicitPaidIntent) {
       await appendJourneyEventBestEffort({
         lineUserId,
@@ -447,7 +546,11 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
+  let replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
+  if (resolveProPredictiveActionsEnabled()) {
+    const addendum = buildProDependencyAddendum(await loadTaskGraphSummary(lineUserId));
+    if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
+  }
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);

@@ -505,6 +505,25 @@ async function getUserOperationalSummary(params) {
     const todoOpenCount = journeyStats && Number.isFinite(Number(journeyStats.openCount))
       ? Number(journeyStats.openCount)
       : 0;
+    const todoTotalCount = journeyStats && Number.isFinite(Number(journeyStats.totalCount))
+      ? Number(journeyStats.totalCount)
+      : (todoOpenCount + (journeyStats && Number.isFinite(Number(journeyStats.completedCount)) ? Number(journeyStats.completedCount) : 0));
+    const todoCompletedCount = journeyStats && Number.isFinite(Number(journeyStats.completedCount))
+      ? Number(journeyStats.completedCount)
+      : Math.max(0, todoTotalCount - todoOpenCount);
+    const todoLockedCount = journeyStats && Number.isFinite(Number(journeyStats.lockedCount))
+      ? Number(journeyStats.lockedCount)
+      : 0;
+    const todoActionableCount = journeyStats && Number.isFinite(Number(journeyStats.actionableCount))
+      ? Number(journeyStats.actionableCount)
+      : Math.max(0, todoOpenCount - todoLockedCount);
+    const taskCompletionRate = journeyStats && Number.isFinite(Number(journeyStats.completionRate))
+      ? Number(journeyStats.completionRate)
+      : (todoTotalCount > 0 ? Math.round((todoCompletedCount / todoTotalCount) * 10000) / 10000 : 0);
+    const dependencyBlockRate = journeyStats && Number.isFinite(Number(journeyStats.dependencyBlockRate))
+      ? Number(journeyStats.dependencyBlockRate)
+      : (todoOpenCount > 0 ? Math.round((todoLockedCount / todoOpenCount) * 10000) / 10000 : 0);
+    const todoProgressRate = taskCompletionRate;
     const todoOverdueCount = journeyStats && Number.isFinite(Number(journeyStats.overdueCount))
       ? Number(journeyStats.overdueCount)
       : 0;
@@ -544,6 +563,13 @@ async function getUserOperationalSummary(params) {
       billingIntegrityState,
       householdType,
       journeyStage,
+      todoTotalCount,
+      todoCompletedCount,
+      todoLockedCount,
+      todoActionableCount,
+      taskCompletionRate,
+      dependencyBlockRate,
+      todoProgressRate,
       todoOpenCount,
       todoOverdueCount,
       nextTodoDueAt

@@ -275,3 +275,44 @@ API:
 即時停止:
 - `ENABLE_JOURNEY_KPI=0`
 - `ENABLE_USER_CONTEXT_SNAPSHOT=0`
+
+## Phase654 追加運用（ToDo依存グラフ / Snapshot v2 / Policy履歴）
+
+### ToDo依存グラフ運用
+1) ToDoの書き込みSSOTは `journey_todo_items` を継続利用する。  
+2) `status` の意味は維持し、依存状態は追加fieldで確認する。  
+   - `progressState`, `graphStatus`, `dependsOn`, `blocks`, `priority`, `riskLevel`, `lockReasons`, `graphEvaluatedAt`  
+3) 派生read model `task_nodes` は UI/集計専用とし、再計算結果を参照する。  
+4) `TODO一覧` でロック理由と `TOP3` が表示されることを運用確認する。  
+
+### Snapshot v2 再圧縮ジョブ
+1) route: `POST /internal/jobs/user-context-snapshot-recompress`  
+2) header: `x-city-pack-job-token`（internal token）  
+3) body:
+   - 単一: `{ "lineUserId": "U..." }`
+   - 複数: `{ "lineUserIds": ["U1","U2"] }`
+   - 全件: `{ "limit": 100 }`
+4) 監査確認（`audit_logs`）:
+   - `snapshot_recompressed`
+   - `snapshot_trimmed`
+   - 障害時 `snapshot_build_fallback`
+
+### Users / Dashboard 追加観測
+1) Users一覧は `llmUsage` / `todoProgressRate` 列を確認する。  
+2) Analyzeで `avgTaskCompletionRate` / `avgDependencyBlockRate` を確認する。  
+3) Dashboardカードで以下を監視する。  
+   - `journey_task_completion_rate`  
+   - `journey_dependency_block_rate`
+
+### LLM Policy 履歴運用
+1) `GET /api/admin/os/llm-policy/history` で最新変更履歴を確認する。  
+2) 保存時の alias は canonical に変換される前提で運用する。  
+   - `max_tokens -> max_output_tokens`
+   - `per_user_limit -> per_user_daily_limit`
+   - `rate_limit -> global_qps_limit`
+
+### 即時停止フラグ（Phase654）
+- `ENABLE_TASK_GRAPH_V1=0`（依存グラフ要約停止）
+- `ENABLE_TASK_GRAPH_UI_V1=0`（UI表示停止）
+- `ENABLE_CONTEXT_SNAPSHOT_V2=0`（再圧縮経路停止）
+- `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=0`（Proの依存補足停止）

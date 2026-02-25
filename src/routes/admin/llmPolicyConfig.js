@@ -7,6 +7,7 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const opsConfigRepo = require('../../repos/firestore/opsConfigRepo');
+const llmPolicyChangeLogsRepo = require('../../repos/firestore/llmPolicyChangeLogsRepo');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
 function serializePolicy(policy) {
@@ -45,6 +46,24 @@ function buildCandidatePolicy(basePolicy, policyPatch) {
   const patch = policyPatch && typeof policyPatch === 'object' ? policyPatch : {};
   const candidate = Object.assign({}, basePolicy, patch);
   if (
+    Object.prototype.hasOwnProperty.call(patch, 'max_tokens')
+    && !Object.prototype.hasOwnProperty.call(patch, 'max_output_tokens')
+  ) {
+    candidate.max_output_tokens = patch.max_tokens;
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(patch, 'per_user_limit')
+    && !Object.prototype.hasOwnProperty.call(patch, 'per_user_daily_limit')
+  ) {
+    candidate.per_user_daily_limit = patch.per_user_limit;
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(patch, 'rate_limit')
+    && !Object.prototype.hasOwnProperty.call(patch, 'global_qps_limit')
+  ) {
+    candidate.global_qps_limit = patch.rate_limit;
+  }
+  if (
     Object.prototype.hasOwnProperty.call(patch, 'per_user_daily_token_budget')
     && !Object.prototype.hasOwnProperty.call(patch, 'per_user_token_budget')
   ) {
@@ -60,11 +79,20 @@ function resolveCanonicalizationInfo(sourcePolicy, normalized) {
   const proAliasInput = listHasAlias(src.allowed_intents_pro);
   const tokenBudgetAliasInput = Object.prototype.hasOwnProperty.call(src, 'per_user_daily_token_budget')
     && !Object.prototype.hasOwnProperty.call(src, 'per_user_token_budget');
+  const maxTokensAliasInput = Object.prototype.hasOwnProperty.call(src, 'max_tokens')
+    && !Object.prototype.hasOwnProperty.call(src, 'max_output_tokens');
+  const perUserLimitAliasInput = Object.prototype.hasOwnProperty.call(src, 'per_user_limit')
+    && !Object.prototype.hasOwnProperty.call(src, 'per_user_daily_limit');
+  const rateLimitAliasInput = Object.prototype.hasOwnProperty.call(src, 'rate_limit')
+    && !Object.prototype.hasOwnProperty.call(src, 'global_qps_limit');
   return {
     intentAliasApplied: freeAliasInput || proAliasInput,
     intentAliasAppliedFree: freeAliasInput,
     intentAliasAppliedPro: proAliasInput,
     tokenBudgetAliasApplied: tokenBudgetAliasInput,
+    maxTokensAliasApplied: maxTokensAliasInput,
+    perUserLimitAliasApplied: perUserLimitAliasInput,
+    rateLimitAliasApplied: rateLimitAliasInput,
     normalizedPolicy: normalized
   };
 }
@@ -230,6 +258,15 @@ async function handleSet(req, res, body) {
   }
 
   const saved = await opsConfigRepo.setLlmPolicy(normalized, actor);
+  await llmPolicyChangeLogsRepo.appendLlmPolicyChangeLog({
+    actor,
+    traceId,
+    requestId,
+    planHash,
+    policy: saved,
+    canonicalization,
+    createdAt: new Date().toISOString()
+  }).catch(() => null);
   await appendAuditLog({
     actor,
     action: 'llm_policy.set',
@@ -255,8 +292,47 @@ async function handleSet(req, res, body) {
   }));
 }
 
+function parseLimit(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const raw = Number(url.searchParams.get('limit') || 20);
+  if (!Number.isFinite(raw) || raw < 1) return 20;
+  return Math.min(Math.floor(raw), 100);
+}
+
+async function handleHistory(req, res) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const limit = parseLimit(req);
+
+  const items = await llmPolicyChangeLogsRepo.listLlmPolicyChangeLogs(limit).catch(() => []);
+  await appendAuditLog({
+    actor,
+    action: 'llm_policy.history.view',
+    entityType: 'opsConfig',
+    entityId: 'llmPolicy',
+    traceId,
+    requestId,
+    payloadSummary: {
+      limit,
+      count: items.length
+    }
+  });
+
+  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({
+    ok: true,
+    traceId,
+    requestId,
+    limit,
+    items
+  }));
+}
+
 module.exports = {
   handleStatus,
   handlePlan,
-  handleSet
+  handleSet,
+  handleHistory
 };

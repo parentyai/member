@@ -52,6 +52,7 @@ const SORT_KEY_TYPES = Object.freeze({
   subscriptionStatus: 'string',
   llmUsage: 'number',
   llmUsageToday: 'number',
+  todoProgressRate: 'number',
   tokensToday: 'number',
   blockedRate: 'number',
   billingIntegrity: 'string',
@@ -228,6 +229,7 @@ function resolveSortValue(item, key) {
   if (key === 'subscriptionStatus') return item && item.subscriptionStatus;
   if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'llmUsageToday') return item && item.llmUsageToday;
+  if (key === 'todoProgressRate') return item && item.todoProgressRate;
   if (key === 'tokensToday') return item && item.llmTokenUsedToday;
   if (key === 'blockedRate') return item && item.llmBlockedRate;
   if (key === 'billingIntegrity') return item && item.billingIntegrityState;

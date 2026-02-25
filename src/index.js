@@ -1330,6 +1330,36 @@ function createServer() {
     return;
   }
 
+  if (req.method === 'POST' && pathname === '/internal/jobs/user-context-snapshot-recompress') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleUserContextSnapshotRecompressJob } = require('./routes/internal/userContextSnapshotRecompressJob');
+      const body = await collectBody();
+      await handleUserContextSnapshotRecompressJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   if (req.method === 'POST' && pathname === '/internal/jobs/journey-kpi-build') {
     let bytes = 0;
     const chunks = [];
@@ -1480,6 +1510,7 @@ function createServer() {
       handlePlan: handleJourneyPolicyPlan,
       handleSet: handleJourneyPolicySet
     } = require('./routes/admin/journeyPolicyConfig');
+    const { handleHistory: handleLlmPolicyHistory } = require('./routes/admin/llmPolicyConfig');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -1624,6 +1655,10 @@ function createServer() {
         await handleJourneyKpi(req, res);
         return;
       }
+      if (req.method === 'GET' && pathname === '/api/admin/os/llm-policy/history') {
+        await handleLlmPolicyHistory(req, res);
+        return;
+      }
       if (req.method === 'POST' && pathname === '/api/admin/os/view') {
         const body = await collectBody();
         await handleView(req, res, body);
@@ -1753,7 +1788,8 @@ function createServer() {
     const {
       handleStatus: handleLlmPolicyStatus,
       handlePlan: handleLlmPolicyPlan,
-      handleSet: handleLlmPolicySet
+      handleSet: handleLlmPolicySet,
+      handleHistory: handleLlmPolicyHistory
     } = require('./routes/admin/llmPolicyConfig');
     const { handleAdminLlmFaqAnswer } = require('./routes/admin/llmFaq');
     const llmClient = require('./infra/llmClient');
@@ -1811,6 +1847,10 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/llm/policy/set') {
         const body = await collectBody();
         await handleLlmPolicySet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/llm/policy/history') {
+        await handleLlmPolicyHistory(req, res);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {

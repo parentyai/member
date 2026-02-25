@@ -170,3 +170,21 @@ MUST:
   - URL query で filter/sort/columns を再現可能にする  
 - Dashboard は `pro_active_count` カードと `Retention/LTV` パネルを表示する。  
 - LLM運用は `llm policy` の2段階更新に加え `llm usage summary` を表示する。  
+
+## Phase654 Add-only UI Contract
+- ToDo依存グラフは `journey_todo_items` をSSOTとして運用し、`status` 意味は変更しない。  
+  追加フィールド: `progressState/graphStatus/dependsOn/blocks/priority/riskLevel/lockReasons/graphEvaluatedAt`
+- 派生read modelとして `task_nodes` を追加する。  
+  `task_nodes.status` は `not_started|in_progress|done|locked` を使用する。
+- Users画面は以下を追加表示する。  
+  - `llmUsage` 列  
+  - `todoProgressRate` 列
+- Dashboardは以下を追加表示する。  
+  - `journey_task_completion_rate`（平均タスク完了率）  
+  - `journey_dependency_block_rate`（依存ブロック率）
+- LLM Policy運用は alias UI を採用する。  
+  - `max_tokens` -> `max_output_tokens`  
+  - `per_user_limit` -> `per_user_daily_limit`  
+  - `rate_limit` -> `global_qps_limit`
+- LLM Policy変更履歴 API を追加する。  
+  - `GET /api/admin/os/llm-policy/history`
