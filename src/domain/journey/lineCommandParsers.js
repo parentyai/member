@@ -66,6 +66,22 @@ function parseJourneyLineCommand(text) {
     };
   }
 
+  const inProgress = raw.match(/^TODO(?:進行中|開始)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (inProgress) {
+    return {
+      action: 'todo_in_progress',
+      todoKey: normalizeText(inProgress[1])
+    };
+  }
+
+  const notStarted = raw.match(/^TODO(?:未着手|戻す)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (notStarted) {
+    return {
+      action: 'todo_not_started',
+      todoKey: normalizeText(notStarted[1])
+    };
+  }
+
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
   if (household) {
     const householdType = normalizeHouseholdLabel(household[1]);
@@ -132,6 +148,18 @@ function parseJourneyPostbackData(data) {
   if (action === 'todo_complete') {
     const todoKey = normalizeText(params.get('todoKey'));
     if (!todoKey) return { action: 'todo_complete_missing' };
+    return { action, todoKey };
+  }
+
+  if (action === 'todo_in_progress') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_in_progress_missing' };
+    return { action, todoKey };
+  }
+
+  if (action === 'todo_not_started') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_not_started_missing' };
     return { action, todoKey };
   }
 

@@ -454,6 +454,46 @@
                   <div id="dashboard-kpi-llmBlockRate-chart" class="dashboard-kpi-chart"></div>
                   <div id="dashboard-kpi-llmBlockRate-note" class="dashboard-kpi-note">-</div>
                 </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="avgTaskCompletion">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">平均タスク完了率</div>
+                    <select id="dashboard-window-avgTaskCompletion" class="select-inline dashboard-window-select" data-dashboard-metric="avgTaskCompletion">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-avgTaskCompletion-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-avgTaskCompletion-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-avgTaskCompletion-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-avgTaskCompletion-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-avgTaskCompletion-note" class="dashboard-kpi-note">-</div>
+                </div>
+                <div class="dashboard-kpi-card" data-dashboard-card="dependencyBlockRate">
+                  <div class="dashboard-kpi-header">
+                    <div class="dashboard-kpi-title">依存ブロック率</div>
+                    <select id="dashboard-window-dependencyBlockRate" class="select-inline dashboard-window-select" data-dashboard-metric="dependencyBlockRate">
+                      <option value="1" data-dict-key="ui.value.home.window.1">1ヶ月</option>
+                      <option value="3" data-dict-key="ui.value.home.window.3">3ヶ月</option>
+                      <option value="6" data-dict-key="ui.value.home.window.6">6ヶ月</option>
+                      <option value="12" data-dict-key="ui.value.home.window.12">1年</option>
+                      <option value="36" data-dict-key="ui.value.home.window.36">3年</option>
+                    </select>
+                  </div>
+                  <div id="dashboard-kpi-dependencyBlockRate-current" class="dashboard-kpi-value">-</div>
+                  <div class="dashboard-kpi-compare">
+                    <span class="dashboard-kpi-previous-label" data-dict-key="ui.label.dashboard.previousMonth">前月</span>
+                    <span id="dashboard-kpi-dependencyBlockRate-previous" class="dashboard-kpi-previous">-</span>
+                    <span id="dashboard-kpi-dependencyBlockRate-delta" class="dashboard-kpi-delta">-</span>
+                  </div>
+                  <div id="dashboard-kpi-dependencyBlockRate-chart" class="dashboard-kpi-chart"></div>
+                  <div id="dashboard-kpi-dependencyBlockRate-note" class="dashboard-kpi-note">-</div>
+                </div>
               </div>
               <div class="panel dashboard-journey-panel">
                 <div class="panel-title">Retention / LTV</div>
@@ -464,6 +504,8 @@
                   <div class="dashboard-journey-grid">
                     <div class="note">Retention 7/30/60/90: <strong id="dashboard-journey-retention">-</strong></div>
                     <div class="note">Phase完了率: <strong id="dashboard-journey-phase-completion">-</strong></div>
+                    <div class="note">Task完了率: <strong id="dashboard-journey-task-completion">-</strong></div>
+                    <div class="note">依存ブロック率: <strong id="dashboard-journey-dependency-block">-</strong></div>
                     <div class="note">NextAction実行率: <strong id="dashboard-journey-next-action-rate">-</strong></div>
                     <div class="note">Pro conversion: <strong id="dashboard-journey-pro-conversion">-</strong></div>
                     <div class="note">Churn ratio: <strong id="dashboard-journey-churn">-</strong></div>
@@ -1969,6 +2011,8 @@
                       <label><input type="checkbox" data-users-column-toggle="subscriptionStatus" checked /> 課金状態</label>
                       <label><input type="checkbox" data-users-column-toggle="billingIntegrity" checked /> 整合</label>
                       <label><input type="checkbox" data-users-column-toggle="currentPeriodEnd" checked /> 期限</label>
+                      <label><input type="checkbox" data-users-column-toggle="llmUsage" checked /> llmUsage</label>
+                      <label><input type="checkbox" data-users-column-toggle="todoProgressRate" checked /> todoProgressRate</label>
                       <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> usageToday</label>
                       <label><input type="checkbox" data-users-column-toggle="tokensToday" checked /> tokensToday</label>
                       <label><input type="checkbox" data-users-column-toggle="blockedRate" checked /> blockedRate</label>
@@ -1998,6 +2042,8 @@
                         <th data-users-col="subscriptionStatus"><button type="button" class="table-sort-btn" data-users-sort-key="subscriptionStatus">課金状態</button></th>
                         <th data-users-col="billingIntegrity"><button type="button" class="table-sort-btn" data-users-sort-key="billingIntegrity">整合</button></th>
                         <th data-users-col="currentPeriodEnd"><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
+                        <th data-users-col="llmUsage"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">llmUsage</button></th>
+                        <th data-users-col="todoProgressRate"><button type="button" class="table-sort-btn" data-users-sort-key="todoProgressRate">todoProgressRate</button></th>
                         <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">usageToday</button></th>
                         <th data-users-col="tokensToday"><button type="button" class="table-sort-btn" data-users-sort-key="tokensToday">tokensToday</button></th>
                         <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">blockedRate</button></th>
@@ -2636,11 +2682,11 @@
                       <input id="llm-policy-top-p" type="number" step="0.1" min="0" max="1" value="1" />
                     </div>
                     <div>
-                      <label>max_output_tokens</label>
+                      <label>max_tokens (alias: max_output_tokens)</label>
                       <input id="llm-policy-max-output-tokens" type="number" step="1" min="32" max="4096" value="600" />
                     </div>
                     <div>
-                      <label>per_user_daily_limit</label>
+                      <label>per_user_limit (alias: per_user_daily_limit)</label>
                       <input id="llm-policy-per-user-daily-limit" type="number" step="1" min="0" max="2000" value="20" />
                     </div>
                     <div>
@@ -2648,7 +2694,7 @@
                       <input id="llm-policy-per-user-token-budget" type="number" step="1" min="0" max="500000" value="12000" />
                     </div>
                     <div>
-                      <label>global_qps_limit</label>
+                      <label>rate_limit (alias: global_qps_limit)</label>
                       <input id="llm-policy-global-qps-limit" type="number" step="1" min="0" max="1000" value="5" />
                     </div>
                     <div>
@@ -2680,6 +2726,7 @@
                     <button id="llm-policy-reload" type="button">ポリシー状態</button>
                     <button id="llm-policy-plan" type="button">ポリシー計画</button>
                     <button id="llm-policy-set" type="button">ポリシー適用</button>
+                    <button id="llm-policy-history" type="button">ポリシー履歴</button>
                   </div>
                   <details class="section">
                     <summary>ポリシー状態</summary>
@@ -2693,6 +2740,8 @@
                     <summary>ポリシー適用結果</summary>
                     <pre id="llm-policy-set-result">-</pre>
                   </details>
+                  <div class="note">ポリシー変更履歴</div>
+                  <pre id="llm-policy-history-result">-</pre>
                   <hr />
                   <div class="row row-top">
                     <label for="llm-usage-window-days">usage window(days)</label>

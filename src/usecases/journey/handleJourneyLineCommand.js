@@ -7,6 +7,7 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
+const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -20,7 +21,31 @@ function normalizeText(value) {
   return value.trim();
 }
 
-function formatTodoList(items) {
+function formatTodoStateLabel(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const dueMs = Date.parse(row.dueAt || '');
+  const nowMs = Date.now();
+  if (row.status === 'completed' || row.status === 'skipped') return '🟢 完了';
+  if (row.graphStatus === 'locked') return '⚫ ロック中';
+  if (Number.isFinite(dueMs) && dueMs <= nowMs + (3 * 24 * 60 * 60 * 1000)) return '🔴 期限迫る';
+  if (row.progressState === 'in_progress') return '🔵 進行中';
+  return '🟡 未着手';
+}
+
+function formatTopActionableTasks(graphResult) {
+  const graph = graphResult && typeof graphResult === 'object' ? graphResult : {};
+  const list = Array.isArray(graph.topActionableTasks) ? graph.topActionableTasks : [];
+  if (!list.length) return '';
+  const lines = ['優先タスクTOP3:'];
+  list.slice(0, 3).forEach((item, index) => {
+    const title = item && item.title ? item.title : (item && item.todoKey ? item.todoKey : '-');
+    const due = item && item.dueDate ? item.dueDate : '-';
+    lines.push(`${index + 1}. [${item.todoKey}] ${title}（期限:${due}）`);
+  });
+  return lines.join('\n');
+}
+
+function formatTodoList(items, graphResult) {
   const rows = Array.isArray(items) ? items : [];
   if (!rows.length) {
     return 'TODOは未登録です。\n「属性:単身」「渡航日:2026-04-01」「着任日:2026-04-08」を設定すると自動作成されます。';
@@ -29,11 +54,17 @@ function formatTodoList(items) {
   rows.slice(0, 10).forEach((item, idx) => {
     const title = item && item.title ? item.title : '-';
     const dueDate = item && item.dueDate ? item.dueDate : '-';
-    const status = item && item.status ? item.status : 'open';
+    const status = formatTodoStateLabel(item);
     const todoKey = item && item.todoKey ? item.todoKey : `todo_${idx + 1}`;
-    lines.push(`${idx + 1}. [${todoKey}] ${title}（期限: ${dueDate} / 状態: ${status}）`);
+    const lockReasons = item && item.graphStatus === 'locked' && Array.isArray(item.lockReasons) && item.lockReasons.length
+      ? ` / 理由: ${item.lockReasons.join('、')}`
+      : '';
+    lines.push(`${idx + 1}. [${todoKey}] ${title}（期限: ${dueDate} / 状態: ${status}${lockReasons}）`);
   });
+  const topActionable = formatTopActionableTasks(graphResult);
+  if (topActionable) lines.push(topActionable);
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
+  lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   return lines.join('\n');
 }
 
@@ -131,10 +162,15 @@ async function handleJourneyLineCommand(params, deps) {
   }
 
   if (command.action === 'todo_list') {
+    const graph = await recomputeJourneyTaskGraph({
+      lineUserId,
+      actor: 'line_command_todo_list',
+      failOnCycle: false
+    }, resolvedDeps).catch(() => ({ ok: false }));
     const items = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 50 });
     return {
       handled: true,
-      replyText: formatTodoList(items)
+      replyText: formatTodoList(items, graph)
     };
   }
 
@@ -154,10 +190,52 @@ async function handleJourneyLineCommand(params, deps) {
       };
     }
     await todoRepo.markJourneyTodoCompleted(lineUserId, todoKey, {});
+    const graph = await recomputeJourneyTaskGraph({
+      lineUserId,
+      actor: 'line_command_todo_complete',
+      failOnCycle: false
+    }, resolvedDeps).catch(() => ({ ok: false, topActionableTasks: [] }));
     const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps);
+    const topActionable = formatTopActionableTasks(graph);
     return {
       handled: true,
-      replyText: `TODO「${todoKey}」を完了にしました。\n未完了: ${stats.openCount}件 / 期限超過: ${stats.overdueCount}件`
+      replyText: `TODO「${todoKey}」を完了にしました。素晴らしい進捗です。\n未完了: ${stats.openCount}件 / 期限超過: ${stats.overdueCount}件${topActionable ? `\n${topActionable}` : ''}`
+    };
+  }
+
+  if (command.action === 'todo_in_progress' || command.action === 'todo_not_started') {
+    const todoKey = normalizeText(command.todoKey);
+    if (!todoKey) {
+      return {
+        handled: true,
+        replyText: 'TODOキーが必要です。例: TODO進行中:visa_documents'
+      };
+    }
+    const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
+    if (!existing) {
+      return {
+        handled: true,
+        replyText: `TODOキー「${todoKey}」が見つかりません。`
+      };
+    }
+    if (existing.status === 'completed' || existing.status === 'skipped') {
+      return {
+        handled: true,
+        replyText: `TODO「${todoKey}」はすでに完了済みです。`
+      };
+    }
+    const progressState = command.action === 'todo_in_progress' ? 'in_progress' : 'not_started';
+    await todoRepo.setJourneyTodoProgressState(lineUserId, todoKey, progressState, {});
+    const graph = await recomputeJourneyTaskGraph({
+      lineUserId,
+      actor: 'line_command_todo_progress',
+      failOnCycle: false
+    }, resolvedDeps).catch(() => ({ ok: false, topActionableTasks: [] }));
+    const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps);
+    const topActionable = formatTopActionableTasks(graph);
+    return {
+      handled: true,
+      replyText: `TODO「${todoKey}」を${progressState === 'in_progress' ? '進行中' : '未着手'}に更新しました。\n未完了: ${stats.openCount}件 / 期限超過: ${stats.overdueCount}件${topActionable ? `\n${topActionable}` : ''}`
     };
   }
 

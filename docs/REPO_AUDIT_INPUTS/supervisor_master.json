@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T19:45:39-05:00",
-  "gitCommit": "d01eeaa7332f907e8f72891c4eb425c268a85b97",
-  "branch": "codex/member-paid-personalization-v1-finish",
-  "sourceDigest": "f821c560e6ae2e7ffc2c13073fb1a5cb965c0e402a2d64ec393d97884dd2985b",
+  "generatedAt": "2026-02-24T20:30:24-05:00",
+  "gitCommit": "24cdc492a7b8238fb4161b582d19f010858c83d5",
+  "branch": "codex/phase654-task-graph-os",
+  "sourceDigest": "88a1c76eaa4f30804169d04d3784155598b1c671a35da695f3e0e4187d995e28",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

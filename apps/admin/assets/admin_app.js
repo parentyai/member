@@ -159,6 +159,8 @@ const state = {
     'subscriptionStatus',
     'billingIntegrity',
     'currentPeriodEnd',
+    'llmUsage',
+    'todoProgressRate',
     'llmUsageToday',
     'tokensToday',
     'blockedRate',
@@ -233,6 +235,7 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   reactionRate: 'number',
   llmUsage: 'number',
   llmUsageToday: 'number',
+  todoProgressRate: 'number',
   tokensToday: 'number',
   blockedRate: 'number',
   billingIntegrity: 'string'
@@ -291,6 +294,8 @@ const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
   'subscriptionStatus',
   'billingIntegrity',
   'currentPeriodEnd',
+  'llmUsage',
+  'todoProgressRate',
   'llmUsageToday',
   'tokensToday',
   'blockedRate',
@@ -349,7 +354,9 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   proRatio: { kpiKeys: ['pro_ratio'], unit: 'percent' },
   proActive: { kpiKeys: ['pro_active_count'], unit: 'count' },
   llmUsage: { kpiKeys: ['llm_daily_usage_count'], unit: 'count' },
-  llmBlockRate: { kpiKeys: ['llm_block_rate'], unit: 'percent' }
+  llmBlockRate: { kpiKeys: ['llm_block_rate'], unit: 'percent' },
+  avgTaskCompletion: { kpiKeys: ['journey_task_completion_rate'], unit: 'percent' },
+  dependencyBlockRate: { kpiKeys: ['journey_dependency_block_rate'], unit: 'percent' }
 });
 
 function isFoundationCoreEnabled() {
@@ -2597,6 +2604,8 @@ function renderDashboardJourneyKpi() {
     : null;
   const retentionEl = document.getElementById('dashboard-journey-retention');
   const phaseEl = document.getElementById('dashboard-journey-phase-completion');
+  const taskCompletionEl = document.getElementById('dashboard-journey-task-completion');
+  const dependencyBlockEl = document.getElementById('dashboard-journey-dependency-block');
   const nextActionEl = document.getElementById('dashboard-journey-next-action-rate');
   const conversionEl = document.getElementById('dashboard-journey-pro-conversion');
   const churnEl = document.getElementById('dashboard-journey-churn');
@@ -2605,6 +2614,8 @@ function renderDashboardJourneyKpi() {
   if (!payload) {
     if (retentionEl) retentionEl.textContent = '-';
     if (phaseEl) phaseEl.textContent = '-';
+    if (taskCompletionEl) taskCompletionEl.textContent = '-';
+    if (dependencyBlockEl) dependencyBlockEl.textContent = '-';
     if (nextActionEl) nextActionEl.textContent = '-';
     if (conversionEl) conversionEl.textContent = '-';
     if (churnEl) churnEl.textContent = '-';
@@ -2622,6 +2633,8 @@ function renderDashboardJourneyKpi() {
     ].join(' / ');
   }
   if (phaseEl) phaseEl.textContent = formatRatioPercent(payload.phaseCompletionRate);
+  if (taskCompletionEl) taskCompletionEl.textContent = formatRatioPercent(payload.taskCompletionRate);
+  if (dependencyBlockEl) dependencyBlockEl.textContent = formatRatioPercent(payload.dependencyBlockRate);
   if (nextActionEl) nextActionEl.textContent = formatRatioPercent(payload.nextActionExecutionRate);
   if (conversionEl) conversionEl.textContent = formatRatioPercent(payload.proConversionRate);
 
@@ -2631,6 +2644,7 @@ function renderDashboardJourneyKpi() {
   if (churnEl) {
     churnEl.textContent = [
       `blocked:${formatRatioPercent(churn.blocked)}`,
+      `dependency_graph_blocked:${formatRatioPercent(churn.dependency_graph_blocked)}`,
       `value_gap:${formatRatioPercent(churn.value_gap)}`,
       `cost:${formatRatioPercent(churn.cost)}`,
       `status_change:${formatRatioPercent(churn.status_change)}`
@@ -3234,6 +3248,7 @@ function resolveUsersSortValue(item, key) {
   if (key === 'todoOverdueCount') return item && item.todoOverdueCount;
   if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'llmUsageToday') return item && item.llmUsageToday;
+  if (key === 'todoProgressRate') return item && item.todoProgressRate;
   if (key === 'tokensToday') return item && item.llmTokenUsedToday;
   if (key === 'blockedRate') return item && item.llmBlockedRate;
   if (key === 'createdAt') return item && item.createdAt;
@@ -5475,6 +5490,10 @@ function mapUsersSummaryItem(item) {
   const row = item && typeof item === 'object' ? item : {};
   const scenarioKey = typeof row.scenarioKey === 'string' ? row.scenarioKey : '';
   const stepKey = typeof row.stepKey === 'string' ? row.stepKey : '';
+  const householdType = normalizeHouseholdType(row.householdType);
+  const journeyStage = normalizeJourneyStage(row.journeyStage);
+  const todoOpenCount = Number(row.todoOpenCount);
+  const todoOverdueCount = Number(row.todoOverdueCount);
   const deliveryCount = Number(row.deliveryCount);
   const clickCount = Number(row.clickCount);
   const llmUsage = Number(row.llmUsage);
@@ -5484,6 +5503,9 @@ function mapUsersSummaryItem(item) {
   const llmTokenUsedToday = Number(row.llmTokenUsedToday);
   const llmBlockedToday = Number(row.llmBlockedToday);
   const llmBlockedRate = Number(row.llmBlockedRate);
+  const todoProgressRate = Number(row.todoProgressRate);
+  const taskCompletionRate = Number(row.taskCompletionRate);
+  const dependencyBlockRate = Number(row.dependencyBlockRate);
   const plan = normalizeBillingPlan(row.plan);
   const subscriptionStatus = normalizeSubscriptionStatus(row.subscriptionStatus);
   const billingIntegrityState = typeof row.billingIntegrityState === 'string' && row.billingIntegrityState.trim()
@@ -5513,6 +5535,9 @@ function mapUsersSummaryItem(item) {
     nextTodoDueAt: row.nextTodoDueAt || null,
     todoOpenCount: Number.isFinite(todoOpenCount) ? todoOpenCount : 0,
     todoOverdueCount: Number.isFinite(todoOverdueCount) ? todoOverdueCount : 0,
+    todoProgressRate: Number.isFinite(todoProgressRate) ? todoProgressRate : 0,
+    taskCompletionRate: Number.isFinite(taskCompletionRate) ? taskCompletionRate : 0,
+    dependencyBlockRate: Number.isFinite(dependencyBlockRate) ? dependencyBlockRate : 0,
     llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
     llmTokenUsed: Number.isFinite(llmTokenUsed) ? llmTokenUsed : 0,
     llmBlockedCount: Number.isFinite(llmBlockedCount) ? llmBlockedCount : 0,
@@ -5804,7 +5829,13 @@ function renderUsersSummaryAnalyzeResult() {
   }
   const ratio = Number.isFinite(Number(payload.proActiveRatio)) ? `${Math.round(Number(payload.proActiveRatio) * 1000) / 10}%` : '-';
   const unknownRatio = Number.isFinite(Number(payload.unknownRatio)) ? `${Math.round(Number(payload.unknownRatio) * 1000) / 10}%` : '-';
-  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio})`;
+  const avgTaskCompletion = Number.isFinite(Number(payload.avgTaskCompletionRate))
+    ? `${Math.round(Number(payload.avgTaskCompletionRate) * 1000) / 10}%`
+    : '-';
+  const avgDependencyBlock = Number.isFinite(Number(payload.avgDependencyBlockRate))
+    ? `${Math.round(Number(payload.avgDependencyBlockRate) * 1000) / 10}%`
+    : '-';
+  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio}), taskCompletion=${avgTaskCompletion}, dependencyBlock=${avgDependencyBlock}`;
 }
 
 function createUsersSummaryBadge(text, className) {
@@ -5860,6 +5891,8 @@ function renderUsersSummaryRows() {
 
   const numericColumnKeys = new Set([
     'currentPeriodEnd',
+    'llmUsage',
+    'todoProgressRate',
     'llmUsageToday',
     'tokensToday',
     'blockedRate',
@@ -5911,6 +5944,8 @@ function renderUsersSummaryRows() {
       else if (columnKey === 'category') value = item.categoryLabel || '-';
       else if (columnKey === 'status') value = item.statusLabel || '-';
       else if (columnKey === 'currentPeriodEnd') value = formatTimestampForList(item.currentPeriodEnd);
+      else if (columnKey === 'llmUsage') value = Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-';
+      else if (columnKey === 'todoProgressRate') value = formatRatioPercent(item.todoProgressRate);
       else if (columnKey === 'llmUsageToday') value = Number.isFinite(Number(item.llmUsageToday)) ? String(item.llmUsageToday) : '-';
       else if (columnKey === 'tokensToday') value = Number.isFinite(Number(item.llmTokenUsedToday)) ? String(item.llmTokenUsedToday) : '-';
       else if (columnKey === 'blockedRate') value = formatBlockedRateValue(item.llmBlockedRate);
@@ -9341,17 +9376,23 @@ function parseIntentCsv(value) {
 }
 
 function buildPolicyPayloadFromForm() {
+  const maxTokens = Math.floor(parseNumberField(document.getElementById('llm-policy-max-output-tokens')?.value, 600));
+  const perUserLimit = Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-daily-limit')?.value, 20));
+  const rateLimit = Math.floor(parseNumberField(document.getElementById('llm-policy-global-qps-limit')?.value, 5));
   const perUserTokenBudget = Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-token-budget')?.value, 12000));
   return {
     enabled: parseLlmEnabled(document.getElementById('llm-policy-enabled')?.value) === true,
     model: (document.getElementById('llm-policy-model')?.value || '').trim() || 'gpt-4o-mini',
     temperature: parseNumberField(document.getElementById('llm-policy-temperature')?.value, 0.2),
     top_p: parseNumberField(document.getElementById('llm-policy-top-p')?.value, 1),
-    max_output_tokens: Math.floor(parseNumberField(document.getElementById('llm-policy-max-output-tokens')?.value, 600)),
-    per_user_daily_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-per-user-daily-limit')?.value, 20)),
+    max_tokens: maxTokens,
+    max_output_tokens: maxTokens,
+    per_user_limit: perUserLimit,
+    per_user_daily_limit: perUserLimit,
     per_user_token_budget: perUserTokenBudget,
     per_user_daily_token_budget: perUserTokenBudget,
-    global_qps_limit: Math.floor(parseNumberField(document.getElementById('llm-policy-global-qps-limit')?.value, 5)),
+    rate_limit: rateLimit,
+    global_qps_limit: rateLimit,
     cache_ttl_sec: Math.floor(parseNumberField(document.getElementById('llm-policy-cache-ttl-sec')?.value, 120)),
     allowed_intents_free: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-free')?.value || ''),
     allowed_intents_pro: parseIntentCsv(document.getElementById('llm-policy-allowed-intents-pro')?.value || ''),
@@ -9378,6 +9419,24 @@ function applyPolicyForm(policy) {
   setSelectValue('llm-policy-safety-mode', payload.safety_mode || 'strict');
 }
 
+function formatPolicyHistoryForDisplay(items) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return '[]';
+  return JSON.stringify(list.map((item) => {
+    const policy = item && item.policy && typeof item.policy === 'object' ? item.policy : {};
+    return {
+      createdAt: item && item.createdAt ? item.createdAt : null,
+      actor: item && item.actor ? item.actor : null,
+      planHash: item && item.planHash ? item.planHash : null,
+      temperature: policy.temperature,
+      max_tokens: policy.max_output_tokens,
+      per_user_limit: policy.per_user_daily_limit,
+      rate_limit: policy.global_qps_limit,
+      safety_mode: policy.safety_mode
+    };
+  }), null, 2);
+}
+
 async function loadLlmPolicyStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('llm-trace');
@@ -9392,6 +9451,22 @@ async function loadLlmPolicyStatus(options) {
   } catch (_err) {
     setTextContent('llm-policy-effective-enabled', '-');
     if (notify) showToast('LLMポリシー状態の取得に失敗しました', 'danger');
+  }
+}
+
+async function loadLlmPolicyHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('llm-trace');
+  const outputEl = document.getElementById('llm-policy-history-result');
+  try {
+    const res = await fetch('/api/admin/os/llm-policy/history?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (outputEl) outputEl.textContent = formatPolicyHistoryForDisplay(data.items || []);
+    if (notify) showToast('LLMポリシー履歴を取得しました', 'ok');
+  } catch (_err) {
+    if (outputEl) outputEl.textContent = JSON.stringify({ ok: false, error: 'fetch error' }, null, 2);
+    if (notify) showToast('LLMポリシー履歴の取得に失敗しました', 'danger');
   }
 }
 
@@ -9481,6 +9556,7 @@ async function setLlmPolicy() {
     llmPolicyConfirmToken = null;
     if (data.llmPolicy) applyPolicyForm(data.llmPolicy);
     await loadLlmPolicyStatus({ notify: false });
+    await loadLlmPolicyHistory({ notify: false });
     showToast('LLMポリシーを適用しました', 'ok');
   } catch (_err) {
     showToast('LLMポリシーの適用に失敗しました', 'danger');
@@ -9515,6 +9591,9 @@ function setupLlmControls() {
   document.getElementById('llm-policy-set')?.addEventListener('click', () => {
     void setLlmPolicy();
   });
+  document.getElementById('llm-policy-history')?.addEventListener('click', () => {
+    void loadLlmPolicyHistory({ notify: true });
+  });
   document.getElementById('llm-usage-summary-reload')?.addEventListener('click', () => {
     void loadLlmUsageSummary({ notify: true });
   });
@@ -9523,6 +9602,7 @@ function setupLlmControls() {
   });
   loadLlmConfigStatus();
   void loadLlmPolicyStatus({ notify: false });
+  void loadLlmPolicyHistory({ notify: false });
   void loadLlmUsageSummary({ notify: false });
 }
 

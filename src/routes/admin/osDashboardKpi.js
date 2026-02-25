@@ -374,17 +374,27 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
   const journeyProConversionRatio = latestJourneyKpi
     ? Number(latestJourneyKpi.proConversionRate)
     : NaN;
+  const journeyTaskCompletionRatio = latestJourneyKpi
+    ? Number(latestJourneyKpi.taskCompletionRate)
+    : NaN;
+  const journeyDependencyBlockRatio = latestJourneyKpi
+    ? Number(latestJourneyKpi.dependencyBlockRate)
+    : NaN;
   const journeyChurnBlockedRatio = latestJourneyKpi && latestJourneyKpi.churnReasonRatio
     ? Number(latestJourneyKpi.churnReasonRatio.blocked)
     : NaN;
   const journeyRetentionD30Percent = ratioToPercent(journeyRetentionD30Ratio);
   const journeyNextActionExecutionPercent = ratioToPercent(journeyNextActionExecutionRatio);
   const journeyProConversionPercent = ratioToPercent(journeyProConversionRatio);
+  const journeyTaskCompletionPercent = ratioToPercent(journeyTaskCompletionRatio);
+  const journeyDependencyBlockPercent = ratioToPercent(journeyDependencyBlockRatio);
   const journeyChurnBlockedPercent = ratioToPercent(journeyChurnBlockedRatio);
   const hasJourneyKpi = Boolean(latestJourneyKpi);
   const journeyRetentionD30Series = buckets.map(() => journeyRetentionD30Percent);
   const journeyNextActionExecutionSeries = buckets.map(() => journeyNextActionExecutionPercent);
   const journeyProConversionSeries = buckets.map(() => journeyProConversionPercent);
+  const journeyTaskCompletionSeries = buckets.map(() => journeyTaskCompletionPercent);
+  const journeyDependencyBlockSeries = buckets.map(() => journeyDependencyBlockPercent);
   const journeyChurnBlockedSeries = buckets.map(() => journeyChurnBlockedPercent);
 
   const notificationsMetric = simpleMetric(String(notificationTotal), notificationSeries, `${windowMonths}ヶ月の通知作成件数`);
@@ -442,6 +452,12 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     journey_pro_conversion_rate: hasJourneyKpi
       ? simpleMetric(formatPercent(journeyProConversionPercent), journeyProConversionSeries, 'Journey Pro転換率')
       : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
+    journey_task_completion_rate: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyTaskCompletionPercent), journeyTaskCompletionSeries, 'Journey タスク完了率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
+    journey_dependency_block_rate: hasJourneyKpi
+      ? simpleMetric(formatPercent(journeyDependencyBlockPercent), journeyDependencyBlockSeries, 'Journey 依存ブロック率')
+      : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
     journey_churn_blocked_ratio: hasJourneyKpi
       ? simpleMetric(formatPercent(journeyChurnBlockedPercent), journeyChurnBlockedSeries, 'Journey Churn(ブロック起因)比率')
       : notAvailable('journey_kpi_dailyが未設定のため取得できません'),
@@ -480,6 +496,8 @@ function buildNotAvailableKpis(note) {
     journey_retention_d30: notAvailable(message),
     journey_next_action_execution_rate: notAvailable(message),
     journey_pro_conversion_rate: notAvailable(message),
+    journey_task_completion_rate: notAvailable(message),
+    journey_dependency_block_rate: notAvailable(message),
     journey_churn_blocked_ratio: notAvailable(message),
     cityPackUsage: notAvailable(message)
   };

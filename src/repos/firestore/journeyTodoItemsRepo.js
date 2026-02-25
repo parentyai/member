@@ -7,6 +7,9 @@ const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 const DEFAULT_REMINDER_OFFSETS = Object.freeze([7, 3, 1]);
 const ALLOWED_STATUS = Object.freeze(['open', 'completed', 'skipped']);
+const ALLOWED_PROGRESS_STATE = Object.freeze(['not_started', 'in_progress']);
+const ALLOWED_GRAPH_STATUS = Object.freeze(['actionable', 'locked', 'done']);
+const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -77,6 +80,50 @@ function normalizeStatus(value, fallback) {
   return lowered;
 }
 
+function normalizeStringList(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const normalized = normalizeString(item, '');
+    if (normalized === null || normalized === '') return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeProgressState(value, fallback) {
+  const normalized = normalizeString(value, fallback || 'not_started');
+  if (normalized === null || normalized === '') return 'not_started';
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_PROGRESS_STATE.includes(lowered)) return null;
+  return lowered;
+}
+
+function normalizeGraphStatus(value, fallback) {
+  const normalized = normalizeString(value, fallback || 'actionable');
+  if (normalized === null || normalized === '') return 'actionable';
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_GRAPH_STATUS.includes(lowered)) return null;
+  return lowered;
+}
+
+function normalizePriority(value, fallback) {
+  const base = value === undefined ? fallback : value;
+  const parsed = Number(base);
+  if (!Number.isFinite(parsed)) return null;
+  const intValue = Math.floor(parsed);
+  if (intValue < 1 || intValue > 5) return null;
+  return intValue;
+}
+
+function normalizeRiskLevel(value, fallback) {
+  const normalized = normalizeString(value, fallback || 'medium');
+  if (normalized === null || normalized === '') return 'medium';
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_RISK_LEVEL.includes(lowered)) return null;
+  return lowered;
+}
+
 function normalizeReminderOffsetsDays(values, fallback) {
   const raw = values === null || values === undefined ? fallback : values;
   if (!Array.isArray(raw)) return null;
@@ -95,7 +142,15 @@ function normalizeTodoItem(docId, data) {
   const parsed = parseTodoDocId(docId);
   const lineUserId = normalizeLineUserId(payload.lineUserId || parsed.lineUserId);
   const todoKey = normalizeTodoKey(payload.todoKey || parsed.todoKey);
+  const status = normalizeStatus(payload.status, 'open') || 'open';
   const dueAt = toIso(payload.dueAt || payload.dueDate);
+  const done = status === 'completed' || status === 'skipped';
+  const progressState = normalizeProgressState(payload.progressState, done ? 'in_progress' : 'not_started')
+    || (done ? 'in_progress' : 'not_started');
+  const graphStatus = normalizeGraphStatus(payload.graphStatus, done ? 'done' : 'actionable')
+    || (done ? 'done' : 'actionable');
+  const priority = normalizePriority(payload.priority, 3) || 3;
+  const riskLevel = normalizeRiskLevel(payload.riskLevel, 'medium') || 'medium';
   return {
     id: docId,
     lineUserId,
@@ -105,7 +160,15 @@ function normalizeTodoItem(docId, data) {
     householdType: normalizeString(payload.householdType, null),
     dueDate: toIsoDate(payload.dueDate || dueAt),
     dueAt,
-    status: normalizeStatus(payload.status, 'open') || 'open',
+    status,
+    progressState,
+    graphStatus,
+    dependsOn: normalizeStringList(payload.dependsOn || payload.depends_on),
+    blocks: normalizeStringList(payload.blocks),
+    priority,
+    riskLevel,
+    lockReasons: normalizeStringList(payload.lockReasons),
+    graphEvaluatedAt: toIso(payload.graphEvaluatedAt),
     reminderOffsetsDays: normalizeReminderOffsetsDays(payload.reminderOffsetsDays, DEFAULT_REMINDER_OFFSETS) || DEFAULT_REMINDER_OFFSETS.slice(),
     remindedOffsetsDays: normalizeReminderOffsetsDays(payload.remindedOffsetsDays, []) || [],
     nextReminderAt: toIso(payload.nextReminderAt),
@@ -138,12 +201,17 @@ async function upsertJourneyTodoItem(lineUserId, todoKey, patch) {
   const docId = buildTodoDocId(lineUserId, todoKey);
   if (!docId) throw new Error('lineUserId/todoKey required');
   const payload = patch && typeof patch === 'object' ? patch : {};
-  const normalized = normalizeTodoItem(docId, Object.assign({}, payload, {
+  const existing = await getJourneyTodoItem(lineUserId, todoKey);
+  const normalized = normalizeTodoItem(docId, Object.assign({}, existing || {}, payload, {
     lineUserId: normalizeLineUserId(lineUserId),
     todoKey: normalizeTodoKey(todoKey)
   }));
 
-  if (payload.status !== undefined && normalized.status === null) throw new Error('invalid status');
+  if (payload.status !== undefined && normalizeStatus(payload.status, null) === null) throw new Error('invalid status');
+  if (payload.progressState !== undefined && normalizeProgressState(payload.progressState, null) === null) throw new Error('invalid progressState');
+  if (payload.graphStatus !== undefined && normalizeGraphStatus(payload.graphStatus, null) === null) throw new Error('invalid graphStatus');
+  if (payload.priority !== undefined && normalizePriority(payload.priority, null) === null) throw new Error('invalid priority');
+  if (payload.riskLevel !== undefined && normalizeRiskLevel(payload.riskLevel, null) === null) throw new Error('invalid riskLevel');
   if (payload.dueDate !== undefined && payload.dueDate !== null && payload.dueDate !== '' && !normalized.dueDate) throw new Error('invalid dueDate');
   if (payload.dueAt !== undefined && payload.dueAt !== null && payload.dueAt !== '' && !normalized.dueAt) throw new Error('invalid dueAt');
   if (payload.nextReminderAt !== undefined && payload.nextReminderAt !== null && payload.nextReminderAt !== '' && !normalized.nextReminderAt) throw new Error('invalid nextReminderAt');
@@ -156,6 +224,10 @@ async function upsertJourneyTodoItem(lineUserId, todoKey, patch) {
   return getJourneyTodoItem(lineUserId, todoKey);
 }
 
+async function patchJourneyTodoItem(lineUserId, todoKey, patch) {
+  return upsertJourneyTodoItem(lineUserId, todoKey, patch);
+}
+
 async function markJourneyTodoCompleted(lineUserId, todoKey, options) {
   const docId = buildTodoDocId(lineUserId, todoKey);
   if (!docId) throw new Error('lineUserId/todoKey required');
@@ -166,11 +238,31 @@ async function markJourneyTodoCompleted(lineUserId, todoKey, options) {
     lineUserId: normalizeLineUserId(lineUserId),
     todoKey: normalizeTodoKey(todoKey),
     status: 'completed',
+    progressState: 'in_progress',
+    graphStatus: 'done',
+    lockReasons: [],
+    graphEvaluatedAt: completedAt,
     completedAt,
     nextReminderAt: null,
     updatedAt: payload.updatedAt || serverTimestamp()
   }, { merge: true });
   return getJourneyTodoItem(lineUserId, todoKey);
+}
+
+async function setJourneyTodoProgressState(lineUserId, todoKey, progressState, options) {
+  const normalizedProgress = normalizeProgressState(progressState, null);
+  if (!normalizedProgress) throw new Error('invalid progressState');
+  const existing = await getJourneyTodoItem(lineUserId, todoKey);
+  if (!existing) throw new Error('todo_not_found');
+  if (existing.status === 'completed' || existing.status === 'skipped') {
+    throw new Error('todo_already_done');
+  }
+  const payload = options && typeof options === 'object' ? options : {};
+  return patchJourneyTodoItem(lineUserId, todoKey, {
+    progressState: normalizedProgress,
+    graphStatus: 'actionable',
+    updatedAt: payload.updatedAt || undefined
+  });
 }
 
 async function listJourneyTodoItemsByLineUserId(params) {
@@ -205,12 +297,17 @@ module.exports = {
   COLLECTION,
   DEFAULT_REMINDER_OFFSETS,
   ALLOWED_STATUS,
+  ALLOWED_PROGRESS_STATE,
+  ALLOWED_GRAPH_STATUS,
+  ALLOWED_RISK_LEVEL,
   buildTodoDocId,
   parseTodoDocId,
   normalizeTodoItem,
   getJourneyTodoItem,
   upsertJourneyTodoItem,
+  patchJourneyTodoItem,
   markJourneyTodoCompleted,
+  setJourneyTodoProgressState,
   listJourneyTodoItemsByLineUserId,
   listDueJourneyTodoItems
 };

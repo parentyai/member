@@ -35,9 +35,21 @@ function toNumber(value, fallback) {
 
 function normalizeStats(lineUserId, data) {
   const payload = data && typeof data === 'object' ? data : {};
+  const totalCount = Math.max(0, Math.floor(toNumber(payload.totalCount, 0)));
+  const completedCount = Math.max(0, Math.floor(toNumber(payload.completedCount, 0)));
+  const lockedCount = Math.max(0, Math.floor(toNumber(payload.lockedCount, 0)));
+  const actionableCount = Math.max(0, Math.floor(toNumber(payload.actionableCount, 0)));
+  const completionRateRaw = toNumber(payload.completionRate, totalCount > 0 ? completedCount / totalCount : 0);
+  const dependencyBlockRateRaw = toNumber(payload.dependencyBlockRate, 0);
   return {
     lineUserId: normalizeLineUserId(lineUserId),
     openCount: Math.max(0, Math.floor(toNumber(payload.openCount, 0))),
+    totalCount,
+    completedCount,
+    lockedCount,
+    actionableCount,
+    completionRate: Math.max(0, Math.min(1, Math.round(completionRateRaw * 10000) / 10000)),
+    dependencyBlockRate: Math.max(0, Math.min(1, Math.round(dependencyBlockRateRaw * 10000) / 10000)),
     overdueCount: Math.max(0, Math.floor(toNumber(payload.overdueCount, 0))),
     dueIn7DaysCount: Math.max(0, Math.floor(toNumber(payload.dueIn7DaysCount, 0))),
     nextDueAt: toIso(payload.nextDueAt),

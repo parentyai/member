@@ -48,6 +48,9 @@ function buildSummary(items) {
     unknown: 0
   };
   const byIntegrity = { ok: 0, unknown: 0, conflict: 0 };
+  let taskCompletionRateSum = 0;
+  let dependencyBlockRateSum = 0;
+  let metricCount = 0;
 
   list.forEach((item) => {
     const plan = item && item.plan === 'pro' ? 'pro' : 'free';
@@ -60,6 +63,16 @@ function buildSummary(items) {
     const integrity = item && typeof item.billingIntegrityState === 'string' ? item.billingIntegrityState : 'unknown';
     if (Object.prototype.hasOwnProperty.call(byIntegrity, integrity)) byIntegrity[integrity] += 1;
     else byIntegrity.unknown += 1;
+
+    const completion = Number(item && item.todoProgressRate);
+    const blockRate = Number(item && item.dependencyBlockRate);
+    if (Number.isFinite(completion)) {
+      taskCompletionRateSum += completion;
+      metricCount += 1;
+    }
+    if (Number.isFinite(blockRate)) {
+      dependencyBlockRateSum += blockRate;
+    }
   });
 
   const total = list.length;
@@ -74,6 +87,8 @@ function buildSummary(items) {
     proActiveRatio,
     unknownCount,
     unknownRatio,
+    avgTaskCompletionRate: metricCount > 0 ? Number((taskCompletionRateSum / metricCount).toFixed(4)) : 0,
+    avgDependencyBlockRate: metricCount > 0 ? Number((dependencyBlockRateSum / metricCount).toFixed(4)) : 0,
     byPlan,
     byStatus,
     byIntegrity
@@ -126,6 +141,8 @@ async function handleUsersSummaryAnalyze(req, res) {
         total: analyze.total,
         proActiveCount: analyze.proActiveCount,
         unknownRatio: analyze.unknownRatio,
+        avgTaskCompletionRate: analyze.avgTaskCompletionRate,
+        avgDependencyBlockRate: analyze.avgDependencyBlockRate,
         filters: {
           plan: plan || 'all',
           subscriptionStatus: subscriptionStatus || 'all',

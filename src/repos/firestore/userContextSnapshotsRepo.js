@@ -72,15 +72,16 @@ function normalizeTasks(value) {
     .slice(0, 5);
 }
 
-function normalizeRiskFlags(value) {
+function normalizeRiskFlags(value, limit) {
   if (!Array.isArray(value)) return [];
   const out = [];
+  const max = Number.isFinite(Number(limit)) ? Math.max(1, Math.floor(Number(limit))) : 3;
   value.forEach((item) => {
     const key = normalizeText(item, '').toLowerCase();
     if (!key) return;
     if (!out.includes(key)) out.push(key);
   });
-  return out.slice(0, 3);
+  return out.slice(0, max);
 }
 
 function normalizeSnapshot(lineUserId, data) {
@@ -101,8 +102,11 @@ function normalizeSnapshot(lineUserId, data) {
     },
     priorities: normalizePriorityList(payload.priorities),
     openTasksTop5: normalizeTasks(payload.openTasksTop5),
-    riskFlagsTop3: normalizeRiskFlags(payload.riskFlagsTop3),
+    riskFlagsTop3: normalizeRiskFlags(payload.riskFlagsTop3, 3),
     lastSummary: normalizeText(payload.lastSummary, ''),
+    topOpenTasks: normalizeTasks(payload.topOpenTasks),
+    riskFlags: normalizeRiskFlags(payload.riskFlags, 5),
+    shortSummary: normalizeText(payload.shortSummary, ''),
     snapshotVersion: Math.max(1, Math.floor(normalizeNumber(payload.snapshotVersion, 1))),
     sourceUpdatedAt: normalizeDate(payload.sourceUpdatedAt),
     updatedAt: payload.updatedAt || null

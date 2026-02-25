@@ -192,3 +192,37 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ### Admin運用補助
 - `GET /api/admin/os/llm-usage/export` で masked CSV を取得できる。  
   `userIdMasked` 以外の識別子を運用用途で再復元しないこと。
+
+## Phase654 Addendum（ToDo依存グラフ連動 / Policy履歴）
+
+### Free / Pro の運用境界
+- Free:
+  - FAQ検索ベース回答を継続する
+  - 依存質問は簡易説明（ロック件数/理由）まで
+- Pro:
+  - 5ブロック回答契約を維持する
+  - `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=1` のとき、依存グラフ補足（ロック理由/次アクション最大3）を末尾追記する
+
+### Task graph 連動条件
+- `ENABLE_TASK_GRAPH_V1=1` のときだけ `task_nodes` 参照を行う。  
+- 取得失敗時は静かに通常回答へフォールバックする（fail-closed）。  
+- `journey_todo_items.status` の意味は変更しない。`locked` は `graphStatus=locked` で扱う。  
+
+### LLM Policy alias / 履歴
+- UI入力alias:
+  - `max_tokens`
+  - `per_user_limit`
+  - `rate_limit`
+- 保存時は canonical に変換される:
+  - `max_output_tokens`
+  - `per_user_daily_limit`
+  - `global_qps_limit`
+- 変更履歴API:
+  - `GET /api/admin/os/llm-policy/history`
+  - `GET /api/admin/llm/policy/history`（同ハンドラ）
+
+### 即時ロールバック（Phase654）
+1) `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=0`  
+2) `ENABLE_TASK_GRAPH_V1=0`  
+3) `opsConfig/llmPolicy.allowed_intents_pro=[]`  
+4) `opsConfig/llmPolicy.enabled=false`  

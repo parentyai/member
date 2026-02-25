@@ -79,6 +79,12 @@ async function handleUserBillingDetail(req, res) {
           updatedAt: journeySchedule && journeySchedule.updatedAt ? journeySchedule.updatedAt : null
         },
         todoStats: {
+          totalCount: journeyStats && Number.isFinite(Number(journeyStats.totalCount)) ? Number(journeyStats.totalCount) : 0,
+          completedCount: journeyStats && Number.isFinite(Number(journeyStats.completedCount)) ? Number(journeyStats.completedCount) : 0,
+          lockedCount: journeyStats && Number.isFinite(Number(journeyStats.lockedCount)) ? Number(journeyStats.lockedCount) : 0,
+          actionableCount: journeyStats && Number.isFinite(Number(journeyStats.actionableCount)) ? Number(journeyStats.actionableCount) : 0,
+          completionRate: journeyStats && Number.isFinite(Number(journeyStats.completionRate)) ? Number(journeyStats.completionRate) : 0,
+          dependencyBlockRate: journeyStats && Number.isFinite(Number(journeyStats.dependencyBlockRate)) ? Number(journeyStats.dependencyBlockRate) : 0,
           openCount: journeyStats && Number.isFinite(Number(journeyStats.openCount)) ? Number(journeyStats.openCount) : 0,
           overdueCount: journeyStats && Number.isFinite(Number(journeyStats.overdueCount)) ? Number(journeyStats.overdueCount) : 0,
           dueIn7DaysCount: journeyStats && Number.isFinite(Number(journeyStats.dueIn7DaysCount)) ? Number(journeyStats.dueIn7DaysCount) : 0,

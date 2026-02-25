@@ -57,7 +57,8 @@ function normalizeChurnReasons(raw) {
     blocked: normalizeRate(payload.blocked),
     value_gap: normalizeRate(payload.value_gap),
     cost: normalizeRate(payload.cost),
-    status_change: normalizeRate(payload.status_change)
+    status_change: normalizeRate(payload.status_change),
+    dependency_graph_blocked: normalizeRate(payload.dependency_graph_blocked)
   };
 }
 
@@ -73,6 +74,8 @@ function normalizeDailyKpi(dateKey, data) {
     proActiveRatio: normalizeRate(payload.proActiveRatio),
     retention: normalizeRetention(payload.retention),
     phaseCompletionRate: normalizeRate(payload.phaseCompletionRate),
+    taskCompletionRate: normalizeRate(payload.taskCompletionRate),
+    dependencyBlockRate: normalizeRate(payload.dependencyBlockRate),
     nextActionExecutionRate: normalizeRate(payload.nextActionExecutionRate),
     proConversionRate: normalizeRate(payload.proConversionRate),
     churnReasonRatio: normalizeChurnReasons(payload.churnReasonRatio),

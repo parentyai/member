@@ -339,6 +339,37 @@
         "service": "member",
         "route": "line.todo_list"
       }
+    },
+    {
+      "id": "task_nodes_lineUserId_updatedAt_desc",
+      "collectionGroup": "task_nodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskNodesRepo.js",
+          "line": 188
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskNodesRepo.js",
+          "line": 189
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-25",
+        "service": "member",
+        "route": "line.task_graph_summary"
+      }
     }
   ],
   "criticalContracts": [
@@ -483,6 +514,23 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/osUserBillingDetail.js",
           "line": 39
+        }
+      ]
+    },
+    {
+      "contractId": "line_task_graph_summary",
+      "routeOrUsecase": "POST /webhook/line (task graph summary for free/pro assistant)",
+      "requiredIndexIds": [
+        "task_nodes_lineUserId_updatedAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/webhookLine.js",
+          "line": 208
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskNodesRepo.js",
+          "line": 186
         }
       ]
     }

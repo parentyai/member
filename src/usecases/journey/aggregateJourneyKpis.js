@@ -4,6 +4,7 @@ const analyticsReadRepo = require('../../repos/firestore/analyticsReadRepo');
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
 const userSubscriptionsRepo = require('../../repos/firestore/userSubscriptionsRepo');
 const journeyKpiDailyRepo = require('../../repos/firestore/journeyKpiDailyRepo');
+const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -115,6 +116,7 @@ function summarizeChurnReasons(events, llmUsageLogs, subscriptions) {
   let valueGap = 0;
   let cost = 0;
   let statusChange = 0;
+  let dependencyGraphBlocked = 0;
 
   (llmUsageLogs || []).forEach((row) => {
     const decision = String(row && row.decision ? row.decision : '').toLowerCase();
@@ -129,6 +131,9 @@ function summarizeChurnReasons(events, llmUsageLogs, subscriptions) {
     if (reason === 'value_gap') valueGap += 1;
     if (reason === 'cost') cost += 1;
     if (reason === 'status_change') statusChange += 1;
+    if (reason === 'dependency_block' || reason === 'dependency_graph' || reason === 'dependency_locked') {
+      dependencyGraphBlocked += 1;
+    }
   });
 
   (subscriptions || []).forEach((item) => {
@@ -141,12 +146,13 @@ function summarizeChurnReasons(events, llmUsageLogs, subscriptions) {
     }
   });
 
-  const total = blocked + valueGap + cost + statusChange;
+  const total = blocked + valueGap + cost + statusChange + dependencyGraphBlocked;
   return {
     blocked: normalizeRate(blocked, total),
     value_gap: normalizeRate(valueGap, total),
     cost: normalizeRate(cost, total),
-    status_change: normalizeRate(statusChange, total)
+    status_change: normalizeRate(statusChange, total),
+    dependency_graph_blocked: normalizeRate(dependencyGraphBlocked, total)
   };
 }
 
@@ -164,6 +170,7 @@ async function aggregateJourneyKpis(params, deps) {
   const readRepo = resolvedDeps.analyticsReadRepo || analyticsReadRepo;
   const usageRepo = resolvedDeps.llmUsageLogsRepo || llmUsageLogsRepo;
   const subscriptionsRepo = resolvedDeps.userSubscriptionsRepo || userSubscriptionsRepo;
+  const todoStatsRepo = resolvedDeps.journeyTodoStatsRepo || journeyTodoStatsRepo;
   const dailyRepo = resolvedDeps.journeyKpiDailyRepo || journeyKpiDailyRepo;
 
   const [usersRows, eventsRows, llmUsageLogs] = await Promise.all([
@@ -220,6 +227,9 @@ async function aggregateJourneyKpis(params, deps) {
   const subscriptions = lineUserIds.length
     ? await subscriptionsRepo.listUserSubscriptionsByLineUserIds({ lineUserIds }).catch(() => [])
     : [];
+  const todoStats = lineUserIds.length
+    ? await todoStatsRepo.listUserJourneyTodoStatsByLineUserIds({ lineUserIds }).catch(() => [])
+    : [];
 
   const totalUsers = statsByUser.size;
   const proActiveCount = (subscriptions || []).filter((item) => {
@@ -239,6 +249,25 @@ async function aggregateJourneyKpis(params, deps) {
     }
   });
 
+  let totalTaskCount = 0;
+  let totalCompletedTaskCount = 0;
+  let totalOpenTaskCount = 0;
+  let totalLockedTaskCount = 0;
+  (todoStats || []).forEach((row) => {
+    const openCount = Number(row && row.openCount);
+    const completedCount = Number(row && row.completedCount);
+    const totalCount = Number(row && row.totalCount);
+    const lockedCount = Number(row && row.lockedCount);
+    if (Number.isFinite(totalCount) && totalCount >= 0) {
+      totalTaskCount += totalCount;
+    } else if (Number.isFinite(openCount) || Number.isFinite(completedCount)) {
+      totalTaskCount += Math.max(0, (Number.isFinite(openCount) ? openCount : 0) + (Number.isFinite(completedCount) ? completedCount : 0));
+    }
+    if (Number.isFinite(completedCount) && completedCount >= 0) totalCompletedTaskCount += completedCount;
+    if (Number.isFinite(openCount) && openCount >= 0) totalOpenTaskCount += openCount;
+    if (Number.isFinite(lockedCount) && lockedCount >= 0) totalLockedTaskCount += lockedCount;
+  });
+
   const result = {
     dateKey,
     generatedAt: toIso(nowMs) || new Date(nowMs).toISOString(),
@@ -249,6 +278,8 @@ async function aggregateJourneyKpis(params, deps) {
     proActiveRatio: normalizeRate(proActiveCount, totalUsers),
     retention,
     phaseCompletionRate: normalizeRate(phaseCompletedUsers, phaseChangedUsers),
+    taskCompletionRate: normalizeRate(totalCompletedTaskCount, totalTaskCount),
+    dependencyBlockRate: normalizeRate(totalLockedTaskCount, totalOpenTaskCount),
     nextActionExecutionRate: normalizeRate(nextActionCompletedCount, nextActionShownCount),
     proConversionRate: normalizeRate(proConvertedCount, proPromptedCount),
     churnReasonRatio: summarizeChurnReasons(eventsRows, llmUsageLogs, subscriptions),
@@ -259,7 +290,8 @@ async function aggregateJourneyKpis(params, deps) {
     metadata: {
       eventsScanned: Array.isArray(eventsRows) ? eventsRows.length : 0,
       llmLogsScanned: Array.isArray(llmUsageLogs) ? llmUsageLogs.length : 0,
-      subscriptionsScanned: Array.isArray(subscriptions) ? subscriptions.length : 0
+      subscriptionsScanned: Array.isArray(subscriptions) ? subscriptions.length : 0,
+      journeyTodoStatsScanned: Array.isArray(todoStats) ? todoStats.length : 0
     }
   };
 
@@ -279,6 +311,8 @@ async function aggregateJourneyKpis(params, deps) {
         totalUsers: result.totalUsers,
         proActiveCount: result.proActiveCount,
         retention,
+        taskCompletionRate: result.taskCompletionRate,
+        dependencyBlockRate: result.dependencyBlockRate,
         nextActionExecutionRate: result.nextActionExecutionRate,
         proConversionRate: result.proConversionRate
       }

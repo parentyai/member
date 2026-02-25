@@ -1732,6 +1732,8 @@ details:not([open]) > *:not(summary) {
 }
 
 .users-summary-table td[data-users-col="currentPeriodEnd"],
+.users-summary-table td[data-users-col="llmUsage"],
+.users-summary-table td[data-users-col="todoProgressRate"],
 .users-summary-table td[data-users-col="llmUsageToday"],
 .users-summary-table td[data-users-col="tokensToday"],
 .users-summary-table td[data-users-col="blockedRate"],
