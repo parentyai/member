@@ -44,6 +44,30 @@ async function seedBasicData(db) {
   });
 }
 
+async function seedUserScenarioKeyMismatchForChecklistData(db) {
+  await db.collection('users').doc('U1').set({
+    scenarioKey: 'A',
+    scenario: 'B',
+    createdAt: '2026-01-01T00:00:00Z'
+  });
+  await db.collection('events').doc('E1').set({
+    lineUserId: 'U1',
+    type: 'open',
+    createdAt: '2026-01-29T10:00:00Z'
+  });
+  await db.collection('checklists').doc('C1').set({
+    scenario: 'A',
+    step: '3mo',
+    items: [{ itemId: 'i1' }]
+  });
+  await db.collection('user_checklists').doc('U1__C1__i1').set({
+    lineUserId: 'U1',
+    checklistId: 'C1',
+    itemId: 'i1',
+    completedAt: '2026-01-29T11:00:00Z'
+  });
+}
+
 test('runPhase2Automation: dryRun does not write reports', async () => {
   const db = createDbStub();
   setDbForTest(db);
@@ -83,4 +107,23 @@ test('runPhase2Automation: writes reports when not dryRun', async () => {
   assert.ok(daily);
   assert.ok(weekly);
   assert.ok(checklist);
+});
+
+test('runPhase2Automation: scenarioKey is preferred for user scenario resolution in checklist totals', async () => {
+  const db = createDbStub();
+  setDbForTest(db);
+  await seedUserScenarioKeyMismatchForChecklistData(db);
+
+  const result = await runPhase2Automation({
+    runId: 'run-3',
+    targetDate: '2026-01-29',
+    dryRun: false
+  });
+
+  assert.strictEqual(result.ok, true);
+  const checklist = db._state.collections.phase2_reports_checklist_pending;
+  const checklistDoc = checklist && checklist.docs['2026-01-29__A__3mo'] && checklist.docs['2026-01-29__A__3mo'].data;
+  assert.ok(checklistDoc);
+  assert.strictEqual(checklistDoc.scenarioKey, 'A');
+  assert.strictEqual(checklistDoc.totalTargets, 1);
 });

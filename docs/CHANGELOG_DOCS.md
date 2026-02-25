@@ -13,6 +13,8 @@
 - Updated `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md` to latest drift inventory (scenario legacy count `7`)
 - Updated `docs/CATCHUP_4W_EVIDENCE.md` with W5.1 checklist-path evidence (`naming_drift_scenario_count: 7 -> 4`)
 - Updated `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md` to latest drift inventory (scenario legacy count `4`)
+- Updated `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md` to latest W5.2 progress (`naming_drift_scenario_count: 4 -> 0`)
+- Updated `docs/REPO_AUDIT_INPUTS/design_ai_meta.json` and `docs/REPO_AUDIT_INPUTS/structure_risk.json` with W5.2 drift closure for remaining four scenario naming files
 
 ## 2026-02-14
 - Added Japanese admin manual and runbook docs
