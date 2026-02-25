@@ -1325,11 +1325,23 @@ async function runProductReadinessScenario(ctx, traceId) {
   for (const endpoint of ADMIN_READINESS_ENDPOINTS) {
     const resp = await apiRequest(ctx, 'GET', endpoint.endpoint, traceId);
     steps[endpoint.key] = summarizeResponse(resp);
-    adminReadinessChecks.push({
+    const baseCheck = {
       endpoint: endpoint.endpoint,
       status: resp.status,
       ok: resp.okStatus
-    });
+    };
+    if (endpoint.key === 'monitorInsights' && resp.body && typeof resp.body === 'object') {
+      adminReadinessChecks.push({
+        ...baseCheck,
+        resultRows: Number.isFinite(resp.body.resultRows) ? resp.body.resultRows : null,
+        matchedDeliveryCount: Number.isFinite(resp.body.matchedDeliveryCount) ? resp.body.matchedDeliveryCount : null,
+        dataSource: resp.body.dataSource || resp.body.source || null,
+        asOf: typeof resp.body.asOf === 'string' ? resp.body.asOf : null,
+        freshnessMinutes: Number.isFinite(resp.body.freshnessMinutes) ? resp.body.freshnessMinutes : null
+      });
+    } else {
+      adminReadinessChecks.push(baseCheck);
+    }
 
     if (!resp.okStatus) {
       return {
@@ -1463,7 +1475,11 @@ function renderMarkdownSummary(report) {
     if (Array.isArray(scenario.adminReadinessChecks) && scenario.adminReadinessChecks.length > 0) {
       lines.push('- admin readiness checks:');
       scenario.adminReadinessChecks.forEach((item) => {
-        lines.push(`  - ${item.endpoint}: status=${item.status} ok=${item.ok === true ? 'true' : 'false'}`);
+        const isMonitorInsights = item && item.endpoint === '/api/admin/monitor-insights?windowDays=7';
+        const extra = isMonitorInsights
+          ? ` rows=${Number.isFinite(item.resultRows) ? item.resultRows : '-'} matched=${Number.isFinite(item.matchedDeliveryCount) ? item.matchedDeliveryCount : '-'} source=${item.dataSource || '-'} asOf=${item.asOf || '-'} freshness=${Number.isFinite(item.freshnessMinutes) ? item.freshnessMinutes : '-'}`
+          : '';
+        lines.push(`  - ${item.endpoint}: status=${item.status} ok=${item.ok === true ? 'true' : 'false'}${extra}`);
       });
     }
     const routeErrors = scenario.routeErrors || null;

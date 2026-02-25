@@ -48,6 +48,7 @@ npm run ops:stg-e2e -- \
 ```bash
 gh workflow run stg-notification-e2e.yml --ref main \
   -f actor=ops_stg_e2e \
+  -f admin_token_file="$ADMIN_OS_TOKEN_FILE" \
   -f route_error_limit=20 \
   -f trace_limit=100 \
   -f fail_on_missing_audit_actions=true \
@@ -62,7 +63,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `ADMIN_OS_TOKEN`: 管理APIトークン
 
 ### Optional Inputs
-- `ADMIN_OS_TOKEN_FILE` / `E2E_ADMIN_TOKEN_FILE`: 管理APIトークンを保存したファイル
+- `admin_token_file`: workflow_dispatch でトークンファイルを直接指定
 - `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー（未指定時は `status=active` を自動解決）
 - `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決）
 - `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
@@ -73,7 +74,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `trace_limit`: trace bundle 取得件数（`/api/admin/trace?limit`）を 1-500 で指定
 - `fail_on_missing_audit_actions`: シナリオごとの必須 audit action 欠落を FAIL 扱いにする（推奨 true）
 - `expect_llm_enabled`: LLM gate で `effectiveEnabled=true` と非ブロック `llmStatus` を要求する（推奨 true）
-- `--admin-token-file`: `ADMIN_OS_TOKEN` の代替。`ADMIN_OS_TOKEN` が空文字の場合のみ使用される
+- `--admin-token-file`: CLI 実行時にトークンファイルを指定。`--admin-token` より優先度が高い
 
 ## Checklist (fixed order)
 1. Product Readiness Gate（管理API 7本）:
@@ -83,6 +84,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
    - `/api/admin/struct-drift/backfill-runs` が HTTP 200
    - `/api/admin/os/alerts/summary` が HTTP 200
    - `/api/admin/monitor-insights?windowDays=7` が HTTP 200
+   - 監査時に `resultRows`, `matchedDeliveryCount`, `dataSource`, `asOf`, `freshnessMinutes` の有無と値の妥当性を確認
    - `/api/admin/city-packs` が HTTP 200
 2. LLM Gate:
    - `/api/admin/llm/config/status` が HTTP 200
@@ -93,6 +95,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 4. Retry Queue: `plan -> retry`
 5. Kill Switch: ON時に send 系が全ブロックされる
 6. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
+7. monitor-insights 診断収集: `resultRows` / `matchedDeliveryCount` / `dataSource` / `asOf` / `freshnessMinutes` を記録し、欠落時は再実施条件として要因追跡
 
 ## Run Cadence
 - 推奨: main への通知制御系マージごとに 1 回 + 週次 1 回
@@ -134,6 +137,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `result=FAIL` の場合、再実施条件（何を直して再試行するか）を `notes` に書く
 - 個人情報（平文会員ID、token、secret）は書かない
 - URL証跡（Actions run / Cloud Run revision / trace API）を可能な限り添付する
+- `monitor-insights` で対象キーが欠測した場合は、`notes` に再実施条件（例: `monitor-insights payload shape changed`）を明記
 
 ### Evidence Template（copy）
 ```
@@ -165,9 +169,10 @@ notes: <optional>
 ## Latest Mainline Evidence (W7)
 - date: `2026-02-23`
 - workflow run: `22319659529` (`main`, success)
-- fixed-order summary: `pass=5 fail=0 skip=0`
+- fixed-order summary: `pass=6 fail=0 skip=0`
 - scenario results:
-  - `product_readiness_gate: PASS`
+  - `product_readiness_gate: PASS`（monitor-insights 診断含む）
+  - `llm_gate: PASS`
   - `segment: PASS`
   - `retry_queue: PASS`
   - `kill_switch_block: PASS`

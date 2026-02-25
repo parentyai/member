@@ -23,7 +23,16 @@ test('phase633: markdown summary renders admin readiness checks for product_read
         adminReadinessChecks: [
           { endpoint: '/api/admin/product-readiness', status: 200, ok: true },
           { endpoint: '/api/admin/read-path-fallback-summary', status: 200, ok: true },
-          { endpoint: '/api/admin/monitor-insights?windowDays=7', status: 200, ok: true }
+          {
+            endpoint: '/api/admin/monitor-insights?windowDays=7',
+            status: 200,
+            ok: true,
+            resultRows: 2,
+            matchedDeliveryCount: 2,
+            dataSource: 'delivery-ops',
+            asOf: '2026-02-25T00:00:00.000Z',
+            freshnessMinutes: 1.25
+          }
         ]
       }
     ]
@@ -33,4 +42,9 @@ test('phase633: markdown summary renders admin readiness checks for product_read
   assert.ok(markdown.includes('/api/admin/product-readiness: status=200 ok=true'));
   assert.ok(markdown.includes('/api/admin/read-path-fallback-summary: status=200 ok=true'));
   assert.ok(markdown.includes('/api/admin/monitor-insights?windowDays=7: status=200 ok=true'));
+  assert.ok(markdown.includes('rows=2'));
+  assert.ok(markdown.includes('matched=2'));
+  assert.ok(markdown.includes('source=delivery-ops'));
+  assert.ok(markdown.includes('asOf=2026-02-25T00:00:00.000Z'));
+  assert.ok(markdown.includes('freshness=1.25'));
 });
