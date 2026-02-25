@@ -120,6 +120,27 @@
   - `docs/REPO_AUDIT_INPUTS/structure_risk.json`
   - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
 
+## W5.1 Checklist Path Canonicalization (2026-02-25T03:04:37Z)
+- scope:
+  - `getChecklistForUser` を `scenarioKey` 優先解決へ移行（legacy alias 維持）
+  - `getChecklistWithStatus` へ `scenarioKey` add-only 出力を追加
+  - naming drift inventory から checklist/usecase 系の完了分を反映
+- command results:
+  - `node --test tests/phase661/*.test.js` PASS (3/3)
+  - `node --test tests/phase1/getChecklistForUser.test.js tests/phase1/smoke.test.js` PASS (3/3)
+  - `npm run structure-risk:generate` PASS
+  - `npm run cleanup:generate` PASS
+  - `npm run docs-artifacts:generate` PASS
+  - `npm run audit-inputs:generate` PASS
+- structure snapshot delta:
+  - `naming_drift_scenario_count`: `7 -> 4`
+  - `legacy_repos_count`: `6` (unchanged)
+  - `active_legacy_repo_imports_count`: `0` (unchanged)
+- related artifacts:
+  - `docs/REPO_AUDIT_INPUTS/design_ai_meta.json`
+  - `docs/REPO_AUDIT_INPUTS/structure_risk.json`
+  - `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md`
+
 ## Log Template (copy)
 ```text
 date_utc: YYYY-MM-DDTHH:mm:ssZ
