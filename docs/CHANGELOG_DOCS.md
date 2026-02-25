@@ -11,6 +11,8 @@
 - Added `docs/CATCHUP_GO_DECISION_PACKAGE.md` (Go/No-Go decision package with latest stg fixed-order evidence)
 - Updated `docs/CATCHUP_4W_EVIDENCE.md` with W5 kickoff debt-compression evidence (`naming_drift_scenario_count: 9 -> 7`)
 - Updated `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md` to latest drift inventory (scenario legacy count `7`)
+- Updated `docs/CATCHUP_4W_EVIDENCE.md` with W5.1 checklist-path evidence (`naming_drift_scenario_count: 7 -> 4`)
+- Updated `docs/NAMING_DRIFT_SCENARIOKEY_PLAN.md` to latest drift inventory (scenario legacy count `4`)
 
 ## 2026-02-14
 - Added Japanese admin manual and runbook docs

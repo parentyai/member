@@ -51,6 +51,18 @@
   - `naming_drift_scenario_count` は `9 -> 7` に改善
   - `legacy_repos_count=6` / `active_legacy_repo_imports_count=0` は維持
 
+## 3.2 Progress (2026-02-25 / W5.1 checklist path)
+- 完了:
+  - `src/usecases/checklists/getChecklistForUser.js`
+  - `src/usecases/checklists/getChecklistWithStatus.js`
+  - `src/repos/firestore/usersPhase1Repo.js`（W5 kickoffで canonical+fallback 統合済み）
+- 変更要点:
+  - read: `scenarioKey` 優先、legacy `scenario` fallback
+  - response: checklist系 usecase に `scenarioKey` add-only 追加（legacy `scenario` は維持）
+- 結果:
+  - `naming_drift_scenario_count` は `7 -> 4` に改善
+  - 残対象は `checklistsRepo / phase2ReportsRepo / scenarioReportsRepo / runAutomation`
+
 ## 4. Gate Rules
 - `npm run structure-risk:check` をPRで必須化
 - 予算基準は `docs/STRUCTURE_BUDGETS.md` の最新 baseline を採用

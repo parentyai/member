@@ -62,9 +62,6 @@
       "src/repos/firestore/checklistsRepo.js",
       "src/repos/firestore/phase2ReportsRepo.js",
       "src/repos/firestore/scenarioReportsRepo.js",
-      "src/repos/firestore/usersPhase1Repo.js",
-      "src/usecases/checklists/getChecklistForUser.js",
-      "src/usecases/checklists/getChecklistWithStatus.js",
       "src/usecases/phase2/runAutomation.js"
     ],
     "scenarioKey": [
