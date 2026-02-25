@@ -251,3 +251,17 @@ MUST:
   - writeは `planHash + confirmToken` 必須
   - 運用手順は `dry-run -> apply -> verify -> rollback`
   - 緊急停止は `opsConfig/richMenuPolicy.updateEnabled=false`
+
+## Phase664 Add-only UI Contract（Journey Branching運用）
+- Rule Editor は JSON編集を残しつつ、運用向けの quick editor を add-only で提供する。
+  - Edge ON/OFF（`edge.required`）
+  - reaction branch 行編集（`ruleSet.reactionBranches[]`）
+  - plan unlock（`planUnlocks.free/pro.maxNextActions`）
+- Admin OS API（add-only）:
+  - `GET /api/admin/os/journey-graph/branch-queue/status`
+- Internal Job API（add-only）:
+  - `POST /internal/jobs/journey-branch-dispatch`
+  - token guard: `JOURNEY_BRANCH_JOB_TOKEN`（header: `x-journey-branch-job-token` または Bearer）
+- Safety:
+  - 既存 `mark-read` / `mark-click` は互換維持
+  - `reaction-v2` の branch反映は feature flag（`ENABLE_JOURNEY_BRANCH_QUEUE_V1`）で即時停止可能

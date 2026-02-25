@@ -11,7 +11,7 @@
 | --- | --- |
 | aggregate | 10 |
 | config | 37 |
-| event | 5 |
+| event | 6 |
 | evidence | 7 |
 | transient | 3 |
 
@@ -37,6 +37,7 @@
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
+| `journey_branch_queue` | event | 180d | CONDITIONAL | true |
 | `journey_graph_change_logs` | evidence | 365d | false | false |
 | `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |

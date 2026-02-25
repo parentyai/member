@@ -119,3 +119,49 @@ ServicePhase は機能解禁の上位概念であり、Preset は “出し方/�
 - related evidence:
   - `audit_logs.action=DELIVERY_REACTION_V2`
   - `events.type=journey_reaction`
+
+## Phase664 Add-only Data Contract（Journey Branching Runtime）
+
+### journeyGraphCatalog ruleSet add-only fields
+- `ruleSet.reactionBranches[]`
+  - `ruleId`
+  - `enabled`
+  - `priority`
+  - `match.actions[]`
+  - `match.planTiers[]` (`free|pro`)
+  - `match.todoKeys[]`
+  - `match.notificationGroups[]`
+  - `match.phaseKeys[]`
+  - `match.domainKeys[]`
+  - `effect.todoPatch`
+  - `effect.todoCreate[]`
+  - `effect.nodeUnlockKeys[]`
+  - `effect.queueDispatch`
+
+### journey_todo_items add-only fields（Phase664）
+- `dependencyReasonMap`（`dependsOn` の依存理由を key-value で保持）
+
+### notification_deliveries add-only fields（Phase664）
+- `branchRuleId`
+- `branchMatchedRuleIds[]`
+- `branchQueuedAt`
+- `branchDispatchStatus`
+
+### journey branch queue
+- collection: `journey_branch_queue`
+- status: `pending|sent|failed|skipped`
+- primary fields:
+  - `lineUserId`
+  - `deliveryId`
+  - `todoKey`
+  - `action`
+  - `plan`
+  - `ruleId`
+  - `attemptCount`
+  - `nextAttemptAt`
+  - `lastError`
+  - `traceId`, `requestId`, `actor`
+
+### runtime/admin route contract（Phase664）
+- `GET /api/admin/os/journey-graph/branch-queue/status`
+- `POST /internal/jobs/journey-branch-dispatch`（internal token required）

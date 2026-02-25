@@ -85,6 +85,21 @@ function normalizeTodoStatus(value) {
   return 'open';
 }
 
+function parseDependencyReason(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return { reasonType: 'prerequisite', reasonLabel: null };
+  const idx = normalized.indexOf(':');
+  if (idx <= 0) {
+    return { reasonType: normalized, reasonLabel: null };
+  }
+  const reasonType = normalizeText(normalized.slice(0, idx));
+  const reasonLabel = normalizeText(normalized.slice(idx + 1));
+  return {
+    reasonType: reasonType || 'prerequisite',
+    reasonLabel: reasonLabel || null
+  };
+}
+
 function isTodoDone(todo) {
   const status = normalizeTodoStatus(todo && todo.status);
   if (status === 'completed' || status === 'skipped') return true;
@@ -256,17 +271,19 @@ function evaluateGraph(todoItems, options) {
         if (!isTodoDone(dep)) {
           unresolvedDeps.push(depKey);
           const depReason = next.dependencyReasonMap && typeof next.dependencyReasonMap[depKey] === 'string'
-            ? normalizeText(next.dependencyReasonMap[depKey])
-            : '';
+            ? parseDependencyReason(next.dependencyReasonMap[depKey])
+            : { reasonType: 'prerequisite', reasonLabel: null };
           unresolvedDepsWithReason.push({
             todoKey: depKey,
-            reasonType: depReason || 'prerequisite',
-            reasonLabel: depReason || null
+            reasonType: depReason.reasonType || 'prerequisite',
+            reasonLabel: depReason.reasonLabel || null
           });
         }
       });
       if (unresolvedDeps.length > 0) {
-        lockReasons.push(`依存未完了:${unresolvedDeps.join(',')}`);
+        const unresolvedText = unresolvedDepsWithReason
+          .map((item) => `${item.todoKey}${item.reasonType ? `(${item.reasonType})` : ''}`);
+        lockReasons.push(`依存未完了:${unresolvedText.join(',')}`);
       }
       next.graphStatus = lockReasons.length > 0 ? 'locked' : 'actionable';
       next.lockReasons = lockReasons;

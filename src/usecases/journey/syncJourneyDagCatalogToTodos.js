@@ -106,20 +106,37 @@ function resolveReminderOffsets(node, policy) {
 function normalizeDependsOn(node, edges) {
   const payload = node && typeof node === 'object' ? node : {};
   if (Array.isArray(payload.dependsOn) && payload.dependsOn.length) {
-    return Array.from(new Set(payload.dependsOn.map((item) => String(item || '').trim()).filter(Boolean)));
+    return {
+      dependsOn: Array.from(new Set(payload.dependsOn.map((item) => String(item || '').trim()).filter(Boolean))),
+      dependencyReasonMap: payload.dependencyReasonMap && typeof payload.dependencyReasonMap === 'object'
+        ? Object.assign({}, payload.dependencyReasonMap)
+        : {}
+    };
   }
-  const nodeKey = String(payload.nodeKey || '').trim();
-  if (!nodeKey || !Array.isArray(edges)) return [];
+  const nodeKey = String(payload.nodeKey || payload.todoKey || '').trim();
+  if (!nodeKey || !Array.isArray(edges)) return { dependsOn: [], dependencyReasonMap: {} };
   const out = [];
+  const dependencyReasonMap = {};
   edges.forEach((edge) => {
     if (!edge || typeof edge !== 'object') return;
     const to = String(edge.to || '').trim();
     const from = String(edge.from || '').trim();
     if (!to || !from) return;
     if (to !== nodeKey) return;
+    if (edge.required === false) return;
     if (!out.includes(from)) out.push(from);
+    const reasonType = typeof edge.reasonType === 'string' && edge.reasonType.trim()
+      ? edge.reasonType.trim()
+      : 'prerequisite';
+    const reasonLabel = typeof edge.reasonLabel === 'string' && edge.reasonLabel.trim()
+      ? edge.reasonLabel.trim()
+      : null;
+    dependencyReasonMap[from] = reasonLabel ? `${reasonType}:${reasonLabel}` : reasonType;
   });
-  return out;
+  return {
+    dependsOn: out,
+    dependencyReasonMap
+  };
 }
 
 async function syncJourneyDagCatalogToTodos(params, deps) {
@@ -175,6 +192,7 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
     if (!isNodeUnlockedForPlan(node, planInfo, catalog.planUnlocks)) continue;
 
     const existing = existingMap.get(nodeKey) || null;
+    const dependency = normalizeDependsOn(node, edges);
     const reminderOffsetsDays = resolveReminderOffsets(node, policy);
     const remindedOffsetsDays = existing && Array.isArray(existing.remindedOffsetsDays)
       ? existing.remindedOffsetsDays
@@ -201,7 +219,8 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
       status: existingStatus,
       progressState: existing && existing.progressState ? existing.progressState : 'not_started',
       graphStatus: existing && existing.graphStatus ? existing.graphStatus : 'actionable',
-      dependsOn: normalizeDependsOn(node, edges),
+      dependsOn: dependency.dependsOn,
+      dependencyReasonMap: dependency.dependencyReasonMap,
       priority: Number.isFinite(Number(node && node.priority)) ? Math.floor(Number(node.priority)) : 3,
       riskLevel: node && node.riskLevel ? node.riskLevel : 'medium',
       lockReasons: existing && Array.isArray(existing.lockReasons) ? existing.lockReasons : [],

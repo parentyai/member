@@ -4,6 +4,7 @@ const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
+const { applyJourneyReactionBranch } = require('../journey/applyJourneyReactionBranch');
 
 const ACTIONS = new Set(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
@@ -148,13 +149,78 @@ async function markDeliveryReactionV2(params, deps) {
     snoozeUntil
   }, resolvedDeps).catch(() => ({ updated: false }));
 
+  const branchEvaluator = resolvedDeps.applyJourneyReactionBranch || applyJourneyReactionBranch;
+  const branchResult = await branchEvaluator({
+    lineUserId,
+    deliveryId,
+    todoKey,
+    action,
+    plan: parseOptionalString(payload.plan) || 'free',
+    traceId,
+    requestId,
+    actor,
+    notificationGroup: parseOptionalString(payload.notificationGroup) || parseOptionalString(delivery && delivery.notificationGroup),
+    phaseKey: parseOptionalString(payload.phaseKey),
+    domainKey: parseOptionalString(payload.domainKey)
+  }, resolvedDeps).catch((err) => ({
+    ok: false,
+    enabled: false,
+    reason: err && err.message ? String(err.message) : 'branch_apply_failed',
+    matchedRules: [],
+    queuedCount: 0
+  }));
+
+  const branchMatchedRuleIds = Array.isArray(branchResult && branchResult.matchedRules)
+    ? branchResult.matchedRules
+    : [];
+  if (typeof deliveries.patchDeliveryBranchOutcome === 'function') {
+    await deliveries.patchDeliveryBranchOutcome(deliveryId, {
+      branchRuleId: branchMatchedRuleIds.length ? branchMatchedRuleIds[0] : null,
+      branchMatchedRuleIds,
+      branchQueuedAt: branchResult && branchResult.queuedCount > 0 ? at : null,
+      branchDispatchStatus: branchResult && branchResult.queuedCount > 0 ? 'queued' : null
+    }).catch(() => null);
+  }
+
+  const shouldAppendBranchAudit = Boolean(
+    branchResult
+    && (
+      branchResult.enabled === true
+      || branchMatchedRuleIds.length > 0
+      || Number(branchResult.queuedCount) > 0
+    )
+  );
+  if (shouldAppendBranchAudit) {
+    await auditRepo.appendAuditLog({
+      action: 'DELIVERY_REACTION_BRANCH',
+      eventType: 'DELIVERY_REACTION_BRANCH',
+      type: 'DELIVERY_REACTION_BRANCH',
+      deliveryId,
+      reaction: action,
+      lineUserId,
+      todoKey,
+      traceId,
+      requestId,
+      actor,
+      branchResult
+    }).catch(() => null);
+  }
+
   return {
     ok: true,
     deliveryId,
     action,
     lineUserId: lineUserId || null,
     todoKey: todoKey || null,
-    todoUpdated: todoUpdate.updated === true
+    todoUpdated: todoUpdate.updated === true,
+    branch: {
+      enabled: Boolean(branchResult && branchResult.enabled),
+      reason: branchResult && branchResult.reason ? branchResult.reason : null,
+      matchedRules: branchMatchedRuleIds,
+      queuedCount: Number.isFinite(Number(branchResult && branchResult.queuedCount))
+        ? Number(branchResult.queuedCount)
+        : 0
+    }
   };
 }
 

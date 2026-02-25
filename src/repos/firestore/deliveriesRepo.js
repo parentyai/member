@@ -309,6 +309,32 @@ async function markReactionV2(deliveryId, action, options) {
   return getDelivery(deliveryId);
 }
 
+async function patchDeliveryBranchOutcome(deliveryId, patch) {
+  if (!deliveryId) throw new Error('deliveryId required');
+  const payload = patch && typeof patch === 'object' ? patch : {};
+  const branchRuleId = typeof payload.branchRuleId === 'string' && payload.branchRuleId.trim()
+    ? payload.branchRuleId.trim()
+    : null;
+  const branchQueuedAt = normalizeOptionalIso(payload.branchQueuedAt);
+  const branchDispatchStatus = typeof payload.branchDispatchStatus === 'string' && payload.branchDispatchStatus.trim()
+    ? payload.branchDispatchStatus.trim()
+    : null;
+  const branchMatchedRuleIds = Array.isArray(payload.branchMatchedRuleIds)
+    ? Array.from(new Set(payload.branchMatchedRuleIds
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)))
+    : [];
+  const patchData = {
+    branchRuleId,
+    branchQueuedAt,
+    branchDispatchStatus
+  };
+  if (branchMatchedRuleIds.length) patchData.branchMatchedRuleIds = branchMatchedRuleIds;
+  const db = getDb();
+  await db.collection(COLLECTION).doc(deliveryId).set(patchData, { merge: true });
+  return getDelivery(deliveryId);
+}
+
 async function listDeliveriesByUser(lineUserId, limit) {
   if (!lineUserId) throw new Error('lineUserId required');
   const db = getDb();
@@ -635,6 +661,7 @@ module.exports = {
   markRead,
   markClick,
   markReactionV2,
+  patchDeliveryBranchOutcome,
   listDeliveriesByUser,
   listDeliveriesByNotificationId,
   countDeliveredByUserSince,

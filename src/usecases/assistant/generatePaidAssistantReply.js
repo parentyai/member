@@ -115,7 +115,7 @@ function formatListSection(title, list, fallback, aliasTitle) {
   return `${title}\n${aliasTitle}\n${body}`;
 }
 
-function resolveOutputConstraints(policy) {
+function resolveOutputConstraints(policy, maxNextActionsCap) {
   const src = policy && typeof policy === 'object' && policy.output_constraints && typeof policy.output_constraints === 'object'
     ? policy.output_constraints
     : {};
@@ -130,8 +130,12 @@ function resolveOutputConstraints(policy) {
     if (value === true || value === false) return value;
     return fallback;
   };
+  const maxNextActions = parseNumber(src.max_next_actions, DEFAULT_OUTPUT_CONSTRAINTS.max_next_actions, 0, MAX_NEXT_ACTIONS);
+  const cap = Number.isFinite(Number(maxNextActionsCap))
+    ? Math.max(0, Math.min(MAX_NEXT_ACTIONS, Math.floor(Number(maxNextActionsCap))))
+    : null;
   return {
-    max_next_actions: parseNumber(src.max_next_actions, DEFAULT_OUTPUT_CONSTRAINTS.max_next_actions, 0, MAX_NEXT_ACTIONS),
+    max_next_actions: cap === null ? maxNextActions : Math.min(maxNextActions, cap),
     max_gaps: parseNumber(src.max_gaps, DEFAULT_OUTPUT_CONSTRAINTS.max_gaps, 0, MAX_GAPS),
     max_risks: parseNumber(src.max_risks, DEFAULT_OUTPUT_CONSTRAINTS.max_risks, 0, MAX_RISKS),
     require_evidence: parseBool(src.require_evidence, DEFAULT_OUTPUT_CONSTRAINTS.require_evidence),
@@ -325,7 +329,7 @@ async function generatePaidAssistantReply(params) {
       retryCount: 0
     };
   }
-  const outputConstraints = resolveOutputConstraints(payload.llmPolicy || null);
+  const outputConstraints = resolveOutputConstraints(payload.llmPolicy || null, payload.maxNextActionsCap);
   const faq = await searchFaqFromKb({
     question,
     locale: payload.locale || 'ja',

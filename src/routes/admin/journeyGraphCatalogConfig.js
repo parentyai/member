@@ -63,6 +63,27 @@ function mergeCatalog(base, patch) {
   return Object.assign({}, baseline, payload);
 }
 
+function buildCatalogSummary(catalog) {
+  const payload = catalog && typeof catalog === 'object' ? catalog : {};
+  const edges = Array.isArray(payload.edges) ? payload.edges : [];
+  const ruleSet = payload.ruleSet && typeof payload.ruleSet === 'object' ? payload.ruleSet : {};
+  const reactionBranches = Array.isArray(ruleSet.reactionBranches) ? ruleSet.reactionBranches : [];
+  const planUnlocks = payload.planUnlocks && typeof payload.planUnlocks === 'object' ? payload.planUnlocks : {};
+  const freeUnlock = planUnlocks.free && typeof planUnlocks.free === 'object' ? planUnlocks.free : {};
+  const proUnlock = planUnlocks.pro && typeof planUnlocks.pro === 'object' ? planUnlocks.pro : {};
+  return {
+    enabled: payload.enabled === true,
+    schemaVersion: Number.isFinite(Number(payload.schemaVersion)) ? Math.floor(Number(payload.schemaVersion)) : null,
+    nodeCount: Array.isArray(payload.nodes) ? payload.nodes.length : 0,
+    edgeCount: edges.length,
+    requiredEdgeCount: edges.filter((edge) => edge && edge.required !== false).length,
+    optionalEdgeCount: edges.filter((edge) => edge && edge.required === false).length,
+    reactionBranchCount: reactionBranches.length,
+    freeMaxNextActions: Number.isFinite(Number(freeUnlock.maxNextActions)) ? Math.floor(Number(freeUnlock.maxNextActions)) : null,
+    proMaxNextActions: Number.isFinite(Number(proUnlock.maxNextActions)) ? Math.floor(Number(proUnlock.maxNextActions)) : null
+  };
+}
+
 async function handleStatus(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -84,12 +105,10 @@ async function handleStatus(req, res) {
     entityId: 'journeyGraphCatalog',
     traceId,
     requestId,
-    payloadSummary: {
+    payloadSummary: Object.assign({
       effectiveEnabled,
-      flags,
-      nodeCount: Array.isArray(journeyGraphCatalog.nodes) ? journeyGraphCatalog.nodes.length : 0,
-      edgeCount: Array.isArray(journeyGraphCatalog.edges) ? journeyGraphCatalog.edges.length : 0
-    }
+      flags
+    }, buildCatalogSummary(journeyGraphCatalog))
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -131,12 +150,9 @@ async function handlePlan(req, res, body) {
     entityId: 'journeyGraphCatalog',
     traceId,
     requestId,
-    payloadSummary: {
-      planHash,
-      nodeCount: normalized.nodes.length,
-      edgeCount: normalized.edges.length,
-      enabled: normalized.enabled
-    }
+    payloadSummary: Object.assign({
+      planHash
+    }, buildCatalogSummary(normalized))
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -223,12 +239,7 @@ async function handleSet(req, res, body) {
     requestId,
     planHash,
     catalog: saved,
-    summary: {
-      enabled: saved.enabled === true,
-      schemaVersion: saved.schemaVersion,
-      nodeCount: Array.isArray(saved.nodes) ? saved.nodes.length : 0,
-      edgeCount: Array.isArray(saved.edges) ? saved.edges.length : 0
-    },
+    summary: buildCatalogSummary(saved),
     createdAt: new Date().toISOString()
   }).catch(() => null);
   await appendAuditLog({
@@ -238,12 +249,9 @@ async function handleSet(req, res, body) {
     entityId: 'journeyGraphCatalog',
     traceId,
     requestId,
-    payloadSummary: {
-      ok: true,
-      enabled: saved.enabled === true,
-      nodeCount: Array.isArray(saved.nodes) ? saved.nodes.length : 0,
-      edgeCount: Array.isArray(saved.edges) ? saved.edges.length : 0
-    }
+    payloadSummary: Object.assign({
+      ok: true
+    }, buildCatalogSummary(saved))
   });
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

@@ -73,6 +73,7 @@ async function recomputeJourneyTaskGraph(params, deps) {
       graphStatus: node.graphStatus,
       journeyState: node.journeyState,
       dependsOn: node.dependsOn,
+      dependencyReasonMap: node.dependencyReasonMap || {},
       blocks: node.blocks,
       priority: node.priority,
       riskLevel: node.riskLevel,

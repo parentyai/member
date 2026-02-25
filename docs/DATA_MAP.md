@@ -339,9 +339,43 @@ Typical fields:
 - `phaseKey`, `domainKey`, `planTier`
 - `snoozeUntil`, `lastSignal`
 - `stateEvidenceRef`, `stateUpdatedAt`
+- `dependencyReasonMap`
 
 Notes:
 - 既存 `status=open|completed|skipped` の意味は変更しない。
+
+### journey_branch_queue
+Purpose: reaction branch の dispatch 対象を非同期処理する運用キュー（add-only）。  
+Typical fields:
+- `lineUserId`
+- `deliveryId`
+- `todoKey`
+- `action`
+- `plan`
+- `ruleId`
+- `status` (`pending|sent|failed|skipped`)
+- `attempts`
+- `nextAttemptAt`
+- `branchDispatchStatus`
+- `lastError`
+- `effect`
+- `traceId`, `requestId`, `actor`
+- `createdAt`, `updatedAt`, `dispatchedAt`
+
+### notification_deliveries（Phase664 add-only fields）
+- `branchRuleId`
+- `branchMatchedRuleIds[]`
+- `branchQueuedAt`
+- `branchDispatchStatus`
+
+### opsConfig/journeyGraphCatalog（Phase664 add-only fields）
+- `ruleSet.reactionBranches[]`
+  - `ruleId`, `enabled`, `priority`
+  - `match.actions[]`, `match.planTiers[]`, `match.todoKeys[]`
+  - `match.notificationGroups[]`, `match.phaseKeys[]`, `match.domainKeys[]`
+  - `effect.todoPatch`, `effect.todoCreate[]`, `effect.nodeUnlockKeys[]`, `effect.queueDispatch`
+- `planUnlocks.free.maxNextActions`
+- `planUnlocks.pro.maxNextActions`
 
 ## Phase663 Add-only Collections（LINE Rich Menu）
 

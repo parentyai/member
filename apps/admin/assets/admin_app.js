@@ -6902,7 +6902,10 @@ function renderJourneyGraphRuntime(data) {
   const summaryEl = document.getElementById('journey-graph-runtime-summary');
   if (summaryEl) {
     const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
-    summaryEl.textContent = `nodes=${nodes.length} / edges=${edges.length} / done=${summary.done || 0} / blocked=${summary.blocked || 0} / snoozed=${summary.snoozed || 0}`;
+    const requiredEdges = Number.isFinite(Number(summary.requiredEdges)) ? Number(summary.requiredEdges) : 0;
+    const optionalEdges = Number.isFinite(Number(summary.optionalEdges)) ? Number(summary.optionalEdges) : 0;
+    const schemaVersion = payload.catalog && payload.catalog.schemaVersion ? payload.catalog.schemaVersion : '-';
+    summaryEl.textContent = `nodes=${nodes.length} / edges=${edges.length} (required=${requiredEdges}, optional=${optionalEdges}) / done=${summary.done || 0} / blocked=${summary.blocked || 0} / snoozed=${summary.snoozed || 0} / schema=${schemaVersion}`;
   }
   const edgeListEl = document.getElementById('journey-graph-edge-list');
   if (edgeListEl) {
@@ -6917,7 +6920,9 @@ function renderJourneyGraphRuntime(data) {
         const from = edge && edge.from ? edge.from : '-';
         const to = edge && edge.to ? edge.to : '-';
         const reason = edge && edge.reasonType ? edge.reasonType : 'prerequisite';
-        li.textContent = `${from} -> ${to} (${reason})`;
+        const reasonLabel = edge && edge.reasonLabel ? edge.reasonLabel : '';
+        const required = edge && edge.required === false ? 'optional' : 'required';
+        li.textContent = `${from} -> ${to} (${reason}${reasonLabel ? `:${reasonLabel}` : ''}, ${required})`;
         edgeListEl.appendChild(li);
       });
     }
@@ -6971,6 +6976,350 @@ function writeJourneyGraphCatalogEditor(catalog) {
   const input = document.getElementById('journey-graph-catalog-json');
   if (!input) return;
   input.value = JSON.stringify(catalog || {}, null, 2);
+  renderJourneyGraphQuickEditors(catalog || {});
+}
+
+function parseCsvList(raw, options) {
+  const text = typeof raw === 'string' ? raw : '';
+  const opts = options && typeof options === 'object' ? options : {};
+  const allowed = Array.isArray(opts.allowed) ? opts.allowed : null;
+  const out = [];
+  text.split(',').forEach((item) => {
+    let value = String(item || '').trim();
+    if (!value) return;
+    if (opts.lower === true) value = value.toLowerCase();
+    if (opts.upper === true) value = value.toUpperCase();
+    if (allowed && !allowed.includes(value)) return;
+    if (!out.includes(value)) out.push(value);
+  });
+  return out;
+}
+
+function readJourneyGraphCatalogEditorOrDefault() {
+  try {
+    const parsed = readJourneyGraphCatalogEditor();
+    if (parsed && typeof parsed === 'object') return parsed;
+    return {};
+  } catch (_err) {
+    return {};
+  }
+}
+
+function renderJourneyGraphPlanUnlockQuickEditor(catalog) {
+  const payload = catalog && typeof catalog === 'object' ? catalog : {};
+  const planUnlocks = payload.planUnlocks && typeof payload.planUnlocks === 'object' ? payload.planUnlocks : {};
+  const free = planUnlocks.free && typeof planUnlocks.free === 'object' ? planUnlocks.free : {};
+  const pro = planUnlocks.pro && typeof planUnlocks.pro === 'object' ? planUnlocks.pro : {};
+  const freeMax = document.getElementById('journey-graph-plan-unlock-free-max');
+  const proMax = document.getElementById('journey-graph-plan-unlock-pro-max');
+  const freeTiers = document.getElementById('journey-graph-plan-unlock-free-tiers');
+  const proTiers = document.getElementById('journey-graph-plan-unlock-pro-tiers');
+  if (freeMax) freeMax.value = Number.isFinite(Number(free.maxNextActions)) ? String(Math.floor(Number(free.maxNextActions))) : '1';
+  if (proMax) proMax.value = Number.isFinite(Number(pro.maxNextActions)) ? String(Math.floor(Number(pro.maxNextActions))) : '3';
+  if (freeTiers) freeTiers.value = Array.isArray(free.includePlanTiers) ? free.includePlanTiers.join(',') : 'all';
+  if (proTiers) proTiers.value = Array.isArray(pro.includePlanTiers) ? pro.includePlanTiers.join(',') : 'all,pro';
+}
+
+function renderJourneyGraphEdgeQuickEditor(catalog) {
+  const payload = catalog && typeof catalog === 'object' ? catalog : {};
+  const edges = Array.isArray(payload.edges) ? payload.edges : [];
+  const rowsEl = document.getElementById('journey-graph-edge-editor-rows');
+  if (!rowsEl) return;
+  rowsEl.innerHTML = '';
+  if (!edges.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = '-';
+    tr.appendChild(td);
+    rowsEl.appendChild(tr);
+    return;
+  }
+  edges.slice(0, 500).forEach((edge, index) => {
+    const tr = document.createElement('tr');
+    tr.dataset.edgeIndex = String(index);
+
+    const tdRequired = document.createElement('td');
+    const requiredInput = document.createElement('input');
+    requiredInput.type = 'checkbox';
+    requiredInput.dataset.edgeField = 'required';
+    requiredInput.checked = !(edge && edge.required === false);
+    tdRequired.appendChild(requiredInput);
+    tr.appendChild(tdRequired);
+
+    const fields = [
+      { key: 'from', value: edge && edge.from ? edge.from : '' },
+      { key: 'to', value: edge && edge.to ? edge.to : '' },
+      { key: 'reasonType', value: edge && edge.reasonType ? edge.reasonType : 'prerequisite' },
+      { key: 'reasonLabel', value: edge && edge.reasonLabel ? edge.reasonLabel : '' },
+      { key: 'conditionSignal', value: edge && edge.conditionSignal ? edge.conditionSignal : '' }
+    ];
+    fields.forEach((field) => {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'input-inline input-sm';
+      input.dataset.edgeField = field.key;
+      input.value = field.value;
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+    rowsEl.appendChild(tr);
+  });
+}
+
+function renderJourneyGraphBranchQuickEditor(catalog) {
+  const payload = catalog && typeof catalog === 'object' ? catalog : {};
+  const ruleSet = payload.ruleSet && typeof payload.ruleSet === 'object' ? payload.ruleSet : {};
+  const branches = Array.isArray(ruleSet.reactionBranches) ? ruleSet.reactionBranches : [];
+  const rowsEl = document.getElementById('journey-graph-branch-editor-rows');
+  if (!rowsEl) return;
+  rowsEl.innerHTML = '';
+  if (!branches.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.textContent = '-';
+    tr.appendChild(td);
+    rowsEl.appendChild(tr);
+    return;
+  }
+  branches.slice(0, 300).forEach((branch, index) => {
+    const tr = document.createElement('tr');
+    tr.dataset.branchIndex = String(index);
+
+    const enabledTd = document.createElement('td');
+    const enabledInput = document.createElement('input');
+    enabledInput.type = 'checkbox';
+    enabledInput.dataset.branchField = 'enabled';
+    enabledInput.checked = !(branch && branch.enabled === false);
+    enabledTd.appendChild(enabledInput);
+    tr.appendChild(enabledTd);
+
+    const ruleIdTd = document.createElement('td');
+    const ruleIdInput = document.createElement('input');
+    ruleIdInput.type = 'text';
+    ruleIdInput.className = 'input-inline input-sm';
+    ruleIdInput.dataset.branchField = 'ruleId';
+    ruleIdInput.value = branch && branch.ruleId ? branch.ruleId : `reaction_branch_${index + 1}`;
+    ruleIdTd.appendChild(ruleIdInput);
+    tr.appendChild(ruleIdTd);
+
+    const priorityTd = document.createElement('td');
+    const priorityInput = document.createElement('input');
+    priorityInput.type = 'number';
+    priorityInput.className = 'input-inline input-sm';
+    priorityInput.dataset.branchField = 'priority';
+    priorityInput.min = '0';
+    priorityInput.max = '100000';
+    priorityInput.value = Number.isFinite(Number(branch && branch.priority)) ? String(Math.floor(Number(branch.priority))) : '1000';
+    priorityTd.appendChild(priorityInput);
+    tr.appendChild(priorityTd);
+
+    const actionsTd = document.createElement('td');
+    const actionsInput = document.createElement('input');
+    actionsInput.type = 'text';
+    actionsInput.className = 'input-inline input-sm';
+    actionsInput.dataset.branchField = 'actions';
+    actionsInput.value = Array.isArray(branch && branch.match && branch.match.actions)
+      ? branch.match.actions.join(',')
+      : '';
+    actionsTd.appendChild(actionsInput);
+    tr.appendChild(actionsTd);
+
+    const plansTd = document.createElement('td');
+    const plansInput = document.createElement('input');
+    plansInput.type = 'text';
+    plansInput.className = 'input-inline input-sm';
+    plansInput.dataset.branchField = 'planTiers';
+    plansInput.value = Array.isArray(branch && branch.match && branch.match.planTiers)
+      ? branch.match.planTiers.join(',')
+      : '';
+    plansTd.appendChild(plansInput);
+    tr.appendChild(plansTd);
+
+    const nextTemplateTd = document.createElement('td');
+    const nextTemplateInput = document.createElement('input');
+    nextTemplateInput.type = 'text';
+    nextTemplateInput.className = 'input-inline input-sm';
+    nextTemplateInput.dataset.branchField = 'nextTemplateId';
+    nextTemplateInput.value = branch && branch.effect && branch.effect.nextTemplateId ? branch.effect.nextTemplateId : '';
+    nextTemplateTd.appendChild(nextTemplateInput);
+    tr.appendChild(nextTemplateTd);
+
+    const queueTd = document.createElement('td');
+    const queueInput = document.createElement('input');
+    queueInput.type = 'checkbox';
+    queueInput.dataset.branchField = 'queueDispatch';
+    queueInput.checked = !(branch && branch.effect && branch.effect.queueDispatch === false);
+    queueTd.appendChild(queueInput);
+    tr.appendChild(queueTd);
+
+    rowsEl.appendChild(tr);
+  });
+}
+
+function renderJourneyGraphQuickEditors(catalog) {
+  renderJourneyGraphPlanUnlockQuickEditor(catalog);
+  renderJourneyGraphEdgeQuickEditor(catalog);
+  renderJourneyGraphBranchQuickEditor(catalog);
+}
+
+function applyJourneyGraphPlanUnlockEditor() {
+  const catalog = readJourneyGraphCatalogEditorOrDefault();
+  const freeMax = Number(document.getElementById('journey-graph-plan-unlock-free-max')?.value);
+  const proMax = Number(document.getElementById('journey-graph-plan-unlock-pro-max')?.value);
+  const freeTiers = parseCsvList(document.getElementById('journey-graph-plan-unlock-free-tiers')?.value || '', {
+    lower: true,
+    allowed: ['all', 'pro']
+  });
+  const proTiers = parseCsvList(document.getElementById('journey-graph-plan-unlock-pro-tiers')?.value || '', {
+    lower: true,
+    allowed: ['all', 'pro']
+  });
+  catalog.planUnlocks = catalog.planUnlocks && typeof catalog.planUnlocks === 'object' ? catalog.planUnlocks : {};
+  catalog.planUnlocks.free = Object.assign({}, catalog.planUnlocks.free || {}, {
+    includePlanTiers: freeTiers.length ? freeTiers : ['all'],
+    maxNextActions: Number.isFinite(freeMax) ? Math.max(0, Math.min(3, Math.floor(freeMax))) : 1
+  });
+  catalog.planUnlocks.pro = Object.assign({}, catalog.planUnlocks.pro || {}, {
+    includePlanTiers: proTiers.length ? proTiers : ['all', 'pro'],
+    maxNextActions: Number.isFinite(proMax) ? Math.max(0, Math.min(3, Math.floor(proMax))) : 3
+  });
+  writeJourneyGraphCatalogEditor(catalog);
+  showToast('Plan unlock編集をJSONへ反映しました', 'ok');
+}
+
+function applyJourneyGraphEdgeQuickEditor() {
+  const rows = Array.from(document.querySelectorAll('#journey-graph-edge-editor-rows tr[data-edge-index]'));
+  const edges = [];
+  rows.forEach((row) => {
+    const required = row.querySelector('[data-edge-field="required"]')?.checked !== false;
+    const from = row.querySelector('[data-edge-field="from"]')?.value?.trim() || '';
+    const to = row.querySelector('[data-edge-field="to"]')?.value?.trim() || '';
+    const reasonType = row.querySelector('[data-edge-field="reasonType"]')?.value?.trim() || 'prerequisite';
+    const reasonLabel = row.querySelector('[data-edge-field="reasonLabel"]')?.value?.trim() || '';
+    const conditionSignal = row.querySelector('[data-edge-field="conditionSignal"]')?.value?.trim() || '';
+    if (!from || !to) return;
+    const edge = { from, to, reasonType, required };
+    if (reasonLabel) edge.reasonLabel = reasonLabel;
+    if (conditionSignal) edge.conditionSignal = conditionSignal;
+    edges.push(edge);
+  });
+  const catalog = readJourneyGraphCatalogEditorOrDefault();
+  catalog.edges = edges;
+  writeJourneyGraphCatalogEditor(catalog);
+  showToast('Edge編集をJSONへ反映しました', 'ok');
+}
+
+function applyJourneyGraphBranchQuickEditor() {
+  const catalog = readJourneyGraphCatalogEditorOrDefault();
+  const ruleSet = catalog.ruleSet && typeof catalog.ruleSet === 'object' ? catalog.ruleSet : {};
+  const currentBranches = Array.isArray(ruleSet.reactionBranches) ? ruleSet.reactionBranches : [];
+  const rows = Array.from(document.querySelectorAll('#journey-graph-branch-editor-rows tr[data-branch-index]'));
+  const branches = [];
+  rows.forEach((row, index) => {
+    const base = currentBranches[index] && typeof currentBranches[index] === 'object' ? currentBranches[index] : {};
+    const enabled = row.querySelector('[data-branch-field="enabled"]')?.checked !== false;
+    const ruleId = row.querySelector('[data-branch-field="ruleId"]')?.value?.trim() || `reaction_branch_${index + 1}`;
+    const priorityRaw = Number(row.querySelector('[data-branch-field="priority"]')?.value);
+    const priority = Number.isFinite(priorityRaw) ? Math.max(0, Math.floor(priorityRaw)) : 1000;
+    const actions = parseCsvList(row.querySelector('[data-branch-field="actions"]')?.value || '', {
+      lower: true,
+      allowed: ['open', 'save', 'snooze', 'none', 'redeem', 'response']
+    });
+    if (!actions.length) return;
+    const planTiers = parseCsvList(row.querySelector('[data-branch-field="planTiers"]')?.value || '', {
+      lower: true,
+      allowed: ['free', 'pro']
+    });
+    const nextTemplateId = row.querySelector('[data-branch-field="nextTemplateId"]')?.value?.trim() || null;
+    const queueDispatch = row.querySelector('[data-branch-field="queueDispatch"]')?.checked !== false;
+    const matchBase = base.match && typeof base.match === 'object' ? base.match : {};
+    const effectBase = base.effect && typeof base.effect === 'object' ? base.effect : {};
+    const branch = Object.assign({}, base, {
+      ruleId,
+      enabled,
+      priority,
+      match: Object.assign({}, matchBase, {
+        actions,
+        planTiers
+      }),
+      effect: Object.assign({}, effectBase, {
+        nextTemplateId,
+        queueDispatch
+      })
+    });
+    branches.push(branch);
+  });
+  catalog.ruleSet = Object.assign({}, ruleSet, { reactionBranches: branches });
+  writeJourneyGraphCatalogEditor(catalog);
+  showToast('Reaction branch編集をJSONへ反映しました', 'ok');
+}
+
+function renderJourneyGraphBranchQueueStatus(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const summaryEl = document.getElementById('journey-graph-branch-queue-summary');
+  if (summaryEl) {
+    summaryEl.textContent = `total=${summary.total || 0} / pending=${summary.pending || 0} / sent=${summary.sent || 0} / failed=${summary.failed || 0} / skipped=${summary.skipped || 0}`;
+  }
+  const rowsEl = document.getElementById('journey-graph-branch-queue-rows');
+  if (!rowsEl) return;
+  rowsEl.innerHTML = '';
+  if (!items.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.textContent = '-';
+    tr.appendChild(td);
+    rowsEl.appendChild(tr);
+    return;
+  }
+  items.slice(0, 200).forEach((item) => {
+    const tr = document.createElement('tr');
+    const values = [
+      item && item.id ? item.id : '-',
+      item && item.status ? item.status : '-',
+      item && item.lineUserId ? item.lineUserId : '-',
+      item && item.deliveryId ? item.deliveryId : '-',
+      item && item.ruleId ? item.ruleId : '-',
+      item && item.nextAttemptAt ? item.nextAttemptAt : '-',
+      item && item.branchDispatchStatus ? item.branchDispatchStatus : '-'
+    ];
+    values.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    rowsEl.appendChild(tr);
+  });
+}
+
+async function loadJourneyGraphBranchQueueStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const status = document.getElementById('journey-graph-branch-queue-status-filter')?.value?.trim() || '';
+  const lineUserId = document.getElementById('journey-graph-branch-queue-line-user-id')?.value?.trim() || '';
+  const limit = normalizeMonitorLimit(document.getElementById('journey-graph-limit')?.value, 100, 500);
+  const traceId = ensureTraceInput('monitor-trace');
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (status) query.set('status', status);
+  if (lineUserId) query.set('lineUserId', lineUserId);
+  try {
+    const res = await fetch(`/api/admin/os/journey-graph/branch-queue/status?${query.toString()}`, {
+      headers: buildHeaders({}, traceId)
+    });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-graph-branch-queue-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderJourneyGraphBranchQueueStatus(data);
+    if (notify) showToast('branch queue statusを取得しました', 'ok');
+  } catch (_err) {
+    renderJourneyGraphBranchQueueStatus({});
+    setJsonTextResult('journey-graph-branch-queue-result', { ok: false, error: 'fetch error' });
+    if (notify) showToast('branch queue statusの取得に失敗しました', 'danger');
+  }
 }
 
 function applyJourneyGraphPlanTokens(planHash, confirmToken) {
@@ -9607,6 +9956,10 @@ function setupMonitorControls() {
     if (runtimeLineUserIdEl && !runtimeLineUserIdEl.value.trim()) {
       runtimeLineUserIdEl.value = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
     }
+    const branchQueueLineUserIdEl = document.getElementById('journey-graph-branch-queue-line-user-id');
+    if (branchQueueLineUserIdEl && !branchQueueLineUserIdEl.value.trim()) {
+      branchQueueLineUserIdEl.value = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
+    }
     loadMonitorUserDeliveries({ notify: true });
   });
   document.getElementById('monitor-insights-reload')?.addEventListener('click', () => {
@@ -9656,6 +10009,24 @@ function setupMonitorControls() {
   });
   document.getElementById('journey-graph-history')?.addEventListener('click', () => {
     void loadJourneyGraphHistory({ notify: true });
+  });
+  document.getElementById('journey-graph-plan-unlock-apply')?.addEventListener('click', () => {
+    applyJourneyGraphPlanUnlockEditor();
+  });
+  document.getElementById('journey-graph-edge-editor-apply')?.addEventListener('click', () => {
+    applyJourneyGraphEdgeQuickEditor();
+  });
+  document.getElementById('journey-graph-branch-editor-apply')?.addEventListener('click', () => {
+    applyJourneyGraphBranchQuickEditor();
+  });
+  document.getElementById('journey-graph-branch-queue-reload')?.addEventListener('click', () => {
+    void loadJourneyGraphBranchQueueStatus({ notify: true });
+  });
+  document.getElementById('journey-graph-branch-queue-status-filter')?.addEventListener('change', () => {
+    void loadJourneyGraphBranchQueueStatus({ notify: false });
+  });
+  document.getElementById('journey-graph-branch-queue-line-user-id')?.addEventListener('change', () => {
+    void loadJourneyGraphBranchQueueStatus({ notify: false });
   });
   document.getElementById('journey-graph-filter-state')?.addEventListener('change', () => {
     void loadJourneyGraphRuntime({ notify: false });
@@ -9707,6 +10078,7 @@ function setupMonitorControls() {
   }
   void loadJourneyGraphStatus({ notify: false });
   void loadJourneyGraphHistory({ notify: false });
+  void loadJourneyGraphBranchQueueStatus({ notify: false });
   void loadRichMenuStatus({ notify: false });
   void loadRichMenuHistory({ notify: false });
 }

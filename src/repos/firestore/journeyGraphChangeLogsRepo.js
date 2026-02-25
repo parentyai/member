@@ -30,11 +30,38 @@ function normalizeDate(value) {
 
 function normalizeCatalogSummary(value) {
   const payload = value && typeof value === 'object' ? value : {};
+  const edges = Array.isArray(payload.edges) ? payload.edges : [];
+  const requiredEdgeCountFromCatalog = edges.filter((edge) => edge && edge.required !== false).length;
+  const optionalEdgeCountFromCatalog = edges.filter((edge) => edge && edge.required === false).length;
+  const reactionBranchCountFromCatalog = Array.isArray(payload.ruleSet && payload.ruleSet.reactionBranches)
+    ? payload.ruleSet.reactionBranches.length
+    : 0;
+  const freeUnlock = payload.planUnlocks && payload.planUnlocks.free && typeof payload.planUnlocks.free === 'object'
+    ? payload.planUnlocks.free
+    : {};
+  const proUnlock = payload.planUnlocks && payload.planUnlocks.pro && typeof payload.planUnlocks.pro === 'object'
+    ? payload.planUnlocks.pro
+    : {};
   return {
     enabled: payload.enabled === true,
     schemaVersion: Number.isFinite(Number(payload.schemaVersion)) ? Math.floor(Number(payload.schemaVersion)) : null,
     nodeCount: Array.isArray(payload.nodes) ? payload.nodes.length : Number.isFinite(Number(payload.nodeCount)) ? Math.floor(Number(payload.nodeCount)) : 0,
-    edgeCount: Array.isArray(payload.edges) ? payload.edges.length : Number.isFinite(Number(payload.edgeCount)) ? Math.floor(Number(payload.edgeCount)) : 0
+    edgeCount: Array.isArray(payload.edges) ? payload.edges.length : Number.isFinite(Number(payload.edgeCount)) ? Math.floor(Number(payload.edgeCount)) : 0,
+    requiredEdgeCount: Number.isFinite(Number(payload.requiredEdgeCount))
+      ? Math.floor(Number(payload.requiredEdgeCount))
+      : requiredEdgeCountFromCatalog,
+    optionalEdgeCount: Number.isFinite(Number(payload.optionalEdgeCount))
+      ? Math.floor(Number(payload.optionalEdgeCount))
+      : optionalEdgeCountFromCatalog,
+    reactionBranchCount: Number.isFinite(Number(payload.reactionBranchCount))
+      ? Math.floor(Number(payload.reactionBranchCount))
+      : reactionBranchCountFromCatalog,
+    freeMaxNextActions: Number.isFinite(Number(payload.freeMaxNextActions))
+      ? Math.floor(Number(payload.freeMaxNextActions))
+      : (Number.isFinite(Number(freeUnlock.maxNextActions)) ? Math.floor(Number(freeUnlock.maxNextActions)) : null),
+    proMaxNextActions: Number.isFinite(Number(payload.proMaxNextActions))
+      ? Math.floor(Number(payload.proMaxNextActions))
+      : (Number.isFinite(Number(proUnlock.maxNextActions)) ? Math.floor(Number(proUnlock.maxNextActions)) : null)
   };
 }
 

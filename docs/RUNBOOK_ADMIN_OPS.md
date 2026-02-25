@@ -361,6 +361,31 @@ API:
 - `ENABLE_JOURNEY_DAG_UI_V1=0`
 - `ENABLE_JOURNEY_RULE_ENGINE_V1=0`
 
+## Phase664 Addendum（Journey Branching運用）
+
+### reaction branch queue status
+1) `/admin/app?pane=monitor` の Journey Rule Editor で `Branch queue status` を開く。  
+2) `status` / `lineUserId` を指定して `Queueを更新` を実行する。  
+3) `pending` が継続する場合は `nextAttemptAt` と `attempts` を確認する。  
+4) 監査確認: `journey_graph.branch_queue.view`
+
+### internal dispatch job（token guard）
+1) `POST /internal/jobs/journey-branch-dispatch` を `x-journey-branch-job-token` 付きで実行する。  
+2) payload で `dryRun` / `limit` を指定する（既定 `dryRun=false`, `limit=100`）。  
+3) 実行後は `journey_branch.dispatch` 監査ログを確認する。  
+4) queue item の `status` (`sent|skipped|failed`) と `notification_deliveries.branchDispatchStatus` を突合する。  
+
+### dispatch失敗時の切り分け
+1) `status=failed` で queue を絞り、`lastError` を確認する。  
+2) `effect.nextTemplateId` 欠損時は `skipped_no_template` が正常動作。  
+3) 再試行時刻は `nextAttemptAt`（指数的に最大60分）を参照する。  
+4) 継続障害時は `ENABLE_JOURNEY_BRANCH_QUEUE_V1=0` で即時停止する。  
+
+### 即時停止フラグ（Phase664）
+- `ENABLE_JOURNEY_BRANCH_QUEUE_V1=0`
+- `ENABLE_JOURNEY_RULE_ENGINE_V1=0`
+- `journeyPolicy.enabled=false`
+
 ## Phase663 Addendum（LINE Rich Menu運用）
 
 ### Rich Menu status / preview
