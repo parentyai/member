@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-24T20:30:24-05:00",
-  "gitCommit": "24cdc492a7b8238fb4161b582d19f010858c83d5",
-  "branch": "codex/phase654-task-graph-os",
-  "sourceDigest": "88a1c76eaa4f30804169d04d3784155598b1c671a35da695f3e0e4187d995e28",
+  "generatedAt": "2026-02-24T20:35:34-05:00",
+  "gitCommit": "ce88be9822df824bfb8863f796225eee1ee50024",
+  "branch": "main",
+  "sourceDigest": "156d6d6ab0975a2f3bd93839693144bb737cb0fec2a16ec2d1ab80d8e88cff09",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
