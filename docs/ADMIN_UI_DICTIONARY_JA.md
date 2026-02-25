@@ -791,6 +791,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.label.monitor.freshness": "鮮度",
   "ui.label.monitor.fallback": "フォールバック",
   "ui.label.monitor.limit": "件数",
+  "ui.label.monitor.note": "ノート",
   "ui.label.monitor.readLimit": "上限（生データ）",
   "ui.label.monitor.snapshotMode": "スナップショット",
   "ui.label.monitor.fallbackMode": "フォールバック",

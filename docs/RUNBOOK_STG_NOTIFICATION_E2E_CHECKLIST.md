@@ -95,7 +95,13 @@ gh workflow run stg-notification-e2e.yml --ref main \
 4. Retry Queue: `plan -> retry`
 5. Kill Switch: ON時に send 系が全ブロックされる
 6. Composer execute: cap 到達ユーザーが `notification_cap_blocked`
-7. monitor-insights 診断収集: `resultRows` / `matchedDeliveryCount` / `dataSource` / `asOf` / `freshnessMinutes` を記録し、欠落時は再実施条件として要因追跡
+7. monitor-insights 診断収集（固定項目）:
+   - 記録キー: `resultRows` / `matchedDeliveryCount` / `dataSource` / `asOf` / `freshnessMinutes` / `readLimitUsed` / `fallbackUsed` / `fallbackBlocked`
+   - 再実施条件:
+     - `resultRows` または `matchedDeliveryCount` が欠落 / 非数値
+     - `readLimitUsed` が 1〜5000 の範囲外、または欠落
+     - `dataSource` が空、`asOf`・`freshnessMinutes` が `dataSource !== 'not_available'` かつ欠落
+     - HTTP 200 なのに `dataSource` と `resultRows` が同時に `-` のみで監査値として保存できない場合
 
 ## Run Cadence
 - 推奨: main への通知制御系マージごとに 1 回 + 週次 1 回
@@ -164,7 +170,7 @@ notes: <optional>
 - `audits/decisions/timeline` が欠損しない
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
-- 6シナリオすべての `result` が記録されている（PASS/FAIL問わず）
+- 6ステップ+Product Readiness Gate内7本端点の `result` が記録されている（PASS/FAIL問わず）
 
 ## Latest Mainline Evidence (W7)
 - date: `2026-02-23`

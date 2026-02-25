@@ -122,3 +122,49 @@ test('phase321: monitor insights excludes out-of-window delivery when bounded se
   assert.ok(Number.isFinite(body.freshnessMinutes));
   assert.ok(body.freshnessMinutes >= 0);
 });
+
+test('phase321: fallbackOnEmpty=false + fallbackMode=block returns not_available metadata', async (t) => {
+  const prevMode = process.env.SERVICE_MODE;
+  if (prevMode !== undefined) delete process.env.SERVICE_MODE;
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  process.env.ADMIN_OS_TOKEN = 'phase321_admin_token';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const { createServer } = require('../../src/index');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevMode === undefined) delete process.env.SERVICE_MODE;
+    else process.env.SERVICE_MODE = prevMode;
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+  });
+
+  const res = await httpRequest({
+    port,
+    method: 'GET',
+    path: '/api/admin/monitor-insights?windowDays=7&fallbackMode=block&fallbackOnEmpty=false&readLimit=10',
+    headers: {
+      'x-admin-token': 'phase321_admin_token',
+      'x-actor': 'phase321_test',
+      'x-trace-id': 'trace_phase321_insights_not_available'
+    }
+  });
+
+  assert.strictEqual(res.status, 200);
+  const body = JSON.parse(res.body);
+  assert.strictEqual(body.ok, true);
+  assert.strictEqual(body.dataSource, 'not_available');
+  assert.strictEqual(body.source, 'not_available');
+  assert.strictEqual(body.fallbackUsed, false);
+  assert.strictEqual(body.fallbackBlocked, true);
+  assert.strictEqual(body.asOf, null);
+  assert.strictEqual(body.freshnessMinutes, null);
+});

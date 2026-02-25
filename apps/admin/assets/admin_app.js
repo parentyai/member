@@ -4181,6 +4181,19 @@ function setMonitorSummaryValue(id, value) {
   el.textContent = value == null || value === '' ? '-' : String(value);
 }
 
+function formatMonitorNote(value) {
+  if (value == null) return '-';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch (_err) {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
 function renderMonitorInsightsFailure(traceId, requestInfo, error) {
   const rawPayload = {
     ok: false,
@@ -4188,6 +4201,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
     traceId,
     error: error && error.message ? error.message : 'unknown'
   };
+  const noteText = formatMonitorNote(rawPayload.error);
   renderVendorCtrRows([]);
   renderFaqReferenceRows([]);
   const abSummaryEl = document.getElementById('monitor-ab-summary');
@@ -4201,6 +4215,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
   setMonitorSummaryValue('monitor-insights-as-of', '-');
   setMonitorSummaryValue('monitor-insights-freshness', '-');
   setMonitorSummaryValue('monitor-insights-trace-id', traceId || '-');
+  setMonitorSummaryValue('monitor-insights-note', noteText);
   setMonitorBadge(document.getElementById('monitor-insights-fallback-used'), t('ui.value.boolean.no', 'いいえ'), 'warn');
   setMonitorBadge(document.getElementById('monitor-insights-fallback-blocked'), t('ui.value.boolean.no', 'いいえ'), 'warn');
   const raw = document.getElementById('monitor-insights-raw');
@@ -4210,6 +4225,7 @@ function renderMonitorInsightsFailure(traceId, requestInfo, error) {
 
 function renderMonitorInsightsDiagnostics(payload, traceId) {
   const data = payload && typeof payload === 'object' ? payload : null;
+  const note = data && Object.prototype.hasOwnProperty.call(data, 'note') ? data.note : null;
   const diagnostics = data && data.diagnostics && typeof data.diagnostics === 'object' ? data.diagnostics : null;
   const source = data ? (data.source || data.dataSource || '-') : '-';
   const resultRows = data && Number.isFinite(Number(data.resultRows)) ? data.resultRows : '-';
@@ -4230,6 +4246,7 @@ function renderMonitorInsightsDiagnostics(payload, traceId) {
   setMonitorSummaryValue('monitor-insights-as-of', asOfLabel);
   setMonitorSummaryValue('monitor-insights-freshness', formatMonitorFreshness(freshness));
   setMonitorSummaryValue('monitor-insights-trace-id', (data && data.traceId) || traceId || '-');
+  setMonitorSummaryValue('monitor-insights-note', formatMonitorNote(note));
 
   const fallbackUsed = !!(data && data.fallbackUsed);
   const fallbackBlocked = !!(data && data.fallbackBlocked);
@@ -4240,7 +4257,7 @@ function renderMonitorInsightsDiagnostics(payload, traceId) {
 
   const notes = [];
   if (isEmpty) notes.push(t('ui.desc.monitor.insightsEmpty', '表示対象データがありません'));
-  if (data && data.note) notes.push(`note=${data.note}`);
+  if (note !== null && note !== undefined) notes.push(`note=${formatMonitorNote(note)}`);
   if (data && Array.isArray(data.fallbackSourceTrace) && data.fallbackSourceTrace.length > 0) {
     notes.push(`fallbackSources=${data.fallbackSourceTrace.join(' > ')}`);
   }

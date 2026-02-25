@@ -1331,13 +1331,18 @@ async function runProductReadinessScenario(ctx, traceId) {
       ok: resp.okStatus
     };
     if (endpoint.key === 'monitorInsights' && resp.body && typeof resp.body === 'object') {
+      const fallbackUsed = typeof resp.body.fallbackUsed === 'boolean' ? resp.body.fallbackUsed : null;
+      const fallbackBlocked = typeof resp.body.fallbackBlocked === 'boolean' ? resp.body.fallbackBlocked : null;
       adminReadinessChecks.push({
         ...baseCheck,
         resultRows: Number.isFinite(resp.body.resultRows) ? resp.body.resultRows : null,
         matchedDeliveryCount: Number.isFinite(resp.body.matchedDeliveryCount) ? resp.body.matchedDeliveryCount : null,
         dataSource: resp.body.dataSource || resp.body.source || null,
         asOf: typeof resp.body.asOf === 'string' ? resp.body.asOf : null,
-        freshnessMinutes: Number.isFinite(resp.body.freshnessMinutes) ? resp.body.freshnessMinutes : null
+        freshnessMinutes: Number.isFinite(resp.body.freshnessMinutes) ? resp.body.freshnessMinutes : null,
+        readLimitUsed: Number.isFinite(resp.body.readLimitUsed) ? resp.body.readLimitUsed : null,
+        fallbackUsed,
+        fallbackBlocked
       });
     } else {
       adminReadinessChecks.push(baseCheck);
@@ -1477,7 +1482,7 @@ function renderMarkdownSummary(report) {
       scenario.adminReadinessChecks.forEach((item) => {
         const isMonitorInsights = item && item.endpoint === '/api/admin/monitor-insights?windowDays=7';
         const extra = isMonitorInsights
-          ? ` rows=${Number.isFinite(item.resultRows) ? item.resultRows : '-'} matched=${Number.isFinite(item.matchedDeliveryCount) ? item.matchedDeliveryCount : '-'} source=${item.dataSource || '-'} asOf=${item.asOf || '-'} freshness=${Number.isFinite(item.freshnessMinutes) ? item.freshnessMinutes : '-'}`
+          ? ` rows=${Number.isFinite(item.resultRows) ? item.resultRows : '-'} matched=${Number.isFinite(item.matchedDeliveryCount) ? item.matchedDeliveryCount : '-'} source=${item.dataSource || '-'} asOf=${item.asOf || '-'} freshness=${Number.isFinite(item.freshnessMinutes) ? item.freshnessMinutes : '-'} readLimit=${Number.isFinite(item.readLimitUsed) ? item.readLimitUsed : '-'} fallbackUsed=${item.fallbackUsed === true ? 'true' : item.fallbackUsed === false ? 'false' : '-'} fallbackBlocked=${item.fallbackBlocked === true ? 'true' : item.fallbackBlocked === false ? 'false' : '-'}`
           : '';
         lines.push(`  - ${item.endpoint}: status=${item.status} ok=${item.ok === true ? 'true' : 'false'}${extra}`);
       });
