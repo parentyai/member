@@ -1,6 +1,9 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { test } = require('node:test');
 
 const {
@@ -33,6 +36,48 @@ test('phase171: parseArgs reads env defaults and supports skip flags', () => {
   assert.strictEqual(args.allowSkip, true);
   assert.strictEqual(args.expectLlmEnabled, true);
   assert.strictEqual(args.tracePrefix, 'trace-custom');
+});
+
+test('phase171: parseArgs reads admin token from file when env token is missing', () => {
+  const tokenFile = path.join(os.tmpdir(), `stg-e2e-admin-token-${Date.now()}.txt`);
+  fs.writeFileSync(tokenFile, ' token_from_file \n');
+  const args = parseArgs([
+    'node',
+    'tools/run_stg_notification_e2e_checklist.js'
+  ], {
+    ADMIN_OS_TOKEN_FILE: tokenFile
+  });
+  fs.unlinkSync(tokenFile);
+  assert.strictEqual(args.adminToken, 'token_from_file');
+});
+
+test('phase171: parseArgs reads admin token from CLI file arg with highest priority', () => {
+  const tokenFile = path.join(os.tmpdir(), `stg-e2e-admin-token-arg-${Date.now()}.txt`);
+  fs.writeFileSync(tokenFile, ' token_from_arg ');
+  const args = parseArgs([
+    'node',
+    'tools/run_stg_notification_e2e_checklist.js',
+    '--admin-token-file',
+    tokenFile
+  ], {
+    ADMIN_OS_TOKEN: 'env_token'
+  });
+  fs.unlinkSync(tokenFile);
+  assert.strictEqual(args.adminToken, 'token_from_arg');
+});
+
+test('phase171: parseArgs reads admin token env even when file exists', () => {
+  const tokenFile = path.join(os.tmpdir(), `stg-e2e-admin-token-fallback-${Date.now()}.txt`);
+  fs.writeFileSync(tokenFile, ' token_from_file ');
+  const args = parseArgs([
+    'node',
+    'tools/run_stg_notification_e2e_checklist.js'
+  ], {
+    ADMIN_OS_TOKEN: 'env_token',
+    ADMIN_OS_TOKEN_FILE: tokenFile
+  });
+  fs.unlinkSync(tokenFile);
+  assert.strictEqual(args.adminToken, 'env_token');
 });
 
 test('phase171: parseArgs supports E2E_EXPECT_LLM_ENABLED env default', () => {

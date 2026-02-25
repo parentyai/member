@@ -92,11 +92,32 @@ function parsePositiveInt(value, label, min, max) {
   return num;
 }
 
+function normalizeAdminTokenValue(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function readAdminTokenFromFile(filePath) {
+  if (!filePath || typeof filePath !== 'string') {
+    return '';
+  }
+  const trimmedPath = filePath.trim();
+  if (!trimmedPath) return '';
+  try {
+    const raw = fs.readFileSync(trimmedPath, 'utf8');
+    return normalizeAdminTokenValue(raw);
+  } catch (err) {
+    throw new Error(`failed to read admin token file: ${trimmedPath}`);
+  }
+}
+
 function parseArgs(argv, env) {
   const sourceEnv = env || process.env;
   const opts = {
     baseUrl: normalizeBaseUrl(sourceEnv.MEMBER_BASE_URL || sourceEnv.BASE_URL || DEFAULT_BASE_URL),
-    adminToken: sourceEnv.ADMIN_OS_TOKEN || '',
+    adminToken: normalizeAdminTokenValue(sourceEnv.ADMIN_OS_TOKEN || ''),
+    adminTokenFile: normalizeAdminTokenValue(sourceEnv.E2E_ADMIN_TOKEN_FILE || sourceEnv.ADMIN_OS_TOKEN_FILE || ''),
+    adminTokenFileExplicit: false,
     internalJobToken: sourceEnv.CITY_PACK_JOB_TOKEN || '',
     actor: sourceEnv.E2E_ACTOR || DEFAULT_ACTOR,
     tracePrefix: sourceEnv.E2E_TRACE_PREFIX || DEFAULT_TRACE_PREFIX,
@@ -177,6 +198,11 @@ function parseArgs(argv, env) {
       opts.adminToken = readValue(argv, ++i, '--admin-token');
       continue;
     }
+    if (arg === '--admin-token-file') {
+      opts.adminTokenFile = readValue(argv, ++i, '--admin-token-file');
+      opts.adminTokenFileExplicit = true;
+      continue;
+    }
     if (arg === '--internal-job-token') {
       opts.internalJobToken = readValue(argv, ++i, '--internal-job-token');
       continue;
@@ -233,8 +259,14 @@ function parseArgs(argv, env) {
     throw new Error(`unknown option: ${arg}`);
   }
 
-  if (!opts.adminToken || typeof opts.adminToken !== 'string' || opts.adminToken.trim().length === 0) {
-    throw new Error('admin token required (ADMIN_OS_TOKEN or --admin-token)');
+  if (opts.adminTokenFileExplicit) {
+    opts.adminToken = readAdminTokenFromFile(opts.adminTokenFile);
+  }
+  if (!opts.adminToken || opts.adminToken.trim().length === 0) {
+    opts.adminToken = readAdminTokenFromFile(opts.adminTokenFile);
+  }
+  if (!opts.adminToken || opts.adminToken.trim().length === 0) {
+    throw new Error('admin token required (ADMIN_OS_TOKEN, ADMIN_OS_TOKEN_FILE, --admin-token, --admin-token-file)');
   }
   if (opts.failOnRouteErrors) opts.fetchRouteErrors = true;
   if (typeof opts.failOnMissingAuditActions !== 'boolean') {
