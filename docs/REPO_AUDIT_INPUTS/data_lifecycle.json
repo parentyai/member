@@ -500,6 +500,18 @@
     ]
   },
   {
+    "collection": "rich_menu_assignment_rules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuAssignmentRulesRepo.js:5",
+      "src/repos/firestore/richMenuAssignmentRulesRepo.js:116",
+      "src/repos/firestore/richMenuAssignmentRulesRepo.js:135"
+    ]
+  },
+  {
     "collection": "rich_menu_bindings",
     "kind": "config",
     "recomputable": false,
@@ -508,6 +520,54 @@
     "evidence": [
       "src/repos/firestore/richMenuBindingsRepo.js:5",
       "src/domain/retention/retentionPolicy.js:50"
+    ]
+  },
+  {
+    "collection": "rich_menu_phase_profiles",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuPhaseProfilesRepo.js:5",
+      "src/repos/firestore/richMenuPhaseProfilesRepo.js:90",
+      "src/repos/firestore/richMenuPhaseProfilesRepo.js:109"
+    ]
+  },
+  {
+    "collection": "rich_menu_rate_buckets",
+    "kind": "transient",
+    "recomputable": true,
+    "retention": "30d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/richMenuRateBucketsRepo.js:5",
+      "src/repos/firestore/richMenuRateBucketsRepo.js:10",
+      "src/repos/firestore/richMenuRateBucketsRepo.js:39"
+    ]
+  },
+  {
+    "collection": "rich_menu_rollout_runs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuRolloutRunsRepo.js:6",
+      "src/repos/firestore/richMenuRolloutRunsRepo.js:49",
+      "src/repos/firestore/richMenuRolloutRunsRepo.js:74"
+    ]
+  },
+  {
+    "collection": "rich_menu_templates",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/richMenuTemplatesRepo.js:5",
+      "src/repos/firestore/richMenuTemplatesRepo.js:215",
+      "src/repos/firestore/richMenuTemplatesRepo.js:236"
     ]
   },
   {

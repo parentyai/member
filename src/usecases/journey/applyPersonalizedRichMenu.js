@@ -1,8 +1,8 @@
 'use strict';
 
-const { linkRichMenuToUser } = require('../../infra/lineClient');
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const richMenuBindingsRepo = require('../../repos/firestore/richMenuBindingsRepo');
+const { applyRichMenuAssignment } = require('./applyRichMenuAssignment');
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -56,6 +56,7 @@ async function applyPersonalizedRichMenu(params, deps) {
 
   const policyRepo = resolvedDeps.journeyPolicyRepo || journeyPolicyRepo;
   const bindingsRepo = resolvedDeps.richMenuBindingsRepo || richMenuBindingsRepo;
+  const assignmentFn = resolvedDeps.applyRichMenuAssignment || applyRichMenuAssignment;
 
   if (!resolveRichMenuFeatureEnabled()) {
     return { ok: true, status: 'disabled_by_env' };
@@ -66,19 +67,17 @@ async function applyPersonalizedRichMenu(params, deps) {
     return { ok: true, status: 'disabled_by_policy' };
   }
 
-  const menuKey = resolveMenuKey(payload.plan, payload.householdType);
-  const richMenuId = resolveRichMenuId(policy, menuKey);
-  if (!richMenuId) {
-    await bindingsRepo.upsertRichMenuBinding(lineUserId, {
-      currentMenuKey: menuKey,
-      currentRichMenuId: null,
-      lastError: `rich_menu_not_configured:${menuKey}`
-    });
-    return { ok: true, status: 'menu_missing', menuKey };
-  }
+  const result = await assignmentFn(Object.assign({}, payload, {
+    lineUserId,
+    journeyPolicy: policy
+  }), resolvedDeps);
 
-  try {
-    await linkRichMenuToUser(lineUserId, richMenuId);
+  const menuKey = result && result.resolution && result.resolution.legacyMenuKey
+    ? result.resolution.legacyMenuKey
+    : resolveMenuKey(payload.plan, payload.householdType);
+  const richMenuId = result && result.richMenuId ? result.richMenuId : null;
+
+  if (result && (result.status === 'applied' || result.status === 'applied_fallback')) {
     await bindingsRepo.upsertRichMenuBinding(lineUserId, {
       currentMenuKey: menuKey,
       currentRichMenuId: richMenuId,
@@ -91,22 +90,48 @@ async function applyPersonalizedRichMenu(params, deps) {
       menuKey,
       richMenuId
     };
-  } catch (err) {
-    const message = err && err.message ? String(err.message) : 'rich_menu_apply_failed';
+  }
+
+  if (result && result.status === 'menu_missing') {
     await bindingsRepo.upsertRichMenuBinding(lineUserId, {
       currentMenuKey: menuKey,
-      currentRichMenuId: richMenuId,
-      lastError: message,
-      appliedAt: new Date().toISOString()
+      currentRichMenuId: null,
+      lastError: `rich_menu_not_configured:${menuKey}`
     });
+    return { ok: true, status: 'menu_missing', menuKey };
+  }
+
+  if (result && result.status === 'disabled_by_policy') {
+    return { ok: true, status: 'disabled_by_policy' };
+  }
+
+  if (result && result.status === 'disabled_by_env') {
+    return { ok: true, status: 'disabled_by_env' };
+  }
+
+  if (result && (result.status === 'cooldown' || result.status === 'rate_limited' || result.status === 'blocked_by_policy_killswitch')) {
     return {
-      ok: false,
-      status: 'error',
+      ok: true,
+      status: result.status,
       menuKey,
-      richMenuId,
-      reason: message
+      richMenuId
     };
   }
+
+  const reason = result && result.reason ? result.reason : 'rich_menu_apply_failed';
+  await bindingsRepo.upsertRichMenuBinding(lineUserId, {
+    currentMenuKey: menuKey,
+    currentRichMenuId: richMenuId,
+    lastError: reason,
+    appliedAt: new Date().toISOString()
+  });
+  return {
+    ok: false,
+    status: 'error',
+    menuKey,
+    richMenuId,
+    reason
+  };
 }
 
 module.exports = {

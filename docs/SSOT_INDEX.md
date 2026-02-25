@@ -8,6 +8,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/PHASE_PATH_MAP.json`（Phase docs legacy→archive の解決マップ）
 - `docs/REPO_AUDIT_INPUTS/phase_compression_baseline.json`（Wave0 baseline）
 - `docs/SSOT_LINE_ONLY_DELTA.md`（LINE-only 境界 / reaction 定義 / webhook events SSOT）
+- `docs/SSOT_LINE_RICH_MENU.md`（LINE Rich Menu SSOT / template-rule-policy / admin運用契約）
 - `docs/RUNBOOK_TRACE_AUDIT.md`（traceId 監査 runbook）
 - `docs/RUNBOOK_OPS.md`（Ops判断/停止/復旧の runbook）
 - `docs/RUNBOOK_ADMIN_OPS.md`（管理UI運用OSの日次/事故対応 runbook）

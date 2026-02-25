@@ -10,10 +10,10 @@
 | kind | count |
 | --- | --- |
 | aggregate | 10 |
-| config | 34 |
+| config | 37 |
 | event | 5 |
-| evidence | 6 |
-| transient | 2 |
+| evidence | 7 |
+| transient | 3 |
 
 ## Collection方針
 
@@ -62,7 +62,12 @@
 | `phase2_runs` | aggregate | 90d | CONDITIONAL | true |
 | `phase22_kpi_snapshots` | config | INDEFINITE | false | false |
 | `redac_membership_links` | config | INDEFINITE | false | false |
+| `rich_menu_assignment_rules` | config | INDEFINITE | false | false |
 | `rich_menu_bindings` | config | INDEFINITE | false | false |
+| `rich_menu_phase_profiles` | config | INDEFINITE | false | false |
+| `rich_menu_rate_buckets` | transient | 30d | CONDITIONAL | true |
+| `rich_menu_rollout_runs` | evidence | 365d | false | false |
+| `rich_menu_templates` | config | INDEFINITE | false | false |
 | `send_retry_queue` | config | INDEFINITE | false | false |
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |

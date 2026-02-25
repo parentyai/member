@@ -37,6 +37,13 @@ Secrets（例）:
 - `REDAC_MEMBERSHIP_ID_HMAC_SECRET`
 - `OPS_CONFIRM_TOKEN_SECRET`
 
+Rich Menu運用（Phase663 add-only）:
+- 新規Secretは追加しない（LINE APIは既存 `LINE_CHANNEL_ACCESS_TOKEN` を利用）。
+- 運用フラグ:
+  - `ENABLE_RICH_MENU_DYNAMIC`（既定ON）
+  - `opsConfig/richMenuPolicy.enabled`（Firestore）
+  - `opsConfig/richMenuPolicy.updateEnabled`（Firestore）
+
 ## Runtime Secret Access Guardrail
 Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
 `roles/secretmanager.secretAccessor` を idempotent に付与する。

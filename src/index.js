@@ -1520,6 +1520,13 @@ function createServer() {
       handleRuntime: handleJourneyGraphRuntime,
       handleRuntimeHistory: handleJourneyGraphRuntimeHistory
     } = require('./routes/admin/journeyGraphRuntime');
+    const {
+      handleStatus: handleRichMenuStatus,
+      handlePlan: handleRichMenuPlan,
+      handleSet: handleRichMenuSet,
+      handleHistory: handleRichMenuHistory,
+      handleResolvePreview: handleRichMenuResolvePreview
+    } = require('./routes/admin/richMenuConfig');
     const { handleHistory: handleLlmPolicyHistory } = require('./routes/admin/llmPolicyConfig');
     let bytes = 0;
     const chunks = [];
@@ -1669,6 +1676,29 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime/history') {
         await handleJourneyGraphRuntimeHistory(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/status') {
+        await handleRichMenuStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/plan') {
+        const body = await collectBody();
+        await handleRichMenuPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/set') {
+        const body = await collectBody();
+        await handleRichMenuSet(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/history') {
+        await handleRichMenuHistory(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/resolve-preview') {
+        const body = await collectBody();
+        await handleRichMenuResolvePreview(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/analyze') {

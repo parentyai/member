@@ -125,6 +125,20 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 - `/Users/parentyai.com/Projects/Member/apps/admin/assets/admin_ui_core.js:328`
 - `/Users/parentyai.com/Projects/Member/apps/admin/app.html:2698-2702`
 
+### Phase663 Addendum（Rich Menu運用語彙）
+- monitor内で次の語彙を固定する。
+  - `Rich Menu Ops（admin）`
+  - `resolve-preview`
+  - `plan`
+  - `set`
+  - `history`
+  - `policy.enabled / policy.updateEnabled`
+- Rich Menu運用は monitor の「ユーザー検索」「Journey Graph」と並列で扱う（別画面へ分離しない）。
+
+根拠:
+- `/Users/parentyai.com/Projects/Member/apps/admin/app.html`
+- `/Users/parentyai.com/Projects/Member/apps/admin/assets/admin_app.js`
+
 ## 通知集計/配信結果 表示項目（Read Model / Monitor）
 - targetCount: 通知送信 plan で算出された対象人数
 - targetCountSource: targetCount の出所（`plan_audit` / `plan_missing`）

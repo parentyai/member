@@ -1038,6 +1038,113 @@
                 </div>
               </div>
               <div class="panel">
+                <div class="panel-title">Rich Menu Ops（admin）</div>
+                <div class="panel-body">
+                  <div class="note">free/paid + phase 解決を monitor で一元運用します（dry-run → apply → verify → rollback）。</div>
+                  <div class="row row-top">
+                    <button id="rich-menu-status-reload" type="button">status</button>
+                    <button id="rich-menu-history" type="button">history</button>
+                  </div>
+                  <div id="rich-menu-policy-summary" class="note">-</div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th>templateId</th>
+                          <th>kind</th>
+                          <th>status</th>
+                          <th>target</th>
+                          <th>richMenuId</th>
+                        </tr>
+                      </thead>
+                      <tbody id="rich-menu-template-rows"></tbody>
+                    </table>
+                  </div>
+                  <div class="table-scroll">
+                    <table class="table-compact">
+                      <thead>
+                        <tr>
+                          <th>runId</th>
+                          <th>action</th>
+                          <th>mode</th>
+                          <th>summary</th>
+                          <th>createdAt</th>
+                        </tr>
+                      </thead>
+                      <tbody id="rich-menu-run-rows"></tbody>
+                    </table>
+                  </div>
+                  <details class="section" open>
+                    <summary>Resolve Preview</summary>
+                    <div class="row">
+                      <label class="flex-1">LINEユーザーID
+                        <input type="text" id="rich-menu-preview-line-user-id" placeholder="U..." />
+                      </label>
+                      <label>planTier
+                        <select id="rich-menu-preview-plan-tier" class="select-inline">
+                          <option value="">auto</option>
+                          <option value="free">free</option>
+                          <option value="paid">paid</option>
+                        </select>
+                      </label>
+                      <label>journeyStage
+                        <input type="text" id="rich-menu-preview-journey-stage" class="input-inline input-sm" placeholder="assigned" />
+                      </label>
+                      <label>phaseId
+                        <input type="text" id="rich-menu-preview-phase-id" class="input-inline input-sm" placeholder="arrival" />
+                      </label>
+                    </div>
+                    <div class="row row-top">
+                      <button id="rich-menu-resolve-preview" type="button">resolve-preview</button>
+                    </div>
+                    <pre id="rich-menu-preview-result">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>Plan / Set</summary>
+                    <div class="row">
+                      <label>action
+                        <select id="rich-menu-action-select" class="select-inline">
+                          <option value="set_policy">set_policy</option>
+                          <option value="upsert_template">upsert_template</option>
+                          <option value="upsert_phase_profile">upsert_phase_profile</option>
+                          <option value="upsert_rule">upsert_rule</option>
+                          <option value="set_manual_override">set_manual_override</option>
+                          <option value="clear_manual_override">clear_manual_override</option>
+                          <option value="apply">apply</option>
+                          <option value="rollback">rollback</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label>payload JSON</label>
+                    <textarea id="rich-menu-action-payload-json" rows="14" class="input-mono"></textarea>
+                    <div class="row row-top">
+                      <button id="rich-menu-plan" type="button">plan</button>
+                      <button id="rich-menu-set" type="button">set</button>
+                    </div>
+                    <div class="note">
+                      planHash: <span id="rich-menu-plan-hash">-</span>
+                      / confirmToken: <span id="rich-menu-confirm-token">-</span>
+                    </div>
+                    <details class="section">
+                      <summary>plan result</summary>
+                      <pre id="rich-menu-plan-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>set result</summary>
+                      <pre id="rich-menu-set-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>status raw</summary>
+                      <pre id="rich-menu-status-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>history raw</summary>
+                      <pre id="rich-menu-history-result">-</pre>
+                    </details>
+                  </details>
+                </div>
+              </div>
+              <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.insights">クリック分析（7日/30日）</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.monitor.insights">配信実績からベンダー別反応率、AB状況、FAQ参照Topを表示します。</div>

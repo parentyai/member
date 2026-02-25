@@ -207,3 +207,22 @@ MUST:
   - `forbidden_domains`
   - `disclaimer_templates`
   - `output_constraints`
+
+## Phase663 Add-only UI Contract（LINE Rich Menu運用）
+- Rich Menu運用UIは `/admin/app?pane=monitor` に統合する（専用paneは追加しない）。
+- monitor に以下を add-only で追加する。
+  - template一覧（kind/status/target/richMenuId）
+  - policy概要（enabled/updateEnabled/cooldown/maxApplies）
+  - resolve-preview（対象ユーザー別）
+  - plan/set（二段階確認）
+  - history（run evidence）
+- Admin OS API（add-only）:
+  - `GET /api/admin/os/rich-menu/status`
+  - `POST /api/admin/os/rich-menu/plan`
+  - `POST /api/admin/os/rich-menu/set`
+  - `GET /api/admin/os/rich-menu/history`
+  - `POST /api/admin/os/rich-menu/resolve-preview`
+- Safety:
+  - writeは `planHash + confirmToken` 必須
+  - 運用手順は `dry-run -> apply -> verify -> rollback`
+  - 緊急停止は `opsConfig/richMenuPolicy.updateEnabled=false`

@@ -4,6 +4,7 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'rich_menu_bindings';
 const IN_QUERY_CHUNK_SIZE = 10;
+const ALLOWED_PLAN_TIER = Object.freeze(['free', 'paid']);
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -18,12 +19,32 @@ function normalizeString(value, fallback) {
   return normalized;
 }
 
+function normalizePlanTier(value, fallback) {
+  const normalized = normalizeString(value, fallback || null);
+  if (normalized === null) return null;
+  if (!normalized) return fallback || null;
+  const lowered = normalized.toLowerCase();
+  if (!ALLOWED_PLAN_TIER.includes(lowered)) return null;
+  return lowered;
+}
+
 function normalizeBinding(lineUserId, data) {
   const payload = data && typeof data === 'object' ? data : {};
   return {
     lineUserId: normalizeLineUserId(lineUserId),
     currentMenuKey: normalizeString(payload.currentMenuKey, null),
     currentRichMenuId: normalizeString(payload.currentRichMenuId, null),
+    currentTemplateId: normalizeString(payload.currentTemplateId, null),
+    previousTemplateId: normalizeString(payload.previousTemplateId, null),
+    resolvedRuleId: normalizeString(payload.resolvedRuleId, null),
+    planTier: normalizePlanTier(payload.planTier, null),
+    phaseId: normalizeString(payload.phaseId, null),
+    lastApplyResult: payload.lastApplyResult && typeof payload.lastApplyResult === 'object'
+      ? payload.lastApplyResult
+      : null,
+    lastTraceId: normalizeString(payload.lastTraceId, null),
+    nextEligibleAt: payload.nextEligibleAt || null,
+    manualOverrideTemplateId: normalizeString(payload.manualOverrideTemplateId, null),
     appliedAt: payload.appliedAt || null,
     lastError: normalizeString(payload.lastError, null),
     updatedAt: payload.updatedAt || null
