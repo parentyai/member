@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveFirestoreProjectId } = require('../src/infra/firestore');
 
 function normalizeMessage(err) {
   if (!err) return 'unknown error';
@@ -66,10 +67,16 @@ function evaluateCredentialsPath(env, fsApi) {
   };
 }
 
-function evaluateProjectId(env) {
+function evaluateProjectId(env, options) {
+  const opts = options && typeof options === 'object' ? options : {};
   const envSource = env && typeof env === 'object' ? env : process.env;
-  const raw = typeof envSource.FIRESTORE_PROJECT_ID === 'string'
-    ? envSource.FIRESTORE_PROJECT_ID.trim()
+  const resolver = typeof opts.resolveProjectId === 'function'
+    ? opts.resolveProjectId
+    : resolveFirestoreProjectId;
+  const allowGcloudDetect = opts.allowGcloudDetect === true;
+  const resolved = resolver({ env: envSource, allowGcloud: allowGcloudDetect });
+  const raw = resolved && typeof resolved.projectId === 'string'
+    ? resolved.projectId.trim()
     : '';
   if (!raw) {
     return {
@@ -77,15 +84,19 @@ function evaluateProjectId(env) {
       status: 'warn',
       code: 'FIRESTORE_PROJECT_ID_MISSING',
       message: 'FIRESTORE_PROJECT_ID が未設定です。',
-      value: null
+      value: null,
+      source: 'unresolved'
     };
   }
+  const source = resolved && typeof resolved.source === 'string' ? resolved.source : 'env:FIRESTORE_PROJECT_ID';
+  const sourceLabel = source === 'env:FIRESTORE_PROJECT_ID' ? 'FIRESTORE_PROJECT_ID' : source;
   return {
     key: 'firestoreProjectId',
     status: 'ok',
     code: 'FIRESTORE_PROJECT_ID_OK',
-    message: 'FIRESTORE_PROJECT_ID を確認しました。',
-    value: raw
+    message: `Firestore projectId を確認しました（${sourceLabel}）。`,
+    value: raw,
+    source
   };
 }
 
@@ -107,6 +118,19 @@ function classifyProbeError(message) {
 
 function classifyFirestoreProbeClassification(message) {
   const text = normalizeLowerText(message);
+  if (text.includes('database not found')
+    || text.includes('datastore was not found')
+    || text.includes('resource name') && text.includes('/databases/') && text.includes('not found')
+    || text.includes('projects/') && text.includes('/databases/') && text.includes('not found')) {
+    return 'FIRESTORE_DATABASE_NOT_FOUND';
+  }
+  if (text.includes('unable to detect a project id')
+    || text.includes('unable to detect project id')
+    || text.includes('project id is required')
+    || text.includes('firestore_project_id_error')
+    || text.includes('firestore_project_id_missing')) {
+    return 'FIRESTORE_PROJECT_ID_ERROR';
+  }
   if (text.includes('invalid_rapt')
     || text.includes('invalid_grant')
     || text.includes('reauth related error')
@@ -160,6 +184,11 @@ const RECOVERY_COMMANDS = Object.freeze({
     'gcloud projects get-iam-policy <your-project-id> --flatten="bindings[].members" --format="table(bindings.role,bindings.members)"',
     'npm run admin:preflight'
   ]),
+  CHECK_FIRESTORE_DATABASE: Object.freeze([
+    'gcloud firestore databases list --project <your-project-id>',
+    'https://console.cloud.google.com/firestore/databases/-default-/data?project=<your-project-id>',
+    'npm run admin:preflight'
+  ]),
   CHECK_FIRESTORE_UNKNOWN: Object.freeze([
     'npm run admin:preflight',
     'curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight'
@@ -170,6 +199,8 @@ const RECOVERY_COMMANDS = Object.freeze({
     'npm run admin:preflight'
   ]),
   SET_FIRESTORE_PROJECT_ID: Object.freeze([
+    'gcloud config get-value project',
+    'export FIRESTORE_PROJECT_ID="$(gcloud config get-value project 2>/dev/null)"',
     'export FIRESTORE_PROJECT_ID=<your-project-id>',
     'npm run admin:preflight'
   ])
@@ -188,6 +219,36 @@ function buildErrorSummary(entry) {
 
   if (source.key === 'firestoreProbe') {
     const classification = normalizeCode(source.classification || 'FIRESTORE_UNKNOWN');
+    if (classification === 'FIRESTORE_DATABASE_NOT_FOUND') {
+      return {
+        code: 'FIRESTORE_DATABASE_NOT_FOUND',
+        tone: 'danger',
+        category: 'config',
+        cause: 'Firestore Database が見つからず接続に失敗しました。',
+        impact: 'Firestore依存APIが失敗し、管理画面に NOT AVAILABLE が増えます。',
+        action: 'databaseId と GCP Console URL を確認し、(default) DB へ切り替えて再診断してください。',
+        recoveryActionCode: 'CHECK_FIRESTORE_DATABASE',
+        recoveryCommands: resolveRecoveryCommands('CHECK_FIRESTORE_DATABASE'),
+        primaryCheckKey: 'firestoreProbe',
+        rawHint,
+        retriable: true
+      };
+    }
+    if (classification === 'FIRESTORE_PROJECT_ID_ERROR') {
+      return {
+        code: 'FIRESTORE_PROJECT_ID_ERROR',
+        tone: 'danger',
+        category: 'config',
+        cause: 'Firestore Project ID を特定できず接続に失敗しました。',
+        impact: 'Firestore依存APIが失敗し、管理画面に NOT AVAILABLE が増えます。',
+        action: 'FIRESTORE_PROJECT_ID を設定して再診断してください。',
+        recoveryActionCode: 'SET_FIRESTORE_PROJECT_ID',
+        recoveryCommands: resolveRecoveryCommands('SET_FIRESTORE_PROJECT_ID'),
+        primaryCheckKey: 'firestoreProjectId',
+        rawHint,
+        retriable: true
+      };
+    }
     if (classification === 'ADC_REAUTH_REQUIRED') {
       return {
         code: 'ADC_REAUTH_REQUIRED',
@@ -407,10 +468,15 @@ async function runLocalPreflight(options) {
   const probeFirestore = typeof opts.probeFirestore === 'function'
     ? opts.probeFirestore
     : probeFirestoreReadOnly;
+  const allowGcloudProjectIdDetect = opts.allowGcloudProjectIdDetect === true
+    || (!opts.env && opts.allowGcloudProjectIdDetect !== false);
 
   const checks = {
     credentialsPath: evaluateCredentialsPath(env, fsApi),
-    firestoreProjectId: evaluateProjectId(env),
+    firestoreProjectId: evaluateProjectId(env, {
+      resolveProjectId: opts.resolveProjectId,
+      allowGcloudDetect: allowGcloudProjectIdDetect
+    }),
     firestoreProbe: await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb })
   };
   const summary = buildSummary(checks);

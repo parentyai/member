@@ -98,6 +98,8 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
   - `rawHint`
   - `retriable`
 - `checks.firestoreProbe.classification` は以下を返す:
+  - `FIRESTORE_DATABASE_NOT_FOUND`
+  - `FIRESTORE_PROJECT_ID_ERROR`
   - `ADC_REAUTH_REQUIRED`
   - `FIRESTORE_TIMEOUT`
   - `FIRESTORE_NETWORK_ERROR`

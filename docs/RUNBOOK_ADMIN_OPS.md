@@ -60,12 +60,17 @@
 ### 実行コマンド
 1) `npm run admin:preflight`  
 2) `curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight`
+3) （推奨）`gcloud config get-value project` で project を確認し、`export FIRESTORE_PROJECT_ID="$(gcloud config get-value project 2>/dev/null)"` を設定
+4) （DB確認）`gcloud firestore databases list --project <your-project-id>`
+5) （Console）`https://console.cloud.google.com/firestore/databases/-default-/data?project=<your-project-id>`
 
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
   - `GOOGLE_APPLICATION_CREDENTIALS` の無効パス/非ファイルを解消
   - `FIRESTORE_PROJECT_ID` を確認
+  - `Unable to detect a Project Id` の場合は `FIRESTORE_PROJECT_ID` を明示設定
+  - `Database not found` の場合は Console URL の databaseId が `-default-` か確認
   - `gcloud auth application-default login` を再実行
 
 ### UI復旧フロー（Phase664）
