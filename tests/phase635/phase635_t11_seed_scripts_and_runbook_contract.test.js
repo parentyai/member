@@ -10,7 +10,8 @@ const { parseSeedSetupArgs, parseSeedPurgeArgs } = require('../../tools/seed/lib
 test('phase635: package scripts expose seed setup and purge commands', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
   assert.equal(pkg.scripts['seed:setup'], 'node tools/seed_templates_and_citypacks.js');
-  assert.equal(pkg.scripts['seed:purge'], 'node tools/seed_purge.js --seedRunId "$SEED_RUN_ID" --confirm SEED_DELETE');
+  assert.equal(pkg.scripts['seed:trial'], 'node tools/seed_trial_setup.js');
+  assert.equal(pkg.scripts['seed:purge'], 'node tools/seed_trial_purge.js --seedRunId "$SEED_RUN_ID" --confirm SEED_DELETE');
 });
 
 test('phase635: seed cli wrappers call shared library entry points', () => {
