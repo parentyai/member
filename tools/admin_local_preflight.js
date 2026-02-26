@@ -19,6 +19,13 @@ function normalizeLowerText(value) {
   return String(value || '').toLowerCase();
 }
 
+function hasProjectIdToken(text) {
+  return text.includes('project id')
+    || text.includes('project-id')
+    || text.includes('project_id')
+    || text.includes('projectid');
+}
+
 function evaluateCredentialsPath(env, fsApi) {
   const envSource = env && typeof env === 'object' ? env : process.env;
   const fsSource = fsApi && typeof fsApi === 'object' ? fsApi : fs;
@@ -109,7 +116,7 @@ function classifyProbeError(message) {
     || text.includes('enoent')) {
     return 'FIRESTORE_CREDENTIALS_ERROR';
   }
-  if (text.includes('project id')) return 'FIRESTORE_PROJECT_ID_ERROR';
+  if (hasProjectIdToken(text)) return 'FIRESTORE_PROJECT_ID_ERROR';
   if (text.includes('permission') || text.includes('unauthorized') || text.includes('forbidden')) {
     return 'FIRESTORE_PERMISSION_ERROR';
   }
@@ -128,7 +135,13 @@ function classifyFirestoreProbeClassification(message) {
     || text.includes('unable to detect project id')
     || text.includes('project id is required')
     || text.includes('firestore_project_id_error')
-    || text.includes('firestore_project_id_missing')) {
+    || text.includes('firestore_project_id_missing')
+    || (hasProjectIdToken(text)
+      && (text.includes('unable to detect')
+        || text.includes('required')
+        || text.includes('missing')
+        || text.includes('unset')
+        || text.includes('not set')))) {
     return 'FIRESTORE_PROJECT_ID_ERROR';
   }
   if (text.includes('invalid_rapt')
@@ -461,6 +474,38 @@ function buildSummary(checks) {
   };
 }
 
+function normalizeProjectIdProbeClassification(checks) {
+  const source = checks && typeof checks === 'object' ? checks : {};
+  const projectIdCheck = source.firestoreProjectId && typeof source.firestoreProjectId === 'object'
+    ? source.firestoreProjectId
+    : null;
+  const probeCheck = source.firestoreProbe && typeof source.firestoreProbe === 'object'
+    ? source.firestoreProbe
+    : null;
+  if (!projectIdCheck || !probeCheck) return source;
+
+  const projectIdMissing = projectIdCheck.status === 'warn'
+    && normalizeCode(projectIdCheck.code) === 'FIRESTORE_PROJECT_ID_MISSING';
+  const probeErrored = probeCheck.status === 'error';
+  if (!projectIdMissing || !probeErrored) return source;
+
+  const probeCode = normalizeCode(probeCheck.code);
+  const probeClassification = normalizeCode(probeCheck.classification || probeCheck.code);
+  if (probeClassification === 'FIRESTORE_PROJECT_ID_ERROR') return source;
+
+  const shouldPromoteToProjectId = probeClassification === 'FIRESTORE_UNKNOWN'
+    || probeCode === 'FIRESTORE_PROJECT_ID_ERROR'
+    || probeCode === 'FIRESTORE_PROBE_FAILED';
+  if (!shouldPromoteToProjectId) return source;
+
+  return Object.assign({}, source, {
+    firestoreProbe: Object.assign({}, probeCheck, {
+      code: 'FIRESTORE_PROJECT_ID_ERROR',
+      classification: 'FIRESTORE_PROJECT_ID_ERROR'
+    })
+  });
+}
+
 async function runLocalPreflight(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const env = opts.env && typeof opts.env === 'object' ? opts.env : process.env;
@@ -471,7 +516,7 @@ async function runLocalPreflight(options) {
   const allowGcloudProjectIdDetect = opts.allowGcloudProjectIdDetect === true
     || (!opts.env && opts.allowGcloudProjectIdDetect !== false);
 
-  const checks = {
+  const rawChecks = {
     credentialsPath: evaluateCredentialsPath(env, fsApi),
     firestoreProjectId: evaluateProjectId(env, {
       resolveProjectId: opts.resolveProjectId,
@@ -479,6 +524,7 @@ async function runLocalPreflight(options) {
     }),
     firestoreProbe: await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb })
   };
+  const checks = normalizeProjectIdProbeClassification(rawChecks);
   const summary = buildSummary(checks);
   const ready = summary.tone !== 'danger';
 

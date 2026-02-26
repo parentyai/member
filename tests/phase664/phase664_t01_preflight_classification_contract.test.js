@@ -67,6 +67,28 @@ test('phase664: local preflight classifies missing project id probe failure as F
   assert.ok(result.summary.recoveryCommands.includes('npm run admin:preflight'));
 });
 
+test('phase664: local preflight promotes FIRESTORE_UNKNOWN probe to FIRESTORE_PROJECT_ID_ERROR when project id is missing', async () => {
+  const result = await runLocalPreflight({
+    env: {},
+    allowGcloudProjectIdDetect: false,
+    probeFirestore: async () => ({
+      key: 'firestoreProbe',
+      status: 'error',
+      code: 'FIRESTORE_PROJECT_ID_ERROR',
+      classification: 'FIRESTORE_UNKNOWN',
+      message: 'Firestore read-only probe failed: Unable to detect a Project Id in the current environment.'
+    })
+  });
+
+  assert.equal(result.ready, false);
+  assert.equal(result.checks.firestoreProjectId.code, 'FIRESTORE_PROJECT_ID_MISSING');
+  assert.equal(result.checks.firestoreProbe.code, 'FIRESTORE_PROJECT_ID_ERROR');
+  assert.equal(result.checks.firestoreProbe.classification, 'FIRESTORE_PROJECT_ID_ERROR');
+  assert.equal(result.summary.code, 'FIRESTORE_PROJECT_ID_ERROR');
+  assert.equal(result.summary.recoveryActionCode, 'SET_FIRESTORE_PROJECT_ID');
+  assert.equal(result.summary.primaryCheckKey, 'firestoreProjectId');
+});
+
 test('phase664: local preflight classifies missing firestore database as FIRESTORE_DATABASE_NOT_FOUND', async () => {
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
