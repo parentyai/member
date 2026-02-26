@@ -18,7 +18,11 @@ const INTERNAL_JOB_PATHS = [
   '/internal/jobs/journey-todo-reminder',
   '/internal/jobs/user-context-snapshot-build',
   '/internal/jobs/user-context-snapshot-recompress',
-  '/internal/jobs/journey-kpi-build'
+  '/internal/jobs/journey-kpi-build',
+  '/internal/jobs/emergency-sync',
+  '/internal/jobs/emergency-provider-fetch',
+  '/internal/jobs/emergency-provider-normalize',
+  '/internal/jobs/emergency-provider-summarize'
 ];
 
 const CITY_PACK_TOKEN_FILES = [
@@ -32,7 +36,8 @@ const CITY_PACK_TOKEN_FILES = [
   'src/routes/internal/opsSnapshotJob.js',
   'src/routes/internal/userContextSnapshotJob.js',
   'src/routes/internal/userContextSnapshotRecompressJob.js',
-  'src/routes/internal/journeyKpiBuildJob.js'
+  'src/routes/internal/journeyKpiBuildJob.js',
+  'src/routes/internal/emergencyJobs.js'
 ];
 
 test('phase657: index route wiring keeps internal jobs explicitly declared', () => {

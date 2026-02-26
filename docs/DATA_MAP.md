@@ -242,6 +242,101 @@ Typical fields:
 - `traceId`, `requestId`
 - `createdAt`, `updatedAt`, `activatedAt`, `retiredAt`
 
+### `emergency_providers/{providerKey}`
+Purpose: Emergency provider の有効/無効と取得頻度を管理する。
+
+Typical fields:
+- `providerKey`（`nws_alerts` / `usgs_earthquakes` / `fema_ipaws` / `openfema_declarations` / `openfda_recalls` / `airnow_aqi`）
+- `status` (`enabled`/`disabled`)
+- `scheduleMinutes`
+- `officialLinkRegistryId`
+- `lastRunAt`, `lastSuccessAt`, `lastError`
+- `lastPayloadHash`, `lastEtag`, `lastModified`
+- `traceId`
+- `createdAt`, `updatedAt`
+
+### `emergency_snapshots/{snapshotId}`
+Purpose: provider取得結果の証跡（raw/要約/ハッシュ）を保持する。
+
+Typical fields:
+- `providerKey`
+- `fetchedAt`
+- `statusCode`
+- `etag`, `lastModified`
+- `payloadHash`
+- `payloadPath`（必要時）
+- `payloadSummary`
+- `rawPayload`（サイズ上限内）
+- `runId`, `traceId`
+- `createdAt`, `updatedAt`
+
+### `emergency_events_normalized/{eventDocId}`
+Purpose: provider差異を吸収した正規化イベントを保持する。
+
+Typical fields:
+- `providerKey`
+- `eventKey`
+- `regionKey`
+- `severity` (`INFO`/`WARN`/`CRITICAL`)
+- `category` (`weather`/`earthquake`/`alert`/`recall`/`air`)
+- `headline`
+- `startsAt`, `endsAt`
+- `officialLinkRegistryId`
+- `snapshotId`
+- `eventHash`
+- `isActive`, `resolvedAt`
+- `rawMeta`
+- `runId`, `traceId`
+- `createdAt`, `updatedAt`
+
+### `emergency_diffs/{diffId}`
+Purpose: normalized event の差分（new/update/resolve）を保存する。
+
+Typical fields:
+- `providerKey`
+- `regionKey`
+- `category`
+- `diffType` (`new`/`update`/`resolve`)
+- `severity`
+- `changedKeys[]`
+- `summaryDraft`
+- `snapshotId`
+- `eventKey`, `eventDocId`
+- `runId`, `traceId`
+- `createdAt`, `updatedAt`
+
+### `emergency_bulletins/{bulletinId}`
+Purpose: 通知候補（draft→approved→sent/rejected）を管理する。
+
+Typical fields:
+- `status` (`draft`/`approved`/`sent`/`rejected`)
+- `providerKey`
+- `regionKey`
+- `category`
+- `severity`
+- `headline`
+- `linkRegistryId`
+- `messageDraft`
+- `evidenceRefs`（`snapshotId` / `diffId` / `eventDocId`）
+- `approvedBy`, `approvedAt`
+- `sentAt`
+- `notificationIds[]`
+- `sendResult`
+- `traceId`
+- `createdAt`, `updatedAt`
+
+### `emergency_unmapped_events/{id}`
+Purpose: region解決できなかったイベントを監査隔離する。
+
+Typical fields:
+- `providerKey`
+- `eventKey`
+- `reason`
+- `snapshotId`
+- `rawMeta`
+- `runId`, `traceId`
+- `createdAt`, `updatedAt`
+
 ### `ops_read_model_snapshots/{snapshotType__snapshotKey}`
 Purpose: Ops KPI/summary の snapshot read-model（full scanの常用回避）。
 

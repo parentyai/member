@@ -1,0 +1,198 @@
+name: Emergency Layer sync
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      provider_keys:
+        description: "Optional comma-separated provider keys"
+        required: false
+        default: ""
+        type: string
+      force_provider_keys:
+        description: "Optional comma-separated force-refresh provider keys"
+        required: false
+        default: ""
+        type: string
+      force_refresh:
+        description: "Ignore schedule for enabled providers"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      skip_summarize:
+        description: "Skip optional Job C summarize"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      run_id:
+        description: "Optional runId"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
+
+jobs:
+  emergency-sync:
+    name: emergency-sync
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: emergency-layer-sync
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Resolve Cloud Run service URL
+        id: service_url
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          echo "service_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Auth (OIDC proxy token)
+        id: proxy_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.service_url.outputs.service_url }}
+          create_credentials_file: false
+
+      - name: Resolve CITY_PACK_JOB_TOKEN
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            echo "::add-mask::$CITY_PACK_JOB_TOKEN"
+            echo "CITY_PACK_JOB_TOKEN=$CITY_PACK_JOB_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=CITY_PACK_JOB_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::CITY_PACK_JOB_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CITY_PACK_JOB_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run emergency sync
+        env:
+          PROXY_ID_TOKEN: ${{ steps.proxy_auth.outputs.id_token }}
+          INPUT_PROVIDER_KEYS: ${{ github.event.inputs.provider_keys }}
+          INPUT_FORCE_PROVIDER_KEYS: ${{ github.event.inputs.force_provider_keys }}
+          INPUT_FORCE_REFRESH: ${{ github.event.inputs.force_refresh }}
+          INPUT_SKIP_SUMMARIZE: ${{ github.event.inputs.skip_summarize }}
+          INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/emergency-layer-sync
+          RUN_TS="$(date -u +%Y%m%d%H%M%S)"
+          STDOUT_PATH="artifacts/emergency-layer-sync/stdout-${RUN_TS}.jsonl"
+          STDERR_PATH="artifacts/emergency-layer-sync/stderr-${RUN_TS}.log"
+
+          if [ -z "${PROXY_ID_TOKEN:-}" ]; then
+            echo "::error title=Identity token missing::Unable to mint identity token for Cloud Run proxy"
+            exit 1
+          fi
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --token "$PROXY_ID_TOKEN" \
+            --port 18083 >/tmp/emergency-sync-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18083/healthz" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18083 did not become ready"
+            tail -n 80 /tmp/emergency-sync-proxy.log || true
+            exit 1
+          fi
+
+          ARGS=(
+            --service-url "http://127.0.0.1:18083"
+            --job-token "$CITY_PACK_JOB_TOKEN"
+            --force-refresh "${INPUT_FORCE_REFRESH:-false}"
+            --skip-summarize "${INPUT_SKIP_SUMMARIZE:-false}"
+          )
+          if [ -n "${INPUT_PROVIDER_KEYS:-}" ]; then
+            ARGS+=(--provider-keys "$INPUT_PROVIDER_KEYS")
+          fi
+          if [ -n "${INPUT_FORCE_PROVIDER_KEYS:-}" ]; then
+            ARGS+=(--force-provider-keys "$INPUT_FORCE_PROVIDER_KEYS")
+          fi
+          if [ -n "${INPUT_RUN_ID:-}" ]; then
+            ARGS+=(--run-id "$INPUT_RUN_ID")
+          fi
+
+          set +e
+          node scripts/emergency_sync_runner.js "${ARGS[@]}" >"$STDOUT_PATH" 2>"$STDERR_PATH"
+          EXIT_CODE=$?
+          set -e
+          cat "$STDOUT_PATH" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "::error title=Emergency sync failed::See artifacts for details"
+            exit "$EXIT_CODE"
+          fi
+
+      - name: Upload emergency sync artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emergency-layer-sync-${{ github.run_id }}
+          path: artifacts/emergency-layer-sync
+          if-no-files-found: warn

@@ -60,6 +60,10 @@
             <span class="nav-icon" aria-hidden="true">CP</span>
             <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
           </button>
+          <button class="nav-item" data-pane-target="emergency-layer" data-nav-priority="87">
+            <span class="nav-icon" aria-hidden="true">EM</span>
+            <span data-dict-key="ui.label.nav.emergencyLayer">Emergency Layer</span>
+          </button>
           <button class="nav-item" data-pane-target="vendors" data-nav-priority="87">
             <span class="nav-icon" aria-hidden="true">V</span>
             <span data-dict-key="ui.label.nav.vendorManage">ベンダー管理</span>
@@ -1512,6 +1516,104 @@
               </div>
             </aside>
           </div>
+          </details>
+        </section>
+
+        <section id="pane-emergency-layer" class="app-pane" data-pane="emergency-layer">
+          <div class="decision-card" id="emergency-layer-decision-card">
+            <div class="decision-card-header">
+              <div class="decision-title" data-dict-key="ui.label.page.emergencyLayer">Emergency Layer</div>
+              <span id="emergency-layer-decision-state" class="decision-state state-ready">READY</span>
+            </div>
+            <div id="emergency-layer-decision-reason1" class="decision-reason">-</div>
+            <div id="emergency-layer-decision-reason2" class="decision-reason">-</div>
+            <div class="decision-updated">
+              <span data-dict-key="ui.label.decision.updatedAt">最終更新</span>
+              <span id="emergency-layer-decision-updated">-</span>
+            </div>
+            <div class="decision-actions">
+              <button id="emergency-layer-action-edit" type="button" class="decision-action-btn" data-action-kind="primary" data-dict-key="ui.label.decision.action.createEdit">作成・編集</button>
+              <button id="emergency-layer-action-activate" type="button" class="decision-action-btn" data-action-kind="secondary" data-dict-key="ui.label.decision.action.activate">有効化・公開</button>
+              <button id="emergency-layer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
+            </div>
+          </div>
+          <details id="emergency-layer-pane-details" class="decision-details section">
+            <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="panel">
+              <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
+              <div class="panel-body">
+                <div class="row row-top">
+                  <button id="emergency-provider-reload" type="button" data-dict-key="ui.label.emergency.reloadProviders">Provider一覧を更新</button>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.emergency.providerKey">providerKey</th>
+                        <th data-dict-key="ui.label.emergency.providerStatus">status</th>
+                        <th data-dict-key="ui.label.emergency.scheduleMinutes">scheduleMinutes</th>
+                        <th data-dict-key="ui.label.emergency.lastRunAt">lastRunAt</th>
+                        <th data-dict-key="ui.label.emergency.lastSuccessAt">lastSuccessAt</th>
+                        <th data-dict-key="ui.label.emergency.lastError">lastError</th>
+                        <th data-dict-key="ui.label.emergency.actions">actions</th>
+                        <th data-dict-key="ui.label.emergency.traceId">traceId</th>
+                      </tr>
+                    </thead>
+                    <tbody id="emergency-provider-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title" data-dict-key="ui.label.emergency.inbox">Emergency Inbox</div>
+              <div class="panel-body">
+                <div class="row">
+                  <label data-dict-key="ui.label.emergency.filterStatus">状態
+                    <select id="emergency-bulletin-status-filter" class="select-inline">
+                      <option value="" data-dict-key="ui.value.emergency.status.all">すべて</option>
+                      <option value="draft">draft</option>
+                      <option value="approved">approved</option>
+                      <option value="sent">sent</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  </label>
+                  <label data-dict-key="ui.label.emergency.filterRegion">regionKey
+                    <input id="emergency-bulletin-region-filter" type="text" class="input-sm" />
+                  </label>
+                  <label data-dict-key="ui.label.emergency.filterLimit">件数
+                    <input id="emergency-bulletin-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                  </label>
+                  <button id="emergency-bulletin-reload" type="button" data-dict-key="ui.label.emergency.reloadBulletins">Inboxを更新</button>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th data-dict-key="ui.label.emergency.col.status">status</th>
+                        <th data-dict-key="ui.label.emergency.col.regionKey">regionKey</th>
+                        <th data-dict-key="ui.label.emergency.col.category">category</th>
+                        <th data-dict-key="ui.label.emergency.col.severity">severity</th>
+                        <th data-dict-key="ui.label.emergency.col.updatedAt">updatedAt</th>
+                        <th data-dict-key="ui.label.emergency.col.evidence">evidence</th>
+                        <th data-dict-key="ui.label.emergency.col.actions">actions</th>
+                        <th data-dict-key="ui.label.emergency.col.traceId">traceId</th>
+                      </tr>
+                    </thead>
+                    <tbody id="emergency-bulletin-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title" data-dict-key="ui.label.emergency.evidenceViewer">Evidence Viewer</div>
+              <div class="panel-body">
+                <div id="emergency-evidence-summary" class="note" data-dict-key="ui.desc.emergency.evidenceEmpty">bulletinを選択すると証跡を表示します。</div>
+                <details open>
+                  <summary data-dict-key="ui.label.emergency.rawJson">RAW JSON</summary>
+                  <pre id="emergency-evidence-json">-</pre>
+                </details>
+              </div>
+            </div>
           </details>
         </section>
 
