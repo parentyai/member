@@ -899,6 +899,17 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+function normalizeComparableJson(filePath, jsonText) {
+  if (filePath !== OUTPUT_FILES.protectionMatrix) return jsonText;
+  try {
+    const parsed = JSON.parse(jsonText);
+    if (parsed && typeof parsed === 'object') delete parsed.generatedAt;
+    return stableJson(parsed);
+  } catch (_err) {
+    return jsonText;
+  }
+}
+
 function writeOrCheck(filePath, payload, checkMode) {
   const next = stableJson(payload);
   if (!checkMode) {
@@ -909,7 +920,7 @@ function writeOrCheck(filePath, payload, checkMode) {
     throw new Error(`${toRepoRelative(filePath)} is missing. run: npm run audit-core:generate`);
   }
   const current = fs.readFileSync(filePath, 'utf8');
-  if (current !== next) {
+  if (normalizeComparableJson(filePath, current) !== normalizeComparableJson(filePath, next)) {
     throw new Error(`${toRepoRelative(filePath)} is stale. run: npm run audit-core:generate`);
   }
 }
