@@ -5,13 +5,13 @@
 - add-onlyで legacy/duplicate/fallback/full-scan/drift を制御可能にする。
 
 ## 対象
-- canonical repos: 22
-- legacy repos: 6
-- duplicate groups: 6
+- canonical repos: 82
+- legacy repos: 0
+- duplicate groups: 0
 - missing-index fallback points: 0
 - full-scan hotspots: 0
 - lifecycle collections: 67
-- unreachable frozen targets: 20
+- unreachable frozen targets: 0
 
 ## 実施フェーズ
 1. Canonicalizationコメント統一（LEGACY_HEADER/LEGACY_ALIAS）

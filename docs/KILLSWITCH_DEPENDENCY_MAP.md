@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 83
+- 抽出件数: 82
 
 | file | line | reference |
 | --- | --- | --- |
@@ -85,6 +85,5 @@
 | `src/usecases/phase121/sendOpsNotice.js` | 47 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase33/executeOpsNextAction.js` | 176 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase40/getOpsAssistSuggestion.js` | 121 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/phase43/executeAutomationDecision.js` | 99 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase68/executeSegmentSend.js` | 148 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase73/retryQueuedSend.js` | 35 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
