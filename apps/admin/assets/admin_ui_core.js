@@ -586,9 +586,9 @@ function setTraceToUrl(url, traceId) {
   });
 
   const DEFAULT_NAV_PANE_POLICY = Object.freeze({
-    operator: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings']),
-    admin: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']),
-    developer: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'])
+    operator: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings']),
+    admin: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']),
+    developer: Object.freeze(['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'])
   });
 
   const DEFAULT_NAV_GROUP_ROLLOUT_POLICY = Object.freeze({

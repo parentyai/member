@@ -43,6 +43,10 @@ npm run firestore-indexes:plan -- --project-id <PROJECT_ID>
 - `/internal/jobs/city-pack-audit-light`
 - `/internal/jobs/city-pack-audit-heavy`
 - `/internal/jobs/city-pack-draft-generator`
+- `/internal/jobs/emergency-sync`
+- `/internal/jobs/emergency-provider-fetch`
+- `/internal/jobs/emergency-provider-normalize`
+- `/internal/jobs/emergency-provider-summarize`
 - `/internal/jobs/struct-drift-backfill`
 - `/internal/jobs/retention-dry-run`
 - `/internal/jobs/retention-apply`
@@ -86,3 +90,8 @@ npm run firestore-indexes:plan -- --project-id <PROJECT_ID>
 - confirm token guard がFAIL:
   - plan/setフローを復元
   - route-level mutationを停止し、revert検討
+
+## 8. Emergency Layer Guard（Phase669 add-only）
+- `system_flags.killSwitch=true` で Emergency fetch/normalize/summarize/approve は fail-closed で停止する。
+- `emergency_providers.status=disabled` で provider 単位停止できる。
+- approve/send 経路は既存 validator（CTA=1 / link_registry必須 / WARNリンク遮断 / 直URL禁止）を通過しなければ送信しない。

@@ -956,6 +956,47 @@ function createServer() {
     return;
   }
 
+  const isEmergencyAdminRoute = pathname === '/api/admin/emergency/providers'
+    || /^\/api\/admin\/emergency\/providers\/[^/]+$/.test(pathname)
+    || /^\/api\/admin\/emergency\/providers\/[^/]+\/force-refresh$/.test(pathname)
+    || pathname === '/api/admin/emergency/bulletins'
+    || /^\/api\/admin\/emergency\/bulletins\/[^/]+$/.test(pathname)
+    || /^\/api\/admin\/emergency\/bulletins\/[^/]+\/(approve|reject)$/.test(pathname)
+    || /^\/api\/admin\/emergency\/evidence\/[^/]+$/.test(pathname);
+  if (isEmergencyAdminRoute) {
+    const collectBody = () => new Promise((resolve) => {
+      if (req.method !== 'POST') {
+        resolve('');
+        return;
+      }
+      let bytes = 0;
+      const chunks = [];
+      let tooLarge = false;
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('payload too large');
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleEmergencyLayer } = require('./routes/admin/emergencyLayer');
+      const body = await collectBody();
+      await handleEmergencyLayer(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
   const isCityPackAdminRoute = pathname === '/api/admin/city-packs'
     || pathname === '/api/admin/city-packs/composition'
     || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
@@ -1122,6 +1163,42 @@ function createServer() {
         return;
       }
       await handleCityPackSourceAuditJob(req, res, body, { stage: null, mode: null });
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  const isEmergencyInternalRoute = req.method === 'POST' && (
+    pathname === '/internal/jobs/emergency-sync'
+    || pathname === '/internal/jobs/emergency-provider-fetch'
+    || pathname === '/internal/jobs/emergency-provider-normalize'
+    || pathname === '/internal/jobs/emergency-provider-summarize'
+  );
+  if (isEmergencyInternalRoute) {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleEmergencyJobs } = require('./routes/internal/emergencyJobs');
+      const body = await collectBody();
+      await handleEmergencyJobs(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

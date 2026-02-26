@@ -14,6 +14,7 @@ test('phase261: /admin/app uses decision cards and removes summary header blocks
     'home',
     'composer',
     'monitor',
+    'emergency-layer',
     'errors',
     'read-model',
     'vendors',

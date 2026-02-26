@@ -184,6 +184,22 @@ Firestore missing-index fallback を段階的に無効化するための最小�
   - 現行実装は where + orderBy の複合条件を追加していないため、新規 composite index は必須化しない。
   - status絞り込みは post-filter（アプリ側）で行う。
 
+### 23) Emergency Layer Admin/Internal（Phase669 add-only）
+- Source:
+  - `src/repos/firestore/emergencyProvidersRepo.js`
+  - `src/repos/firestore/emergencySnapshotsRepo.js`
+  - `src/repos/firestore/emergencyEventsRepo.js`
+  - `src/repos/firestore/emergencyDiffsRepo.js`
+  - `src/repos/firestore/emergencyBulletinsRepo.js`
+  - `src/repos/firestore/emergencyUnmappedEventsRepo.js`
+- Query:
+  - `where('providerKey','==',...)` + `limit(...)`（providers/snapshots/events/diffs）
+  - `where('snapshotId','==',...)` + `limit(...)`（diffs/unmapped）
+  - `where('status','==',...)` **or** `where('regionKey','==',...)` + `limit(...)`（bulletins）
+- Note:
+  - Emergency Layer は単一 where（status または regionKey）のみを使用し、複合 where を導入しない。
+  - 現時点で追加の composite index は必須化しない（missing-index surface 追加なし）。
+
 ## 運用ルール
 - 新規 fallback catch を追加する場合は、`tests/phase307/phase307_index_fallback_drift.test.js` に反映すること。
 - full-scan を許容する場合は、理由と期限を execution log に残すこと。

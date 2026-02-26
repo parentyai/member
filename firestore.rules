@@ -337,5 +337,32 @@ service cloud.firestore {
     match /city_pack_metrics_daily/{docId} {
       allow read, write: if isAdmin() || isServiceAccount();
     }
+
+    // --------------------------------------------------------
+    // Emergency Layer collections
+    // --------------------------------------------------------
+    match /emergency_providers/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /emergency_snapshots/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /emergency_events_normalized/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /emergency_diffs/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /emergency_bulletins/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /emergency_unmapped_events/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
   }
 }

@@ -111,6 +111,10 @@ const state = {
   cityPackFeedbackItems: [],
   cityPackBulletinItems: [],
   cityPackProposalItems: [],
+  emergencyProviderItems: [],
+  emergencyBulletinItems: [],
+  emergencySelectedBulletinId: null,
+  emergencyEvidenceItem: null,
   cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
   cityPackEducationLinkItems: [],
@@ -340,6 +344,7 @@ const PANE_HEADER_MAP = Object.freeze({
   errors: { titleKey: 'ui.label.page.errors', subtitleKey: 'ui.desc.page.errors' },
   'read-model': { titleKey: 'ui.label.page.readModel', subtitleKey: 'ui.desc.page.readModel' },
   vendors: { titleKey: 'ui.label.page.vendors', subtitleKey: 'ui.desc.page.vendors' },
+  'emergency-layer': { titleKey: 'ui.label.page.emergencyLayer', subtitleKey: 'ui.desc.page.emergencyLayer' },
   'city-pack': { titleKey: 'ui.label.page.cityPack', subtitleKey: 'ui.desc.page.cityPack' },
   audit: { titleKey: 'ui.label.page.audit', subtitleKey: 'ui.desc.page.audit' },
   'developer-map': { titleKey: 'ui.label.page.developerMap', subtitleKey: 'ui.desc.page.developerMap' },
@@ -351,9 +356,9 @@ const PANE_HEADER_MAP = Object.freeze({
 });
 
 const NAV_POLICY = Object.freeze({
-  operator: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings'],
-  admin: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
-  developer: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
+  operator: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings'],
+  admin: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
+  developer: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
 });
 
 const NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
@@ -1088,6 +1093,8 @@ async function runInitialDataLoads(options) {
   loadUsersSummary({ notify: false });
   loadErrors({ notify: false });
   loadVendors({ notify: false });
+  loadEmergencyProviders({ notify: false });
+  loadEmergencyBulletins({ notify: false });
   loadCityPackRequests({ notify: false });
   loadCityPackFeedback({ notify: false });
   loadCityPackBulletins({ notify: false });
@@ -1719,7 +1726,14 @@ function updatePageHeader(paneKey) {
   const secondaryAction = document.getElementById('page-action-secondary');
   if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
   if (subtitleEl) {
-    if (paneKey === 'composer' || paneKey === 'monitor' || paneKey === 'read-model' || paneKey === 'city-pack' || paneKey === 'vendors') {
+    if (
+      paneKey === 'composer'
+      || paneKey === 'monitor'
+      || paneKey === 'read-model'
+      || paneKey === 'city-pack'
+      || paneKey === 'vendors'
+      || paneKey === 'emergency-layer'
+    ) {
       subtitleEl.textContent = '';
     } else {
       subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
@@ -2442,6 +2456,7 @@ function normalizePaneTarget(target) {
     'errors',
     'read-model',
     'vendors',
+    'emergency-layer',
     'city-pack',
     'audit',
     'developer-map',
@@ -2547,6 +2562,7 @@ const PANE_SHORTCUTS = Object.freeze({
   '3': 'errors',
   '4': 'read-model',
   '5': 'vendors',
+  e: 'emergency-layer',
   '6': 'city-pack',
   '7': 'audit',
   '8': 'settings',
@@ -3211,6 +3227,25 @@ function resolveCityPackDecisionVm() {
   };
 }
 
+function resolveEmergencyLayerDecisionVm() {
+  const items = Array.isArray(state.emergencyBulletinItems) ? state.emergencyBulletinItems : [];
+  const draftCount = items.filter((item) => String(item && item.status) === 'draft').length;
+  const criticalCount = items.filter((item) => String(item && item.severity) === 'CRITICAL').length;
+  const decisionState = criticalCount > 0 ? 'STOP' : draftCount > 0 ? 'ATTENTION' : 'READY';
+  const primary = criticalCount > 0
+    ? 'CRITICAL'
+    : draftCount > 0
+      ? 'draft'
+      : t('ui.status.ok', '問題なし');
+  const reasons = buildDecisionReasons(draftCount, primary);
+  return {
+    state: decisionState,
+    reason1: reasons.reason1,
+    reason2: reasons.reason2,
+    updatedAt: resolvePaneUpdatedAt('emergency-layer')
+  };
+}
+
 function resolveVendorsDecisionVm() {
   const items = Array.isArray(state.vendorItems) ? state.vendorItems : [];
   const warnCount = items.filter((item) => String(item && item.healthState) === 'WARN').length;
@@ -3243,6 +3278,7 @@ function renderAllDecisionCards() {
   renderDecisionCard('monitor', resolveMonitorDecisionVm());
   renderDecisionCard('errors', resolveErrorsDecisionVm());
   renderDecisionCard('read-model', resolveReadModelDecisionVm());
+  renderDecisionCard('emergency-layer', resolveEmergencyLayerDecisionVm());
   renderDecisionCard('city-pack', resolveCityPackDecisionVm());
   renderDecisionCard('vendors', resolveVendorsDecisionVm());
 }
@@ -10764,6 +10800,387 @@ function setupReadModelControls() {
   });
 }
 
+function formatEmergencyStatus(value) {
+  const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!status) return '-';
+  return status;
+}
+
+function renderEmergencyProviderRows(items) {
+  const tbody = document.getElementById('emergency-provider-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const providerKey = row && row.providerKey ? String(row.providerKey) : '-';
+    const status = row && row.status ? String(row.status) : 'disabled';
+    const schedule = Number.isFinite(Number(row && row.scheduleMinutes)) ? String(Number(row.scheduleMinutes)) : '-';
+    const lastRunAt = row && row.lastRunAt ? formatDateLabel(row.lastRunAt) : '-';
+    const lastSuccessAt = row && row.lastSuccessAt ? formatDateLabel(row.lastSuccessAt) : '-';
+    const lastError = row && row.lastError ? String(row.lastError) : '-';
+
+    [
+      providerKey,
+      formatEmergencyStatus(status),
+      schedule,
+      lastRunAt,
+      lastSuccessAt,
+      lastError
+    ].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    const actionsTd = document.createElement('td');
+    const toggleBtn = createUnifiedActionButton(
+      status === 'enabled' ? t('ui.label.emergency.disable', 'Disable') : t('ui.label.emergency.enable', 'Enable'),
+      () => { void updateEmergencyProvider(providerKey, status === 'enabled' ? 'disabled' : 'enabled'); }
+    );
+    const scheduleBtn = createUnifiedActionButton(
+      t('ui.label.emergency.scheduleEdit', 'Schedule'),
+      () => { void updateEmergencyProviderSchedule(providerKey, row && row.scheduleMinutes); }
+    );
+    const forceBtn = createUnifiedActionButton(
+      t('ui.label.emergency.forceRefresh', 'Force Refresh'),
+      () => { void forceRefreshEmergencyProvider(providerKey); }
+    );
+    actionsTd.appendChild(toggleBtn);
+    actionsTd.appendChild(scheduleBtn);
+    actionsTd.appendChild(forceBtn);
+    tr.appendChild(actionsTd);
+
+    const traceTd = document.createElement('td');
+    traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
+    tr.appendChild(traceTd);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function renderEmergencyBulletinRows(items) {
+  const tbody = document.getElementById('emergency-bulletin-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const bulletinId = row && row.id ? String(row.id) : '';
+    tr.dataset.bulletinId = bulletinId;
+    if (state.emergencySelectedBulletinId && state.emergencySelectedBulletinId === bulletinId) {
+      tr.classList.add('is-selected');
+    }
+    tr.addEventListener('click', () => {
+      state.emergencySelectedBulletinId = bulletinId;
+      void loadEmergencyEvidence(bulletinId, { notify: false });
+      renderEmergencyBulletinRows(state.emergencyBulletinItems);
+    });
+
+    const updatedAt = row && (row.updatedAt || row.createdAt) ? formatDateLabel(row.updatedAt || row.createdAt) : '-';
+    [
+      row && row.status ? String(row.status) : '-',
+      row && row.regionKey ? String(row.regionKey) : '-',
+      row && row.category ? String(row.category) : '-',
+      row && row.severity ? String(row.severity) : '-',
+      updatedAt
+    ].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    const evidenceTd = document.createElement('td');
+    const refs = row && row.evidenceRefs && typeof row.evidenceRefs === 'object' ? row.evidenceRefs : {};
+    evidenceTd.textContent = refs.diffId || refs.snapshotId || '-';
+    tr.appendChild(evidenceTd);
+
+    const actionsTd = document.createElement('td');
+    actionsTd.appendChild(createUnifiedActionButton(
+      t('ui.label.emergency.approve', 'Approve'),
+      () => { void approveEmergencyBulletinAction(bulletinId); }
+    ));
+    actionsTd.appendChild(createUnifiedActionButton(
+      t('ui.label.emergency.reject', 'Reject'),
+      () => { void rejectEmergencyBulletinAction(bulletinId); }
+    ));
+    actionsTd.appendChild(createUnifiedActionButton(
+      t('ui.label.emergency.evidence', 'Evidence'),
+      () => { void loadEmergencyEvidence(bulletinId, { notify: true }); }
+    ));
+    tr.appendChild(actionsTd);
+
+    const traceTd = document.createElement('td');
+    traceTd.textContent = row && row.traceId ? String(row.traceId) : '-';
+    tr.appendChild(traceTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function sanitizeEmergencyEvidence(item) {
+  const payload = item && typeof item === 'object' ? item : {};
+  const linkEntry = payload.linkEntry && typeof payload.linkEntry === 'object'
+    ? {
+        id: payload.linkEntry.id || null,
+        title: payload.linkEntry.title || null,
+        lastHealthState: payload.linkEntry.lastHealth && payload.linkEntry.lastHealth.state
+          ? payload.linkEntry.lastHealth.state
+          : null
+      }
+    : null;
+  const snapshot = payload.snapshot && typeof payload.snapshot === 'object'
+    ? Object.assign({}, payload.snapshot, { rawPayload: payload.snapshot.rawPayload ? '[omitted]' : null })
+    : null;
+  return {
+    bulletin: payload.bulletin || null,
+    diff: payload.diff || null,
+    snapshot,
+    unmappedEvents: Array.isArray(payload.unmappedEvents) ? payload.unmappedEvents : [],
+    linkEntry
+  };
+}
+
+function renderEmergencyEvidence(item) {
+  const summaryEl = document.getElementById('emergency-evidence-summary');
+  const jsonEl = document.getElementById('emergency-evidence-json');
+  if (!summaryEl || !jsonEl) return;
+  if (!item) {
+    summaryEl.textContent = t('ui.desc.emergency.evidenceEmpty', 'bulletinを選択すると証跡を表示します。');
+    jsonEl.textContent = '-';
+    return;
+  }
+  const sanitized = sanitizeEmergencyEvidence(item);
+  const bulletin = sanitized.bulletin || {};
+  const diff = sanitized.diff || {};
+  const linkEntry = sanitized.linkEntry || {};
+  summaryEl.textContent = `${bulletin.id || '-'} / ${bulletin.regionKey || '-'} / ${bulletin.severity || '-'} / link=${linkEntry.id || '-'}`;
+  jsonEl.textContent = JSON.stringify({
+    bulletin: sanitized.bulletin,
+    diff: sanitized.diff,
+    snapshot: sanitized.snapshot,
+    unmappedCount: Array.isArray(sanitized.unmappedEvents) ? sanitized.unmappedEvents.length : 0,
+    link: sanitized.linkEntry,
+    diffType: diff.diffType || null
+  }, null, 2);
+}
+
+async function loadEmergencyProviders(options) {
+  const notify = options && options.notify;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const data = await adminFetchJson({
+    url: '/api/admin/emergency/providers',
+    traceId
+  });
+  if (data && data.ok) {
+    state.emergencyProviderItems = Array.isArray(data.items) ? data.items : [];
+    renderEmergencyProviderRows(state.emergencyProviderItems);
+    setPaneUpdatedAt('emergency-layer');
+    renderAllDecisionCards();
+    if (notify) showToast(t('ui.toast.emergency.providersLoaded', 'Emergency provider一覧を取得しました'), 'ok');
+    return;
+  }
+  state.emergencyProviderItems = [];
+  renderEmergencyProviderRows([]);
+  if (notify) showToast(t('ui.toast.emergency.providersLoadFail', 'Emergency provider一覧の取得に失敗しました'), 'danger');
+}
+
+async function loadEmergencyBulletins(options) {
+  const notify = options && options.notify;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const status = getSelectValue('emergency-bulletin-status-filter');
+  const regionKey = getInputValue('emergency-bulletin-region-filter');
+  const limit = getInputValue('emergency-bulletin-limit') || '50';
+  const params = new URLSearchParams({ limit });
+  if (status) params.set('status', status);
+  if (regionKey) params.set('regionKey', regionKey);
+  const data = await adminFetchJson({
+    url: `/api/admin/emergency/bulletins?${params.toString()}`,
+    traceId
+  });
+  if (data && data.ok) {
+    state.emergencyBulletinItems = Array.isArray(data.items) ? data.items : [];
+    if (state.emergencySelectedBulletinId) {
+      const exists = state.emergencyBulletinItems.some((item) => item && item.id === state.emergencySelectedBulletinId);
+      if (!exists) state.emergencySelectedBulletinId = null;
+    }
+    renderEmergencyBulletinRows(state.emergencyBulletinItems);
+    setPaneUpdatedAt('emergency-layer');
+    renderAllDecisionCards();
+    if (notify) showToast(t('ui.toast.emergency.bulletinsLoaded', 'Emergency bulletin一覧を取得しました'), 'ok');
+    if (state.emergencySelectedBulletinId) {
+      void loadEmergencyEvidence(state.emergencySelectedBulletinId, { notify: false });
+    } else if (state.emergencyBulletinItems.length > 0) {
+      state.emergencySelectedBulletinId = state.emergencyBulletinItems[0].id;
+      void loadEmergencyEvidence(state.emergencySelectedBulletinId, { notify: false });
+    } else {
+      renderEmergencyEvidence(null);
+    }
+    return;
+  }
+  state.emergencyBulletinItems = [];
+  renderEmergencyBulletinRows([]);
+  renderEmergencyEvidence(null);
+  if (notify) showToast(t('ui.toast.emergency.bulletinsLoadFail', 'Emergency bulletin一覧の取得に失敗しました'), 'danger');
+}
+
+async function loadEmergencyEvidence(bulletinId, options) {
+  const id = typeof bulletinId === 'string' ? bulletinId.trim() : '';
+  if (!id) {
+    renderEmergencyEvidence(null);
+    return;
+  }
+  const notify = options && options.notify;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const data = await adminFetchJson({
+    url: `/api/admin/emergency/evidence/${encodeURIComponent(id)}`,
+    traceId
+  });
+  if (data && data.ok && data.item) {
+    state.emergencyEvidenceItem = data.item;
+    renderEmergencyEvidence(data.item);
+    if (notify) showToast(t('ui.toast.emergency.evidenceLoaded', '証跡を取得しました'), 'ok');
+    return;
+  }
+  state.emergencyEvidenceItem = null;
+  renderEmergencyEvidence(null);
+  if (notify) showToast(t('ui.toast.emergency.evidenceLoadFail', '証跡の取得に失敗しました'), 'danger');
+}
+
+async function approveEmergencyBulletinAction(bulletinId) {
+  const id = typeof bulletinId === 'string' ? bulletinId.trim() : '';
+  if (!id) return;
+  const confirmed = window.confirm(t('ui.confirm.emergency.approve', 'Emergency bulletinを承認して送信しますか？'));
+  if (!confirmed) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const ctaText = window.prompt(t('ui.prompt.emergency.ctaText', 'CTA文言（空欄で既定）'), '') || '';
+  const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve`, { ctaText }, traceId);
+  if (data && data.ok) {
+    showToast(t('ui.toast.emergency.approveOk', 'Emergency bulletinを送信しました'), 'ok');
+    await loadEmergencyBulletins({ notify: false });
+    await loadEmergencyProviders({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.emergency.approveFail', 'Emergency bulletinの送信に失敗しました'), 'danger');
+}
+
+async function rejectEmergencyBulletinAction(bulletinId) {
+  const id = typeof bulletinId === 'string' ? bulletinId.trim() : '';
+  if (!id) return;
+  const confirmed = window.confirm(t('ui.confirm.emergency.reject', 'Emergency bulletinを却下しますか？'));
+  if (!confirmed) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const data = await postJson(`/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject`, {}, traceId);
+  if (data && data.ok) {
+    showToast(t('ui.toast.emergency.rejectOk', 'Emergency bulletinを却下しました'), 'ok');
+    await loadEmergencyBulletins({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.emergency.rejectFail', 'Emergency bulletinの却下に失敗しました'), 'danger');
+}
+
+async function updateEmergencyProvider(providerKey, status) {
+  const key = typeof providerKey === 'string' ? providerKey.trim() : '';
+  if (!key) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const current = state.emergencyProviderItems.find((item) => item && item.providerKey === key) || null;
+  const scheduleMinutes = Number.isFinite(Number(current && current.scheduleMinutes))
+    ? Number(current.scheduleMinutes)
+    : 10;
+  const payload = {
+    status,
+    scheduleMinutes,
+    officialLinkRegistryId: current && current.officialLinkRegistryId ? current.officialLinkRegistryId : null
+  };
+  const data = await postJson(`/api/admin/emergency/providers/${encodeURIComponent(key)}`, payload, traceId);
+  if (data && data.ok) {
+    showToast(t('ui.toast.emergency.providerUpdateOk', 'Emergency providerを更新しました'), 'ok');
+    await loadEmergencyProviders({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.emergency.providerUpdateFail', 'Emergency providerの更新に失敗しました'), 'danger');
+}
+
+async function updateEmergencyProviderSchedule(providerKey, currentScheduleMinutes) {
+  const key = typeof providerKey === 'string' ? providerKey.trim() : '';
+  if (!key) return;
+  const fallback = Number.isFinite(Number(currentScheduleMinutes)) ? Number(currentScheduleMinutes) : 10;
+  const input = window.prompt(t('ui.prompt.emergency.scheduleMinutes', 'scheduleMinutes を入力してください（分）'), String(fallback));
+  if (input == null) return;
+  const nextValue = Number(input);
+  if (!Number.isFinite(nextValue) || nextValue <= 0) {
+    showToast(t('ui.toast.emergency.scheduleInvalid', 'scheduleMinutes が不正です'), 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const current = state.emergencyProviderItems.find((item) => item && item.providerKey === key) || null;
+  const payload = {
+    status: current && current.status ? current.status : 'enabled',
+    scheduleMinutes: Math.floor(nextValue),
+    officialLinkRegistryId: current && current.officialLinkRegistryId ? current.officialLinkRegistryId : null
+  };
+  const data = await postJson(`/api/admin/emergency/providers/${encodeURIComponent(key)}`, payload, traceId);
+  if (data && data.ok) {
+    showToast(t('ui.toast.emergency.scheduleUpdateOk', 'scheduleMinutes を更新しました'), 'ok');
+    await loadEmergencyProviders({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.emergency.scheduleUpdateFail', 'scheduleMinutes の更新に失敗しました'), 'danger');
+}
+
+async function forceRefreshEmergencyProvider(providerKey) {
+  const key = typeof providerKey === 'string' ? providerKey.trim() : '';
+  if (!key) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const data = await postJson(
+    `/api/admin/emergency/providers/${encodeURIComponent(key)}/force-refresh`,
+    { summarize: false },
+    traceId
+  );
+  if (data && data.ok) {
+    showToast(t('ui.toast.emergency.forceRefreshOk', 'Emergency providerを再取得しました'), 'ok');
+    await loadEmergencyProviders({ notify: false });
+    await loadEmergencyBulletins({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.emergency.forceRefreshFail', 'Emergency providerの再取得に失敗しました'), 'danger');
+}
+
+function setupEmergencyLayerControls() {
+  document.getElementById('emergency-provider-reload')?.addEventListener('click', () => {
+    void loadEmergencyProviders({ notify: true });
+  });
+  document.getElementById('emergency-bulletin-reload')?.addEventListener('click', () => {
+    void loadEmergencyBulletins({ notify: true });
+  });
+  document.getElementById('emergency-bulletin-status-filter')?.addEventListener('change', () => {
+    void loadEmergencyBulletins({ notify: false });
+  });
+  document.getElementById('emergency-bulletin-region-filter')?.addEventListener('change', () => {
+    void loadEmergencyBulletins({ notify: false });
+  });
+  document.getElementById('emergency-bulletin-limit')?.addEventListener('change', () => {
+    void loadEmergencyBulletins({ notify: false });
+  });
+}
+
 function setupCityPackControls() {
   document.getElementById('city-pack-unified-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: false });
@@ -11101,6 +11518,27 @@ function setupDecisionActions() {
   });
   document.getElementById('read-model-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
+  });
+
+  document.getElementById('emergency-layer-action-edit')?.addEventListener('click', () => {
+    activatePane('emergency-layer');
+    document.getElementById('emergency-bulletin-reload')?.click();
+  });
+  document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
+    activatePane('emergency-layer');
+    if (!state.emergencySelectedBulletinId) {
+      showToast(t('ui.toast.emergency.needSelection', 'Emergency bulletinを選択してください'), 'warn');
+      return;
+    }
+    void approveEmergencyBulletinAction(state.emergencySelectedBulletinId);
+  });
+  document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
+    activatePane('emergency-layer');
+    if (!state.emergencySelectedBulletinId) {
+      showToast(t('ui.toast.emergency.needSelection', 'Emergency bulletinを選択してください'), 'warn');
+      return;
+    }
+    void rejectEmergencyBulletinAction(state.emergencySelectedBulletinId);
   });
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
@@ -11768,6 +12206,7 @@ function setupLlmControls() {
   setupMonitorControls();
   setupErrorsControls();
   setupReadModelControls();
+  setupEmergencyLayerControls();
   setupCityPackControls();
   setupVendorControls();
   setupMaintenanceControls();

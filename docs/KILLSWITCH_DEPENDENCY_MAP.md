@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 57
+- 抽出件数: 83
 
 | file | line | reference |
 | --- | --- | --- |
@@ -32,6 +32,8 @@
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 26 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/cityPackSourceAuditJob.js` | 47 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/emergencyJobs.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
+| `src/routes/internal/emergencyJobs.js` | 31 | `const killSwitchOn = await getKillSwitch();` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/journeyBranchDispatchJob.js` | 50 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/journeyKpiBuildJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -49,6 +51,30 @@
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
 | `src/usecases/adminOs/executeNotificationSend.js` | 203 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 119 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 273 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 274 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 275 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 284 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/fetchProviderSnapshot.js` | 86 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/fetchProviderSnapshot.js` | 87 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/fetchProviderSnapshot.js` | 88 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/fetchProviderSnapshot.js` | 89 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/normalizeAndDiffProvider.js` | 110 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/normalizeAndDiffProvider.js` | 111 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/normalizeAndDiffProvider.js` | 112 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/normalizeAndDiffProvider.js` | 113 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/runEmergencySync.js` | 140 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/runEmergencySync.js` | 141 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/runEmergencySync.js` | 142 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/runEmergencySync.js` | 143 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/summarizeDraftWithLLM.js` | 82 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/summarizeDraftWithLLM.js` | 83 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/summarizeDraftWithLLM.js` | 84 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/summarizeDraftWithLLM.js` | 85 | `const killSwitchOn = await getKillSwitch();` |
 | `src/usecases/killSwitch/setKillSwitch.js` | 9 | `async function getKillSwitch() {` |
 | `src/usecases/killSwitch/setKillSwitch.js` | 10 | `return systemFlagsRepo.getKillSwitch();` |
 | `src/usecases/killSwitch/setKillSwitch.js` | 15 | `getKillSwitch` |

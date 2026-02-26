@@ -34,6 +34,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_NOTIFICATION_PATTERN_REGISTRY.json`（通知テスト pattern registry SSOT）
 - `docs/SSOT_CITY_PACK_SECURITY_RULES.md`（City PackコレクションのSecurity Rules設計）
 - `docs/SSOT_CITY_PACK_EXTENSIONS_1_12.md`（City Pack拡張1〜12の依存順/安全契約）
+- `docs/SSOT_EMERGENCY_LAYER.md`（Emergency Layer のprovider/guard/job/UI契約）
 - `docs/CLEANUP_PLAN.md`（Struct Cleanup実施計画）
 - `docs/CLEANUP_DIFF_SUMMARY.md`（Struct Cleanup差分要約）
 - `docs/STRUCTURAL_RISK_BEFORE_AFTER.md`（構造リスクの前後比較）
@@ -69,6 +70,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）
 - `docs/RUNBOOK_STRUCT_DRIFT_BACKFILL.md`（構造ドリフト補正ジョブの運用手順）
 - `docs/RUNBOOK_RETENTION_APPLY.md`（Retention applyジョブのstg運用手順）
+- `docs/RUNBOOK_EMERGENCY_LAYER.md`（Emergency Layer 実行・承認・切戻し手順）
 - `docs/STRUCTURE_DEBT_REDUCTION_QUEUE.md`（構造負債の優先圧縮キュー）
 - `docs/RUNBOOK_CRITICAL_CONTRACT_GUARD.md`（W3クリティカル契約ガード運用）
 - `tests/phase596/*`（productReadiness threshold 契約テスト）

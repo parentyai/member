@@ -105,10 +105,22 @@ async function listBulletins(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const limit = Number.isFinite(Number(opts.limit)) ? Math.min(Math.max(Math.floor(Number(opts.limit)), 1), 300) : 50;
   let query = getDb().collection(COLLECTION);
-  if (opts.status) query = query.where('status', '==', normalizeStatus(opts.status));
-  if (opts.regionKey) query = query.where('regionKey', '==', String(opts.regionKey).trim().toLowerCase());
+  const statusFilter = opts.status ? normalizeStatus(opts.status) : null;
+  const regionFilter = opts.regionKey ? String(opts.regionKey).trim().toLowerCase() : null;
+
+  // Keep a single where filter to avoid introducing new composite index requirements.
+  if (statusFilter) query = query.where('status', '==', statusFilter);
+  else if (regionFilter) query = query.where('regionKey', '==', regionFilter);
+
   const snap = await query.limit(limit).get();
-  const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  let rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  if (statusFilter) rows = rows.filter((row) => normalizeStatus(row && row.status) === statusFilter);
+  if (regionFilter) {
+    rows = rows.filter((row) => {
+      const regionKey = row && typeof row.regionKey === 'string' ? row.regionKey.trim().toLowerCase() : '';
+      return regionKey === regionFilter;
+    });
+  }
   return sortByUpdatedAtDesc(rows).slice(0, limit);
 }
 
