@@ -33,11 +33,19 @@
 ### B4: 計測・効果
 10. 効果測定（最小安全）
 
+### B5: 公立学校リンク運用（add-only）
+13. `link_registry` 教育メタ拡張（`domainClass/schoolType/eduScope/regionKey/tags`）
+14. `city_pack` school slot の `schoolType=public` fail-closed 検証
+15. `municipality_schools` / `school_calendar_links` の追加
+16. 120日監査 + `diff_detected -> city_pack_bulletins(draft)` 自動作成（送信は人間承認のみ）
+
 ## Dependency
 ```text
 B1 -> B2 -> B3
 B1 + B2 -> B4
 B3 -> B4
+B2 -> B5
+B5 -> B3
 ```
 
 ## PR sequence contract

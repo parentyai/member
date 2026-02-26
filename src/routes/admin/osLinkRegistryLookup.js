@@ -44,7 +44,12 @@ async function handleLookup(req, res) {
         title: row.title || null,
         vendorKey: row.vendorKey || null,
         vendorLabel: row.vendorLabel || null,
-        state: row.lastHealth && row.lastHealth.state ? row.lastHealth.state : null
+        state: row.lastHealth && row.lastHealth.state ? row.lastHealth.state : null,
+        domainClass: row.domainClass || 'unknown',
+        schoolType: row.schoolType || 'unknown',
+        eduScope: row.eduScope || null,
+        regionKey: row.regionKey || null,
+        tags: Array.isArray(row.tags) ? row.tags : []
       }
     }));
   } catch (err) {

@@ -46,6 +46,27 @@ function normalizeLanguageFilter(value) {
   return language || null;
 }
 
+function normalizeSchoolTypeFilter(value) {
+  const schoolType = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!schoolType) return null;
+  if (schoolType === 'public' || schoolType === 'private' || schoolType === 'unknown') return schoolType;
+  return null;
+}
+
+function normalizeEduScopeFilter(value) {
+  const eduScope = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!eduScope) return null;
+  if (eduScope === 'calendar' || eduScope === 'district_info' || eduScope === 'enrollment' || eduScope === 'closure_alert') {
+    return eduScope;
+  }
+  return null;
+}
+
+function normalizeRegionKeyFilter(value) {
+  const regionKey = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return regionKey || null;
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -176,14 +197,29 @@ async function handleReviewInbox(req, res, context) {
   const status = (url.searchParams.get('status') || '').trim() || null;
   const packClass = normalizePackClassFilter(url.searchParams.get('packClass'));
   const language = normalizeLanguageFilter(url.searchParams.get('language'));
+  const schoolType = normalizeSchoolTypeFilter(url.searchParams.get('schoolType'));
+  const eduScope = normalizeEduScopeFilter(url.searchParams.get('eduScope'));
+  const regionKey = normalizeRegionKeyFilter(url.searchParams.get('regionKey'));
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const nowMs = Date.now();
 
   const expandedLimit = (packClass || language) ? Math.min(limit * 5, 1000) : limit;
-  const refs = await sourceRefsRepo.listSourceRefs({ status, limit: expandedLimit });
+  const refs = await sourceRefsRepo.listSourceRefs({
+    status,
+    limit: expandedLimit,
+    schoolType,
+    eduScope,
+    regionKey
+  });
   const items = [];
   for (const sourceRef of refs) {
     const usedByDetails = await resolveUsedByDetails(sourceRef);
+    const latestEvidence = sourceRef && sourceRef.evidenceLatestId
+      ? await sourceEvidenceRepo.getEvidence(sourceRef.evidenceLatestId)
+      : null;
+    const diffSummary = latestEvidence && typeof latestEvidence.diffSummary === 'string' && latestEvidence.diffSummary.trim()
+      ? latestEvidence.diffSummary.trim()
+      : null;
     const packClassMatches = !packClass || usedByDetails.some((item) => item.packClass === packClass);
     const languageMatches = !language || usedByDetails.some((item) => item.language === language);
     if (!packClassMatches || !languageMatches) continue;
@@ -201,10 +237,15 @@ async function handleReviewInbox(req, res, context) {
       usedByCount: usedBy.length,
       evidenceLatestId: sourceRef.evidenceLatestId || null,
       recommendation: resolveRecommendation(sourceRef, nowMs),
+      diffSummary,
       riskLevel: sourceRef.riskLevel || null,
       sourceType: sourceRef.sourceType || 'other',
       requiredLevel: sourceRef.requiredLevel || 'required',
       authorityLevel: sourceRef.authorityLevel || 'other',
+      domainClass: sourceRef.domainClass || 'unknown',
+      schoolType: sourceRef.schoolType || 'unknown',
+      eduScope: sourceRef.eduScope || null,
+      regionKey: sourceRef.regionKey || null,
       confidenceScore: resolveConfidenceScore(sourceRef),
       lastAuditStage: resolveAuditStage(sourceRef),
       usedByPackClasses,
@@ -231,6 +272,9 @@ async function handleReviewInbox(req, res, context) {
       status,
       packClass: packClass || null,
       language: language || null,
+      schoolType: schoolType || null,
+      eduScope: eduScope || null,
+      regionKey: regionKey || null,
       count: limitedItems.length
     }
   });

@@ -100,6 +100,32 @@
 2) 上表どおりのグループ表示か確認
 3) 逸脱時は直近 UI PR を revert し、契約テスト失敗を確認して原因修正
 
+## City Pack Education運用（公立学校 / link-only）
+目的: 公立学校の公式リンクを安全運用し、120日監査で期限切れ/差分を管理する。
+
+### 1) 教育リンク登録（Admin UI）
+1. `/admin/app?pane=city-pack` の `Education Links` で `regionKey/schoolYear/linkRegistryId` を入力して作成。
+2. `link_registry` は `schoolType=public` のみ許可。`private/unknown` は fail-closed。
+3. 作成時に `source_refs` / `school_calendar_links` が同時生成される。
+
+### 2) カレンダー監査（Internal Job）
+- エンドポイント: `POST /internal/jobs/school-calendar-audit`
+- 必須: `x-city-pack-job-token`（`CITY_PACK_JOB_TOKEN`）
+- kill switch が ON の場合は `409` で停止（送信副作用なし）。
+- 監査結果 `diff_detected` は `city_pack_bulletins` に draft を自動作成（自動送信はしない）。
+
+### 3) Review/通知承認（人間）
+1. `Calendar Review` で `validUntil` / `diffSummary` / recommendation を確認。
+2. `Approve通知` は draft 作成・承認までを補助し、実送信は既存 `sendNotification` 経路を使う。
+3. 送信時は既存 validator（`CTA=1` / direct URL禁止 / WARN block / kill switch）を必ず通す。
+
+### 4) 監査証跡
+- `city_pack.education_link.*`
+- `city_pack.source_audit.run`
+- `city_pack.bulletin.*`
+
+上記 action は `traceId` で `audit_logs` と相互追跡できることを運用完了条件とする。
+
 ## Daily Ops (ServicePhase1 / 運用OS v1)
 推奨順序（迷わないための一本道）。
 

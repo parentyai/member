@@ -113,6 +113,8 @@ const state = {
   cityPackProposalItems: [],
   cityPackTemplateLibraryItems: [],
   cityPackInboxItems: [],
+  cityPackEducationLinkItems: [],
+  cityPackCalendarReviewItems: [],
   cityPackCompositionItems: [],
   cityPackUnifiedItems: [],
   cityPackUnifiedFilteredItems: [],
@@ -291,6 +293,8 @@ const CITY_PACK_RECORD_TYPE_LABELS = Object.freeze({
   bulletin: 'Bulletin',
   proposal: 'Proposal',
   review: 'Review',
+  education_link: 'EducationLink',
+  calendar_review: 'CalendarReview',
   template: 'Template'
 });
 const USER_CATEGORY_LABELS = Object.freeze({
@@ -1089,6 +1093,7 @@ async function runInitialDataLoads(options) {
   loadCityPackBulletins({ notify: false });
   loadCityPackProposals({ notify: false });
   loadCityPackTemplateLibrary({ notify: false });
+  loadCityPackEducationLinks({ notify: false });
   loadCityPackReviewInbox({ notify: false });
   loadCityPackKpi({ notify: false });
   loadCityPackMetrics({ notify: false });
@@ -3896,6 +3901,44 @@ function buildCityPackUnifiedItems() {
     });
   });
 
+  state.cityPackEducationLinkItems.forEach((row) => {
+    const validUntilMs = toSortMillis(row && row.validUntil);
+    const nowMs = Date.now();
+    const daysLeft = validUntilMs > 0 ? Math.floor((validUntilMs - nowMs) / (24 * 60 * 60 * 1000)) : null;
+    addRow({
+      recordType: 'education_link',
+      itemId: row.id || '',
+      lineUserId: '',
+      cityLabel: row.regionKey || '-',
+      status: row.status || '',
+      assignee: (row.link && row.link.domainClass) ? row.link.domainClass : '-',
+      createdAt: row.createdAt || row.updatedAt || null,
+      updatedAt: row.updatedAt || row.createdAt || null,
+      kpiText: `schoolYear:${row.schoolYear || '-'} / validUntil:${toDateLabel(row.validUntil)} / days:${daysLeft == null ? '-' : String(daysLeft)}`,
+      kpiScore: daysLeft == null ? null : daysLeft,
+      raw: row
+    });
+  });
+
+  state.cityPackCalendarReviewItems.forEach((row) => {
+    const validUntilMs = toSortMillis(row && row.validUntil);
+    const nowMs = Date.now();
+    const daysLeft = validUntilMs > 0 ? Math.floor((validUntilMs - nowMs) / (24 * 60 * 60 * 1000)) : null;
+    addRow({
+      recordType: 'calendar_review',
+      itemId: row.sourceRefId || '',
+      lineUserId: '',
+      cityLabel: row.regionKey || '-',
+      status: row.status || '',
+      assignee: row.recommendation || '-',
+      createdAt: row.validUntil || null,
+      updatedAt: row.validUntil || null,
+      kpiText: `days:${daysLeft == null ? '-' : String(daysLeft)} / diff:${row.diffSummary || '-'}`,
+      kpiScore: daysLeft == null ? null : daysLeft,
+      raw: row
+    });
+  });
+
   state.cityPackTemplateLibraryItems.forEach((row) => {
     const traceScore = row.traceId ? String(row.traceId).length : 0;
     addRow({
@@ -4043,6 +4086,13 @@ function renderCityPackUnifiedActionCell(item) {
     group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
     group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackSourceAction('replace', row); }));
     group.appendChild(createUnifiedActionButton('Manual', () => { void runCityPackSourceAction('manual-only', row); }));
+  } else if (type === 'education_link' && row) {
+    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackEducationAction('replace', row); }));
+    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackEducationAction('retire', row); }));
+  } else if (type === 'calendar_review' && row) {
+    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
+    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
+    group.appendChild(createUnifiedActionButton('Approve通知', () => { void runCityPackCalendarApproveNotification(row); }));
   } else if (type === 'template' && row) {
     group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackTemplateLibraryAction('activate', row); }));
     group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackTemplateLibraryAction('retire', row); }));
@@ -5194,6 +5244,141 @@ function renderCityPackInboxRows(items) {
 
     tbody.appendChild(tr);
   });
+}
+
+function normalizeCsvValues(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeDateInputToIso(value) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const date = new Date(`${text}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function resolveCalendarReviewRows() {
+  const nearDaysRaw = Number(document.getElementById('city-pack-calendar-review-days')?.value);
+  const nearDays = Number.isFinite(nearDaysRaw) && nearDaysRaw > 0 ? Math.min(Math.floor(nearDaysRaw), 180) : 30;
+  const nowMs = Date.now();
+  const thresholdMs = nowMs + (nearDays * 24 * 60 * 60 * 1000);
+  return (Array.isArray(state.cityPackInboxItems) ? state.cityPackInboxItems : [])
+    .filter((row) => row && row.schoolType === 'public' && row.eduScope === 'calendar')
+    .map((row) => {
+      const validUntilMs = toSortMillis(row.validUntil);
+      const expiryStatus = !validUntilMs
+        ? 'unknown'
+        : validUntilMs <= nowMs
+          ? 'expired'
+          : validUntilMs <= thresholdMs
+            ? 'warning'
+            : 'ok';
+      return Object.assign({}, row, { expiryStatus });
+    });
+}
+
+function createCityPackEducationActionButton(action, label, row) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn city-pack-action-btn';
+  btn.textContent = label;
+  btn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    void runCityPackEducationAction(action, row);
+  });
+  return btn;
+}
+
+function renderCityPackEducationRows(items) {
+  const tbody = document.getElementById('city-pack-education-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const cells = [
+      row.status || '-',
+      row.regionKey || '-',
+      row.schoolYear || '-',
+      row.link && row.link.domainClass ? row.link.domainClass : '-',
+      toDateLabel(row.validUntil),
+      row.linkRegistryId || '-',
+      row.sourceRefId || '-'
+    ];
+    cells.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement('td');
+    actionTd.appendChild(createCityPackEducationActionButton('replace', 'Replace', row));
+    actionTd.appendChild(createCityPackEducationActionButton('retire', 'Retire', row));
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function renderCityPackCalendarReviewRows(items) {
+  const tbody = document.getElementById('city-pack-calendar-review-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const cells = [
+      row.sourceRefId || '-',
+      `${row.status || '-'} (${row.expiryStatus || '-'})`,
+      toDateLabel(row.validUntil),
+      row.diffSummary || '-',
+      row.recommendation || '-'
+    ];
+    cells.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    const actionTd = document.createElement('td');
+    actionTd.appendChild(createCityPackActionButton('confirm', t('ui.label.cityPack.action.confirm', 'Confirm'), row));
+    actionTd.appendChild(createCityPackActionButton('retire', t('ui.label.cityPack.action.retire', 'Retire'), row));
+    const approveBtn = document.createElement('button');
+    approveBtn.type = 'button';
+    approveBtn.className = 'btn city-pack-action-btn';
+    approveBtn.textContent = 'Approve通知';
+    approveBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      void runCityPackCalendarApproveNotification(row);
+    });
+    actionTd.appendChild(approveBtn);
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function refreshCityPackCalendarReviewItems() {
+  state.cityPackCalendarReviewItems = resolveCalendarReviewRows();
+  renderCityPackCalendarReviewRows(state.cityPackCalendarReviewItems);
 }
 
 function parseCityPackCompositionLimit() {
@@ -7988,6 +8173,40 @@ async function loadCityPackTemplateLibrary(options) {
   }
 }
 
+async function loadCityPackEducationLinks(options) {
+  const notify = options && options.notify;
+  const regionKey = document.getElementById('city-pack-education-region-key')?.value?.trim().toLowerCase() || '';
+  const schoolYear = document.getElementById('city-pack-education-school-year')?.value?.trim() || '';
+  const status = document.getElementById('city-pack-education-status-filter')?.value || '';
+  const limitRaw = Number(document.getElementById('city-pack-education-limit')?.value);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 200) : 50;
+  const trace = ensureTraceInput('monitor-trace');
+  const params = new URLSearchParams({ limit: String(limit), traceId: trace });
+  if (regionKey) params.set('regionKey', regionKey);
+  if (schoolYear) params.set('schoolYear', schoolYear);
+  if (status) params.set('status', status);
+  try {
+    const data = await getJson(`/api/admin/city-pack-education-links?${params.toString()}`, trace);
+    if (data && data.ok) {
+      const items = Array.isArray(data.items) ? data.items : [];
+      state.cityPackEducationLinkItems = items;
+      renderCityPackEducationRows(items);
+      refreshCityPackUnifiedRows();
+      if (notify) showToast(t('ui.toast.cityPack.educationLoaded', 'Education Linksを取得しました'), 'ok');
+    } else {
+      state.cityPackEducationLinkItems = [];
+      renderCityPackEducationRows([]);
+      refreshCityPackUnifiedRows();
+      if (notify) showToast(t('ui.toast.cityPack.educationLoadFail', 'Education Linksの取得に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    state.cityPackEducationLinkItems = [];
+    renderCityPackEducationRows([]);
+    refreshCityPackUnifiedRows();
+    if (notify) showToast(t('ui.toast.cityPack.educationLoadFail', 'Education Linksの取得に失敗しました'), 'danger');
+  }
+}
+
 async function loadCityPackRequestDetail(requestId) {
   if (!requestId) {
     renderCityPackRequestDetail(null);
@@ -8024,12 +8243,14 @@ async function loadCityPackReviewInbox(options) {
     const items = Array.isArray(data && data.items) ? data.items : [];
     state.cityPackInboxItems = items;
     renderCityPackInboxRows(items);
+    refreshCityPackCalendarReviewItems();
     refreshCityPackUnifiedRows();
     setPaneUpdatedAt('city-pack');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoaded', 'Review Inboxを取得しました'), 'ok');
   } catch (_err) {
     state.cityPackInboxItems = [];
+    refreshCityPackCalendarReviewItems();
     refreshCityPackUnifiedRows();
     if (notify) showToast(t('ui.toast.cityPack.inboxLoadFail', 'Review Inboxの取得に失敗しました'), 'danger');
     renderCityPackInboxRows([]);
@@ -8136,6 +8357,106 @@ async function loadCityPackAuditRuns(options) {
 
 function shouldRequireReplaceUrl(action) {
   return action === 'replace';
+}
+
+async function runCityPackEducationAction(action, row) {
+  const educationId = row && row.id ? String(row.id) : '';
+  if (!educationId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  const actionLabel = action === 'replace' ? 'Replace' : 'Retire';
+  const approved = window.confirm(`${actionLabel} を実行しますか？`);
+  if (!approved) return;
+  let body = {};
+  if (action === 'replace') {
+    const replacementLinkRegistryId = window.prompt('replacementLinkRegistryId を入力してください');
+    if (!replacementLinkRegistryId) return;
+    const validUntilDate = window.prompt('validUntil(YYYY-MM-DD, optional)');
+    body = {
+      replacementLinkRegistryId: replacementLinkRegistryId.trim()
+    };
+    const validUntilIso = normalizeDateInputToIso(validUntilDate);
+    if (validUntilIso) body.validUntil = validUntilIso;
+  }
+  try {
+    const data = await postJson(`/api/admin/city-pack-education-links/${encodeURIComponent(educationId)}/${action}`, body, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.educationActionOk', 'Education Linkを更新しました'), 'ok');
+      await loadCityPackEducationLinks({ notify: false });
+      await loadCityPackReviewInbox({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.educationActionFail', 'Education Linkの更新に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.educationActionFail', 'Education Linkの更新に失敗しました'), 'danger');
+  }
+}
+
+async function createCityPackEducationLink() {
+  const regionKey = document.getElementById('city-pack-education-create-region-key')?.value?.trim() || '';
+  const schoolYear = document.getElementById('city-pack-education-create-school-year')?.value?.trim() || '';
+  const linkRegistryId = document.getElementById('city-pack-education-create-link-id')?.value?.trim() || '';
+  const validUntilRaw = document.getElementById('city-pack-education-create-valid-until')?.value || '';
+  const cityPackIdsRaw = document.getElementById('city-pack-education-create-city-pack-ids')?.value || '';
+  if (!regionKey || !schoolYear || !linkRegistryId) {
+    showToast(t('ui.toast.cityPack.educationNeedFields', 'regionKey/schoolYear/linkRegistryId を入力してください'), 'warn');
+    return;
+  }
+  const trace = ensureTraceInput('monitor-trace');
+  const body = {
+    regionKey,
+    schoolYear,
+    linkRegistryId
+  };
+  const validUntilIso = normalizeDateInputToIso(validUntilRaw);
+  if (validUntilIso) body.validUntil = validUntilIso;
+  const cityPackIds = normalizeCsvValues(cityPackIdsRaw);
+  if (cityPackIds.length) body.usedByCityPackIds = cityPackIds;
+  try {
+    const data = await postJson('/api/admin/city-pack-education-links', body, trace);
+    if (data && data.ok) {
+      showToast(t('ui.toast.cityPack.educationCreateOk', 'Education Linkを作成しました'), 'ok');
+      await loadCityPackEducationLinks({ notify: false });
+      await loadCityPackReviewInbox({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.educationCreateFail', 'Education Linkの作成に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.educationCreateFail', 'Education Linkの作成に失敗しました'), 'danger');
+  }
+}
+
+async function runCityPackCalendarApproveNotification(row) {
+  if (!row || !row.sourceRefId) return;
+  const trace = ensureTraceInput('monitor-trace');
+  const cityPackId = window.prompt('通知対象 cityPackId を入力してください');
+  if (!cityPackId) return;
+  const notificationId = window.prompt('approveに使う notificationId を入力してください');
+  if (!notificationId) return;
+  const summaryDefault = row.diffSummary || 'calendar update detected';
+  const summary = window.prompt('bulletin summary を入力してください', summaryDefault);
+  if (!summary) return;
+  try {
+    const created = await postJson('/api/admin/city-pack-bulletins', {
+      cityPackId: cityPackId.trim(),
+      notificationId: notificationId.trim(),
+      summary: summary.trim()
+    }, trace);
+    if (!created || !created.ok || !created.bulletinId) {
+      showToast(t('ui.toast.cityPack.calendarApproveFail', 'Calendar通知の作成に失敗しました'), 'danger');
+      return;
+    }
+    const approved = await postJson(`/api/admin/city-pack-bulletins/${encodeURIComponent(created.bulletinId)}/approve`, {
+      notificationId: notificationId.trim()
+    }, trace);
+    if (approved && approved.ok) {
+      showToast(t('ui.toast.cityPack.calendarApproveOk', 'Calendar通知の承認下書きを作成しました'), 'ok');
+      await loadCityPackBulletins({ notify: false });
+    } else {
+      showToast(t('ui.toast.cityPack.calendarApproveFail', 'Calendar通知の作成に失敗しました'), 'danger');
+    }
+  } catch (_err) {
+    showToast(t('ui.toast.cityPack.calendarApproveFail', 'Calendar通知の作成に失敗しました'), 'danger');
+  }
 }
 
 async function runCityPackSourceAction(action, row) {
@@ -8267,8 +8588,17 @@ async function runCityPackBulletinAction(action, row) {
     const approved = window.confirm(t(`ui.confirm.cityPack.bulletin.${action}`, `${actionLabel} を実行しますか？`));
     if (!approved) return;
   }
+  const body = {};
+  if (action === 'approve') {
+    const currentNotificationId = row && typeof row.notificationId === 'string' ? row.notificationId.trim() : '';
+    if (!currentNotificationId) {
+      const promptedNotificationId = window.prompt('notificationId を入力してください');
+      if (!promptedNotificationId) return;
+      body.notificationId = promptedNotificationId.trim();
+    }
+  }
   try {
-    const data = await postJson(`/api/admin/city-pack-bulletins/${encodeURIComponent(bulletinId)}/${action}`, {}, trace);
+    const data = await postJson(`/api/admin/city-pack-bulletins/${encodeURIComponent(bulletinId)}/${action}`, body, trace);
     if (data && data.ok !== false) {
       showToast(t('ui.toast.cityPack.bulletinActionOk', 'Bulletin操作を実行しました'), 'ok');
       await loadCityPackBulletins({ notify: false });
@@ -10441,6 +10771,7 @@ function setupCityPackControls() {
     void loadCityPackBulletins({ notify: false });
     void loadCityPackProposals({ notify: false });
     void loadCityPackTemplateLibrary({ notify: false });
+    void loadCityPackEducationLinks({ notify: false });
     void loadCityPackReviewInbox({ notify: true });
   });
   ['city-pack-unified-filter-id', 'city-pack-unified-filter-user-id', 'city-pack-unified-filter-city', 'city-pack-unified-filter-date-from', 'city-pack-unified-filter-date-to'].forEach((id) => {
@@ -10519,6 +10850,27 @@ function setupCityPackControls() {
   document.getElementById('city-pack-template-library-status-filter')?.addEventListener('change', () => {
     void loadCityPackTemplateLibrary({ notify: false });
   });
+  document.getElementById('city-pack-education-reload')?.addEventListener('click', () => {
+    void loadCityPackEducationLinks({ notify: true });
+  });
+  ['city-pack-education-region-key', 'city-pack-education-school-year', 'city-pack-education-limit'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('change', () => {
+      void loadCityPackEducationLinks({ notify: false });
+    });
+  });
+  document.getElementById('city-pack-education-status-filter')?.addEventListener('change', () => {
+    void loadCityPackEducationLinks({ notify: false });
+  });
+  document.getElementById('city-pack-education-create')?.addEventListener('click', () => {
+    void createCityPackEducationLink();
+  });
+  document.getElementById('city-pack-calendar-review-reload')?.addEventListener('click', () => {
+    void loadCityPackReviewInbox({ notify: true });
+  });
+  document.getElementById('city-pack-calendar-review-days')?.addEventListener('change', () => {
+    refreshCityPackCalendarReviewItems();
+    refreshCityPackUnifiedRows();
+  });
   document.getElementById('city-pack-metrics-reload')?.addEventListener('click', () => {
     void loadCityPackMetrics({ notify: true });
   });
@@ -10543,6 +10895,7 @@ function setupCityPackControls() {
     void loadCityPackBulletins({ notify: false });
     void loadCityPackProposals({ notify: false });
     void loadCityPackTemplateLibrary({ notify: false });
+    void loadCityPackEducationLinks({ notify: false });
     void loadCityPackReviewInbox({ notify: true });
     void loadCityPackKpi({ notify: false });
     void loadCityPackMetrics({ notify: false });
@@ -10754,6 +11107,7 @@ function setupDecisionActions() {
     activatePane('city-pack');
     document.getElementById('city-pack-request-reload')?.click();
     document.getElementById('city-pack-template-library-reload')?.click();
+    document.getElementById('city-pack-education-reload')?.click();
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');

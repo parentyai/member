@@ -1,0 +1,191 @@
+name: School calendar audit
+
+on:
+  schedule:
+    - cron: "45 2 * * *"
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Optional runId"
+        required: false
+        default: ""
+        type: string
+      region_key:
+        description: "Optional regionKey"
+        required: false
+        default: ""
+        type: string
+      school_year:
+        description: "Optional schoolYear"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
+
+jobs:
+  school-calendar-audit:
+    name: school-calendar-audit
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: school-calendar-audit
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate required workflow variables
+        run: |
+          set -euo pipefail
+          REQUIRED_VARS=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            SERVICE_NAME
+            GCP_WIF_PROVIDER
+            DEPLOY_SA_EMAIL
+          )
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error title=Missing workflow variable::${VAR_NAME} is empty"
+              exit 1
+            fi
+          done
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Resolve Cloud Run service URL
+        id: service_url
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          echo "service_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Auth (OIDC proxy token)
+        id: proxy_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.service_url.outputs.service_url }}
+          create_credentials_file: false
+
+      - name: Resolve CITY_PACK_JOB_TOKEN
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            echo "::add-mask::$CITY_PACK_JOB_TOKEN"
+            echo "CITY_PACK_JOB_TOKEN=$CITY_PACK_JOB_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=CITY_PACK_JOB_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::CITY_PACK_JOB_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CITY_PACK_JOB_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Run school calendar audit
+        env:
+          PROXY_ID_TOKEN: ${{ steps.proxy_auth.outputs.id_token }}
+          INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
+          INPUT_REGION_KEY: ${{ github.event.inputs.region_key }}
+          INPUT_SCHOOL_YEAR: ${{ github.event.inputs.school_year }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/school-calendar-audit
+          RUN_TS="$(date -u +%Y%m%d%H%M%S)"
+          OUTPUT_PATH="artifacts/school-calendar-audit/result-${RUN_TS}.json"
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --token "$PROXY_ID_TOKEN" \
+            --port 18082 >/tmp/school-calendar-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18082/admin/login" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18082 did not become ready"
+            tail -n 80 /tmp/school-calendar-proxy.log || true
+            exit 1
+          fi
+
+          node - <<'NODE' > "$OUTPUT_PATH"
+          const payload = {
+            runId: process.env.INPUT_RUN_ID || undefined,
+            stage: 'heavy',
+            mode: 'scheduled',
+            regionKey: process.env.INPUT_REGION_KEY || undefined,
+            schoolYear: process.env.INPUT_SCHOOL_YEAR || undefined
+          };
+          const body = JSON.stringify(payload);
+          fetch('http://127.0.0.1:18082/internal/jobs/school-calendar-audit', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-city-pack-job-token': process.env.CITY_PACK_JOB_TOKEN
+            },
+            body
+          }).then(async (res) => {
+            const text = await res.text();
+            let parsed;
+            try { parsed = JSON.parse(text); } catch (_err) { parsed = { raw: text }; }
+            process.stdout.write(JSON.stringify({ status: res.status, ok: res.ok, response: parsed }, null, 2));
+            process.exit(res.ok ? 0 : 1);
+          }).catch((err) => {
+            process.stdout.write(JSON.stringify({ ok: false, error: err && err.message ? err.message : 'request_failed' }, null, 2));
+            process.exit(1);
+          });
+          NODE
+          cat "$OUTPUT_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload school calendar audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-calendar-audit-${{ github.run_id }}
+          path: artifacts/school-calendar-audit
+          if-no-files-found: warn

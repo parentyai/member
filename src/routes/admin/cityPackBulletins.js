@@ -92,7 +92,7 @@ async function handleCreateBulletin(req, res, bodyText, context) {
   writeJson(res, 201, { ok: true, traceId: context.traceId, bulletinId: created.id });
 }
 
-async function handleApproveBulletin(req, res, context, bulletinId) {
+async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
     writeJson(res, 404, { ok: false, error: 'bulletin not found' });
@@ -102,9 +102,23 @@ async function handleApproveBulletin(req, res, context, bulletinId) {
     writeJson(res, 409, { ok: false, error: 'bulletin_not_draft' });
     return;
   }
+  const payload = parseJson(bodyText || '{}', res);
+  if (!payload && bodyText) return;
+  const notificationId = payload && typeof payload.notificationId === 'string' ? payload.notificationId.trim() : '';
+  const resolvedNotificationId = bulletin.notificationId || notificationId || null;
+  if (!resolvedNotificationId) {
+    writeJson(res, 409, { ok: false, error: 'notificationId required' });
+    return;
+  }
+  const notification = await notificationsRepo.getNotification(resolvedNotificationId);
+  if (!notification) {
+    writeJson(res, 404, { ok: false, error: 'notification not found' });
+    return;
+  }
   await cityPackBulletinsRepo.updateBulletin(bulletinId, {
     status: 'approved',
-    approvedAt: new Date().toISOString()
+    approvedAt: new Date().toISOString(),
+    notificationId: resolvedNotificationId
   });
   await appendAuditLog({
     actor: context.actor,
@@ -117,7 +131,12 @@ async function handleApproveBulletin(req, res, context, bulletinId) {
       cityPackId: bulletin.cityPackId || null
     }
   });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, bulletinId });
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    bulletinId,
+    notificationId: resolvedNotificationId
+  });
 }
 
 async function handleRejectBulletin(req, res, context, bulletinId) {
@@ -155,6 +174,10 @@ async function handleSendBulletin(req, res, context, bulletinId) {
   }
   if (bulletin.status !== 'approved') {
     writeJson(res, 409, { ok: false, error: 'bulletin_not_approved' });
+    return;
+  }
+  if (!bulletin.notificationId) {
+    writeJson(res, 409, { ok: false, error: 'notificationId required' });
     return;
   }
   const killSwitch = await getKillSwitch();
@@ -227,7 +250,7 @@ async function handleCityPackBulletins(req, res, bodyText) {
     if (req.method === 'POST') {
       const action = parseActionPath(pathname);
       if (action && action.action === 'approve') {
-        await handleApproveBulletin(req, res, context, action.bulletinId);
+        await handleApproveBulletin(req, res, bodyText, context, action.bulletinId);
         return;
       }
       if (action && action.action === 'reject') {

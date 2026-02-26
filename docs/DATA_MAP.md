@@ -73,6 +73,16 @@ Typical fields:
 - `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
 - `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 
+### `link_registry/{id}`（教育 add-only field）
+Purpose: 通知/City Packが参照するリンク辞書。教育用途では公立学校公式リンクを管理する。
+
+Typical fields (education add-only):
+- `domainClass` (`gov`/`k12_district`/`school_public`/`unknown`)
+- `schoolType` (`public`/`private`/`unknown`)
+- `eduScope` (`calendar`/`district_info`/`enrollment`/`closure_alert`)
+- `regionKey`
+- `tags[]`（例: `education`,`calendar`,`public`）
+
 ### `city_packs/{id}`
 Purpose: City Pack の宣言型配信ロジック束。
 
@@ -145,8 +155,39 @@ Typical fields:
 - `authorityLevel` (`federal`/`state`/`local`/`other`)
 - `confidenceScore`（0..100）
 - `lastAuditStage` (`light`/`heavy`)
+- `domainClass` (`gov`/`k12_district`/`school_public`/`unknown`)
+- `schoolType` (`public`/`private`/`unknown`)
+- `eduScope` (`calendar`/`district_info`/`enrollment`/`closure_alert`)
+- `regionKey`
 - `evidenceLatestId`
 - `usedByCityPackIds[]`
+
+### `municipality_schools/{id}`
+Purpose: 自治体単位の公立学校インポート結果（NCES CCD など）。
+
+Typical fields:
+- `regionKey`
+- `name`
+- `type`（固定: `public`）
+- `district`
+- `sourceLinkRegistryId`
+- `sourceUrl`
+- `lastFetchedAt`
+- `traceId`
+- `createdAt`, `updatedAt`
+
+### `school_calendar_links/{id}`
+Purpose: 公立学校カレンダーの参照リンク管理（本文非保持）。
+
+Typical fields:
+- `regionKey`
+- `linkRegistryId`
+- `sourceRefId`
+- `schoolYear`
+- `status` (`active`/`archived`)
+- `validUntil`
+- `traceId`
+- `createdAt`, `updatedAt`
 
 ### `source_evidence/{id}`
 Purpose: 情報源監査の証跡（append-only）。

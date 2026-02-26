@@ -290,9 +290,17 @@ service cloud.firestore {
       // Updates restricted to allow-listed fields and valid status values.
       allow update: if (isAdmin() || isServiceAccount())
         && isAllowedStatus(request.resource.data,
-          ['active', 'expired', 'dead', 'blocked'])
+          ['active', 'expired', 'needs_review', 'dead', 'blocked', 'retired'])
         && hasRequiredField(request.resource.data, 'validUntil');
       allow delete: if false;
+    }
+
+    match /municipality_schools/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /school_calendar_links/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
     }
 
     match /source_evidence/{docId} {

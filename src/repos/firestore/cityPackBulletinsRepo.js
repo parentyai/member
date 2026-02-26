@@ -22,6 +22,7 @@ function resolveId(payload) {
 
 function normalizePayload(data) {
   const payload = data && typeof data === 'object' ? data : {};
+  const origin = normalizeString(payload.origin) || 'manual';
   return {
     id: resolveId(payload),
     status: normalizeStatus(payload.status),
@@ -29,16 +30,18 @@ function normalizePayload(data) {
     notificationId: normalizeString(payload.notificationId),
     summary: normalizeString(payload.summary),
     traceId: normalizeString(payload.traceId),
-    requestId: normalizeString(payload.requestId)
+    requestId: normalizeString(payload.requestId),
+    sourceRefId: normalizeString(payload.sourceRefId),
+    origin
   };
 }
 
 async function createBulletin(data) {
   const payload = normalizePayload(data);
   if (!payload.cityPackId) throw new Error('cityPackId required');
-  if (!payload.notificationId) throw new Error('notificationId required');
   if (!payload.summary) throw new Error('summary required');
   if (!payload.traceId) throw new Error('traceId required');
+  if (payload.status !== 'draft' && !payload.notificationId) throw new Error('notificationId required');
   const db = getDb();
   await db.collection(COLLECTION).doc(payload.id).set({
     status: payload.status,
@@ -47,6 +50,8 @@ async function createBulletin(data) {
     summary: payload.summary,
     traceId: payload.traceId,
     requestId: payload.requestId,
+    sourceRefId: payload.sourceRefId,
+    origin: payload.origin,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     approvedAt: null,

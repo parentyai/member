@@ -4,6 +4,7 @@ const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { validateCityPackSources } = require('./validateCityPackSources');
+const { validateCityPackSchoolLinks } = require('./validateCityPackSchoolLinks');
 
 async function activateCityPack(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
@@ -46,6 +47,31 @@ async function activateCityPack(params, deps) {
       payloadSummary: { reason: 'source_refs_required', cityPackId }
     });
     return { ok: false, reason: 'source_refs_required', cityPackId, traceId };
+  }
+
+  const schoolLinkValidation = await validateCityPackSchoolLinks({ cityPack });
+  if (!schoolLinkValidation.ok) {
+    await audit({
+      actor,
+      action: 'city_pack.activate.blocked',
+      entityType: 'city_pack',
+      entityId: cityPackId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        reason: schoolLinkValidation.reason,
+        schoolLinkRegistryId: schoolLinkValidation.schoolLinkRegistryId,
+        schoolType: schoolLinkValidation.schoolType || null
+      }
+    });
+    return {
+      ok: false,
+      reason: schoolLinkValidation.reason,
+      cityPackId,
+      schoolLinkRegistryId: schoolLinkValidation.schoolLinkRegistryId,
+      schoolType: schoolLinkValidation.schoolType || null,
+      traceId
+    };
   }
 
   const packClass = cityPack.packClass || 'regional';
