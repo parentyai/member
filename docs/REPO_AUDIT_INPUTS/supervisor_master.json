@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T19:47:47-05:00",
-  "gitCommit": "75427840eab8dd54c199b46f6849fde6eacb1257",
-  "branch": "codex/dynamic-journey-param-layer-v1",
-  "sourceDigest": "5f44e4e6c1b05ceb57818c630e5c58c15093f34ec4bfecbdc30652319ebbe604",
+  "generatedAt": "2026-02-25T22:53:37-05:00",
+  "gitCommit": "d905e419abfe54f7261fad8368b4b6c8c9a93f6a",
+  "branch": "HEAD",
+  "sourceDigest": "721035d21b8b9b35e3d879ec6f047cac7e68faa8fa51182430170ca67e18b69d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

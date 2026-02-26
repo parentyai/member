@@ -1585,6 +1585,8 @@
                         <option value="bulletin">Bulletin</option>
                         <option value="proposal">Proposal</option>
                         <option value="review">Review</option>
+                        <option value="education_link">EducationLink</option>
+                        <option value="calendar_review">CalendarReview</option>
                         <option value="template">Template</option>
                       </select>
                     </div>
@@ -1896,6 +1898,87 @@
                       </tr>
                     </thead>
                     <tbody id="city-pack-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.educationLinks">Education Links</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label>regionKey
+                      <input id="city-pack-education-region-key" type="text" class="input-sm" placeholder="ny::new-york" />
+                    </label>
+                    <label>schoolYear
+                      <input id="city-pack-education-school-year" type="text" class="input-sm" placeholder="2025-2026" />
+                    </label>
+                    <label>status
+                      <select id="city-pack-education-status-filter" class="select-inline">
+                        <option value="">all</option>
+                        <option value="active">active</option>
+                        <option value="archived">archived</option>
+                      </select>
+                    </label>
+                    <label>件数
+                      <input id="city-pack-education-limit" type="number" min="1" max="200" value="50" class="input-sm" />
+                    </label>
+                    <button id="city-pack-education-reload" type="button">Education更新</button>
+                  </div>
+                  <div class="row">
+                    <label>regionKey(create)
+                      <input id="city-pack-education-create-region-key" type="text" class="input-sm" placeholder="ny::new-york" />
+                    </label>
+                    <label>schoolYear(create)
+                      <input id="city-pack-education-create-school-year" type="text" class="input-sm" placeholder="2025-2026" />
+                    </label>
+                    <label>linkRegistryId
+                      <input id="city-pack-education-create-link-id" type="text" class="input-sm" placeholder="lr_xxx" />
+                    </label>
+                    <label>validUntil
+                      <input id="city-pack-education-create-valid-until" type="date" class="input-sm" />
+                    </label>
+                    <label>usedByCityPackIds
+                      <input id="city-pack-education-create-city-pack-ids" type="text" class="input-sm" placeholder="cp_a,cp_b" />
+                    </label>
+                    <button id="city-pack-education-create" type="button" data-role="admin">Create</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th>status</th>
+                        <th>regionKey</th>
+                        <th>schoolYear</th>
+                        <th>domainClass</th>
+                        <th>validUntil</th>
+                        <th>linkRegistryId</th>
+                        <th>sourceRefId</th>
+                        <th>actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-education-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="panel-title" data-dict-key="ui.label.cityPack.calendarReview">Calendar Review</div>
+                <div class="panel-body">
+                  <div class="row">
+                    <label>期限警告(日)
+                      <input id="city-pack-calendar-review-days" type="number" min="1" max="180" value="30" class="input-sm" />
+                    </label>
+                    <button id="city-pack-calendar-review-reload" type="button">Calendar Review更新</button>
+                  </div>
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th>sourceRefId</th>
+                        <th>status</th>
+                        <th>validUntil</th>
+                        <th>diffSummary</th>
+                        <th>recommendation</th>
+                        <th>actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="city-pack-calendar-review-rows"></tbody>
                   </table>
                 </div>
               </div>

@@ -9,6 +9,8 @@ const INTERNAL_JOB_PATHS = [
   '/internal/jobs/city-pack-audit-light',
   '/internal/jobs/city-pack-audit-heavy',
   '/internal/jobs/city-pack-draft-generator',
+  '/internal/jobs/municipality-schools-import',
+  '/internal/jobs/school-calendar-audit',
   '/internal/jobs/struct-drift-backfill',
   '/internal/jobs/retention-dry-run',
   '/internal/jobs/retention-apply',
@@ -22,6 +24,8 @@ const INTERNAL_JOB_PATHS = [
 const CITY_PACK_TOKEN_FILES = [
   'src/routes/internal/cityPackSourceAuditJob.js',
   'src/routes/internal/cityPackDraftGeneratorJob.js',
+  'src/routes/internal/municipalitySchoolsImportJob.js',
+  'src/routes/internal/schoolCalendarAuditJob.js',
   'src/routes/internal/structDriftBackfillJob.js',
   'src/routes/internal/retentionDryRunJob.js',
   'src/routes/internal/retentionApplyJob.js',

@@ -5,6 +5,7 @@ const sourceRefsRepo = require('../../repos/firestore/sourceRefsRepo');
 const sourceEvidenceRepo = require('../../repos/firestore/sourceEvidenceRepo');
 const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
+const cityPackBulletinsRepo = require('../../repos/firestore/cityPackBulletinsRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -165,6 +166,15 @@ function hashContent(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
+function buildAutoBulletinId(runId, sourceRefId, cityPackId) {
+  const digest = crypto
+    .createHash('sha1')
+    .update(`${runId || ''}:${sourceRefId || ''}:${cityPackId || ''}`)
+    .digest('hex')
+    .slice(0, 20);
+  return `cpb_auto_${digest}`;
+}
+
 function resolveNextStatus(sourceRef, result, diffDetected, nowMs) {
   if (toMillis(sourceRef && sourceRef.validUntil) <= nowMs) return 'blocked';
   if (result === 'http_error' || result === 'timeout' || result === 'error') return 'dead';
@@ -238,6 +248,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   const updateSourceRef = deps && deps.updateSourceRef ? deps.updateSourceRef : sourceRefsRepo.updateSourceRef;
   const createEvidence = deps && deps.createEvidence ? deps.createEvidence : sourceEvidenceRepo.createEvidence;
   const audit = deps && deps.appendAuditLog ? deps.appendAuditLog : appendAuditLog;
+  const createBulletin = deps && deps.createBulletin ? deps.createBulletin : cityPackBulletinsRepo.createBulletin;
 
   const existingRun = await getRun(runId);
   if (existingRun && existingRun.endedAt) {
@@ -314,6 +325,7 @@ async function runCityPackSourceAuditJob(params, deps) {
   const confidenceScores = [];
   let succeeded = 0;
   let failed = 0;
+  let bulletinDraftCount = 0;
 
   for (const sourceRef of candidates) {
     try {
@@ -373,6 +385,34 @@ async function runCityPackSourceAuditJob(params, deps) {
         evidenceLatestId: evidence.id
       });
 
+      if (diffDetected) {
+        const targetCityPackIds = Array.isArray(sourceRef && sourceRef.usedByCityPackIds)
+          ? sourceRef.usedByCityPackIds
+          : [];
+        const summary = llmSummary && typeof llmSummary.diffSummary === 'string' && llmSummary.diffSummary.trim()
+          ? llmSummary.diffSummary.trim()
+          : 'source diff detected';
+        for (const cityPackId of targetCityPackIds) {
+          if (typeof cityPackId !== 'string' || !cityPackId.trim()) continue;
+          try {
+            await createBulletin({
+              id: buildAutoBulletinId(runId, sourceRef.id, cityPackId),
+              status: 'draft',
+              cityPackId: cityPackId.trim(),
+              notificationId: null,
+              summary,
+              traceId,
+              requestId: payload.requestId || null,
+              sourceRefId: sourceRef.id,
+              origin: 'source_audit'
+            });
+            bulletinDraftCount += 1;
+          } catch (_err) {
+            // Ignore duplicate or transient bulletin draft errors to keep audit job idempotent.
+          }
+        }
+      }
+
       confidenceScores.push(confidenceScore);
       succeeded += 1;
     } catch (err) {
@@ -416,7 +456,8 @@ async function runCityPackSourceAuditJob(params, deps) {
     succeeded,
     failed,
     failureTop3,
-    confidenceSummary
+    confidenceSummary,
+    bulletinDraftCount
   });
 
   await audit({
@@ -434,7 +475,8 @@ async function runCityPackSourceAuditJob(params, deps) {
       succeeded,
       failed,
       failureTop3,
-      confidenceSummary
+      confidenceSummary,
+      bulletinDraftCount
     }
   });
 
@@ -451,6 +493,7 @@ async function runCityPackSourceAuditJob(params, deps) {
     failed,
     failureTop3,
     confidenceSummary,
+    bulletinDraftCount,
     traceId,
     idempotent: false
   };

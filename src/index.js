@@ -970,6 +970,8 @@ function createServer() {
     || /^\/api\/admin\/city-pack-feedback\/[^/]+(\/(ack|triage|resolve|reject|propose))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-bulletins'
     || /^\/api\/admin\/city-pack-bulletins\/[^/]+(\/(approve|reject|send))?$/.test(pathname)
+    || pathname === '/api/admin/city-pack-education-links'
+    || /^\/api\/admin\/city-pack-education-links\/[^/]+\/(replace|retire)$/.test(pathname)
     || pathname === '/api/admin/city-pack-update-proposals'
     || /^\/api\/admin\/city-pack-update-proposals\/[^/]+(\/(approve|reject|apply))?$/.test(pathname)
     || pathname === '/api/admin/review-inbox'
@@ -1041,6 +1043,13 @@ function createServer() {
         const { handleCityPackBulletins } = require('./routes/admin/cityPackBulletins');
         const body = await collectBody();
         await handleCityPackBulletins(req, res, body);
+        return;
+      }
+      if (pathname === '/api/admin/city-pack-education-links'
+        || /^\/api\/admin\/city-pack-education-links\/[^/]+\/(replace|retire)$/.test(pathname)) {
+        const { handleCityPackEducationLinks } = require('./routes/admin/cityPackEducationLinks');
+        const body = await collectBody();
+        await handleCityPackEducationLinks(req, res, body);
         return;
       }
       if (pathname === '/api/admin/city-pack-update-proposals'
@@ -1143,6 +1152,66 @@ function createServer() {
       const { handleCityPackDraftGeneratorJob } = require('./routes/internal/cityPackDraftGeneratorJob');
       const body = await collectBody();
       await handleCityPackDraftGeneratorJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/municipality-schools-import') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleMunicipalitySchoolsImportJob } = require('./routes/internal/municipalitySchoolsImportJob');
+      const body = await collectBody();
+      await handleMunicipalitySchoolsImportJob(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/internal/jobs/school-calendar-audit') {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleSchoolCalendarAuditJob } = require('./routes/internal/schoolCalendarAuditJob');
+      const body = await collectBody();
+      await handleSchoolCalendarAuditJob(req, res, body);
     })().catch(() => {
       res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'error' }));

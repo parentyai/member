@@ -319,6 +319,18 @@
     ]
   },
   {
+    "collection": "municipality_schools",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/municipalitySchoolsRepo.js:5",
+      "src/usecases/cityPack/importMunicipalitySchools.js:133",
+      "src/domain/retention/retentionPolicy.js:33"
+    ]
+  },
+  {
     "collection": "notices",
     "kind": "config",
     "recomputable": false,
@@ -604,6 +616,18 @@
       "src/repos/firestore/richMenuTemplatesRepo.js:5",
       "src/repos/firestore/richMenuTemplatesRepo.js:215",
       "src/repos/firestore/richMenuTemplatesRepo.js:236"
+    ]
+  },
+  {
+    "collection": "school_calendar_links",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/schoolCalendarLinksRepo.js:7",
+      "src/routes/admin/cityPackEducationLinks.js:140",
+      "src/routes/admin/cityPackEducationLinks.js:162"
     ]
   },
   {

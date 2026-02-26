@@ -12,6 +12,9 @@ const ALLOWED_SOURCE_TYPE = new Set(['official', 'semi_official', 'community', '
 const ALLOWED_REQUIRED_LEVEL = new Set(['required', 'optional']);
 const ALLOWED_AUTHORITY_LEVEL = new Set(['federal', 'state', 'local', 'other']);
 const ALLOWED_AUDIT_STAGE = new Set(['light', 'heavy']);
+const ALLOWED_DOMAIN_CLASS = new Set(['gov', 'k12_district', 'school_public', 'unknown']);
+const ALLOWED_SCHOOL_TYPE = new Set(['public', 'private', 'unknown']);
+const ALLOWED_EDU_SCOPE = new Set(['calendar', 'district_info', 'enrollment', 'closure_alert']);
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -55,6 +58,48 @@ function resolveAuthorityLevelFilter(value) {
 function normalizeAuditStage(value) {
   const stage = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_AUDIT_STAGE.has(stage) ? stage : null;
+}
+
+function normalizeDomainClass(value) {
+  const domainClass = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_DOMAIN_CLASS.has(domainClass) ? domainClass : 'unknown';
+}
+
+function normalizeSchoolType(value) {
+  const schoolType = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return ALLOWED_SCHOOL_TYPE.has(schoolType) ? schoolType : 'unknown';
+}
+
+function normalizeEduScope(value) {
+  const eduScope = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!eduScope) return null;
+  return ALLOWED_EDU_SCOPE.has(eduScope) ? eduScope : null;
+}
+
+function normalizeRegionKey(value) {
+  if (typeof value !== 'string') return null;
+  const regionKey = value.trim().toLowerCase();
+  return regionKey || null;
+}
+
+function resolveSchoolTypeFilter(value) {
+  if (typeof value !== 'string') return null;
+  const schoolType = value.trim().toLowerCase();
+  if (!schoolType) return null;
+  return ALLOWED_SCHOOL_TYPE.has(schoolType) ? schoolType : null;
+}
+
+function resolveEduScopeFilter(value) {
+  if (typeof value !== 'string') return null;
+  const eduScope = value.trim().toLowerCase();
+  if (!eduScope) return null;
+  return ALLOWED_EDU_SCOPE.has(eduScope) ? eduScope : null;
+}
+
+function resolveRegionKeyFilter(value) {
+  if (typeof value !== 'string') return null;
+  const regionKey = value.trim().toLowerCase();
+  return regionKey || null;
 }
 
 function normalizeConfidenceScore(value) {
@@ -114,6 +159,10 @@ function normalizeSourceRefData(data) {
     authorityLevel: normalizeAuthorityLevel(payload.authorityLevel),
     confidenceScore: normalizeConfidenceScore(payload.confidenceScore),
     lastAuditStage: normalizeAuditStage(payload.lastAuditStage),
+    domainClass: normalizeDomainClass(payload.domainClass),
+    schoolType: normalizeSchoolType(payload.schoolType),
+    eduScope: normalizeEduScope(payload.eduScope),
+    regionKey: normalizeRegionKey(payload.regionKey),
     evidenceLatestId: typeof payload.evidenceLatestId === 'string' ? payload.evidenceLatestId.trim() : null,
     usedByCityPackIds: normalizeArray(payload.usedByCityPackIds)
   };
@@ -166,6 +215,10 @@ async function createSourceRef(data) {
     authorityLevel: normalized.authorityLevel,
     confidenceScore: normalized.confidenceScore,
     lastAuditStage: normalized.lastAuditStage,
+    domainClass: normalized.domainClass,
+    schoolType: normalized.schoolType,
+    eduScope: normalized.eduScope,
+    regionKey: normalized.regionKey,
     evidenceLatestId: normalized.evidenceLatestId,
     usedByCityPackIds: normalized.usedByCityPackIds,
     createdAt: serverTimestamp(),
@@ -196,12 +249,30 @@ async function listSourceRefs(params) {
   if (sourceType) baseQuery = baseQuery.where('sourceType', '==', sourceType);
   const authorityLevel = resolveAuthorityLevelFilter(opts.authorityLevel);
   if (authorityLevel) baseQuery = baseQuery.where('authorityLevel', '==', authorityLevel);
+  const schoolTypeFilter = resolveSchoolTypeFilter(opts.schoolType);
+  const eduScopeFilter = resolveEduScopeFilter(opts.eduScope);
+  const regionKeyFilter = resolveRegionKeyFilter(opts.regionKey);
 
   const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+  const filteredRows = rows.filter((row) => {
+    if (schoolTypeFilter) {
+      const schoolType = typeof row.schoolType === 'string' ? row.schoolType.toLowerCase() : 'unknown';
+      if (schoolType !== schoolTypeFilter) return false;
+    }
+    if (eduScopeFilter) {
+      const eduScope = typeof row.eduScope === 'string' ? row.eduScope.toLowerCase() : '';
+      if (eduScope !== eduScopeFilter) return false;
+    }
+    if (regionKeyFilter) {
+      const regionKey = typeof row.regionKey === 'string' ? row.regionKey.toLowerCase() : '';
+      if (regionKey !== regionKeyFilter) return false;
+    }
+    return true;
+  });
 
-  if (!expiringBeforeMs) return rows;
-  return rows.filter((row) => {
+  if (!expiringBeforeMs) return filteredRows;
+  return filteredRows.filter((row) => {
     const validUntilMs = toMillis(row && row.validUntil);
     return validUntilMs > 0 && validUntilMs <= expiringBeforeMs;
   });

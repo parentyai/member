@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 10 |
-| config | 38 |
+| config | 40 |
 | event | 6 |
 | evidence | 8 |
 | transient | 3 |
@@ -46,6 +46,7 @@
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
+| `municipality_schools` | config | INDEFINITE | false | false |
 | `notices` | config | INDEFINITE | false | false |
 | `notification_deliveries` | event | 180d | CONDITIONAL | true |
 | `notification_templates` | config | INDEFINITE | false | false |
@@ -71,6 +72,7 @@
 | `rich_menu_rate_buckets` | transient | 30d | CONDITIONAL | true |
 | `rich_menu_rollout_runs` | evidence | 365d | false | false |
 | `rich_menu_templates` | config | INDEFINITE | false | false |
+| `school_calendar_links` | config | INDEFINITE | false | false |
 | `send_retry_queue` | config | INDEFINITE | false | false |
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |

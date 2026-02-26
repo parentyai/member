@@ -48,9 +48,22 @@ async function handleList(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const limit = url.searchParams.get('limit');
   const state = url.searchParams.get('state');
+  const domainClass = url.searchParams.get('domainClass');
+  const schoolType = url.searchParams.get('schoolType');
+  const eduScope = url.searchParams.get('eduScope');
+  const regionKey = url.searchParams.get('regionKey');
+  const tagsRaw = url.searchParams.get('tags');
+  const tags = typeof tagsRaw === 'string' && tagsRaw.trim()
+    ? tagsRaw.split(',').map((item) => item.trim()).filter(Boolean)
+    : [];
   const result = await listLinks({
     limit: limit ? Number(limit) : undefined,
-    state: state || undefined
+    state: state || undefined,
+    domainClass: domainClass || undefined,
+    schoolType: schoolType || undefined,
+    eduScope: eduScope || undefined,
+    regionKey: regionKey || undefined,
+    tags
   });
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: true, items: result }));

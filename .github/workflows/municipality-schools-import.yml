@@ -1,0 +1,148 @@
+name: Municipality schools import
+
+on:
+  schedule:
+    - cron: "30 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      csv_url:
+        description: "CSV URL (regionKey,name,district,sourceUrl/sourceLinkRegistryId)"
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Run in dry-run mode"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+  GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+  DEPLOY_SA_EMAIL: ${{ vars.GCP_DEPLOY_SA }}
+  CITY_PACK_JOB_TOKEN: ${{ secrets.CITY_PACK_JOB_TOKEN }}
+  NCES_CCD_PUBLIC_SCHOOLS_URL: ${{ vars.NCES_CCD_PUBLIC_SCHOOLS_URL }}
+
+jobs:
+  import:
+    name: municipality-schools-import
+    runs-on: ubuntu-latest
+    environment: stg
+    concurrency:
+      group: municipality-schools-import
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Auth (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: access_token
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Resolve Cloud Run service URL
+        id: service_url
+        run: |
+          set -euo pipefail
+          SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          if [ -z "$SERVICE_URL" ]; then
+            echo "::error title=Service URL missing::Unable to resolve Cloud Run service URL"
+            exit 1
+          fi
+          echo "service_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Auth (OIDC proxy token)
+        id: proxy_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.service_url.outputs.service_url }}
+          create_credentials_file: false
+
+      - name: Resolve CITY_PACK_JOB_TOKEN
+        run: |
+          set -euo pipefail
+          if [ -n "${CITY_PACK_JOB_TOKEN:-}" ]; then
+            echo "::add-mask::$CITY_PACK_JOB_TOKEN"
+            echo "CITY_PACK_JOB_TOKEN=$CITY_PACK_JOB_TOKEN" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          TOKEN="$(gcloud secrets versions access latest --secret=CITY_PACK_JOB_TOKEN --project "$GCP_PROJECT_ID" | tr -d '\r')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Secret read failed::CITY_PACK_JOB_TOKEN is empty"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CITY_PACK_JOB_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Import municipality schools
+        env:
+          PROXY_ID_TOKEN: ${{ steps.proxy_auth.outputs.id_token }}
+          INPUT_CSV_URL: ${{ github.event.inputs.csv_url }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          CSV_URL="${INPUT_CSV_URL:-${NCES_CCD_PUBLIC_SCHOOLS_URL:-}}"
+          if [ -z "$CSV_URL" ]; then
+            echo "::error title=CSV URL missing::Set workflow input csv_url or repo variable NCES_CCD_PUBLIC_SCHOOLS_URL"
+            exit 1
+          fi
+
+          gcloud run services proxy "$SERVICE_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --token "$PROXY_ID_TOKEN" \
+            --port 18082 >/tmp/municipality-schools-import-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" >/dev/null 2>&1 || true' EXIT
+
+          READY=0
+          for _ in $(seq 1 40); do
+            if curl -sS "http://127.0.0.1:18082/admin/login" >/dev/null 2>&1; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error title=Cloud Run proxy not ready::member service proxy on 127.0.0.1:18082 did not become ready"
+            tail -n 80 /tmp/municipality-schools-import-proxy.log || true
+            exit 1
+          fi
+
+          ARGS=(
+            --service-url "http://127.0.0.1:18082"
+            --job-token "$CITY_PACK_JOB_TOKEN"
+            --source-url "$CSV_URL"
+          )
+          if [ "${INPUT_DRY_RUN:-true}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+
+          node tools/import_nces_ccd_public_schools.js "${ARGS[@]}"

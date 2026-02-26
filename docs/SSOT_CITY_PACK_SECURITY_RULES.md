@@ -9,6 +9,8 @@ City Pack 追加コレクションの Security Rules 設計（add-only）。
 - `source_refs`
 - `source_evidence`
 - `source_audit_runs`
+- `municipality_schools`
+- `school_calendar_links`
 
 ## Access Policy
 - Read/Write は `isAdmin()` のみ許可。
@@ -17,8 +19,9 @@ City Pack 追加コレクションの Security Rules 設計（add-only）。
 ## Write Constraints
 ### source_refs
 - 許可フィールドのみ更新可能（allow-list）。
-- `status` は定義済み enum のみ。
+- `status` は定義済み enum のみ（`active/expired/needs_review/dead/blocked/retired`）。
 - `validUntil` は timestamp 必須。
+- 教育系連携フィールド（`domainClass/schoolType/eduScope/regionKey/usedByCityPackIds`）は add-only で保持する。
 
 ### source_evidence
 - create-only（append-only）。
@@ -39,6 +42,17 @@ City Pack 追加コレクションの Security Rules 設計（add-only）。
 - status は定義済み enum のみ。
 - `lineUserId` / `regionKey` / `traceId` 必須。
 - `draftCityPackIds[]` などの参照は add-only 更新のみ許可。
+
+### municipality_schools
+- Read/Write は `isAdmin()` または service account のみ。
+- `type=public` をアプリ層で固定（private は保存対象外）。
+- `traceId` を保存し、監査突合を可能にする。
+
+### school_calendar_links
+- Read/Write は `isAdmin()` または service account のみ。
+- 実カレンダー本文は保持しない（link-only）。
+- `validUntil` は 120日ポリシーと連動し、期限監査対象とする。
+- `traceId` を保存し、`source_refs`/`source_evidence` と相互参照可能にする。
 
 ## Audit Requirements
 - `city_pack.*` 操作は `audit_logs` へ append-only で保存。
