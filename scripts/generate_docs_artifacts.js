@@ -7,6 +7,10 @@ const ROOT = path.resolve(__dirname, '..');
 
 const TASKS = Object.freeze([
   {
+    label: 'audit-core',
+    script: path.join('scripts', 'generate_audit_core_maps.js')
+  },
+  {
     label: 'repo-map',
     script: path.join('scripts', 'generate_repo_map.js')
   },

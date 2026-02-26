@@ -34,7 +34,7 @@
     "phase-compat-stubs:generate": "node scripts/generate_phase_compat_stubs.js",
     "docs-artifacts:generate": "node scripts/generate_docs_artifacts.js",
     "docs-artifacts:check": "node scripts/check_docs_artifacts.js",
-    "catchup:drift-check": "npm run repo-map:check && npm run docs-artifacts:check && npm run cleanup:check && npm run retention-risk:check && npm run structure-risk:check && npm run load-risk:check && npm run missing-index-surface:check",
+    "catchup:drift-check": "npm run audit-core:check && npm run repo-map:check && npm run docs-artifacts:check && npm run cleanup:check && npm run retention-risk:check && npm run structure-risk:check && npm run load-risk:check && npm run missing-index-surface:check",
     "catchup:gate:pr": "npm run test:docs && npm run test:admin-nav-contract && npm run catchup:drift-check && npm run firestore-indexes:check -- --contracts-only",
     "catchup:gate:full": "npm run catchup:gate:pr && npm test && npm run test:trace-smoke && npm run test:ops-smoke",
     "cleanup:generate": "node scripts/generate_cleanup_reports.js",
@@ -52,6 +52,8 @@
     "missing-index-surface:generate": "node scripts/generate_missing_index_surface.js",
     "missing-index-surface:check": "node scripts/generate_missing_index_surface.js --check",
     "firestore-indexes:check": "node scripts/check_firestore_indexes.js --check",
-    "firestore-indexes:plan": "node scripts/check_firestore_indexes.js --plan"
+    "firestore-indexes:plan": "node scripts/check_firestore_indexes.js --plan",
+    "audit-core:generate": "node scripts/generate_audit_core_maps.js",
+    "audit-core:check": "node scripts/check_audit_core_maps.js"
   }
 }
