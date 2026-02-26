@@ -415,3 +415,66 @@ counts: audits=2 decisions=1 timeline=2
 sample.auditActions: ops_console.view,ops_decision.submit
 sample.timelineActions: DECIDE,EXECUTE
 
+## TRACE_SMOKE
+UTC: 2026-02-26T16:39:23.395Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772123963347-3caa407e
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T16:41:11.089Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772124071047-bbd54843
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T16:43:57.954Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772124237909-86f8e80e
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T16:53:01.293Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772124781249-1bb1edfd
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T17:08:02.699Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772125682663-d8cf4821
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T17:52:47.558Z
+HEAD: 34d5c895298b6a39855fcf9b66640373162793e1
+traceId: trace-smoke-view-1772128367516-dcd4f9d1
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
+## TRACE_SMOKE
+UTC: 2026-02-26T18:52:08.960Z
+HEAD: 3b779e97ef6ae5cbdff9870ec55a2284c1b8161c
+traceId: trace-smoke-view-1772131928910-189234ee
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
