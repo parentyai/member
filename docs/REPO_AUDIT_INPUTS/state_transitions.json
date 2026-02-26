@@ -9,7 +9,7 @@
       {
         "from": "*",
         "to": "draft",
-        "writer": "src/routes/admin/osNotifications.js:43 + src/usecases/notifications/createNotification.js:51-85",
+        "writer": "src/routes/admin/osNotifications.js + src/usecases/notifications/createNotification.js",
         "collection_write": "notifications",
         "audit_log": true,
         "killSwitch_check": false
@@ -17,7 +17,7 @@
       {
         "from": "draft",
         "to": "active",
-        "writer": "src/usecases/adminOs/approveNotification.js:17-23",
+        "writer": "src/usecases/adminOs/approveNotification.js",
         "collection_write": "notifications",
         "audit_log": true,
         "killSwitch_check": false
@@ -25,7 +25,7 @@
       {
         "from": "active",
         "to": "sent",
-        "writer": "src/usecases/notifications/sendNotification.js:241-245",
+        "writer": "src/usecases/notifications/sendNotification.js",
         "collection_write": "notifications",
         "audit_log": true,
         "killSwitch_check": true
@@ -47,56 +47,16 @@
       {
         "from": "*",
         "to": "queued",
-        "writer": "src/usecases/cityPack/declareCityRegionFromLine.js:49-58",
+        "writer": "src/usecases/cityPack/declareCityRegionFromLine.js",
         "collection_write": "city_pack_requests",
         "audit_log": true,
         "killSwitch_check": false
-      },
-      {
-        "from": "queued",
-        "to": "collecting",
-        "writer": "src/usecases/cityPack/runCityPackDraftJob.js:106-111",
-        "collection_write": "city_pack_requests",
-        "audit_log": true,
-        "killSwitch_check": false
-      },
-      {
-        "from": "collecting",
-        "to": "drafted",
-        "writer": "src/usecases/cityPack/runCityPackDraftJob.js:178-205",
-        "collection_write": "city_pack_requests",
-        "audit_log": true,
-        "killSwitch_check": false
-      },
-      {
-        "from": "drafted",
-        "to": "approved",
-        "writer": "src/routes/admin/cityPackRequests.js:189-203",
-        "collection_write": "city_pack_requests",
-        "audit_log": true,
-        "killSwitch_check": true
       },
       {
         "from": "approved",
         "to": "active",
-        "writer": "src/routes/admin/cityPackRequests.js:297-310 + src/usecases/cityPack/activateCityPack.js:76-101",
+        "writer": "src/routes/admin/cityPackRequests.js + src/usecases/cityPack/activateCityPack.js",
         "collection_write": "city_pack_requests,city_packs",
-        "audit_log": true,
-        "killSwitch_check": true
-      },
-      {
-        "from": "*",
-        "to": "needs_review",
-        "writer": "src/routes/admin/cityPackRequests.js:231-245",
-        "collection_write": "city_pack_requests",
-        "audit_log": true,
-        "killSwitch_check": true
-      },
-      {
-        "from": "*",
-        "to": "rejected",
-        "writer": "src/routes/admin/cityPackRequests.js:209-222",
-        "collection_write": "city_pack_requests",
         "audit_log": true,
         "killSwitch_check": true
       }
@@ -113,28 +73,52 @@
       {
         "from": "pending",
         "to": "decided",
-        "writer": "src/usecases/adminOs/setOpsDecision.js:1-120",
-        "collection_write": "ops_states",
+        "writer": "src/usecases/phase25/submitOpsDecision.js",
+        "collection_write": "ops_states,decision_logs",
         "audit_log": true,
         "killSwitch_check": false
       },
       {
         "from": "decided",
-        "to": "escalated",
-        "writer": "DOC_ONLY_TRANSITION",
-        "collection_write": "UNRESOLVED",
-        "audit_log": false,
-        "killSwitch_check": false,
-        "issue": "DOC_ONLY_TRANSITION"
+        "to": "resolved",
+        "writer": "src/usecases/phase33/executeOpsNextAction.js",
+        "collection_write": "ops_states,decision_logs",
+        "audit_log": true,
+        "killSwitch_check": true
+      }
+    ]
+  },
+  "emergency": {
+    "states": [
+      "draft",
+      "approved",
+      "sent",
+      "rejected"
+    ],
+    "transitions": [
+      {
+        "from": "*",
+        "to": "draft",
+        "writer": "src/usecases/emergency/runEmergencySync.js",
+        "collection_write": "emergency_bulletins,emergency_diffs,emergency_snapshots",
+        "audit_log": true,
+        "killSwitch_check": true
       },
       {
-        "from": "escalated",
-        "to": "resolved",
-        "writer": "DOC_ONLY_TRANSITION",
-        "collection_write": "UNRESOLVED",
-        "audit_log": false,
-        "killSwitch_check": false,
-        "issue": "DOC_ONLY_TRANSITION"
+        "from": "draft",
+        "to": "approved",
+        "writer": "src/usecases/emergency/approveEmergencyBulletin.js",
+        "collection_write": "emergency_bulletins",
+        "audit_log": true,
+        "killSwitch_check": true
+      },
+      {
+        "from": "approved",
+        "to": "sent",
+        "writer": "src/usecases/emergency/approveEmergencyBulletin.js + src/usecases/notifications/sendNotification.js",
+        "collection_write": "emergency_bulletins,notification_deliveries,decision_timeline",
+        "audit_log": true,
+        "killSwitch_check": true
       }
     ]
   }

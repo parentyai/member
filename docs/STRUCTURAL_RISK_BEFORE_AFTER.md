@@ -9,5 +9,5 @@
 | retention定義不鮮明 | high | medium | SSOT_RETENTION_ADDENDUM (0件未定義を明示) |
 
 ## 注記
-- duplicate groups: 6
+- duplicate groups: 0
 - fallback points: 0
