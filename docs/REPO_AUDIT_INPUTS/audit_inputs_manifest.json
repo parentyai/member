@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T22:48:19-05:00",
-  "gitCommit": "baa07985a40a987a04d9161b5272ad82c308c7d6",
-  "branch": "codex/city-pack-public-schools-v1",
-  "sourceDigest": "5b5cd9e50e4a62641fc8944b30cc4d21275784ad6d840d6fc214b01e5d758772",
+  "generatedAt": "2026-02-25T22:53:37-05:00",
+  "gitCommit": "d905e419abfe54f7261fad8368b4b6c8c9a93f6a",
+  "branch": "HEAD",
+  "sourceDigest": "23b855f131999cb64063491ccb6c6ad49310d9378405bf8b5efbd0bc81b6dade",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "ebbcfadb118faba26f0712658da50004c94d05fcda7e623bd1a8f56df89e0dd5",
+      "sha256": "bcd1ae82a522b28e6b27eb338d64be0eef2cf416276b2291220ddc9027e517e4",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "181331e99742916301f3c256e2e36f64db766b7e9e57393d4fa42eb6608173a2",
+      "sha256": "675f64d19278465a7b362bdb78ef81bad4036dc7a9c3d6e62b1ae326e2263e42",
       "bytes": 487
     },
     {
@@ -118,12 +118,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "51ca58f2fd606a67912f3362d2cd3309bd8273fee8095d81a974ccf36a806a81",
+      "sha256": "87642f9647167a005f528afb00e48989771f29cf57e40e02ccd7dc8e895f917d",
       "bytes": 292294
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "bd9c4a97638202750ca65df9b0a4aebf7ab8e37c422d672d86093b360db273c7",
+      "sha256": "fc6371b135837a4318c20da343e4a72eede17be5d56d136aec5ed44ad2e61ec9",
       "bytes": 740
     },
     {
@@ -133,13 +133,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "888b69a4168638447084a76efc4470401c624957be743c6203a44820b2970132",
+      "sha256": "89fa6a53ab192618e80527fd03a8f3335830658f54eeeeaffa4754a0164a43cb",
       "bytes": 3193
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "6c23c5ba1936ad341ea1a1157d8fa2469a39d26e6fd43be2440704c6d3e8dd62",
-      "bytes": 2419
+      "sha256": "ec2adc89fbbe6624e5584e4ac4369838385de85bcbf03d69400cb17048586d81",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [
