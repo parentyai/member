@@ -200,3 +200,25 @@ ServicePhase は機能解禁の上位概念であり、Preset は “出し方/�
 ### opsConfig/llmPolicy add-only fields（Phase665）
 - `refusal_strategy{ mode, show_blocked_reason, fallback }`
 - `policy_version_id`
+
+## Phase670 Add-only Data Contract（City Pack内容管理）
+
+### city_packs editable scope（Admin UI）
+- 既存編集対象（add-only）:
+  - `name`
+  - `description`
+  - `sourceRefs`
+  - `validUntil`
+  - `packClass`
+  - `language`
+  - `slotContents`
+  - `slotSchemaVersion`
+  - `metadata`
+- 生成時受理（add-only）:
+  - `templateRefs`
+  - `requestId`
+
+### update guard（SSOT）
+- `POST /api/admin/city-packs/:id/content` は `status=draft` のみ更新可能（active/retiredは409）。
+- active/retiredの編集要求は、先に draft を複製作成してから内容更新する。
+- 削除は物理削除を行わず、`status=retired` への論理削除のみを許可する。

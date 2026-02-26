@@ -34,6 +34,12 @@ function parseCityPackDetail(pathname) {
   return decodeURIComponent(match[1]);
 }
 
+function parseCityPackContentPath(pathname) {
+  const match = pathname.match(/^\/api\/admin\/city-packs\/([^/]+)\/content$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]);
+}
+
 function parseCityPackExport(pathname) {
   const match = pathname.match(/^\/api\/admin\/city-packs\/([^/]+)\/export$/);
   if (!match) return null;
@@ -99,6 +105,11 @@ function computeImportPlanHash(templatePayload) {
   return crypto.createHash('sha256').update(stableSerialize(templatePayload)).digest('hex');
 }
 
+function countSlotContentKeys(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return 0;
+  return Object.keys(value).length;
+}
+
 function importConfirmTokenData(planHash) {
   return {
     planHash: String(planHash || ''),
@@ -124,6 +135,12 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     targetingRules: payload.targetingRules,
     slots: payload.slots,
     metadata: payload.metadata,
+    requestId: payload.requestId,
+    templateRefs: payload.templateRefs,
+    slotContents: payload.slotContents,
+    slotSchemaVersion: payload.slotSchemaVersion,
+    basePackId: payload.basePackId,
+    overrides: payload.overrides,
     packClass: payload.packClass,
     language: payload.language,
     nationwidePolicy: payload.nationwidePolicy
@@ -138,10 +155,13 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     payloadSummary: {
       name: payload.name || null,
       sourceRefCount: Array.isArray(payload.sourceRefs) ? payload.sourceRefs.length : 0,
+      templateRefCount: Array.isArray(payload.templateRefs) ? payload.templateRefs.length : 0,
+      requestId: typeof payload.requestId === 'string' && payload.requestId.trim() ? payload.requestId.trim() : null,
       validUntil: payload.validUntil || null,
       packClass: normalizedPackClass,
       language: normalizedLanguage,
-      nationwidePolicy: normalizedNationwidePolicy
+      nationwidePolicy: normalizedNationwidePolicy,
+      slotContentCount: countSlotContentKeys(payload.slotContents)
     }
   });
   writeJson(res, 201, {
@@ -400,6 +420,48 @@ async function handleUpdateCityPackStructure(req, res, bodyText, context, cityPa
   });
 }
 
+async function handleUpdateCityPackContent(req, res, bodyText, context, cityPackId) {
+  const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+  if (!cityPack) {
+    writeJson(res, 404, { ok: false, error: 'city pack not found' });
+    return;
+  }
+  if (cityPack.status !== 'draft') {
+    writeJson(res, 409, { ok: false, error: 'city_pack_not_editable' });
+    return;
+  }
+  const payload = parseJson(bodyText, res);
+  if (!payload) return;
+  const contentPatch = cityPacksRepo.normalizeCityPackContentPatch(payload);
+  if (!Object.keys(contentPatch).length) {
+    writeJson(res, 400, { ok: false, error: 'content patch required' });
+    return;
+  }
+  await cityPacksRepo.updateCityPack(cityPackId, contentPatch);
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'city_pack.content.update',
+    entityType: 'city_pack',
+    entityId: cityPackId,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      keys: Object.keys(contentPatch).sort(),
+      sourceRefCount: Array.isArray(contentPatch.sourceRefs) ? contentPatch.sourceRefs.length : undefined,
+      slotContentCount: countSlotContentKeys(contentPatch.slotContents),
+      slotSchemaVersion: contentPatch.slotSchemaVersion || undefined,
+      packClass: contentPatch.packClass || undefined,
+      language: contentPatch.language || undefined
+    }
+  });
+  writeJson(res, 200, {
+    ok: true,
+    cityPackId,
+    traceId: context.traceId,
+    updatedKeys: Object.keys(contentPatch).sort()
+  });
+}
+
 async function handleCityPacks(req, res, bodyText) {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   const context = {
@@ -433,6 +495,14 @@ async function handleCityPacks(req, res, bodyText) {
     if (req.method === 'POST' && pathname === '/api/admin/city-packs') {
       await handleCreateCityPack(req, res, bodyText, context);
       return;
+    }
+
+    if (req.method === 'POST') {
+      const contentCityPackId = parseCityPackContentPath(pathname);
+      if (contentCityPackId) {
+        await handleUpdateCityPackContent(req, res, bodyText, context, contentCityPackId);
+        return;
+      }
     }
 
     if (req.method === 'POST') {

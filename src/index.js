@@ -81,6 +81,10 @@ function resolveAdminUsersStripeLayoutFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1', true);
 }
 
+function resolveCityPackContentManageFlag() {
+  return resolveBooleanEnvFlag('ENABLE_CITY_PACK_CONTENT_MANAGE_V1', true);
+}
+
 function resolveAdminBuildMeta() {
   const commitRaw = process.env.GIT_COMMIT_SHA
     || process.env.SOURCE_COMMIT
@@ -116,9 +120,10 @@ function buildAdminAppBootScript() {
   const noCollapseEnabled = resolveAdminNoCollapseFlag();
   const topSummaryEnabled = resolveAdminTopSummaryFlag();
   const usersStripeLayoutEnabled = resolveAdminUsersStripeLayoutFlag();
+  const cityPackContentManageEnabled = resolveCityPackContentManageFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
@@ -1002,7 +1007,7 @@ function createServer() {
     || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
     || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
     || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)
-    || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure)$/.test(pathname)
+    || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure|content)$/.test(pathname)
     || pathname === '/api/admin/city-pack-template-library'
     || /^\/api\/admin\/city-pack-template-library\/[^/]+(\/(activate|retire))?$/.test(pathname)
     || pathname === '/api/admin/city-pack-requests'
@@ -1053,7 +1058,7 @@ function createServer() {
         || /^\/api\/admin\/city-packs\/[^/]+$/.test(pathname)
         || /^\/api\/admin\/city-packs\/[^/]+\/export$/.test(pathname)
         || /^\/api\/admin\/city-packs\/import\/(dry-run|apply)$/.test(pathname)
-        || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure)$/.test(pathname)) {
+        || /^\/api\/admin\/city-packs\/[^/]+\/(activate|retire|structure|content)$/.test(pathname)) {
         const { handleCityPacks } = require('./routes/admin/cityPacks');
         const body = await collectBody();
         await handleCityPacks(req, res, body);
