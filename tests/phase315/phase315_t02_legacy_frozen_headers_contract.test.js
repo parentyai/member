@@ -4,14 +4,9 @@ const assert = require('assert');
 const fs = require('fs');
 const { test } = require('node:test');
 
-const FROZEN_TARGETS = [
+const DELETED_FROZEN_TARGETS = [
   'src/repos/firestore/checklistsRepo.js',
   'src/repos/firestore/kpiSnapshotsRepo.js',
-  'src/repos/firestore/phase18StatsRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsReadRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsRepo.js',
-  'src/repos/firestore/phase2ReportsRepo.js',
-  'src/repos/firestore/phase2RunsRepo.js',
   'src/repos/firestore/redacMembershipLinksRepo.js',
   'src/repos/firestore/userChecklistsRepo.js',
   'src/routes/admin/killSwitch.js',
@@ -27,10 +22,23 @@ const FROZEN_TARGETS = [
   'src/usecases/users/setMemberNumber.js'
 ];
 
-test('phase315: unreachable baseline files are frozen with LEGACY marker', () => {
-  FROZEN_TARGETS.forEach((file) => {
-    const source = fs.readFileSync(file, 'utf8');
-    assert.ok(source.includes('LEGACY_FROZEN_DO_NOT_USE'), `${file}: missing LEGACY_FROZEN_DO_NOT_USE marker`);
-    assert.ok(source.includes('REPO_FULL_AUDIT_REPORT_2026-02-21'), `${file}: missing ssot report reference`);
+const DELETED_ALIAS_TARGETS = [
+  'src/repos/firestore/phase18StatsRepo.js',
+  'src/repos/firestore/phase22KpiSnapshotsReadRepo.js',
+  'src/repos/firestore/phase22KpiSnapshotsRepo.js',
+  'src/repos/firestore/phase2ReadRepo.js',
+  'src/repos/firestore/phase2ReportsRepo.js',
+  'src/repos/firestore/phase2RunsRepo.js'
+];
+
+test('phase315: unreachable frozen candidates are physically removed', () => {
+  DELETED_FROZEN_TARGETS.forEach((file) => {
+    assert.ok(!fs.existsSync(file), `${file}: expected deleted`);
+  });
+});
+
+test('phase315: alias deletion candidates are physically removed', () => {
+  DELETED_ALIAS_TARGETS.forEach((file) => {
+    assert.ok(!fs.existsSync(file), `${file}: expected deleted`);
   });
 });

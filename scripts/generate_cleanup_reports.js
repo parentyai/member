@@ -11,7 +11,6 @@ const INPUT_DIR = path.join(DOCS_DIR, 'REPO_AUDIT_INPUTS');
 const DESIGN_META_PATH = path.join(INPUT_DIR, 'design_ai_meta.json');
 const LOAD_RISK_PATH = path.join(INPUT_DIR, 'load_risk.json');
 const DATA_LIFECYCLE_PATH = path.join(INPUT_DIR, 'data_lifecycle.json');
-const AUDIT_REPORT_PATH = path.join(DOCS_DIR, 'REPO_FULL_AUDIT_REPORT_2026-02-21.md');
 
 const OUTPUTS = Object.freeze({
   CLEANUP_PLAN: path.join(DOCS_DIR, 'CLEANUP_PLAN.md'),
@@ -88,21 +87,12 @@ function listFiles(dir) {
   return out;
 }
 
-function extractUnreachableFromAuditReport(text) {
-  const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.includes('unreachable JS files (static graph)'));
-  if (start === -1) return [];
-  const out = [];
-  for (let i = start + 1; i < lines.length; i += 1) {
-    const line = lines[i].trim();
-    if (!line.startsWith('- `')) {
-      if (line.startsWith('### ') || line.startsWith('## ')) break;
-      continue;
-    }
-    const match = line.match(/-\s+`([^`]+)`/);
-    if (match) out.push(match[1]);
-  }
-  return out;
+function collectFrozenFiles() {
+  const srcFiles = listFiles(path.join(ROOT, 'src')).filter((file) => file.endsWith('.js'));
+  return srcFiles
+    .filter((file) => fs.readFileSync(file, 'utf8').includes('LEGACY_FROZEN_DO_NOT_USE'))
+    .map((file) => toRepoRelative(file))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 function buildFallbackIndexPlan(loadRisk) {
@@ -461,8 +451,7 @@ function buildOutputs() {
   const designMeta = readJson(DESIGN_META_PATH);
   const loadRisk = readJson(LOAD_RISK_PATH);
   const lifecycle = readJson(DATA_LIFECYCLE_PATH);
-  const reportText = fs.readFileSync(AUDIT_REPORT_PATH, 'utf8');
-  const unreachable = extractUnreachableFromAuditReport(reportText);
+  const unreachable = collectFrozenFiles();
 
   const rebuiltLifecycle = rebuildDataLifecycle(lifecycle);
 
