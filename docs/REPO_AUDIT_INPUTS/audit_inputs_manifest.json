@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T22:53:37-05:00",
-  "gitCommit": "d905e419abfe54f7261fad8368b4b6c8c9a93f6a",
+  "generatedAt": "2026-02-25T23:07:34-05:00",
+  "gitCommit": "bd8dd7e9b7ba48c72a3e1d43f62310b9b66ed7a9",
   "branch": "HEAD",
-  "sourceDigest": "23b855f131999cb64063491ccb6c6ad49310d9378405bf8b5efbd0bc81b6dade",
+  "sourceDigest": "945280dfe3b4ea379b342e2d0fc0e1522259b2fd7a05743b948a78c49ffb285e",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "bcd1ae82a522b28e6b27eb338d64be0eef2cf416276b2291220ddc9027e517e4",
+      "sha256": "3863d065732ea8db7b7a224a8f21f7ca4358ea493e80589d129678ee259dcdc2",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "675f64d19278465a7b362bdb78ef81bad4036dc7a9c3d6e62b1ae326e2263e42",
+      "sha256": "d7c4866aed2765bf5e7a94550e360c98008816adb1b69398784d7229279f7759",
       "bytes": 487
     },
     {
@@ -118,12 +118,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "87642f9647167a005f528afb00e48989771f29cf57e40e02ccd7dc8e895f917d",
+      "sha256": "51ca58f2fd606a67912f3362d2cd3309bd8273fee8095d81a974ccf36a806a81",
       "bytes": 292294
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "fc6371b135837a4318c20da343e4a72eede17be5d56d136aec5ed44ad2e61ec9",
+      "sha256": "60b361e7eb9a33f0dd915c9001d6353b6bfee9be15de17f92fc5063f282a3d89",
       "bytes": 740
     },
     {
@@ -133,12 +133,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "89fa6a53ab192618e80527fd03a8f3335830658f54eeeeaffa4754a0164a43cb",
+      "sha256": "b2e233b58c2255156527d443ccb52971853414aed7f170a4fbca0762cf08267b",
       "bytes": 3193
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "ec2adc89fbbe6624e5584e4ac4369838385de85bcbf03d69400cb17048586d81",
+      "sha256": "286c0f7d60272acf6505a4edc978d90230d91ce92d17f5522fa2249591842cb4",
       "bytes": 2390
     }
   ],
