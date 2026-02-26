@@ -8,6 +8,7 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const journeyReminderRunsRepo = require('../../repos/firestore/journeyReminderRunsRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { computeNextReminderAt, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
+const { resolveEffectiveJourneyParams } = require('./resolveEffectiveJourneyParams');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,6 +35,13 @@ function resolveReminderJobEnabled() {
 
 function resolveJourneyRuleEngineEnabled() {
   const raw = process.env.ENABLE_JOURNEY_RULE_ENGINE_V1;
+  if (typeof raw !== 'string') return false;
+  const normalized = raw.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'on';
+}
+
+function resolveJourneyParamVersioningEnabled() {
+  const raw = process.env.ENABLE_JOURNEY_PARAM_VERSIONING_V1;
   if (typeof raw !== 'string') return false;
   const normalized = raw.trim().toLowerCase();
   return normalized === '1' || normalized === 'true' || normalized === 'on';
@@ -145,11 +153,36 @@ async function runJourneyTodoReminderJob(params, deps) {
 
   const dryRun = normalizeBoolean(payload.dryRun, false);
   const nowIso = payload.now || new Date().toISOString();
-  const policy = payload.journeyPolicy || await policyRepo.getJourneyPolicy();
+  let policy = payload.journeyPolicy || await policyRepo.getJourneyPolicy();
   const ruleEngineEnabled = resolveJourneyRuleEngineEnabled();
-  const journeyGraphCatalog = ruleEngineEnabled
+  let journeyGraphCatalog = ruleEngineEnabled
     ? await (payload.journeyGraphCatalog || catalogRepo.getJourneyGraphCatalog()).catch(() => null)
     : null;
+  let policyVersionId = null;
+  const candidateVersionId = typeof payload.candidateVersionId === 'string' && payload.candidateVersionId.trim()
+    ? payload.candidateVersionId.trim()
+    : null;
+  if (payload.effectiveJourneyParams && typeof payload.effectiveJourneyParams === 'object') {
+    const effective = payload.effectiveJourneyParams;
+    if (effective.journeyPolicy && typeof effective.journeyPolicy === 'object') policy = effective.journeyPolicy;
+    if (ruleEngineEnabled && effective.graph && typeof effective.graph === 'object') {
+      journeyGraphCatalog = effective.graph;
+    }
+    policyVersionId = effective.policyVersionId || null;
+  } else if (candidateVersionId || resolveJourneyParamVersioningEnabled()) {
+    const resolved = await resolveEffectiveJourneyParams({
+      versionId: candidateVersionId || undefined
+    }, resolvedDeps).catch(() => null);
+    if (resolved && resolved.ok && resolved.effective && typeof resolved.effective === 'object') {
+      if (resolved.effective.journeyPolicy && typeof resolved.effective.journeyPolicy === 'object') {
+        policy = resolved.effective.journeyPolicy;
+      }
+      if (ruleEngineEnabled && resolved.effective.graph && typeof resolved.effective.graph === 'object') {
+        journeyGraphCatalog = resolved.effective.graph;
+      }
+      policyVersionId = resolved.effective.policyVersionId || null;
+    }
+  }
   const ruleSet = journeyGraphCatalog && journeyGraphCatalog.enabled === true
     ? resolveRuleSet(journeyGraphCatalog)
     : {};
@@ -284,6 +317,7 @@ async function runJourneyTodoReminderJob(params, deps) {
     ok: true,
     status: 'completed',
     runId: run.runId,
+    policyVersionId,
     dryRun,
     scannedCount,
     sentCount,

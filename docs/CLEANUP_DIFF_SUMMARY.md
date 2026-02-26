@@ -7,7 +7,7 @@
 | duplicate groups | 6 | 6 | 削除なし、可視化のみ |
 | missing-index fallback points | 0 | 0 | 実行経路置換完了（fallback zero） |
 | full-scan hotspots | 0 | 0 | bounded運用固定（hotspot zero） |
-| lifecycle rows | 44 | 63 | retentionPolicy準拠へ再生成 |
+| lifecycle rows | 44 | 65 | retentionPolicy準拠へ再生成 |
 | unreachable frozen files | 0 markers | 20 | LEGACY_FROZEN_DO_NOT_USE を付与 |
 
 ## 備考

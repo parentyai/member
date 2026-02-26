@@ -43,7 +43,13 @@ const DEFAULT_LLM_POLICY = Object.freeze({
     max_risks: 3,
     require_evidence: true,
     forbid_direct_url: true
-  })
+  }),
+  refusal_strategy: Object.freeze({
+    mode: 'suggest_and_consult',
+    show_blocked_reason: false,
+    fallback: 'free_retrieval'
+  }),
+  policy_version_id: null
 });
 
 function normalizeBoolean(value, fallback) {
@@ -163,6 +169,33 @@ function normalizeOutputConstraints(value, fallback) {
   };
 }
 
+function normalizeRefusalStrategy(value, fallback) {
+  const base = fallback && typeof fallback === 'object' ? fallback : DEFAULT_LLM_POLICY.refusal_strategy;
+  if (value === null || value === undefined) return Object.assign({}, base);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const modeRaw = normalizeString(value.mode, base.mode);
+  const mode = typeof modeRaw === 'string' ? modeRaw.trim().toLowerCase() : null;
+  if (!mode || !['suggest_and_consult', 'faq_only'].includes(mode)) return null;
+  const showBlockedReason = normalizeBoolean(value.show_blocked_reason, base.show_blocked_reason);
+  const fallbackModeRaw = normalizeString(value.fallback, base.fallback);
+  const fallbackMode = typeof fallbackModeRaw === 'string' ? fallbackModeRaw.trim().toLowerCase() : null;
+  if (showBlockedReason === null || fallbackMode !== 'free_retrieval') return null;
+  return {
+    mode,
+    show_blocked_reason: showBlockedReason,
+    fallback: fallbackMode
+  };
+}
+
+function normalizePolicyVersionId(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback || null;
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return fallback || null;
+  if (!/^[A-Za-z0-9_.:-]{3,128}$/.test(normalized)) return null;
+  return normalized;
+}
+
 function normalizeLlmPolicy(input) {
   if (input === null || input === undefined) {
     return Object.assign({}, DEFAULT_LLM_POLICY);
@@ -193,6 +226,14 @@ function normalizeLlmPolicy(input) {
     input.output_constraints,
     DEFAULT_LLM_POLICY.output_constraints
   );
+  const refusalStrategy = normalizeRefusalStrategy(
+    input.refusal_strategy,
+    DEFAULT_LLM_POLICY.refusal_strategy
+  );
+  const policyVersionId = normalizePolicyVersionId(
+    input.policy_version_id,
+    DEFAULT_LLM_POLICY.policy_version_id
+  );
 
   if ([
     enabled,
@@ -209,7 +250,8 @@ function normalizeLlmPolicy(input) {
     safetyMode,
     forbiddenDomains,
     disclaimerTemplates,
-    outputConstraints
+    outputConstraints,
+    refusalStrategy
   ].includes(null)) {
     return null;
   }
@@ -229,7 +271,9 @@ function normalizeLlmPolicy(input) {
     safety_mode: safetyMode,
     forbidden_domains: forbiddenDomains,
     disclaimer_templates: disclaimerTemplates,
-    output_constraints: outputConstraints
+    output_constraints: outputConstraints,
+    refusal_strategy: refusalStrategy,
+    policy_version_id: policyVersionId
   };
 }
 

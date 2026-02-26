@@ -24,6 +24,8 @@ const RETENTION_POLICY = Object.freeze({
   'journey_branch_queue': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'journey_kpi_daily': Object.freeze({ kind: 'aggregate', retentionDays: 90, deletable: 'CONDITIONAL', recomputable: true }),
   'journey_graph_change_logs': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
+  'journey_param_change_logs': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
+  'journey_param_versions': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'link_registry': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'llm_quality_logs': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),
   'llm_usage_logs': Object.freeze({ kind: 'event', retentionDays: 180, deletable: 'CONDITIONAL', recomputable: true }),

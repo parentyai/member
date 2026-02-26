@@ -248,6 +248,30 @@
     ]
   },
   {
+    "collection": "journey_param_change_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyParamChangeLogsRepo.js:6",
+      "src/repos/firestore/journeyParamChangeLogsRepo.js:70",
+      "src/routes/admin/journeyParamConfig.js:312"
+    ]
+  },
+  {
+    "collection": "journey_param_versions",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyParamVersionsRepo.js:6",
+      "src/repos/firestore/journeyParamVersionsRepo.js:168",
+      "src/routes/admin/journeyParamConfig.js:248"
+    ]
+  },
+  {
     "collection": "link_registry",
     "kind": "config",
     "recomputable": false,

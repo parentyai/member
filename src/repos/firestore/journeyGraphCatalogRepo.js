@@ -359,12 +359,23 @@ function normalizeNode(value) {
   if (!nodeKey) return null;
   const planTier = normalizePlanTier(value.planTier, 'all');
   const defaultJourneyState = normalizeJourneyState(value.defaultJourneyState || value.journeyState, 'planned');
+  const defaultDeadlineOffset = normalizeInteger(
+    value.defaultDeadlineOffset !== undefined ? value.defaultDeadlineOffset : value.defaultDeadlineOffsetDays,
+    0,
+    -365,
+    365
+  );
   if (planTier === null || defaultJourneyState === null) return null;
+  if (defaultDeadlineOffset === null) return null;
+  const dependsOn = normalizeStringList(value.dependsOn || value.prereq || value.prereqIds);
   return {
     nodeKey,
+    id: nodeKey,
     title: normalizeText(value.title || value.task, nodeKey),
     phaseKey: normalizeText(value.phaseKey || value.phase, null),
+    phase: normalizeText(value.phase || value.phaseKey, null),
     domainKey: normalizeText(value.domainKey || value.domain, null),
+    domain: normalizeText(value.domain || value.domainKey, null),
     planTier,
     owner: normalizeText(value.owner, null),
     trigger: normalizeText(value.trigger, null),
@@ -372,8 +383,14 @@ function normalizeNode(value) {
     dueAt: normalizeText(value.dueAt, null),
     output: normalizeText(value.output, null),
     evidence: normalizeText(value.evidence, null),
+    evidenceKeys: normalizeStringList(value.evidenceKeys),
     notificationGroup: normalizeText(value.notificationGroup, null),
-    dependsOn: normalizeStringList(value.dependsOn || value.prereq),
+    dependsOn,
+    prereqIds: dependsOn.slice(),
+    unlockCondition: normalizeText(value.unlockCondition, null),
+    completionCriteria: normalizeText(value.completionCriteria, null),
+    defaultDeadlineOffset,
+    defaultDeadlineOffsetDays: defaultDeadlineOffset,
     reminderOffsetsDays: normalizeReminderOffsetsDays(value.reminderOffsetsDays),
     defaultJourneyState,
     sortOrder: normalizeInteger(value.sortOrder, 0, 0, 100000) || 0
@@ -400,19 +417,30 @@ function normalizeNodes(values) {
 
 function normalizeEdge(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const from = normalizeText(value.from || value.prereqNodeKey, '');
-  const to = normalizeText(value.to || value.nodeKey, '');
+  const from = normalizeText(value.from || value.fromNode || value.prereqNodeKey, '');
+  const to = normalizeText(value.to || value.toNode || value.nodeKey, '');
   if (!from || !to) return null;
-  const reasonTypeRaw = normalizeText(value.reasonType || value.reason || 'prerequisite', 'prerequisite');
+  const reasonTypeRaw = normalizeText(value.reasonType || value.type || value.reason || 'prerequisite', 'prerequisite');
   const reasonType = reasonTypeRaw.toLowerCase();
   if (!ALLOWED_EDGE_REASON_TYPES.includes(reasonType)) return null;
+  const enabled = normalizeBoolean(value.enabled, true);
+  const version = normalizeInteger(value.version, 1, 1, 100000);
+  if (enabled === null || version === null) return null;
+  const edgeId = normalizeText(value.edgeId || value.id, `${from}__${to}__${reasonType}`);
+  if (!edgeId) return null;
   return {
+    edgeId,
     from,
+    fromNode: from,
     to,
+    toNode: to,
+    type: reasonType,
     reasonType,
     reasonLabel: normalizeText(value.reasonLabel || value.reason, null),
     conditionSignal: normalizeText(value.conditionSignal || value.signal, null),
-    required: normalizeBoolean(value.required, true) !== false
+    required: normalizeBoolean(value.required, true) !== false,
+    enabled,
+    version
   };
 }
 
@@ -443,12 +471,18 @@ function buildEdgesFromNodes(nodes) {
       if (seen.has(marker)) return;
       seen.add(marker);
       out.push({
+        edgeId: `${from}__${node.nodeKey}__prerequisite`,
         from,
+        fromNode: from,
         to: node.nodeKey,
+        toNode: node.nodeKey,
+        type: 'prerequisite',
         reasonType: 'prerequisite',
         reasonLabel: null,
         conditionSignal: null,
-        required: true
+        required: true,
+        enabled: true,
+        version: 1
       });
     });
   });

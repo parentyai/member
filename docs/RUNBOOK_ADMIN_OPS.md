@@ -413,3 +413,22 @@ API:
   - action=`set_policy`, payload=`{ updateEnabled: false, ... }`  
 - 全体停止（最終）:
   - 既存 kill switch を使用する。  
+
+## Journey Param Versioning（Phase665）
+
+### Draft -> Validate -> DryRun -> Apply
+1) `GET /api/admin/os/journey-param/status` で activeVersion と runtime pointer を確認。  
+2) `POST /api/admin/os/journey-param/plan` で draft を保存し、`planHash` / `confirmToken` を取得。  
+3) `POST /api/admin/os/journey-param/validate` を実行し、循環/ガード違反を解消。  
+4) `POST /api/admin/os/journey-param/dry-run` で影響件数を確認（`impactedUsers/additionalNotifications/disabledNodes/deadlineBreachForecast`）。  
+5) `POST /api/admin/os/journey-param/apply` を `planHash + confirmToken + latestDryRunHash` 付きで実行。  
+6) `GET /api/admin/os/journey-param/history` で証跡を確認。  
+
+### Rollback
+1) `POST /api/admin/os/journey-param/plan` (`action=rollback_plan`) で rollback 用 token を発行。  
+2) `POST /api/admin/os/journey-param/rollback` で `versionId -> rollbackToVersionId` を適用。  
+3) `GET /api/admin/os/journey-param/status` で activeVersion 巻き戻しを確認。  
+
+### 即時停止
+- `ENABLE_JOURNEY_PARAM_VERSIONING_V1=0`  
+- `ENABLE_JOURNEY_PARAM_CANARY_V1=0`  

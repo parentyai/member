@@ -165,3 +165,38 @@ ServicePhase は機能解禁の上位概念であり、Preset は “出し方/�
 ### runtime/admin route contract（Phase664）
 - `GET /api/admin/os/journey-graph/branch-queue/status`
 - `POST /internal/jobs/journey-branch-dispatch`（internal token required）
+
+## Phase665 Add-only Data Contract（Journey Param Versioning）
+
+### journey_param_versions
+- collection: `journey_param_versions`
+- primary fields:
+  - `versionId`
+  - `state` (`draft|validated|dry_run_passed|applied|rolled_back|rejected`)
+  - `effectiveAt`
+  - `parameters.graph`
+  - `parameters.journeyPolicy`
+  - `parameters.llmPolicyPatch`
+  - `validation{ ok/errors/warnings/cycleCount }`
+  - `dryRun{ metrics/scope/hash/generatedAt }`
+
+### journey_param_change_logs
+- collection: `journey_param_change_logs`
+- primary fields:
+  - `action` (`plan|validate|dry_run|apply|rollback`)
+  - `versionId`
+  - `summary`
+  - `before` / `after`
+  - `traceId` / `requestId` / `actor`
+
+### opsConfig/journeyParamRuntime
+- document: `opsConfig/journeyParamRuntime`
+- fields:
+  - `enabled`
+  - `activeVersionId`
+  - `previousAppliedVersionId`
+  - `canary{ enabled/versionId/lineUserIds[] }`
+
+### opsConfig/llmPolicy add-only fields（Phase665）
+- `refusal_strategy{ mode, show_blocked_reason, fallback }`
+- `policy_version_id`

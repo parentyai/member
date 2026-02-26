@@ -1547,6 +1547,15 @@ function createServer() {
       handleHistory: handleJourneyGraphHistory
     } = require('./routes/admin/journeyGraphCatalogConfig');
     const {
+      handleStatus: handleJourneyParamStatus,
+      handlePlan: handleJourneyParamPlan,
+      handleValidate: handleJourneyParamValidate,
+      handleDryRun: handleJourneyParamDryRun,
+      handleApply: handleJourneyParamApply,
+      handleRollback: handleJourneyParamRollback,
+      handleHistory: handleJourneyParamHistory
+    } = require('./routes/admin/journeyParamConfig');
+    const {
       handleRuntime: handleJourneyGraphRuntime,
       handleRuntimeHistory: handleJourneyGraphRuntimeHistory
     } = require('./routes/admin/journeyGraphRuntime');
@@ -1711,6 +1720,39 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/branch-queue/status') {
         await handleJourneyGraphBranchQueueStatus(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-param/status') {
+        await handleJourneyParamStatus(req, res);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/plan') {
+        const body = await collectBody();
+        await handleJourneyParamPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/validate') {
+        const body = await collectBody();
+        await handleJourneyParamValidate(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/dry-run') {
+        const body = await collectBody();
+        await handleJourneyParamDryRun(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/apply') {
+        const body = await collectBody();
+        await handleJourneyParamApply(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/rollback') {
+        const body = await collectBody();
+        await handleJourneyParamRollback(req, res, body);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/journey-param/history') {
+        await handleJourneyParamHistory(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/status') {

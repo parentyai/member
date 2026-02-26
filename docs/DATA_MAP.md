@@ -453,3 +453,34 @@ Typical fields:
 - `lastTraceId`
 - `nextEligibleAt`
 - `manualOverrideTemplateId`
+
+### `journey_param_versions/{versionId}`
+Purpose: Journey制御パラメータのVersion管理（draft/validate/dry-run/apply/rollback）。
+
+Typical fields:
+- `state` (`draft|validated|dry_run_passed|applied|rolled_back|rejected`)
+- `effectiveAt`
+- `parameters.graph`
+- `parameters.journeyPolicy`
+- `parameters.llmPolicyPatch`
+- `validation`
+- `dryRun`
+- `appliedMeta`
+
+### `journey_param_change_logs/{id}`
+Purpose: Journey Param運用の監査証跡（plan/validate/dry_run/apply/rollback）。
+
+Typical fields:
+- `versionId`, `action`, `summary`
+- `before`, `after`
+- `traceId`, `requestId`, `actor`
+- `createdAt`
+
+### `opsConfig/journeyParamRuntime`
+Purpose: Journey Paramの active/canary pointer 管理。
+
+Typical fields:
+- `enabled`
+- `activeVersionId`
+- `previousAppliedVersionId`
+- `canary{ enabled, versionId, lineUserIds[] }`

@@ -5,6 +5,7 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
+const { resolveEffectiveJourneyParams } = require('./resolveEffectiveJourneyParams');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,6 +28,10 @@ function resolveJourneyDagCatalogEnabled(params) {
   if (payload.forceEnabled === true) return true;
   if (payload.forceEnabled === false) return false;
   return resolveBooleanEnvFlag('ENABLE_JOURNEY_DAG_CATALOG_V1', false);
+}
+
+function resolveJourneyParamVersioningEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_JOURNEY_PARAM_VERSIONING_V1', false);
 }
 
 function toIso(value) {
@@ -53,6 +58,16 @@ function toIso(value) {
 function toIsoDate(value) {
   const iso = toIso(value);
   return iso ? iso.slice(0, 10) : null;
+}
+
+function shiftIsoByDays(iso, offsetDays) {
+  const normalized = toIso(iso);
+  if (!normalized) return null;
+  const offset = Number(offsetDays);
+  if (!Number.isFinite(offset) || offset === 0) return normalized;
+  const baseMs = Date.parse(normalized);
+  if (!Number.isFinite(baseMs)) return normalized;
+  return new Date(baseMs + (Math.floor(offset) * DAY_MS)).toISOString();
 }
 
 function computeNextReminderAt(dueAt, reminderOffsetsDays, remindedOffsetsDays, nowIso) {
@@ -103,6 +118,31 @@ function resolveReminderOffsets(node, policy) {
   return [7, 3, 1];
 }
 
+function resolveDeadlineShiftDays(node, policy) {
+  const payload = node && typeof node === 'object' ? node : {};
+  const policyPayload = policy && typeof policy === 'object' ? policy : {};
+  const nodeKey = String(payload.nodeKey || payload.todoKey || '').trim();
+  const phaseKey = String(payload.phaseKey || payload.phase || '').trim();
+  const deadlineOffsets = policyPayload.deadlineOffsets && typeof policyPayload.deadlineOffsets === 'object'
+    ? policyPayload.deadlineOffsets
+    : {};
+  const deadlineOffsetsByPhase = policyPayload.deadlineOffsetsByPhase && typeof policyPayload.deadlineOffsetsByPhase === 'object'
+    ? policyPayload.deadlineOffsetsByPhase
+    : {};
+  const nodeOffset = Number(
+    payload.defaultDeadlineOffset !== undefined
+      ? payload.defaultDeadlineOffset
+      : payload.defaultDeadlineOffsetDays
+  );
+  const keyOffset = Number(deadlineOffsets[nodeKey]);
+  const phaseOffset = Number(deadlineOffsetsByPhase[phaseKey]);
+  let total = 0;
+  if (Number.isFinite(nodeOffset)) total += Math.floor(nodeOffset);
+  if (Number.isFinite(keyOffset)) total += Math.floor(keyOffset);
+  if (Number.isFinite(phaseOffset)) total += Math.floor(phaseOffset);
+  return total;
+}
+
 function normalizeDependsOn(node, edges) {
   const payload = node && typeof node === 'object' ? node : {};
   if (Array.isArray(payload.dependsOn) && payload.dependsOn.length) {
@@ -119,6 +159,7 @@ function normalizeDependsOn(node, edges) {
   const dependencyReasonMap = {};
   edges.forEach((edge) => {
     if (!edge || typeof edge !== 'object') return;
+    if (edge.enabled === false) return;
     const to = String(edge.to || '').trim();
     const from = String(edge.from || '').trim();
     if (!to || !from) return;
@@ -139,6 +180,46 @@ function normalizeDependsOn(node, edges) {
   };
 }
 
+async function resolveCatalogAndPolicy(payload, resolvedDeps, lineUserId) {
+  if (payload.effectiveJourneyParams && typeof payload.effectiveJourneyParams === 'object') {
+    const effective = payload.effectiveJourneyParams;
+    const catalog = effective.graph || payload.journeyGraphCatalog || await (resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo).getJourneyGraphCatalog();
+    const policy = effective.journeyPolicy || payload.journeyPolicy || await (resolvedDeps.journeyPolicyRepo || journeyPolicyRepo).getJourneyPolicy();
+    return {
+      journeyGraphCatalog: catalog,
+      journeyPolicy: policy,
+      policyVersionId: effective.policyVersionId || null
+    };
+  }
+
+  const candidateVersionId = typeof payload.candidateVersionId === 'string' && payload.candidateVersionId.trim()
+    ? payload.candidateVersionId.trim()
+    : null;
+  if (candidateVersionId || resolveJourneyParamVersioningEnabled()) {
+    const resolved = await resolveEffectiveJourneyParams({
+      lineUserId,
+      versionId: candidateVersionId || undefined
+    }, resolvedDeps).catch(() => null);
+    if (resolved && resolved.ok && resolved.effective && typeof resolved.effective === 'object') {
+      return {
+        journeyGraphCatalog: resolved.effective.graph || await (resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo).getJourneyGraphCatalog(),
+        journeyPolicy: resolved.effective.journeyPolicy || await (resolvedDeps.journeyPolicyRepo || journeyPolicyRepo).getJourneyPolicy(),
+        policyVersionId: resolved.effective.policyVersionId || null
+      };
+    }
+  }
+
+  const [journeyGraphCatalog, journeyPolicy] = await Promise.all([
+    payload.journeyGraphCatalog || (resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo).getJourneyGraphCatalog(),
+    payload.journeyPolicy || (resolvedDeps.journeyPolicyRepo || journeyPolicyRepo).getJourneyPolicy()
+  ]);
+  return {
+    journeyGraphCatalog,
+    journeyPolicy,
+    policyVersionId: null
+  };
+}
+
 async function syncJourneyDagCatalogToTodos(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -156,15 +237,15 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
 
   const catalogRepo = resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo;
   const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
-  const policyRepo = resolvedDeps.journeyPolicyRepo || journeyPolicyRepo;
   const planResolver = resolvedDeps.resolvePlan || resolvePlan;
 
-  const [catalog, policy, planInfo, existingItems] = await Promise.all([
-    payload.journeyGraphCatalog || catalogRepo.getJourneyGraphCatalog(),
-    payload.journeyPolicy || policyRepo.getJourneyPolicy(),
+  const [effectiveResolved, planInfo, existingItems] = await Promise.all([
+    resolveCatalogAndPolicy(payload, resolvedDeps, lineUserId),
     payload.planInfo || planResolver(lineUserId),
     todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 1000 })
   ]);
+  const catalog = effectiveResolved.journeyGraphCatalog || await catalogRepo.getJourneyGraphCatalog();
+  const policy = effectiveResolved.journeyPolicy || await (resolvedDeps.journeyPolicyRepo || journeyPolicyRepo).getJourneyPolicy();
 
   if (!catalog || catalog.enabled !== true) {
     return {
@@ -197,8 +278,10 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
     const remindedOffsetsDays = existing && Array.isArray(existing.remindedOffsetsDays)
       ? existing.remindedOffsetsDays
       : [];
-    const dueAt = toIso(node && node.dueAt) || (existing && existing.dueAt ? existing.dueAt : null);
-    const dueDate = toIsoDate(node && node.dueAt) || (existing && existing.dueDate ? existing.dueDate : null);
+    const baseDueAt = toIso(node && node.dueAt) || (existing && existing.dueAt ? existing.dueAt : null);
+    const deadlineShiftDays = resolveDeadlineShiftDays(node, policy);
+    const dueAt = baseDueAt ? shiftIsoByDays(baseDueAt, deadlineShiftDays) : null;
+    const dueDate = dueAt ? toIsoDate(dueAt) : (existing && existing.dueDate ? existing.dueDate : null);
     const nextReminderAt = dueAt
       ? computeNextReminderAt(dueAt, reminderOffsetsDays, remindedOffsetsDays, nowIso)
       : null;
@@ -232,6 +315,7 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
       dueDate,
       sourceTemplateVersion: `journey_dag_catalog_v${Number.isFinite(Number(catalog.schemaVersion)) ? Math.floor(Number(catalog.schemaVersion)) : 1}`,
       source: payload.source || 'journey_dag_catalog_sync',
+      stateEvidenceRef: effectiveResolved.policyVersionId || (existing && existing.stateEvidenceRef ? existing.stateEvidenceRef : null),
       journeyState,
       phaseKey: node && node.phaseKey ? node.phaseKey : null,
       domainKey: node && node.domainKey ? node.domainKey : null,
@@ -263,6 +347,7 @@ async function syncJourneyDagCatalogToTodos(params, deps) {
     status: 'synced',
     syncedCount,
     plan: normalizePlan(planInfo),
+    policyVersionId: effectiveResolved.policyVersionId || null,
     graph,
     stats
   };

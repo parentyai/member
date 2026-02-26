@@ -502,6 +502,83 @@
         "service": "member",
         "route": "admin.journey_graph_branch_queue_status"
       }
+    },
+    {
+      "id": "journey_param_versions_updatedAt_desc",
+      "collectionGroup": "journey_param_versions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyParamVersionsRepo.js",
+          "line": 248
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-26",
+        "service": "member",
+        "route": "admin.journey_param_status_history"
+      }
+    },
+    {
+      "id": "journey_param_versions_state_updatedAt_desc",
+      "collectionGroup": "journey_param_versions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyParamVersionsRepo.js",
+          "line": 262
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyParamVersionsRepo.js",
+          "line": 263
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-26",
+        "service": "member",
+        "route": "journey_param_versions_get_latest_by_state"
+      }
+    },
+    {
+      "id": "journey_param_change_logs_createdAt_desc",
+      "collectionGroup": "journey_param_change_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyParamChangeLogsRepo.js",
+          "line": 89
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-02-26",
+        "service": "member",
+        "route": "admin.journey_param_history"
+      }
     }
   ],
   "criticalContracts": [
@@ -699,6 +776,41 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/journeyGraphBranchQueue.js",
           "line": 45
+        }
+      ]
+    },
+    {
+      "contractId": "admin_journey_param_status",
+      "routeOrUsecase": "GET /api/admin/os/journey-param/status",
+      "requiredIndexIds": [
+        "journey_param_versions_updatedAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1716
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/journeyParamConfig.js",
+          "line": 160
+        }
+      ]
+    },
+    {
+      "contractId": "admin_journey_param_history",
+      "routeOrUsecase": "GET /api/admin/os/journey-param/history",
+      "requiredIndexIds": [
+        "journey_param_versions_updatedAt_desc",
+        "journey_param_change_logs_createdAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1740
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/journeyParamConfig.js",
+          "line": 549
         }
       ]
     }

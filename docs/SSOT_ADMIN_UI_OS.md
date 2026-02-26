@@ -265,3 +265,19 @@ MUST:
 - Safety:
   - 既存 `mark-read` / `mark-click` は互換維持
   - `reaction-v2` の branch反映は feature flag（`ENABLE_JOURNEY_BRANCH_QUEUE_V1`）で即時停止可能
+
+## Phase665 Add-only UI Contract（Journey Param Versioning）
+- monitor pane に Journey Param Console（versioned）を add-only で追加する。
+- 強制フロー:
+  - `plan(draft)` -> `validate` -> `dry-run` -> `apply`
+  - rollback は `plan(action=rollback_plan)` -> `rollback`
+- Admin OS API（add-only）:
+  - `GET /api/admin/os/journey-param/status`
+  - `POST /api/admin/os/journey-param/plan`
+  - `POST /api/admin/os/journey-param/validate`
+  - `POST /api/admin/os/journey-param/dry-run`
+  - `POST /api/admin/os/journey-param/apply`
+  - `POST /api/admin/os/journey-param/rollback`
+  - `GET /api/admin/os/journey-param/history`
+- Apply保護:
+  - `planHash + confirmToken + latestDryRunHash` 一致を必須化する。

@@ -78,13 +78,18 @@ function buildCatalogEdgeMap(catalogEdges) {
     if (!from || !to) return;
     const marker = `${from}|${to}`;
     map.set(marker, {
+      edgeId: typeof edge.edgeId === 'string' && edge.edgeId.trim()
+        ? edge.edgeId.trim()
+        : `${from}__${to}__${typeof edge.reasonType === 'string' ? edge.reasonType : 'prerequisite'}`,
       reasonType: typeof edge.reasonType === 'string' && edge.reasonType.trim()
         ? edge.reasonType.trim()
         : 'prerequisite',
       reasonLabel: typeof edge.reasonLabel === 'string' && edge.reasonLabel.trim()
         ? edge.reasonLabel.trim()
         : null,
-      required: edge.required !== false
+      required: edge.required !== false,
+      enabled: edge.enabled !== false,
+      version: Number.isFinite(Number(edge.version)) ? Math.max(1, Math.floor(Number(edge.version))) : 1
     });
   });
   return map;
@@ -106,11 +111,14 @@ function buildEdges(nodes, catalogEdges) {
       seen.add(marker);
       const edgeMeta = catalogEdgeMap.get(marker);
       out.push({
+        edgeId: edgeMeta && edgeMeta.edgeId ? edgeMeta.edgeId : `${from}__${to}__prerequisite`,
         from,
         to,
         reasonType: edgeMeta && edgeMeta.reasonType ? edgeMeta.reasonType : 'prerequisite',
         reasonLabel: edgeMeta ? edgeMeta.reasonLabel : null,
-        required: edgeMeta ? edgeMeta.required !== false : true
+        required: edgeMeta ? edgeMeta.required !== false : true,
+        enabled: edgeMeta ? edgeMeta.enabled !== false : true,
+        version: edgeMeta && Number.isFinite(Number(edgeMeta.version)) ? Number(edgeMeta.version) : 1
       });
     });
   });
@@ -124,6 +132,9 @@ function buildEdges(nodes, catalogEdges) {
     if (seen.has(marker)) return;
     seen.add(marker);
     out.push({
+      edgeId: typeof edge.edgeId === 'string' && edge.edgeId.trim()
+        ? edge.edgeId.trim()
+        : `${from}__${to}__${typeof edge.reasonType === 'string' ? edge.reasonType : 'prerequisite'}`,
       from,
       to,
       reasonType: typeof edge.reasonType === 'string' && edge.reasonType.trim()
@@ -132,7 +143,9 @@ function buildEdges(nodes, catalogEdges) {
       reasonLabel: typeof edge.reasonLabel === 'string' && edge.reasonLabel.trim()
         ? edge.reasonLabel.trim()
         : null,
-      required: edge.required !== false
+      required: edge.required !== false,
+      enabled: edge.enabled !== false,
+      version: Number.isFinite(Number(edge.version)) ? Math.max(1, Math.floor(Number(edge.version))) : 1
     });
   });
   return out;
@@ -211,6 +224,8 @@ async function handleRuntime(req, res) {
       totalEdges: edges.length,
       requiredEdges: edges.filter((edge) => edge.required !== false).length,
       optionalEdges: edges.filter((edge) => edge.required === false).length,
+      enabledEdges: edges.filter((edge) => edge.enabled !== false).length,
+      disabledEdges: edges.filter((edge) => edge.enabled === false).length,
       done: filteredNodes.filter((node) => node.journeyState === 'done').length,
       blocked: filteredNodes.filter((node) => node.journeyState === 'blocked').length,
       snoozed: filteredNodes.filter((node) => node.journeyState === 'snoozed').length
