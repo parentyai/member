@@ -197,6 +197,35 @@
   - `docs/REPO_AUDIT_INPUTS/repo_map_ui.json`
   - `docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json`
 
+## W6 Final Integration Gate + STG Evidence Refresh (2026-02-26T19:11:51Z)
+- branch: `codex/pr10-final-integration-gates`
+- base commit: `ede29a45440dc5f9fb2ab3f0e3e64390e86678fa`
+- local command results:
+  - `ADMIN_OS_TOKEN=dev-local-token npm run catchup:gate:full` PASS
+  - `gcloud run services proxy member --project member-485303 --region us-east1 --port 18080` + `npm run ops:stg-e2e -- --base-url http://127.0.0.1:18080 --project-id member-485303 --fetch-route-errors --fail-on-route-errors --fail-on-missing-audit-actions --expect-llm-enabled` PASS
+- local fixed-order summary:
+  - pass: `6`
+  - fail: `0`
+  - skip: `0`
+  - route_error_failures: `0`
+  - audit_action_failures: `0`
+- local scenario results:
+  - `product_readiness_gate`: PASS (`trace-stg-e2e-product-readiness-gate-20260226190916`)
+  - `llm_gate`: PASS (`trace-stg-e2e-llm-gate-20260226190921`)
+  - `segment`: PASS (`trace-stg-e2e-segment-20260226190923`)
+  - `retry_queue`: PASS (`trace-stg-e2e-retry-queue-20260226190927`)
+  - `kill_switch_block`: PASS (`trace-stg-e2e-kill-switch-block-20260226190929`)
+  - `composer_cap_block`: PASS (`trace-stg-e2e-composer-cap-block-20260226190930`)
+- workflow revalidation:
+  - name: `STG notification e2e checklist`
+  - run_id: `22457145602`
+  - url: `https://github.com/parentyai/member/actions/runs/22457145602`
+  - head_sha: `ede29a45440dc5f9fb2ab3f0e3e64390e86678fa`
+  - conclusion: `success`
+- workflow artifacts:
+  - `artifacts/gh-runs/22457145602/stg-notification-e2e-22457145602/stg-notification-e2e-20260226191110.json`
+  - `artifacts/gh-runs/22457145602/stg-notification-e2e-22457145602/stg-notification-e2e-20260226191110.md`
+
 ## Log Template (copy)
 ```text
 date_utc: YYYY-MM-DDTHH:mm:ssZ

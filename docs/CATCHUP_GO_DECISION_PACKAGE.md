@@ -3,7 +3,7 @@
 4週間キャッチアップ完了時の Go / No-Go 判定パッケージ。
 判定は stg fixed-order E2E と product-readiness を一次情報として行う。
 
-更新日: 2026-02-25
+更新日: 2026-02-26
 
 ## 1. Decision Inputs
 - Wave execution OS:
@@ -17,16 +17,16 @@
 
 ## 2. Latest STG Fixed-Order Evidence
 - workflow run:
-  - id: `22379499260`
-  - url: `https://github.com/parentyai/member/actions/runs/22379499260`
+  - id: `22457145602`
+  - url: `https://github.com/parentyai/member/actions/runs/22457145602`
   - branch: `main`
-  - headSha: `ce88be9822df824bfb8863f796225eee1ee50024`
-  - startedAt: `2026-02-25T02:29:25Z`
-  - completedAt: `2026-02-25T02:30:39Z`
+  - headSha: `ede29a45440dc5f9fb2ab3f0e3e64390e86678fa`
+  - startedAt: `2026-02-26T19:10:16Z`
+  - completedAt: `2026-02-26T19:11:51Z`
   - conclusion: `success`
 - artifact:
-  - `artifacts/gh-runs/22379499260/stg-notification-e2e-22379499260/stg-notification-e2e-20260225022959.json`
-  - `artifacts/gh-runs/22379499260/stg-notification-e2e-22379499260/stg-notification-e2e-20260225022959.md`
+  - `artifacts/gh-runs/22457145602/stg-notification-e2e-22457145602/stg-notification-e2e-20260226191110.json`
+  - `artifacts/gh-runs/22457145602/stg-notification-e2e-22457145602/stg-notification-e2e-20260226191110.md`
 
 ## 3. Fixed-Order Scenario Summary
 - `product_readiness_gate`: PASS
@@ -41,7 +41,7 @@
 
 ## 4. Product Readiness Snapshot
 - `/api/admin/product-readiness`: HTTP 200 / ok=true
-- admin readiness endpoints (6/6): HTTP 200 / ok=true
+- admin readiness endpoints (7/7): HTTP 200 / ok=true
 - `status=GO` の継続を Go 判定前提とする
 
 ## 5. Decision
