@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T20:07:48-05:00",
-  "gitCommit": "76cbc5d2e4c7c894c79dbd486069675803c5da71",
-  "branch": "main",
-  "sourceDigest": "c886e2d263c77308f245f3ce1343d582db23b9ca8388edf96100a5fcaa2a62d5",
+  "generatedAt": "2026-02-25T22:48:19-05:00",
+  "gitCommit": "baa07985a40a987a04d9161b5272ad82c308c7d6",
+  "branch": "codex/city-pack-public-schools-v1",
+  "sourceDigest": "5f3811ac7b15803a20d65204a7ca49640cc9f489705d5aa3b64720f030d7cd6d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

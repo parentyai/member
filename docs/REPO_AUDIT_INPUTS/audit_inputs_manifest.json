@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T20:07:48-05:00",
-  "gitCommit": "76cbc5d2e4c7c894c79dbd486069675803c5da71",
-  "branch": "main",
-  "sourceDigest": "a818db2ca25f75a7b6621506f8df3de7519b5be463d383b70443c1a296417b1b",
+  "generatedAt": "2026-02-25T22:48:19-05:00",
+  "gitCommit": "baa07985a40a987a04d9161b5272ad82c308c7d6",
+  "branch": "codex/city-pack-public-schools-v1",
+  "sourceDigest": "5b5cd9e50e4a62641fc8944b30cc4d21275784ad6d840d6fc214b01e5d758772",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -28,8 +28,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
-      "sha256": "aac7bed01d81fa4ef8f074084582bc953092214f8849619a13af41228e3a79cc",
-      "bytes": 21176
+      "sha256": "a1816bfeb38f49802fcd48c743d6e8bedcd18addb689f84bbe58e9ff97e23f16",
+      "bytes": 21877
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "07268c98cecbcda7c117cbbe2638404c5a95e23198607bc5b5affdc31e76ec93",
+      "sha256": "ebbcfadb118faba26f0712658da50004c94d05fcda7e623bd1a8f56df89e0dd5",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "2a8f35c21c8272d2d923a8f0bcbb5d2159b9ffa3528643d7fbb67263bc2bfbbb",
+      "sha256": "181331e99742916301f3c256e2e36f64db766b7e9e57393d4fa42eb6608173a2",
       "bytes": 487
     },
     {
@@ -118,12 +118,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "92f6085fc798934bf875fa6f3c931cb1858189a16cfbe6598d1756ac05dba597",
+      "sha256": "51ca58f2fd606a67912f3362d2cd3309bd8273fee8095d81a974ccf36a806a81",
       "bytes": 292294
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "74b00cce5191c8e4cad65c0d7c4953f0b96125706a08b39d25329c2ac7a019ff",
+      "sha256": "bd9c4a97638202750ca65df9b0a4aebf7ab8e37c422d672d86093b360db273c7",
       "bytes": 740
     },
     {
@@ -138,8 +138,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "9989a6bc3fafb162cfbf621b5405f9e33c704c11426ca8ad54be7d0bd5b68b48",
-      "bytes": 2390
+      "sha256": "6c23c5ba1936ad341ea1a1157d8fa2469a39d26e6fd43be2440704c6d3e8dd62",
+      "bytes": 2419
     }
   ],
   "diff_detection_rules": [
