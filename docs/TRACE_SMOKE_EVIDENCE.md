@@ -478,3 +478,12 @@ counts: audits=2 decisions=1 timeline=2
 sample.auditActions: ops_console.view,ops_decision.submit
 sample.timelineActions: DECIDE,EXECUTE
 
+## TRACE_SMOKE
+UTC: 2026-02-26T19:08:17.076Z
+HEAD: ede29a45440dc5f9fb2ab3f0e3e64390e86678fa
+traceId: trace-smoke-view-1772132897030-549af54a
+result: PASS
+counts: audits=2 decisions=1 timeline=2
+sample.auditActions: ops_console.view,ops_decision.submit
+sample.timelineActions: DECIDE,EXECUTE
+
