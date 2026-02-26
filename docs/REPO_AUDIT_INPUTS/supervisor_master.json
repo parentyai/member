@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T23:07:34-05:00",
-  "gitCommit": "bd8dd7e9b7ba48c72a3e1d43f62310b9b66ed7a9",
-  "branch": "HEAD",
-  "sourceDigest": "5a0a1b17b9aaf6647b51ad152e4e4b3df28e6163cd8aa1cd5e4212101a17cbc5",
+  "generatedAt": "2026-02-26T06:43:41-05:00",
+  "gitCommit": "50b7341d7feac72108e181e33ab3a04f487356a5",
+  "branch": "codex/emergency-layer-foundation-v1",
+  "sourceDigest": "f4d4927b652a0b8ef738a63a8cf79cef25a0c2feb3d9be5c240eb181450eb882",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
