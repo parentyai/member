@@ -226,29 +226,81 @@ function inferEntrypointsFromIndexForRoute(routePath) {
     const from = Math.max(0, i - 40);
     const to = Math.min(lines.length - 1, i + 5);
     const block = lines.slice(from, to + 1).join('\n');
-
-    for (const m of block.matchAll(/pathname\s*===\s*'([^']+)'/g)) out.add(m[1]);
-    for (const m of block.matchAll(/pathname\.startsWith\(\s*'([^']+)'\s*\)/g)) out.add(`${m[1]}*`);
-    for (const m of block.matchAll(/\/((?:\\.|[^\/])+)\/[gimsuy]*\.test\(pathname\)/g)) {
-      out.add(`/${m[1]}/`);
-    }
+    inferPathsFromBlock(block).forEach((row) => out.add(row.value));
   }
 
   return Array.from(out.values()).sort((a, b) => a.localeCompare(b));
 }
 
-function countTestsForFeature(featureName, routeRelPath) {
-  const featureToken = String(featureName || '').toLowerCase();
-  const routeBase = path.basename(routeRelPath || '', '.js').toLowerCase();
-  const files = listJsFiles(TESTS_DIR).map((f) => toRepoRelative(f));
-  let count = 0;
-  files.forEach((file) => {
-    const lower = file.toLowerCase();
-    if (featureToken && lower.includes(featureToken)) {
-      count += 1;
-      return;
+const TEST_TOKEN_EXCLUDES = new Set([
+  'appendauditlog',
+  'normalize',
+  'normalizelimit',
+  'normalizewindowdays',
+  'plangate',
+  'resolveplan',
+  'getkillswitch',
+  'setkillswitch',
+  'runautomation'
+]);
+
+let TEST_INDEX_CACHE = null;
+
+function getTestIndex() {
+  if (TEST_INDEX_CACHE) return TEST_INDEX_CACHE;
+  if (!fs.existsSync(TESTS_DIR)) {
+    TEST_INDEX_CACHE = [];
+    return TEST_INDEX_CACHE;
+  }
+  TEST_INDEX_CACHE = listJsFiles(TESTS_DIR).map((abs) => {
+    const rel = toRepoRelative(abs);
+    let text = '';
+    try {
+      text = readText(abs).toLowerCase();
+    } catch (_err) {
+      text = '';
     }
-    if (routeBase && lower.includes(routeBase)) count += 1;
+    return {
+      rel,
+      pathLower: rel.toLowerCase(),
+      textLower: text
+    };
+  });
+  return TEST_INDEX_CACHE;
+}
+
+function normalizeTestToken(raw) {
+  const token = String(raw || '').trim().toLowerCase();
+  if (!token) return null;
+  const compact = token.replace(/[^a-z0-9]+/g, '');
+  if (compact.length < 4) return null;
+  if (TEST_TOKEN_EXCLUDES.has(compact)) return null;
+  return token;
+}
+
+function countTestsForFeature(featureName, routeRelPath, usecases, repos) {
+  const featureToken = normalizeTestToken(featureName);
+  const routeBase = normalizeTestToken(path.basename(routeRelPath || '', '.js'));
+  const tokens = new Set();
+  if (featureToken) tokens.add(featureToken);
+  if (routeBase) tokens.add(routeBase);
+  (usecases || []).forEach((name) => {
+    const token = normalizeTestToken(name);
+    if (token) tokens.add(token);
+  });
+  (repos || []).forEach((name) => {
+    const token = normalizeTestToken(name);
+    if (token) tokens.add(token);
+  });
+
+  const probes = Array.from(tokens.values()).slice(0, 24);
+  if (!probes.length) return 0;
+
+  let count = 0;
+  getTestIndex().forEach((file) => {
+    if (probes.some((token) => file.pathLower.includes(token) || file.textLower.includes(token))) {
+      count += 1;
+    }
   });
   return count;
 }
@@ -383,7 +435,7 @@ function buildFeatureMap(core) {
       killSwitch_dependent: /getKillSwitch|setKillSwitch|killSwitch/i.test(`${routeText}\n${joinedUsecaseText}`),
       trace_linked: /traceId|x-trace-id|trace_id/i.test(`${routeText}\n${joinedUsecaseText}`),
       audit_linked: /appendAuditLog|audit_logs|audit/i.test(`${routeText}\n${joinedUsecaseText}`),
-      tests_count: countTestsForFeature(featureName, routeRel),
+      tests_count: countTestsForFeature(featureName, routeRel, usecases, Array.from(repos.values())),
       ssot_refs: [],
       completion: LEGACY_FEATURES.has(featureName) ? 'legacy' : 'completed'
     };
@@ -646,22 +698,40 @@ function inferPathsFromBlock(text) {
     const value = `${m[1]}*`;
     paths.set(`prefix:${value}`, { value, match: 'prefix' });
   }
-  for (const m of text.matchAll(/\/((?:\\.|[^\/])+)\/[gimsuy]*\.test\(pathname\)/g)) {
-    const value = `/${m[1]}/`;
-    paths.set(`regex:${value}`, { value, match: 'regex' });
-  }
-  for (const m of text.matchAll(/pathname\.match\(\s*\/((?:\\.|[^\/])+)\/[gimsuy]*\s*\)/g)) {
-    const value = `/${m[1]}/`;
-    paths.set(`regex:${value}`, { value, match: 'regex' });
-  }
+
+  const lines = text.split(/\r?\n/);
+  lines.forEach((line) => {
+    for (const m of line.matchAll(/(?:^|[^'"])\/\^(.+?)\/[gimsuy]*\.test\(pathname\)/g)) {
+      const value = `/^${m[1]}/`;
+      paths.set(`regex:${value}`, { value, match: 'regex' });
+    }
+    for (const m of line.matchAll(/pathname\.match\(\s*\/\^(.+?)\/[gimsuy]*\s*\)/g)) {
+      const value = `/^${m[1]}/`;
+      paths.set(`regex:${value}`, { value, match: 'regex' });
+    }
+  });
   return Array.from(paths.values()).sort((a, b) => String(a.value).localeCompare(String(b.value)));
 }
 
-function resolveAuthForPath(pathValue) {
+function inferAuthFromRouteRel(routeRel) {
+  if (!routeRel) return null;
+  if (routeRel.includes('/routes/internal/')) return 'internalToken';
+  if (routeRel.includes('/routes/admin/')) return 'adminToken';
+  return null;
+}
+
+function resolveAuthForPath(pathValue, routeRel) {
   const normalized = String(pathValue || '').replace(/\*$/, '');
   if (normalized.startsWith('/internal/')) return 'internalToken';
   if (normalized.startsWith('/api/admin/') || normalized.startsWith('/admin/')) return 'adminToken';
   if (normalized.startsWith('/api/phase') && !normalized.startsWith('/api/phase1/events')) return 'adminToken';
+  if (normalized.startsWith('/^\\/internal\\/')) return 'internalToken';
+  if (normalized.startsWith('/^\\/api\\/admin\\/') || normalized.startsWith('/^\\/admin\\/')) return 'adminToken';
+  if (normalized.startsWith('/^\\/api\\/phase') && !normalized.startsWith('/^\\/api\\/phase1\\/events')) {
+    return 'adminToken';
+  }
+  const fallback = inferAuthFromRouteRel(routeRel);
+  if (fallback) return fallback;
   return 'none';
 }
 
@@ -809,7 +879,7 @@ function buildProtectionMatrix(core) {
             match: pathRow.match,
             line: idx + 1,
             route_files: [routeRel],
-            auth_required: resolveAuthForPath(pathRow.value),
+            auth_required: resolveAuthForPath(pathRow.value, routeRel),
             csrf_required: false,
             confirm_token_required: DANGEROUS_CONFIRM_TOKEN_PATHS.has(pathRow.value),
             confirm_token_confidence: DANGEROUS_CONFIRM_TOKEN_PATHS.has(pathRow.value) ? 'high' : 'low',

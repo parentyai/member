@@ -1,13 +1,15 @@
 'use strict';
 
 const emergencyProvidersRepo = require('../../repos/firestore/emergencyProvidersRepo');
-const emergencySnapshotsRepo = require('../../repos/firestore/emergencySnapshotsRepo');
-const emergencyDiffsRepo = require('../../repos/firestore/emergencyDiffsRepo');
-const emergencyBulletinsRepo = require('../../repos/firestore/emergencyBulletinsRepo');
-const emergencyUnmappedEventsRepo = require('../../repos/firestore/emergencyUnmappedEventsRepo');
-const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
-const { ensureEmergencyProviders } = require('../../usecases/emergency/ensureEmergencyProviders');
+const {
+  listEmergencyProviders,
+  updateEmergencyProvider,
+  listEmergencyBulletins,
+  getEmergencyBulletin,
+  rejectEmergencyBulletin,
+  getEmergencyEvidence
+} = require('../../usecases/emergency/adminEmergencyLayer');
 const { fetchProviderSnapshot } = require('../../usecases/emergency/fetchProviderSnapshot');
 const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalizeAndDiffProvider');
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
@@ -23,12 +25,6 @@ const {
 function writeJson(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
-}
-
-function normalizeLimit(value, fallback, max) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.min(Math.floor(parsed), max);
 }
 
 function parseProviderPath(pathname) {
@@ -65,39 +61,25 @@ function parseEvidencePath(pathname) {
 }
 
 async function handleListProviders(req, res, context) {
-  await ensureEmergencyProviders({ traceId: context.traceId });
-  const items = await emergencyProvidersRepo.listProviders(200);
-  writeJson(res, 200, { ok: true, traceId: context.traceId, items });
+  const result = await listEmergencyProviders({
+    traceId: context.traceId
+  });
+  writeJson(res, 200, result);
 }
 
 async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
-  const existing = await emergencyProvidersRepo.getProvider(providerKey);
-  if (!existing) {
-    writeJson(res, 404, { ok: false, error: 'provider not found' });
-    return;
-  }
-  await emergencyProvidersRepo.upsertProvider(providerKey, {
+  const result = await updateEmergencyProvider({
+    providerKey,
     status: payload.status,
     scheduleMinutes: payload.scheduleMinutes,
     officialLinkRegistryId: payload.officialLinkRegistryId,
+    actor: context.actor,
+    requestId: context.requestId,
     traceId: context.traceId
   });
-  const updated = await emergencyProvidersRepo.getProvider(providerKey);
-  await appendAuditLog({
-    actor: context.actor,
-    action: 'emergency.provider.update',
-    entityType: 'emergency_provider',
-    entityId: providerKey,
-    traceId: context.traceId,
-    requestId: context.requestId,
-    payloadSummary: {
-      status: updated && updated.status ? updated.status : null,
-      scheduleMinutes: updated && Number(updated.scheduleMinutes) ? Number(updated.scheduleMinutes) : null
-    }
-  });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, item: updated });
+  writeJson(res, 200, result);
 }
 
 async function handleForceRefreshProvider(req, res, bodyText, context, providerKey) {
@@ -168,49 +150,31 @@ async function handleForceRefreshProvider(req, res, bodyText, context, providerK
 
 async function handleListBulletins(req, res, context) {
   const url = new URL(req.url, 'http://localhost');
-  const status = (url.searchParams.get('status') || '').trim() || null;
-  const regionKey = (url.searchParams.get('regionKey') || '').trim() || null;
-  const limit = normalizeLimit(url.searchParams.get('limit'), 50, 200);
-  const items = await emergencyBulletinsRepo.listBulletins({ status, regionKey, limit });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, items });
+  const result = await listEmergencyBulletins({
+    status: url.searchParams.get('status'),
+    regionKey: url.searchParams.get('regionKey'),
+    limit: url.searchParams.get('limit'),
+    traceId: context.traceId
+  });
+  writeJson(res, 200, result);
 }
 
 async function handleGetBulletin(req, res, context, bulletinId) {
-  const item = await emergencyBulletinsRepo.getBulletin(bulletinId);
-  if (!item) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
-    return;
-  }
-  writeJson(res, 200, { ok: true, traceId: context.traceId, item });
+  const result = await getEmergencyBulletin({
+    bulletinId,
+    traceId: context.traceId
+  });
+  writeJson(res, 200, result);
 }
 
 async function handleRejectBulletin(req, res, context, bulletinId) {
-  const bulletin = await emergencyBulletinsRepo.getBulletin(bulletinId);
-  if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
-    return;
-  }
-  if (bulletin.status === 'sent') {
-    writeJson(res, 409, { ok: false, error: 'bulletin_already_sent' });
-    return;
-  }
-  await emergencyBulletinsRepo.updateBulletin(bulletinId, {
-    status: 'rejected',
+  const result = await rejectEmergencyBulletin({
+    bulletinId,
+    actor: context.actor,
+    requestId: context.requestId,
     traceId: context.traceId
   });
-  await appendAuditLog({
-    actor: context.actor,
-    action: 'emergency.bulletin.reject',
-    entityType: 'emergency_bulletin',
-    entityId: bulletinId,
-    traceId: context.traceId,
-    requestId: context.requestId,
-    payloadSummary: {
-      regionKey: bulletin.regionKey || null,
-      severity: bulletin.severity || null
-    }
-  });
-  writeJson(res, 200, { ok: true, traceId: context.traceId, bulletinId });
+  writeJson(res, 200, result);
 }
 
 function resolveStatusCodeFromApproveResult(result) {
@@ -236,41 +200,13 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
 }
 
 async function handleGetEvidence(req, res, context, bulletinId) {
-  const bulletin = await emergencyBulletinsRepo.getBulletin(bulletinId);
-  if (!bulletin) {
-    writeJson(res, 404, { ok: false, error: 'bulletin not found' });
-    return;
-  }
-  const refs = bulletin.evidenceRefs && typeof bulletin.evidenceRefs === 'object'
-    ? bulletin.evidenceRefs
-    : {};
-  const diffId = refs.diffId || null;
-  const snapshotId = refs.snapshotId || null;
-  const diff = diffId ? await emergencyDiffsRepo.getDiff(diffId).catch(() => null) : null;
-  const resolvedSnapshotId = snapshotId || (diff && diff.snapshotId) || null;
-  const snapshot = resolvedSnapshotId
-    ? await emergencySnapshotsRepo.getSnapshot(resolvedSnapshotId).catch(() => null)
-    : null;
-  const unmappedEvents = resolvedSnapshotId
-    ? await emergencyUnmappedEventsRepo.listUnmappedBySnapshot(
-      resolvedSnapshotId,
-      normalizeLimit(new URL(req.url, 'http://localhost').searchParams.get('unmappedLimit'), 20, 100)
-    )
-    : [];
-  const linkEntry = bulletin.linkRegistryId
-    ? await linkRegistryRepo.getLink(bulletin.linkRegistryId).catch(() => null)
-    : null;
-  writeJson(res, 200, {
-    ok: true,
-    traceId: context.traceId,
-    item: {
-      bulletin,
-      diff,
-      snapshot,
-      unmappedEvents,
-      linkEntry
-    }
+  const url = new URL(req.url, 'http://localhost');
+  const result = await getEmergencyEvidence({
+    bulletinId,
+    unmappedLimit: url.searchParams.get('unmappedLimit'),
+    traceId: context.traceId
   });
+  writeJson(res, 200, result);
 }
 
 async function handleEmergencyLayer(req, res, bodyText) {
@@ -327,6 +263,10 @@ async function handleEmergencyLayer(req, res, bodyText) {
     writeJson(res, 404, { ok: false, error: 'not found' });
   } catch (err) {
     logRouteError('admin.emergency_layer', err, context);
+    if (err && Number.isInteger(err.statusCode)) {
+      writeJson(res, err.statusCode, { ok: false, error: err.message || 'error' });
+      return;
+    }
     writeJson(res, 500, { ok: false, error: 'error' });
   }
 }
