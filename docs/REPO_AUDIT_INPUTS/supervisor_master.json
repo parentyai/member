@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-25T18:44:58-05:00",
-  "gitCommit": "39fddabbe88ced079e1add69eb72e7e3e735b2da",
-  "branch": "codex/journey-dag-branching-v1",
-  "sourceDigest": "a56dcd77ca1aabeacbd598fa2281d6bc80aee3c79d2f494b179ce4c2bf4922a9",
+  "generatedAt": "2026-02-25T19:47:47-05:00",
+  "gitCommit": "75427840eab8dd54c199b46f6849fde6eacb1257",
+  "branch": "codex/dynamic-journey-param-layer-v1",
+  "sourceDigest": "5f44e4e6c1b05ceb57818c630e5c58c15093f34ec4bfecbdc30652319ebbe604",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

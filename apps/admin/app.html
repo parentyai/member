@@ -1146,6 +1146,75 @@
                       <pre id="journey-graph-history-result">-</pre>
                     </details>
                   </details>
+                  <details class="section" open>
+                    <summary>Journey Param Console（versioned）</summary>
+                    <div class="row">
+                      <label class="flex-1">versionId
+                        <input type="text" id="journey-param-version-id" placeholder="jpv_..." />
+                      </label>
+                      <label class="flex-1">rollbackToVersionId
+                        <input type="text" id="journey-param-rollback-to-version-id" placeholder="jpv_..." />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">effectiveAt(ISO8601)
+                        <input type="text" id="journey-param-effective-at" class="input-inline input-sm" placeholder="2026-03-01T00:00:00.000Z" />
+                      </label>
+                      <label class="flex-1">note
+                        <input type="text" id="journey-param-note" class="input-inline input-sm" placeholder="change note" />
+                      </label>
+                      <label>horizonDays
+                        <input type="number" id="journey-param-dry-run-horizon-days" class="input-sm" min="1" max="180" value="30" />
+                      </label>
+                    </div>
+                    <div class="row row-top">
+                      <button id="journey-param-status-reload" type="button">status</button>
+                      <button id="journey-param-plan" type="button">plan</button>
+                      <button id="journey-param-validate" type="button">validate</button>
+                      <button id="journey-param-dry-run" type="button">dry-run</button>
+                      <button id="journey-param-apply" type="button">apply</button>
+                      <button id="journey-param-rollback" type="button">rollback</button>
+                      <button id="journey-param-history" type="button">history</button>
+                    </div>
+                    <div class="note">
+                      activeVersion: <span id="journey-param-active-version-id">-</span>
+                      / planHash: <span id="journey-param-plan-hash">-</span>
+                      / confirmToken: <span id="journey-param-confirm-token">-</span>
+                      / dryRunHash: <span id="journey-param-dry-run-hash">-</span>
+                    </div>
+                    <label>candidate parameters JSON</label>
+                    <textarea id="journey-param-parameters-json" rows="12" class="input-mono">{}</textarea>
+                    <label>dry-run scope JSON</label>
+                    <textarea id="journey-param-scope-json" rows="8" class="input-mono">{"limit":200}</textarea>
+                    <details class="section">
+                      <summary>journey-param status</summary>
+                      <pre id="journey-param-status-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param plan</summary>
+                      <pre id="journey-param-plan-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param validate</summary>
+                      <pre id="journey-param-validate-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param dry-run</summary>
+                      <pre id="journey-param-dry-run-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param apply</summary>
+                      <pre id="journey-param-apply-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param rollback</summary>
+                      <pre id="journey-param-rollback-result">-</pre>
+                    </details>
+                    <details class="section">
+                      <summary>journey-param history</summary>
+                      <pre id="journey-param-history-result">-</pre>
+                    </details>
+                  </details>
                 </div>
               </div>
               <div class="panel">

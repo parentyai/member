@@ -7416,6 +7416,237 @@ async function loadJourneyGraphHistory(options) {
   }
 }
 
+function applyJourneyParamPlanTokens(planHash, confirmToken) {
+  journeyParamPlanHash = planHash || null;
+  journeyParamConfirmToken = confirmToken || null;
+  setTextContent('journey-param-plan-hash', journeyParamPlanHash || '-');
+  setTextContent('journey-param-confirm-token', journeyParamConfirmToken ? 'set' : '-');
+}
+
+function setJourneyParamDryRunHash(hash) {
+  journeyParamDryRunHash = hash || null;
+  setTextContent('journey-param-dry-run-hash', journeyParamDryRunHash || '-');
+}
+
+function setJourneyParamActiveVersion(versionId) {
+  const normalized = typeof versionId === 'string' ? versionId.trim() : '';
+  setTextContent('journey-param-active-version-id', normalized || '-');
+}
+
+function readJourneyParamVersionId() {
+  return document.getElementById('journey-param-version-id')?.value?.trim() || '';
+}
+
+function readJourneyParamRollbackToVersionId() {
+  return document.getElementById('journey-param-rollback-to-version-id')?.value?.trim() || '';
+}
+
+function readJourneyParamJsonInput(id, fallback) {
+  const raw = document.getElementById(id)?.value?.trim() || '';
+  if (!raw) return fallback;
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${id}_invalid_json`);
+  }
+  return parsed;
+}
+
+function writeJourneyParamParametersEditor(parameters) {
+  const el = document.getElementById('journey-param-parameters-json');
+  if (!el) return;
+  el.value = JSON.stringify(parameters && typeof parameters === 'object' ? parameters : {}, null, 2);
+}
+
+async function loadJourneyParamStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/journey-param/status', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-param-status-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    const activeVersion = data.activeVersion && typeof data.activeVersion === 'object' ? data.activeVersion : null;
+    setJourneyParamActiveVersion(activeVersion && activeVersion.versionId ? activeVersion.versionId : null);
+    if (!readJourneyParamVersionId() && activeVersion && activeVersion.versionId) {
+      const el = document.getElementById('journey-param-version-id');
+      if (el) el.value = activeVersion.versionId;
+    }
+    if (activeVersion && activeVersion.parameters && typeof activeVersion.parameters === 'object') {
+      writeJourneyParamParametersEditor(activeVersion.parameters);
+    }
+    setJourneyParamDryRunHash(activeVersion && activeVersion.dryRun ? activeVersion.dryRun.hash || null : null);
+    if (notify) showToast('Journey Param statusを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Journey Param statusの取得に失敗しました', 'danger');
+  }
+}
+
+async function planJourneyParamVersion() {
+  const versionId = readJourneyParamVersionId();
+  const effectiveAt = document.getElementById('journey-param-effective-at')?.value?.trim() || null;
+  const note = document.getElementById('journey-param-note')?.value?.trim() || null;
+  let parameters;
+  try {
+    parameters = readJourneyParamJsonInput('journey-param-parameters-json', {});
+  } catch (_err) {
+    showToast('Journey Param parameters JSONが不正です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/journey-param/plan', {
+      versionId: versionId || undefined,
+      effectiveAt: effectiveAt || undefined,
+      note: note || undefined,
+      parameters
+    }, traceId);
+    setJsonTextResult('journey-param-plan-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (data.version && data.version.versionId) {
+      const el = document.getElementById('journey-param-version-id');
+      if (el) el.value = data.version.versionId;
+    }
+    applyJourneyParamPlanTokens(data.planHash, data.confirmToken);
+    setJourneyParamDryRunHash(data.version && data.version.dryRun ? data.version.dryRun.hash || null : null);
+    showToast('Journey Param planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Param planの作成に失敗しました', 'danger');
+  }
+}
+
+async function validateJourneyParamVersionAction() {
+  const versionId = readJourneyParamVersionId();
+  if (!versionId) {
+    showToast('Journey Param validateにはversionIdが必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/journey-param/validate', { versionId }, traceId);
+    setJsonTextResult('journey-param-validate-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    showToast('Journey Param validateを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Param validateに失敗しました', 'danger');
+  }
+}
+
+async function dryRunJourneyParamVersionAction() {
+  const versionId = readJourneyParamVersionId();
+  if (!versionId) {
+    showToast('Journey Param dry-runにはversionIdが必要です', 'warn');
+    return;
+  }
+  let scope;
+  try {
+    scope = readJourneyParamJsonInput('journey-param-scope-json', { limit: 200 });
+  } catch (_err) {
+    showToast('Journey Param scope JSONが不正です', 'warn');
+    return;
+  }
+  const horizonDays = Number(document.getElementById('journey-param-dry-run-horizon-days')?.value || 30);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/journey-param/dry-run', {
+      versionId,
+      scope,
+      horizonDays: Number.isFinite(horizonDays) ? Math.max(1, Math.min(180, Math.floor(horizonDays))) : 30
+    }, traceId);
+    setJsonTextResult('journey-param-dry-run-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    const hash = data.dryRun && data.dryRun.hash ? data.dryRun.hash : null;
+    setJourneyParamDryRunHash(hash);
+    showToast('Journey Param dry-runを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Param dry-runに失敗しました', 'danger');
+  }
+}
+
+async function applyJourneyParamVersionAction() {
+  const versionId = readJourneyParamVersionId();
+  if (!versionId) {
+    showToast('Journey Param applyにはversionIdが必要です', 'warn');
+    return;
+  }
+  if (!journeyParamPlanHash || !journeyParamConfirmToken || !journeyParamDryRunHash) {
+    showToast('Journey Param applyにはplanHash/confirmToken/dryRunHashが必要です', 'warn');
+    return;
+  }
+  if (!window.confirm(`Journey Param version=${versionId} を適用しますか？`)) {
+    showToast('Journey Param applyを中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/journey-param/apply', {
+      versionId,
+      planHash: journeyParamPlanHash,
+      confirmToken: journeyParamConfirmToken,
+      latestDryRunHash: journeyParamDryRunHash
+    }, traceId);
+    setJsonTextResult('journey-param-apply-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyJourneyParamPlanTokens(null, null);
+    await loadJourneyParamStatus({ notify: false });
+    await loadJourneyParamHistory({ notify: false });
+    showToast('Journey Param applyを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Param applyに失敗しました', 'danger');
+  }
+}
+
+async function rollbackJourneyParamVersionAction() {
+  const versionId = readJourneyParamVersionId();
+  const rollbackToVersionId = readJourneyParamRollbackToVersionId();
+  if (!versionId || !rollbackToVersionId) {
+    showToast('Journey Param rollbackにはversionId/rollbackToVersionIdが必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const planData = await postJson('/api/admin/os/journey-param/plan', {
+      action: 'rollback_plan',
+      versionId,
+      rollbackToVersionId
+    }, traceId);
+    setJsonTextResult('journey-param-plan-result', planData);
+    if (!planData || planData.ok !== true) throw new Error((planData && planData.error) || 'failed');
+    applyJourneyParamPlanTokens(planData.planHash, planData.confirmToken);
+    if (!window.confirm(`Journey Param rollback ${versionId} -> ${rollbackToVersionId} を実行しますか？`)) {
+      showToast('Journey Param rollbackを中止しました', 'warn');
+      return;
+    }
+    const rollbackData = await postJson('/api/admin/os/journey-param/rollback', {
+      versionId,
+      rollbackToVersionId,
+      planHash: planData.planHash,
+      confirmToken: planData.confirmToken
+    }, traceId);
+    setJsonTextResult('journey-param-rollback-result', rollbackData);
+    if (!rollbackData || rollbackData.ok !== true) throw new Error((rollbackData && rollbackData.error) || 'failed');
+    applyJourneyParamPlanTokens(null, null);
+    await loadJourneyParamStatus({ notify: false });
+    await loadJourneyParamHistory({ notify: false });
+    showToast('Journey Param rollbackを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Journey Param rollbackに失敗しました', 'danger');
+  }
+}
+
+async function loadJourneyParamHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/journey-param/history?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('journey-param-history-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('Journey Param historyを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Journey Param historyの取得に失敗しました', 'danger');
+  }
+}
+
 async function loadJourneyGraphRuntime(options) {
   const notify = Boolean(options && options.notify);
   const lineUserId = resolveJourneyGraphLineUserId();
@@ -10043,6 +10274,27 @@ function setupMonitorControls() {
   document.getElementById('journey-graph-filter-domain')?.addEventListener('change', () => {
     void loadJourneyGraphRuntime({ notify: false });
   });
+  document.getElementById('journey-param-status-reload')?.addEventListener('click', () => {
+    void loadJourneyParamStatus({ notify: true });
+  });
+  document.getElementById('journey-param-plan')?.addEventListener('click', () => {
+    void planJourneyParamVersion();
+  });
+  document.getElementById('journey-param-validate')?.addEventListener('click', () => {
+    void validateJourneyParamVersionAction();
+  });
+  document.getElementById('journey-param-dry-run')?.addEventListener('click', () => {
+    void dryRunJourneyParamVersionAction();
+  });
+  document.getElementById('journey-param-apply')?.addEventListener('click', () => {
+    void applyJourneyParamVersionAction();
+  });
+  document.getElementById('journey-param-rollback')?.addEventListener('click', () => {
+    void rollbackJourneyParamVersionAction();
+  });
+  document.getElementById('journey-param-history')?.addEventListener('click', () => {
+    void loadJourneyParamHistory({ notify: true });
+  });
   document.getElementById('rich-menu-status-reload')?.addEventListener('click', () => {
     void loadRichMenuStatus({ notify: true });
   });
@@ -10079,6 +10331,8 @@ function setupMonitorControls() {
   void loadJourneyGraphStatus({ notify: false });
   void loadJourneyGraphHistory({ notify: false });
   void loadJourneyGraphBranchQueueStatus({ notify: false });
+  void loadJourneyParamStatus({ notify: false });
+  void loadJourneyParamHistory({ notify: false });
   void loadRichMenuStatus({ notify: false });
   void loadRichMenuHistory({ notify: false });
 }
@@ -10679,6 +10933,9 @@ let llmPolicyPlanHash = null;
 let llmPolicyConfirmToken = null;
 let journeyGraphPlanHash = null;
 let journeyGraphConfirmToken = null;
+let journeyParamPlanHash = null;
+let journeyParamConfirmToken = null;
+let journeyParamDryRunHash = null;
 let richMenuPlanHash = null;
 let richMenuConfirmToken = null;
 

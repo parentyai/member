@@ -31,7 +31,11 @@ function serializePolicy(policy) {
       : {},
     output_constraints: payload.output_constraints && typeof payload.output_constraints === 'object'
       ? payload.output_constraints
-      : {}
+      : {},
+    refusal_strategy: payload.refusal_strategy && typeof payload.refusal_strategy === 'object'
+      ? payload.refusal_strategy
+      : {},
+    policy_version_id: payload.policy_version_id || null
   });
 }
 

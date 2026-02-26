@@ -172,6 +172,36 @@ function resolvePlanTier(planInfo) {
   return 'free';
 }
 
+function resolveRefusalStrategy(policy) {
+  const payload = policy && typeof policy === 'object' ? policy : {};
+  const src = payload.refusal_strategy && typeof payload.refusal_strategy === 'object'
+    ? payload.refusal_strategy
+    : {};
+  const modeRaw = typeof src.mode === 'string' ? src.mode.trim().toLowerCase() : '';
+  const mode = modeRaw === 'faq_only' ? 'faq_only' : 'suggest_and_consult';
+  const showBlockedReason = src.show_blocked_reason === true;
+  const fallbackRaw = typeof src.fallback === 'string' ? src.fallback.trim().toLowerCase() : '';
+  const fallback = fallbackRaw === 'free_retrieval' ? 'free_retrieval' : 'free_retrieval';
+  return {
+    mode,
+    show_blocked_reason: showBlockedReason,
+    fallback
+  };
+}
+
+function buildRefusalExtraText(blockedReason, policy) {
+  const strategy = resolveRefusalStrategy(policy);
+  if (strategy.show_blocked_reason !== true) return '';
+  const lines = [];
+  if (strategy.show_blocked_reason && blockedReason) {
+    lines.push(`回答を制限しました（理由: ${blockedReason}）`);
+  }
+  if (strategy.mode === 'suggest_and_consult') {
+    lines.push('必要な場合は「相談希望」と送信してください。有人導線をご案内します。');
+  }
+  return lines.join('\n');
+}
+
 async function resolveMaxNextActionsCapFromJourneyCatalog(planInfo) {
   const planTier = resolvePlanTier(planInfo);
   try {
@@ -274,6 +304,11 @@ async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
   if (!lineUserId) return;
+  const policy = payload.policy && typeof payload.policy === 'object' ? payload.policy : null;
+  const refusalStrategy = resolveRefusalStrategy(policy);
+  const policyVersionId = payload.policyVersionId
+    || (policy && typeof policy.policy_version_id === 'string' ? policy.policy_version_id : null)
+    || null;
   try {
     await appendAuditLog({
       actor: 'line_webhook',
@@ -291,7 +326,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         blockedReason: payload.blockedReason || null,
         tokenUsed: Number.isFinite(Number(payload.tokenUsed)) ? Number(payload.tokenUsed) : 0,
         costEstimate: Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null,
-        model: payload.model || null
+        model: payload.model || null,
+        policyVersionId,
+        refusalMode: refusalStrategy.mode
       }
     });
   } catch (_err) {
@@ -322,7 +359,13 @@ async function replyWithFreeRetrieval(params) {
     question: payload.text,
     locale: 'ja'
   });
-  const extra = normalizeReplyText(payload.extraText || '');
+  const refusalExtraText = normalizeReplyText(
+    payload.refusalExtraText || buildRefusalExtraText(payload.blockedReason || null, payload.llmPolicy || null)
+  );
+  const mergedExtra = [normalizeReplyText(payload.extraText || ''), refusalExtraText]
+    .filter(Boolean)
+    .join('\n\n');
+  const extra = normalizeReplyText(mergedExtra);
   const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
   const replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
@@ -346,11 +389,13 @@ async function handleAssistantMessage(params) {
   const requestId = traceId;
 
   if (planInfo.plan !== 'pro') {
+    const blockedReason = explicitPaidIntent ? 'plan_free' : 'free_retrieval_only';
     const dependencyHint = isDependencyHintIntent(text)
       ? buildFreeDependencyHint(await loadTaskGraphSummary(lineUserId))
       : '';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
-      extraText: dependencyHint
+      extraText: dependencyHint,
+      blockedReason
     }));
     if (explicitPaidIntent) {
       await appendJourneyEventBestEffort({
@@ -367,7 +412,7 @@ async function handleAssistantMessage(params) {
       subscriptionStatus: planInfo.status,
       intent: 'faq_search',
       decision: 'blocked',
-      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only',
+      blockedReason,
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0
@@ -378,7 +423,7 @@ async function handleAssistantMessage(params) {
       status: planInfo.status,
       intent: paidIntent,
       decision: 'blocked',
-      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only',
+      blockedReason,
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       traceId,
@@ -388,7 +433,7 @@ async function handleAssistantMessage(params) {
       handled: true,
       mode: 'free_retrieval',
       fallback,
-      blockedReason: explicitPaidIntent ? 'plan_free' : 'free_retrieval_only'
+      blockedReason
     };
   }
 
@@ -399,8 +444,11 @@ async function handleAssistantMessage(params) {
   });
 
   if (!budget.allowed) {
-    const fallback = await replyWithFreeRetrieval(payload);
     const blockedReason = budget.blockedReason || 'plan_gate_blocked';
+    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+      blockedReason,
+      llmPolicy: budget.policy || null
+    }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
@@ -422,6 +470,7 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
       traceId,
       requestId
     });
@@ -435,8 +484,11 @@ async function handleAssistantMessage(params) {
 
   const availability = await evaluateLlmAvailability({ policy: budget.policy });
   if (!availability.available) {
-    const fallback = await replyWithFreeRetrieval(payload);
     const blockedReason = availability.reason || 'llm_unavailable';
+    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+      blockedReason,
+      llmPolicy: budget.policy || null
+    }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
@@ -459,6 +511,7 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
       traceId,
       requestId
     });
@@ -479,7 +532,10 @@ async function handleAssistantMessage(params) {
     const blockedReason = snapshotResult && snapshotResult.ok === true && snapshotResult.stale === true
       ? 'snapshot_stale'
       : 'snapshot_unavailable';
-    const fallback = await replyWithFreeRetrieval(payload);
+    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+      blockedReason,
+      llmPolicy: budget.policy || null
+    }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
@@ -502,6 +558,7 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
       traceId,
       requestId
     });
@@ -541,8 +598,11 @@ async function handleAssistantMessage(params) {
     });
 
   if (!paid.ok) {
-    const fallback = await replyWithFreeRetrieval(payload);
     const blockedReason = paid.blockedReason || 'llm_error';
+    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+      blockedReason,
+      llmPolicy: budget.policy || null
+    }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
       plan: planInfo.plan,
@@ -565,6 +625,7 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
       traceId,
       requestId
     });
@@ -606,6 +667,7 @@ async function handleAssistantMessage(params) {
     tokenUsed,
     costEstimate: usage && usage.costEstimate,
     model: paid.model || (budget.policy && budget.policy.model),
+    policy: budget.policy || null,
     traceId,
     requestId
   });

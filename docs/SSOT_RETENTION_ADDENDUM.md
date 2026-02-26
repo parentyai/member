@@ -10,9 +10,9 @@
 | kind | count |
 | --- | --- |
 | aggregate | 10 |
-| config | 37 |
+| config | 38 |
 | event | 6 |
-| evidence | 7 |
+| evidence | 8 |
 | transient | 3 |
 
 ## Collection方針
@@ -40,6 +40,8 @@
 | `journey_branch_queue` | event | 180d | CONDITIONAL | true |
 | `journey_graph_change_logs` | evidence | 365d | false | false |
 | `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
+| `journey_param_change_logs` | evidence | 365d | false | false |
+| `journey_param_versions` | config | INDEFINITE | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |

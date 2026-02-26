@@ -261,3 +261,16 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1) `ENABLE_PRO_PREDICTIVE_ACTIONS_V1=0`（有料補助導線停止）  
 2) `opsConfig/llmPolicy.output_constraints.max_next_actions=0`（出力上限を強制停止）  
 3) `opsConfig/llmPolicy.enabled=false`（LLM全停止）  
+
+## Phase665 Addendum（refusal strategy / policy_version_id）
+
+### add-only policy fields
+- `opsConfig/llmPolicy.refusal_strategy`
+  - `mode`: `suggest_and_consult|faq_only`
+  - `show_blocked_reason`: boolean
+  - `fallback`: `free_retrieval`
+- `opsConfig/llmPolicy.policy_version_id`
+
+### 適用ポイント
+- 拒否時フォールバックは `free_retrieval` を維持する。  
+- 監査 `llm_gate.decision` へ `policyVersionId` と `refusalMode` を追記する。  
