@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const childProcess = require('child_process');
+const { buildLiveCounts } = require('./generate_audit_core_maps');
 
 const ROOT = path.resolve(__dirname, '..');
 const INPUT_DIR = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS');
@@ -12,6 +13,7 @@ const OUTPUT_PATH = path.join(INPUT_DIR, 'audit_inputs_manifest.json');
 const DIFF_DETECTION_RULES = Object.freeze([
   'If endpoint count changes, regenerate protection_matrix and impact_radius.',
   'If usecase/repo count changes, regenerate dependency_graph and design_ai_meta.',
+  'If artifact counts diverge from live counts, fail until audit-core maps are regenerated.',
   'If any JSON hash changes, require report refresh and PR note update.',
   'If new docs JSON is added under docs/REPO_AUDIT_INPUTS, include in manifest files list.'
 ]);
@@ -93,9 +95,25 @@ function buildCounts() {
   };
 }
 
+function buildCountDrift(artifactCounts, liveCounts) {
+  return {
+    routes: Number(artifactCounts.routes || 0) - Number(liveCounts.routes || 0),
+    usecases: Number(artifactCounts.usecases || 0) - Number(liveCounts.usecases || 0),
+    repos: Number(artifactCounts.repos || 0) - Number(liveCounts.repos || 0),
+    collections: Number(artifactCounts.collections || 0) - Number(liveCounts.collections || 0)
+  };
+}
+
+function hasCountDrift(drift) {
+  return Object.values(drift).some((value) => Number(value) !== 0);
+}
+
 function buildManifest() {
   const files = listInputFiles();
   const gitMeta = resolveGitMetadata(files);
+  const counts = buildCounts();
+  const liveCounts = buildLiveCounts();
+  const countDrift = buildCountDrift(counts, liveCounts);
   const fileRows = files.map((filePath) => {
     const stat = fs.statSync(filePath);
     return {
@@ -110,11 +128,14 @@ function buildManifest() {
     gitCommit: gitMeta.gitCommit,
     branch: gitMeta.branch,
     sourceDigest: gitMeta.sourceDigest,
-    counts: buildCounts(),
+    counts,
+    live_counts: liveCounts,
+    count_drift: countDrift,
+    live_count_match: !hasCountDrift(countDrift),
     files: fileRows,
     diff_detection_rules: Array.from(DIFF_DETECTION_RULES),
     previous_manifest: 'NONE',
-    manifest_version: 2
+    manifest_version: 3
   };
 }
 
@@ -122,6 +143,10 @@ function run() {
   const checkMode = process.argv.includes('--check');
   const manifest = buildManifest();
   const next = `${JSON.stringify(manifest, null, 2)}\n`;
+  if (!manifest.live_count_match) {
+    process.stderr.write('audit_inputs_manifest live count drift detected. run: npm run audit-core:generate && npm run docs-artifacts:generate\n');
+    process.exit(1);
+  }
 
   if (checkMode) {
     const currentRaw = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, 'utf8') : '';

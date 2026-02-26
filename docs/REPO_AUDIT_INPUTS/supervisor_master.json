@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T09:37:27-05:00",
-  "gitCommit": "a7c01aa2f0207fd83238926c03f04c0bd983ea54",
-  "branch": "codex/city-pack-content-manage-phase670",
-  "sourceDigest": "0a5e2e9078435d5cf11ebaa12383191d64e704f2dcf421f5ea0ba9b3b7096243",
+  "generatedAt": "2026-02-26T09:45:09-05:00",
+  "gitCommit": "34d5c895298b6a39855fcf9b66640373162793e1",
+  "branch": "main",
+  "sourceDigest": "ef0b444a3d0febe63166b72fd1a85538b5cde7dbeb3a2fca7532f64cede50a71",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
