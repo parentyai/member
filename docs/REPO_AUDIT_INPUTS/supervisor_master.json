@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T06:43:41-05:00",
-  "gitCommit": "50b7341d7feac72108e181e33ab3a04f487356a5",
-  "branch": "codex/emergency-layer-foundation-v1",
-  "sourceDigest": "f4d4927b652a0b8ef738a63a8cf79cef25a0c2feb3d9be5c240eb181450eb882",
+  "generatedAt": "2026-02-26T09:37:27-05:00",
+  "gitCommit": "a7c01aa2f0207fd83238926c03f04c0bd983ea54",
+  "branch": "codex/city-pack-content-manage-phase670",
+  "sourceDigest": "0a5e2e9078435d5cf11ebaa12383191d64e704f2dcf421f5ea0ba9b3b7096243",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

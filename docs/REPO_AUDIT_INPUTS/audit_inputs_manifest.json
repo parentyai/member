@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T06:43:41-05:00",
-  "gitCommit": "50b7341d7feac72108e181e33ab3a04f487356a5",
-  "branch": "codex/emergency-layer-foundation-v1",
-  "sourceDigest": "2a8c61e61980673ea0d13f3633a2244fc30eacd68eae346847c68829690fa426",
+  "generatedAt": "2026-02-26T09:37:27-05:00",
+  "gitCommit": "a7c01aa2f0207fd83238926c03f04c0bd983ea54",
+  "branch": "codex/city-pack-content-manage-phase670",
+  "sourceDigest": "af634e46c6a9a709468dd33789eec87b852ccfbb84e098cb20297d267a2800ae",
   "counts": {
     "endpoints": 105,
     "routes": 77,
@@ -83,7 +83,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "174db79ccb32844a5e9b4aac8c6cc9e99b8f7a7f970a282b0b244f95c6891a46",
+      "sha256": "43d019b80ba77dd8d55edb7362469263a138b211d0da24033ee199bf4bea3e8e",
       "bytes": 828
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "3b1d538d742d79857ec2f2332e9a0cb4cf06b7d8d8a194ca9057addf78ff3526",
+      "sha256": "8df6e9972cd1a8187eca70993d91c6c4d271b7c082a2034b971b99fda0388a03",
       "bytes": 487
     },
     {
@@ -118,7 +118,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "a3ae40d43214ea1469d4fc23392aa300206eee60ea60732790362495614884d9",
+      "sha256": "7ed838910a4b7cf652eb4773daea48dc16099ac1f61040b0da0f4901f2106a54",
       "bytes": 292294
     },
     {
@@ -138,8 +138,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b65de06923c7fa3e2507d082312a7f3606938455befeba7b3ffa9c719d686a1c",
-      "bytes": 2421
+      "sha256": "fc3fc47b1d761c21209173969766e455ca6b2105aa2e850fc5f93c802c85a24a",
+      "bytes": 2425
     }
   ],
   "diff_detection_rules": [
