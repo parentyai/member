@@ -88,7 +88,7 @@ async function runGateAndRecord(argv, deps) {
   const write = toWriteFlag(args.write);
 
   const runner = deps && deps.runAndGate ? deps.runAndGate : require('./phase22_run_and_gate').runOrchestrator;
-  const repo = deps && deps.snapshotsRepo ? deps.snapshotsRepo : require('../src/repos/firestore/kpiSnapshotsRepo');
+  const repo = deps && deps.snapshotsRepo ? deps.snapshotsRepo : require('../src/repos/firestore/kpiSnapshotsReadRepo');
   const logger = deps && deps.logger ? deps.logger : console;
   const hostParser = deps && deps.parseUrlHost ? deps.parseUrlHost : parseUrlHost;
 

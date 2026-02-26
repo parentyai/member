@@ -16,7 +16,7 @@ function runNode(script, args) {
   }
 }
 
-const LEGACY_ALIAS_FILES = Object.freeze([
+const DELETED_LEGACY_ALIAS_FILES = Object.freeze([
   'src/repos/firestore/phase18StatsRepo.js',
   'src/repos/firestore/phase22KpiSnapshotsReadRepo.js',
   'src/repos/firestore/phase22KpiSnapshotsRepo.js',
@@ -25,14 +25,9 @@ const LEGACY_ALIAS_FILES = Object.freeze([
   'src/repos/firestore/phase2RunsRepo.js'
 ]);
 
-const FROZEN_FILES = Object.freeze([
+const DELETED_FROZEN_FILES = Object.freeze([
   'src/repos/firestore/checklistsRepo.js',
   'src/repos/firestore/kpiSnapshotsRepo.js',
-  'src/repos/firestore/phase18StatsRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsReadRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsRepo.js',
-  'src/repos/firestore/phase2ReportsRepo.js',
-  'src/repos/firestore/phase2RunsRepo.js',
   'src/repos/firestore/redacMembershipLinksRepo.js',
   'src/repos/firestore/userChecklistsRepo.js',
   'src/routes/admin/killSwitch.js',
@@ -57,6 +52,14 @@ function assertMarker(file, marker) {
   }
 }
 
+function assertDeleted(file) {
+  const absolute = path.join(ROOT, file);
+  if (fs.existsSync(absolute)) {
+    process.stderr.write(`cleanup deletion candidate still exists: ${file}\n`);
+    process.exit(1);
+  }
+}
+
 runNode(path.join('scripts', 'generate_cleanup_reports.js'), ['--check']);
-LEGACY_ALIAS_FILES.forEach((file) => assertMarker(file, 'LEGACY_HEADER'));
-FROZEN_FILES.forEach((file) => assertMarker(file, 'LEGACY_FROZEN_DO_NOT_USE'));
+DELETED_LEGACY_ALIAS_FILES.forEach((file) => assertDeleted(file));
+DELETED_FROZEN_FILES.forEach((file) => assertDeleted(file));

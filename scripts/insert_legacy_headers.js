@@ -5,23 +5,11 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 
-const LEGACY_ALIAS_MAP = Object.freeze({
-  'src/repos/firestore/phase18StatsRepo.js': 'src/repos/firestore/ctaStatsRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsReadRepo.js': 'src/repos/firestore/kpiSnapshotsReadRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsRepo.js': 'src/repos/firestore/kpiSnapshotsRepo.js',
-  'src/repos/firestore/phase2ReadRepo.js': 'src/repos/firestore/analyticsReadRepo.js',
-  'src/repos/firestore/phase2ReportsRepo.js': 'src/repos/firestore/scenarioReportsRepo.js',
-  'src/repos/firestore/phase2RunsRepo.js': 'src/repos/firestore/scenarioRunsRepo.js'
-});
+const LEGACY_ALIAS_MAP = Object.freeze({});
 
 const UNREACHABLE_FILES = Object.freeze([
   'src/repos/firestore/checklistsRepo.js',
   'src/repos/firestore/kpiSnapshotsRepo.js',
-  'src/repos/firestore/phase18StatsRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsReadRepo.js',
-  'src/repos/firestore/phase22KpiSnapshotsRepo.js',
-  'src/repos/firestore/phase2ReportsRepo.js',
-  'src/repos/firestore/phase2RunsRepo.js',
   'src/repos/firestore/redacMembershipLinksRepo.js',
   'src/repos/firestore/userChecklistsRepo.js',
   'src/routes/admin/killSwitch.js',
