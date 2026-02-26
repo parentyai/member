@@ -1637,6 +1637,99 @@
           </div>
           <details id="city-pack-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="panel city-pack-manage-panel">
+              <div class="panel-title" data-dict-key="ui.label.cityPack.contentManager">City Pack作成・編集</div>
+              <div class="panel-body city-pack-manage-body">
+                <div id="city-pack-manage-summary" class="note" data-dict-key="ui.desc.cityPack.contentManager">都市を選択して既存City Packを読み込み、内容を編集できます。</div>
+                <div class="row">
+                  <label for="city-pack-manage-city" data-dict-key="ui.label.cityPack.contentManager.city">都市
+                    <select id="city-pack-manage-city" class="select-inline">
+                      <option value="">都市を選択</option>
+                    </select>
+                  </label>
+                  <button id="city-pack-manage-refresh" type="button" data-dict-key="ui.label.cityPack.contentManager.refresh">都市候補を更新</button>
+                  <span id="city-pack-manage-selected-id" class="note">cityPackId: -</span>
+                </div>
+                <div class="city-pack-manage-grid">
+                  <div class="city-pack-manage-list">
+                    <label for="city-pack-manage-pack-list" data-dict-key="ui.label.cityPack.contentManager.savedList">保存済みCity Pack</label>
+                    <select id="city-pack-manage-pack-list" size="8"></select>
+                    <div id="city-pack-manage-pack-meta" class="note">-</div>
+                  </div>
+                  <div class="city-pack-manage-editor">
+                    <div class="input-grid">
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-name" data-dict-key="ui.label.cityPack.contentManager.name">name</label>
+                          <input id="city-pack-manage-name" type="text" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-region-key" data-dict-key="ui.label.cityPack.contentManager.regionKey">regionKey</label>
+                          <input id="city-pack-manage-region-key" type="text" placeholder="TX::austin" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-pack-class" data-dict-key="ui.label.cityPack.contentManager.packClass">packClass</label>
+                          <select id="city-pack-manage-pack-class">
+                            <option value="regional">regional</option>
+                            <option value="nationwide">nationwide</option>
+                          </select>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-language" data-dict-key="ui.label.cityPack.contentManager.language">language</label>
+                          <input id="city-pack-manage-language" type="text" value="ja" />
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-valid-until" data-dict-key="ui.label.cityPack.contentManager.validUntil">validUntil</label>
+                          <input id="city-pack-manage-valid-until" type="date" />
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-slot-schema-version" data-dict-key="ui.label.cityPack.contentManager.slotSchemaVersion">slotSchemaVersion</label>
+                          <input id="city-pack-manage-slot-schema-version" type="text" />
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-description" data-dict-key="ui.label.cityPack.contentManager.description">description</label>
+                          <textarea id="city-pack-manage-description" rows="3"></textarea>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-source-refs" data-dict-key="ui.label.cityPack.contentManager.sourceRefs">sourceRefs（改行 or カンマ）</label>
+                          <textarea id="city-pack-manage-source-refs" rows="3"></textarea>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="flex-1">
+                          <label for="city-pack-manage-metadata" data-dict-key="ui.label.cityPack.contentManager.metadata">metadata(JSON)</label>
+                          <textarea id="city-pack-manage-metadata" rows="4">{}</textarea>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="table-scroll">
+                      <table class="table-compact city-pack-manage-slot-table">
+                        <thead>
+                          <tr>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slot">slot</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotDescription">description</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotCta">ctaText</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotLink">linkRegistryId</th>
+                            <th data-dict-key="ui.label.cityPack.contentManager.slotSources">sourceRefs</th>
+                          </tr>
+                        </thead>
+                        <tbody id="city-pack-manage-slot-rows"></tbody>
+                      </table>
+                    </div>
+                    <div class="row row-top city-pack-manage-actions">
+                      <button id="city-pack-manage-create-manual" type="button" data-dict-key="ui.label.cityPack.contentManager.createManual">手動で新規</button>
+                      <button id="city-pack-manage-create-auto" type="button" data-dict-key="ui.label.cityPack.contentManager.createAuto">自動で新規</button>
+                      <button id="city-pack-manage-save" type="button" data-dict-key="ui.label.cityPack.contentManager.save">保存</button>
+                      <button id="city-pack-manage-retire" type="button" data-dict-key="ui.label.cityPack.contentManager.retire">削除（retire）</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="panel unified-admin-panel city-pack-unified-panel">
               <div class="panel-title">City Pack一覧</div>
               <div class="panel-body">

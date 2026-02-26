@@ -281,3 +281,17 @@ MUST:
   - `GET /api/admin/os/journey-param/history`
 - Apply保護:
   - `planHash + confirmToken + latestDryRunHash` 一致を必須化する。
+
+## Phase670 Add-only UI Contract（City Pack内容CRUD）
+- `/admin/app?pane=city-pack` に City Pack内容Composerを add-only で追加する。
+  - 都市ドロップダウン
+  - 保存済みCity Pack一覧（都市フィルタ）
+  - 内容編集フォーム（`slotContents + 必須基本項目`）
+  - 操作: `手動で新規` / `自動で新規` / `保存` / `削除（retire）`
+- API（add-only）:
+  - `POST /api/admin/city-packs/:id/content`（draftのみ更新可能）
+  - `POST /api/admin/city-packs` は内容項目（`slotContents/slotSchemaVersion/templateRefs/requestId`）を受理
+- 安全規約:
+  - active/retired は直接編集しない。保存時は draft複製を作成し、その draft を更新する。
+  - 物理削除は提供しない。削除操作は `POST /api/admin/city-packs/:id/retire` を使用する。
+  - 即時停止は `ENABLE_CITY_PACK_CONTENT_MANAGE_V1=0` で UI導線を停止する。

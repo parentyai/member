@@ -82,6 +82,11 @@ function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function normalizeMetadata(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.assign({}, value);
+}
+
 function normalizeBasePackId(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -247,7 +252,7 @@ function normalizePayload(data) {
     targetingRules: normalizeTargetingRules(payload.targetingRules),
     slots: normalizeSlots(payload.slots),
     description: typeof payload.description === 'string' ? payload.description.trim() : '',
-    metadata: payload.metadata && typeof payload.metadata === 'object' ? Object.assign({}, payload.metadata) : {},
+    metadata: normalizeMetadata(payload.metadata),
     requestId: normalizeString(payload.requestId),
     basePackId,
     overrides,
@@ -271,6 +276,52 @@ function normalizeCityPackStructurePatch(data) {
     targetingRules: basePackId ? [] : targetingRules,
     slots: basePackId ? [] : slots
   };
+}
+
+function normalizeCityPackContentPatch(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const patch = {};
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'name')) {
+    const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+    if (!name) throw new Error('name required');
+    patch.name = name;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'description')) {
+    patch.description = typeof payload.description === 'string' ? payload.description.trim() : '';
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'sourceRefs')) {
+    const sourceRefs = normalizeStringArray(payload.sourceRefs);
+    if (!sourceRefs.length) throw new Error('sourceRefs required');
+    patch.sourceRefs = sourceRefs;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'validUntil')) {
+    if (payload.validUntil === null || payload.validUntil === '') {
+      patch.validUntil = null;
+    } else {
+      const validUntil = toDate(payload.validUntil);
+      if (!validUntil) throw new Error('validUntil invalid');
+      patch.validUntil = validUntil;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'packClass')) {
+    patch.packClass = normalizePackClass(payload.packClass);
+    patch.nationwidePolicy = normalizeNationwidePolicy(patch.packClass, payload.nationwidePolicy);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'language')) {
+    patch.language = normalizeLanguage(payload.language);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'slotContents')) {
+    patch.slotContents = normalizeSlotContents(payload.slotContents);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'slotSchemaVersion')) {
+    patch.slotSchemaVersion = normalizeSlotSchemaVersion(payload.slotSchemaVersion);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'metadata')) {
+    patch.metadata = normalizeMetadata(payload.metadata);
+  }
+
+  return patch;
 }
 
 
@@ -359,6 +410,7 @@ module.exports = {
   getCityPack,
   listCityPacks,
   normalizeCityPackStructurePatch,
+  normalizeCityPackContentPatch,
   normalizeBasePackId,
   normalizeOverrides,
   validateBasePackDepth,
