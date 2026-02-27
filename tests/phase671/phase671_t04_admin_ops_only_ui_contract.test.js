@@ -27,8 +27,10 @@ test('phase671: admin app includes ops-only nav groups and realtime snapshot pan
   assert.ok(js.includes('ENABLE_OPS_SYSTEM_SNAPSHOT_V1'));
   assert.ok(js.includes('function loadOpsSnapshotBundle(options)'));
   assert.ok(js.includes('function rebuildOpsSystemSnapshot()'));
-  assert.ok(js.includes('if (!ADMIN_DEVELOPER_SURFACE_V1 && value.startsWith(\'developer-\')) return \'home\';'));
-  assert.ok(js.includes("if (!isOpsRealtimeSnapshotEnabled() && (value === 'ops-feature-catalog' || value === 'ops-system-health')) return 'home';"));
+  assert.ok(js.includes('if (!ADMIN_DEVELOPER_SURFACE_V1 && value.startsWith(\'developer-\')) {'));
+  assert.ok(js.includes("return { pane: 'home', invalidReason: 'PANE_FORBIDDEN' };"));
+  assert.ok(js.includes("if (!isOpsRealtimeSnapshotEnabled() && (value === 'ops-feature-catalog' || value === 'ops-system-health')) {"));
+  assert.ok(js.includes("return { pane: 'home', invalidReason: 'PANE_UNAVAILABLE' };"));
   assert.ok(js.includes('function applyOpsOnlyChrome(role)'));
 
   assert.ok(css.includes('.app-shell[data-ops-only-nav="1"] [data-ops-nav-legacy="1"]'));

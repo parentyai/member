@@ -213,6 +213,14 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 ]
 <!-- ADMIN_UI_ROUTES_END -->
 
+### Admin Route Unification V2（add-only）
+- 実行時の route→pane 契約は `docs/SSOT_ADMIN_UI_ROUTES_V2.md` を参照する。
+- この `ADMIN_UI_ROUTES` ブロックは legacy HTML 資産の棚卸しを保持するため継続する（削除禁止）。
+- 運用方針:
+  - 既定導線は `/admin/app` へ redirect（302）。
+  - `compat=1` / `stay_legacy=1` は緊急避難専用で通常運用禁止。
+  - compat 有効化には `role=admin|developer` と `confirm` 一致が必要（server guard）。
+
 <!-- ADMIN_UI_TEXTS_BEGIN -->
 {
   "/admin/ops": {
