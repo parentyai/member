@@ -4,10 +4,12 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const {
+  REQUIRED_INDEX_TYPE_SINGLE_FIELD,
   normalizeRequiredIndex,
   normalizeActualIndex,
   diffIndexes,
-  buildCreateCommand
+  buildCreateCommand,
+  isCompositeRequiredIndex
 } = require('../../scripts/check_firestore_indexes');
 
 test('phase632: diffIndexes identifies missing required indexes and ignores __name__ synthetic field', () => {
@@ -72,4 +74,45 @@ test('phase632: buildCreateCommand renders executable gcloud command', () => {
   assert.ok(command.includes('--collection-group="city_packs"'));
   assert.ok(command.includes('--field-config="field-path=language,order=ascending"'));
   assert.ok(command.includes('--field-config="field-path=updatedAt,order=descending"'));
+});
+
+test('phase632: diffIndexes ignores SINGLE_FIELD required definitions for composite comparison', () => {
+  const required = [
+    normalizeRequiredIndex({
+      id: 'journey_param_versions_updatedAt_desc',
+      indexType: REQUIRED_INDEX_TYPE_SINGLE_FIELD,
+      collectionGroup: 'journey_param_versions',
+      queryScope: 'COLLECTION',
+      fields: [
+        { fieldPath: 'updatedAt', order: 'DESCENDING' }
+      ]
+    }),
+    normalizeRequiredIndex({
+      id: 'journey_param_versions_state_updatedAt_desc',
+      collectionGroup: 'journey_param_versions',
+      queryScope: 'COLLECTION',
+      fields: [
+        { fieldPath: 'state', order: 'ASCENDING' },
+        { fieldPath: 'updatedAt', order: 'DESCENDING' }
+      ]
+    })
+  ];
+  const compositeRequired = required.filter(isCompositeRequiredIndex);
+  const actual = [
+    normalizeActualIndex({
+      name: 'projects/member-485303/databases/(default)/collectionGroups/journey_param_versions/indexes/CIabcdef123',
+      queryScope: 'COLLECTION',
+      state: 'READY',
+      fields: [
+        { fieldPath: 'state', order: 'ASCENDING' },
+        { fieldPath: 'updatedAt', order: 'DESCENDING' },
+        { fieldPath: '__name__', order: 'DESCENDING' }
+      ]
+    })
+  ].filter(Boolean);
+
+  const diff = diffIndexes(compositeRequired, actual);
+  assert.strictEqual(diff.missing.length, 0);
+  assert.strictEqual(diff.present.length, 1);
+  assert.strictEqual(diff.extra.length, 0);
 });
