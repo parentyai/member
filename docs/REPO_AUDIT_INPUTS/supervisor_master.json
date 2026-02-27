@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-27T13:13:01-05:00",
-  "gitCommit": "a0015bfc7b513af3a10b516693b5b1f4470c8f5e",
-  "branch": "codex/admin-ui-actor-required-phase4",
-  "sourceDigest": "adb0b86e1e69cf41df0c7306c00d5d4a649339c7f3134a3785c6c4576e378893",
+  "generatedAt": "2026-02-27T17:14:20-05:00",
+  "gitCommit": "d4b3e83dd71e1f9e8f77c7cdb2c03c0847673592",
+  "branch": "codex/admin-ui-master-table-v1-single-source",
+  "sourceDigest": "09b6ab46da33474dc18f06dfa6f52676b37e58cf0956616c57ba10c1d949497d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
