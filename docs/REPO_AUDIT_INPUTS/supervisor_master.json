@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T14:15:32-05:00",
-  "gitCommit": "d67494e443716e8ab320496010d948e526b8af94",
-  "branch": "codex/pr10-final-integration-gates",
-  "sourceDigest": "96e4922c7cf99d3820ff4930bcce99d55c8705e385b1a31c54a4d4dfca416643",
+  "generatedAt": "2026-02-26T19:04:31-05:00",
+  "gitCommit": "56285a1fa8b833e708ad5831068d63f40b2e3207",
+  "branch": "codex/wave3-fallback-hardening",
+  "sourceDigest": "9305d586f957445996ef95d8fe37cd3d9052919a2b245079d07ec7417288f77e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

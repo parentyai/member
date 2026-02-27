@@ -3,7 +3,7 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "74c7a3efc6253803a232421c8c43a3610c2f6d2c",
+      "hash": "2cf75a695ca28f4065137d085b4644d87b6117b4",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
@@ -1371,19 +1371,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackTemplateLibrary.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyProvidersRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
           ]
         },
         {
@@ -1403,19 +1403,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackTemplateLibrary.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmUsageLogsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
           ]
         },
         {
@@ -5685,7 +5685,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 40,
+              "testsCount": 185,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5701,10 +5701,24 @@
                 "SSOT_INDEXに説明ドキュメントを追記する。"
               ],
               "relatedRepos": [
-                "auditLogsRepo"
+                "analyticsReadRepo",
+                "auditLogsRepo",
+                "decisionLogsRepo",
+                "decisionTimelineRepo",
+                "deliveriesRepo",
+                "emergencyBulletinsRepo",
+                "emergencyDiffsRepo",
+                "emergencyProvidersRepo"
               ],
               "relatedCollections": [
-                "audit_logs"
+                "audit_logs",
+                "checklists",
+                "decision_logs",
+                "decision_timeline",
+                "emergency_bulletins",
+                "emergency_diffs",
+                "emergency_providers",
+                "emergency_snapshots"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",
@@ -5717,7 +5731,9 @@
                 "src/routes/admin/cityPackTemplateLibrary.js"
               ],
               "evidence": [
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
               ]
             },
             {
@@ -5727,7 +5743,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 40,
+              "testsCount": 177,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5743,10 +5759,24 @@
                 "SSOT_INDEXに説明ドキュメントを追記する。"
               ],
               "relatedRepos": [
-                "auditLogsRepo"
+                "analyticsReadRepo",
+                "auditLogsRepo",
+                "decisionLogsRepo",
+                "decisionTimelineRepo",
+                "deliveriesRepo",
+                "journeyKpiDailyRepo",
+                "journeyTodoStatsRepo",
+                "llmUsageLogsRepo"
               ],
               "relatedCollections": [
-                "audit_logs"
+                "audit_logs",
+                "checklists",
+                "decision_logs",
+                "decision_timeline",
+                "events",
+                "journey_kpi_daily",
+                "journey_todo_stats",
+                "llm_usage_logs"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",
@@ -5759,7 +5789,9 @@
                 "src/routes/admin/cityPackTemplateLibrary.js"
               ],
               "evidence": [
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
               ]
             },
             {

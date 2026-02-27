@@ -75,6 +75,19 @@
       "notificationsRepo",
       "sourceRefsRepo"
     ],
+    "computePlanHash": [
+      "deliveriesRepo"
+    ],
+    "confirmTokenData": [
+      "auditLogsRepo",
+      "decisionLogsRepo",
+      "decisionTimelineRepo",
+      "deliveriesRepo",
+      "notificationsRepo",
+      "sendRetryQueueRepo",
+      "systemFlagsRepo",
+      "usersRepo"
+    ],
     "createLink": [
       "linkRegistryRepo"
     ],
@@ -121,6 +134,9 @@
       "opsConfigRepo",
       "systemFlagsRepo"
     ],
+    "executeBackfill": [
+      "deliveriesRepo"
+    ],
     "executeNotificationSend": [
       "auditLogsRepo",
       "decisionLogsRepo",
@@ -135,6 +151,9 @@
       "decisionTimelineRepo",
       "opsStatesRepo",
       "systemFlagsRepo"
+    ],
+    "executeRecovery": [
+      "deliveriesRepo"
     ],
     "executeSegmentSend": [
       "auditLogsRepo",
@@ -161,6 +180,9 @@
     ],
     "getAutomationConfig": [
       "automationConfigRepo"
+    ],
+    "getBackfillStatus": [
+      "deliveriesRepo"
     ],
     "getEmergencyBulletin": [
       "emergencyBulletinsRepo",
@@ -234,6 +256,9 @@
     ],
     "getOpsSegment": [
       "opsSegmentsRepo"
+    ],
+    "getRecoveryStatus": [
+      "deliveriesRepo"
     ],
     "getRedacMembershipStatusForLine": [
       "usersRepo"
@@ -336,6 +361,9 @@
       "emergencyUnmappedEventsRepo",
       "systemFlagsRepo"
     ],
+    "normalizeDeliveryId": [
+      "deliveriesRepo"
+    ],
     "normalizeLimit": [
       "analyticsReadRepo",
       "deliveriesRepo",
@@ -355,16 +383,30 @@
       "userJourneySchedulesRepo",
       "usersRepo"
     ],
+    "normalizeReason": [
+      "analyticsReadRepo",
+      "deliveriesRepo",
+      "journeyKpiDailyRepo",
+      "journeyTodoStatsRepo",
+      "llmUsageLogsRepo",
+      "userSubscriptionsRepo"
+    ],
     "normalizeWindowDays": [
       "analyticsReadRepo",
       "notificationsRepo",
       "sourceRefsRepo"
+    ],
+    "planBackfill": [
+      "deliveriesRepo"
     ],
     "planNotificationSend": [
       "auditLogsRepo",
       "notificationsRepo",
       "systemFlagsRepo",
       "usersRepo"
+    ],
+    "planRecovery": [
+      "deliveriesRepo"
     ],
     "planRetryQueuedSend": [
       "sendRetryQueueRepo"
@@ -909,10 +951,22 @@
       "appendAuditLog"
     ],
     "src/routes/admin/osDeliveryBackfill.js": [
-      "appendAuditLog"
+      "appendAuditLog",
+      "confirmTokenData",
+      "executeBackfill",
+      "getBackfillStatus",
+      "normalizeLimit",
+      "planBackfill"
     ],
     "src/routes/admin/osDeliveryRecovery.js": [
-      "appendAuditLog"
+      "appendAuditLog",
+      "computePlanHash",
+      "confirmTokenData",
+      "executeRecovery",
+      "getRecoveryStatus",
+      "normalizeDeliveryId",
+      "normalizeReason",
+      "planRecovery"
     ],
     "src/routes/admin/osErrors.js": [
       "appendAuditLog"
