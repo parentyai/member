@@ -180,6 +180,21 @@ MUST:
 - LLM は文面/提案の補助のみ。採用/実行は人間。
 - 課金境界（機能フラグ/ロール）と監査が一致している
 
+## Admin Route Unification V2（Phase674 add-only）
+- `/admin/app` を canonical 実行面とし、`/admin/*` 旧導線は route→pane redirect に統一する。
+- 統合契約は `docs/SSOT_ADMIN_UI_ROUTES_V2.md` と runtime `src/shared/adminUiRoutesV2.js` を一致させる。
+- legacy HTML は削除せず保持するが、既定動作では配信しない。
+- compat 例外（緊急避難）:
+  - `compat=1` または `stay_legacy=1` が明示されていること
+  - `role=admin|developer`
+  - `confirm` が `ADMIN_UI_COMPAT_CONFIRM_TOKEN` と一致
+  - 条件不一致時は必ず `/admin/app` 側へ redirect
+- redirect/compat 判定は `traceId` / `actor` を含む server log を残す。
+
+### ブックマーク更新ガイド（短縮版）
+- 推奨: `/admin/app?pane=<pane>` を保存する（例: `composer` / `monitor` / `errors` / `read-model` / `maintenance` / `audit`）。
+- 旧URLブックマークは互換 redirect で到達可能だが、通常運用は新URLへ更新する。
+
 ## IA (Information Architecture) — Screens
 以下は ServicePhase1 の「運用OS v1」で最低限提供される画面（追加は add-only）。
 

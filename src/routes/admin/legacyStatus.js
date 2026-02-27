@@ -7,16 +7,23 @@ const {
   logRouteError
 } = require('./osContext');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { ADMIN_UI_ROUTES_V2, buildAdminAppPaneLocation, resolveLegacyHtmlForAdminRoute } = require('../../shared/adminUiRoutesV2');
 
-const LEGACY_ITEMS = Object.freeze([
-  { path: '/admin/ops', mode: 'redirect', target: '/admin/app', status: 'primary' },
-  { path: '/admin/composer', mode: 'redirect', target: '/admin/app?pane=composer', status: 'legacy_redirect' },
-  { path: '/admin/monitor', mode: 'redirect', target: '/admin/app?pane=monitor', status: 'legacy_redirect' },
-  { path: '/admin/errors', mode: 'redirect', target: '/admin/app?pane=errors', status: 'legacy_redirect' },
-  { path: '/admin/read-model', mode: 'redirect', target: '/admin/app?pane=read-model', status: 'legacy_redirect' },
-  { path: '/admin/review', mode: 'legacy_html', target: '/admin/app?pane=audit', status: 'legacy_html' },
-  { path: '/admin/master', mode: 'legacy_html', target: '/admin/app?pane=settings', status: 'legacy_html' }
-]);
+const LEGACY_ITEMS = Object.freeze(
+  ADMIN_UI_ROUTES_V2
+    .filter((entry) => entry && entry.route !== '/admin/app')
+    .map((entry) => {
+      const compatLegacyHtml = resolveLegacyHtmlForAdminRoute(entry.route);
+      const hasCompatLegacy = typeof compatLegacyHtml === 'string' && compatLegacyHtml.length > 0;
+      return Object.freeze({
+        path: entry.route,
+        mode: hasCompatLegacy ? 'redirect_with_compat' : 'redirect',
+        target: buildAdminAppPaneLocation(entry.pane),
+        status: hasCompatLegacy ? 'compat_legacy' : 'legacy_redirect',
+        legacySource: entry.legacySource || null
+      });
+    })
+);
 
 async function handleLegacyStatus(req, res) {
   const actor = requireActor(req, res);
@@ -27,8 +34,8 @@ async function handleLegacyStatus(req, res) {
 
   const summary = {
     total: LEGACY_ITEMS.length,
-    legacyHtmlCount: LEGACY_ITEMS.filter((item) => item.status === 'legacy_html').length,
-    redirectCount: LEGACY_ITEMS.filter((item) => item.mode === 'redirect').length
+    legacyHtmlCount: LEGACY_ITEMS.filter((item) => item.mode === 'redirect_with_compat').length,
+    redirectCount: LEGACY_ITEMS.filter((item) => String(item.mode || '').startsWith('redirect')).length
   };
 
   try {

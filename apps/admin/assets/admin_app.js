@@ -3140,21 +3140,42 @@ function normalizePaneTarget(target) {
     'llm',
     'maintenance'
   ]);
-  if (!isOpsRealtimeSnapshotEnabled() && (value === 'ops-feature-catalog' || value === 'ops-system-health')) return 'home';
-  if (allowed.has(value)) {
-    if (!ADMIN_DEVELOPER_SURFACE_V1 && value.startsWith('developer-')) return 'home';
-    return value;
+  if (!value) return { pane: 'home', invalidReason: null };
+  if (!isOpsRealtimeSnapshotEnabled() && (value === 'ops-feature-catalog' || value === 'ops-system-health')) {
+    return { pane: 'home', invalidReason: 'PANE_UNAVAILABLE' };
   }
-  return 'home';
+  if (allowed.has(value)) {
+    if (!ADMIN_DEVELOPER_SURFACE_V1 && value.startsWith('developer-')) {
+      return { pane: 'home', invalidReason: 'PANE_FORBIDDEN' };
+    }
+    return { pane: value, invalidReason: null };
+  }
+  return { pane: 'home', invalidReason: 'PANE_INVALID' };
+}
+
+function resolvePaneFromLocation() {
+  const currentUrl = new URL(globalThis.location.href);
+  const queryPane = currentUrl.searchParams.get('pane');
+  if (queryPane) return { pane: queryPane, source: 'query' };
+  const hashRaw = String(currentUrl.hash || '').trim();
+  if (!hashRaw) return { pane: null, source: 'none' };
+  const hashValue = hashRaw.startsWith('#') ? hashRaw.slice(1) : hashRaw;
+  const normalizedHash = hashValue.startsWith('?') ? hashValue.slice(1) : hashValue;
+  if (!normalizedHash) return { pane: null, source: 'none' };
+  if (!normalizedHash.includes('=')) return { pane: normalizedHash, source: 'hash' };
+  const hashParams = new URLSearchParams(normalizedHash);
+  const pane = hashParams.get('pane');
+  return { pane: pane || null, source: 'hash' };
 }
 
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
-  const normalizedTarget = normalizePaneTarget(target);
+  const paneTargetResult = normalizePaneTarget(target);
+  const normalizedTarget = paneTargetResult.pane;
   const navCore = resolveCoreSlice('navCore');
   let nextPane = resolveAllowedPaneForRole(state.role, normalizedTarget, 'home');
-  let paneBlocked = normalizedTarget !== nextPane;
-  let guardReason = opts.guardReason || 'PANE_FORBIDDEN';
+  let paneBlocked = normalizedTarget !== nextPane || Boolean(paneTargetResult.invalidReason);
+  let guardReason = opts.guardReason || paneTargetResult.invalidReason || 'PANE_FORBIDDEN';
   if (!ADMIN_NAV_ALL_ACCESSIBLE_V1 && !paneBlocked && normalizedTarget !== 'home' && opts.allowHiddenRollout !== true) {
     const paneEntries = collectNavItemsForCore().filter((entry) => entry.pane === normalizedTarget);
     if (paneEntries.length) {
@@ -3228,9 +3249,8 @@ function activatePane(target, options) {
 }
 
 function activateInitialPane() {
-  const currentUrl = new URL(globalThis.location.href);
-  const pane = currentUrl.searchParams.get('pane');
-  activatePane(pane || 'home', { historyMode: 'replace' });
+  const resolved = resolvePaneFromLocation();
+  activatePane(resolved.pane || 'home', { historyMode: 'replace' });
 }
 
 function setupHistorySync() {
@@ -3238,9 +3258,13 @@ function setupHistorySync() {
   globalThis.addEventListener('popstate', () => {
     const nextRole = resolveRoleFromPersistence(state.role || 'operator');
     setRole(nextRole, { syncHistory: false });
-    const currentUrl = new URL(globalThis.location.href);
-    const pane = currentUrl.searchParams.get('pane') || 'home';
-    activatePane(pane, { skipHistory: true });
+    const resolved = resolvePaneFromLocation();
+    activatePane(resolved.pane || 'home', { skipHistory: true });
+  });
+  globalThis.addEventListener('hashchange', () => {
+    const resolved = resolvePaneFromLocation();
+    if (resolved.source !== 'hash') return;
+    activatePane(resolved.pane || 'home', { historyMode: 'replace' });
   });
 }
 

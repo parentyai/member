@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T21:45:31-05:00",
-  "gitCommit": "3267734dcdb5cf5142d3fa013af864fd253fc6aa",
-  "branch": "main",
-  "sourceDigest": "09ca346a5e940cc2a43bdff45ac32a3ffc98b1ed4f5671f78e56fdab1369bf2c",
+  "generatedAt": "2026-02-26T23:29:54-05:00",
+  "gitCommit": "cc2887c49dffce24adc59a36afa64b04999cb321",
+  "branch": "codex/admin-ui-full-unification",
+  "sourceDigest": "d041ae745cc78d5ab2c7b2a62b26b6dbf8f2fbac077bfdf2b3b8a03ad7798e5e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

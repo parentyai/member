@@ -7,6 +7,11 @@ const path = require('path');
 const { handleLineWebhook } = require('./routes/webhookLine');
 const { handleStripeWebhook } = require('./routes/webhookStripe');
 const { resolvePathProtection } = require('./domain/security/protectionMatrix');
+const {
+  resolveAdminUiRoute,
+  buildAdminAppPaneLocation,
+  resolveLegacyHtmlForAdminRoute
+} = require('./shared/adminUiRoutesV2');
 
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
@@ -99,6 +104,13 @@ function resolveOpsRealtimeDashboardFlag() {
 
 function resolveOpsSystemSnapshotFlag() {
   return resolveBooleanEnvFlag('ENABLE_OPS_SYSTEM_SNAPSHOT_V1', true);
+}
+
+function resolveAdminUiCompatConfirmToken() {
+  const raw = process.env.ADMIN_UI_COMPAT_CONFIRM_TOKEN;
+  if (typeof raw !== 'string') return null;
+  const value = raw.trim();
+  return value.length > 0 ? value : null;
 }
 
 function resolveAdminBuildMeta() {
@@ -283,6 +295,144 @@ function getRequestId(req) {
     return trace.split('/')[0];
   }
   return crypto.randomUUID();
+}
+
+function resolveAdminUiTraceId(req) {
+  const traceHeader = req && req.headers ? req.headers['x-trace-id'] : null;
+  if (typeof traceHeader === 'string' && traceHeader.trim().length > 0) return traceHeader.trim();
+  return `admin_ui_route_${getRequestId(req)}`;
+}
+
+function resolveAdminUiActor(req) {
+  const actorHeader = req && req.headers ? req.headers['x-actor'] : null;
+  if (typeof actorHeader === 'string' && actorHeader.trim().length > 0) return actorHeader.trim();
+  return 'admin_ui_router';
+}
+
+function logAdminUiRouteEvent(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const parts = [
+    '[OBS] action=admin_ui_route',
+    `result=${String(data.result || 'unknown')}`,
+    `path=${String(data.path || '-')}`,
+    `target=${String(data.target || '-')}`,
+    `pane=${String(data.pane || '-')}`,
+    `traceId=${String(data.traceId || '-')}`,
+    `actor=${String(data.actor || '-')}`
+  ];
+  if (data.compatRequested === true) parts.push('compat=1');
+  if (data.compatRole) parts.push(`compatRole=${String(data.compatRole)}`);
+  if (data.compatReason) parts.push(`compatReason=${String(data.compatReason)}`);
+  console.log(parts.join(' '));
+}
+
+function resolveAdminUiCompatState(req) {
+  const state = {
+    requested: false,
+    allowed: false,
+    role: null,
+    reason: 'not_requested'
+  };
+  let url;
+  try {
+    url = new URL(req.url || '/', 'http://localhost');
+  } catch (_err) {
+    state.reason = 'invalid_url';
+    return state;
+  }
+  const compatRaw = String(url.searchParams.get('compat') || '').trim();
+  const stayLegacyRaw = String(url.searchParams.get('stay_legacy') || '').trim();
+  state.requested = compatRaw === '1' || stayLegacyRaw === '1';
+  if (!state.requested) return state;
+
+  const role = String(url.searchParams.get('role') || '').trim().toLowerCase();
+  state.role = role || null;
+  if (role !== 'admin' && role !== 'developer') {
+    state.reason = 'role_forbidden';
+    return state;
+  }
+
+  const expectedConfirm = resolveAdminUiCompatConfirmToken();
+  const providedConfirm = String(url.searchParams.get('confirm') || '').trim();
+  if (!expectedConfirm) {
+    state.reason = 'confirm_token_missing';
+    return state;
+  }
+  if (!providedConfirm || !timingSafeEqualString(providedConfirm, expectedConfirm)) {
+    state.reason = 'confirm_token_mismatch';
+    return state;
+  }
+  state.allowed = true;
+  state.reason = 'allowed';
+  return state;
+}
+
+function serveAdminAppShell(res) {
+  const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
+  try {
+    const html = fs.readFileSync(filePath, 'utf8');
+    // Historical note (observed before route unification):
+    // 1) Boot/meta flags injection branch.
+    // 2) Trend/foundation-only injection branch.
+    // 3) Trend/foundation conditional raw serve branch.
+    // All three behaviors are consolidated into one canonical injected shell.
+    const bootScript = buildAdminAppBootScript();
+    const injected = html.includes('</head>') ? html.replace('</head>', `${bootScript}</head>`) : `${bootScript}${html}`;
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(injected);
+  } catch (_err) {
+    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('error');
+  }
+}
+
+function handleAdminUiRoute(req, res, pathname) {
+  if (req.method !== 'GET') return false;
+  const routeEntry = resolveAdminUiRoute(pathname);
+  if (!routeEntry) return false;
+
+  if (routeEntry.route === '/admin/app') {
+    serveAdminAppShell(res);
+    return true;
+  }
+
+  const target = buildAdminAppPaneLocation(routeEntry.pane);
+  const traceId = resolveAdminUiTraceId(req);
+  const actor = resolveAdminUiActor(req);
+  const compatState = resolveAdminUiCompatState(req);
+  const legacyHtml = resolveLegacyHtmlForAdminRoute(pathname);
+
+  if (compatState.requested && compatState.allowed && legacyHtml) {
+    const legacyPath = path.resolve(__dirname, '..', 'apps', 'admin', legacyHtml);
+    serveHtml(res, legacyPath);
+    logAdminUiRouteEvent({
+      result: 'compat_legacy',
+      path: pathname,
+      target: legacyPath,
+      pane: routeEntry.pane,
+      traceId,
+      actor,
+      compatRequested: compatState.requested,
+      compatRole: compatState.role,
+      compatReason: compatState.reason
+    });
+    return true;
+  }
+
+  res.writeHead(302, { location: target });
+  res.end();
+  logAdminUiRouteEvent({
+    result: 'redirect',
+    path: pathname,
+    target,
+    pane: routeEntry.pane,
+    traceId,
+    actor,
+    compatRequested: compatState.requested,
+    compatRole: compatState.role,
+    compatReason: compatState.reason
+  });
+  return true;
 }
 
 function serveHtml(res, filePath) {
@@ -727,38 +877,6 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
-    try {
-      const html = fs.readFileSync(filePath, 'utf8');
-      const bootScript = buildAdminAppBootScript();
-      const injected = html.replace('</head>', `${bootScript}</head>`);
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(injected);
-    } catch (_err) {
-      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('error');
-    }
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
-    const trendEnabled = String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0';
-    const foundationEnabled = resolveAdminUiFoundationFlag();
-    try {
-      const html = fs.readFileSync(filePath, 'utf8');
-      const flagScript = `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
-      const injected = html.replace('</head>', `${flagScript}</head>`);
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(injected);
-    } catch (_err) {
-      res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('error');
-    }
-    return;
-  }
-
   if (req.method === 'GET' && pathname === '/admin/ui-dict') {
     const dictPath = path.resolve(__dirname, '..', 'docs', 'ADMIN_UI_DICTIONARY_JA.md');
     try {
@@ -778,62 +896,7 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'GET' && (pathname === '/admin/ops' || pathname === '/admin/ops/')) {
-    res.writeHead(302, { location: '/admin/app' });
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/review' || pathname === '/admin/review/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'review.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/composer' || pathname === '/admin/composer/')) {
-    res.writeHead(302, { location: '/admin/app?pane=composer' });
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/monitor' || pathname === '/admin/monitor/')) {
-    res.writeHead(302, { location: '/admin/app?pane=monitor' });
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/errors' || pathname === '/admin/errors/')) {
-    res.writeHead(302, { location: '/admin/app?pane=errors' });
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/master' || pathname === '/admin/master/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'master.html');
-    serveHtml(res, filePath);
-    return;
-  }
-
-  if (req.method === 'GET' && (pathname === '/admin/app' || pathname === '/admin/app/')) {
-    const filePath = path.resolve(__dirname, '..', 'apps', 'admin', 'app.html');
-    const trendEnabled = String(process.env.ENABLE_ADMIN_TREND_UI || '').trim() !== '0';
-    const foundationEnabled = resolveAdminUiFoundationFlag();
-    if (!trendEnabled || foundationEnabled) {
-      try {
-        const html = fs.readFileSync(filePath, 'utf8');
-        const flagScript = `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
-        const injected = html.replace('</head>', `${flagScript}</head>`);
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        res.end(injected);
-      } catch (_err) {
-        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('error');
-      }
-      return;
-    }
-    serveHtml(res, filePath);
-    return;
-  }
+  if (handleAdminUiRoute(req, res, pathname)) return;
 
   if (req.method === 'GET' && pathname === '/admin/implementation-targets') {
     const { handleImplementationTargets } = require('./routes/admin/implementationTargets');
@@ -3276,11 +3339,6 @@ function createServer() {
   if (pathname.startsWith('/admin/read-model')) {
     const { handleNotificationReadModel } = require('./routes/admin/readModel');
     (async () => {
-      if (req.method === 'GET' && (pathname === '/admin/read-model' || pathname === '/admin/read-model/')) {
-        res.writeHead(302, { location: '/admin/app?pane=read-model' });
-        res.end();
-        return;
-      }
       if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {
         await handleNotificationReadModel(req, res);
         return;

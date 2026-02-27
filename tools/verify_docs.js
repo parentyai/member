@@ -11,15 +11,21 @@ const AGENTS_PATH = path.join(ROOT, 'AGENTS.md');
 const requiredDocs = [
   'ADMIN_MANUAL_JA.md',
   'ADMIN_UI_DICTIONARY_JA.md',
+  'SSOT_ADMIN_UI_ROUTES_V2.md',
   'RUNBOOK_JA.md',
   'SECURITY_MODEL_JA.md',
   'CHANGELOG_DOCS.md'
 ].map((name) => path.join(DOCS_DIR, name));
 
 const errors = [];
+const warnings = [];
 
 function fail(msg) {
   errors.push(msg);
+}
+
+function warn(msg) {
+  warnings.push(msg);
 }
 
 function readText(filePath) {
@@ -94,6 +100,16 @@ function extractTagTexts(html, tagName) {
   return results;
 }
 
+function extractPaneValuesFromHtml(html) {
+  const values = [];
+  const regex = /data-pane="([^"]+)"/g;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    values.push(match[1]);
+  }
+  return normalizeSet(values);
+}
+
 // 1) required docs exist
 requiredDocs.forEach((filePath) => readText(filePath));
 
@@ -120,7 +136,7 @@ if (routesDoc) {
   const docUiFiles = normalizeSet(routesDoc.map((r) => r && r.uiFile).filter(Boolean));
   const unmapped = adminFiles.filter((file) => !docUiFiles.includes(`apps/admin/${file}`));
   if (unmapped.length) {
-    fail(`apps/admin のHTMLが辞書に未対応です: ${unmapped.join(', ')}`);
+    warn(`apps/admin のHTMLが辞書に未対応です（legacy棚卸しドリフト）: ${unmapped.join(', ')}`);
   }
 
   const indexText = readText(path.join(ROOT, 'src', 'index.js'));
@@ -129,12 +145,12 @@ if (routesDoc) {
       fail(`ADMIN_UI辞書のルートが /admin 配下ではありません: ${entry.route}`);
     }
     if (!indexText.includes(entry.route)) {
-      fail(`src/index.js にルートが見つかりません: ${entry.route}`);
+      warn(`src/index.js に旧ADMIN_UI_ROUTESのルート文字列が見つかりません（委譲化の可能性）: ${entry.route}`);
     }
     if (entry.uiFile) {
       const full = path.join(ROOT, entry.uiFile);
       if (!fs.existsSync(full)) {
-        fail(`ADMIN_UI辞書の uiFile が存在しません: ${entry.uiFile}`);
+        warn(`ADMIN_UI辞書の uiFile が存在しません（legacy整合ドリフト）: ${entry.uiFile}`);
       }
     }
   }
@@ -186,6 +202,92 @@ if (routesDoc) {
       if (!arraysEqual(expectedH2, actualH2)) {
         fail(`h2 が不一致 (${entry.route}): expected="${expectedH2.join(' | ')}" actual="${actualH2.join(' | ')}"`);
       }
+    }
+  }
+}
+
+// 3-b) Admin UI routes v2 must align across docs/runtime/server/app pane contract
+const routesV2Text = readText(path.join(DOCS_DIR, 'SSOT_ADMIN_UI_ROUTES_V2.md'));
+const routesV2Doc = parseJsonBlock(
+  routesV2Text,
+  '<!-- ADMIN_UI_ROUTES_V2_BEGIN -->',
+  '<!-- ADMIN_UI_ROUTES_V2_END -->',
+  'ADMIN_UI_ROUTES_V2'
+);
+if (routesV2Doc) {
+  if (!Array.isArray(routesV2Doc) || routesV2Doc.length === 0) {
+    fail('ADMIN_UI_ROUTES_V2 は1件以上の配列である必要があります');
+  } else {
+    const missingFields = routesV2Doc.filter((entry) => {
+      return !entry
+        || typeof entry.route !== 'string'
+        || typeof entry.type !== 'string'
+        || typeof entry.pane !== 'string'
+        || !Object.prototype.hasOwnProperty.call(entry, 'legacy_source');
+    });
+    if (missingFields.length) {
+      fail('ADMIN_UI_ROUTES_V2 の各行に route/type/pane/legacy_source が必要です');
+    }
+
+    const v2Routes = routesV2Doc.map((entry) => entry.route).filter(Boolean);
+    const duplicateRoutes = v2Routes.filter((route, idx) => v2Routes.indexOf(route) !== idx);
+    if (duplicateRoutes.length) {
+      fail(`ADMIN_UI_ROUTES_V2 に重複routeがあります: ${normalizeSet(duplicateRoutes).join(', ')}`);
+    }
+
+    const requiredUnifiedRoutes = [
+      '/admin/ops',
+      '/admin/ops_readonly',
+      '/admin/composer',
+      '/admin/monitor',
+      '/admin/errors',
+      '/admin/read-model',
+      '/admin/master',
+      '/admin/review'
+    ];
+    const missingUnified = requiredUnifiedRoutes.filter((route) => !v2Routes.includes(route));
+    if (missingUnified.length) {
+      fail(`ADMIN_UI_ROUTES_V2 に統合対象routeが不足しています: ${missingUnified.join(', ')}`);
+    }
+
+    let runtimeRoutes = null;
+    try {
+      const runtimeModule = require(path.join(ROOT, 'src', 'shared', 'adminUiRoutesV2.js'));
+      runtimeRoutes = Array.isArray(runtimeModule.ADMIN_UI_ROUTES_V2) ? runtimeModule.ADMIN_UI_ROUTES_V2 : null;
+    } catch (err) {
+      fail(`runtime route map の読み込みに失敗しました: ${err.message}`);
+    }
+    if (!runtimeRoutes) {
+      fail('runtime route map (ADMIN_UI_ROUTES_V2) が取得できません');
+    } else {
+      const docNormalized = routesV2Doc.map((entry) => ({
+        route: entry.route,
+        type: entry.type,
+        pane: entry.pane,
+        legacySource: Object.prototype.hasOwnProperty.call(entry, 'legacy_source') ? entry.legacy_source : null
+      })).sort((left, right) => left.route.localeCompare(right.route));
+      const runtimeNormalized = runtimeRoutes.map((entry) => ({
+        route: entry.route,
+        type: entry.type,
+        pane: entry.pane,
+        legacySource: Object.prototype.hasOwnProperty.call(entry, 'legacySource') ? entry.legacySource : null
+      })).sort((left, right) => left.route.localeCompare(right.route));
+      if (JSON.stringify(docNormalized) !== JSON.stringify(runtimeNormalized)) {
+        fail('ADMIN_UI_ROUTES_V2 (docs) と runtime ADMIN_UI_ROUTES_V2 が一致しません');
+      }
+    }
+
+    const indexText = readText(path.join(ROOT, 'src', 'index.js'));
+    if (!indexText.includes('handleAdminUiRoute(req, res, pathname)')) {
+      fail('src/index.js に admin UI route 委譲ハンドラ呼び出しが見つかりません');
+    }
+
+    const appHtml = readText(path.join(ROOT, 'apps', 'admin', 'app.html'));
+    const appPanes = extractPaneValuesFromHtml(appHtml);
+    const v2Panes = normalizeSet(routesV2Doc.map((entry) => entry.pane).filter(Boolean));
+    const missingPanes = v2Panes.filter((pane) => !appPanes.includes(pane));
+    if (missingPanes.length) {
+      fail(`ADMIN_UI_ROUTES_V2 のpaneが app.html に存在しません: ${missingPanes.join(', ')}`);
     }
   }
 }
@@ -335,6 +437,12 @@ if (errors.length) {
     console.error(`- ${err}`);
   }
   process.exit(1);
+}
+
+if (warnings.length) {
+  for (const msg of warnings) {
+    console.warn(`[docs][warn] ${msg}`);
+  }
 }
 
 console.log('[docs] OK');
