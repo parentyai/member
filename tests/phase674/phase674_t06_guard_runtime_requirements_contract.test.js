@@ -20,7 +20,7 @@ function createResCapture() {
   return { res, capture };
 }
 
-test('phase674: managed flow guard enforces trace/actor/confirm and supports actor fallback mode', async () => {
+test('phase674: managed flow guard enforces trace/actor/confirm with mixed actor modes', async () => {
   const audits = [];
   const deps = {
     appendAuditLog: async (entry) => {
@@ -79,6 +79,32 @@ test('phase674: managed flow guard enforces trace/actor/confirm and supports act
     assert.equal(result.actor, 'unknown');
     assert.equal(result.traceId, 'trace-3');
     assert.equal(capture.status, null);
+  }
+
+  {
+    const { res, capture } = createResCapture();
+    const result = await enforceManagedFlowGuard({
+      req: { headers: { 'x-trace-id': 'trace-4' } },
+      res,
+      actionKey: 'vendors.activate',
+      payload: { linkId: 'link_1' }
+    }, deps);
+    assert.equal(result, null);
+    assert.equal(capture.status, 400);
+    assert.match(String(capture.body || ''), /x-actor required/);
+  }
+
+  {
+    const { res, capture } = createResCapture();
+    const result = await enforceManagedFlowGuard({
+      req: { headers: { 'x-trace-id': 'trace-5' } },
+      res,
+      actionKey: 'emergency.bulletin.approve',
+      payload: { bulletinId: 'b_1' }
+    }, deps);
+    assert.equal(result, null);
+    assert.equal(capture.status, 400);
+    assert.match(String(capture.body || ''), /x-actor required/);
   }
 
   assert.ok(audits.some((entry) => entry && entry.action === 'managed_flow.guard.warning'));
