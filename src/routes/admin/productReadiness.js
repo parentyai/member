@@ -615,7 +615,7 @@ async function handleProductReadiness(req, res) {
     ) {
       blockers.push({
         code: 'structure_risk_naming_drift_over_budget',
-        message: 'structure naming drift scenario count exceeds budget',
+        message: 'structure naming drift legacy field count exceeds budget',
         value: namingDriftScenarioCount,
         budget: structureBudgets.namingDriftScenarioMax
       });

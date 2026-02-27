@@ -86,9 +86,7 @@
   "legacy_repos": [],
   "merge_candidates": [],
   "naming_drift": {
-    "scenario": [
-      "src/routes/admin/productReadiness.js"
-    ],
+    "scenario": [],
     "scenarioKey": [
       "src/domain/journey/lineCommandParsers.js",
       "src/domain/normalizers/scenarioKeyNormalizer.js",

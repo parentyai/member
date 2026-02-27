@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T21:40:06-05:00",
-  "gitCommit": "bbd4cbc592843c032ac4dbdd8056cf47585d5098",
-  "branch": "codex/wave4-ops-only-ui-realtime-snapshot",
-  "sourceDigest": "8835969d46c2e4476ae660b7c2242d30664e6a0b852f8082327610091bca4181",
+  "generatedAt": "2026-02-26T21:45:31-05:00",
+  "gitCommit": "3267734dcdb5cf5142d3fa013af864fd253fc6aa",
+  "branch": "main",
+  "sourceDigest": "09ca346a5e940cc2a43bdff45ac32a3ffc98b1ed4f5671f78e56fdab1369bf2c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
