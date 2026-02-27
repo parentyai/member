@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-27T13:05:16-05:00",
-  "gitCommit": "6d657714d8d3b50819cc193063be7d3f16280e99",
-  "branch": "codex/admin-ui-actor-required-phase2",
-  "sourceDigest": "e3398132803a5db241d514a52c71b632a3b94268e2ba363ea4939d5621d477a5",
+  "generatedAt": "2026-02-27T13:13:01-05:00",
+  "gitCommit": "a0015bfc7b513af3a10b516693b5b1f4470c8f5e",
+  "branch": "codex/admin-ui-actor-required-phase4",
+  "sourceDigest": "7087660ce764ecacaf68ddb4e14ce80d5ae0e2102ef6e9c3f0433a0a765268c8",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "0791ace403a553c01ba9e83a536c27f6c361337f9f5b69fd51989156a6b8a628",
+      "sha256": "aec3b5df9b5844b28c8c8855c1a14caa6f963a3e5d29b88c55a1dddf0c2d817f",
       "bytes": 2422
     }
   ],
