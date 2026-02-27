@@ -58,6 +58,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SECURITY_MODEL_JA.md`（セキュリティ責任分界）
 - `docs/CHANGELOG_DOCS.md`（ドキュメント更新履歴）
 - `docs/REPO_AUDIT_PHASE0_1_2026-02-14.md`（監査計画/現状監査）
+- `docs/REPO_FULL_AUDIT_REPORT_2026-02-27.md`（成熟度再評価レポート / 84c2d34基準）
 - `docs/LLM_KB_SPEC_PHASE_NEXT1.md`（Phase Next-1: KB必須属性強制・llmClient・Admin KB CRUD・blockedReason拡張）
 - `docs/LLM_KB_SPEC_PHASE_NEXT2.md`（Phase Next-2: Ops系llmClient接続・llmAdapterインターフェース・Opsテンプレ3種完備）
 - `docs/LLM_KB_SPEC_PHASE_NEXT3.md`（Phase Next-3: guide-only解禁・consent UI・lawfulBasis整備・consent verify/revoke API）
