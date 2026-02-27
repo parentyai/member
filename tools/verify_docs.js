@@ -11,6 +11,7 @@ const AGENTS_PATH = path.join(ROOT, 'AGENTS.md');
 const requiredDocs = [
   'ADMIN_MANUAL_JA.md',
   'ADMIN_UI_DICTIONARY_JA.md',
+  'SSOT_ADMIN_UI_MASTER_TABLE_V1.md',
   'SSOT_ADMIN_UI_ROUTES_V2.md',
   'RUNBOOK_JA.md',
   'SECURITY_MODEL_JA.md',
@@ -62,6 +63,10 @@ function normalizeText(value) {
 
 function normalizeTextArray(values) {
   return (values || []).map((v) => normalizeText(v)).filter((v) => v.length > 0);
+}
+
+function isObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function arraysEqual(a, b) {
@@ -289,6 +294,105 @@ if (routesV2Doc) {
     if (missingPanes.length) {
       fail(`ADMIN_UI_ROUTES_V2 のpaneが app.html に存在しません: ${missingPanes.join(', ')}`);
     }
+  }
+}
+
+// 3-c) Admin UI Master Table V1 must be parseable and runtime-loadable
+const masterTablePath = path.join(DOCS_DIR, 'SSOT_ADMIN_UI_MASTER_TABLE_V1.md');
+const masterTableText = readText(masterTablePath);
+const masterTableDoc = parseJsonBlock(
+  masterTableText,
+  '<!-- ADMIN_UI_MASTER_TABLE_BEGIN -->',
+  '<!-- ADMIN_UI_MASTER_TABLE_END -->',
+  'ADMIN_UI_MASTER_TABLE'
+);
+if (masterTableDoc) {
+  if (typeof masterTableDoc.version !== 'string' || !masterTableDoc.version.trim()) {
+    fail('ADMIN_UI_MASTER_TABLE.version は必須です');
+  }
+  if (!Array.isArray(masterTableDoc.flows) || masterTableDoc.flows.length === 0) {
+    fail('ADMIN_UI_MASTER_TABLE.flows は1件以上必要です');
+  } else {
+    const flowIdSet = new Set();
+    const actionKeySet = new Set();
+    masterTableDoc.flows.forEach((flow, index) => {
+      const idx = `flows[${index}]`;
+      if (!isObject(flow)) {
+        fail(`${idx} はobjectである必要があります`);
+        return;
+      }
+      if (typeof flow.flowId !== 'string' || !flow.flowId.trim()) {
+        fail(`${idx}.flowId は必須です`);
+      } else if (flowIdSet.has(flow.flowId)) {
+        fail(`ADMIN_UI_MASTER_TABLE.flowId 重複: ${flow.flowId}`);
+      } else {
+        flowIdSet.add(flow.flowId);
+      }
+      if (!isObject(flow.stateMachine)) fail(`${idx}.stateMachine はobject必須です`);
+      if (!isObject(flow.guardRules)) fail(`${idx}.guardRules はobject必須です`);
+      if (!Array.isArray(flow.writeActions) || flow.writeActions.length === 0) fail(`${idx}.writeActions は1件以上必要です`);
+      if (!isObject(flow.evidenceBindings)) fail(`${idx}.evidenceBindings はobject必須です`);
+      if (!isObject(flow.roleRestrictions)) fail(`${idx}.roleRestrictions はobject必須です`);
+
+      const guardRules = flow.guardRules || {};
+      const actorMode = guardRules.actorMode;
+      const traceMode = guardRules.traceMode;
+      const confirmMode = guardRules.confirmMode;
+      const killSwitchCheck = guardRules.killSwitchCheck;
+      const auditMode = guardRules.auditMode;
+      if (!['required', 'allow_fallback'].includes(actorMode)) fail(`${idx}.guardRules.actorMode が不正です`);
+      if (!['required'].includes(traceMode)) fail(`${idx}.guardRules.traceMode が不正です`);
+      if (!['required', 'optional', 'none'].includes(confirmMode)) fail(`${idx}.guardRules.confirmMode が不正です`);
+      if (!['required', 'none'].includes(killSwitchCheck)) fail(`${idx}.guardRules.killSwitchCheck が不正です`);
+      if (!['required'].includes(auditMode)) fail(`${idx}.guardRules.auditMode が不正です`);
+
+      (flow.writeActions || []).forEach((action, actionIndex) => {
+        const actionIdx = `${idx}.writeActions[${actionIndex}]`;
+        if (!isObject(action)) {
+          fail(`${actionIdx} はobjectである必要があります`);
+          return;
+        }
+        if (typeof action.actionKey !== 'string' || !action.actionKey.trim()) {
+          fail(`${actionIdx}.actionKey は必須です`);
+          return;
+        }
+        if (actionKeySet.has(action.actionKey)) {
+          fail(`ADMIN_UI_MASTER_TABLE.actionKey 重複: ${action.actionKey}`);
+        } else {
+          actionKeySet.add(action.actionKey);
+        }
+        if (typeof action.method !== 'string' || !action.method.trim()) fail(`${actionIdx}.method は必須です`);
+        if (typeof action.pathPattern !== 'string' || !action.pathPattern.trim()) fail(`${actionIdx}.pathPattern は必須です`);
+        if (typeof action.dangerClass !== 'string' || !action.dangerClass.trim()) fail(`${actionIdx}.dangerClass は必須です`);
+        if (action.workbenchZoneRequired !== true) fail(`${actionIdx}.workbenchZoneRequired は true 固定です`);
+      });
+    });
+  }
+
+  try {
+    const managedFlowRegistry = require(path.join(ROOT, 'src', 'domain', 'managedFlowRegistry.js'));
+    managedFlowRegistry.loadManagedFlowTableFromDocs();
+  } catch (err) {
+    fail(`managedFlowRegistry のdocs読込に失敗しました: ${err.message}`);
+  }
+
+  try {
+    const bindingsModule = require(path.join(ROOT, 'src', 'routes', 'admin', 'managedFlowBindings.js'));
+    const bindings = typeof bindingsModule.getManagedFlowBindings === 'function'
+      ? bindingsModule.getManagedFlowBindings()
+      : [];
+    const bindingKeys = normalizeSet((bindings || []).map((entry) => entry && entry.actionKey).filter(Boolean));
+    const docKeys = normalizeSet(
+      (masterTableDoc.flows || [])
+        .flatMap((flow) => Array.isArray(flow.writeActions) ? flow.writeActions : [])
+        .map((action) => action && action.actionKey)
+        .filter(Boolean)
+    );
+    if (!arraysEqual(bindingKeys, docKeys)) {
+      fail('ADMIN_UI_MASTER_TABLE.writeActions と managedFlowBindings.actionKey が一致しません');
+    }
+  } catch (err) {
+    fail(`managedFlowBindings の読込に失敗しました: ${err.message}`);
   }
 }
 

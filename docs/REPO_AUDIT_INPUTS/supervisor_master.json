@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T23:29:54-05:00",
-  "gitCommit": "cc2887c49dffce24adc59a36afa64b04999cb321",
-  "branch": "codex/admin-ui-full-unification",
-  "sourceDigest": "d041ae745cc78d5ab2c7b2a62b26b6dbf8f2fbac077bfdf2b3b8a03ad7798e5e",
+  "generatedAt": "2026-02-27T13:00:12-05:00",
+  "gitCommit": "09891b294ce8c0310963c1ec39adc45bade809db",
+  "branch": "codex/admin-ui-master-table-ssot",
+  "sourceDigest": "577718aee8c55b25296347c55eabec0afd0745e17fd1989038c3df868c848f1d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

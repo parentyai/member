@@ -5,6 +5,7 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const { sendNotification } = require('../../usecases/notifications/sendNotification');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
 function writeJson(res, status, payload) {
@@ -57,6 +58,15 @@ async function handleGetBulletin(req, res, context, bulletinId) {
 async function handleCreateBulletin(req, res, bodyText, context) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'city_pack.bulletin.create',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const notificationId = typeof payload.notificationId === 'string' ? payload.notificationId.trim() : '';
   const cityPackId = typeof payload.cityPackId === 'string' ? payload.cityPackId.trim() : '';
   const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
@@ -93,6 +103,17 @@ async function handleCreateBulletin(req, res, bodyText, context) {
 }
 
 async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
+  const payload = parseJson(bodyText || '{}', res);
+  if (!payload && bodyText) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'city_pack.bulletin.approve',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
     writeJson(res, 404, { ok: false, error: 'bulletin not found' });
@@ -102,8 +123,6 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
     writeJson(res, 409, { ok: false, error: 'bulletin_not_draft' });
     return;
   }
-  const payload = parseJson(bodyText || '{}', res);
-  if (!payload && bodyText) return;
   const notificationId = payload && typeof payload.notificationId === 'string' ? payload.notificationId.trim() : '';
   const resolvedNotificationId = bulletin.notificationId || notificationId || null;
   if (!resolvedNotificationId) {
@@ -140,6 +159,15 @@ async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
 }
 
 async function handleRejectBulletin(req, res, context, bulletinId) {
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'city_pack.bulletin.reject',
+    payload: {}
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
     writeJson(res, 404, { ok: false, error: 'bulletin not found' });
@@ -167,6 +195,15 @@ async function handleRejectBulletin(req, res, context, bulletinId) {
 }
 
 async function handleSendBulletin(req, res, context, bulletinId) {
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'city_pack.bulletin.send',
+    payload: {}
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const bulletin = await cityPackBulletinsRepo.getBulletin(bulletinId);
   if (!bulletin) {
     writeJson(res, 404, { ok: false, error: 'bulletin not found' });

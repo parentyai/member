@@ -274,8 +274,14 @@
             <button id="page-action-primary" type="button" class="secondary-btn hidden"></button>
             <button id="page-action-secondary" type="button" class="secondary-btn hidden"></button>
             <button id="header-consult-link" type="button" class="secondary-btn hidden" data-dict-key="ui.label.header.consult">相談窓口</button>
+            <div id="header-readonly-note" class="note topbar-readonly-note">Topbarは参照ショートカット専用です（実行操作はWorkbench内のみ）。</div>
           </div>
         </section>
+        <div id="managed-action-evidence" class="managed-action-evidence is-hidden" aria-live="polite">
+          <span class="managed-action-evidence-label">Evidence</span>
+          <span id="managed-action-evidence-text">-</span>
+          <button id="managed-action-open-audit" type="button" class="secondary-btn">Open Audit</button>
+        </div>
         <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>原因:</strong> <span data-guard-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-guard-field="impact">-</span></div>
@@ -723,7 +729,7 @@
               <button id="composer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="composer-pane-details" class="decision-details section">
+          <details id="composer-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="composer-workspace">
               <div class="panel composer-header">
@@ -737,8 +743,8 @@
                     </div>
                     <div class="composer-primary-actions">
                       <button id="create-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
-                      <button id="approve" type="button" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
-                      <button id="execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                      <button id="approve" type="button" data-workbench-zone="true" data-workbench-action="notifications.approve" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                      <button id="execute" type="button" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
                     </div>
                   </div>
                 </div>
@@ -875,7 +881,7 @@
                     </div>
                     <div class="row row-top">
                       <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
-                      <button id="plan" type="button" data-role="admin" data-dict-key="ui.label.composer.plan">送信計画</button>
+                      <button id="plan" type="button" data-role="admin" data-workbench-zone="true" data-workbench-action="notifications.send.plan" data-dict-key="ui.label.composer.plan">送信計画</button>
                     </div>
                   </div>
                 </div>
@@ -1667,7 +1673,7 @@
               <button id="emergency-layer-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="emergency-layer-pane-details" class="decision-details section">
+          <details id="emergency-layer-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel">
               <div class="panel-title" data-dict-key="ui.label.emergency.providerControl">Provider Control</div>
@@ -1738,7 +1744,7 @@
               <div class="panel-title" data-dict-key="ui.label.emergency.evidenceViewer">Evidence Viewer</div>
               <div class="panel-body">
                 <div id="emergency-evidence-summary" class="note" data-dict-key="ui.desc.emergency.evidenceEmpty">bulletinを選択すると証跡を表示します。</div>
-                <details open>
+                <details open data-json-collapsible="true">
                   <summary data-dict-key="ui.label.emergency.rawJson">RAW JSON</summary>
                   <pre id="emergency-evidence-json">-</pre>
                 </details>
@@ -1765,7 +1771,7 @@
               <button id="city-pack-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="city-pack-pane-details" class="decision-details section">
+          <details id="city-pack-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel city-pack-manage-panel">
               <div class="panel-title" data-dict-key="ui.label.cityPack.contentManager">City Pack作成・編集</div>
@@ -2407,7 +2413,7 @@
                     </label>
                   </div>
                   <div class="row row-top">
-                    <button id="city-pack-bulletin-create" type="button" data-role="admin" data-dict-key="ui.label.cityPack.bulletinDraft.create">Bulletin作成</button>
+                    <button id="city-pack-bulletin-create" type="button" data-role="admin" data-workbench-zone="true" data-workbench-action="city_pack.bulletin.create" data-dict-key="ui.label.cityPack.bulletinDraft.create">Bulletin作成</button>
                   </div>
                 </div>
               </div>
@@ -3032,7 +3038,7 @@
               <button id="vendors-action-disable" type="button" class="decision-action-btn" data-action-kind="tertiary" data-dict-key="ui.label.decision.action.disable">停止・無効化</button>
             </div>
           </div>
-          <details id="vendors-pane-details" class="decision-details section">
+          <details id="vendors-pane-details" class="decision-details section" data-workbench-zone="true">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
             <div class="panel unified-admin-panel vendors-unified-panel">
               <div class="panel-title">Vendor一覧</div>
@@ -3153,9 +3159,9 @@
                       <button id="vendor-reload" type="button" data-dict-key="ui.label.vendors.reload">更新</button>
                     </div>
                     <div class="row row-top">
-                      <button id="vendor-edit" type="button" data-dict-key="ui.label.vendors.edit">作成・編集</button>
-                      <button id="vendor-activate" type="button" data-dict-key="ui.label.vendors.activate">有効化・公開</button>
-                      <button id="vendor-disable" type="button" data-dict-key="ui.label.vendors.disable">停止・無効化</button>
+                      <button id="vendor-edit" type="button" data-workbench-zone="true" data-workbench-action="vendors.edit" data-dict-key="ui.label.vendors.edit">作成・編集</button>
+                      <button id="vendor-activate" type="button" data-workbench-zone="true" data-workbench-action="vendors.activate" data-dict-key="ui.label.vendors.activate">有効化・公開</button>
+                      <button id="vendor-disable" type="button" data-workbench-zone="true" data-workbench-action="vendors.disable" data-dict-key="ui.label.vendors.disable">停止・無効化</button>
                     </div>
                     <div id="vendor-skeleton" class="skeleton-stack is-hidden">
                       <div class="skeleton-line lg w-50"></div>

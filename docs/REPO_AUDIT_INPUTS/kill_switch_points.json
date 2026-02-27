@@ -162,12 +162,12 @@
     },
     {
       "file": "src/routes/admin/cityPackBulletins.js",
-      "line": 183,
+      "line": 220,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/cityPackBulletins.js",
-      "line": 187,
+      "line": 224,
       "symbol": "killSwitch"
     },
     {
@@ -192,12 +192,12 @@
     },
     {
       "file": "src/routes/admin/cityPackRequests.js",
-      "line": 63,
+      "line": 73,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/cityPackRequests.js",
-      "line": 64,
+      "line": 74,
       "symbol": "killSwitch"
     },
     {

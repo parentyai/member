@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "ff771df13c0f9c4976cf0854f353603bc5831a6d",
+      "hash": "dc81f92c337df16244c681aed8591f2d8af81d48",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 958
+    "testCount": 964
   },
   "systemOverview": {
     "what": [
@@ -3848,7 +3848,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 204,
+              "testsCount": 206,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6619,7 +6619,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 89,
+              "testsCount": 90,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [

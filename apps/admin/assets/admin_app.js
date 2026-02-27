@@ -2432,6 +2432,14 @@ function enforceNoCollapseUi() {
   });
 }
 
+function collapseManagedJsonPanels() {
+  if (ADMIN_NO_COLLAPSE_V1) return;
+  document.querySelectorAll('details[data-json-collapsible="true"]').forEach((el) => {
+    el.open = false;
+    el.classList.add('json-collapsed');
+  });
+}
+
 function applyTopSummaryVisibility() {
   const summaryLine = document.getElementById('topbar-summary-line')
     || document.querySelector('.top-summary-line');
@@ -2532,25 +2540,14 @@ function setupHomeControls() {
 }
 
 function setupHeaderActions() {
-  const consultBtn = document.getElementById('header-consult-link');
-  if (!consultBtn) return;
-  consultBtn.addEventListener('click', async () => {
-    const traceId = ensureTraceInput('traceId') || newTraceId();
-    try {
-      await fetch('/api/phase1/events', {
-        method: 'POST',
-        headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, buildHeaders({}, traceId)),
-        body: JSON.stringify({
-          lineUserId: `admin:${state.role}`,
-          type: 'ADMIN_CONSULT_CLICKED',
-          ref: 'admin_composer'
-        })
-      });
-    } catch (_err) {
-      // best effort only
+  bindReadOnlyShortcut({
+    elementId: 'header-consult-link',
+    paneTarget: 'llm',
+    afterNavigateReadTask: async () => {
+      await loadLlmConfigStatus().catch(() => {});
+      await loadLlmPolicyStatus({ notify: false }).catch(() => {});
+      showToast(t('ui.toast.header.consult', '相談導線を開きました'), 'ok');
     }
-    activatePane('llm');
-    showToast(t('ui.toast.header.consult', '相談導線を開きました'), 'ok');
   });
 }
 
@@ -3337,6 +3334,142 @@ function ensureTraceInput(id) {
 function buildHeaders(extra, traceId) {
   const trace = traceId || newTraceId();
   return Object.assign({}, extra || {}, OPS_ACTOR_HEADERS, { [TRACE_HEADER_NAME]: trace });
+}
+
+const MANAGED_FLOW_WRITE_ACTION_MATCHERS = Object.freeze([
+  { actionKey: 'notifications.approve', method: 'POST', pathRegex: /^\/api\/admin\/os\/notifications\/approve\/?$/ },
+  { actionKey: 'notifications.send.plan', method: 'POST', pathRegex: /^\/api\/admin\/os\/notifications\/send\/plan\/?$/ },
+  { actionKey: 'notifications.send.execute', method: 'POST', pathRegex: /^\/api\/admin\/os\/notifications\/send\/execute\/?$/ },
+  { actionKey: 'city_pack.bulletin.create', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-bulletins\/?$/ },
+  { actionKey: 'city_pack.bulletin.approve', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-bulletins\/[^/]+\/approve\/?$/ },
+  { actionKey: 'city_pack.bulletin.reject', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-bulletins\/[^/]+\/reject\/?$/ },
+  { actionKey: 'city_pack.bulletin.send', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-bulletins\/[^/]+\/send\/?$/ },
+  { actionKey: 'city_pack.request.approve', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-requests\/[^/]+\/approve\/?$/ },
+  { actionKey: 'city_pack.request.reject', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-requests\/[^/]+\/reject\/?$/ },
+  { actionKey: 'city_pack.request.request_changes', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-requests\/[^/]+\/request-changes\/?$/ },
+  { actionKey: 'city_pack.request.retry_job', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-requests\/[^/]+\/retry-job\/?$/ },
+  { actionKey: 'city_pack.request.activate', method: 'POST', pathRegex: /^\/api\/admin\/city-pack-requests\/[^/]+\/activate\/?$/ },
+  { actionKey: 'vendors.edit', method: 'POST', pathRegex: /^\/api\/admin\/vendors\/[^/]+\/edit\/?$/ },
+  { actionKey: 'vendors.activate', method: 'POST', pathRegex: /^\/api\/admin\/vendors\/[^/]+\/activate\/?$/ },
+  { actionKey: 'vendors.disable', method: 'POST', pathRegex: /^\/api\/admin\/vendors\/[^/]+\/disable\/?$/ },
+  { actionKey: 'emergency.provider.update', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/providers\/[^/]+\/?$/ },
+  { actionKey: 'emergency.provider.force_refresh', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/providers\/[^/]+\/force-refresh\/?$/ },
+  { actionKey: 'emergency.bulletin.approve', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/approve\/?$/ },
+  { actionKey: 'emergency.bulletin.reject', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/reject\/?$/ }
+]);
+
+function isWriteMethod(method) {
+  const normalized = String(method || '').toUpperCase();
+  return normalized === 'POST' || normalized === 'PUT' || normalized === 'PATCH' || normalized === 'DELETE';
+}
+
+function normalizeRequestPath(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw, globalThis.location ? globalThis.location.origin : 'http://localhost');
+    return parsed.pathname;
+  } catch (_err) {
+    return raw.split('?')[0].split('#')[0];
+  }
+}
+
+function resolveManagedActionKeyFromRequest(method, url) {
+  const normalizedMethod = String(method || 'GET').toUpperCase();
+  const pathname = normalizeRequestPath(url);
+  const match = MANAGED_FLOW_WRITE_ACTION_MATCHERS.find((entry) => {
+    return entry.method === normalizedMethod && entry.pathRegex.test(pathname);
+  });
+  return match ? match.actionKey : null;
+}
+
+function resolveEvidenceEntityId(actionKey, data, url) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const direct = payload.notificationId
+    || payload.bulletinId
+    || payload.requestId
+    || payload.id
+    || payload.entityId
+    || payload.providerKey;
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  const pathname = normalizeRequestPath(url);
+  const parts = pathname.split('/').filter(Boolean);
+  if (!parts.length) return '-';
+  const last = parts[parts.length - 1];
+  if (last && !['approve', 'reject', 'send', 'activate', 'disable', 'edit', 'plan', 'execute', 'force-refresh'].includes(last)) {
+    return decodeURIComponent(last);
+  }
+  if (parts.length >= 2) return decodeURIComponent(parts[parts.length - 2]);
+  return '-';
+}
+
+function renderActionEvidence(params) {
+  const input = params && typeof params === 'object' ? params : {};
+  const panel = document.getElementById('managed-action-evidence');
+  const textEl = document.getElementById('managed-action-evidence-text');
+  const openBtn = document.getElementById('managed-action-open-audit');
+  if (!panel || !textEl || !openBtn) return;
+  const traceId = typeof input.traceId === 'string' ? input.traceId.trim() : '';
+  const actionKey = typeof input.actionKey === 'string' ? input.actionKey.trim() : '';
+  const entityId = typeof input.entityId === 'string' ? input.entityId.trim() : '-';
+  if (!actionKey) return;
+  const summary = `${actionKey} | traceId=${traceId || '-'} | entityId=${entityId || '-'}`;
+  textEl.textContent = summary;
+  panel.classList.remove('is-hidden');
+  openBtn.dataset.traceId = traceId || '';
+  openBtn.onclick = async () => {
+    const trace = openBtn.dataset.traceId || '';
+    if (!trace) {
+      showToast('traceId が取得できませんでした', 'warn');
+      return;
+    }
+    const auditTrace = document.getElementById('audit-trace');
+    if (auditTrace) auditTrace.value = trace;
+    activatePane('audit', { historyMode: 'push' });
+    await loadAudit().catch(() => {
+      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+    });
+  };
+}
+
+function bindWorkbenchAction(params) {
+  const input = params && typeof params === 'object' ? params : {};
+  const actionKey = typeof input.actionKey === 'string' ? input.actionKey.trim() : '';
+  const elementId = typeof input.elementId === 'string' ? input.elementId.trim() : '';
+  const handler = typeof input.handler === 'function' ? input.handler : null;
+  if (!actionKey || !elementId || !handler) return false;
+  const el = document.getElementById(elementId);
+  if (!el) return false;
+  const workbenchRoot = el.closest('[data-workbench-zone="true"]');
+  if (!workbenchRoot) {
+    console.warn(`[workbench_guard] zone_missing actionKey=${actionKey} elementId=${elementId}`);
+    return false;
+  }
+  el.dataset.managedActionKey = actionKey;
+  el.addEventListener('click', (event) => {
+    event.stopPropagation();
+    handler(event);
+  });
+  return true;
+}
+
+function bindReadOnlyShortcut(params) {
+  const input = params && typeof params === 'object' ? params : {};
+  const elementId = typeof input.elementId === 'string' ? input.elementId.trim() : '';
+  if (!elementId) return false;
+  const button = document.getElementById(elementId);
+  if (!button) return false;
+  const paneTarget = typeof input.paneTarget === 'string' ? input.paneTarget.trim() : '';
+  const afterNavigateReadTask = typeof input.afterNavigateReadTask === 'function'
+    ? input.afterNavigateReadTask
+    : null;
+  button.addEventListener('click', async () => {
+    if (paneTarget) activatePane(paneTarget, { historyMode: 'push' });
+    if (afterNavigateReadTask) {
+      await afterNavigateReadTask().catch(() => {});
+    }
+  });
+  return true;
 }
 
 function formatDeltaPercent(value) {
@@ -4818,12 +4951,19 @@ function clearCityPackUnifiedFilters() {
   setInputValue('city-pack-unified-filter-date-to', '');
 }
 
-function createUnifiedActionButton(label, handler) {
+function createUnifiedActionButton(label, handler, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const actionKey = typeof opts.actionKey === 'string' ? opts.actionKey.trim() : '';
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
+  if (actionKey) button.dataset.managedActionKey = actionKey;
   button.addEventListener('click', (event) => {
     event.stopPropagation();
+    if (actionKey && !button.closest('[data-workbench-zone="true"]')) {
+      showToast('Workbench外からの実行は許可されていません', 'warn');
+      return;
+    }
     handler();
   });
   return button;
@@ -4837,20 +4977,20 @@ function renderCityPackUnifiedActionCell(item) {
   const type = item && item.recordType ? String(item.recordType) : '';
   const row = item && item.raw ? item.raw : null;
   if (type === 'request' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackRequestAction('approve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackRequestAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Changes', () => { void runCityPackRequestAction('request-changes', row); }));
-    group.appendChild(createUnifiedActionButton('Retry', () => { void runCityPackRequestAction('retry-job', row); }));
-    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackRequestAction('activate', row); }));
+    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackRequestAction('approve', row); }, { actionKey: 'city_pack.request.approve' }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackRequestAction('reject', row); }, { actionKey: 'city_pack.request.reject' }));
+    group.appendChild(createUnifiedActionButton('Changes', () => { void runCityPackRequestAction('request-changes', row); }, { actionKey: 'city_pack.request.request_changes' }));
+    group.appendChild(createUnifiedActionButton('Retry', () => { void runCityPackRequestAction('retry-job', row); }, { actionKey: 'city_pack.request.retry_job' }));
+    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackRequestAction('activate', row); }, { actionKey: 'city_pack.request.activate' }));
   } else if (type === 'feedback' && row) {
     group.appendChild(createUnifiedActionButton('Triage', () => { void runCityPackFeedbackAction('triage', row); }));
     group.appendChild(createUnifiedActionButton('Resolve', () => { void runCityPackFeedbackAction('resolve', row); }));
     group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackFeedbackAction('reject', row); }));
     group.appendChild(createUnifiedActionButton('Propose', () => { void runCityPackFeedbackAction('propose', row); }));
   } else if (type === 'bulletin' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackBulletinAction('approve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackBulletinAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Send', () => { void runCityPackBulletinAction('send', row); }));
+    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackBulletinAction('approve', row); }, { actionKey: 'city_pack.bulletin.approve' }));
+    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackBulletinAction('reject', row); }, { actionKey: 'city_pack.bulletin.reject' }));
+    group.appendChild(createUnifiedActionButton('Send', () => { void runCityPackBulletinAction('send', row); }, { actionKey: 'city_pack.bulletin.send' }));
   } else if (type === 'proposal' && row) {
     group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackProposalAction('approve', row); }));
     group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackProposalAction('reject', row); }));
@@ -11626,6 +11766,16 @@ async function adminFetchJson(options) {
   const data = await readJsonResponse(res);
   if (res.ok && data && data.ok !== false) {
     clearGuardBanner();
+    if (isWriteMethod(method)) {
+      const actionKey = resolveManagedActionKeyFromRequest(method, url);
+      if (actionKey) {
+        renderActionEvidence({
+          traceId: (data && typeof data.traceId === 'string' && data.traceId.trim()) ? data.traceId : traceId,
+          actionKey,
+          entityId: resolveEvidenceEntityId(actionKey, data, url)
+        });
+      }
+    }
     return data;
   }
   if (data && typeof data === 'object') {
@@ -11705,12 +11855,15 @@ function setupComposerActions() {
     }
   });
 
-  document.getElementById('approve')?.addEventListener('click', async () => {
-    if (!state.composerCurrentNotificationId) {
-      showToast(t('ui.toast.composer.needId', '通知IDが必要です'), 'warn');
-      setComposerStatus('warn', 'WARN');
-      return;
-    }
+  bindWorkbenchAction({
+    actionKey: 'notifications.approve',
+    elementId: 'approve',
+    handler: async () => {
+      if (!state.composerCurrentNotificationId) {
+        showToast(t('ui.toast.composer.needId', '通知IDが必要です'), 'warn');
+        setComposerStatus('warn', 'WARN');
+        return;
+      }
     const confirmed = window.confirm(t('ui.confirm.composer.approve', '承認（有効化）を実行しますか？'));
     if (!confirmed) {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
@@ -11729,12 +11882,16 @@ function setupComposerActions() {
       showToast(t('ui.toast.composer.approveFail', 'approve 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
     }
+    }
   });
 
-  document.getElementById('plan')?.addEventListener('click', async () => {
-    const planTargetCountEl = document.getElementById('planTargetCount');
-    const planCapBlockedEl = document.getElementById('planCapBlockedCount');
-    const resultEl = document.getElementById('plan-result');
+  bindWorkbenchAction({
+    actionKey: 'notifications.send.plan',
+    elementId: 'plan',
+    handler: async () => {
+      const planTargetCountEl = document.getElementById('planTargetCount');
+      const planCapBlockedEl = document.getElementById('planCapBlockedCount');
+      const resultEl = document.getElementById('plan-result');
     if (planTargetCountEl) planTargetCountEl.textContent = '-';
     if (planCapBlockedEl) planCapBlockedEl.textContent = '-';
     if (!state.composerCurrentNotificationId) {
@@ -11760,12 +11917,16 @@ function setupComposerActions() {
       setComposerStatus('danger', 'ERROR');
     }
     updateSafetyBadge(result);
+    }
   });
 
-  document.getElementById('execute')?.addEventListener('click', async () => {
-    const resultEl = document.getElementById('execute-result');
-    if (!state.composerCurrentNotificationId || !state.composerCurrentPlanHash || !state.composerCurrentConfirmToken) {
-      if (resultEl) resultEl.textContent = t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です');
+  bindWorkbenchAction({
+    actionKey: 'notifications.send.execute',
+    elementId: 'execute',
+    handler: async () => {
+      const resultEl = document.getElementById('execute-result');
+      if (!state.composerCurrentNotificationId || !state.composerCurrentPlanHash || !state.composerCurrentConfirmToken) {
+        if (resultEl) resultEl.textContent = t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です');
       showToast(t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です'), 'warn');
       setComposerStatus('warn', 'WARN');
       return;
@@ -11795,6 +11956,7 @@ function setupComposerActions() {
     } else {
       showToast(t('ui.toast.composer.executeFail', 'execute 失敗'), 'danger');
       setComposerStatus('danger', 'ERROR');
+    }
     }
   });
 
@@ -12174,15 +12336,18 @@ function renderEmergencyProviderRows(items) {
     const actionsTd = document.createElement('td');
     const toggleBtn = createUnifiedActionButton(
       status === 'enabled' ? t('ui.label.emergency.disable', 'Disable') : t('ui.label.emergency.enable', 'Enable'),
-      () => { void updateEmergencyProvider(providerKey, status === 'enabled' ? 'disabled' : 'enabled'); }
+      () => { void updateEmergencyProvider(providerKey, status === 'enabled' ? 'disabled' : 'enabled'); },
+      { actionKey: 'emergency.provider.update' }
     );
     const scheduleBtn = createUnifiedActionButton(
       t('ui.label.emergency.scheduleEdit', 'Schedule'),
-      () => { void updateEmergencyProviderSchedule(providerKey, row && row.scheduleMinutes); }
+      () => { void updateEmergencyProviderSchedule(providerKey, row && row.scheduleMinutes); },
+      { actionKey: 'emergency.provider.update' }
     );
     const forceBtn = createUnifiedActionButton(
       t('ui.label.emergency.forceRefresh', 'Force Refresh'),
-      () => { void forceRefreshEmergencyProvider(providerKey); }
+      () => { void forceRefreshEmergencyProvider(providerKey); },
+      { actionKey: 'emergency.provider.force_refresh' }
     );
     actionsTd.appendChild(toggleBtn);
     actionsTd.appendChild(scheduleBtn);
@@ -12245,11 +12410,13 @@ function renderEmergencyBulletinRows(items) {
     const actionsTd = document.createElement('td');
     actionsTd.appendChild(createUnifiedActionButton(
       t('ui.label.emergency.approve', 'Approve'),
-      () => { void approveEmergencyBulletinAction(bulletinId); }
+      () => { void approveEmergencyBulletinAction(bulletinId); },
+      { actionKey: 'emergency.bulletin.approve' }
     ));
     actionsTd.appendChild(createUnifiedActionButton(
       t('ui.label.emergency.reject', 'Reject'),
-      () => { void rejectEmergencyBulletinAction(bulletinId); }
+      () => { void rejectEmergencyBulletinAction(bulletinId); },
+      { actionKey: 'emergency.bulletin.reject' }
     ));
     actionsTd.appendChild(createUnifiedActionButton(
       t('ui.label.emergency.evidence', 'Evidence'),
@@ -12693,8 +12860,12 @@ function setupCityPackControls() {
   document.getElementById('city-pack-source-policy-save')?.addEventListener('click', () => {
     void runCityPackSaveSourcePolicy();
   });
-  document.getElementById('city-pack-bulletin-create')?.addEventListener('click', () => {
-    void createCityPackBulletinDraft();
+  bindWorkbenchAction({
+    actionKey: 'city_pack.bulletin.create',
+    elementId: 'city-pack-bulletin-create',
+    handler: () => {
+      void createCityPackBulletinDraft();
+    }
   });
   document.getElementById('city-pack-proposal-create')?.addEventListener('click', () => {
     void createCityPackProposalDraft();
@@ -12788,14 +12959,26 @@ function setupVendorControls() {
   document.getElementById('vendor-reload')?.addEventListener('click', () => {
     void loadVendors({ notify: true });
   });
-  document.getElementById('vendor-edit')?.addEventListener('click', () => {
-    void runVendorAction('edit');
+  bindWorkbenchAction({
+    actionKey: 'vendors.edit',
+    elementId: 'vendor-edit',
+    handler: () => {
+      void runVendorAction('edit');
+    }
   });
-  document.getElementById('vendor-activate')?.addEventListener('click', () => {
-    void runVendorAction('activate');
+  bindWorkbenchAction({
+    actionKey: 'vendors.activate',
+    elementId: 'vendor-activate',
+    handler: () => {
+      void runVendorAction('activate');
+    }
   });
-  document.getElementById('vendor-disable')?.addEventListener('click', () => {
-    void runVendorAction('disable');
+  bindWorkbenchAction({
+    actionKey: 'vendors.disable',
+    elementId: 'vendor-disable',
+    handler: () => {
+      void runVendorAction('disable');
+    }
   });
   document.getElementById('vendor-state')?.addEventListener('change', () => {
     void loadVendors({ notify: false });
@@ -12803,14 +12986,26 @@ function setupVendorControls() {
 
   setupVendorTableKeyboardNavigation();
 
-  document.getElementById('vendors-action-edit')?.addEventListener('click', () => {
-    void runVendorAction('edit');
+  bindReadOnlyShortcut({
+    elementId: 'vendors-action-edit',
+    paneTarget: 'vendors',
+    afterNavigateReadTask: async () => {
+      showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
+    }
   });
-  document.getElementById('vendors-action-activate')?.addEventListener('click', () => {
-    void runVendorAction('activate');
+  bindReadOnlyShortcut({
+    elementId: 'vendors-action-activate',
+    paneTarget: 'vendors',
+    afterNavigateReadTask: async () => {
+      showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
+    }
   });
-  document.getElementById('vendors-action-disable')?.addEventListener('click', () => {
-    void runVendorAction('disable');
+  bindReadOnlyShortcut({
+    elementId: 'vendors-action-disable',
+    paneTarget: 'vendors',
+    afterNavigateReadTask: async () => {
+      showToast('実行操作は Vendors Workbench 内の操作パネルから実施してください', 'warn');
+    }
   });
 }
 
@@ -12850,7 +13045,8 @@ function setupDecisionActions() {
   });
   document.getElementById('composer-action-activate')?.addEventListener('click', () => {
     activatePane('composer');
-    document.getElementById('approve')?.click();
+    document.getElementById('approve')?.focus();
+    showToast('実行操作は Composer Workbench 内の承認ボタンから実施してください', 'warn');
   });
   document.getElementById('composer-action-disable')?.addEventListener('click', () => {
     activatePane('errors');
@@ -12895,19 +13091,11 @@ function setupDecisionActions() {
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    if (!state.emergencySelectedBulletinId) {
-      showToast(t('ui.toast.emergency.needSelection', 'Emergency bulletinを選択してください'), 'warn');
-      return;
-    }
-    void approveEmergencyBulletinAction(state.emergencySelectedBulletinId);
+    showToast('実行操作は Emergency Workbench 内の行アクションから実施してください', 'warn');
   });
   document.getElementById('emergency-layer-action-disable')?.addEventListener('click', () => {
     activatePane('emergency-layer');
-    if (!state.emergencySelectedBulletinId) {
-      showToast(t('ui.toast.emergency.needSelection', 'Emergency bulletinを選択してください'), 'warn');
-      return;
-    }
-    void rejectEmergencyBulletinAction(state.emergencySelectedBulletinId);
+    showToast('実行操作は Emergency Workbench 内の行アクションから実施してください', 'warn');
   });
 
   document.getElementById('city-pack-action-edit')?.addEventListener('click', () => {
@@ -12921,12 +13109,7 @@ function setupDecisionActions() {
   });
   document.getElementById('city-pack-action-activate')?.addEventListener('click', () => {
     activatePane('city-pack');
-    const selected = state.cityPackRequestItems.find((item) => item.requestId === state.selectedCityPackRequestId);
-    if (selected) {
-      void runCityPackRequestAction('approve', selected);
-    } else {
-      showToast(t('ui.toast.cityPack.needRequestSelection', 'Request行を選択してください'), 'warn');
-    }
+    showToast('実行操作は City Pack Workbench 内の行アクションから実施してください', 'warn');
   });
   document.getElementById('city-pack-action-disable')?.addEventListener('click', () => {
     activatePane('city-pack');
@@ -13588,6 +13771,7 @@ function setupLlmControls() {
   setRole(state.role, { historyMode: 'replace', syncHistory: false });
   expandAllDetails();
   enforceNoCollapseUi();
+  collapseManagedJsonPanels();
   activateInitialPane();
   setupHistorySync();
   setupPaneKeyboardShortcuts();

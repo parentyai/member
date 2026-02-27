@@ -221,6 +221,14 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   - `compat=1` / `stay_legacy=1` は緊急避難専用で通常運用禁止。
   - compat 有効化には `role=admin|developer` と `confirm` 一致が必要（server guard）。
 
+### Admin Master Table V1（add-only）
+- 危険操作フロー（flowId / guardRules / writeActions / evidenceBindings）は `docs/SSOT_ADMIN_UI_MASTER_TABLE_V1.md` を唯一SSOTとする。
+- Workbench境界:
+  - 危険操作のUIバインドは `data-workbench-zone="true"` 配下でのみ許可する。
+  - topbar/ヘッダーは read-only shortcut とし、write API 実行導線を持たない。
+- 監査:
+  - write実行後は `traceId` / `actionKey` / `entityId` を evidence 表示し、Audit paneへ逆引きできることを運用契約とする。
+
 <!-- ADMIN_UI_TEXTS_BEGIN -->
 {
   "/admin/ops": {
