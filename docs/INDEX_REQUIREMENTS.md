@@ -214,3 +214,16 @@ Firestore missing-index fallback を段階的に無効化するための最小�
   - snapshot 不在/期限切れ時は `NOT AVAILABLE` を返却し、full-scan fallback を禁止
 - 互換:
   - `OPS_SNAPSHOT_READ_ENABLED=0|false` は `disabled` と同等扱い（ローカル/検証向け）
+
+## Phase671 Addendum（Ops Snapshot Read Model）
+- Collection: `ops_read_model_snapshots`
+- Doc IDs（hybrid）:
+  - `ops_system_snapshot__global`
+  - `ops_feature_status__catalog`
+  - `ops_feature_status__<featureId>`
+- Query shape:
+  - admin read: `getSnapshot('ops_system_snapshot','global')`
+  - catalog read: `getSnapshot('ops_feature_status','catalog')` + `listSnapshots({ snapshotType:'ops_feature_status', limit: <= 250 })`
+- index方針:
+  - 既存 `snapshotType + updatedAt` クエリを継続利用し、新規 composite index は原則追加しない。
+  - 追加が必要な場合のみ `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` へ add-only 追記する。

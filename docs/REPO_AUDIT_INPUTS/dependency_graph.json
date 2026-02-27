@@ -929,6 +929,9 @@
       "appendAuditLog",
       "runNotificationTest"
     ],
+    "src/routes/admin/opsFeatureCatalogStatus.js": [
+      "appendAuditLog"
+    ],
     "src/routes/admin/opsOverview.js": [
       "appendAuditLog",
       "getNotificationOperationalSummary",
@@ -936,6 +939,10 @@
     ],
     "src/routes/admin/opsSnapshotHealth.js": [
       "appendAuditLog"
+    ],
+    "src/routes/admin/opsSystemSnapshot.js": [
+      "appendAuditLog",
+      "buildOpsSnapshots"
     ],
     "src/routes/admin/osAlerts.js": [
       "appendAuditLog",

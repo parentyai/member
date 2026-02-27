@@ -907,7 +907,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 203,
+      "tests_count": 204,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -938,6 +938,26 @@
       "trace_linked": true,
       "audit_linked": true,
       "tests_count": 105,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "opsFeatureCatalogStatus",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 41,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -980,7 +1000,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 151,
+      "tests_count": 153,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1020,7 +1040,30 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 8,
+      "tests_count": 10,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
+      "feature": "opsSystemSnapshot",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog",
+        "buildOpsSnapshots"
+      ],
+      "repos": [
+        "auditLogsRepo",
+        "opsSnapshotsRepo"
+      ],
+      "collections": [
+        "audit_logs",
+        "ops_read_model_snapshots"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 47,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2077,7 +2120,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 134,
+      "tests_count": 136,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2393,7 +2436,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 52,
+      "tests_count": 53,
       "ssot_refs": [],
       "completion": "completed"
     },

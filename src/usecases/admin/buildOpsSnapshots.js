@@ -6,6 +6,7 @@ const { computeDashboardKpis } = require('../../routes/admin/osDashboardKpi');
 const { getUserOperationalSummary } = require('./getUserOperationalSummary');
 const { getNotificationOperationalSummary } = require('./getNotificationOperationalSummary');
 const { getUserStateSummary } = require('../phase5/getUserStateSummary');
+const { computeOpsSystemSnapshot } = require('./opsSnapshot/computeOpsSystemSnapshot');
 
 const ALLOWED_WINDOWS = new Set([1, 3, 6, 12, 36]);
 const DEFAULT_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
@@ -13,7 +14,8 @@ const SNAPSHOT_TARGETS = Object.freeze([
   'dashboard_kpi',
   'user_operational_summary',
   'notification_operational_summary',
-  'user_state_summary'
+  'user_state_summary',
+  'ops_system_snapshot'
 ]);
 const SNAPSHOT_TARGET_SET = new Set(SNAPSHOT_TARGETS);
 
@@ -62,6 +64,19 @@ function hasTarget(targets, key) {
   return Array.isArray(targets) && targets.includes(key);
 }
 
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  return defaultValue === true;
+}
+
+function resolveOpsSystemSnapshotEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_OPS_SYSTEM_SNAPSHOT_V1', true);
+}
+
 async function buildOpsSnapshots(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const actor = typeof payload.actor === 'string' && payload.actor.trim() ? payload.actor.trim() : 'ops_snapshot_job';
@@ -72,6 +87,8 @@ async function buildOpsSnapshots(params) {
   const lineUserIds = normalizeLineUserIds(payload.lineUserIds);
   const scanLimit = normalizeScanLimit(payload.scanLimit);
   const targets = normalizeTargets(payload.targets);
+  const opsSystemSnapshotEnabled = resolveOpsSystemSnapshotEnabled();
+  const skippedTargets = [];
 
   const asOf = new Date().toISOString();
   const items = [];
@@ -148,10 +165,71 @@ async function buildOpsSnapshots(params) {
     }
   }
 
+  if (hasTarget(targets, 'ops_system_snapshot')) {
+    if (!opsSystemSnapshotEnabled) {
+      skippedTargets.push('ops_system_snapshot');
+    } else {
+      const computed = await computeOpsSystemSnapshot({
+        scanLimit,
+        traceId,
+        requestId,
+        asOf
+      });
+      const snapshotAsOf = computed && computed.nowIso ? computed.nowIso : asOf;
+      const global = computed && computed.global && typeof computed.global === 'object'
+        ? computed.global
+        : null;
+      const catalog = computed && computed.catalog && typeof computed.catalog === 'object'
+        ? computed.catalog
+        : null;
+      const rows = Array.isArray(computed && computed.rows) ? computed.rows : [];
+
+      const globalPayload = {
+        snapshotType: 'ops_system_snapshot',
+        snapshotKey: 'global',
+        asOf: snapshotAsOf,
+        freshnessMinutes: 5,
+        sourceTraceId: traceId,
+        data: global
+      };
+      if (!dryRun) await opsSnapshotsRepo.saveSnapshot(globalPayload);
+      items.push({ snapshotType: 'ops_system_snapshot', snapshotKey: 'global', dryRun });
+
+      const catalogPayload = {
+        snapshotType: 'ops_feature_status',
+        snapshotKey: 'catalog',
+        asOf: snapshotAsOf,
+        freshnessMinutes: 5,
+        sourceTraceId: traceId,
+        data: catalog
+      };
+      if (!dryRun) await opsSnapshotsRepo.saveSnapshot(catalogPayload);
+      items.push({ snapshotType: 'ops_feature_status', snapshotKey: 'catalog', dryRun });
+
+      for (const row of rows) {
+        const featureId = row && typeof row.featureId === 'string' && row.featureId.trim()
+          ? row.featureId.trim()
+          : null;
+        if (!featureId) continue;
+        const rowPayload = {
+          snapshotType: 'ops_feature_status',
+          snapshotKey: featureId,
+          asOf: snapshotAsOf,
+          freshnessMinutes: 5,
+          sourceTraceId: traceId,
+          data: row
+        };
+        if (!dryRun) await opsSnapshotsRepo.saveSnapshot(rowPayload);
+        items.push({ snapshotType: 'ops_feature_status', snapshotKey: featureId, dryRun });
+      }
+    }
+  }
+
   const summary = {
     dryRun,
     windows,
     targets,
+    skippedTargets,
     lineUserIds: lineUserIds.length,
     scanLimit,
     snapshotsBuilt: items.length,

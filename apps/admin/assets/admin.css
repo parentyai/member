@@ -2625,3 +2625,101 @@ details:not([open]) > *:not(summary) {
     align-items: flex-start;
   }
 }
+
+.page-last-updated {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  margin-right: var(--space-2);
+}
+
+.app-shell[data-ops-only-nav="1"] [data-ops-nav-legacy="1"] {
+  display: none !important;
+}
+
+.app-shell[data-hide-developer-role="1"] .role-btn[data-role-value="developer"] {
+  display: none !important;
+}
+
+.ops-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.ops-status-card {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  background: var(--surface);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ops-status-card[data-status="OK"] {
+  border-left-color: var(--status-ok);
+}
+
+.ops-status-card[data-status="WARN"] {
+  border-left-color: var(--status-warn);
+}
+
+.ops-status-card[data-status="ALERT"] {
+  border-left-color: var(--status-danger);
+}
+
+.ops-status-card[data-status="UNKNOWN"] {
+  border-left-color: #b0b0b0;
+}
+
+.ops-status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ops-status-title {
+  font-size: var(--font-14);
+  font-weight: 600;
+}
+
+.ops-status-badge {
+  font-size: var(--font-12);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.ops-status-badge[data-status="OK"] {
+  color: var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.ops-status-badge[data-status="WARN"] {
+  color: var(--status-warn);
+  background: var(--status-warn-bg);
+}
+
+.ops-status-badge[data-status="ALERT"] {
+  color: var(--status-danger);
+  background: var(--status-danger-bg);
+}
+
+.ops-status-badge[data-status="UNKNOWN"] {
+  color: var(--status-unknown-text);
+  background: var(--status-unknown-bg);
+}
+
+.ops-status-meta {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+}
+
+.ops-status-reasons {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  line-height: 1.4;
+  word-break: break-word;
+}

@@ -516,6 +516,61 @@
       "symbol": "killSwitch"
     },
     {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsFeatureCatalogStatus.js",
+      "line": 197,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsFeatureCatalogStatus.js",
+      "line": 198,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsFeatureCatalogStatus.js",
+      "line": 202,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsFeatureCatalogStatus.js",
+      "line": 203,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsFeatureCatalogStatus.js",
+      "line": 216,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 346,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 391,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 392,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 783,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 791,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
+      "line": 809,
+      "symbol": "killSwitch"
+    },
+    {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
       "line": 203,
       "symbol": "getKillSwitch"

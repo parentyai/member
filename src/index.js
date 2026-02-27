@@ -85,6 +85,22 @@ function resolveCityPackContentManageFlag() {
   return resolveBooleanEnvFlag('ENABLE_CITY_PACK_CONTENT_MANAGE_V1', true);
 }
 
+function resolveAdminOpsOnlyNavFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_OPS_ONLY_NAV_V1', true);
+}
+
+function resolveAdminDeveloperSurfaceFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_DEVELOPER_SURFACE_V1', false);
+}
+
+function resolveOpsRealtimeDashboardFlag() {
+  return resolveBooleanEnvFlag('ENABLE_OPS_REALTIME_DASHBOARD_V1', true);
+}
+
+function resolveOpsSystemSnapshotFlag() {
+  return resolveBooleanEnvFlag('ENABLE_OPS_SYSTEM_SNAPSHOT_V1', true);
+}
+
 function resolveAdminBuildMeta() {
   const commitRaw = process.env.GIT_COMMIT_SHA
     || process.env.SOURCE_COMMIT
@@ -121,9 +137,13 @@ function buildAdminAppBootScript() {
   const topSummaryEnabled = resolveAdminTopSummaryFlag();
   const usersStripeLayoutEnabled = resolveAdminUsersStripeLayoutFlag();
   const cityPackContentManageEnabled = resolveCityPackContentManageFlag();
+  const adminOpsOnlyNavEnabled = resolveAdminOpsOnlyNavFlag();
+  const adminDeveloperSurfaceEnabled = resolveAdminDeveloperSurfaceFlag();
+  const opsRealtimeDashboardEnabled = resolveOpsRealtimeDashboardFlag();
+  const opsSystemSnapshotEnabled = resolveOpsSystemSnapshotFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
@@ -1592,6 +1612,48 @@ function createServer() {
   if (req.method === 'GET' && (pathname === '/api/admin/ops-snapshot-health' || pathname === '/api/admin/ops-snapshot-health/')) {
     const { handleOpsSnapshotHealth } = require('./routes/admin/opsSnapshotHealth');
     handleOpsSnapshotHealth(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/api/admin/ops-system-snapshot' || pathname === '/api/admin/ops-system-snapshot/')) {
+    const { handleOpsSystemSnapshot } = require('./routes/admin/opsSystemSnapshot');
+    handleOpsSystemSnapshot(req, res);
+    return;
+  }
+
+  if (req.method === 'GET' && (pathname === '/api/admin/ops-feature-catalog-status' || pathname === '/api/admin/ops-feature-catalog-status/')) {
+    const { handleOpsFeatureCatalogStatus } = require('./routes/admin/opsFeatureCatalogStatus');
+    handleOpsFeatureCatalogStatus(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && (pathname === '/api/admin/ops-system-snapshot/rebuild' || pathname === '/api/admin/ops-system-snapshot/rebuild/')) {
+    let bytes = 0;
+    const chunks = [];
+    let tooLarge = false;
+    const collectBody = () => new Promise((resolve) => {
+      req.on('data', (chunk) => {
+        if (tooLarge) return;
+        bytes += chunk.length;
+        if (bytes > MAX_BODY_BYTES) {
+          tooLarge = true;
+          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    (async () => {
+      const { handleOpsSystemSnapshotRebuild } = require('./routes/admin/opsSystemSnapshot');
+      const body = await collectBody();
+      await handleOpsSystemSnapshotRebuild(req, res, body);
+    })().catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'error' }));
+    });
     return;
   }
 

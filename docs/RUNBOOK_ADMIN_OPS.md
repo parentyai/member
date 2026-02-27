@@ -54,6 +54,31 @@
 - 同一paneが複数groupにある場合、`data-nav-priority` の高い導線を優先して重複表示を抑制する。
 - `notifications` の create/list のような同一group内導線は維持する。
 
+## Phase671 Addendum（Ops-Only運用 + Realtime Snapshot）
+運用者向けの既定導線を `Dashboard / Run / Control` に固定し、snapshot-first で状態を確認する。
+
+### 日次確認
+1) `/admin/app?pane=home&role=operator` で Realtime Ops Dashboard を確認  
+2) `Feature Catalog Status` で 25機能の `status / lastUpdatedAt / reasonCodes` を確認  
+3) `System Health` で `index/drift/retention` の状態を確認  
+
+### 手動再計算（管理者）
+1) UI: `Snapshot手動再計算` ボタン  
+2) API: `POST /api/admin/ops-system-snapshot/rebuild`  
+3) 成功後に `GET /api/admin/ops-system-snapshot` と `GET /api/admin/ops-feature-catalog-status` を再確認  
+
+### internal job（5分 cadence）
+- route: `POST /internal/jobs/ops-snapshot-build`
+- body 例: `{"targets":["ops_system_snapshot"],"dryRun":false,"scanLimit":3000}`
+- token: `x-city-pack-job-token`（internal token guard）
+- kill switch ON の場合は停止し、復旧後に再実行する。
+
+### 即時ロールバック
+- snapshot更新停止: `ENABLE_OPS_SYSTEM_SNAPSHOT_V1=0`
+- realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
+- ops-onlyナビ停止: `ENABLE_ADMIN_OPS_ONLY_NAV_V1=0`
+- developer導線再表示: `ENABLE_ADMIN_DEVELOPER_SURFACE_V1=1`
+
 ## ローカル診断（Phase651）
 ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。
 

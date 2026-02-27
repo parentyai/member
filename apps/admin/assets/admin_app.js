@@ -89,6 +89,26 @@ const ADMIN_CITY_PACK_CONTENT_MANAGE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1 : null,
   true
 );
+const ADMIN_OPS_ONLY_NAV_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_OPS_ONLY_NAV_V1 : null,
+  true
+);
+const ADMIN_DEVELOPER_SURFACE_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1 : null,
+  false
+);
+const OPS_REALTIME_DASHBOARD_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_OPS_REALTIME_DASHBOARD_V1 : null,
+  true
+);
+const OPS_SYSTEM_SNAPSHOT_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1 : null,
+  true
+);
+
+function isOpsRealtimeSnapshotEnabled() {
+  return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
+}
 
 const state = {
   dict: {},
@@ -216,7 +236,10 @@ const state = {
   activePane: 'home',
   buildMeta: null,
   navPolicyHashCore: null,
-  navPolicyHashApp: null
+  navPolicyHashApp: null,
+  opsSystemSnapshot: null,
+  opsFeatureCatalogStatus: null,
+  opsFeatureRows: []
 };
 
 const LOCAL_PREFLIGHT_CODE_SET = new Set([
@@ -357,6 +380,8 @@ const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
 ]);
 const PANE_HEADER_MAP = Object.freeze({
   home: { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
+  'ops-feature-catalog': { titleKey: 'ui.label.nav.dashboard', subtitleKey: 'ui.desc.page.home' },
+  'ops-system-health': { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' },
   alerts: { titleKey: 'ui.label.alerts.title', subtitleKey: 'ui.desc.page.alerts' },
   composer: { titleKey: 'ui.label.page.composer', subtitleKey: 'ui.desc.page.composer' },
   monitor: { titleKey: 'ui.label.page.monitor', subtitleKey: 'ui.desc.page.monitor' },
@@ -375,9 +400,9 @@ const PANE_HEADER_MAP = Object.freeze({
 });
 
 const NAV_POLICY = Object.freeze({
-  operator: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings'],
-  admin: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
-  developer: ['home', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
+  operator: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings'],
+  admin: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user'],
+  developer: ['home', 'ops-feature-catalog', 'ops-system-health', 'alerts', 'composer', 'monitor', 'errors', 'read-model', 'vendors', 'emergency-layer', 'city-pack', 'audit', 'settings', 'llm', 'maintenance', 'developer-map', 'developer-manual-redac', 'developer-manual-user']
 });
 
 const NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
@@ -391,6 +416,7 @@ const NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
   admin: Object.freeze(['communication', 'operations']),
   developer: Object.freeze(['communication', 'operations'])
 });
+const OPS_ONLY_BASE_GROUPS = Object.freeze(['dashboard', 'run', 'control']);
 
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
@@ -425,6 +451,68 @@ const DASHBOARD_CARD_CONFIG = Object.freeze({
   avgTaskCompletion: { kpiKeys: ['journey_task_completion_rate'], unit: 'percent' },
   dependencyBlockRate: { kpiKeys: ['journey_dependency_block_rate'], unit: 'percent' }
 });
+const OPS_SECTION_ORDER = Object.freeze([
+  'notifications',
+  'emergency',
+  'cityPack',
+  'journeyTodo',
+  'subscription',
+  'llm',
+  'safety',
+  'systemHealth'
+]);
+const OPS_SECTION_LABELS = Object.freeze({
+  notifications: '通知',
+  emergency: '緊急',
+  cityPack: 'City Pack',
+  journeyTodo: 'Journey/ToDo',
+  subscription: 'サブスク',
+  llm: 'LLM',
+  safety: '安全',
+  systemHealth: 'System Health'
+});
+const OPS_SECTION_DETAIL_PANES = Object.freeze({
+  notifications: 'monitor',
+  emergency: 'emergency-layer',
+  cityPack: 'city-pack',
+  journeyTodo: 'monitor',
+  subscription: 'read-model',
+  llm: 'llm',
+  safety: 'maintenance',
+  systemHealth: 'ops-system-health'
+});
+const OPS_FEATURE_DETAIL_FALLBACK = 'ops-feature-catalog';
+const OPS_METRIC_LABELS = Object.freeze({
+  successCount: '成功',
+  failedCount: '失敗',
+  pendingCount: '保留',
+  todaySentCount: '今日送信',
+  approvalPendingCount: '承認待ち',
+  lastSyncAt: '最終同期',
+  diffCount: '差分',
+  unapprovedCount: '未承認',
+  errorCount: 'エラー',
+  pendingApprovalCount: '承認待ち',
+  reviewInboxBacklog: 'Inbox滞留',
+  inboxLagHours: 'Inbox遅延(h)',
+  activeUsers: 'アクティブ',
+  stalledUsers: '停滞',
+  unprocessedCount: '未処理',
+  overdueCount: '期限超過',
+  activeCount: '有効',
+  expiredCount: '期限切れ',
+  usageCount: '使用量',
+  errorRate: '失敗率',
+  policyChangeAt: 'ポリシー変更',
+  killSwitch: 'KillSwitch',
+  retentionLastRunAt: 'Retention最終実行',
+  retentionFailed: 'Retention失敗',
+  productReadiness: 'Readiness',
+  missingIndexSurfaceCount: 'Index異常',
+  fallbackSurfaceCount: 'Fallback',
+  undefinedRetentionCount: 'Retention未定義',
+  namingDriftScenarioCount: 'Drift'
+});
 
 function isFoundationCoreEnabled() {
   return Boolean(ADMIN_UI_FOUNDATION_V1 && ADMIN_UI_CORE);
@@ -449,16 +537,37 @@ function parseCsvList(value) {
 
 function normalizeRoleValue(role) {
   const navCore = resolveCoreSlice('navCore');
-  if (navCore && typeof navCore.normalizeRole === 'function') return navCore.normalizeRole(role);
-  return role === 'admin' || role === 'developer' ? role : 'operator';
+  const normalized = navCore && typeof navCore.normalizeRole === 'function'
+    ? navCore.normalizeRole(role)
+    : (role === 'admin' || role === 'developer' ? role : 'operator');
+  if (!ADMIN_DEVELOPER_SURFACE_V1 && normalized === 'developer') return 'operator';
+  return normalized;
 }
 
 function resolvePanePolicy() {
   const navCore = resolveCoreSlice('navCore');
-  if (navCore && navCore.DEFAULT_NAV_PANE_POLICY && typeof navCore.DEFAULT_NAV_PANE_POLICY === 'object') {
-    return navCore.DEFAULT_NAV_PANE_POLICY;
-  }
-  return NAV_POLICY;
+  const source = navCore && navCore.DEFAULT_NAV_PANE_POLICY && typeof navCore.DEFAULT_NAV_PANE_POLICY === 'object'
+    ? navCore.DEFAULT_NAV_PANE_POLICY
+    : NAV_POLICY;
+  const out = {};
+  const enableOpsRealtimePanes = isOpsRealtimeSnapshotEnabled();
+  ['operator', 'admin', 'developer'].forEach((role) => {
+    const values = Array.isArray(source[role]) ? source[role].slice() : [];
+    const normalizedValues = enableOpsRealtimePanes
+      ? values
+      : values.filter((pane) => pane !== 'ops-feature-catalog' && pane !== 'ops-system-health');
+    if (enableOpsRealtimePanes && !normalizedValues.includes('ops-feature-catalog')) normalizedValues.push('ops-feature-catalog');
+    if (enableOpsRealtimePanes && !normalizedValues.includes('ops-system-health')) normalizedValues.push('ops-system-health');
+    const normalized = [];
+    normalizedValues.forEach((value) => {
+      const pane = String(value || '').trim();
+      if (!pane) return;
+      if (!ADMIN_DEVELOPER_SURFACE_V1 && pane.startsWith('developer-')) return;
+      if (!normalized.includes(pane)) normalized.push(pane);
+    });
+    out[role] = Object.freeze(normalized);
+  });
+  return Object.freeze(out);
 }
 
 function resolveBaseGroupVisibilityPolicy() {
@@ -469,7 +578,21 @@ function resolveBaseGroupVisibilityPolicy() {
   return NAV_GROUP_VISIBILITY_POLICY;
 }
 
+function resolveOpsOnlyVisibleGroups(role) {
+  const nextRole = normalizeRoleValue(role);
+  const out = OPS_ONLY_BASE_GROUPS.slice();
+  if (ADMIN_DEVELOPER_SURFACE_V1 && nextRole === 'developer') out.push('developer');
+  return out;
+}
+
 function resolveNavGroupVisibilityPolicy() {
+  if (ADMIN_OPS_ONLY_NAV_V1) {
+    const opsOnly = {};
+    ['operator', 'admin', 'developer'].forEach((role) => {
+      opsOnly[role] = Object.freeze(resolveOpsOnlyVisibleGroups(role));
+    });
+    return Object.freeze(opsOnly);
+  }
   const base = resolveBaseGroupVisibilityPolicy();
   const out = {};
   ['operator', 'admin', 'developer'].forEach((role) => {
@@ -665,6 +788,23 @@ function collectNavItemsForCore() {
   });
 }
 
+function applyOpsOnlyGroupFilter(entries, role) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (!ADMIN_OPS_ONLY_NAV_V1) return list;
+  const allowedGroups = resolveOpsOnlyVisibleGroups(role);
+  return list.map((entry) => {
+    const groupKey = String(entry && entry.groupKey ? entry.groupKey : '').trim();
+    if (!groupKey || allowedGroups.includes(groupKey)) return entry;
+    return Object.assign({}, entry || {}, {
+      visible: false,
+      paneAllowed: false,
+      roleAllowed: false,
+      rolloutAllowed: false,
+      opsOnlyBlocked: true
+    });
+  });
+}
+
 function resolveVisibleNavEntries(role) {
   const navCore = resolveCoreSlice('navCore');
   const nextRole = normalizeRoleValue(role);
@@ -690,18 +830,19 @@ function resolveVisibleNavEntries(role) {
         });
       });
     }
+    const filtered = applyOpsOnlyGroupFilter(evaluated, nextRole);
     if (navCore && typeof navCore.dedupeVisibleNavItemsByPane === 'function') {
-      return navCore.dedupeVisibleNavItemsByPane(evaluated, { preserveSameGroup: true });
+      return navCore.dedupeVisibleNavItemsByPane(filtered, { preserveSameGroup: true });
     }
-    return dedupeNavEntriesByPane(evaluated);
+    return dedupeNavEntriesByPane(filtered);
   }
   if (navCore && typeof navCore.resolveVisibleNavItems === 'function') {
-    return navCore.resolveVisibleNavItems(navItems, nextRole, {
+    return applyOpsOnlyGroupFilter(navCore.resolveVisibleNavItems(navItems, nextRole, {
       groupPolicy: resolveNavGroupVisibilityPolicy(),
       rolloutEnabled: ADMIN_NAV_ROLLOUT_V1
-    });
+    }), nextRole);
   }
-  return navItems.map((entry) => {
+  return applyOpsOnlyGroupFilter(navItems.map((entry) => {
     const groupEl = entry.element ? entry.element.closest('.nav-group') : null;
     const hiddenGroup = groupEl && groupEl.getAttribute('data-nav-visible') === 'false';
     const allowList = parseRoleAllowList(entry.element ? entry.element.getAttribute('data-role-allow') : null);
@@ -713,7 +854,7 @@ function resolveVisibleNavEntries(role) {
       rolloutAllowed: true,
       visible
     });
-  });
+  }), nextRole);
 }
 
 function resolveVisibleGroupKeysFromEntries(role, entries) {
@@ -787,6 +928,25 @@ function applyBuildMetaBadge() {
     return;
   }
   badge.setAttribute('data-build-meta-state', 'ok');
+}
+
+function applyOpsOnlyChrome(role) {
+  if (!appShell) return;
+  const nextRole = normalizeRoleValue(role);
+  appShell.setAttribute('data-ops-only-nav', ADMIN_OPS_ONLY_NAV_V1 ? '1' : '0');
+  const hideDeveloperRole = ADMIN_OPS_ONLY_NAV_V1 && !ADMIN_DEVELOPER_SURFACE_V1;
+  appShell.setAttribute('data-hide-developer-role', hideDeveloperRole ? '1' : '0');
+  document.querySelectorAll('[data-ops-role="developer"]').forEach((el) => {
+    el.classList.toggle('hidden', hideDeveloperRole);
+    if (hideDeveloperRole) el.setAttribute('aria-hidden', 'true');
+    else el.removeAttribute('aria-hidden');
+  });
+  document.querySelectorAll('.nav-group-developer, .top-developer').forEach((el) => {
+    const shouldHide = hideDeveloperRole || nextRole !== 'developer';
+    el.classList.toggle('hidden', shouldHide);
+    if (shouldHide) el.setAttribute('aria-hidden', 'true');
+    else el.removeAttribute('aria-hidden');
+  });
 }
 
 function resolveGuardBannerElement() {
@@ -1129,7 +1289,467 @@ async function runInitialDataLoads(options) {
   loadDashboardKpis({ notify: false });
   loadAlertsSummary({ notify: false });
   loadRepoMap({ notify: false });
+  loadOpsSnapshotBundle({ notify: false });
   renderAllDecisionCards();
+}
+
+function normalizeOpsStatus(value) {
+  const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (raw === 'OK' || raw === 'WARN' || raw === 'ALERT' || raw === 'UNKNOWN') return raw;
+  return 'UNKNOWN';
+}
+
+function normalizeOpsReasonCodes(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const reason = typeof item === 'string' ? item.trim() : '';
+    if (!reason) return;
+    if (!out.includes(reason)) out.push(reason);
+  });
+  return out;
+}
+
+function resolveOpsMetricValueLabel(metricKey, value) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  const lower = String(metricKey || '').toLowerCase();
+  if (lower.endsWith('at')) return formatDateLabel(value);
+  if (lower.includes('rate')) return formatRatioPercent(Number(value));
+  if (Number.isFinite(Number(value))) return String(Math.round(Number(value) * 1000) / 1000);
+  return String(value);
+}
+
+function buildOpsMetricSummary(sectionKey, metrics) {
+  const section = String(sectionKey || '');
+  const source = metrics && typeof metrics === 'object' ? metrics : {};
+  const keysBySection = {
+    notifications: ['todaySentCount', 'failedCount', 'pendingCount', 'approvalPendingCount'],
+    emergency: ['lastSyncAt', 'diffCount', 'unapprovedCount', 'errorCount'],
+    cityPack: ['pendingApprovalCount', 'reviewInboxBacklog', 'inboxLagHours'],
+    journeyTodo: ['activeUsers', 'stalledUsers', 'unprocessedCount'],
+    subscription: ['activeCount', 'failedCount', 'expiredCount'],
+    llm: ['usageCount', 'errorRate', 'policyChangeAt'],
+    safety: ['killSwitch', 'retentionLastRunAt', 'retentionFailed'],
+    systemHealth: ['productReadiness', 'missingIndexSurfaceCount', 'fallbackSurfaceCount', 'undefinedRetentionCount', 'namingDriftScenarioCount']
+  };
+  const keys = Array.isArray(keysBySection[section]) ? keysBySection[section] : [];
+  const parts = [];
+  keys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) return;
+    const label = OPS_METRIC_LABELS[key] || key;
+    const value = resolveOpsMetricValueLabel(key, source[key]);
+    parts.push(`${label}: ${value}`);
+  });
+  return parts.length ? parts.join(' / ') : '-';
+}
+
+function resolveOpsSectionRows(snapshot) {
+  const source = snapshot && snapshot.sections && typeof snapshot.sections === 'object'
+    ? snapshot.sections
+    : {};
+  return OPS_SECTION_ORDER.map((sectionKey) => {
+    const section = source[sectionKey] && typeof source[sectionKey] === 'object' ? source[sectionKey] : {};
+    const status = normalizeOpsStatus(section.status);
+    const reasonCodes = normalizeOpsReasonCodes(section.reasonCodes);
+    return {
+      sectionKey,
+      sectionLabel: OPS_SECTION_LABELS[sectionKey] || sectionKey,
+      status,
+      statusColor: section.statusColor || null,
+      lastUpdatedAt: section.lastUpdatedAt || section.updatedAt || null,
+      stalenessSeconds: Number.isFinite(Number(section.stalenessSeconds)) ? Number(section.stalenessSeconds) : null,
+      reasonCodes,
+      metrics: section.metrics && typeof section.metrics === 'object' ? section.metrics : {},
+      detailPane: OPS_SECTION_DETAIL_PANES[sectionKey] || 'home'
+    };
+  });
+}
+
+function createOpsStatusBadge(status) {
+  const normalized = normalizeOpsStatus(status);
+  const badge = document.createElement('span');
+  badge.className = 'ops-status-badge';
+  badge.setAttribute('data-status', normalized);
+  badge.textContent = normalized;
+  return badge;
+}
+
+function renderOpsHomeDashboard() {
+  const summaryEl = document.getElementById('ops-home-summary');
+  const cardsEl = document.getElementById('ops-home-cards');
+  if (!summaryEl || !cardsEl) return;
+  cardsEl.innerHTML = '';
+
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    summaryEl.textContent = 'Ops realtime dashboard は現在停止中です。';
+    return;
+  }
+
+  const snapshot = state.opsSystemSnapshot && typeof state.opsSystemSnapshot === 'object'
+    ? state.opsSystemSnapshot
+    : null;
+  if (!snapshot) {
+    summaryEl.textContent = 'Snapshot未取得';
+    const emptyCard = document.createElement('div');
+    emptyCard.className = 'ops-status-card';
+    emptyCard.setAttribute('data-status', 'UNKNOWN');
+    emptyCard.textContent = 'ops system snapshot がありません。';
+    cardsEl.appendChild(emptyCard);
+    return;
+  }
+
+  const featureSummary = snapshot.featureSummary && typeof snapshot.featureSummary === 'object'
+    ? snapshot.featureSummary
+    : {};
+  const warnCount = Number(featureSummary.warn || featureSummary.WARN || 0);
+  const alertCount = Number(featureSummary.alert || featureSummary.ALERT || 0);
+  const unknownCount = Number(featureSummary.unknown || featureSummary.UNKNOWN || 0);
+  const updatedAt = snapshot.lastUpdatedAt || snapshot.updatedAt || snapshot.asOf || null;
+  summaryEl.textContent = `status=${normalizeOpsStatus(snapshot.status)} / warn=${warnCount} / alert=${alertCount} / unknown=${unknownCount} / updated=${formatDateLabel(updatedAt)}`;
+
+  const rows = resolveOpsSectionRows(snapshot);
+  rows.forEach((row) => {
+    const card = document.createElement('div');
+    card.className = 'ops-status-card';
+    card.setAttribute('data-status', row.status);
+
+    const header = document.createElement('div');
+    header.className = 'ops-status-card-header';
+    const title = document.createElement('div');
+    title.className = 'ops-status-title';
+    title.textContent = row.sectionLabel;
+    header.appendChild(title);
+    header.appendChild(createOpsStatusBadge(row.status));
+    card.appendChild(header);
+
+    const updated = document.createElement('div');
+    updated.className = 'ops-status-meta';
+    updated.textContent = `lastUpdatedAt: ${formatDateLabel(row.lastUpdatedAt)}`;
+    card.appendChild(updated);
+
+    const staleness = document.createElement('div');
+    staleness.className = 'ops-status-meta';
+    staleness.textContent = `stalenessSeconds: ${Number.isFinite(row.stalenessSeconds) ? row.stalenessSeconds : '-'}`;
+    card.appendChild(staleness);
+
+    const metrics = document.createElement('div');
+    metrics.className = 'ops-status-meta';
+    metrics.textContent = buildOpsMetricSummary(row.sectionKey, row.metrics);
+    card.appendChild(metrics);
+
+    const reasons = document.createElement('div');
+    reasons.className = 'ops-status-reasons';
+    reasons.textContent = `reasonCodes: ${row.reasonCodes.length ? row.reasonCodes.join(', ') : '-'}`;
+    card.appendChild(reasons);
+
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'secondary-btn';
+    action.textContent = '詳細へ';
+    action.addEventListener('click', () => {
+      activatePane(row.detailPane, { historyMode: 'push' });
+    });
+    card.appendChild(action);
+
+    cardsEl.appendChild(card);
+  });
+}
+
+function renderOpsFeatureCatalogRows() {
+  const summaryEl = document.getElementById('ops-feature-catalog-summary');
+  const tbody = document.getElementById('ops-feature-catalog-rows');
+  if (!summaryEl || !tbody) return;
+  tbody.innerHTML = '';
+
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    summaryEl.textContent = 'ops feature catalog status は停止中です。';
+    return;
+  }
+
+  const rows = Array.isArray(state.opsFeatureRows) ? state.opsFeatureRows : [];
+  const catalog = state.opsFeatureCatalogStatus && typeof state.opsFeatureCatalogStatus === 'object'
+    ? state.opsFeatureCatalogStatus
+    : null;
+
+  if (!rows.length) {
+    summaryEl.textContent = 'Feature Catalog snapshot未取得';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const counts = catalog && catalog.counts && typeof catalog.counts === 'object' ? catalog.counts : {};
+  const updatedAt = catalog && (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
+    ? (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
+    : null;
+  summaryEl.textContent = `rows=${rows.length} / ok=${Number(counts.ok || 0)} / warn=${Number(counts.warn || 0)} / alert=${Number(counts.alert || 0)} / unknown=${Number(counts.unknown || 0)} / updated=${formatDateLabel(updatedAt)}`;
+
+  rows.forEach((item) => {
+    const row = item && typeof item === 'object' ? item : {};
+    const tr = document.createElement('tr');
+    const label = row.featureLabelJa || row.featureId || '-';
+    const status = normalizeOpsStatus(row.status);
+    const lastUpdatedAt = row.lastUpdatedAt || row.updatedAt || null;
+    const staleness = Number.isFinite(Number(row.stalenessSeconds)) ? Number(row.stalenessSeconds) : null;
+    const reasonCodes = normalizeOpsReasonCodes(row.reasonCodes);
+    const pane = row.detail && typeof row.detail === 'object' ? row.detail.pane : null;
+    const apiPath = row.detail && typeof row.detail === 'object' ? row.detail.apiPath : null;
+
+    const featureTd = document.createElement('td');
+    featureTd.textContent = label;
+    tr.appendChild(featureTd);
+
+    const statusTd = document.createElement('td');
+    statusTd.appendChild(createOpsStatusBadge(status));
+    tr.appendChild(statusTd);
+
+    const updatedTd = document.createElement('td');
+    updatedTd.textContent = formatDateLabel(lastUpdatedAt);
+    tr.appendChild(updatedTd);
+
+    const staleTd = document.createElement('td');
+    staleTd.textContent = Number.isFinite(staleness) ? String(staleness) : '-';
+    tr.appendChild(staleTd);
+
+    const reasonTd = document.createElement('td');
+    reasonTd.textContent = reasonCodes.length ? reasonCodes.join(', ') : '-';
+    tr.appendChild(reasonTd);
+
+    const detailTd = document.createElement('td');
+    const goBtn = document.createElement('button');
+    goBtn.type = 'button';
+    goBtn.className = 'secondary-btn';
+    goBtn.textContent = pane || OPS_FEATURE_DETAIL_FALLBACK;
+    goBtn.addEventListener('click', () => {
+      activatePane(pane || OPS_FEATURE_DETAIL_FALLBACK, { historyMode: 'push' });
+    });
+    detailTd.appendChild(goBtn);
+    if (apiPath) {
+      const api = document.createElement('div');
+      api.className = 'ops-status-meta';
+      api.textContent = apiPath;
+      detailTd.appendChild(api);
+    }
+    tr.appendChild(detailTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function renderOpsSystemHealthRows() {
+  const summaryEl = document.getElementById('ops-system-health-summary');
+  const tbody = document.getElementById('ops-system-health-rows');
+  if (!summaryEl || !tbody) return;
+  tbody.innerHTML = '';
+
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    summaryEl.textContent = 'ops system snapshot は停止中です。';
+    return;
+  }
+
+  const snapshot = state.opsSystemSnapshot && typeof state.opsSystemSnapshot === 'object'
+    ? state.opsSystemSnapshot
+    : null;
+  if (!snapshot) {
+    summaryEl.textContent = 'System Health snapshot未取得';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const rows = resolveOpsSectionRows(snapshot);
+  const updatedAt = snapshot.lastUpdatedAt || snapshot.updatedAt || snapshot.asOf || null;
+  summaryEl.textContent = `status=${normalizeOpsStatus(snapshot.status)} / sections=${rows.length} / updated=${formatDateLabel(updatedAt)}`;
+
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    const sectionTd = document.createElement('td');
+    sectionTd.textContent = item.sectionLabel;
+    tr.appendChild(sectionTd);
+
+    const statusTd = document.createElement('td');
+    statusTd.appendChild(createOpsStatusBadge(item.status));
+    tr.appendChild(statusTd);
+
+    const updatedTd = document.createElement('td');
+    updatedTd.textContent = formatDateLabel(item.lastUpdatedAt);
+    tr.appendChild(updatedTd);
+
+    const reasonsTd = document.createElement('td');
+    reasonsTd.textContent = item.reasonCodes.length ? item.reasonCodes.join(', ') : '-';
+    tr.appendChild(reasonsTd);
+
+    const detailTd = document.createElement('td');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary-btn';
+    button.textContent = item.detailPane;
+    button.addEventListener('click', () => {
+      activatePane(item.detailPane, { historyMode: 'push' });
+    });
+    detailTd.appendChild(button);
+    tr.appendChild(detailTd);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function applyOpsRealtimeDashboardVisibility() {
+  const enabled = isOpsRealtimeSnapshotEnabled();
+  const homePanel = document.getElementById('ops-home-dashboard');
+  const catalogPane = document.getElementById('pane-ops-feature-catalog');
+  const healthPane = document.getElementById('pane-ops-system-health');
+  [homePanel, catalogPane, healthPane].forEach((el) => {
+    if (!el) return;
+    el.classList.toggle('hidden', !enabled);
+    if (!enabled) el.setAttribute('aria-hidden', 'true');
+    else el.removeAttribute('aria-hidden');
+  });
+}
+
+function syncOpsPaneUpdatedAt(snapshot, catalog) {
+  const global = snapshot && typeof snapshot === 'object' ? snapshot : null;
+  const catalogData = catalog && typeof catalog === 'object' ? catalog : null;
+  if (global) {
+    const homeUpdatedAt = global.lastUpdatedAt || global.updatedAt || global.asOf || null;
+    setPaneUpdatedAtValue('home', homeUpdatedAt);
+    const healthUpdatedAt = global.sections
+      && global.sections.systemHealth
+      && (global.sections.systemHealth.lastUpdatedAt || global.sections.systemHealth.updatedAt)
+      ? (global.sections.systemHealth.lastUpdatedAt || global.sections.systemHealth.updatedAt)
+      : homeUpdatedAt;
+    setPaneUpdatedAtValue('ops-system-health', healthUpdatedAt);
+  }
+  if (catalogData) {
+    const updatedAt = catalogData.lastUpdatedAt || catalogData.updatedAt || catalogData.asOf || null;
+    setPaneUpdatedAtValue('ops-feature-catalog', updatedAt);
+  }
+  if (state.activePane === 'home' || state.activePane === 'ops-feature-catalog' || state.activePane === 'ops-system-health') {
+    updatePageHeader(state.activePane);
+  }
+}
+
+async function loadOpsSystemSnapshot(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    state.opsSystemSnapshot = null;
+    renderOpsHomeDashboard();
+    renderOpsSystemHealthRows();
+    return { ok: true, skipped: true };
+  }
+  try {
+    const traceId = newTraceId();
+    const data = await adminFetchJson({
+      url: '/api/admin/ops-system-snapshot',
+      method: 'GET',
+      traceId
+    });
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'ops snapshot load failed');
+    state.opsSystemSnapshot = data.snapshot && typeof data.snapshot === 'object' ? data.snapshot : null;
+    syncOpsPaneUpdatedAt(state.opsSystemSnapshot, state.opsFeatureCatalogStatus);
+    renderOpsHomeDashboard();
+    renderOpsSystemHealthRows();
+    renderAllDecisionCards();
+    if (notify) showToast('Ops snapshotを更新しました', 'ok');
+    return data;
+  } catch (_err) {
+    state.opsSystemSnapshot = null;
+    renderOpsHomeDashboard();
+    renderOpsSystemHealthRows();
+    renderAllDecisionCards();
+    if (notify) showToast('Ops snapshotの取得に失敗しました', 'danger');
+    return { ok: false, error: 'ops snapshot load failed' };
+  }
+}
+
+async function loadOpsFeatureCatalogStatus(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    state.opsFeatureCatalogStatus = null;
+    state.opsFeatureRows = [];
+    renderOpsFeatureCatalogRows();
+    return { ok: true, skipped: true };
+  }
+  try {
+    const traceId = newTraceId();
+    const data = await adminFetchJson({
+      url: '/api/admin/ops-feature-catalog-status',
+      method: 'GET',
+      traceId
+    });
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'feature catalog status load failed');
+    state.opsFeatureCatalogStatus = data.catalog && typeof data.catalog === 'object' ? data.catalog : null;
+    state.opsFeatureRows = Array.isArray(data.rows) ? data.rows : [];
+    syncOpsPaneUpdatedAt(state.opsSystemSnapshot, state.opsFeatureCatalogStatus);
+    renderOpsFeatureCatalogRows();
+    renderOpsHomeDashboard();
+    if (notify) showToast('Feature Catalog statusを更新しました', 'ok');
+    return data;
+  } catch (_err) {
+    state.opsFeatureCatalogStatus = null;
+    state.opsFeatureRows = [];
+    renderOpsFeatureCatalogRows();
+    renderOpsHomeDashboard();
+    if (notify) showToast('Feature Catalog statusの取得に失敗しました', 'danger');
+    return { ok: false, error: 'feature catalog status load failed' };
+  }
+}
+
+async function loadOpsSnapshotBundle(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  applyOpsRealtimeDashboardVisibility();
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    state.opsSystemSnapshot = null;
+    state.opsFeatureCatalogStatus = null;
+    state.opsFeatureRows = [];
+    renderOpsHomeDashboard();
+    renderOpsFeatureCatalogRows();
+    renderOpsSystemHealthRows();
+    return { ok: true, skipped: true };
+  }
+  const [snapshotRes, catalogRes] = await Promise.all([
+    loadOpsSystemSnapshot({ notify: false }),
+    loadOpsFeatureCatalogStatus({ notify: false })
+  ]);
+  const ok = snapshotRes && snapshotRes.ok === true && catalogRes && catalogRes.ok === true;
+  if (opts.notify) {
+    showToast(ok ? 'Ops snapshotを更新しました' : 'Ops snapshotの取得に失敗しました', ok ? 'ok' : 'danger');
+  }
+  return { ok, snapshotRes, catalogRes };
+}
+
+async function rebuildOpsSystemSnapshot() {
+  if (!isOpsRealtimeSnapshotEnabled()) {
+    showToast('Ops snapshot機能が無効です', 'warn');
+    return;
+  }
+  const proceed = window.confirm('ops system snapshot を再計算しますか？'); // eslint-disable-line no-alert
+  if (!proceed) {
+    showToast('Snapshot再計算を中止しました', 'warn');
+    return;
+  }
+  try {
+    const traceId = newTraceId();
+    const data = await postJson('/api/admin/ops-system-snapshot/rebuild', {
+      dryRun: false,
+      scanLimit: 3000
+    }, traceId);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'ops snapshot rebuild failed');
+    await loadOpsSnapshotBundle({ notify: false });
+    showToast('Ops snapshotを再計算しました', 'ok');
+  } catch (_err) {
+    showToast('Ops snapshot再計算に失敗しました', 'danger');
+  }
 }
 
 function setupLocalPreflightControls() {
@@ -1466,6 +2086,15 @@ function setPaneUpdatedAt(paneKey) {
   state.paneUpdatedAt[paneKey] = new Date().toISOString();
 }
 
+function setPaneUpdatedAtValue(paneKey, value) {
+  const timestamp = value ? new Date(value) : null;
+  if (timestamp && !Number.isNaN(timestamp.getTime())) {
+    state.paneUpdatedAt[paneKey] = timestamp.toISOString();
+    return;
+  }
+  setPaneUpdatedAt(paneKey);
+}
+
 function resolvePaneUpdatedAt(paneKey) {
   return state.paneUpdatedAt[paneKey] || '-';
 }
@@ -1687,6 +2316,7 @@ function setRole(role, options) {
   state.role = nextRole;
   persistRoleState(nextRole);
   if (appShell) appShell.setAttribute('data-role', nextRole);
+  applyOpsOnlyChrome(nextRole);
   document.querySelectorAll('.role-btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.roleValue === nextRole);
   });
@@ -1742,6 +2372,7 @@ function updatePageHeader(paneKey) {
   const meta = PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
   const titleEl = document.getElementById('page-title');
   const subtitleEl = document.getElementById('page-subtitle');
+  const updatedEl = document.getElementById('page-last-updated');
   const primaryAction = document.getElementById('page-action-primary');
   const secondaryAction = document.getElementById('page-action-secondary');
   if (titleEl) titleEl.textContent = t(meta.titleKey, titleEl.textContent || '');
@@ -1758,6 +2389,10 @@ function updatePageHeader(paneKey) {
     } else {
       subtitleEl.textContent = t(meta.subtitleKey, subtitleEl.textContent || '');
     }
+  }
+  if (updatedEl) {
+    const updatedAt = resolvePaneUpdatedAt(paneKey);
+    updatedEl.textContent = `最終更新: ${updatedAt && updatedAt !== '-' ? formatDateLabel(updatedAt) : '-'}`;
   }
   if (primaryAction) primaryAction.classList.add('hidden');
   if (secondaryAction) secondaryAction.classList.add('hidden');
@@ -1846,6 +2481,7 @@ function scrollToPaneAnchor(targetId) {
 }
 
 function setupHomeControls() {
+  applyOpsRealtimeDashboardVisibility();
   document.querySelectorAll('[data-open-pane]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.getAttribute('data-open-pane');
@@ -1876,6 +2512,22 @@ function setupHomeControls() {
   });
   document.getElementById('alerts-reload')?.addEventListener('click', () => {
     void loadAlertsSummary({ notify: true });
+  });
+  document.getElementById('ops-home-reload')?.addEventListener('click', () => {
+    void loadOpsSnapshotBundle({ notify: true });
+  });
+  document.getElementById('ops-home-rebuild')?.addEventListener('click', () => {
+    void rebuildOpsSystemSnapshot();
+  });
+  document.getElementById('ops-home-open-catalog')?.addEventListener('click', () => {
+    activatePane('ops-feature-catalog', { historyMode: 'push' });
+    void loadOpsFeatureCatalogStatus({ notify: false });
+  });
+  document.getElementById('ops-feature-catalog-reload')?.addEventListener('click', () => {
+    void loadOpsFeatureCatalogStatus({ notify: true });
+  });
+  document.getElementById('ops-system-health-reload')?.addEventListener('click', () => {
+    void loadOpsSystemSnapshot({ notify: true });
   });
 }
 
@@ -2470,6 +3122,8 @@ function normalizePaneTarget(target) {
   const value = typeof target === 'string' ? target : '';
   const allowed = new Set([
     'home',
+    'ops-feature-catalog',
+    'ops-system-health',
     'alerts',
     'composer',
     'monitor',
@@ -2486,7 +3140,11 @@ function normalizePaneTarget(target) {
     'llm',
     'maintenance'
   ]);
-  if (allowed.has(value)) return value;
+  if (!isOpsRealtimeSnapshotEnabled() && (value === 'ops-feature-catalog' || value === 'ops-system-health')) return 'home';
+  if (allowed.has(value)) {
+    if (!ADMIN_DEVELOPER_SURFACE_V1 && value.startsWith('developer-')) return 'home';
+    return value;
+  }
   return 'home';
 }
 
@@ -2545,12 +3203,24 @@ function activatePane(target, options) {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
   state.activePane = nextPane;
+  if (!state.paneUpdatedAt[nextPane]) {
+    setPaneUpdatedAt(nextPane);
+  }
   if (!opts.skipHistory) {
     const mode = opts.historyMode || 'replace';
     updateHistoryWithPaneRole(nextPane, state.role, mode);
   }
   if (paneBlocked) renderGuardBanner({ error: guardReason, recommendedPane: nextPane });
   updatePageHeader(nextPane);
+  if (nextPane === 'home' && isOpsRealtimeSnapshotEnabled() && !state.opsSystemSnapshot) {
+    void loadOpsSnapshotBundle({ notify: false });
+  }
+  if (nextPane === 'ops-feature-catalog' && isOpsRealtimeSnapshotEnabled() && (!Array.isArray(state.opsFeatureRows) || state.opsFeatureRows.length === 0)) {
+    void loadOpsFeatureCatalogStatus({ notify: false });
+  }
+  if (nextPane === 'ops-system-health' && isOpsRealtimeSnapshotEnabled() && !state.opsSystemSnapshot) {
+    void loadOpsSystemSnapshot({ notify: false });
+  }
   expandPaneDetails(nextPane);
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
@@ -3281,6 +3951,30 @@ function resolveVendorsDecisionVm() {
 }
 
 function resolveHomeDecisionVm() {
+  const snapshot = state.opsSystemSnapshot && typeof state.opsSystemSnapshot === 'object'
+    ? state.opsSystemSnapshot
+    : null;
+  if (snapshot && isOpsRealtimeSnapshotEnabled()) {
+    const status = normalizeOpsStatus(snapshot.status);
+    const featureSummary = snapshot.featureSummary && typeof snapshot.featureSummary === 'object'
+      ? snapshot.featureSummary
+      : {};
+    const pendingCount = Number(featureSummary.alert || featureSummary.ALERT || 0)
+      + Number(featureSummary.warn || featureSummary.WARN || 0);
+    const primary = normalizeOpsReasonCodes(snapshot.reasonCodes).join(', ') || status;
+    const decisionState = status === 'ALERT'
+      ? 'STOP'
+      : status === 'WARN' || status === 'UNKNOWN'
+        ? 'ATTENTION'
+        : 'READY';
+    const reasons = buildDecisionReasons(pendingCount, primary);
+    return {
+      state: decisionState,
+      reason1: reasons.reason1,
+      reason2: reasons.reason2,
+      updatedAt: resolvePaneUpdatedAt('home')
+    };
+  }
   const counts = getHealthCounts(state.monitorItems);
   const decisionState = counts.DANGER > 0 ? 'STOP' : counts.WARN > 0 ? 'ATTENTION' : 'READY';
   const reasons = buildDecisionReasons(counts.DANGER || 0, state.topCauses || '-');
@@ -3288,7 +3982,7 @@ function resolveHomeDecisionVm() {
     state: decisionState,
     reason1: reasons.reason1,
     reason2: reasons.reason2,
-    updatedAt: resolvePaneUpdatedAt('monitor')
+    updatedAt: resolvePaneUpdatedAt('home')
   };
 }
 
