@@ -199,6 +199,7 @@ MUST:
 - 危険操作フローの唯一SSOTは `docs/SSOT_ADMIN_UI_MASTER_TABLE_V1.md` とする。
 - runtime は docs JSON ブロック（`ADMIN_UI_MASTER_TABLE_BEGIN/END`）を直接読み込む。
 - v1.1（2026-02-27）では `vendors.write` と `emergency.write` の `actorMode` を `required` へ昇格した。
+- v1.2（2026-02-27）では `city_pack.bulletin.write` と `city_pack.request.write` の `actorMode` を `required` へ昇格した。
 - guard適用:
   - `traceMode=required` は write API の `x-trace-id` を必須化する。
   - `actorMode=required|allow_fallback` を flow単位で宣言し、`allow_fallback` は warning監査を必須化する。

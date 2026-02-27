@@ -12,7 +12,7 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
 
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
-  "version": "2026-02-27.v1.1",
+  "version": "2026-02-27.v1.2",
   "flows": [
     {
       "flowId": "composer.notification.approve_plan",
@@ -99,7 +99,7 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
         ]
       },
       "guardRules": {
-        "actorMode": "allow_fallback",
+        "actorMode": "required",
         "traceMode": "required",
         "confirmMode": "none",
         "killSwitchCheck": "none",
@@ -157,7 +157,7 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
         ]
       },
       "guardRules": {
-        "actorMode": "allow_fallback",
+        "actorMode": "required",
         "traceMode": "required",
         "confirmMode": "none",
         "killSwitchCheck": "none",

@@ -75,6 +75,7 @@ test('phase306: kill switch blocks city pack admin/internal write operations', a
     headers: {
       'x-admin-token': 'phase306_admin_token',
       'x-actor': 'phase306_test',
+      'x-trace-id': 'trace_phase306_admin',
       'content-type': 'application/json'
     },
     body: '{}'
