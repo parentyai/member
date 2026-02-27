@@ -195,6 +195,19 @@ MUST:
 - 推奨: `/admin/app?pane=<pane>` を保存する（例: `composer` / `monitor` / `errors` / `read-model` / `maintenance` / `audit`）。
 - 旧URLブックマークは互換 redirect で到達可能だが、通常運用は新URLへ更新する。
 
+## Admin Master Table V1（Phase675 add-only）
+- 危険操作フローの唯一SSOTは `docs/SSOT_ADMIN_UI_MASTER_TABLE_V1.md` とする。
+- runtime は docs JSON ブロック（`ADMIN_UI_MASTER_TABLE_BEGIN/END`）を直接読み込む。
+- guard適用:
+  - `traceMode=required` は write API の `x-trace-id` を必須化する。
+  - `actorMode=required|allow_fallback` を flow単位で宣言し、`allow_fallback` は warning監査を必須化する。
+  - `confirmMode=required` flow は `planHash/confirmToken` を必須化する。
+- Workbench境界:
+  - 危険操作バインドは Workbench zone（`data-workbench-zone="true"`）配下に限定する。
+  - topbar/ヘッダー導線は read-only shortcut とし、write実行を禁止する。
+- Evidence:
+  - write成功時は `traceId/actionKey/entityId` を即時表示し、Audit pane の trace 検索へ1操作で遷移可能にする。
+
 ## IA (Information Architecture) — Screens
 以下は ServicePhase1 の「運用OS v1」で最低限提供される画面（追加は add-only）。
 

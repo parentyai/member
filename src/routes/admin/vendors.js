@@ -4,6 +4,7 @@ const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { updateLink } = require('../../usecases/linkRegistry/updateLink');
 const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
   resolveRequestId,
@@ -131,16 +132,28 @@ async function handleVendors(req, res, bodyText) {
   if (req.method === 'POST' && actionMatch) {
     const linkId = decodeURIComponent(actionMatch[1]);
     const action = actionMatch[2];
+    const actionKey = action === 'edit'
+      ? 'vendors.edit'
+      : (action === 'activate' ? 'vendors.activate' : 'vendors.disable');
+    const guard = await enforceManagedFlowGuard({
+      req,
+      res,
+      actionKey,
+      payload: {}
+    });
+    if (!guard) return;
+    const guardedActor = guard.actor || actor;
+    const guardedTraceId = guard.traceId || traceId;
     if (action === 'edit') {
-      await handleEdit(req, res, actor, traceId, requestId, linkId, bodyText);
+      await handleEdit(req, res, guardedActor, guardedTraceId, requestId, linkId, bodyText);
       return;
     }
     if (action === 'activate') {
-      await handleSetHealth(res, actor, traceId, requestId, linkId, 'OK', 200, 'vendors.activate');
+      await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'OK', 200, 'vendors.activate');
       return;
     }
     if (action === 'disable') {
-      await handleSetHealth(res, actor, traceId, requestId, linkId, 'WARN', 409, 'vendors.disable');
+      await handleSetHealth(res, guardedActor, guardedTraceId, requestId, linkId, 'WARN', 409, 'vendors.disable');
       return;
     }
   }

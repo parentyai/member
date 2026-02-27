@@ -1657,6 +1657,45 @@ body.app-body {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar-readonly-note {
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.managed-action-evidence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--summary-border);
+  border-left: 4px solid var(--summary-accent);
+  border-radius: var(--radius-sm);
+  background: var(--summary-bg);
+}
+
+.managed-action-evidence-label {
+  font-size: var(--font-12);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#managed-action-evidence-text {
+  font-size: var(--font-12);
+  color: var(--text-base);
+  flex: 1;
+}
+
+details[data-json-collapsible="true"].json-collapsed > summary {
+  color: var(--text-muted);
 }
 
 .top-developer {

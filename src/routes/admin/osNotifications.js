@@ -7,6 +7,7 @@ const { approveNotification } = require('../../usecases/adminOs/approveNotificat
 const { previewNotification } = require('../../usecases/adminOs/previewNotification');
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../usecases/adminOs/executeNotificationSend');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
 function handleError(res, err, context) {
@@ -89,21 +90,30 @@ async function handleApprove(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'notifications.approve',
+    payload
+  });
+  if (!guard) return;
+  const guardedActor = guard.actor || actor;
+  const guardedTraceId = guard.traceId || traceId;
   try {
-    const result = await approveNotification({ notificationId: payload.notificationId, actor });
+    const result = await approveNotification({ notificationId: payload.notificationId, actor: guardedActor });
     await appendAuditLog({
-      actor,
+      actor: guardedActor,
       action: 'notifications.approve',
       entityType: 'notification',
       entityId: payload.notificationId,
-      traceId,
+      traceId: guardedTraceId,
       requestId,
       payloadSummary: { status: 'active' }
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
+    res.end(JSON.stringify(Object.assign({ traceId: guardedTraceId, requestId }, result)));
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
   }
 }
 
@@ -114,17 +124,26 @@ async function handleSendPlan(req, res, body) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'notifications.send.plan',
+    payload
+  });
+  if (!guard) return;
+  const guardedActor = guard.actor || actor;
+  const guardedTraceId = guard.traceId || traceId;
   try {
     const result = await planNotificationSend({
       notificationId: payload.notificationId,
-      actor,
-      traceId,
+      actor: guardedActor,
+      traceId: guardedTraceId,
       requestId
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
   }
 }
 
@@ -247,19 +266,28 @@ async function handleSendExecute(req, res, body, deps) {
   const requestId = resolveRequestId(req);
   const payload = parseJson(body, res);
   if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'notifications.send.execute',
+    payload
+  });
+  if (!guard) return;
+  const guardedActor = guard.actor || actor;
+  const guardedTraceId = guard.traceId || traceId;
   try {
     const result = await executeNotificationSend({
       notificationId: payload.notificationId,
       planHash: payload.planHash,
       confirmToken: payload.confirmToken,
-      actor,
-      traceId,
+      actor: guardedActor,
+      traceId: guardedTraceId,
       requestId
     }, deps);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
-    handleError(res, err, { traceId, requestId, actor });
+    handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
   }
 }
 

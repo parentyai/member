@@ -14,6 +14,7 @@ const { fetchProviderSnapshot } = require('../../usecases/emergency/fetchProvide
 const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalizeAndDiffProvider');
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
 const { approveEmergencyBulletin } = require('../../usecases/emergency/approveEmergencyBulletin');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
   resolveRequestId,
@@ -70,6 +71,15 @@ async function handleListProviders(req, res, context) {
 async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
   const payload = parseJson(bodyText, res);
   if (!payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'emergency.provider.update',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const result = await updateEmergencyProvider({
     providerKey,
     status: payload.status,
@@ -85,6 +95,15 @@ async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
 async function handleForceRefreshProvider(req, res, bodyText, context, providerKey) {
   const payload = bodyText ? parseJson(bodyText, res) : {};
   if (bodyText && !payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'emergency.provider.force_refresh',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const provider = await emergencyProvidersRepo.getProvider(providerKey);
   if (!provider) {
     writeJson(res, 404, { ok: false, error: 'provider not found' });
@@ -168,6 +187,15 @@ async function handleGetBulletin(req, res, context, bulletinId) {
 }
 
 async function handleRejectBulletin(req, res, context, bulletinId) {
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'emergency.bulletin.reject',
+    payload: {}
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const result = await rejectEmergencyBulletin({
     bulletinId,
     actor: context.actor,
@@ -189,6 +217,15 @@ function resolveStatusCodeFromApproveResult(result) {
 async function handleApproveBulletin(req, res, bodyText, context, bulletinId) {
   const payload = bodyText ? parseJson(bodyText, res) : {};
   if (bodyText && !payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'emergency.bulletin.approve',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const result = await approveEmergencyBulletin({
     bulletinId,
     ctaText: payload && payload.ctaText ? payload.ctaText : null,

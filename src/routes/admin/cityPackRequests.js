@@ -6,6 +6,7 @@ const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { runCityPackDraftJob } = require('../../usecases/cityPack/runCityPackDraftJob');
 const { activateCityPack } = require('../../usecases/cityPack/activateCityPack');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
   resolveRequestId,
@@ -35,6 +36,15 @@ function parseDetailPath(pathname) {
   const match = pathname.match(/^\/api\/admin\/city-pack-requests\/([^/]+)$/);
   if (!match) return null;
   return match[1];
+}
+
+function resolveCityPackRequestActionKey(action) {
+  if (action === 'approve') return 'city_pack.request.approve';
+  if (action === 'reject') return 'city_pack.request.reject';
+  if (action === 'request-changes') return 'city_pack.request.request_changes';
+  if (action === 'retry-job') return 'city_pack.request.retry_job';
+  if (action === 'activate') return 'city_pack.request.activate';
+  return null;
 }
 
 function toMillis(value) {
@@ -181,6 +191,20 @@ async function handleAction(req, res, bodyText, context, requestId, action) {
     writeJson(res, 404, { ok: false, error: 'request not found' });
     return;
   }
+  const actionKey = resolveCityPackRequestActionKey(action);
+  if (!actionKey) {
+    writeJson(res, 404, { ok: false, error: 'not found' });
+    return;
+  }
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey,
+    payload: {}
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
   const writeAllowed = await ensureCityPackWriteAllowed(res, context, 'city_pack_request', requestId, {
     regionKey: request.regionKey || null,
     action
