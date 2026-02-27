@@ -28,24 +28,21 @@ const {
   resolveSnapshotFreshnessMinutes,
   isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
+const {
+  FALLBACK_MODE_BLOCK,
+  resolveFallbackMode
+} = require('../../domain/readModel/fallbackPolicy');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_state_summary';
-const FALLBACK_MODE_ALLOW = 'allow';
-const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 1) return DEFAULT_ANALYTICS_LIMIT;
   return Math.min(Math.floor(num), MAX_ANALYTICS_LIMIT);
-}
-
-function resolveFallbackMode(value) {
-  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
-  return FALLBACK_MODE_ALLOW;
 }
 
 function toMillis(value) {

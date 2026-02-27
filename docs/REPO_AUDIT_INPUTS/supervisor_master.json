@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T19:10:48-05:00",
-  "gitCommit": "76749277e8c07593194178474c749fe9b4393b4e",
-  "branch": "main",
-  "sourceDigest": "15a332379f397af75e0c9c5e87e849bbe27841ae1dbaabd21ced8b2bf2f8aad2",
+  "generatedAt": "2026-02-26T19:42:49-05:00",
+  "gitCommit": "40416d908904f3e2600b9e2a3b1477e9622007f4",
+  "branch": "codex/wave3-fallback-fail-closed-unify",
+  "sourceDigest": "8391aa392ac3725d38e56b362c881104ce92d5394cf26b346d86b952efeeee05",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
