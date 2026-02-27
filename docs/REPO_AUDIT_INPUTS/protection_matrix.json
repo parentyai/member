@@ -2,7 +2,7 @@
   "generatedAt": "2026-02-26T09:37:27-05:00",
   "source": "static_analysis_live_core",
   "counts": {
-    "endpoints": 244
+    "endpoints": 256
   },
   "rules": {
     "admin_paths_must_admin_token": true,
@@ -24,14 +24,120 @@
   ],
   "protection_matrix": [
     {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/city-pack-bulletins\\/[^/]+(\\/(approve|reject|send))?$/",
+      "match": "regex",
+      "line": 1091,
+      "route_files": [
+        "src/routes/admin/cityPackBulletins.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1091",
+        "src/routes/admin/cityPackBulletins.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/city-pack-bulletins\\/[^/]+(\\/(approve|reject|send))?$/",
+      "match": "regex",
+      "line": 1091,
+      "route_files": [
+        "src/routes/admin/cityPackBulletins.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "decision_timeline",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1091",
+        "src/routes/admin/cityPackBulletins.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/city-pack-education-links\\/[^/]+\\/(replace|retire)$/",
+      "match": "regex",
+      "line": 1098,
+      "route_files": [
+        "src/routes/admin/cityPackEducationLinks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1098",
+        "src/routes/admin/cityPackEducationLinks.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/city-pack-education-links\\/[^/]+\\/(replace|retire)$/",
+      "match": "regex",
+      "line": 1098,
+      "route_files": [
+        "src/routes/admin/cityPackEducationLinks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1098",
+        "src/routes/admin/cityPackEducationLinks.js:1"
+      ]
+    },
+    {
       "method": "*",
-      "path": "/]+(\\/(ack|triage|resolve|reject|propose))?$/",
+      "path": "/^\\/api\\/admin\\/city-pack-feedback\\/[^/]+(\\/(ack|triage|resolve|reject|propose))?$/",
       "match": "regex",
       "line": 1084,
       "route_files": [
         "src/routes/admin/cityPackFeedback.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -49,109 +155,13 @@
     },
     {
       "method": "GET",
-      "path": "/]+(\\/(activate|retire))?$/",
-      "match": "regex",
-      "line": 1071,
-      "route_files": [
-        "src/routes/admin/cityPackTemplateLibrary.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1071",
-        "src/routes/admin/cityPackTemplateLibrary.js:1"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/]+(\\/(activate|retire))?$/",
-      "match": "regex",
-      "line": 1071,
-      "route_files": [
-        "src/routes/admin/cityPackTemplateLibrary.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1071",
-        "src/routes/admin/cityPackTemplateLibrary.js:1"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/]+(\\/(approve|reject|apply))?$/",
-      "match": "regex",
-      "line": 1105,
-      "route_files": [
-        "src/routes/admin/cityPackUpdateProposals.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1105",
-        "src/routes/admin/cityPackUpdateProposals.js:1"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/]+(\\/(approve|reject|apply))?$/",
-      "match": "regex",
-      "line": 1105,
-      "route_files": [
-        "src/routes/admin/cityPackUpdateProposals.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1105",
-        "src/routes/admin/cityPackUpdateProposals.js:1"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/]+(\\/(approve|reject|request-changes|retry-job|activate))?$/",
+      "path": "/^\\/api\\/admin\\/city-pack-requests\\/[^/]+(\\/(approve|reject|request-changes|retry-job|activate))?$/",
       "match": "regex",
       "line": 1077,
       "route_files": [
         "src/routes/admin/cityPackRequests.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -172,13 +182,13 @@
     },
     {
       "method": "POST",
-      "path": "/]+(\\/(approve|reject|request-changes|retry-job|activate))?$/",
+      "path": "/^\\/api\\/admin\\/city-pack-requests\\/[^/]+(\\/(approve|reject|request-changes|retry-job|activate))?$/",
       "match": "regex",
       "line": 1077,
       "route_files": [
         "src/routes/admin/cityPackRequests.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -199,123 +209,13 @@
     },
     {
       "method": "GET",
-      "path": "/]+(\\/(approve|reject|send))?$/",
-      "match": "regex",
-      "line": 1091,
-      "route_files": [
-        "src/routes/admin/cityPackBulletins.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": true,
-      "killSwitch_confidence": "high",
-      "writes_collections": [
-        "audit_logs",
-        "decision_timeline",
-        "link_registry",
-        "notification_deliveries",
-        "notifications",
-        "users"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1091",
-        "src/routes/admin/cityPackBulletins.js:1"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/]+(\\/(approve|reject|send))?$/",
-      "match": "regex",
-      "line": 1091,
-      "route_files": [
-        "src/routes/admin/cityPackBulletins.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": true,
-      "killSwitch_confidence": "high",
-      "writes_collections": [
-        "audit_logs",
-        "decision_timeline",
-        "link_registry",
-        "notification_deliveries",
-        "notifications",
-        "users"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1091",
-        "src/routes/admin/cityPackBulletins.js:1"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/]+\\/(activate|retire|structure|content)$/",
-      "match": "regex",
-      "line": 1064,
-      "route_files": [
-        "src/routes/admin/cityPacks.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs",
-        "city_packs",
-        "source_refs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/]+\\/(activate|retire|structure|content)$/",
-      "match": "regex",
-      "line": 1064,
-      "route_files": [
-        "src/routes/admin/cityPacks.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs",
-        "city_packs",
-        "source_refs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/]+\\/(confirm|retire|replace|manual-only)$/",
+      "path": "/^\\/api\\/admin\\/city-pack-source-audit\\/runs\\/[^/]+$/",
       "match": "regex",
       "line": 1118,
       "route_files": [
         "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -326,10 +226,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -349,13 +255,13 @@
     },
     {
       "method": "POST",
-      "path": "/]+\\/(confirm|retire|replace|manual-only)$/",
+      "path": "/^\\/api\\/admin\\/city-pack-source-audit\\/runs\\/[^/]+$/",
       "match": "regex",
       "line": 1118,
       "route_files": [
         "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -366,10 +272,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -389,13 +301,13 @@
     },
     {
       "method": "GET",
-      "path": "/]+\\/(replace|retire)$/",
+      "path": "/^\\/api\\/admin\\/city-pack-template-library\\/[^/]+(\\/(activate|retire))?$/",
       "match": "regex",
-      "line": 1098,
+      "line": 1071,
       "route_files": [
-        "src/routes/admin/cityPackEducationLinks.js"
+        "src/routes/admin/cityPackTemplateLibrary.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -407,19 +319,19 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1098",
-        "src/routes/admin/cityPackEducationLinks.js:1"
+        "src/index.js:1071",
+        "src/routes/admin/cityPackTemplateLibrary.js:1"
       ]
     },
     {
       "method": "POST",
-      "path": "/]+\\/(replace|retire)$/",
+      "path": "/^\\/api\\/admin\\/city-pack-template-library\\/[^/]+(\\/(activate|retire))?$/",
       "match": "regex",
-      "line": 1098,
+      "line": 1071,
       "route_files": [
-        "src/routes/admin/cityPackEducationLinks.js"
+        "src/routes/admin/cityPackTemplateLibrary.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -431,19 +343,67 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1098",
-        "src/routes/admin/cityPackEducationLinks.js:1"
+        "src/index.js:1071",
+        "src/routes/admin/cityPackTemplateLibrary.js:1"
       ]
     },
     {
       "method": "GET",
-      "path": "/]+\\/export$/",
+      "path": "/^\\/api\\/admin\\/city-pack-update-proposals\\/[^/]+(\\/(approve|reject|apply))?$/",
+      "match": "regex",
+      "line": 1105,
+      "route_files": [
+        "src/routes/admin/cityPackUpdateProposals.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1105",
+        "src/routes/admin/cityPackUpdateProposals.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/city-pack-update-proposals\\/[^/]+(\\/(approve|reject|apply))?$/",
+      "match": "regex",
+      "line": 1105,
+      "route_files": [
+        "src/routes/admin/cityPackUpdateProposals.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1105",
+        "src/routes/admin/cityPackUpdateProposals.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+\\/(activate|retire|structure|content)$/",
       "match": "regex",
       "line": 1064,
       "route_files": [
         "src/routes/admin/cityPacks.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -463,13 +423,13 @@
     },
     {
       "method": "POST",
-      "path": "/]+\\/export$/",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+\\/(activate|retire|structure|content)$/",
       "match": "regex",
       "line": 1064,
       "route_files": [
         "src/routes/admin/cityPacks.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -489,53 +449,169 @@
     },
     {
       "method": "GET",
-      "path": "/]+\\/policy$/",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+\\/export$/",
       "match": "regex",
-      "line": 1118,
+      "line": 1064,
       "route_files": [
-        "src/routes/admin/cityPackReviewInbox.js"
+        "src/routes/admin/cityPacks.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
-      "killSwitch_enforced": true,
-      "killSwitch_confidence": "high",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
       "writes_collections": [
         "audit_logs",
-        "checklists",
-        "city_pack_bulletins",
         "city_packs",
-        "events",
-        "journey_param_versions",
-        "journey_reminder_runs",
-        "journey_todo_items",
-        "notification_deliveries",
-        "notifications",
-        "opsConfig",
-        "source_audit_runs",
-        "source_evidence",
-        "source_refs",
-        "user_checklists",
-        "user_journey_schedules",
-        "users"
+        "source_refs"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1118",
-        "src/routes/admin/cityPackReviewInbox.js:1"
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
       ]
     },
     {
       "method": "POST",
-      "path": "/]+\\/policy$/",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+\\/export$/",
       "match": "regex",
-      "line": 1118,
+      "line": 1064,
       "route_files": [
-        "src/routes/admin/cityPackReviewInbox.js"
+        "src/routes/admin/cityPacks.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+$/",
+      "match": "regex",
+      "line": 1064,
+      "route_files": [
+        "src/routes/admin/cityPacks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/city-packs\\/[^/]+$/",
+      "match": "regex",
+      "line": 1064,
+      "route_files": [
+        "src/routes/admin/cityPacks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/city-packs\\/import\\/(dry-run|apply)$/",
+      "match": "regex",
+      "line": 1064,
+      "route_files": [
+        "src/routes/admin/cityPacks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/city-packs\\/import\\/(dry-run|apply)$/",
+      "match": "regex",
+      "line": 1064,
+      "route_files": [
+        "src/routes/admin/cityPacks.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "city_packs",
+        "source_refs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1064",
+        "src/routes/admin/cityPacks.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/emergency\\/bulletins\\/([^/]+)\\/(approve|reject)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -543,39 +619,319 @@
       "killSwitch_confidence": "high",
       "writes_collections": [
         "audit_logs",
-        "checklists",
-        "city_pack_bulletins",
-        "city_packs",
-        "events",
-        "journey_param_versions",
-        "journey_reminder_runs",
-        "journey_todo_items",
-        "notification_deliveries",
-        "notifications",
-        "opsConfig",
-        "source_audit_runs",
-        "source_evidence",
-        "source_refs",
-        "user_checklists",
-        "user_journey_schedules",
-        "users"
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1118",
-        "src/routes/admin/cityPackReviewInbox.js:1"
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/emergency\\/bulletins\\/([^/]+)\\/(approve|reject)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/emergency\\/bulletins\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/emergency\\/bulletins\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/emergency\\/evidence\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/emergency\\/evidence\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/emergency\\/providers\\/([^/]+)\\/force-refresh$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/emergency\\/providers\\/([^/]+)\\/force-refresh$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/emergency\\/providers\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/emergency\\/providers\\/([^/]+)$/",
+      "match": "regex",
+      "line": 997,
+      "route_files": [
+        "src/routes/admin/emergencyLayer.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_events_normalized",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "link_registry",
+        "system_flags"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:997",
+        "src/routes/admin/emergencyLayer.js:1"
       ]
     },
     {
       "method": "*",
-      "path": "/]+$/",
+      "path": "/^\\/api\\/admin\\/source-evidence\\/[^/]+$/",
       "match": "regex",
       "line": 1123,
       "route_files": [
         "src/routes/admin/cityPackEvidence.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -593,39 +949,13 @@
     },
     {
       "method": "GET",
-      "path": "/]+$/",
-      "match": "regex",
-      "line": 1064,
-      "route_files": [
-        "src/routes/admin/cityPacks.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs",
-        "city_packs",
-        "source_refs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/]+$/",
+      "path": "/^\\/api\\/admin\\/source-refs\\/[^/]+\\/(confirm|retire|replace|manual-only)$/",
       "match": "regex",
       "line": 1118,
       "route_files": [
         "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -636,10 +966,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -659,39 +995,13 @@
     },
     {
       "method": "POST",
-      "path": "/]+$/",
-      "match": "regex",
-      "line": 1064,
-      "route_files": [
-        "src/routes/admin/cityPacks.js"
-      ],
-      "auth_required": "none",
-      "csrf_required": false,
-      "confirm_token_required": false,
-      "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
-      "writes_collections": [
-        "audit_logs",
-        "city_packs",
-        "source_refs"
-      ],
-      "audit_required": true,
-      "trace_required": true,
-      "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/]+$/",
+      "path": "/^\\/api\\/admin\\/source-refs\\/[^/]+\\/(confirm|retire|replace|manual-only)$/",
       "match": "regex",
       "line": 1118,
       "route_files": [
         "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -702,10 +1012,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -725,39 +1041,105 @@
     },
     {
       "method": "GET",
-      "path": "/^\\/api\\/admin\\/city-packs\\/import\\/(dry-run|apply)$/",
+      "path": "/^\\/api\\/admin\\/source-refs\\/[^/]+\\/policy$/",
       "match": "regex",
-      "line": 1064,
+      "line": 1118,
       "route_files": [
-        "src/routes/admin/cityPacks.js"
+        "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
       "writes_collections": [
         "audit_logs",
+        "checklists",
+        "city_pack_bulletins",
         "city_packs",
-        "source_refs"
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "events",
+        "journey_param_versions",
+        "journey_reminder_runs",
+        "journey_todo_items",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "opsConfig",
+        "source_audit_runs",
+        "source_evidence",
+        "source_refs",
+        "user_checklists",
+        "user_journey_schedules",
+        "users"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
+        "src/index.js:1118",
+        "src/routes/admin/cityPackReviewInbox.js:1"
       ]
     },
     {
       "method": "POST",
-      "path": "/^\\/api\\/admin\\/city-packs\\/import\\/(dry-run|apply)$/",
+      "path": "/^\\/api\\/admin\\/source-refs\\/[^/]+\\/policy$/",
       "match": "regex",
-      "line": 1064,
+      "line": 1118,
       "route_files": [
-        "src/routes/admin/cityPacks.js"
+        "src/routes/admin/cityPackReviewInbox.js"
       ],
-      "auth_required": "none",
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs",
+        "checklists",
+        "city_pack_bulletins",
+        "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
+        "events",
+        "journey_param_versions",
+        "journey_reminder_runs",
+        "journey_todo_items",
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "opsConfig",
+        "source_audit_runs",
+        "source_evidence",
+        "source_refs",
+        "user_checklists",
+        "user_journey_schedules",
+        "users"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:1118",
+        "src/routes/admin/cityPackReviewInbox.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/^\\/api\\/admin\\/vendors\\/([^/]+)\\/(edit|activate|disable)$/",
+      "match": "regex",
+      "line": 921,
+      "route_files": [
+        "src/routes/admin/vendors.js"
+      ],
+      "auth_required": "adminToken",
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
@@ -765,14 +1147,38 @@
       "killSwitch_confidence": "low",
       "writes_collections": [
         "audit_logs",
-        "city_packs",
-        "source_refs"
+        "link_registry"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:1064",
-        "src/routes/admin/cityPacks.js:1"
+        "src/index.js:921",
+        "src/routes/admin/vendors.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/^\\/api\\/admin\\/vendors\\/([^/]+)\\/(edit|activate|disable)$/",
+      "match": "regex",
+      "line": 921,
+      "route_files": [
+        "src/routes/admin/vendors.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": false,
+      "killSwitch_confidence": "low",
+      "writes_collections": [
+        "audit_logs",
+        "link_registry"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:921",
+        "src/routes/admin/vendors.js:1"
       ]
     },
     {
@@ -1226,10 +1632,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1266,10 +1678,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1306,10 +1724,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1346,10 +1770,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1440,10 +1870,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1480,10 +1916,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1520,10 +1962,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -1560,10 +2008,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -2450,7 +2904,10 @@
       "killSwitch_enforced": false,
       "killSwitch_confidence": "low",
       "writes_collections": [
-        "audit_logs"
+        "link_registry",
+        "notification_deliveries",
+        "notifications",
+        "users"
       ],
       "audit_required": true,
       "trace_required": true,
@@ -4235,10 +4692,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",
@@ -4275,10 +4738,16 @@
         "checklists",
         "city_pack_bulletins",
         "city_packs",
+        "emergency_bulletins",
+        "emergency_diffs",
+        "emergency_providers",
+        "emergency_snapshots",
+        "emergency_unmapped_events",
         "events",
         "journey_param_versions",
         "journey_reminder_runs",
         "journey_todo_items",
+        "link_registry",
         "notification_deliveries",
         "notifications",
         "opsConfig",

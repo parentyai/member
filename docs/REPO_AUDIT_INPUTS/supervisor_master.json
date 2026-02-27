@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T09:45:09-05:00",
-  "gitCommit": "34d5c895298b6a39855fcf9b66640373162793e1",
-  "branch": "main",
-  "sourceDigest": "ef0b444a3d0febe63166b72fd1a85538b5cde7dbeb3a2fca7532f64cede50a71",
+  "generatedAt": "2026-02-26T14:15:32-05:00",
+  "gitCommit": "d67494e443716e8ab320496010d948e526b8af94",
+  "branch": "codex/pr10-final-integration-gates",
+  "sourceDigest": "96e4922c7cf99d3820ff4930bcce99d55c8705e385b1a31c54a4d4dfca416643",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

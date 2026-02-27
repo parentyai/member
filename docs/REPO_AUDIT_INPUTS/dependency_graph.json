@@ -110,9 +110,6 @@
       "automationConfigRepo"
     ],
     "dryRunSegmentSend": [],
-    "ensureEmergencyProviders": [
-      "emergencyProvidersRepo"
-    ],
     "ensureUserFromWebhook": [
       "usersRepo"
     ],
@@ -165,6 +162,22 @@
     "getAutomationConfig": [
       "automationConfigRepo"
     ],
+    "getEmergencyBulletin": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
+    ],
+    "getEmergencyEvidence": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
+    ],
     "getKillSwitch": [
       "systemFlagsRepo"
     ],
@@ -177,6 +190,12 @@
     ],
     "getNextActionCandidates": [
       "systemFlagsRepo"
+    ],
+    "getNotificationDeliveries": [
+      "deliveriesRepo",
+      "linkRegistryRepo",
+      "notificationsRepo",
+      "usersRepo"
     ],
     "getNotificationOperationalSummary": [
       "analyticsReadRepo",
@@ -260,6 +279,22 @@
     "listDecisions": [
       "decisionLogsRepo"
     ],
+    "listEmergencyBulletins": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
+    ],
+    "listEmergencyProviders": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
+    ],
     "listLinks": [
       "linkRegistryRepo"
     ],
@@ -303,11 +338,18 @@
     ],
     "normalizeLimit": [
       "analyticsReadRepo",
+      "deliveriesRepo",
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
       "journeyGraphCatalogRepo",
       "journeyParamVersionsRepo",
       "journeyPolicyRepo",
       "journeyReminderRunsRepo",
       "journeyTodoItemsRepo",
+      "linkRegistryRepo",
       "notificationsRepo",
       "sourceRefsRepo",
       "userJourneySchedulesRepo",
@@ -359,6 +401,14 @@
     ],
     "recordUserLlmConsent": [
       "userConsentsRepo"
+    ],
+    "rejectEmergencyBulletin": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
     ],
     "resolvePlan": [
       "opsConfigRepo",
@@ -482,6 +532,14 @@
       "decisionTimelineRepo",
       "deliveriesRepo",
       "notificationsRepo"
+    ],
+    "updateEmergencyProvider": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyProvidersRepo",
+      "emergencySnapshotsRepo",
+      "emergencyUnmappedEventsRepo",
+      "linkRegistryRepo"
     ],
     "updateLink": [
       "linkRegistryRepo"
@@ -748,10 +806,15 @@
     "src/routes/admin/emergencyLayer.js": [
       "appendAuditLog",
       "approveEmergencyBulletin",
-      "ensureEmergencyProviders",
       "fetchProviderSnapshot",
+      "getEmergencyBulletin",
+      "getEmergencyEvidence",
+      "listEmergencyBulletins",
+      "listEmergencyProviders",
       "normalizeAndDiffProvider",
-      "summarizeDraftWithLLM"
+      "rejectEmergencyBulletin",
+      "summarizeDraftWithLLM",
+      "updateEmergencyProvider"
     ],
     "src/routes/admin/implementationTargets.js": [],
     "src/routes/admin/journeyGraphBranchQueue.js": [
@@ -811,7 +874,7 @@
       "appendAuditLog"
     ],
     "src/routes/admin/notificationDeliveries.js": [
-      "appendAuditLog"
+      "getNotificationDeliveries"
     ],
     "src/routes/admin/notifications.js": [
       "appendAuditLog",
