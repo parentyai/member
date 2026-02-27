@@ -22,6 +22,9 @@ test('phase674: master table loader contract (docs JSON is single SSOT)', () => 
   assert.equal(typeof registry.version, 'string');
   assert.ok(Array.isArray(registry.flows));
   assert.ok(registry.flows.length > 0, 'flows should not be empty');
+  registry.flows.forEach((flow) => {
+    assert.ok(['required', 'warn_only'].includes(flow.confirmMode), `invalid flow.confirmMode: ${flow.flowId}`);
+  });
 
   const actionKeys = Object.keys(registry.actionByKey || {});
   assert.ok(actionKeys.length > 0, 'actionByKey should not be empty');
@@ -32,6 +35,7 @@ test('phase674: master table loader contract (docs JSON is single SSOT)', () => 
     assert.equal(typeof action.flowId, 'string');
     assert.equal(typeof action.method, 'string');
     assert.equal(typeof action.pathPattern, 'string');
+    assert.equal(typeof action.handlerFile, 'string');
     assert.equal(action.workbenchZoneRequired, true);
   });
 });

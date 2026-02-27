@@ -223,6 +223,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
 
 ### Admin Master Table V1（add-only）
 - 危険操作フロー（flowId / guardRules / writeActions / evidenceBindings）は `docs/SSOT_ADMIN_UI_MASTER_TABLE_V1.md` を唯一SSOTとする。
+- flow単位 `confirmMode` は `required|warn_only` を採用する（段階導入: `warn_only` は警告監査のみ、`required` は実行遮断）。
 - Workbench境界:
   - 危険操作のUIバインドは `data-workbench-zone="true"` 配下でのみ許可する。
   - topbar/ヘッダーは read-only shortcut とし、write API 実行導線を持たない。

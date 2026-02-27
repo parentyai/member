@@ -153,10 +153,13 @@ async function enforceManagedFlowGuard(params, deps) {
     }, deps);
   }
 
-  if (flow.guardRules.confirmMode === 'required') {
-    const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
-    const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
-    if (!planHash || !confirmToken) {
+  const confirmMode = typeof flow.confirmMode === 'string' && flow.confirmMode
+    ? flow.confirmMode
+    : (flow.guardRules.confirmMode === 'required' ? 'required' : 'warn_only');
+  const planHash = typeof payload.planHash === 'string' ? payload.planHash.trim() : '';
+  const confirmToken = typeof payload.confirmToken === 'string' ? payload.confirmToken.trim() : '';
+  if (!planHash || !confirmToken) {
+    if (confirmMode === 'required') {
       await auditManagedFlowViolation({
         actor: actor || 'unknown',
         actionKey,
@@ -167,6 +170,16 @@ async function enforceManagedFlowGuard(params, deps) {
       }, deps);
       writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId: traceId || null });
       return null;
+    }
+    if (confirmMode === 'warn_only') {
+      await auditManagedFlowWarning({
+        actor: actor || 'unknown',
+        actionKey,
+        traceId: traceId || null,
+        payloadSummary: {
+          reason: 'confirm_missing_warn_only'
+        }
+      }, deps);
     }
   }
 
@@ -189,6 +202,7 @@ async function enforceManagedFlowGuard(params, deps) {
     actionKey,
     actor: actor || 'unknown',
     traceId: traceId || null,
+    confirmMode,
     guardRules: flow.guardRules
   };
 }

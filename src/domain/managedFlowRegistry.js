@@ -34,12 +34,14 @@ function validateFlow(flow, flowIndex) {
   const idx = `flows[${flowIndex}]`;
   if (!isObject(flow)) throw new Error(`${idx}_OBJECT_REQUIRED`);
   if (typeof flow.flowId !== 'string' || !flow.flowId.trim()) throw new Error(`${idx}.flowId_REQUIRED`);
+  if (typeof flow.confirmMode !== 'string' || !flow.confirmMode.trim()) throw new Error(`${idx}.confirmMode_REQUIRED`);
   if (!isObject(flow.stateMachine)) throw new Error(`${idx}.stateMachine_OBJECT_REQUIRED`);
   if (!isObject(flow.guardRules)) throw new Error(`${idx}.guardRules_OBJECT_REQUIRED`);
   if (!Array.isArray(flow.writeActions) || flow.writeActions.length === 0) throw new Error(`${idx}.writeActions_ARRAY_REQUIRED`);
   if (!isObject(flow.evidenceBindings)) throw new Error(`${idx}.evidenceBindings_OBJECT_REQUIRED`);
   if (!isObject(flow.roleRestrictions)) throw new Error(`${idx}.roleRestrictions_OBJECT_REQUIRED`);
 
+  ensureEnum(flow.confirmMode, ['required', 'warn_only'], `${idx}.confirmMode`);
   ensureEnum(flow.guardRules.actorMode, ['required', 'allow_fallback'], `${idx}.guardRules.actorMode`);
   ensureEnum(flow.guardRules.traceMode, ['required'], `${idx}.guardRules.traceMode`);
   ensureEnum(flow.guardRules.confirmMode, ['required', 'optional', 'none'], `${idx}.guardRules.confirmMode`);
@@ -53,6 +55,7 @@ function validateFlow(flow, flowIndex) {
     if (typeof action.method !== 'string' || !action.method.trim()) throw new Error(`${actionIdx}.method_REQUIRED`);
     if (typeof action.pathPattern !== 'string' || !action.pathPattern.trim()) throw new Error(`${actionIdx}.pathPattern_REQUIRED`);
     if (typeof action.dangerClass !== 'string' || !action.dangerClass.trim()) throw new Error(`${actionIdx}.dangerClass_REQUIRED`);
+    if (typeof action.handlerFile !== 'string' || !action.handlerFile.trim()) throw new Error(`${actionIdx}.handlerFile_REQUIRED`);
     if (action.workbenchZoneRequired !== true) throw new Error(`${actionIdx}.workbenchZoneRequired_TRUE_REQUIRED`);
   });
 }
@@ -64,6 +67,7 @@ function validateMasterTable(table) {
 
   const flowIds = new Set();
   const actionKeys = new Set();
+  const methodPathKeys = new Set();
   table.flows.forEach((flow, flowIndex) => {
     validateFlow(flow, flowIndex);
     if (flowIds.has(flow.flowId)) throw new Error(`DUPLICATE_FLOW_ID:${flow.flowId}`);
@@ -71,6 +75,9 @@ function validateMasterTable(table) {
     flow.writeActions.forEach((action) => {
       if (actionKeys.has(action.actionKey)) throw new Error(`DUPLICATE_ACTION_KEY:${action.actionKey}`);
       actionKeys.add(action.actionKey);
+      const methodPathKey = `${String(action.method).trim().toUpperCase()} ${String(action.pathPattern).trim()}`;
+      if (methodPathKeys.has(methodPathKey)) throw new Error(`DUPLICATE_METHOD_PATH:${methodPathKey}`);
+      methodPathKeys.add(methodPathKey);
     });
   });
 }
@@ -78,6 +85,7 @@ function validateMasterTable(table) {
 function buildRegistry(table) {
   const flows = table.flows.map((flow) => Object.freeze({
     flowId: flow.flowId,
+    confirmMode: flow.confirmMode,
     stateMachine: flow.stateMachine,
     guardRules: flow.guardRules,
     writeActions: flow.writeActions,
