@@ -196,7 +196,7 @@ async function getUserStateSummary(params) {
   if (!payload.lineUserId) throw new Error('lineUserId required');
   const fallbackMode = resolveFallbackMode(payload.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
-  const fallbackOnEmpty = payload.fallbackOnEmpty !== false;
+  const fallbackOnEmpty = payload.fallbackOnEmpty === true;
   const includeMeta = payload.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(payload);
   const fallbackSources = [];

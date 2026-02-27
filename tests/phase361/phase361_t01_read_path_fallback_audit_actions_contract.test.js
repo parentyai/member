@@ -23,4 +23,9 @@ test('phase361: read-path routes include fallback audit actions', () => {
   assert.ok(phase5State.includes("action: 'read_path.fallback.phase5_state'"));
   assert.ok(phase5Ops.includes("'read_path.fallback.users_summary'"));
   assert.ok(phase5Ops.includes("'read_path.fallback.notifications_summary'"));
+  assert.ok(opsOverview.includes("action: 'read_path_fallback'"));
+  assert.ok(dashboard.includes("action: 'read_path_fallback'"));
+  assert.ok(monitor.includes("action: 'read_path_fallback'"));
+  assert.ok(phase5State.includes("action: 'read_path_fallback'"));
+  assert.ok(phase5Ops.includes("action: 'read_path_fallback'"));
 });

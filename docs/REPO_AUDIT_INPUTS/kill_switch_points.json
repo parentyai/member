@@ -262,22 +262,22 @@
     },
     {
       "file": "src/routes/admin/osDashboardKpi.js",
-      "line": 181,
+      "line": 179,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/osDashboardKpi.js",
-      "line": 203,
+      "line": 201,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/osDashboardKpi.js",
-      "line": 336,
+      "line": 334,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/osDashboardKpi.js",
-      "line": 465,
+      "line": 463,
       "symbol": "killSwitch"
     },
     {

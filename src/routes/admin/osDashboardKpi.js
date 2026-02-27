@@ -15,10 +15,10 @@ const {
   isFallbackAllowed
 } = require('../../domain/readModel/snapshotReadPolicy');
 const {
-  FALLBACK_MODE_ALLOW,
   FALLBACK_MODE_BLOCK,
   normalizeFallbackMode,
-  resolveFallbackModeDefault
+  resolveFallbackModeDefault,
+  resolveFallbackMode
 } = require('../../domain/readModel/fallbackPolicy');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
@@ -55,7 +55,7 @@ function parseFallbackMode(req) {
 function parseFallbackOnEmpty(req) {
   const url = new URL(req.url, 'http://localhost');
   const raw = url.searchParams.get('fallbackOnEmpty');
-  if (raw === null || raw === undefined || raw === '') return true;
+  if (raw === null || raw === undefined || raw === '') return false;
   if (raw === 'true') return true;
   if (raw === 'false') return false;
   throw new Error('invalid fallbackOnEmpty');
@@ -171,10 +171,8 @@ function isSnapshotFresh(snapshot, freshnessMinutes) {
 
 async function computeDashboardKpis(windowMonths, scanLimit, options) {
   const opts = options && typeof options === 'object' ? options : {};
-  const fallbackMode = opts.fallbackMode === FALLBACK_MODE_BLOCK
-    ? FALLBACK_MODE_BLOCK
-    : FALLBACK_MODE_ALLOW;
-  const fallbackOnEmpty = opts.fallbackOnEmpty !== false;
+  const fallbackMode = resolveFallbackMode(opts.fallbackMode);
+  const fallbackOnEmpty = opts.fallbackOnEmpty === true;
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
   const buckets = monthBuckets(windowMonths);
   const queryRange = resolveBucketQueryRange(buckets);
@@ -626,6 +624,16 @@ async function handleDashboardKpi(req, res) {
     }
     if (computed.fallbackUsed === true || computed.fallbackBlocked === true) {
       try {
+        const fallbackPayloadSummary = {
+          fallbackUsed: computed.fallbackUsed === true,
+          fallbackBlocked: computed.fallbackBlocked === true,
+          fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
+          snapshotMode,
+          fallbackMode,
+          fallbackOnEmpty,
+          windowMonths,
+          scanLimit
+        };
         await appendAuditLog({
           actor,
           action: 'read_path.fallback.dashboard_kpi',
@@ -633,16 +641,18 @@ async function handleDashboardKpi(req, res) {
           entityId: 'dashboard_kpi',
           traceId: traceId || undefined,
           requestId: requestId || undefined,
-          payloadSummary: {
-            fallbackUsed: computed.fallbackUsed === true,
-            fallbackBlocked: computed.fallbackBlocked === true,
-            fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
-            snapshotMode,
-            fallbackMode,
-            fallbackOnEmpty,
-            windowMonths,
-            scanLimit
-          }
+          payloadSummary: fallbackPayloadSummary
+        });
+        await appendAuditLog({
+          actor,
+          action: 'read_path_fallback',
+          entityType: 'read_path',
+          entityId: 'dashboard_kpi',
+          traceId: traceId || undefined,
+          requestId: requestId || undefined,
+          payloadSummary: Object.assign({}, fallbackPayloadSummary, {
+            readPathAction: 'read_path.fallback.dashboard_kpi'
+          })
         });
       } catch (_auditErr) {
         // best effort only

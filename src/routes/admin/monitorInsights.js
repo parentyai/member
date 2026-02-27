@@ -48,7 +48,7 @@ function resolveFallbackMode(value) {
 }
 
 function parseFallbackOnEmpty(value) {
-  if (value === null || value === undefined || value === '') return true;
+  if (value === null || value === undefined || value === '') return false;
   if (value === 'true') return true;
   if (value === 'false') return false;
   return null;
@@ -291,6 +291,22 @@ async function handleMonitorInsights(req, res) {
         }
       });
       if (fallbackUsed || fallbackBlockedFlag) {
+        const fallbackPayloadSummary = {
+          fallbackUsed,
+          fallbackBlocked: fallbackBlockedFlag,
+          fallbackSources,
+          fallbackSourceTrace,
+          snapshotMode,
+          fallbackMode,
+          fallbackOnEmpty,
+          windowStart: windowStartDate.toISOString(),
+          windowEnd: windowEndDate.toISOString(),
+          readLimitUsed,
+          resultRows,
+          matchedDeliveryCount,
+          dataSource,
+          readLimit
+        };
         await appendAuditLog({
           actor,
           action: 'read_path.fallback.monitor_insights',
@@ -298,22 +314,18 @@ async function handleMonitorInsights(req, res) {
           entityId: 'monitor_insights',
           traceId,
           requestId,
-          payloadSummary: {
-            fallbackUsed,
-            fallbackBlocked: fallbackBlockedFlag,
-            fallbackSources,
-            fallbackSourceTrace,
-            snapshotMode,
-            fallbackMode,
-            fallbackOnEmpty,
-            windowStart: windowStartDate.toISOString(),
-            windowEnd: windowEndDate.toISOString(),
-            readLimitUsed,
-            resultRows,
-            matchedDeliveryCount,
-            dataSource,
-            readLimit
-          }
+          payloadSummary: fallbackPayloadSummary
+        });
+        await appendAuditLog({
+          actor,
+          action: 'read_path_fallback',
+          entityType: 'read_path',
+          entityId: 'monitor_insights',
+          traceId,
+          requestId,
+          payloadSummary: Object.assign({}, fallbackPayloadSummary, {
+            readPathAction: 'read_path.fallback.monitor_insights'
+          })
         });
       }
     } catch (_err) {

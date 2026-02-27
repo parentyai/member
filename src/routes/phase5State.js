@@ -47,7 +47,7 @@ function parseFallbackMode(value) {
 }
 
 function parseFallbackOnEmpty(value) {
-  if (value === null || value === undefined || value === '') return true;
+  if (value === null || value === undefined || value === '') return false;
   if (value === 'true') return true;
   if (value === 'false') return false;
   return null;
@@ -70,6 +70,11 @@ async function appendFallbackAudit(req, meta, extra) {
   const fallbackBlocked = Boolean(meta.fallbackBlocked);
   if (!fallbackUsed && !fallbackBlocked) return;
   try {
+    const payloadSummary = Object.assign({
+      fallbackUsed,
+      fallbackBlocked,
+      fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
+    }, extra || {});
     await appendAuditLog({
       actor: resolveAuditActor(req),
       action: 'read_path.fallback.phase5_state',
@@ -77,11 +82,18 @@ async function appendFallbackAudit(req, meta, extra) {
       entityId: 'phase5_state',
       traceId: resolveHeader(req, 'x-trace-id') || undefined,
       requestId: resolveHeader(req, 'x-request-id') || undefined,
-      payloadSummary: Object.assign({
-        fallbackUsed,
-        fallbackBlocked,
-        fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
-      }, extra || {})
+      payloadSummary
+    });
+    await appendAuditLog({
+      actor: resolveAuditActor(req),
+      action: 'read_path_fallback',
+      entityType: 'read_path',
+      entityId: 'phase5_state',
+      traceId: resolveHeader(req, 'x-trace-id') || undefined,
+      requestId: resolveHeader(req, 'x-request-id') || undefined,
+      payloadSummary: Object.assign({}, payloadSummary, {
+        readPathAction: 'read_path.fallback.phase5_state'
+      })
     });
   } catch (_err) {
     // best effort only

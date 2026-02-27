@@ -25,7 +25,11 @@ async function runSummaryWithDeliveries(deliveries) {
   }
 
   const { getUserStateSummary } = require('../../src/usecases/phase5/getUserStateSummary');
-  const result = await getUserStateSummary({ lineUserId: 'U1' });
+  const result = await getUserStateSummary({
+    lineUserId: 'U1',
+    fallbackMode: 'allow',
+    fallbackOnEmpty: true
+  });
   clearDbForTest();
   return result;
 }
@@ -62,4 +66,3 @@ test('phase127: lastReactionAt is null when both clickAt/readAt missing', async 
   }]);
   assert.strictEqual(result.lastReactionAt, null);
 });
-

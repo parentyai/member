@@ -13,7 +13,7 @@ function normalizeFallbackMode(value) {
 
 function resolveFallbackModeDefault() {
   const envMode = normalizeFallbackMode(process.env.READ_PATH_FALLBACK_MODE_DEFAULT);
-  return envMode || FALLBACK_MODE_ALLOW;
+  return envMode || FALLBACK_MODE_BLOCK;
 }
 
 function resolveFallbackMode(value) {
