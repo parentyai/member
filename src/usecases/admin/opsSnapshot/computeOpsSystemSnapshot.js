@@ -521,8 +521,9 @@ async function computeOpsSystemSnapshot(params) {
     return status === 'draft';
   }).length;
   const emergencyDiffCount = emergencyDiffs.reduce((sum, row) => {
-    const count = Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0;
-    return sum + count;
+    const data = rowData(row);
+    const count = Number(data.count);
+    return sum + (Number.isFinite(count) ? count : 0);
   }, 0);
 
   const emergencyAgeState = evaluateAgeStatus(emergencyLastSyncAgeSeconds, 30 * 60, 90 * 60);
@@ -621,13 +622,27 @@ async function computeOpsSystemSnapshot(params) {
     }
   });
 
-  const todoOverdueCount = todoStats.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.overdueCount)) ? Number(row.overdueCount) : 0), 0);
-  const todoOpenCount = todoStats.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.openCount)) ? Number(row.openCount) : 0), 0);
-  const activeUsers = Number.isFinite(Number(journeyKpiDaily && journeyKpiDaily.totalUsers))
-    ? Number(journeyKpiDaily.totalUsers)
+  const todoOverdueCount = todoStats.reduce((sum, row) => {
+    const data = rowData(row);
+    const count = Number(data.overdueCount);
+    return sum + (Number.isFinite(count) ? count : 0);
+  }, 0);
+  const todoOpenCount = todoStats.reduce((sum, row) => {
+    const data = rowData(row);
+    const count = Number(data.openCount);
+    return sum + (Number.isFinite(count) ? count : 0);
+  }, 0);
+  const journeyTotalUsers = Number(journeyKpiDaily && typeof journeyKpiDaily === 'object' ? journeyKpiDaily.totalUsers : null);
+  const activeUsers = Number.isFinite(journeyTotalUsers)
+    ? journeyTotalUsers
     : lineUserIds.length;
-  const stalledRate = Number.isFinite(Number(journeyKpiDaily && journeyKpiDaily.dependencyBlockRate))
-    ? Number(journeyKpiDaily.dependencyBlockRate)
+  const journeyDependencyBlockRate = Number(
+    journeyKpiDaily && typeof journeyKpiDaily === 'object'
+      ? journeyKpiDaily.dependencyBlockRate
+      : null
+  );
+  const stalledRate = Number.isFinite(journeyDependencyBlockRate)
+    ? journeyDependencyBlockRate
     : null;
   const stalledUsers = Number.isFinite(stalledRate) && activeUsers > 0
     ? Math.round(activeUsers * stalledRate)
