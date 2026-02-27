@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-02-27T02:42:41.341Z",
+  "generatedAt": "2026-02-27T03:26:57.975Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "a7caa436209f2e7ce315e7baad7894da095b15c0b7e3e66f58838e253e50913f",
+  "sourceDigest": "c5fe7988733eccd6de92381881f0acbe89c08629253bf344dfe30fa54925a51e",
   "canonical_repos_count": 82,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
-  "naming_drift_scenario_count": 1,
+  "naming_drift_scenario_count": 0,
   "naming_drift_scenarioKey_count": 38,
   "canonical_repos": [
     "analyticsReadRepo",
@@ -97,9 +97,7 @@
   "merge_candidates": [],
   "unresolved_dynamic_dep": [],
   "naming_drift": {
-    "scenario": [
-      "src/routes/admin/productReadiness.js"
-    ],
+    "scenario": [],
     "scenarioKey": [
       "src/domain/journey/lineCommandParsers.js",
       "src/domain/normalizers/scenarioKeyNormalizer.js",
