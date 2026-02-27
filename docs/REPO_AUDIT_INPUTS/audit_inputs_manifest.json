@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T19:10:48-05:00",
-  "gitCommit": "76749277e8c07593194178474c749fe9b4393b4e",
+  "generatedAt": "2026-02-26T19:31:50-05:00",
+  "gitCommit": "de5a04961e1bdc4a0a9909ad641bbdcbe77e4847",
   "branch": "main",
-  "sourceDigest": "6bcbe866b4c06ccdf6d8788f057e2fdf0865b01c36914ba67facdd776226d5f0",
+  "sourceDigest": "79c813992611403f43cccd98755aae713893a9941d8c96d0eed3a1282e36102b",
   "counts": {
     "endpoints": 256,
     "routes": 118,
@@ -71,8 +71,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
-      "sha256": "ea8a707564cb4f4b86aa065184068fcdb96cf876904223f714fdab0a3f716b69",
-      "bytes": 23749
+      "sha256": "e0f6475bc95e5ad78b71e5b7f1341f4a5335a70f191940069ffb547be4c2e46a",
+      "bytes": 23819
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/impact_radius.json",

@@ -6,6 +6,8 @@ const childProcess = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_REQUIRED_PATH = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS', 'firestore_required_indexes.json');
+const REQUIRED_INDEX_TYPE_COMPOSITE = 'COMPOSITE';
+const REQUIRED_INDEX_TYPE_SINGLE_FIELD = 'SINGLE_FIELD';
 
 function toPosix(value) {
   return String(value || '').replace(/\\/g, '/');
@@ -90,16 +92,30 @@ function normalizeQueryScope(value) {
   return value.trim().toUpperCase();
 }
 
+function normalizeRequiredIndexType(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) return REQUIRED_INDEX_TYPE_COMPOSITE;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === REQUIRED_INDEX_TYPE_COMPOSITE) return REQUIRED_INDEX_TYPE_COMPOSITE;
+  if (normalized === REQUIRED_INDEX_TYPE_SINGLE_FIELD) return REQUIRED_INDEX_TYPE_SINGLE_FIELD;
+  throw new Error(`required index type must be ${REQUIRED_INDEX_TYPE_COMPOSITE} or ${REQUIRED_INDEX_TYPE_SINGLE_FIELD}`);
+}
+
+function isCompositeRequiredIndex(item) {
+  return Boolean(item) && item.indexType !== REQUIRED_INDEX_TYPE_SINGLE_FIELD;
+}
+
 function normalizeRequiredIndex(raw) {
   const payload = raw && typeof raw === 'object' ? raw : {};
   const id = typeof payload.id === 'string' ? payload.id.trim() : '';
   const collectionGroup = typeof payload.collectionGroup === 'string' ? payload.collectionGroup.trim() : '';
+  const indexType = normalizeRequiredIndexType(payload.indexType);
   if (!id) throw new Error('required index id is missing');
   if (!collectionGroup) throw new Error(`required index ${id} missing collectionGroup`);
   const fields = Array.isArray(payload.fields) ? payload.fields.map(normalizeField).filter(Boolean) : [];
   if (!fields.length) throw new Error(`required index ${id} has no valid fields`);
   return {
     id,
+    indexType,
     collectionGroup,
     queryScope: normalizeQueryScope(payload.queryScope),
     fields
@@ -355,13 +371,19 @@ function listActualIndexes(projectId, execFileSyncFn) {
   return parsed.map(normalizeActualIndex).filter(Boolean);
 }
 
-function printDiffSummary(projectId, requiredFile, requiredIndexes, actualIndexes, diff) {
+function printDiffSummary(projectId, requiredFile, requiredIndexes, compositeRequiredIndexes, actualIndexes, diff) {
   const rel = toPosix(path.relative(ROOT, requiredFile));
+  const compositeCount = Array.isArray(compositeRequiredIndexes) ? compositeRequiredIndexes.length : 0;
+  const totalRequiredCount = Array.isArray(requiredIndexes) ? requiredIndexes.length : 0;
+  const singleFieldCount = Math.max(0, totalRequiredCount - compositeCount);
   process.stdout.write(`[firestore-indexes] project=${projectId}\n`);
   process.stdout.write(`[firestore-indexes] required_file=${rel}\n`);
   process.stdout.write(
-    `[firestore-indexes] required=${requiredIndexes.length} actual=${actualIndexes.length} present=${diff.present.length} missing=${diff.missing.length} extra=${diff.extra.length}\n`
+    `[firestore-indexes] required=${totalRequiredCount} composite_required=${compositeCount} single_field_required=${singleFieldCount} actual=${actualIndexes.length} present=${diff.present.length} missing=${diff.missing.length} extra=${diff.extra.length}\n`
   );
+  if (singleFieldCount > 0) {
+    process.stdout.write(`単一フィールド index（composite比較対象外）: ${singleFieldCount}\n`);
+  }
 
   if (diff.missing.length > 0) {
     process.stdout.write('不足 index:\n');
@@ -401,6 +423,7 @@ function run(argv, env, execFileSyncFn) {
   const execSync = execFileSyncFn || childProcess.execFileSync;
   const requiredPayload = readRequiredPayload(opts.requiredFile);
   const required = requiredPayload.indexes;
+  const requiredComposite = required.filter(isCompositeRequiredIndex);
   const criticalContracts = requiredPayload.criticalContracts;
   const contractErrors = validateCriticalContracts(required, criticalContracts);
   const contractsOnly = Boolean(opts.contractsOnly);
@@ -418,8 +441,8 @@ function run(argv, env, execFileSyncFn) {
   } else {
     projectId = resolveProjectId(opts, execSync);
     actual = listActualIndexes(projectId, execSync);
-    diff = diffIndexes(required, actual);
-    printDiffSummary(projectId, opts.requiredFile, required, actual, diff);
+    diff = diffIndexes(requiredComposite, actual);
+    printDiffSummary(projectId, opts.requiredFile, required, requiredComposite, actual, diff);
     if (opts.plan) printCreatePlan(projectId, diff.missing);
   }
   printContractErrors(contractErrors);
@@ -448,8 +471,12 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_REQUIRED_PATH,
+  REQUIRED_INDEX_TYPE_COMPOSITE,
+  REQUIRED_INDEX_TYPE_SINGLE_FIELD,
   parseArgs,
   normalizeField,
+  normalizeRequiredIndexType,
+  isCompositeRequiredIndex,
   normalizeRequiredIndex,
   normalizeCriticalContract,
   normalizeActualIndex,

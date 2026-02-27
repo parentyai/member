@@ -505,6 +505,7 @@
     },
     {
       "id": "journey_param_versions_updatedAt_desc",
+      "indexType": "SINGLE_FIELD",
       "collectionGroup": "journey_param_versions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -559,6 +560,7 @@
     },
     {
       "id": "journey_param_change_logs_createdAt_desc",
+      "indexType": "SINGLE_FIELD",
       "collectionGroup": "journey_param_change_logs",
       "queryScope": "COLLECTION",
       "fields": [
