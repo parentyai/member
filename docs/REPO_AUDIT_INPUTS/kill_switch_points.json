@@ -557,17 +557,17 @@
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 783,
+      "line": 798,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 791,
+      "line": 806,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 809,
+      "line": 824,
       "symbol": "killSwitch"
     },
     {
