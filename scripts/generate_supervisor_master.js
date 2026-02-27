@@ -53,7 +53,7 @@ const RECOMMENDED = Object.freeze({
   kill_switch_dependency_map: 'docs/KILLSWITCH_DEPENDENCY_MAP.md',
   schema_templates_v: 'docs/SCHEMA_templates_v.md',
   schema_ops_segments: 'docs/SCHEMA_ops_segments.md',
-  audit_report_latest: 'docs/REPO_FULL_AUDIT_REPORT_2026-02-21.md'
+  audit_report_latest: 'docs/REPO_FULL_AUDIT_REPORT_2026-02-27.md'
 });
 
 const EXCLUDED_EXAMPLES = Object.freeze([

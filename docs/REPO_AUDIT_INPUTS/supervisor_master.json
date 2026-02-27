@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T19:42:49-05:00",
-  "gitCommit": "40416d908904f3e2600b9e2a3b1477e9622007f4",
-  "branch": "codex/wave3-fallback-fail-closed-unify",
-  "sourceDigest": "8391aa392ac3725d38e56b362c881104ce92d5394cf26b346d86b952efeeee05",
+  "generatedAt": "2026-02-26T20:00:53-05:00",
+  "gitCommit": "84c2d347b6df2612270250b0c5708429ae247625",
+  "branch": "main",
+  "sourceDigest": "7e11f154e3615b9234dac718b1200beadc6595213072b7ab4b92217403c0fea2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
@@ -47,7 +47,7 @@
     "kill_switch_dependency_map": "docs/KILLSWITCH_DEPENDENCY_MAP.md",
     "schema_templates_v": "docs/SCHEMA_templates_v.md",
     "schema_ops_segments": "docs/SCHEMA_ops_segments.md",
-    "audit_report_latest": "docs/REPO_FULL_AUDIT_REPORT_2026-02-21.md"
+    "audit_report_latest": "docs/REPO_FULL_AUDIT_REPORT_2026-02-27.md"
   },
   "excluded_examples": [
     "tests/**",

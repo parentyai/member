@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T19:42:49-05:00",
-  "gitCommit": "40416d908904f3e2600b9e2a3b1477e9622007f4",
-  "branch": "codex/wave3-fallback-fail-closed-unify",
-  "sourceDigest": "c39cabbeedf3b0bf0efbf38a87737a83499d57c2ee13b0091135ba5e50cdfd0e",
+  "generatedAt": "2026-02-26T20:00:53-05:00",
+  "gitCommit": "84c2d347b6df2612270250b0c5708429ae247625",
+  "branch": "main",
+  "sourceDigest": "4eed11f089f1fa6b39ee75644eab3b4034e969e899e0f717c39ead7f351b3abf",
   "counts": {
     "endpoints": 256,
     "routes": 118,
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "f6eaa8b889a564c55b79e830d7e16b6d32753690e8f7d3e4b47dfdcede10a71c",
-      "bytes": 2424
+      "sha256": "90897af4d00fcc31816e6aa6de4174d771d562cb1ac2753a53ca81880ca75533",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [
