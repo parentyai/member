@@ -70,6 +70,19 @@ test('phase674: managed flow guard enforces trace/actor/confirm in strict actor 
   {
     const { res, capture } = createResCapture();
     const result = await enforceManagedFlowGuard({
+      req: { headers: { 'x-trace-id': 'trace-2b', 'x-actor': 'admin' } },
+      res,
+      actionKey: 'notifications.approve',
+      payload: { notificationId: 'n_2b' }
+    }, deps);
+    assert.ok(result && result.ok === true);
+    assert.equal(result.confirmMode, 'warn_only');
+    assert.equal(capture.status, null);
+  }
+
+  {
+    const { res, capture } = createResCapture();
+    const result = await enforceManagedFlowGuard({
       req: { headers: { 'x-trace-id': 'trace-3' } },
       res,
       actionKey: 'city_pack.bulletin.approve',
@@ -120,6 +133,6 @@ test('phase674: managed flow guard enforces trace/actor/confirm in strict actor 
     assert.match(String(capture.body || ''), /x-actor required/);
   }
 
-  assert.equal(audits.some((entry) => entry && entry.action === 'managed_flow.guard.warning'), false);
+  assert.ok(audits.some((entry) => entry && entry.action === 'managed_flow.guard.warning'));
   assert.ok(audits.some((entry) => entry && entry.action === 'managed_flow.guard.violation'));
 });

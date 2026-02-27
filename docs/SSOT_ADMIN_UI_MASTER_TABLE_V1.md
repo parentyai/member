@@ -9,18 +9,28 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
 ## Source of Truth
 - 本ファイルの `ADMIN_UI_MASTER_TABLE` JSON ブロックのみを真実源とする。
 - runtime は `src/domain/managedFlowRegistry.js` から本ブロックを読み込む。
+- `writeActions[].handlerFile` は server guard 適用漏れ検知の照合元とする（CI fail対象）。
+- `confirmMode` は flow単位の段階導入スイッチ（`warn_only` / `required`）とする。
 
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
-  "version": "2026-02-27.v1.2",
+  "version": "2026-02-27.v1.3",
   "flows": [
     {
       "flowId": "composer.notification.approve_plan",
       "stateMachine": {
         "initial": "draft",
         "transitions": [
-          { "event": "approve", "from": "draft", "to": "approved" },
-          { "event": "plan", "from": "approved", "to": "planned" }
+          {
+            "event": "approve",
+            "from": "draft",
+            "to": "approved"
+          },
+          {
+            "event": "plan",
+            "from": "approved",
+            "to": "planned"
+          }
         ]
       },
       "guardRules": {
@@ -36,31 +46,46 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/os/notifications/approve",
           "dangerClass": "approve",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/osNotifications.js"
         },
         {
           "actionKey": "notifications.send.plan",
           "method": "POST",
           "pathPattern": "/api/admin/os/notifications/send/plan",
           "dangerClass": "send_plan",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/osNotifications.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["notifications.approve", "notifications.send.plan"],
+        "auditActionHints": [
+          "notifications.approve",
+          "notifications.send.plan"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer"],
-        "deny": ["operator"]
-      }
+        "allow": [
+          "admin",
+          "developer"
+        ],
+        "deny": [
+          "operator"
+        ]
+      },
+      "confirmMode": "warn_only"
     },
     {
       "flowId": "composer.notification.execute",
       "stateMachine": {
         "initial": "planned",
         "transitions": [
-          { "event": "execute", "from": "planned", "to": "sent" }
+          {
+            "event": "execute",
+            "from": "planned",
+            "to": "sent"
+          }
         ]
       },
       "guardRules": {
@@ -76,26 +101,47 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/os/notifications/send/execute",
           "dangerClass": "execute",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/osNotifications.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["notifications.send.execute"],
+        "auditActionHints": [
+          "notifications.send.execute"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer"],
-        "deny": ["operator"]
-      }
+        "allow": [
+          "admin",
+          "developer"
+        ],
+        "deny": [
+          "operator"
+        ]
+      },
+      "confirmMode": "required"
     },
     {
       "flowId": "city_pack.bulletin.write",
       "stateMachine": {
         "initial": "draft",
         "transitions": [
-          { "event": "approve", "from": "draft", "to": "approved" },
-          { "event": "send", "from": "approved", "to": "sent" },
-          { "event": "reject", "from": "draft", "to": "rejected" }
+          {
+            "event": "approve",
+            "from": "draft",
+            "to": "approved"
+          },
+          {
+            "event": "send",
+            "from": "approved",
+            "to": "sent"
+          },
+          {
+            "event": "reject",
+            "from": "draft",
+            "to": "rejected"
+          }
         ]
       },
       "guardRules": {
@@ -111,49 +157,83 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-bulletins",
           "dangerClass": "create",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackBulletins.js"
         },
         {
           "actionKey": "city_pack.bulletin.approve",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-bulletins/:bulletinId/approve",
           "dangerClass": "approve",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackBulletins.js"
         },
         {
           "actionKey": "city_pack.bulletin.reject",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-bulletins/:bulletinId/reject",
           "dangerClass": "reject",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackBulletins.js"
         },
         {
           "actionKey": "city_pack.bulletin.send",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-bulletins/:bulletinId/send",
           "dangerClass": "send",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackBulletins.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["city_pack.bulletin.create", "city_pack.bulletin.approve", "city_pack.bulletin.reject", "city_pack.bulletin.send"],
+        "auditActionHints": [
+          "city_pack.bulletin.create",
+          "city_pack.bulletin.approve",
+          "city_pack.bulletin.reject",
+          "city_pack.bulletin.send"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer", "operator"],
+        "allow": [
+          "admin",
+          "developer",
+          "operator"
+        ],
         "deny": []
-      }
+      },
+      "confirmMode": "warn_only"
     },
     {
       "flowId": "city_pack.request.write",
       "stateMachine": {
         "initial": "requested",
         "transitions": [
-          { "event": "approve", "from": "requested", "to": "approved" },
-          { "event": "activate", "from": "approved", "to": "active" },
-          { "event": "reject", "from": "requested", "to": "rejected" },
-          { "event": "request_changes", "from": "requested", "to": "needs_review" },
-          { "event": "retry_job", "from": "needs_review", "to": "requested" }
+          {
+            "event": "approve",
+            "from": "requested",
+            "to": "approved"
+          },
+          {
+            "event": "activate",
+            "from": "approved",
+            "to": "active"
+          },
+          {
+            "event": "reject",
+            "from": "requested",
+            "to": "rejected"
+          },
+          {
+            "event": "request_changes",
+            "from": "requested",
+            "to": "needs_review"
+          },
+          {
+            "event": "retry_job",
+            "from": "needs_review",
+            "to": "requested"
+          }
         ]
       },
       "guardRules": {
@@ -169,54 +249,82 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-requests/:requestId/approve",
           "dangerClass": "approve",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackRequests.js"
         },
         {
           "actionKey": "city_pack.request.reject",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-requests/:requestId/reject",
           "dangerClass": "reject",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackRequests.js"
         },
         {
           "actionKey": "city_pack.request.request_changes",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-requests/:requestId/request-changes",
           "dangerClass": "request_changes",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackRequests.js"
         },
         {
           "actionKey": "city_pack.request.retry_job",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-requests/:requestId/retry-job",
           "dangerClass": "retry",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackRequests.js"
         },
         {
           "actionKey": "city_pack.request.activate",
           "method": "POST",
           "pathPattern": "/api/admin/city-pack-requests/:requestId/activate",
           "dangerClass": "activate",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/cityPackRequests.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["city_pack.request.approve", "city_pack.request.reject", "city_pack.request.request_changes", "city_pack.request.retry_job", "city_pack.request.activate"],
+        "auditActionHints": [
+          "city_pack.request.approve",
+          "city_pack.request.reject",
+          "city_pack.request.request_changes",
+          "city_pack.request.retry_job",
+          "city_pack.request.activate"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer", "operator"],
+        "allow": [
+          "admin",
+          "developer",
+          "operator"
+        ],
         "deny": []
-      }
+      },
+      "confirmMode": "warn_only"
     },
     {
       "flowId": "vendors.write",
       "stateMachine": {
         "initial": "unknown",
         "transitions": [
-          { "event": "edit", "from": "*", "to": "updated" },
-          { "event": "activate", "from": "*", "to": "enabled" },
-          { "event": "disable", "from": "*", "to": "disabled" }
+          {
+            "event": "edit",
+            "from": "*",
+            "to": "updated"
+          },
+          {
+            "event": "activate",
+            "from": "*",
+            "to": "enabled"
+          },
+          {
+            "event": "disable",
+            "from": "*",
+            "to": "disabled"
+          }
         ]
       },
       "guardRules": {
@@ -232,41 +340,69 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/vendors/:linkId/edit",
           "dangerClass": "edit",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/vendors.js"
         },
         {
           "actionKey": "vendors.activate",
           "method": "POST",
           "pathPattern": "/api/admin/vendors/:linkId/activate",
           "dangerClass": "activate",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/vendors.js"
         },
         {
           "actionKey": "vendors.disable",
           "method": "POST",
           "pathPattern": "/api/admin/vendors/:linkId/disable",
           "dangerClass": "disable",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/vendors.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["vendors.edit", "vendors.activate", "vendors.disable"],
+        "auditActionHints": [
+          "vendors.edit",
+          "vendors.activate",
+          "vendors.disable"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer", "operator"],
+        "allow": [
+          "admin",
+          "developer",
+          "operator"
+        ],
         "deny": []
-      }
+      },
+      "confirmMode": "warn_only"
     },
     {
       "flowId": "emergency.write",
       "stateMachine": {
         "initial": "draft",
         "transitions": [
-          { "event": "provider_update", "from": "*", "to": "configured" },
-          { "event": "provider_force_refresh", "from": "configured", "to": "synced" },
-          { "event": "bulletin_approve", "from": "draft", "to": "approved" },
-          { "event": "bulletin_reject", "from": "draft", "to": "rejected" }
+          {
+            "event": "provider_update",
+            "from": "*",
+            "to": "configured"
+          },
+          {
+            "event": "provider_force_refresh",
+            "from": "configured",
+            "to": "synced"
+          },
+          {
+            "event": "bulletin_approve",
+            "from": "draft",
+            "to": "approved"
+          },
+          {
+            "event": "bulletin_reject",
+            "from": "draft",
+            "to": "rejected"
+          }
         ]
       },
       "guardRules": {
@@ -282,38 +418,52 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "method": "POST",
           "pathPattern": "/api/admin/emergency/providers/:providerKey",
           "dangerClass": "provider_update",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
         },
         {
           "actionKey": "emergency.provider.force_refresh",
           "method": "POST",
           "pathPattern": "/api/admin/emergency/providers/:providerKey/force-refresh",
           "dangerClass": "provider_force_refresh",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
         },
         {
           "actionKey": "emergency.bulletin.approve",
           "method": "POST",
           "pathPattern": "/api/admin/emergency/bulletins/:bulletinId/approve",
           "dangerClass": "approve",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
         },
         {
           "actionKey": "emergency.bulletin.reject",
           "method": "POST",
           "pathPattern": "/api/admin/emergency/bulletins/:bulletinId/reject",
           "dangerClass": "reject",
-          "workbenchZoneRequired": true
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
         }
       ],
       "evidenceBindings": {
-        "auditActionHints": ["emergency.provider.update", "emergency.provider.force_refresh", "emergency.bulletin.approve", "emergency.bulletin.reject"],
+        "auditActionHints": [
+          "emergency.provider.update",
+          "emergency.provider.force_refresh",
+          "emergency.bulletin.approve",
+          "emergency.bulletin.reject"
+        ],
         "defaultPane": "audit"
       },
       "roleRestrictions": {
-        "allow": ["admin", "developer", "operator"],
+        "allow": [
+          "admin",
+          "developer",
+          "operator"
+        ],
         "deny": []
-      }
+      },
+      "confirmMode": "warn_only"
     }
   ]
 }

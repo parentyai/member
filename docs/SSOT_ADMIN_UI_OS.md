@@ -200,13 +200,18 @@ MUST:
 - runtime は docs JSON ブロック（`ADMIN_UI_MASTER_TABLE_BEGIN/END`）を直接読み込む。
 - v1.1（2026-02-27）では `vendors.write` と `emergency.write` の `actorMode` を `required` へ昇格した。
 - v1.2（2026-02-27）では `city_pack.bulletin.write` と `city_pack.request.write` の `actorMode` を `required` へ昇格した。
+- v1.3（2026-02-27）では flow単位 `confirmMode`（`required|warn_only`）を追加した。
 - guard適用:
   - `traceMode=required` は write API の `x-trace-id` を必須化する。
   - `actorMode=required|allow_fallback` を flow単位で宣言し、`allow_fallback` は warning監査を必須化する。
   - `confirmMode=required` flow は `planHash/confirmToken` を必須化する。
+  - `confirmMode=warn_only` flow は token欠落時に `managed_flow.guard.warning` を監査へ記録し、実行は継続する（段階導入用）。
 - Workbench境界:
   - 危険操作バインドは Workbench zone（`data-workbench-zone="true"`）配下に限定する。
   - topbar/ヘッダー導線は read-only shortcut とし、write実行を禁止する。
+- 観測固定（Phase0補遺）:
+  - role別可視性は `apps/admin/assets/admin_app.js` の `NAV_POLICY` と `apps/admin/app.html` の `data-role-allow` を根拠に確認する。
+  - legacy compat は `src/index.js` の `resolveAdminUiCompatState`（`role=admin|developer` + `confirm` 一致）を根拠に確認する。
 - Evidence:
   - write成功時は `traceId/actionKey/entityId` を即時表示し、Audit pane の trace 検索へ1操作で遷移可能にする。
 

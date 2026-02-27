@@ -315,6 +315,7 @@ if (masterTableDoc) {
   } else {
     const flowIdSet = new Set();
     const actionKeySet = new Set();
+    const globalMethodPathSet = new Set();
     masterTableDoc.flows.forEach((flow, index) => {
       const idx = `flows[${index}]`;
       if (!isObject(flow)) {
@@ -327,6 +328,11 @@ if (masterTableDoc) {
         fail(`ADMIN_UI_MASTER_TABLE.flowId 重複: ${flow.flowId}`);
       } else {
         flowIdSet.add(flow.flowId);
+      }
+      if (typeof flow.confirmMode !== 'string' || !flow.confirmMode.trim()) {
+        fail(`${idx}.confirmMode は必須です`);
+      } else if (!['required', 'warn_only'].includes(flow.confirmMode)) {
+        fail(`${idx}.confirmMode が不正です`);
       }
       if (!isObject(flow.stateMachine)) fail(`${idx}.stateMachine はobject必須です`);
       if (!isObject(flow.guardRules)) fail(`${idx}.guardRules はobject必須です`);
@@ -346,6 +352,7 @@ if (masterTableDoc) {
       if (!['required', 'none'].includes(killSwitchCheck)) fail(`${idx}.guardRules.killSwitchCheck が不正です`);
       if (!['required'].includes(auditMode)) fail(`${idx}.guardRules.auditMode が不正です`);
 
+      const methodPathSet = new Set();
       (flow.writeActions || []).forEach((action, actionIndex) => {
         const actionIdx = `${idx}.writeActions[${actionIndex}]`;
         if (!isObject(action)) {
@@ -364,7 +371,13 @@ if (masterTableDoc) {
         if (typeof action.method !== 'string' || !action.method.trim()) fail(`${actionIdx}.method は必須です`);
         if (typeof action.pathPattern !== 'string' || !action.pathPattern.trim()) fail(`${actionIdx}.pathPattern は必須です`);
         if (typeof action.dangerClass !== 'string' || !action.dangerClass.trim()) fail(`${actionIdx}.dangerClass は必須です`);
+        if (typeof action.handlerFile !== 'string' || !action.handlerFile.trim()) fail(`${actionIdx}.handlerFile は必須です`);
         if (action.workbenchZoneRequired !== true) fail(`${actionIdx}.workbenchZoneRequired は true 固定です`);
+        const methodPathKey = `${String(action.method || '').trim().toUpperCase()} ${String(action.pathPattern || '').trim()}`;
+        if (methodPathSet.has(methodPathKey)) fail(`${idx}.writeActions method/path 重複: ${methodPathKey}`);
+        methodPathSet.add(methodPathKey);
+        if (globalMethodPathSet.has(methodPathKey)) fail(`ADMIN_UI_MASTER_TABLE.writeActions method/path 重複: ${methodPathKey}`);
+        globalMethodPathSet.add(methodPathKey);
       });
     });
   }
@@ -381,15 +394,31 @@ if (masterTableDoc) {
     const bindings = typeof bindingsModule.getManagedFlowBindings === 'function'
       ? bindingsModule.getManagedFlowBindings()
       : [];
-    const bindingKeys = normalizeSet((bindings || []).map((entry) => entry && entry.actionKey).filter(Boolean));
-    const docKeys = normalizeSet(
-      (masterTableDoc.flows || [])
-        .flatMap((flow) => Array.isArray(flow.writeActions) ? flow.writeActions : [])
-        .map((action) => action && action.actionKey)
-        .filter(Boolean)
-    );
-    if (!arraysEqual(bindingKeys, docKeys)) {
-      fail('ADMIN_UI_MASTER_TABLE.writeActions と managedFlowBindings.actionKey が一致しません');
+    if (!Array.isArray(bindings) || bindings.length === 0) {
+      fail('managedFlowBindings が空です');
+    } else {
+      const actionSet = new Set();
+      const methodPathSet = new Set();
+      bindings.forEach((binding, index) => {
+        const idx = `managedFlowBindings[${index}]`;
+        if (!isObject(binding)) {
+          fail(`${idx} はobjectである必要があります`);
+          return;
+        }
+        if (typeof binding.actionKey !== 'string' || !binding.actionKey.trim()) fail(`${idx}.actionKey は必須です`);
+        if (typeof binding.method !== 'string' || !binding.method.trim()) fail(`${idx}.method は必須です`);
+        if (typeof binding.pathPattern !== 'string' || !binding.pathPattern.trim()) fail(`${idx}.pathPattern は必須です`);
+        if (typeof binding.handlerFile !== 'string' || !binding.handlerFile.trim()) fail(`${idx}.handlerFile は必須です`);
+        if (!(binding.pathRegex instanceof RegExp)) fail(`${idx}.pathRegex はRegExp必須です`);
+        const actionKey = String(binding.actionKey || '').trim();
+        if (actionSet.has(actionKey)) fail(`managedFlowBindings.actionKey 重複: ${actionKey}`);
+        actionSet.add(actionKey);
+        const methodPathKey = `${String(binding.method || '').trim().toUpperCase()} ${String(binding.pathPattern || '').trim()}`;
+        if (methodPathSet.has(methodPathKey)) fail(`managedFlowBindings.method/path 重複: ${methodPathKey}`);
+        methodPathSet.add(methodPathKey);
+        const handlerFilePath = path.join(ROOT, String(binding.handlerFile || '').trim());
+        if (!fs.existsSync(handlerFilePath)) fail(`${idx}.handlerFile が存在しません: ${binding.handlerFile}`);
+      });
     }
   } catch (err) {
     fail(`managedFlowBindings の読込に失敗しました: ${err.message}`);
