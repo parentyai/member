@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-02-26T20:00:53-05:00",
-  "gitCommit": "84c2d347b6df2612270250b0c5708429ae247625",
-  "branch": "main",
-  "sourceDigest": "4eed11f089f1fa6b39ee75644eab3b4034e969e899e0f717c39ead7f351b3abf",
+  "generatedAt": "2026-02-26T21:40:06-05:00",
+  "gitCommit": "bbd4cbc592843c032ac4dbdd8056cf47585d5098",
+  "branch": "codex/wave4-ops-only-ui-realtime-snapshot",
+  "sourceDigest": "8cebd2bbfffa3882243ffa28bc85ca0a95e5e03b6d2ec2920974072d120bfb71",
   "counts": {
-    "endpoints": 256,
-    "routes": 118,
+    "endpoints": 262,
+    "routes": 120,
     "usecases": 132,
     "repos": 69,
     "collections": 67
   },
   "live_counts": {
-    "routes": 118,
+    "routes": 120,
     "usecases": 132,
     "repos": 69,
     "collections": 67
@@ -56,8 +56,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-      "sha256": "14a3ef5b215bcdce7dc13581b75fad97d3bf9c14a4b166dd340ad6b428844c37",
-      "bytes": 30525
+      "sha256": "ec4da0284f23c4ecd2f34142cfa9db49d42363fa18b0ddfdbf9237b587c25138",
+      "bytes": 30712
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
@@ -66,8 +66,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "e87da96c64fc0fa1e91cdd25502c6319fab6c2e4910f6a622cba85373fc13d4d",
-      "bytes": 68482
+      "sha256": "53bfeb872d1369d1acc690520f2edee38fd0bf1684a74972d9a6d2f7693788a1",
+      "bytes": 69440
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
@@ -86,8 +86,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
-      "sha256": "36f2f38e6bcc8c133e417cf58f57253efbe4e110e702d4d7241bb792befe38f5",
-      "bytes": 20296
+      "sha256": "0f6f1ac6eff8d9a322be55727f14008559b4db49621197ff4471239c0631d49a",
+      "bytes": 21836
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json",
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "026b63d577ebed4478ad0d766b054f4029cff09df26869322be17366c35eccd0",
+      "sha256": "54ee421f2293bb4da5c84d38abc0c27fb8c0db4e86e63fe4055e027fb6b335a8",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "4e140e52e9c6b4097fb579771c0596d1c52d79e52c677dae6c5acda8408b0ece",
+      "sha256": "936d06543b0e51768188f7cec826ed96809e5cdee6437ce0c95eaf82bc7b356b",
       "bytes": 487
     },
     {
@@ -121,8 +121,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "348461386d7d23c93f4ee9b0f92e6205720ed8ae5c8933c1ce3ecb63ed0d3fa1",
-      "bytes": 196960
+      "sha256": "4aa9afac46b4a18d247ee6056dd2d5599ffbff8d8f134087da0dc45319fa3bbe",
+      "bytes": 201127
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
@@ -131,12 +131,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "ba1229e0d18a6f59616f7718184aa1c44b7e9f56141b3ba9fbe2badb4b5377c2",
-      "bytes": 400528
+      "sha256": "4d6f91f4f70777c53e1870cde366af2e49cd565870d6489814fc0ba3b29c1009",
+      "bytes": 407921
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "5ae0c14348eea7a07285d6bc01626726f855a70056a92d10f189ac77f0fa9757",
+      "sha256": "f45f28baf071af8241c4e22a191e26a84c1279c4b32f5fdeada7ce25bdd1edb4",
       "bytes": 740
     },
     {
@@ -146,13 +146,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "949e7dff8f10732717167382aa366c3b838dff532ba3bf3846dc306e09ff2eef",
+      "sha256": "f5bc6ccb2a8068fdda84854053bd7b21def351599d87d1adbfa68dde3295a94f",
       "bytes": 5285
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "90897af4d00fcc31816e6aa6de4174d771d562cb1ac2753a53ca81880ca75533",
-      "bytes": 2390
+      "sha256": "50a376fe1a36f7fd618818023581b5731fa0cf5651b8cf4b7a394646d8fbdef9",
+      "bytes": 2427
     }
   ],
   "diff_detection_rules": [

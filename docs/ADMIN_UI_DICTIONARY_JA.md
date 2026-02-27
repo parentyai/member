@@ -177,6 +177,23 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   - `branchQueuedAt`
   - `branchDispatchStatus`
 
+### Phase671 Addendum（Ops-Only UI + Realtime Snapshot語彙）
+- `/admin/app` の主要ナビグループ語彙は `Dashboard / Run / Control` を固定する。
+  - `ui.label.nav.group.run`
+  - `ui.label.nav.group.control`
+- Realtime Snapshot 表示語彙:
+  - `ui.label.ops.snapshot.lastUpdatedAt`
+  - `ui.label.ops.snapshot.status`
+  - `ui.label.ops.snapshot.reasonCodes`
+  - `ui.label.ops.snapshot.stalenessSeconds`
+- Feature Catalog Status の固定列:
+  - `機能名`
+  - `Status`
+  - `lastUpdatedAt`
+  - `stalenessSeconds`
+  - `reasonCodes`
+  - `detail`
+
 ## Admin_UI_Master_Dictionary v2.0 の所在確認結果
 - 検索1: `rg -n "Admin_UI_Master_Dictionary" /Users/parentyai.com/Projects/Member/docs` → 未検出
 - 検索2: `rg -n "Admin_UI_Master_Dictionary" /Users/parentyai.com/Projects/Member` → 未検出

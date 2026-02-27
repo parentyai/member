@@ -83,6 +83,32 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 - 同一paneが複数groupにある場合は `data-nav-priority` の高い導線を優先し、重複表示を抑制する（同一group内導線は維持）。
 - `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=0` で Phase638–647 の判定経路へ即時ロールバックできる。
 
+## Phase671 Add-only UI Contract（Ops-Only + Realtime Snapshot）
+目的: `/admin/app` を運用導線へ収束し、snapshot-first で realtime 状態を可視化する。
+
+### ナビ/画面ポリシー
+- 主要グループは `dashboard`, `run`, `control` を優先表示する。
+- `operator/admin` で developer 導線は非表示とし、`?pane=developer-*` は `home` へフォールバックする。
+- developer 導線の再表示は `ENABLE_ADMIN_DEVELOPER_SURFACE_V1=1` で即時ロールバック可能とする。
+
+### Snapshot API（admin）
+- `GET /api/admin/ops-system-snapshot`
+- `GET /api/admin/ops-feature-catalog-status`
+- `POST /api/admin/ops-system-snapshot/rebuild`
+
+### Snapshot job（internal）
+- `POST /internal/jobs/ops-snapshot-build` に `targets=["ops_system_snapshot"]` を渡し、hybrid snapshot を再計算する。
+- 生成ドキュメント:
+  - `ops_system_snapshot__global`
+  - `ops_feature_status__catalog`
+  - `ops_feature_status__<featureId>`
+
+### 運用フラグ
+- `ENABLE_ADMIN_OPS_ONLY_NAV_V1`（既定: 1）
+- `ENABLE_ADMIN_DEVELOPER_SURFACE_V1`（既定: 0）
+- `ENABLE_OPS_REALTIME_DASHBOARD_V1`（既定: 1）
+- `ENABLE_OPS_SYSTEM_SNAPSHOT_V1`（既定: 1）
+
 ## /admin/app ローカル診断ポリシー（Phase651）
 `/admin/app` は `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1`（既定ON）でローカル前提条件診断を有効化する。
 

@@ -304,8 +304,22 @@ async function deleteArticle(id) {
   return { id };
 }
 
+async function listArticles(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const limit = Number.isFinite(Number(payload.limit))
+    ? Math.min(Math.max(Math.floor(Number(payload.limit)), 1), 500)
+    : 100;
+  const status = normalizeStatus(payload.status);
+  const db = getDb();
+  let query = db.collection(COLLECTION);
+  if (status) query = query.where('status', '==', status);
+  const snap = await query.limit(limit).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
+}
+
 module.exports = {
   getArticle,
+  listArticles,
   searchActiveArticles,
   validateKbArticle,
   createArticle,
