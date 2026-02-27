@@ -9,7 +9,7 @@ test('phase360: monitor insights emits read_path fallback audit action when fall
   const file = path.join(process.cwd(), 'src/routes/admin/monitorInsights.js');
   const src = fs.readFileSync(file, 'utf8');
   assert.ok(src.includes("action: 'read_path.fallback.monitor_insights'"));
+  assert.ok(src.includes("action: 'read_path_fallback'"));
   assert.ok(src.includes('if (fallbackUsed || fallbackBlockedFlag) {'));
   assert.ok(src.includes('fallbackSources'));
 });
-

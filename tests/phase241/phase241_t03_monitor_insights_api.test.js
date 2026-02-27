@@ -133,7 +133,7 @@ test('phase241: monitor insights returns vendor CTR, AB snapshot, FAQ reference 
   const res = await httpRequest({
     port,
     method: 'GET',
-    path: '/api/admin/monitor-insights?windowDays=7&limit=10',
+    path: '/api/admin/monitor-insights?windowDays=7&limit=10&fallbackMode=allow&fallbackOnEmpty=true',
     headers: { 'x-admin-token': 'test_admin_token', 'x-actor': 'phase241_test' }
   });
 

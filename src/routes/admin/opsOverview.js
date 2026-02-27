@@ -47,7 +47,7 @@ function parseFallbackMode(value) {
 }
 
 function parseFallbackOnEmpty(value) {
-  if (value === null || value === undefined || value === '') return true;
+  if (value === null || value === undefined || value === '') return false;
   if (value === 'true') return true;
   if (value === 'false') return false;
   return null;
@@ -70,6 +70,11 @@ async function appendFallbackAudit(req, action, meta, extra) {
   const fallbackBlocked = Boolean(meta.fallbackBlocked);
   if (!fallbackUsed && !fallbackBlocked) return;
   try {
+    const payloadSummary = Object.assign({
+      fallbackUsed,
+      fallbackBlocked,
+      fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
+    }, extra || {});
     await appendAuditLog({
       actor: resolveAuditActor(req),
       action,
@@ -77,11 +82,16 @@ async function appendFallbackAudit(req, action, meta, extra) {
       entityId: 'summary',
       traceId: resolveHeader(req, 'x-trace-id') || undefined,
       requestId: resolveHeader(req, 'x-request-id') || undefined,
-      payloadSummary: Object.assign({
-        fallbackUsed,
-        fallbackBlocked,
-        fallbackSources: Array.isArray(meta.fallbackSources) ? meta.fallbackSources : []
-      }, extra || {})
+      payloadSummary
+    });
+    await appendAuditLog({
+      actor: resolveAuditActor(req),
+      action: 'read_path_fallback',
+      entityType: 'read_path',
+      entityId: 'summary',
+      traceId: resolveHeader(req, 'x-trace-id') || undefined,
+      requestId: resolveHeader(req, 'x-request-id') || undefined,
+      payloadSummary: Object.assign({}, payloadSummary, { readPathAction: action })
     });
   } catch (_err) {
     // best effort only
@@ -126,7 +136,8 @@ async function handleUsersSummary(req, res) {
     await appendFallbackAudit(req, 'read_path.fallback.users_summary', meta, {
       scope: 'phase4_users_summary',
       snapshotMode: snapshotMode || null,
-      fallbackMode
+      fallbackMode,
+      fallbackOnEmpty
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
@@ -188,7 +199,8 @@ async function handleNotificationsSummary(req, res) {
     await appendFallbackAudit(req, 'read_path.fallback.notifications_summary', meta, {
       scope: 'phase4_notifications_summary',
       snapshotMode: snapshotMode || null,
-      fallbackMode
+      fallbackMode,
+      fallbackOnEmpty
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({

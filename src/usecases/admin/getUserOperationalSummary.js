@@ -249,7 +249,7 @@ async function getUserOperationalSummary(params) {
   const opts = params && typeof params === 'object' ? params : {};
   const fallbackMode = resolveFallbackMode(opts.fallbackMode);
   const fallbackBlocked = fallbackMode === FALLBACK_MODE_BLOCK;
-  const fallbackOnEmpty = opts.fallbackOnEmpty !== false;
+  const fallbackOnEmpty = opts.fallbackOnEmpty === true;
   const includeMeta = opts.includeMeta === true;
   const freshnessMinutes = resolveSnapshotFreshnessMinutes(opts);
   const fallbackSources = [];

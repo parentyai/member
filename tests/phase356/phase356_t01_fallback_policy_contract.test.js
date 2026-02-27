@@ -12,5 +12,6 @@ test('phase356: fallback policy module defines env-driven default and resolver',
   assert.ok(src.includes("const FALLBACK_MODE_BLOCK = 'block';"));
   assert.ok(src.includes('function resolveFallbackModeDefault()'));
   assert.ok(src.includes('process.env.READ_PATH_FALLBACK_MODE_DEFAULT'));
+  assert.ok(src.includes('return envMode || FALLBACK_MODE_BLOCK;'));
   assert.ok(src.includes('function resolveFallbackMode(value)'));
 });

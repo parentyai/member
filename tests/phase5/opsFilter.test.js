@@ -45,11 +45,16 @@ test('phase5 ops filters: date range', async () => {
   const fromMs = new Date('2026-01-05T00:00:00Z').getTime();
   const toMs = new Date('2026-01-10T23:59:59Z').getTime();
 
-  const users = await getUsersSummaryFiltered({ fromMs, toMs });
+  const users = await getUsersSummaryFiltered({ fromMs, toMs, fallbackMode: 'allow', fallbackOnEmpty: true });
   assert.strictEqual(users.length, 1);
   assert.strictEqual(users[0].lineUserId, 'U2');
 
-  const notifications = await getNotificationsSummaryFiltered({ fromMs, toMs });
+  const notifications = await getNotificationsSummaryFiltered({
+    fromMs,
+    toMs,
+    fallbackMode: 'allow',
+    fallbackOnEmpty: true
+  });
   assert.strictEqual(notifications.length, 1);
   assert.strictEqual(notifications[0].notificationId, notif2.id);
 });

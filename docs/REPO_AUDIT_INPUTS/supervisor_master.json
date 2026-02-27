@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-26T19:04:31-05:00",
-  "gitCommit": "56285a1fa8b833e708ad5831068d63f40b2e3207",
-  "branch": "codex/wave3-fallback-hardening",
-  "sourceDigest": "9305d586f957445996ef95d8fe37cd3d9052919a2b245079d07ec7417288f77e",
+  "generatedAt": "2026-02-26T19:10:48-05:00",
+  "gitCommit": "76749277e8c07593194178474c749fe9b4393b4e",
+  "branch": "main",
+  "sourceDigest": "15a332379f397af75e0c9c5e87e849bbe27841ae1dbaabd21ced8b2bf2f8aad2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
