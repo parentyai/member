@@ -14,12 +14,14 @@ const {
   resolveSnapshotFreshnessMinutes,
   isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
+const {
+  FALLBACK_MODE_BLOCK,
+  resolveFallbackMode
+} = require('../../domain/readModel/fallbackPolicy');
 const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
 const SNAPSHOT_TYPE = 'notification_operational_summary';
 const SNAPSHOT_KEY = 'latest';
-const FALLBACK_MODE_ALLOW = 'allow';
-const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveEventsLimit(value) {
   const num = Number(value);
@@ -72,11 +74,6 @@ function resolveNotificationFilters(options) {
     scenarioKey: typeof options.scenarioKey === 'string' && options.scenarioKey.trim() ? options.scenarioKey.trim() : undefined,
     stepKey: typeof options.stepKey === 'string' && options.stepKey.trim() ? options.stepKey.trim() : undefined
   };
-}
-
-function resolveFallbackMode(value) {
-  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
-  return FALLBACK_MODE_ALLOW;
 }
 
 function createSummaryItem(notification, current) {

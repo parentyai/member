@@ -26,14 +26,16 @@ const {
   resolveSnapshotFreshnessMinutes,
   isSnapshotFresh
 } = require('../../domain/readModel/snapshotReadPolicy');
+const {
+  FALLBACK_MODE_BLOCK,
+  resolveFallbackMode
+} = require('../../domain/readModel/fallbackPolicy');
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_operational_summary';
 const SNAPSHOT_KEY = 'latest';
 const DEFAULT_LIST_LIMIT = null;
 const MAX_LIST_LIMIT = 500;
-const FALLBACK_MODE_ALLOW = 'allow';
-const FALLBACK_MODE_BLOCK = 'block';
 
 function resolveAnalyticsLimit(value) {
   const num = Number(value);
@@ -49,11 +51,6 @@ function resolveListLimit(value, analyticsLimit) {
     return Math.min(bounded, analyticsLimit);
   }
   return bounded;
-}
-
-function resolveFallbackMode(value) {
-  if (value === FALLBACK_MODE_BLOCK) return FALLBACK_MODE_BLOCK;
-  return FALLBACK_MODE_ALLOW;
 }
 
 function toMillis(value) {
