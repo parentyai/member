@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:25:40-05:00",
-  "gitCommit": "0defe8f0974d749a154fdb46ccfced7696b44375",
-  "branch": "codex/p0-legacy-freeze-visibility",
-  "sourceDigest": "3624d92cd7cdad80daa5bfab10017584ad1358738d02243d502a7226751ad328",
+  "generatedAt": "2026-02-28T08:30:32-05:00",
+  "gitCommit": "e7cd959092befa3a95faae0c6312782b99804909",
+  "branch": "HEAD",
+  "sourceDigest": "925643c4ca89a20a403c6eef87d1c91dcfbf99a017ca4c54833c7fa3fa4912e8",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "18321950630a60fdf8c56e70715209df571f0df9339f89f4ca2272d30ded3c0d",
+      "sha256": "e039002da1829e4916a53fe593cfd326864e92db22500cf49c3856f6d34a344d",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d4c1c45a3849dc207ad6f24799bcf9a15e85dfa4ca68a092100108d7069e55f3",
+      "sha256": "3b5d6c11ef83c1c445fe4ad84bee58edc9085af5ee99b531c29e5e6a86c9e86a",
       "bytes": 487
     },
     {
@@ -136,7 +136,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "23297370aa9670094adbb9f29ca1ee3f228805addbf7fb456ab2c44047077167",
+      "sha256": "6b41beac90385b5ab5cbfc89b53db903ea27b985902a113f6a3dbdd429734f32",
       "bytes": 740
     },
     {
@@ -146,13 +146,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "ea17470eb69a2479241fe949ad142e084c8b009e2690c4741ab8352ca88fce89",
+      "sha256": "b7dc51cd50111bb6a32eb649ebed2a795a3e571ff064c33adbbbbca95dfc0567",
       "bytes": 5235
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "756b352a4410820a5030bc5a99d4a9762bf7b6047f20c27f9e8bd39ae7bfb601",
-      "bytes": 2419
+      "sha256": "731db928d847ee4106c5946ae772d2aa9de7e6aaed5b0c7c9d5090f86516be0a",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

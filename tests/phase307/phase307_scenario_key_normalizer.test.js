@@ -48,3 +48,53 @@ test('phase307: usersRepo.listUsers accepts legacy scenario input and queries ca
   assert.strictEqual(rows.length, 1);
   assert.strictEqual(rows[0].id, 'U_SCENARIO_A');
 });
+
+test('phase307: usersRepo write path supplements scenarioKey only when missing', async (t) => {
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  t.after(() => {
+    clearDbForTest();
+    clearServerTimestampForTest();
+  });
+
+  await usersRepo.createUser('U_SCENARIO_ONLY', {
+    scenario: 'A',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  });
+  await usersRepo.createUser('U_SCENARIO_KEY', {
+    scenarioKey: 'B',
+    scenario: 'A',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  });
+
+  const scenarioOnly = await usersRepo.getUser('U_SCENARIO_ONLY');
+  const scenarioKeyUser = await usersRepo.getUser('U_SCENARIO_KEY');
+  assert.strictEqual(scenarioOnly.scenarioKey, 'A');
+  assert.strictEqual(scenarioOnly.scenario, 'A');
+  assert.strictEqual(scenarioKeyUser.scenarioKey, 'B');
+});
+
+test('phase307: usersRepo update does not overwrite existing scenarioKey with legacy scenario', async (t) => {
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  t.after(() => {
+    clearDbForTest();
+    clearServerTimestampForTest();
+  });
+
+  await usersRepo.createUser('U_KEEP_KEY', {
+    scenarioKey: 'C',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  });
+  await usersRepo.updateUser('U_KEEP_KEY', { scenario: 'A' });
+  const keepKey = await usersRepo.getUser('U_KEEP_KEY');
+  assert.strictEqual(keepKey.scenarioKey, 'C');
+
+  await usersRepo.createUser('U_FILL_KEY', { createdAt: '2026-01-01T00:00:00.000Z' });
+  await usersRepo.updateUser('U_FILL_KEY', { scenario: 'D' });
+  const fillKey = await usersRepo.getUser('U_FILL_KEY');
+  assert.strictEqual(fillKey.scenarioKey, 'D');
+  assert.strictEqual(fillKey.scenario, 'D');
+});
