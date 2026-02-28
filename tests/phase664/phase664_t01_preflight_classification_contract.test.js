@@ -17,6 +17,8 @@ test('phase664: local preflight classifies ADC reauth and exposes recovery summa
 
   assert.equal(result.ready, false);
   assert.equal(result.checks.firestoreProbe.classification, 'ADC_REAUTH_REQUIRED');
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(result.checks.saKeyPath.status, 'warn');
   assert.equal(result.summary.code, 'ADC_REAUTH_REQUIRED');
   assert.equal(result.summary.category, 'auth');
   assert.equal(result.summary.recoveryActionCode, 'RUN_ADC_REAUTH');

@@ -74,6 +74,82 @@ function evaluateCredentialsPath(env, fsApi) {
   };
 }
 
+function evaluateSaKeyPath(env, fsApi) {
+  const envSource = env && typeof env === 'object' ? env : process.env;
+  const fsSource = fsApi && typeof fsApi === 'object' ? fsApi : fs;
+  const raw = typeof envSource.GOOGLE_APPLICATION_CREDENTIALS === 'string'
+    ? envSource.GOOGLE_APPLICATION_CREDENTIALS.trim()
+    : '';
+
+  if (!raw) {
+    return {
+      key: 'saKeyPath',
+      status: 'warn',
+      code: 'SA_KEY_PATH_UNSET',
+      message: 'ローカルSA鍵パス（GOOGLE_APPLICATION_CREDENTIALS）が未設定です。',
+      value: null
+    };
+  }
+
+  let stats;
+  try {
+    stats = fsSource.statSync(raw);
+  } catch (err) {
+    return {
+      key: 'saKeyPath',
+      status: 'error',
+      code: 'SA_KEY_PATH_INVALID',
+      message: `ローカルSA鍵を参照できません: ${normalizeMessage(err)}`,
+      value: raw
+    };
+  }
+
+  if (!stats.isFile()) {
+    return {
+      key: 'saKeyPath',
+      status: 'error',
+      code: 'SA_KEY_PATH_NOT_FILE',
+      message: 'ローカルSA鍵パス（GOOGLE_APPLICATION_CREDENTIALS）はファイルを指していません。',
+      value: raw
+    };
+  }
+
+  if (typeof fsSource.accessSync === 'function') {
+    const readMode = fsSource.constants && Number.isFinite(fsSource.constants.R_OK)
+      ? fsSource.constants.R_OK
+      : fs.constants.R_OK;
+    try {
+      fsSource.accessSync(raw, readMode);
+    } catch (err) {
+      const text = normalizeLowerText(normalizeMessage(err));
+      if (text.includes('eacces') || text.includes('eperm')) {
+        return {
+          key: 'saKeyPath',
+          status: 'error',
+          code: 'SA_KEY_PATH_PERMISSION_DENIED',
+          message: `ローカルSA鍵の読み取り権限が不足しています: ${normalizeMessage(err)}`,
+          value: raw
+        };
+      }
+      return {
+        key: 'saKeyPath',
+        status: 'error',
+        code: 'SA_KEY_PATH_UNREADABLE',
+        message: `ローカルSA鍵を読み取れません: ${normalizeMessage(err)}`,
+        value: raw
+      };
+    }
+  }
+
+  return {
+    key: 'saKeyPath',
+    status: 'ok',
+    code: 'SA_KEY_PATH_OK',
+    message: 'ローカルSA鍵パスを確認しました。',
+    value: raw
+  };
+}
+
 function evaluateProjectId(env, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const envSource = env && typeof env === 'object' ? env : process.env;
@@ -367,6 +443,25 @@ function buildErrorSummary(entry) {
     };
   }
 
+  if (code === 'SA_KEY_PATH_INVALID'
+    || code === 'SA_KEY_PATH_NOT_FILE'
+    || code === 'SA_KEY_PATH_PERMISSION_DENIED'
+    || code === 'SA_KEY_PATH_UNREADABLE') {
+    return {
+      code,
+      tone: 'danger',
+      category: 'auth',
+      cause: message,
+      impact: 'ローカルSA鍵の読み取り不備によりFirestore依存APIが失敗する可能性があります。',
+      action: 'GOOGLE_APPLICATION_CREDENTIALS を有効なローカルSA鍵へ修正し、読み取り権限を確認して再診断してください。',
+      recoveryActionCode: 'FIX_CREDENTIALS_PATH',
+      recoveryCommands: resolveRecoveryCommands('FIX_CREDENTIALS_PATH'),
+      primaryCheckKey: source.key || 'saKeyPath',
+      rawHint,
+      retriable: true
+    };
+  }
+
   return {
     code,
     tone: 'danger',
@@ -397,6 +492,21 @@ function buildWarnSummary(entry) {
       recoveryActionCode: 'SET_FIRESTORE_PROJECT_ID',
       recoveryCommands: resolveRecoveryCommands('SET_FIRESTORE_PROJECT_ID'),
       primaryCheckKey: source.key || 'firestoreProjectId',
+      rawHint: String(message),
+      retriable: true
+    };
+  }
+  if (code === 'SA_KEY_PATH_UNSET') {
+    return {
+      code: 'SA_KEY_PATH_UNSET',
+      tone: 'warn',
+      category: 'auth',
+      cause: message,
+      impact: 'ADC依存での再認証発生率が高くなるため、ローカル運用の安定性が低下します。',
+      action: 'GOOGLE_APPLICATION_CREDENTIALS にローカルSA鍵パスを設定して再診断してください。',
+      recoveryActionCode: 'FIX_CREDENTIALS_PATH',
+      recoveryCommands: resolveRecoveryCommands('FIX_CREDENTIALS_PATH'),
+      primaryCheckKey: source.key || 'saKeyPath',
       rawHint: String(message),
       retriable: true
     };
@@ -532,6 +642,7 @@ async function runLocalPreflight(options) {
 
   const rawChecks = {
     credentialsPath: evaluateCredentialsPath(env, fsApi),
+    saKeyPath: evaluateSaKeyPath(env, fsApi),
     firestoreProjectId: evaluateProjectId(env, {
       resolveProjectId: opts.resolveProjectId,
       allowGcloudDetect: allowGcloudProjectIdDetect
@@ -567,6 +678,7 @@ if (require.main === module) {
 module.exports = {
   runLocalPreflight,
   evaluateCredentialsPath,
+  evaluateSaKeyPath,
   evaluateProjectId,
   probeFirestoreReadOnly,
   buildSummary,

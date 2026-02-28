@@ -95,6 +95,8 @@
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
+  - `checks.saKeyPath.code=SA_KEY_PATH_UNSET` はローカルSA鍵未設定（推奨設定を適用）
+  - `checks.saKeyPath.code=SA_KEY_PATH_PERMISSION_DENIED` は鍵ファイル読取権限不足
   - `GOOGLE_APPLICATION_CREDENTIALS` の無効パス/非ファイルを解消（ローカルSA鍵を優先）
   - `FIRESTORE_PROJECT_ID` を確認
   - `Unable to detect a Project Id` の場合は `FIRESTORE_PROJECT_ID` を明示設定
