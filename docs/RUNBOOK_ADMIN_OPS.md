@@ -110,6 +110,47 @@
   - `--allow-gac` を明示して実行
 - この注意は運用導線の明示であり、phase21ガード契約そのものは変更しない。
 
+### P1-1 ローカルSA鍵の最小権限設計（観測ベース）
+観測ソース:
+- preflight は Firestore read-only probe として `listCollections` を実行（`tools/admin_local_preflight.js`）。
+- phase21 verify（REST fallback）は Firestore REST API の `GET/POST/PATCH` を実行（`scripts/phase21_verify_day_window.js`）。
+
+推奨ロールプロファイル（最小権限）:
+1) preflight専用（推奨デフォルト）  
+   - `roles/datastore.viewer`  
+   - 用途: `npm run admin:preflight` / `/api/admin/local-preflight` の診断
+2) phase21検証を伴うローカル検証（限定運用）  
+   - `roles/datastore.user`（検証対象projectでのみ付与）
+   - 用途: `scripts/phase21_verify_day_window.js` の read/write 検証
+
+運用ルール:
+- 開発者の通常作業は 1) を既定とし、2) は必要時のみ一時運用する。
+- `roles/editor` / `roles/owner` をローカルSA鍵へ直接付与しない。
+- role最適化は audit log で実アクセスを観測し、四半期ごとに見直す。
+
+### P1-2 SA鍵ローテーション手順（Runbook固定）
+前提:
+- 鍵ファイルは repo 外（例: `$HOME/.secrets/`）で管理し、コミットしない。
+- 新旧鍵を並行運用できる時間を確保してから切替する。
+
+1) 新鍵発行（旧鍵はまだ削除しない）  
+`gcloud iam service-accounts keys create "$HOME/.secrets/member-dev-sa-<yyyymmdd>.json" --iam-account "<sa-email>" --project "<your-project-id>"`
+2) 切替  
+`export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa-<yyyymmdd>.json"`
+3) 動作確認  
+`npm run admin:preflight`
+4) 旧鍵の keyId 特定  
+`gcloud iam service-accounts keys list --iam-account "<sa-email>" --project "<your-project-id>"`
+5) 旧鍵失効（削除）  
+`gcloud iam service-accounts keys delete "<old-key-id>" --iam-account "<sa-email>" --project "<your-project-id>"`
+6) 失効後確認  
+`npm run admin:preflight`
+
+失効時復旧フロー:
+1) `SA_KEY_PATH_*` / `ADC_REAUTH_REQUIRED` の分類を preflight で確認
+2) 誤失効時は新鍵を再発行して `GOOGLE_APPLICATION_CREDENTIALS` を更新
+3) 復旧確認後に不要鍵を削除し、監査ログに `actor/traceId/実施時刻` を残す
+
 ### UI復旧フロー（Phase664）
 1) `/admin/app` 上部の local preflight バナーで `再診断` を実行  
 2) バナーの `復旧コマンド` から必要コマンドを `コマンドコピー`  

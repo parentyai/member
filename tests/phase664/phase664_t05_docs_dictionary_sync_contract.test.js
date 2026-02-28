@@ -35,5 +35,8 @@ test('phase664: ssot and runbook mention single banner, degraded mode, and recov
   assert.ok(ssot.includes('admin-local-preflight-banner'));
   assert.ok(runbook.includes('UI復旧フロー（Phase664）'));
   assert.ok(runbook.includes('コマンドコピー'));
+  assert.ok(runbook.includes('P1-1 ローカルSA鍵の最小権限設計'));
+  assert.ok(runbook.includes('roles/datastore.viewer'));
+  assert.ok(runbook.includes('P1-2 SA鍵ローテーション手順'));
   assert.ok(index.includes('local preflight recovery UX'));
 });
