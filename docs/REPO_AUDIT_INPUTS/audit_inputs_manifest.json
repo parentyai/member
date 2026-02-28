@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T10:21:54-05:00",
-  "gitCommit": "326ca7efeb2ebc040822b281a7a64af4e2fdea9f",
-  "branch": "codex/p1-sa-role-and-rotation-runbook",
-  "sourceDigest": "9a0372d5c91728586155402e0c6580085c84cea075d3f5987fd8834647f4b21a",
+  "generatedAt": "2026-02-28T10:28:02-05:00",
+  "gitCommit": "73180e072ad8ac662089c1f9518fb7a4971de16c",
+  "branch": "codex/p2-keyless-alternative-assessment",
+  "sourceDigest": "6cb88b167c669712677316b0a3f92bc1585028e5486d63791430340df8e786f0",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "cced23f208c477ee3d9b8c124a3e91bd414d92640fc7517814945675d45c70ea",
-      "bytes": 2423
+      "sha256": "92336f9c1bdd46019d1dd3360d95476bb99429f8a1fb3d0913a34a322cb9378f",
+      "bytes": 2425
     }
   ],
   "diff_detection_rules": [

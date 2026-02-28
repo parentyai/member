@@ -38,5 +38,7 @@ test('phase664: ssot and runbook mention single banner, degraded mode, and recov
   assert.ok(runbook.includes('P1-1 ローカルSA鍵の最小権限設計'));
   assert.ok(runbook.includes('roles/datastore.viewer'));
   assert.ok(runbook.includes('P1-2 SA鍵ローテーション手順'));
+  assert.ok(runbook.includes('P2-1 鍵なし代替（WIF / impersonation）評価'));
+  assert.ok(runbook.includes('WIF/OIDC'));
   assert.ok(index.includes('local preflight recovery UX'));
 });
