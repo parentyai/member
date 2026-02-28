@@ -2762,3 +2762,20 @@ details:not([open]) > *:not(summary) {
   line-height: 1.4;
   word-break: break-word;
 }
+
+/* Ops-only nav visibility SSOT: prefer JS data-nav-* attributes over legacy group whitelist hiding. */
+.app-shell.ops-only-nav-v1 .app-nav .nav-group[data-nav-visible="true"] {
+  display: grid !important;
+}
+
+.app-shell.ops-only-nav-v1 .app-nav .nav-group[data-nav-visible="false"] {
+  display: none !important;
+}
+
+.app-shell.ops-only-nav-v1 .app-nav .nav-item[data-nav-item-visible="true"] {
+  display: flex !important;
+}
+
+.app-shell.ops-only-nav-v1 .app-nav .nav-item[data-nav-item-visible="false"] {
+  display: none !important;
+}
