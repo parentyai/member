@@ -76,6 +76,28 @@ gh workflow run stg-notification-e2e.yml --ref main \
 - `expect_llm_enabled`: LLM gate で `effectiveEnabled=true` と非ブロック `llmStatus` を要求する（推奨 true）
 - `--admin-token-file`: CLI 実行時にトークンファイルを指定。`--admin-token` より優先度が高い
 
+## Public Click Latency Probe (manual)
+`trackClick` 系の変更を main に入れた直後は、302 経路の遅延を同一条件で記録する。
+
+```bash
+npm run ops:track-click-latency -- \
+  --base-url "$BASE_URL" \
+  --mode post \
+  --delivery-id "$DELIVERY_ID" \
+  --link-registry-id "$LINK_REGISTRY_ID" \
+  --count 20 \
+  --warmup 2 \
+  --expect-status 302 \
+  --max-p95-ms 500 \
+  --trace-prefix trace-stg-track-click-latency-$(date +%Y%m%d%H%M%S)
+```
+
+- `DELIVERY_ID` は `test-send` で得た deliveryId を使う
+- Cloud Run IAM 経由で呼ぶ場合は `--bearer-token "$(gcloud auth print-identity-token)"` を追加する
+- 失敗条件:
+  - 302 以外が 1 件でも出る（`status_mismatch`）
+  - `p95` が `max-p95-ms` を超える（`p95_exceeded`）
+
 ## Checklist (fixed order)
 1. Product Readiness Gate（管理API 7本）:
    - `/api/admin/product-readiness` が `status=GO` かつ `checks.retentionRisk.ok=true` / `checks.structureRisk.ok=true` / `checks.structureRisk.activeLegacyRepoImports=0`
@@ -102,6 +124,9 @@ gh workflow run stg-notification-e2e.yml --ref main \
      - `readLimitUsed` が 1〜5000 の範囲外、または欠落
      - `dataSource` が空、`asOf`・`freshnessMinutes` が `dataSource !== 'not_available'` かつ欠落
      - HTTP 200 なのに `dataSource` と `resultRows` が同時に `-` のみで監査値として保存できない場合
+8. Public click latency probe（trackClick 変更時は必須）:
+   - `npm run ops:track-click-latency` を実行し、`expectStatus=302` / `mismatchCount=0` を確認
+   - `latencyMs.p95` を記録し、直近運用値から有意に悪化していないことを確認
 
 ## Run Cadence
 - 推奨: main への通知制御系マージごとに 1 回 + 週次 1 回
@@ -161,6 +186,13 @@ timeline_ids: <comma separated ids or ->
 result: <PASS|FAIL>
 notes: <optional>
 ```
+
+### Public click latency evidence (addendum)
+- `trace-prefix`
+- `requestCount` / `warmupCount`
+- `expectStatus` / `mismatchCount`
+- `latencyMs.p50` / `latencyMs.p95` / `latencyMs.p99`
+- `stopReasons`（空配列が期待）
 
 ### Full Log Template
 - テンプレートファイルを使って記録を開始:
