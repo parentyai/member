@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-27T22:50:05-05:00",
-  "gitCommit": "5597912e2fe4825bc42fa63b7ab49ca409b0ac9a",
+  "generatedAt": "2026-02-27T23:09:04-05:00",
+  "gitCommit": "700b98377a64bba2fb78bc8384e7f76d181306c5",
   "branch": "codex/admin-nav-ops-only-visibility-v1",
-  "sourceDigest": "7d8609f9bfdaeac9799b1d94c09cdd2e30322029cc70570a7835be9811cbfef5",
+  "sourceDigest": "53dfda4d741697f78742a0e38d66f06812483e446c92d88436973ff1d9712f66",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
