@@ -82,6 +82,10 @@ function resolveAdminTopSummaryFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_TOP_SUMMARY_V1', false);
 }
 
+function resolveAdminHomeCleanSurfaceFlag() {
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1', true);
+}
+
 function resolveAdminUsersStripeLayoutFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1', true);
 }
@@ -147,6 +151,7 @@ function buildAdminAppBootScript() {
   const localPreflightEnabled = resolveAdminLocalPreflightFlag();
   const noCollapseEnabled = resolveAdminNoCollapseFlag();
   const topSummaryEnabled = resolveAdminTopSummaryFlag();
+  const homeCleanSurfaceEnabled = resolveAdminHomeCleanSurfaceFlag();
   const usersStripeLayoutEnabled = resolveAdminUsersStripeLayoutFlag();
   const cityPackContentManageEnabled = resolveCityPackContentManageFlag();
   const adminOpsOnlyNavEnabled = resolveAdminOpsOnlyNavFlag();
@@ -155,7 +160,7 @@ function buildAdminAppBootScript() {
   const opsSystemSnapshotEnabled = resolveOpsSystemSnapshotFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1=${homeCleanSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
