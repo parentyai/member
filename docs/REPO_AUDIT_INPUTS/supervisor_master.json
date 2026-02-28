@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T00:17:50-05:00",
-  "gitCommit": "72f56e35dfb3667a20202159e17d88f2ce4e4431",
-  "branch": "codex/p0-trackclick-audit-hardening",
-  "sourceDigest": "d164a784ad259765c98b6f513d0ffce834e92da10ee2430738a3f5200bb450d1",
+  "generatedAt": "2026-02-28T08:25:40-05:00",
+  "gitCommit": "0defe8f0974d749a154fdb46ccfced7696b44375",
+  "branch": "codex/p0-legacy-freeze-visibility",
+  "sourceDigest": "3c9bbf6fb778b2cdd1bf75fa814494cca8e08f3685a2d0f59ff9d0812f867465",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

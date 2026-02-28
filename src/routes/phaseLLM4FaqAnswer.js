@@ -2,7 +2,21 @@
 
 const { answerFaqFromKb } = require('../usecases/faq/answerFaqFromKb');
 
+const LEGACY_SUCCESSOR = '/api/admin/llm/faq/answer';
+
+function isLegacyRouteFreezeEnabled() {
+  const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
+  if (raw === undefined || raw === null || String(raw).trim() === '') return false; // compat default
+  const v = String(raw).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
 async function handleFaqAnswer(req, res, body) {
+  if (isLegacyRouteFreezeEnabled()) {
+    res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'legacy route frozen', replacement: LEGACY_SUCCESSOR }));
+    return;
+  }
   try {
     const payload = body ? JSON.parse(body) : {};
     const traceId = req.headers['x-trace-id'] || null;
@@ -22,7 +36,7 @@ async function handleFaqAnswer(req, res, body) {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({}, result, {
       deprecated: true,
-      replacement: '/api/admin/llm/faq/answer'
+      replacement: LEGACY_SUCCESSOR
     })));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';

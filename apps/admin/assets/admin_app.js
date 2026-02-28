@@ -101,6 +101,10 @@ const ADMIN_DEVELOPER_SURFACE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1 : null,
   false
 );
+const ADMIN_LEGACY_STATUS_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_LEGACY_STATUS_V1 : null,
+  false
+);
 const OPS_REALTIME_DASHBOARD_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_OPS_REALTIME_DASHBOARD_V1 : null,
   true
@@ -951,6 +955,12 @@ function applyOpsOnlyChrome(role) {
     const shouldHide = hideDeveloperRole || nextRole !== 'developer';
     el.classList.toggle('hidden', shouldHide);
     if (shouldHide) el.setAttribute('aria-hidden', 'true');
+    else el.removeAttribute('aria-hidden');
+  });
+  const hideLegacyStatusSurface = !ADMIN_LEGACY_STATUS_V1 || nextRole !== 'developer';
+  document.querySelectorAll('[data-legacy-status-surface="1"]').forEach((el) => {
+    el.classList.toggle('is-hidden', hideLegacyStatusSurface);
+    if (hideLegacyStatusSurface) el.setAttribute('aria-hidden', 'true');
     else el.removeAttribute('aria-hidden');
   });
 }

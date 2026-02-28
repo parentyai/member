@@ -322,12 +322,12 @@
     },
     {
       "file": "src/routes/admin/phase1Notifications.js",
-      "line": 67,
+      "line": 86,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/phase1Notifications.js",
-      "line": 71,
+      "line": 90,
       "symbol": "killSwitch"
     },
     {
