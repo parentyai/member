@@ -4,9 +4,40 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { runLocalPreflight } = require('../../tools/admin_local_preflight');
 
-test('phase664: local preflight classifies ADC reauth and exposes recovery summary fields', async () => {
+test('phase664: local preflight requires SA key in local strict mode and skips firestore probe', async () => {
+  let probeCalled = 0;
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+
+  assert.equal(result.ready, false);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(result.checks.firestoreProbe.code, 'FIRESTORE_PROBE_SKIPPED_SA_KEY_REQUIRED');
+  assert.equal(result.checks.firestoreProbe.classification, 'SA_KEY_REQUIRED');
+  assert.equal(result.summary.code, 'SA_KEY_REQUIRED');
+  assert.equal(result.summary.category, 'auth');
+  assert.equal(result.summary.recoveryActionCode, 'SET_SA_KEY_REQUIRED');
+  assert.equal(result.summary.primaryCheckKey, 'saKeyPath');
+  assert.equal(result.summary.retriable, true);
+  assert.ok(Array.isArray(result.summary.recoveryCommands));
+  assert.ok(result.summary.recoveryCommands.some((entry) => String(entry).includes('export GOOGLE_APPLICATION_CREDENTIALS')));
+  assert.ok(!result.summary.recoveryCommands.some((entry) => String(entry).includes('gcloud auth application-default login')));
+  assert.equal(probeCalled, 0);
+});
+
+test('phase664: compatibility mode keeps ADC reauth classification when strict SA requirement is disabled', async () => {
+  const result = await runLocalPreflight({
+    env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    requireSaKey: false,
     timeoutMs: 100,
     getDb: () => ({
       listCollections: async () => {
@@ -34,6 +65,7 @@ test('phase664: local preflight classifies ADC reauth and exposes recovery summa
 test('phase664: local preflight classifies timeout and exposes timeout recovery action', async () => {
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    requireSaKey: false,
     timeoutMs: 10,
     getDb: () => ({
       listCollections: async () => new Promise(() => {})
@@ -53,6 +85,7 @@ test('phase664: local preflight classifies timeout and exposes timeout recovery 
 test('phase664: local preflight classifies missing project id probe failure as FIRESTORE_PROJECT_ID_ERROR', async () => {
   const result = await runLocalPreflight({
     env: {},
+    requireSaKey: false,
     allowGcloudProjectIdDetect: false,
     timeoutMs: 100,
     getDb: () => ({
@@ -75,6 +108,7 @@ test('phase664: local preflight classifies missing project id probe failure as F
 test('phase664: local preflight promotes FIRESTORE_UNKNOWN probe to FIRESTORE_PROJECT_ID_ERROR when project id is missing', async () => {
   const result = await runLocalPreflight({
     env: {},
+    requireSaKey: false,
     allowGcloudProjectIdDetect: false,
     probeFirestore: async () => ({
       key: 'firestoreProbe',
@@ -97,6 +131,7 @@ test('phase664: local preflight promotes FIRESTORE_UNKNOWN probe to FIRESTORE_PR
 test('phase664: local preflight classifies missing firestore database as FIRESTORE_DATABASE_NOT_FOUND', async () => {
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    requireSaKey: false,
     timeoutMs: 100,
     getDb: () => ({
       listCollections: async () => {
@@ -115,6 +150,7 @@ test('phase664: local preflight classifies missing firestore database as FIRESTO
 
 test('phase664: local preflight resolves project id via resolver fallback when env is missing', async () => {
   const result = await runLocalPreflight({
+    requireSaKey: false,
     resolveProjectId: () => ({ projectId: 'member-485303', source: 'resolver:test' }),
     allowGcloudProjectIdDetect: true,
     timeoutMs: 100,

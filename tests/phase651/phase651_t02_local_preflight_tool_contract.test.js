@@ -36,7 +36,8 @@ test('phase651: local preflight marks invalid credentials path as not ready', as
 test('phase651: local preflight allows ready state when probe succeeds', async () => {
   const result = await runLocalPreflight({
     env: {
-      FIRESTORE_PROJECT_ID: 'member-485303'
+      FIRESTORE_PROJECT_ID: 'member-485303',
+      GOOGLE_APPLICATION_CREDENTIALS: '/tmp/service-account.json'
     },
     fsApi: {
       statSync(filePath) {
@@ -52,8 +53,31 @@ test('phase651: local preflight allows ready state when probe succeeds', async (
   });
   assert.equal(result.ok, true);
   assert.equal(result.ready, true);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_OK');
+  assert.equal(result.summary.tone, 'ok');
+});
+
+test('phase651: local preflight keeps compatibility when strict SA requirement is disabled', async () => {
+  let probeCalled = 0;
+  const result = await runLocalPreflight({
+    env: {
+      FIRESTORE_PROJECT_ID: 'member-485303'
+    },
+    requireSaKey: false,
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.ready, true);
   assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
-  assert.equal(result.summary.tone === 'ok' || result.summary.tone === 'warn', true);
+  assert.equal(probeCalled, 1);
 });
 
 test('phase651: direct evaluators expose credentials and project-id states', () => {

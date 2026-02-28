@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T10:28:02-05:00",
-  "gitCommit": "73180e072ad8ac662089c1f9518fb7a4971de16c",
-  "branch": "codex/p2-keyless-alternative-assessment",
-  "sourceDigest": "8fa7e32b5ab6fdd0365f97c696b69fa827269ca2cfe394f5b92e8a342b91327b",
+  "generatedAt": "2026-02-28T10:31:56-05:00",
+  "gitCommit": "3fe6369a3c70153f0bc3b8e7a5308559a78539ca",
+  "branch": "main",
+  "sourceDigest": "f98fd96c6ad07ae4445c4867a54082c489a2ed1f2a77f3932c96a7076f277438",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
