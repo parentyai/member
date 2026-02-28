@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-27T17:14:20-05:00",
-  "gitCommit": "d4b3e83dd71e1f9e8f77c7cdb2c03c0847673592",
-  "branch": "codex/admin-ui-master-table-v1-single-source",
-  "sourceDigest": "09b6ab46da33474dc18f06dfa6f52676b37e58cf0956616c57ba10c1d949497d",
+  "generatedAt": "2026-02-27T22:50:05-05:00",
+  "gitCommit": "5597912e2fe4825bc42fa63b7ab49ca409b0ac9a",
+  "branch": "codex/admin-nav-ops-only-visibility-v1",
+  "sourceDigest": "7d8609f9bfdaeac9799b1d94c09cdd2e30322029cc70570a7835be9811cbfef5",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
