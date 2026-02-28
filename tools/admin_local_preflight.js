@@ -19,11 +19,29 @@ function normalizeLowerText(value) {
   return String(value || '').toLowerCase();
 }
 
+function resolveBooleanFlag(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return fallback;
+}
+
 function hasProjectIdToken(text) {
   return text.includes('project id')
     || text.includes('project-id')
     || text.includes('project_id')
     || text.includes('projectid');
+}
+
+function resolveRequireSaKey(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  if (typeof opts.requireSaKey === 'boolean') return opts.requireSaKey;
+  const envSource = opts.env && typeof opts.env === 'object' ? opts.env : process.env;
+  const envName = typeof envSource.ENV_NAME === 'string' ? envSource.ENV_NAME.trim().toLowerCase() : '';
+  const nodeEnv = typeof envSource.NODE_ENV === 'string' ? envSource.NODE_ENV.trim().toLowerCase() : '';
+  const defaultValue = !envName || envName === 'local' || nodeEnv === 'test';
+  return resolveBooleanFlag(envSource.ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1, defaultValue);
 }
 
 function evaluateCredentialsPath(env, fsApi) {
@@ -252,6 +270,12 @@ function classifyFirestoreProbeClassification(message) {
 }
 
 const RECOVERY_COMMANDS = Object.freeze({
+  SET_SA_KEY_REQUIRED: Object.freeze([
+    '# local preflight requires SA key (strict mode)',
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
+    'npm run admin:preflight'
+  ]),
   RUN_ADC_REAUTH: Object.freeze([
     '# Preferred: local SA key via GOOGLE_APPLICATION_CREDENTIALS',
     'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
@@ -598,6 +622,36 @@ function buildSummary(checks) {
   };
 }
 
+function buildFirestoreProbeSkippedForSaRequired(saKeyPathCheck) {
+  const source = saKeyPathCheck && typeof saKeyPathCheck === 'object' ? saKeyPathCheck : {};
+  const detail = source.message || 'ローカルSA鍵パスの確認に失敗しました。';
+  return {
+    key: 'firestoreProbe',
+    status: 'warn',
+    code: 'FIRESTORE_PROBE_SKIPPED_SA_KEY_REQUIRED',
+    classification: 'SA_KEY_REQUIRED',
+    message: `Firestore read-only probe skipped: ${detail}`
+  };
+}
+
+function buildSaKeyRequiredSummary(saKeyPathCheck) {
+  const source = saKeyPathCheck && typeof saKeyPathCheck === 'object' ? saKeyPathCheck : {};
+  const hint = String(source.message || 'ローカルSA鍵パス（GOOGLE_APPLICATION_CREDENTIALS）が必要です。');
+  return {
+    code: 'SA_KEY_REQUIRED',
+    tone: 'danger',
+    category: 'auth',
+    cause: 'ローカルSA鍵が未設定または無効のため診断を停止しました。',
+    impact: 'ADC経路へフォールバックせず、Firestore依存APIの初期ロードを停止します。',
+    action: 'GOOGLE_APPLICATION_CREDENTIALS に読み取り可能なローカルSA鍵を設定して再診断してください。',
+    recoveryActionCode: 'SET_SA_KEY_REQUIRED',
+    recoveryCommands: resolveRecoveryCommands('SET_SA_KEY_REQUIRED'),
+    primaryCheckKey: 'saKeyPath',
+    rawHint: hint,
+    retriable: true
+  };
+}
+
 function normalizeProjectIdProbeClassification(checks) {
   const source = checks && typeof checks === 'object' ? checks : {};
   const projectIdCheck = source.firestoreProjectId && typeof source.firestoreProjectId === 'object'
@@ -637,20 +691,28 @@ async function runLocalPreflight(options) {
   const probeFirestore = typeof opts.probeFirestore === 'function'
     ? opts.probeFirestore
     : probeFirestoreReadOnly;
+  const requireSaKey = resolveRequireSaKey({ requireSaKey: opts.requireSaKey, env });
   const allowGcloudProjectIdDetect = opts.allowGcloudProjectIdDetect === true
     || (!opts.env && opts.allowGcloudProjectIdDetect !== false);
 
+  const saKeyPath = evaluateSaKeyPath(env, fsApi);
+  const shouldSkipProbe = requireSaKey && normalizeCode(saKeyPath.code) !== 'SA_KEY_PATH_OK';
+
   const rawChecks = {
     credentialsPath: evaluateCredentialsPath(env, fsApi),
-    saKeyPath: evaluateSaKeyPath(env, fsApi),
+    saKeyPath,
     firestoreProjectId: evaluateProjectId(env, {
       resolveProjectId: opts.resolveProjectId,
       allowGcloudDetect: allowGcloudProjectIdDetect
     }),
-    firestoreProbe: await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb })
+    firestoreProbe: shouldSkipProbe
+      ? buildFirestoreProbeSkippedForSaRequired(saKeyPath)
+      : await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb })
   };
   const checks = normalizeProjectIdProbeClassification(rawChecks);
-  const summary = buildSummary(checks);
+  const summary = shouldSkipProbe
+    ? buildSaKeyRequiredSummary(saKeyPath)
+    : buildSummary(checks);
   const ready = summary.tone !== 'danger';
 
   return {
@@ -680,6 +742,7 @@ module.exports = {
   evaluateCredentialsPath,
   evaluateSaKeyPath,
   evaluateProjectId,
+  resolveRequireSaKey,
   probeFirestoreReadOnly,
   buildSummary,
   classifyProbeError,

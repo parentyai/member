@@ -123,7 +123,9 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
   - `primaryCheckKey`
   - `rawHint`
   - `retriable`
+  - `code=SA_KEY_REQUIRED`（local strict SA policy により probe を停止した場合）
 - `checks.firestoreProbe.classification` は以下を返す:
+  - `SA_KEY_REQUIRED`（strict SA policy で probe を停止）
   - `FIRESTORE_DATABASE_NOT_FOUND`
   - `FIRESTORE_PROJECT_ID_ERROR`
   - `ADC_REAUTH_REQUIRED`
@@ -138,6 +140,9 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 - `FIRESTORE_PROJECT_ID` の設定有無
 - Firestore read-only probe（`listCollections`）の成否
 - 復旧手順の優先度は `GOOGLE_APPLICATION_CREDENTIALS`（ローカルSA鍵）を先頭、`gcloud auth application-default login` はフォールバックとして扱う
+- local strict SA policy: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1`（既定: local=ON / non-local=OFF）
+  - strict有効かつ `checks.saKeyPath.code !== SA_KEY_PATH_OK` の場合、`checks.firestoreProbe.code=FIRESTORE_PROBE_SKIPPED_SA_KEY_REQUIRED` として probe を実行しない
+  - strict有効時の summary は `SA_KEY_REQUIRED` を返し、ADC再認証導線は表示しない
 
 ### UI復旧導線（Phase664）
 - preflight異常時は `admin-local-preflight-banner` を一次表示とし、汎用 `admin-guard-banner` は重複表示しない。
@@ -147,6 +152,7 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
   - `監査ログへ移動`
   - 診断詳細（checks JSON）
 - `ADC_REAUTH_REQUIRED` / `CREDENTIALS_PATH_*` 系の操作案内は「ローカルSA鍵の設定・読取確認 → ADC再認証（フォールバック）」の順序で提示する。
+- `SA_KEY_REQUIRED` は「ローカルSA鍵設定 → 再診断」を優先し、ADC再認証は含めない。
 - preflight未復旧時は `degraded` モードで初期Firestore依存ロードを抑止し、Dashboard KPIは `BLOCKED` 表示に統一する。
 - preflight復旧時は初期ロードを自動再開する。
 

@@ -419,6 +419,9 @@
     if (lower.includes('adc_reauth_required')) {
       return { cause: 'ADC認証の再実行が必要です', impact: 'Firestore依存APIの取得が失敗します', action: 'まず GOOGLE_APPLICATION_CREDENTIALS にローカルSA鍵を設定して再診断し、必要時のみ gcloud auth application-default login を実行してください', tone: 'danger' };
     }
+    if (lower.includes('sa_key_required')) {
+      return { cause: 'ローカルSA鍵が必須です', impact: 'ADCフォールバックを行わないため、Firestore依存APIの取得を停止します', action: 'GOOGLE_APPLICATION_CREDENTIALS に読み取り可能なローカルSA鍵を設定して再診断してください', tone: 'danger' };
+    }
     if (lower.includes('firestore_timeout')) {
       return { cause: 'Firestore接続がタイムアウトしました', impact: 'ダッシュボード/監視の取得が停止します', action: 'ネットワークまたは認証状態を確認して再診断してください', tone: 'danger' };
     }

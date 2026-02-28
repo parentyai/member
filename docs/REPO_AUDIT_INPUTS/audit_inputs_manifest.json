@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T10:28:02-05:00",
-  "gitCommit": "73180e072ad8ac662089c1f9518fb7a4971de16c",
-  "branch": "codex/p2-keyless-alternative-assessment",
-  "sourceDigest": "6cb88b167c669712677316b0a3f92bc1585028e5486d63791430340df8e786f0",
+  "generatedAt": "2026-02-28T10:31:56-05:00",
+  "gitCommit": "3fe6369a3c70153f0bc3b8e7a5308559a78539ca",
+  "branch": "main",
+  "sourceDigest": "8284562f67b93ba3d3f6da0f3f2637ae92535c560a3f390ae2e91c3868a01df3",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "95990b33de1c9c6f186be2fad4b27862aa8ea87694379202b8eaf41c17abd27a",
+      "sha256": "f8e67feb8d146b9191087fdde5c8cc0f2f2283f39210705c29005d972a0056e3",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "4d2a259fba498c86c623d9d418c34a330ebbc753558cdcaab026b537c8016961",
+      "sha256": "18a1865b6a64f777030fe6aebcefe6b33eb8fe7aeda52e634afd6b57bf7019be",
       "bytes": 487
     },
     {
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "92336f9c1bdd46019d1dd3360d95476bb99429f8a1fb3d0913a34a322cb9378f",
-      "bytes": 2425
+      "sha256": "4b71bda33d952a48013d0e9bd964ab6c1a3d4237a1ef7dd3958be47f1f32e8b9",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

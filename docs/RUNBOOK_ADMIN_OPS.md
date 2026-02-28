@@ -81,7 +81,7 @@
 
 ## ローカル診断（Phase651）
 ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。
-方針: ローカルFirestore認証は `GOOGLE_APPLICATION_CREDENTIALS` によるローカルSA鍵を優先し、`gcloud auth application-default login` はフォールバックとして扱う。
+方針: ローカル診断は `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1`（local既定ON）により `GOOGLE_APPLICATION_CREDENTIALS` のローカルSA鍵を必須化する。strict無効時のみ `gcloud auth application-default login` をフォールバックとして扱う。
 
 ### 実行コマンド
 1) `npm run admin:preflight`  
@@ -95,6 +95,8 @@
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
+  - `summary.code=SA_KEY_REQUIRED` は strict SA policy により probe を停止した状態（ADC経路には到達していない）
+  - `checks.firestoreProbe.code=FIRESTORE_PROBE_SKIPPED_SA_KEY_REQUIRED` は SA鍵未解消のため read-only probe を未実行
   - `checks.saKeyPath.code=SA_KEY_PATH_UNSET` はローカルSA鍵未設定（推奨設定を適用）
   - `checks.saKeyPath.code=SA_KEY_PATH_PERMISSION_DENIED` は鍵ファイル読取権限不足
   - `GOOGLE_APPLICATION_CREDENTIALS` の無効パス/非ファイルを解消（ローカルSA鍵を優先）
@@ -102,6 +104,12 @@
   - `Unable to detect a Project Id` の場合は `FIRESTORE_PROJECT_ID` を明示設定
   - `Database not found` の場合は Console URL の databaseId が `-default-` か確認
   - 上記で解消しない場合のみ `gcloud auth application-default login` を再実行（ADCフォールバック）
+
+### strict SA policy の緊急退避（ロールバック）
+- 既定（推奨）: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=1`
+- 緊急時のみ一時退避: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0`
+  - 退避後は `npm run admin:preflight` で `ADC_REAUTH_REQUIRED` など既存分類に戻ることを確認する
+  - 恒久運用は必ず `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=1` に戻す
 
 ### Phase21系の注意（挙動変更なし）
 - `node scripts/phase21_verify_day_window.js` は `GOOGLE_APPLICATION_CREDENTIALS` を既定で拒否する契約（`--allow-gac` 未指定時）。
