@@ -30,6 +30,7 @@ test('phase664: ssot and runbook mention single banner, degraded mode, and recov
   const index = fs.readFileSync('docs/SSOT_INDEX.md', 'utf8');
 
   assert.ok(ssot.includes('checks.firestoreProbe.classification'));
+  assert.ok(ssot.includes('checks.saKeyPath'));
   assert.ok(ssot.includes('degraded'));
   assert.ok(ssot.includes('admin-local-preflight-banner'));
   assert.ok(runbook.includes('UI復旧フロー（Phase664）'));

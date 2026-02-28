@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:43:56-05:00",
-  "gitCommit": "15fec9273162e9cdd3848fab82caeb27e8ddd5cd",
-  "branch": "main",
-  "sourceDigest": "e6cf7a8844bf90861d783aab5c680b972e85c45fe1392a3e6cd7f1c2838bf406",
+  "generatedAt": "2026-02-28T10:16:54-05:00",
+  "gitCommit": "0f473c44d313aff243b4e31aa9590ea640d310aa",
+  "branch": "codex/p0-3-preflight-sa-key-diagnostic-v1",
+  "sourceDigest": "5c1f32badeae5f851a54d5b758de0fdd57909fae88748f86bb1026822a1ca4bf",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "bf842d6439a55cbee944d3e07a99e77d7b6b6af054a0510995b0e3f88e9f232e",
-      "bytes": 2390
+      "sha256": "0c57e11fc1647adf41b7faa68c85b5382181f655ebf1d170ab7f67e2d613d3ed",
+      "bytes": 2427
     }
   ],
   "diff_detection_rules": [

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:43:56-05:00",
-  "gitCommit": "15fec9273162e9cdd3848fab82caeb27e8ddd5cd",
-  "branch": "main",
-  "sourceDigest": "d5cd92253de23044bcc50b2b64a1d747814bf998094a0da1fafe6f2cb49040f6",
+  "generatedAt": "2026-02-28T10:16:54-05:00",
+  "gitCommit": "0f473c44d313aff243b4e31aa9590ea640d310aa",
+  "branch": "codex/p0-3-preflight-sa-key-diagnostic-v1",
+  "sourceDigest": "9ea10afd68140c68a45e36013860355051565a94d7693293c521d6be0bea5342",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

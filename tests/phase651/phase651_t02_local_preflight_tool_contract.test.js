@@ -5,6 +5,7 @@ const { test } = require('node:test');
 const {
   runLocalPreflight,
   evaluateCredentialsPath,
+  evaluateSaKeyPath,
   evaluateProjectId
 } = require('../../tools/admin_local_preflight');
 
@@ -51,6 +52,7 @@ test('phase651: local preflight allows ready state when probe succeeds', async (
   });
   assert.equal(result.ok, true);
   assert.equal(result.ready, true);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
   assert.equal(result.summary.tone === 'ok' || result.summary.tone === 'warn', true);
 });
 
@@ -62,4 +64,28 @@ test('phase651: direct evaluators expose credentials and project-id states', () 
   const project = evaluateProjectId({ FIRESTORE_PROJECT_ID: '' });
   assert.equal(credentials.code, 'CREDENTIALS_PATH_OK');
   assert.equal(project.code, 'FIRESTORE_PROJECT_ID_MISSING');
+});
+
+test('phase651: SA key evaluator classifies unset, missing, and permission denied states', () => {
+  const unset = evaluateSaKeyPath({}, {});
+  assert.equal(unset.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(unset.status, 'warn');
+
+  const missing = evaluateSaKeyPath(
+    { GOOGLE_APPLICATION_CREDENTIALS: '/tmp/missing-sa.json' },
+    { statSync: () => { throw new Error('ENOENT'); } }
+  );
+  assert.equal(missing.code, 'SA_KEY_PATH_INVALID');
+  assert.equal(missing.status, 'error');
+
+  const denied = evaluateSaKeyPath(
+    { GOOGLE_APPLICATION_CREDENTIALS: '/tmp/locked-sa.json' },
+    {
+      statSync: () => ({ isFile: () => true }),
+      accessSync: () => { throw new Error('EACCES'); },
+      constants: { R_OK: 4 }
+    }
+  );
+  assert.equal(denied.code, 'SA_KEY_PATH_PERMISSION_DENIED');
+  assert.equal(denied.status, 'error');
 });

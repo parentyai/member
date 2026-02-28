@@ -134,6 +134,7 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 
 ### 判定対象
 - `GOOGLE_APPLICATION_CREDENTIALS` が有効ファイルか
+- `checks.saKeyPath` でローカルSA鍵の未設定/参照不可/権限不足を返せること（`SA_KEY_PATH_*`）
 - `FIRESTORE_PROJECT_ID` の設定有無
 - Firestore read-only probe（`listCollections`）の成否
 - 復旧手順の優先度は `GOOGLE_APPLICATION_CREDENTIALS`（ローカルSA鍵）を先頭、`gcloud auth application-default login` はフォールバックとして扱う
