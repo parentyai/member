@@ -934,6 +934,7 @@ function applyOpsOnlyChrome(role) {
   if (!appShell) return;
   const nextRole = normalizeRoleValue(role);
   appShell.setAttribute('data-ops-only-nav', ADMIN_OPS_ONLY_NAV_V1 ? '1' : '0');
+  appShell.classList.toggle('ops-only-nav-v1', ADMIN_OPS_ONLY_NAV_V1);
   const hideDeveloperRole = ADMIN_OPS_ONLY_NAV_V1 && !ADMIN_DEVELOPER_SURFACE_V1;
   appShell.setAttribute('data-hide-developer-role', hideDeveloperRole ? '1' : '0');
   document.querySelectorAll('[data-ops-role="developer"]').forEach((el) => {
