@@ -136,6 +136,7 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 - `GOOGLE_APPLICATION_CREDENTIALS` が有効ファイルか
 - `FIRESTORE_PROJECT_ID` の設定有無
 - Firestore read-only probe（`listCollections`）の成否
+- 復旧手順の優先度は `GOOGLE_APPLICATION_CREDENTIALS`（ローカルSA鍵）を先頭、`gcloud auth application-default login` はフォールバックとして扱う
 
 ### UI復旧導線（Phase664）
 - preflight異常時は `admin-local-preflight-banner` を一次表示とし、汎用 `admin-guard-banner` は重複表示しない。
@@ -144,6 +145,7 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
   - `コマンドコピー`
   - `監査ログへ移動`
   - 診断詳細（checks JSON）
+- `ADC_REAUTH_REQUIRED` / `CREDENTIALS_PATH_*` 系の操作案内は「ローカルSA鍵の設定・読取確認 → ADC再認証（フォールバック）」の順序で提示する。
 - preflight未復旧時は `degraded` モードで初期Firestore依存ロードを抑止し、Dashboard KPIは `BLOCKED` 表示に統一する。
 - preflight復旧時は初期ロードを自動再開する。
 

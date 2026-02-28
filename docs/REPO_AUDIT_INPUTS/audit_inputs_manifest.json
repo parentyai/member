@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:36:15-05:00",
-  "gitCommit": "bb2fd71796d5ba2055b120cdcbac5f4593eed127",
-  "branch": "codex/p2-trackclick-latency-observability",
-  "sourceDigest": "2df4074a11e5865cef4163bcefd120ede2ddb51933d378b5f0110bbb92a689ce",
+  "generatedAt": "2026-02-28T08:43:56-05:00",
+  "gitCommit": "15fec9273162e9cdd3848fab82caeb27e8ddd5cd",
+  "branch": "main",
+  "sourceDigest": "e6cf7a8844bf90861d783aab5c680b972e85c45fe1392a3e6cd7f1c2838bf406",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "eaa841e8add88c7c92c017981d1fac96d2748dc54f41b55e07410e1916b6d096",
-      "bytes": 2427
+      "sha256": "bf842d6439a55cbee944d3e07a99e77d7b6b6af054a0510995b0e3f88e9f232e",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

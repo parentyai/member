@@ -417,7 +417,7 @@
       return { cause: 'ローカル診断APIを取得できません', impact: '環境不備と実装不備の切り分けができません', action: '/api/admin/local-preflight を直接確認してください', tone: 'warn' };
     }
     if (lower.includes('adc_reauth_required')) {
-      return { cause: 'ADC認証の再実行が必要です', impact: 'Firestore依存APIの取得が失敗します', action: 'gcloud auth application-default login を実行して再診断してください', tone: 'danger' };
+      return { cause: 'ADC認証の再実行が必要です', impact: 'Firestore依存APIの取得が失敗します', action: 'まず GOOGLE_APPLICATION_CREDENTIALS にローカルSA鍵を設定して再診断し、必要時のみ gcloud auth application-default login を実行してください', tone: 'danger' };
     }
     if (lower.includes('firestore_timeout')) {
       return { cause: 'Firestore接続がタイムアウトしました', impact: 'ダッシュボード/監視の取得が停止します', action: 'ネットワークまたは認証状態を確認して再診断してください', tone: 'danger' };
@@ -440,7 +440,7 @@
     if (lower.includes('credentials_path_invalid')
       || lower.includes('credentials_path_not_file')
       || lower.includes('firestore_credentials_error')) {
-      return { cause: 'Firestore認証情報を読み込めません', impact: 'Dashboard/Alerts/City Pack などのAPI取得が失敗します', action: 'GOOGLE_APPLICATION_CREDENTIALS を解除するか、有効な鍵ファイルへ修正してください', tone: 'danger' };
+      return { cause: 'Firestore認証情報を読み込めません', impact: 'Dashboard/Alerts/City Pack などのAPI取得が失敗します', action: 'GOOGLE_APPLICATION_CREDENTIALS を有効なローカルSA鍵ファイルへ修正し、必要時のみ解除して ADC 再認証へ切り替えてください', tone: 'danger' };
     }
     if (lower.includes('firestore_project_id_missing') || lower.includes('firestore_project_id_error')) {
       return { cause: 'FIRESTORE_PROJECT_ID が不足または不正です', impact: '一部環境でFirestore接続先を確定できません', action: 'FIRESTORE_PROJECT_ID を設定し、プロセスを再起動してください', tone: 'warn' };

@@ -11,6 +11,13 @@ test('phase651: guard normalization maps local preflight credential issues', () 
   assert.ok(mapped.action.includes('GOOGLE_APPLICATION_CREDENTIALS'));
 });
 
+test('phase651: guard normalization keeps ADC fallback while prioritizing SA key guidance', () => {
+  const mapped = fetchGuardCore.normalizeGuardError({ error: 'ADC_REAUTH_REQUIRED' });
+  assert.equal(mapped.tone, 'danger');
+  assert.ok(mapped.action.includes('GOOGLE_APPLICATION_CREDENTIALS'));
+  assert.ok(mapped.action.includes('gcloud auth application-default login'));
+});
+
 test('phase651: guard normalization maps local preflight unavailable warning', () => {
   const mapped = fetchGuardCore.normalizeGuardError({ error: 'LOCAL_PREFLIGHT_UNAVAILABLE' });
   assert.equal(mapped.tone, 'warn');

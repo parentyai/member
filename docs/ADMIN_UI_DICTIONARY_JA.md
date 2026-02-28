@@ -1658,7 +1658,7 @@ Admin_UI_Master_Dictionary v2.0 はリポジトリ/全ブランチ/履歴で未�
   "ui.toast.maintenance.productReadiness.reloadFail": "Product Readiness 判定の取得に失敗しました",
   "ui.desc.admin.localPreflight.defaultCause": "ローカル前提条件を確認できませんでした。",
   "ui.desc.admin.localPreflight.defaultImpact": "Firestore依存APIの取得が不安定になります。",
-  "ui.desc.admin.localPreflight.defaultAction": "認証設定を確認して再試行してください。",
+  "ui.desc.admin.localPreflight.defaultAction": "GOOGLE_APPLICATION_CREDENTIALS にローカルSA鍵を設定して再試行し、必要時のみADC再認証を実行してください。",
   "ui.desc.admin.localPreflight.rawHintEmpty": "追加ヒントはありません。",
   "ui.desc.admin.localPreflight.unavailableCause": "ローカル診断APIの取得に失敗しました。",
   "ui.desc.admin.localPreflight.unavailableImpact": "環境不備と実装不備の切り分けができません。",
