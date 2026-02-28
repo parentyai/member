@@ -20,4 +20,5 @@ test('phase674: home clean surface flag wires boot/js/css declutter controls', (
   assert.ok(css.includes('.app-shell.home-clean-surface-v1 .top-developer'));
   assert.ok(css.includes('.app-shell.home-clean-surface-v1 #admin-guard-banner'));
   assert.ok(css.includes('.app-shell.home-clean-surface-v1 #ops-home-dashboard'));
+  assert.ok(css.includes('.app-shell.home-clean-surface-v1 .dashboard-journey-panel'));
 });

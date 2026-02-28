@@ -2784,6 +2784,7 @@ details:not([open]) > *:not(summary) {
 .app-shell.home-clean-surface-v1 #header-readonly-note,
 .app-shell.home-clean-surface-v1 .top-developer,
 .app-shell.home-clean-surface-v1 #admin-guard-banner,
-.app-shell.home-clean-surface-v1 #ops-home-dashboard {
+.app-shell.home-clean-surface-v1 #ops-home-dashboard,
+.app-shell.home-clean-surface-v1 .dashboard-journey-panel {
   display: none !important;
 }
