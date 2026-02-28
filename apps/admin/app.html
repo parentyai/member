@@ -156,7 +156,7 @@
             <span class="nav-icon" aria-hidden="true">I</span>
             <span data-dict-key="ui.label.developer.implementation">実装状況</span>
           </button>
-          <button id="developer-open-legacy" type="button" class="nav-item">
+          <button id="developer-open-legacy" type="button" class="nav-item" data-legacy-status-surface="1">
             <span class="nav-icon" aria-hidden="true">L</span>
             <span data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</span>
           </button>
@@ -257,7 +257,7 @@
               <button id="topbar-dev-system" type="button" class="secondary-btn" data-dict-key="ui.label.developer.systemState">システム状態</button>
               <button id="topbar-dev-audit" type="button" class="secondary-btn" data-dict-key="ui.label.developer.audit">監査ログ</button>
               <button id="topbar-dev-implementation" type="button" class="secondary-btn" data-dict-key="ui.label.developer.implementation">実装状況</button>
-              <button id="topbar-dev-legacy" type="button" class="secondary-btn" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</button>
+              <button id="topbar-dev-legacy" type="button" class="secondary-btn" data-legacy-status-surface="1" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</button>
               <button id="topbar-dev-manual-redac" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
               <button id="topbar-dev-manual-user" type="button" class="secondary-btn" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
             </div>
@@ -3315,7 +3315,7 @@
                   <div id="repo-map-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため NOT AVAILABLE を表示します。</div>
                 </div>
               </div>
-              <div id="developer-map-legacy" class="panel">
+              <div id="developer-map-legacy" class="panel" data-legacy-status-surface="1">
                 <div class="panel-title" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</div>
                 <div class="panel-body">
                   <div class="row row-top">

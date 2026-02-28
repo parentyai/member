@@ -5,6 +5,13 @@ const { sendOpsNotice } = require('../usecases/phase121/sendOpsNotice');
 const LEGACY_SUNSET = 'Wed, 30 Sep 2026 00:00:00 GMT';
 const LEGACY_SUCCESSOR = '/api/admin/os/notifications/send/execute';
 
+function isLegacyRouteFreezeEnabled() {
+  const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
+  if (raw === undefined || raw === null || String(raw).trim() === '') return false; // compat default
+  const v = String(raw).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
 function applyDeprecationHeaders(res, successorPath) {
   res.setHeader('Deprecation', 'true');
   res.setHeader('Sunset', LEGACY_SUNSET);
@@ -37,6 +44,12 @@ function handleError(res, err) {
 }
 
 async function handleOpsNoticeSend(req, res, body) {
+  if (isLegacyRouteFreezeEnabled()) {
+    applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
+    res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'legacy route frozen', replacement: LEGACY_SUCCESSOR }));
+    return;
+  }
   const payload = parseJson(body, res);
   if (!payload) return;
   try {
