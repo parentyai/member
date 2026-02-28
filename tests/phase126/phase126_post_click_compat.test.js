@@ -113,6 +113,71 @@ test('phase126: existing POST /track/click still redirects and records clickAt',
   assert.ok(Object.prototype.hasOwnProperty.call(statsDoc.data, 'clickCount'));
 });
 
+test('phase126: POST /track/click keeps redirect contract when audit append fails', async (t) => {
+  const prevMode = process.env.SERVICE_MODE;
+  const prevFlag = process.env.TRACK_POST_CLICK_ENABLED;
+  process.env.SERVICE_MODE = 'track';
+  delete process.env.TRACK_POST_CLICK_ENABLED;
+
+  const db = createDbStub();
+  setDbForTest(db);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const restoreAdminStub = stubFirebaseAdminIncrement();
+  const auditLogUsecase = require('../../src/usecases/audit/appendAuditLog');
+  const prevAppendAuditLog = auditLogUsecase.appendAuditLog;
+  auditLogUsecase.appendAuditLog = async () => {
+    throw new Error('audit write failed');
+  };
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    auditLogUsecase.appendAuditLog = prevAppendAuditLog;
+    restoreAdminStub();
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevMode === undefined) delete process.env.SERVICE_MODE;
+    else process.env.SERVICE_MODE = prevMode;
+    if (prevFlag === undefined) delete process.env.TRACK_POST_CLICK_ENABLED;
+    else process.env.TRACK_POST_CLICK_ENABLED = prevFlag;
+  });
+
+  await db.collection('link_registry').doc('l1').set({ url: 'https://example.com', createdAt: 1 });
+  await db.collection('notifications').doc('n1').set({
+    title: 't',
+    body: 'b',
+    ctaText: 'openA',
+    linkRegistryId: 'l1',
+    createdAt: 1
+  });
+
+  const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
+  const delivery = await deliveriesRepo.createDelivery({
+    notificationId: 'n1',
+    lineUserId: 'U1',
+    delivered: true
+  });
+
+  const res = await httpRequest({
+    port,
+    method: 'POST',
+    path: '/track/click',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deliveryId: delivery.id, linkRegistryId: 'l1' })
+  });
+
+  assert.strictEqual(res.status, 302);
+  assert.strictEqual(res.headers.location, 'https://example.com');
+  const deliveryDoc = db._state.collections.notification_deliveries.docs[delivery.id];
+  assert.ok(deliveryDoc);
+  assert.strictEqual(deliveryDoc.data.clickAt, 'SERVER_TIMESTAMP');
+});
+
 test('phase126: POST /track/click can be disabled via TRACK_POST_CLICK_ENABLED=0', async (t) => {
   const prevMode = process.env.SERVICE_MODE;
   const prevFlag = process.env.TRACK_POST_CLICK_ENABLED;
