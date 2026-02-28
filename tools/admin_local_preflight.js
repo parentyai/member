@@ -177,25 +177,36 @@ function classifyFirestoreProbeClassification(message) {
 
 const RECOVERY_COMMANDS = Object.freeze({
   RUN_ADC_REAUTH: Object.freeze([
+    '# Preferred: local SA key via GOOGLE_APPLICATION_CREDENTIALS',
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
+    'npm run admin:preflight',
+    '# Fallback: ADC reauth only when SA key is unavailable',
     'unset GOOGLE_APPLICATION_CREDENTIALS',
     'gcloud auth application-default login',
     'gcloud auth application-default print-access-token',
     'npm run admin:preflight'
   ]),
   CHECK_FIRESTORE_TIMEOUT: Object.freeze([
-    'gcloud auth application-default print-access-token',
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
     'export FIRESTORE_PROJECT_ID=<your-project-id>',
-    'npm run admin:preflight'
+    'npm run admin:preflight',
+    'gcloud auth application-default print-access-token'
   ]),
   CHECK_FIRESTORE_NETWORK: Object.freeze([
-    'gcloud auth application-default print-access-token',
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
     'curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight',
-    'npm run admin:preflight'
+    'npm run admin:preflight',
+    'gcloud auth application-default print-access-token'
   ]),
   CHECK_FIRESTORE_PERMISSION: Object.freeze([
-    'gcloud auth application-default print-access-token',
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
     'gcloud projects get-iam-policy <your-project-id> --flatten="bindings[].members" --format="table(bindings.role,bindings.members)"',
-    'npm run admin:preflight'
+    'npm run admin:preflight',
+    'gcloud auth application-default print-access-token'
   ]),
   CHECK_FIRESTORE_DATABASE: Object.freeze([
     'gcloud firestore databases list --project <your-project-id>',
@@ -207,6 +218,9 @@ const RECOVERY_COMMANDS = Object.freeze({
     'curl -sS -H "x-admin-token: <token>" -H "x-actor: local-check" http://127.0.0.1:8080/api/admin/local-preflight'
   ]),
   FIX_CREDENTIALS_PATH: Object.freeze([
+    'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.secrets/member-dev-sa.json"',
+    'test -r "$GOOGLE_APPLICATION_CREDENTIALS"',
+    'npm run admin:preflight',
     'unset GOOGLE_APPLICATION_CREDENTIALS',
     'gcloud auth application-default login',
     'npm run admin:preflight'
@@ -269,7 +283,7 @@ function buildErrorSummary(entry) {
         category: 'auth',
         cause: 'ADC認証が期限切れでFirestore接続に失敗しました。',
         impact: 'Firestore依存APIが失敗し、管理画面に NOT AVAILABLE が増えます。',
-        action: 'ADCを再認証して再診断してください。',
+        action: 'まず GOOGLE_APPLICATION_CREDENTIALS にローカルSA鍵を設定して再診断し、解消しない場合はADCを再認証してください。',
         recoveryActionCode: 'RUN_ADC_REAUTH',
         recoveryCommands: resolveRecoveryCommands('RUN_ADC_REAUTH'),
         primaryCheckKey: 'firestoreProbe',
@@ -284,7 +298,7 @@ function buildErrorSummary(entry) {
         category: 'connectivity',
         cause: 'Firestore read-only probeがタイムアウトしました。',
         impact: 'ダッシュボード等の取得が遅延または失敗します。',
-        action: '接続状態と認証状態を確認して再診断してください。',
+        action: 'まずローカルSA鍵パス（GOOGLE_APPLICATION_CREDENTIALS）と FIRESTORE_PROJECT_ID を確認し、必要時のみADCを再認証してください。',
         recoveryActionCode: 'CHECK_FIRESTORE_TIMEOUT',
         recoveryCommands: resolveRecoveryCommands('CHECK_FIRESTORE_TIMEOUT'),
         primaryCheckKey: 'firestoreProbe',
@@ -299,7 +313,7 @@ function buildErrorSummary(entry) {
         category: 'connectivity',
         cause: 'Firestoreへのネットワーク到達性に問題があります。',
         impact: 'Firestore依存APIが断続的に失敗します。',
-        action: 'ネットワーク疎通と認証状態を確認して再診断してください。',
+        action: 'まずローカルSA鍵パス（GOOGLE_APPLICATION_CREDENTIALS）を確認し、ネットワーク疎通を確認したうえで再診断してください。',
         recoveryActionCode: 'CHECK_FIRESTORE_NETWORK',
         recoveryCommands: resolveRecoveryCommands('CHECK_FIRESTORE_NETWORK'),
         primaryCheckKey: 'firestoreProbe',
@@ -314,7 +328,7 @@ function buildErrorSummary(entry) {
         category: 'permission',
         cause: 'Firestoreアクセス権限が不足しています。',
         impact: '管理画面のFirestore依存操作が拒否されます。',
-        action: '利用中アカウントの権限を確認して再診断してください。',
+        action: 'まずローカルSA鍵の権限を確認し、必要時のみADCアカウント権限を確認して再診断してください。',
         recoveryActionCode: 'CHECK_FIRESTORE_PERMISSION',
         recoveryCommands: resolveRecoveryCommands('CHECK_FIRESTORE_PERMISSION'),
         primaryCheckKey: 'firestoreProbe',
@@ -344,7 +358,7 @@ function buildErrorSummary(entry) {
       category: 'auth',
       cause: message,
       impact: 'Firestore依存APIが失敗し、管理画面に NOT AVAILABLE が増えます。',
-      action: '認証情報を修正して再診断してください。',
+      action: 'GOOGLE_APPLICATION_CREDENTIALS を有効なローカルSA鍵パスへ修正し、解消しない場合はADC再認証を試してください。',
       recoveryActionCode: 'FIX_CREDENTIALS_PATH',
       recoveryCommands: resolveRecoveryCommands('FIX_CREDENTIALS_PATH'),
       primaryCheckKey: source.key || 'credentialsPath',

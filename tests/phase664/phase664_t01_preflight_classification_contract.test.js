@@ -24,6 +24,8 @@ test('phase664: local preflight classifies ADC reauth and exposes recovery summa
   assert.equal(result.summary.retriable, true);
   assert.ok(Array.isArray(result.summary.recoveryCommands));
   assert.ok(result.summary.recoveryCommands.length >= 2);
+  assert.ok(result.summary.recoveryCommands.some((entry) => String(entry).includes('export GOOGLE_APPLICATION_CREDENTIALS')));
+  assert.ok(result.summary.recoveryCommands.some((entry) => String(entry).includes('gcloud auth application-default login')));
   assert.ok(typeof result.summary.rawHint === 'string' && result.summary.rawHint.length > 0);
 });
 
@@ -42,6 +44,7 @@ test('phase664: local preflight classifies timeout and exposes timeout recovery 
   assert.equal(result.summary.recoveryActionCode, 'CHECK_FIRESTORE_TIMEOUT');
   assert.equal(result.summary.retriable, true);
   assert.ok(Array.isArray(result.summary.recoveryCommands));
+  assert.ok(result.summary.recoveryCommands.some((entry) => String(entry).includes('export GOOGLE_APPLICATION_CREDENTIALS')));
   assert.ok(result.summary.recoveryCommands.includes('npm run admin:preflight'));
 });
 
