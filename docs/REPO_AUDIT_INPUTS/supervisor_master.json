@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:25:40-05:00",
-  "gitCommit": "0defe8f0974d749a154fdb46ccfced7696b44375",
-  "branch": "codex/p0-legacy-freeze-visibility",
-  "sourceDigest": "3c9bbf6fb778b2cdd1bf75fa814494cca8e08f3685a2d0f59ff9d0812f867465",
+  "generatedAt": "2026-02-28T08:30:32-05:00",
+  "gitCommit": "e7cd959092befa3a95faae0c6312782b99804909",
+  "branch": "HEAD",
+  "sourceDigest": "07a4c8cf0c702159d878a3866796f7f7429de36cfac80d870a031046d8eec316",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

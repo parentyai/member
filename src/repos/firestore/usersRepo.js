@@ -5,8 +5,28 @@ const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNo
 
 const COLLECTION = 'users';
 
+function normalizeString(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function resolveTimestamp(at) {
   return at || serverTimestamp();
+}
+
+function shouldSupplementScenarioKey(payload, existing) {
+  const current = payload && typeof payload === 'object' ? payload : {};
+  const existingRecord = existing && typeof existing === 'object' ? existing : {};
+  const incomingScenarioKey = normalizeString(current.scenarioKey);
+  if (incomingScenarioKey) return null;
+  const existingScenarioKey = normalizeString(existingRecord.scenarioKey);
+  if (existingScenarioKey) return null;
+  const normalizedScenarioKey = normalizeScenarioKey({
+    scenarioKey: current.scenarioKey,
+    scenario: current.scenario
+  });
+  return normalizedScenarioKey || null;
 }
 
 async function createUser(lineUserId, data) {
@@ -14,6 +34,8 @@ async function createUser(lineUserId, data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(lineUserId);
   const payload = Object.assign({}, data || {}, { createdAt: resolveTimestamp(data && data.createdAt) });
+  const normalizedScenarioKey = shouldSupplementScenarioKey(payload, null);
+  if (normalizedScenarioKey) payload.scenarioKey = normalizedScenarioKey;
   await docRef.set(payload, { merge: false });
   return { id: lineUserId };
 }
@@ -31,7 +53,12 @@ async function updateUser(lineUserId, patch) {
   if (!lineUserId) throw new Error('lineUserId required');
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(lineUserId);
-  await docRef.set(patch || {}, { merge: true });
+  const payload = Object.assign({}, patch || {});
+  const currentSnap = await docRef.get();
+  const current = currentSnap.exists ? currentSnap.data() : null;
+  const normalizedScenarioKey = shouldSupplementScenarioKey(payload, current);
+  if (normalizedScenarioKey) payload.scenarioKey = normalizedScenarioKey;
+  await docRef.set(payload, { merge: true });
   return { id: lineUserId };
 }
 
