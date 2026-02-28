@@ -77,6 +77,10 @@ const ADMIN_TOP_SUMMARY_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_TOP_SUMMARY_V1 : null,
   false
 );
+const ADMIN_HOME_CLEAN_SURFACE_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1 : null,
+  true
+);
 const ADMIN_USERS_STRIPE_LAYOUT_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1 : null,
   true
@@ -935,6 +939,7 @@ function applyOpsOnlyChrome(role) {
   const nextRole = normalizeRoleValue(role);
   appShell.setAttribute('data-ops-only-nav', ADMIN_OPS_ONLY_NAV_V1 ? '1' : '0');
   appShell.classList.toggle('ops-only-nav-v1', ADMIN_OPS_ONLY_NAV_V1);
+  appShell.classList.toggle('home-clean-surface-v1', ADMIN_HOME_CLEAN_SURFACE_V1);
   const hideDeveloperRole = ADMIN_OPS_ONLY_NAV_V1 && !ADMIN_DEVELOPER_SURFACE_V1;
   appShell.setAttribute('data-hide-developer-role', hideDeveloperRole ? '1' : '0');
   document.querySelectorAll('[data-ops-role="developer"]').forEach((el) => {
