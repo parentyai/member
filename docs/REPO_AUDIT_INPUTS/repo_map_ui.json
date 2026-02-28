@@ -3,7 +3,7 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "e3641269197da014afd3a6eae61fc5be54df8ad9",
+      "hash": "35de0a5177c123adaeb5f4834af92840204b22a4",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
@@ -3420,7 +3420,9 @@
           "nameJa": "共通基盤機能（trackClick）",
           "status": "実装済み",
           "canDo": [
-            "運用で利用できます（管理画面/API）。"
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
           ],
           "cannotDo": [
             "この機能を説明するSSOT参照が不足しています。"
@@ -3430,16 +3432,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/trackClick.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/trackClickGet.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -3447,7 +3452,9 @@
           "nameJa": "共通基盤機能（trackClickGet）",
           "status": "実装済み",
           "canDo": [
-            "運用で利用できます（管理画面/API）。"
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
           ],
           "cannotDo": [
             "この機能を説明するSSOT参照が不足しています。"
@@ -3457,16 +3464,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/trackClick.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/trackClickGet.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -8677,11 +8687,13 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 85,
+              "testsCount": 108,
               "killSwitchDependent": false,
-              "auditDependent": false,
+              "auditDependent": true,
               "canDo": [
-                "運用で利用できます（管理画面/API）。"
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
               ],
               "cannotDo": [
                 "この機能を説明するSSOT参照が不足しています。"
@@ -8691,23 +8703,31 @@
                 "SSOT_INDEXに説明ドキュメントを追記する。"
               ],
               "relatedRepos": [
+                "auditLogsRepo",
                 "deliveriesRepo",
                 "linkRegistryRepo",
                 "notificationsRepo"
               ],
               "relatedCollections": [
+                "audit_logs",
                 "link_registry",
                 "notification_deliveries",
                 "notifications"
               ],
               "entrypoints": [
-                "src/routes/trackClick.js",
-                "src/routes/trackClickGet.js"
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
               ],
               "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
               ]
             },
             {
@@ -8717,11 +8737,13 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 85,
+              "testsCount": 108,
               "killSwitchDependent": false,
-              "auditDependent": false,
+              "auditDependent": true,
               "canDo": [
-                "運用で利用できます（管理画面/API）。"
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
               ],
               "cannotDo": [
                 "この機能を説明するSSOT参照が不足しています。"
@@ -8731,23 +8753,31 @@
                 "SSOT_INDEXに説明ドキュメントを追記する。"
               ],
               "relatedRepos": [
+                "auditLogsRepo",
                 "deliveriesRepo",
                 "linkRegistryRepo",
                 "notificationsRepo"
               ],
               "relatedCollections": [
+                "audit_logs",
                 "link_registry",
                 "notification_deliveries",
                 "notifications"
               ],
               "entrypoints": [
-                "src/routes/trackClick.js",
-                "src/routes/trackClickGet.js"
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
               ],
               "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
               ]
             },
             {

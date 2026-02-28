@@ -1233,9 +1233,11 @@
       "answerFaqFromKb"
     ],
     "src/routes/trackClick.js": [
+      "appendAuditLog",
       "recordClickAndRedirect"
     ],
     "src/routes/trackClickGet.js": [
+      "appendAuditLog",
       "recordClickAndRedirect"
     ],
     "src/routes/webhookLine.js": [

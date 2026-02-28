@@ -2723,23 +2723,26 @@
       "feature": "trackClick",
       "entrypoints": [],
       "usecases": [
+        "appendAuditLog",
         "recordClickAndRedirect"
       ],
       "repos": [
+        "auditLogsRepo",
         "deliveriesRepo",
         "linkRegistryRepo",
         "notificationsRepo"
       ],
       "collections": [
+        "audit_logs",
         "link_registry",
         "notification_deliveries",
         "notifications"
       ],
       "auth": "public",
       "killSwitch_dependent": false,
-      "trace_linked": false,
-      "audit_linked": false,
-      "tests_count": 85,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 108,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2747,23 +2750,26 @@
       "feature": "trackClickGet",
       "entrypoints": [],
       "usecases": [
+        "appendAuditLog",
         "recordClickAndRedirect"
       ],
       "repos": [
+        "auditLogsRepo",
         "deliveriesRepo",
         "linkRegistryRepo",
         "notificationsRepo"
       ],
       "collections": [
+        "audit_logs",
         "link_registry",
         "notification_deliveries",
         "notifications"
       ],
       "auth": "public",
       "killSwitch_dependent": false,
-      "trace_linked": false,
-      "audit_linked": false,
-      "tests_count": 85,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 108,
       "ssot_refs": [],
       "completion": "completed"
     },

@@ -6828,12 +6828,13 @@
       "killSwitch_enforced": false,
       "killSwitch_confidence": "low",
       "writes_collections": [
+        "audit_logs",
         "link_registry",
         "notification_deliveries",
         "notifications"
       ],
-      "audit_required": false,
-      "trace_required": false,
+      "audit_required": true,
+      "trace_required": true,
       "evidence": [
         "src/index.js:590",
         "src/routes/trackClickGet.js:1"
@@ -7131,12 +7132,13 @@
       "killSwitch_enforced": false,
       "killSwitch_confidence": "low",
       "writes_collections": [
+        "audit_logs",
         "link_registry",
         "notification_deliveries",
         "notifications"
       ],
-      "audit_required": false,
-      "trace_required": false,
+      "audit_required": true,
+      "trace_required": true,
       "evidence": [
         "src/index.js:567",
         "src/routes/trackClick.js:1"

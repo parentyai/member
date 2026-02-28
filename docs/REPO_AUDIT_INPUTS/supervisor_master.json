@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-27T23:09:04-05:00",
-  "gitCommit": "700b98377a64bba2fb78bc8384e7f76d181306c5",
-  "branch": "codex/admin-nav-ops-only-visibility-v1",
-  "sourceDigest": "53dfda4d741697f78742a0e38d66f06812483e446c92d88436973ff1d9712f66",
+  "generatedAt": "2026-02-28T00:17:50-05:00",
+  "gitCommit": "72f56e35dfb3667a20202159e17d88f2ce4e4431",
+  "branch": "codex/p0-trackclick-audit-hardening",
+  "sourceDigest": "d164a784ad259765c98b6f513d0ffce834e92da10ee2430738a3f5200bb450d1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
