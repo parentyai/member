@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T10:21:54-05:00",
-  "gitCommit": "326ca7efeb2ebc040822b281a7a64af4e2fdea9f",
-  "branch": "codex/p1-sa-role-and-rotation-runbook",
-  "sourceDigest": "de642fb60cd5400cb54574e4a5cfa5fc6eba33de21cd44a3f1494485543421b3",
+  "generatedAt": "2026-02-28T10:28:02-05:00",
+  "gitCommit": "73180e072ad8ac662089c1f9518fb7a4971de16c",
+  "branch": "codex/p2-keyless-alternative-assessment",
+  "sourceDigest": "8fa7e32b5ab6fdd0365f97c696b69fa827269ca2cfe394f5b92e8a342b91327b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -151,6 +151,28 @@
 2) 誤失効時は新鍵を再発行して `GOOGLE_APPLICATION_CREDENTIALS` を更新
 3) 復旧確認後に不要鍵を削除し、監査ログに `actor/traceId/実施時刻` を残す
 
+### P2-1 鍵なし代替（WIF / impersonation）評価
+現状観測:
+- CI / deploy は WIF/OIDC を既定採用（`google-github-actions/auth@v2` + `workload_identity_provider`）。
+- local preflight は `GOOGLE_APPLICATION_CREDENTIALS` と `SA_KEY_PATH_*` を診断軸にしている。
+- `phase21_verify_day_window` は `GOOGLE_APPLICATION_CREDENTIALS` を既定拒否し、`--allow-gac` でのみ回避可能。
+
+選択肢評価（2026-02-28 時点）:
+1) CI/本番: WIF/OIDC（採用済み・維持）  
+   - 採否: 採用継続  
+   - 理由: 鍵配布が不要で、現行workflow契約と一致
+2) ローカル: SA鍵ファイル（現行）  
+   - 採否: 当面採用  
+   - 理由: preflight/UI/Runbook が既にこの診断導線に最適化済み
+3) ローカル: 鍵なし（ADC + SA impersonation）  
+   - 採否: 今期は未採用（調査継続）  
+   - 理由: preflight契約・phase21ガード・運用手順を同時改修する必要があり、1PR範囲を超える
+
+鍵なし方式を採用する条件:
+1) preflight に impersonation 前提の診断コードを add-only で追加できること
+2) phase21 guard 契約（`--allow-gac`）との整合案を先に確定できること
+3) ローカル運用者向けに再現可能な失敗時Runbook（復旧手順固定）を用意できること
+
 ### UI復旧フロー（Phase664）
 1) `/admin/app` 上部の local preflight バナーで `再診断` を実行  
 2) バナーの `復旧コマンド` から必要コマンドを `コマンドコピー`  
