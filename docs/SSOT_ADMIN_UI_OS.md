@@ -153,6 +153,7 @@ Phase648 では「Role別アクセス可能カテゴリを左ナビに全表示�
 ### 運用意図
 - `NOT AVAILABLE` の原因を「実装未完了」と「環境不備」に分離して提示する。
 - 既存API/Firestoreスキーマは変更しない（診断は read-only）。
+- ローカルSA鍵の最小権限ロール設計とローテーション手順は `docs/RUNBOOK_ADMIN_OPS.md` を SSOT 運用手順として参照する。
 
 ## ServicePhase と「運用OS成熟度」
 ServicePhase（1〜4）は SSOT として保持される（`docs/SSOT_SERVICE_PHASES.md`）。

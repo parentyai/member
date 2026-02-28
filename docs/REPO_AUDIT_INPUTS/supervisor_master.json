@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T10:16:54-05:00",
-  "gitCommit": "0f473c44d313aff243b4e31aa9590ea640d310aa",
-  "branch": "codex/p0-3-preflight-sa-key-diagnostic-v1",
-  "sourceDigest": "9ea10afd68140c68a45e36013860355051565a94d7693293c521d6be0bea5342",
+  "generatedAt": "2026-02-28T10:21:54-05:00",
+  "gitCommit": "326ca7efeb2ebc040822b281a7a64af4e2fdea9f",
+  "branch": "codex/p1-sa-role-and-rotation-runbook",
+  "sourceDigest": "de642fb60cd5400cb54574e4a5cfa5fc6eba33de21cd44a3f1494485543421b3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
