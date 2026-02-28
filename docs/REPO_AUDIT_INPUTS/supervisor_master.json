@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T08:30:32-05:00",
-  "gitCommit": "e7cd959092befa3a95faae0c6312782b99804909",
-  "branch": "HEAD",
-  "sourceDigest": "07a4c8cf0c702159d878a3866796f7f7429de36cfac80d870a031046d8eec316",
+  "generatedAt": "2026-02-28T08:36:15-05:00",
+  "gitCommit": "bb2fd71796d5ba2055b120cdcbac5f4593eed127",
+  "branch": "codex/p2-trackclick-latency-observability",
+  "sourceDigest": "82bdc150247d7840b35e05eb433f80703ca82625f32662c89b0928067acf6807",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

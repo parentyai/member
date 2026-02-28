@@ -32,6 +32,11 @@
    - deliveryId / linkRegistryId を使用
    - requestId を記録
 
+5) 302遅延の事実記録（任意）
+   - 変更直後の観測が必要な場合のみ実施
+   - `npm run ops:track-click-latency -- --base-url "$BASE_URL" --mode post --delivery-id "$DELIVERY_ID" --link-registry-id "$LINK_REGISTRY_ID" --count 20 --warmup 2 --expect-status 302 --max-p95-ms 500`
+   - `mismatchCount` と `latencyMs.p95` を事実として記録する（評価はしない）
+
 ## OBSログ最小確認
 - [OBS] action=test-send result=ok の行を取得
 - 同一 requestId で lineUserId / notificationId / deliveryId を記録
@@ -50,6 +55,9 @@
 - click 実行: Yes/No
 - requestId (click):
 - click result (ok/reject/error):
+- latency probe 実行: Yes/No
+- latency probe mismatchCount:
+- latency probe p95(ms):
 - OBSログ抜粋:
 
 ## 禁止事項
