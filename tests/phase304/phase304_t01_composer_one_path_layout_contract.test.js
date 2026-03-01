@@ -15,8 +15,9 @@ test('phase304: composer pane keeps type-driven form + live preview + saved list
   assert.ok(html.includes('id="composer-preview-title"'));
   assert.ok(html.includes('id="composer-preview-cta2"'));
   assert.ok(html.includes('id="composer-saved-rows"'));
+  assert.ok(html.includes('id="composer-matrix-head"'));
+  assert.ok(html.includes('id="composer-matrix-rows"'));
   assert.ok(html.includes('id="traceId"'));
   assert.ok(html.includes('type="hidden" id="traceId"'));
   assert.ok(!html.includes('for="traceId"'));
 });
-

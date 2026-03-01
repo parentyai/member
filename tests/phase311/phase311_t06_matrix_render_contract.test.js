@@ -15,6 +15,10 @@ test('phase311: developer matrix render uses scenario-step cells with count/stat
   assert.ok(js.includes('trigger=${entry.trigger || COMPOSER_DEFAULT_TRIGGER} / order=${Number.isFinite(Number(entry.order)) ? Number(entry.order) : \'-\'}'));
   assert.ok(js.includes('executeConfirm=planHash+confirmToken'));
   assert.ok(js.includes('function mergeNotificationMatrixFromItems'));
+  assert.ok(js.includes("headId: 'composer-matrix-head'"));
+  assert.ok(js.includes("bodyId: 'composer-matrix-rows'"));
+  assert.ok(js.includes('state.composerScenarioStepMatrix = matrix;'));
+  assert.ok(js.includes('renderComposerMatrix(matrix);'));
 
   const repoMap = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/repo_map_ui.json', 'utf8'));
   const matrix = repoMap.layers && repoMap.layers.developer && repoMap.layers.developer.scenarioStepMatrix;

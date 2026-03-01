@@ -2932,9 +2932,12 @@ function renderRepoMapMatrixEntry(cellEl, entry) {
   cellEl.appendChild(block);
 }
 
-function renderRepoMapMatrix(matrix) {
-  const head = document.getElementById('repo-map-matrix-head');
-  const body = document.getElementById('repo-map-matrix-rows');
+function renderRepoMapMatrix(matrix, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const headId = typeof opts.headId === 'string' && opts.headId.trim() ? opts.headId.trim() : 'repo-map-matrix-head';
+  const bodyId = typeof opts.bodyId === 'string' && opts.bodyId.trim() ? opts.bodyId.trim() : 'repo-map-matrix-rows';
+  const head = document.getElementById(headId);
+  const body = document.getElementById(bodyId);
   if (!head || !body) return;
   clearElementChildren(head);
   clearElementChildren(body);
@@ -3000,6 +3003,13 @@ function renderRepoMapMatrix(matrix) {
       tr.appendChild(td);
     });
     body.appendChild(tr);
+  });
+}
+
+function renderComposerMatrix(matrix) {
+  renderRepoMapMatrix(matrix, {
+    headId: 'composer-matrix-head',
+    bodyId: 'composer-matrix-rows'
   });
 }
 
@@ -12179,6 +12189,9 @@ async function loadComposerSavedNotifications(options) {
     state.composerSavedItems = Array.isArray(data.items) ? data.items : [];
     state.composerListLoadedAt = new Date().toISOString();
     renderComposerSavedRows();
+    const matrix = await loadNotificationMatrixOverlay().catch(() => ({ scenarios: [], steps: [], cells: [] }));
+    state.composerScenarioStepMatrix = matrix;
+    renderComposerMatrix(matrix);
     if (notify) showToast(t('ui.toast.composer.listOk', '保存済み通知を更新しました'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.composer.listFail', '保存済み通知の取得に失敗しました'), 'danger');

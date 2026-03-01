@@ -24,4 +24,6 @@ test('phase272: composer pane contains type-driven form, live preview, and saved
   assert.ok(html.includes('id="composer-saved-status"'));
   assert.ok(html.includes('id="composer-saved-type"'));
   assert.ok(html.includes('id="composer-saved-rows"'));
+  assert.ok(html.includes('id="composer-matrix-head"'));
+  assert.ok(html.includes('id="composer-matrix-rows"'));
 });
