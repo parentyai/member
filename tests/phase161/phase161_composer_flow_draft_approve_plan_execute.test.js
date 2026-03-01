@@ -72,6 +72,8 @@ test('phase161: composer flow draft -> approve -> plan -> execute (no real send)
   assert.strictEqual(plan.count, 2);
   assert.ok(plan.planHash);
   assert.ok(plan.confirmToken);
+  const afterPlan = await notificationsRepo.getNotification(created.id);
+  assert.strictEqual(afterPlan.status, 'planned');
 
   const sentTo = [];
   const exec = await executeNotificationSend({

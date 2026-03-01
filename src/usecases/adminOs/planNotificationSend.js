@@ -99,7 +99,8 @@ async function planNotificationSend(params, deps) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
-  if (notification.status !== 'active') throw new Error('notification not active');
+  const status = typeof notification.status === 'string' ? notification.status : 'draft';
+  if (status !== 'active' && status !== 'planned') throw new Error('notification not active/planned');
 
   const target = notification.target && typeof notification.target === 'object' ? notification.target : {};
   const limit = requireNumber(target.limit, 'target.limit');
@@ -138,6 +139,8 @@ async function planNotificationSend(params, deps) {
     templateKey,
     payloadSummary: {
       notificationId,
+      stateFrom: status,
+      stateTo: 'planned',
       count: lineUserIds.length,
       planHash,
       bucket,
@@ -151,7 +154,8 @@ async function planNotificationSend(params, deps) {
     },
     snapshot: {
       notificationId,
-      status: notification.status || null,
+      statusBefore: status,
+      statusAfter: 'planned',
       scenarioKey: notification.scenarioKey || null,
       stepKey: notification.stepKey || null,
       notificationCategory: notification.notificationCategory || null,
@@ -165,6 +169,13 @@ async function planNotificationSend(params, deps) {
       capBlockedSummary: capSummary.capBlockedSummary
     }
   });
+  await notificationsRepo.updateNotificationStatus(notificationId, {
+    status: 'planned',
+    plannedAt: serverTime,
+    plannedBy: actor,
+    lastPlanHash: planHash,
+    lastPlanCount: lineUserIds.length
+  });
 
   return {
     ok: true,
@@ -172,6 +183,7 @@ async function planNotificationSend(params, deps) {
     traceId,
     requestId,
     notificationId,
+    status: 'planned',
     count: lineUserIds.length,
     planHash,
     confirmToken,

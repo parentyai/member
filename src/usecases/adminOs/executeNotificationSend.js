@@ -97,7 +97,8 @@ async function executeNotificationSend(params, deps) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
-  if (notification.status !== 'active') throw new Error('notification not active');
+  const status = typeof notification.status === 'string' ? notification.status : 'draft';
+  if (status !== 'active' && status !== 'planned') throw new Error('notification not active/planned');
 
   const templateKey = buildTemplateKey(notificationId);
   const latestPlan = await auditLogsRepo.getLatestAuditLog({ action: 'notifications.send.plan', templateKey });

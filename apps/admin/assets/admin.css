@@ -1810,6 +1810,10 @@ details:not([open]) > *:not(summary) {
   display: none !important;
 }
 
+#pane-composer .composer-hidden-input {
+  display: flex !important;
+}
+
 .composer-status-wrap {
   display: none !important;
 }

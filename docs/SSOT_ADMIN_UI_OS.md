@@ -208,6 +208,7 @@ MUST:
 
 ## Admin Master Table V1（Phase675 add-only）
 - 危険操作フローの唯一SSOTは `docs/SSOT_ADMIN_UI_MASTER_TABLE_V1.md` とする。
+- 通知Composerの状態・入力・監査の補助SSOTは `docs/SSOT_NOTIFICATION_COMPOSER_CONTRACT_V1.md` とする（Master Tableのguard契約を上書きしない）。
 - runtime は docs JSON ブロック（`ADMIN_UI_MASTER_TABLE_BEGIN/END`）を直接読み込む。
 - v1.1（2026-02-27）では `vendors.write` と `emergency.write` の `actorMode` を `required` へ昇格した。
 - v1.2（2026-02-27）では `city_pack.bulletin.write` と `city_pack.request.write` の `actorMode` を `required` へ昇格した。
