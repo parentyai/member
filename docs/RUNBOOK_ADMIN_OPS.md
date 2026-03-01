@@ -286,13 +286,21 @@
    - traceId で view → decision → execute が追えるか確認
 
 ## Composer Flow (通知作成 → 承認 → 送信)
-1) `/admin/composer`
+1) `/admin/app?pane=composer`（正規導線）
    - draft 作成（title/body/cta/linkRegistryId/target/scenario/step）
    - preview で本文とリンクを確認
    - approve（active化）
    - plan → confirm token を取得
    - execute（confirm token 必須）
 2) Monitor で反応/CTR を確認
+
+### Legacy Composer運用ゲート（調査専用）
+- 方針: 通常運用は `app pane` 固定。`/admin/composer` 直アクセスは redirect を前提とする。
+- 例外利用（調査時のみ）:
+  - `env=local/dev` かつ `role=admin|developer`
+  - `compat=1|stay_legacy=1` と `confirm` の一致
+  - root cause 調査・再現検証・互換比較に用途を限定する
+- 迷った場合の判断: 送信業務は常に `/admin/app?pane=composer` で実施する。
 
 ## Composer Category Wizard（Phase676 / add-only）
 対象: `/admin/app?pane=composer`（`/admin/composer` は互換redirect）

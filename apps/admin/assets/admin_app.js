@@ -291,7 +291,9 @@ if (!ADMIN_TREND_UI_ENABLED) {
 }
 
 const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
-const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
+const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
+const COMPOSER_ALLOWED_STEPS = new Set(COMPOSER_STEP_ORDER);
+const COMPOSER_DEFAULT_TRIGGER = 'manual';
 const COMPOSER_CATEGORY_FLOW_DEFS = Object.freeze({
   DEADLINE_REQUIRED: Object.freeze({
     recommendedType: 'ANNOUNCEMENT',
@@ -2899,6 +2901,12 @@ function formatRepoMapMatrixTarget(target) {
   return `region=${region}, limit=${limit}, membersOnly=${membersOnly}`;
 }
 
+function resolveComposerOrderFromStep(stepKey) {
+  const index = COMPOSER_STEP_ORDER.indexOf(String(stepKey || ''));
+  if (index < 0) return null;
+  return index + 1;
+}
+
 function renderRepoMapMatrixEntry(cellEl, entry) {
   const block = document.createElement('div');
   block.className = 'cell-muted';
@@ -2918,9 +2926,9 @@ function renderRepoMapMatrixEntry(cellEl, entry) {
   const actionLine = document.createElement('div');
   actionLine.textContent = `actions[draft=${actions.draft ? 'Y' : 'N'},preview=${actions.preview ? 'Y' : 'N'},approve=${actions.approve ? 'Y' : 'N'},plan=${actions.plan ? 'Y' : 'N'},execute=${actions.execute ? 'Y' : 'N'}] / guard=actor+trace / executeConfirm=planHash+confirmToken`;
   block.appendChild(actionLine);
-  const unknownLine = document.createElement('div');
-  unknownLine.textContent = 'trigger=UNKNOWN / order=UNKNOWN';
-  block.appendChild(unknownLine);
+  const triggerLine = document.createElement('div');
+  triggerLine.textContent = `trigger=${entry.trigger || COMPOSER_DEFAULT_TRIGGER} / order=${Number.isFinite(Number(entry.order)) ? Number(entry.order) : '-'}`;
+  block.appendChild(triggerLine);
   cellEl.appendChild(block);
 }
 
@@ -3095,11 +3103,19 @@ function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
     else if (status === 'sent') target.states.sent = Number(target.states.sent || 0) + 1;
     const notificationId = item && typeof item.id === 'string' ? item.id : '';
     const readModelRow = notificationId ? readModelIndex.get(notificationId) : null;
+    const trigger = item && typeof item.trigger === 'string' && item.trigger.trim()
+      ? item.trigger.trim().toLowerCase()
+      : COMPOSER_DEFAULT_TRIGGER;
+    const rowOrder = item && Number.isFinite(Number(item.order)) && Number(item.order) > 0
+      ? Math.floor(Number(item.order))
+      : resolveComposerOrderFromStep(stepKey);
     const entry = {
       notificationId: notificationId || null,
       title: item && typeof item.title === 'string' ? item.title : null,
       type: normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP'),
       status: normalizeComposerSavedStatus(status || 'draft'),
+      trigger,
+      order: rowOrder,
       target: item && item.target && typeof item.target === 'object' ? item.target : null,
       planHash: item && typeof item.planHash === 'string' && item.planHash.trim() ? item.planHash.trim() : null,
       lastExecution: readModelRow && typeof readModelRow.lastSentAt === 'string' ? readModelRow.lastSentAt : null,
@@ -11635,6 +11651,15 @@ function renderComposerCta2Notice() {
   noticeEl.classList.toggle('admin-guard-text-danger', Boolean(cta2));
 }
 
+function renderComposerTriggerOrderNotice(payload) {
+  const noticeEl = document.getElementById('composer-trigger-order-note');
+  if (!noticeEl) return;
+  const body = payload && typeof payload === 'object' ? payload : buildDraftPayload();
+  const trigger = typeof body.trigger === 'string' && body.trigger.trim() ? body.trigger.trim() : COMPOSER_DEFAULT_TRIGGER;
+  const order = Number.isFinite(Number(body.order)) ? Number(body.order) : '-';
+  noticeEl.textContent = `trigger=${trigger} / order=${order}`;
+}
+
 function buildComposerLocalSafetyIssues(payload) {
   const issues = [];
   if (state.composerKillSwitch) {
@@ -11703,6 +11728,7 @@ function updateComposerSummary() {
   renderComposerLivePreview();
   renderComposerCta2Notice();
   const payload = buildDraftPayload();
+  renderComposerTriggerOrderNotice(payload);
   const issues = buildComposerLocalSafetyIssues(payload);
   renderComposerSafety(issues);
   const gateState = computeComposerActionGateState(payload, issues);
@@ -11743,6 +11769,7 @@ function buildDraftPayload() {
   const stepKey = notificationType === 'STEP'
     ? (document.getElementById('stepKey')?.value || 'week')
     : 'week';
+  const order = resolveComposerOrderFromStep(stepKey) || 1;
   const notificationMeta = buildComposerNotificationMeta(notificationType);
   return {
     title: document.getElementById('title')?.value?.trim() || '',
@@ -11754,6 +11781,8 @@ function buildDraftPayload() {
     notificationCategory: normalizeComposerCategory(document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE'),
     notificationType,
     notificationMeta,
+    trigger: COMPOSER_DEFAULT_TRIGGER,
+    order,
     target: buildTarget(notificationType)
   };
 }

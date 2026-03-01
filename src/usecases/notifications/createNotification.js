@@ -2,7 +2,12 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
-const { PHASE0_SCENARIOS, STEP_ORDER } = require('../../domain/constants');
+const {
+  PHASE0_SCENARIOS,
+  STEP_ORDER,
+  NOTIFICATION_TRIGGER,
+  NOTIFICATION_TRIGGER_VALUES
+} = require('../../domain/constants');
 const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const {
@@ -40,6 +45,28 @@ function normalizeNotificationType(value) {
     throw new Error('notificationType invalid');
   }
   return raw;
+}
+
+function normalizeNotificationTrigger(value) {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!raw) return NOTIFICATION_TRIGGER.MANUAL;
+  if (!NOTIFICATION_TRIGGER_VALUES.includes(raw)) {
+    throw new Error('trigger invalid');
+  }
+  return raw;
+}
+
+function normalizeNotificationOrder(value, stepKey) {
+  if (value !== undefined && value !== null && value !== '') {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || Math.floor(numeric) !== numeric || numeric <= 0) {
+      throw new Error('order invalid');
+    }
+    return numeric;
+  }
+  const index = STEP_ORDER.indexOf(String(stepKey || ''));
+  if (index < 0) throw new Error('order invalid');
+  return index + 1;
 }
 
 function normalizeNotificationMeta(meta) {
@@ -136,6 +163,8 @@ async function createNotification(data) {
   const sourceRefs = normalizeStringArray(payload.sourceRefs);
   const notificationType = normalizeNotificationType(payload.notificationType);
   const notificationMeta = normalizeNotificationMeta(payload.notificationMeta);
+  const trigger = normalizeNotificationTrigger(payload.trigger);
+  const order = normalizeNotificationOrder(payload.order, payload.stepKey);
   if (notificationType === 'VENDOR') {
     const vendorId = notificationMeta && typeof notificationMeta.vendorId === 'string'
       ? notificationMeta.vendorId.trim()
@@ -157,6 +186,8 @@ async function createNotification(data) {
     notificationCategory,
     notificationType,
     notificationMeta,
+    trigger,
+    order,
     cityPackFallback,
     status: payload.status || 'draft',
     scheduledAt: payload.scheduledAt || null,

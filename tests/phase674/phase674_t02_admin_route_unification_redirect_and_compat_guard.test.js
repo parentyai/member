@@ -5,6 +5,7 @@ const http = require('node:http');
 const { test } = require('node:test');
 const {
   ADMIN_UI_ROUTES_V2,
+  ADMIN_UI_COMPAT_LEGACY_HTML,
   buildAdminAppPaneLocation
 } = require('../../src/shared/adminUiRoutesV2');
 
@@ -58,6 +59,8 @@ test('phase674: /admin/* routes converge to /admin/app and compat is guarded by 
     assert.equal(res.headers.location, buildAdminAppPaneLocation(entry.pane), `${entry.route} redirect target mismatch`);
   }
 
+  assert.equal(ADMIN_UI_COMPAT_LEGACY_HTML['/admin/composer'], undefined, '/admin/composer must stay redirect-only');
+
   const compatDenied = await request({
     port,
     method: 'GET',
@@ -84,4 +87,13 @@ test('phase674: /admin/* routes converge to /admin/app and compat is guarded by 
   });
   assert.equal(compatAllowed.status, 200);
   assert.match(compatAllowed.body, /設定\/回復（Master/);
+
+  const composerCompatDenied = await request({
+    port,
+    method: 'GET',
+    path: '/admin/composer?compat=1&role=admin&confirm=phase674_confirm',
+    headers: authHeaders
+  });
+  assert.equal(composerCompatDenied.status, 302);
+  assert.equal(composerCompatDenied.headers.location, '/admin/app?pane=composer');
 });
