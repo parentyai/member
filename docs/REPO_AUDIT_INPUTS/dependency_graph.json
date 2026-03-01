@@ -291,6 +291,9 @@
       "opsStatesRepo",
       "usersRepo"
     ],
+    "giveUpRetryQueuedSend": [
+      "sendRetryQueueRepo"
+    ],
     "handleJourneyLineCommand": [
       "journeyTodoItemsRepo",
       "userJourneyProfilesRepo",
@@ -389,6 +392,7 @@
       "journeyKpiDailyRepo",
       "journeyTodoStatsRepo",
       "llmUsageLogsRepo",
+      "sendRetryQueueRepo",
       "userSubscriptionsRepo"
     ],
     "normalizeWindowDays": [
@@ -1212,6 +1216,7 @@
       "getMemberSummary"
     ],
     "src/routes/phase73RetryQueue.js": [
+      "giveUpRetryQueuedSend",
       "listRetryQueue",
       "planRetryQueuedSend",
       "retryQueuedSend"

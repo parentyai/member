@@ -537,32 +537,32 @@
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 346,
+      "line": 374,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 391,
+      "line": 419,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 392,
+      "line": 420,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 798,
+      "line": 826,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 806,
+      "line": 834,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js",
-      "line": 824,
+      "line": 852,
       "symbol": "killSwitch"
     },
     {

@@ -73,6 +73,20 @@ Typical fields:
 - `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
 - `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 
+### `send_retry_queue/{id}`
+Purpose: 送信失敗の再送/解決キュー（phase73運用導線）。
+
+Typical fields:
+- `status` (`PENDING`/`DONE`/`GAVE_UP`)
+- `lineUserId`
+- `templateKey`
+- `payloadSnapshot`（再送時に使う最小ペイロード）
+- `lastError`
+- `giveUpReason`（add-only）
+- `resolvedBy`（add-only）
+- `resolvedAt`（add-only）
+- `createdAt`, `updatedAt`
+
 ### `link_registry/{id}`（教育 add-only field）
 Purpose: 通知/City Packが参照するリンク辞書。教育用途では公立学校公式リンクを管理する。
 

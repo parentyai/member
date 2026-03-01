@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T08:43:17-05:00",
-  "gitCommit": "eda61692bb07a9c1f9e6e4ae22c71bd6ced985f9",
+  "generatedAt": "2026-03-01T14:14:12-05:00",
+  "gitCommit": "b0d17e57c2dc0a075185645c707a6d869824bcf7",
   "branch": "codex/feature-catalog-visibility",
-  "sourceDigest": "d3cd210f32a0591797f691f56d58d4e277f0246623a4d691e5b9da1bf1d4952f",
+  "sourceDigest": "0bc9a61ec1ea81b0c6ccb22f004c4200c4f3a40596cb2927d9821d149bd1eb21",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

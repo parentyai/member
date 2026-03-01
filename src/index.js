@@ -3300,7 +3300,12 @@ function createServer() {
   }
 
   if (pathname.startsWith('/api/phase73/retry-queue')) {
-    const { handleListRetryQueue, handlePlanRetryQueue, handleRetrySend } = require('./routes/phase73RetryQueue');
+    const {
+      handleListRetryQueue,
+      handlePlanRetryQueue,
+      handleRetrySend,
+      handleGiveUpSend
+    } = require('./routes/phase73RetryQueue');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -3334,6 +3339,11 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/phase73/retry-queue/retry') {
         const body = await collectBody();
         await handleRetrySend(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/phase73/retry-queue/give-up') {
+        const body = await collectBody();
+        await handleGiveUpSend(req, res, body);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });

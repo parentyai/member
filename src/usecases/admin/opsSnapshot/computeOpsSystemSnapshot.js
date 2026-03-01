@@ -174,15 +174,43 @@ function resolveNotificationType(value) {
   return normalized;
 }
 
+function resolveNotificationDocumentId(row) {
+  if (!row || typeof row !== 'object') return null;
+  if (typeof row.id === 'string' && row.id.trim()) return row.id.trim();
+  const data = rowData(row);
+  if (typeof data.id === 'string' && data.id.trim()) return data.id.trim();
+  return null;
+}
+
+function resolveLinkHealthState(row) {
+  const state = row && row.lastHealth && typeof row.lastHealth.state === 'string'
+    ? row.lastHealth.state.trim().toUpperCase()
+    : '';
+  return state;
+}
+
+function isVendorLinkRow(row) {
+  const item = rowData(row);
+  const category = typeof item.category === 'string' ? item.category.toLowerCase() : '';
+  const tagText = Array.isArray(item.tags) ? item.tags.join(',').toLowerCase() : '';
+  const vendorKey = typeof item.vendorKey === 'string' ? item.vendorKey.toLowerCase() : '';
+  const vendorLabel = typeof item.vendorLabel === 'string' ? item.vendorLabel.toLowerCase() : '';
+  const title = typeof item.title === 'string' ? item.title.toLowerCase() : '';
+  if (category.includes('vendor') || tagText.includes('vendor')) return true;
+  if (vendorKey.includes('vendor') || vendorLabel.includes('vendor')) return true;
+  if (title.includes('[vendor_link]')) return true;
+  return false;
+}
+
 function buildNotificationTypeMetrics(deliveryRows, notificationRows) {
-  const notifications = toArray(notificationRows).map((row) => rowData(row));
+  const notifications = toArray(notificationRows);
   const deliveries = toArray(deliveryRows);
   const byId = new Map();
 
   notifications.forEach((row) => {
-    const id = typeof row.id === 'string' && row.id.trim() ? row.id.trim() : null;
+    const id = resolveNotificationDocumentId(row);
     if (!id) return;
-    byId.set(id, row);
+    byId.set(id, rowData(row));
   });
 
   const byType = {
@@ -883,38 +911,17 @@ async function computeOpsSystemSnapshot(params) {
       notificationsByType: notificationTypeMetrics,
       linkHealth: {
         totalCount: linkRows.length,
-        warnCount: linkRows.filter((row) => {
-          const state = row && row.lastHealth && typeof row.lastHealth.state === 'string'
-            ? row.lastHealth.state.trim().toUpperCase()
-            : '';
-          return state === 'WARN';
-        }).length,
+        warnCount: linkRows.filter((row) => resolveLinkHealthState(row) === 'WARN').length,
         criticalCount: linkRows.filter((row) => {
-          const state = row && row.lastHealth && typeof row.lastHealth.state === 'string'
-            ? row.lastHealth.state.trim().toUpperCase()
-            : '';
+          const state = resolveLinkHealthState(row);
           return state === 'ERROR' || state === 'DEAD' || state === 'BLOCKED';
         }).length,
-        vendorLinkCount: linkRows.filter((row) => {
-          const category = typeof row.category === 'string' ? row.category.toLowerCase() : '';
-          const tagText = Array.isArray(row.tags) ? row.tags.join(',').toLowerCase() : '';
-          return category.includes('vendor') || tagText.includes('vendor');
-        }).length,
-        vendorWarnCount: linkRows.filter((row) => {
-          const category = typeof row.category === 'string' ? row.category.toLowerCase() : '';
-          const tagText = Array.isArray(row.tags) ? row.tags.join(',').toLowerCase() : '';
-          const state = row && row.lastHealth && typeof row.lastHealth.state === 'string'
-            ? row.lastHealth.state.trim().toUpperCase()
-            : '';
-          return (category.includes('vendor') || tagText.includes('vendor')) && state === 'WARN';
-        }).length,
+        vendorLinkCount: linkRows.filter((row) => isVendorLinkRow(row)).length,
+        vendorWarnCount: linkRows.filter((row) => isVendorLinkRow(row) && resolveLinkHealthState(row) === 'WARN').length,
         vendorCriticalCount: linkRows.filter((row) => {
-          const category = typeof row.category === 'string' ? row.category.toLowerCase() : '';
-          const tagText = Array.isArray(row.tags) ? row.tags.join(',').toLowerCase() : '';
-          const state = row && row.lastHealth && typeof row.lastHealth.state === 'string'
-            ? row.lastHealth.state.trim().toUpperCase()
-            : '';
-          return (category.includes('vendor') || tagText.includes('vendor')) && (state === 'ERROR' || state === 'DEAD' || state === 'BLOCKED');
+          if (!isVendorLinkRow(row)) return false;
+          const state = resolveLinkHealthState(row);
+          return state === 'ERROR' || state === 'DEAD' || state === 'BLOCKED';
         }).length,
         lastUpdatedAt: latestTimestamp([
           latestFromRows(linkRows, ['updatedAt', 'createdAt']),
