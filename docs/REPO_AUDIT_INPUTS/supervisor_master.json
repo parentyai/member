@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T20:28:03-05:00",
-  "gitCommit": "785b07a227de7ce714eed30f1e95c153f9fdf616",
-  "branch": "codex/p0-add-public-write-safety-net",
-  "sourceDigest": "7868dbe653f7123963c27bab13199e5819f5573ffb7aa392ff34b9c573e85dda",
+  "generatedAt": "2026-03-01T06:48:38-05:00",
+  "gitCommit": "f7a4a542c0453311d90b38b0990f586004da8916",
+  "branch": "codex/notifications-redesign-planned-contract-v1",
+  "sourceDigest": "9ad723290ff1d0c97c58eab8e4488fa7f74d6a83612d208a361ebc8279cc57b1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
