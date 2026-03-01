@@ -122,37 +122,42 @@
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 80,
+      "line": 164,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 86,
+      "line": 170,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 89,
+      "line": 202,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/repos/firestore/systemFlagsRepo.js",
+      "line": 243,
       "symbol": "setKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 92,
+      "line": 246,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 93,
+      "line": 247,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 221,
+      "line": 382,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 222,
+      "line": 383,
       "symbol": "setKillSwitch"
     },
     {
@@ -317,17 +322,7 @@
     },
     {
       "file": "src/routes/admin/phase1Notifications.js",
-      "line": 5,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/admin/phase1Notifications.js",
-      "line": 86,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/admin/phase1Notifications.js",
-      "line": 90,
+      "line": 266,
       "symbol": "killSwitch"
     },
     {

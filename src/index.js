@@ -302,6 +302,12 @@ function getRequestId(req) {
   return crypto.randomUUID();
 }
 
+function getTraceId(req, fallbackRequestId) {
+  const traceHeader = req && req.headers ? req.headers['x-trace-id'] : null;
+  if (typeof traceHeader === 'string' && traceHeader.trim().length > 0) return traceHeader.trim();
+  return fallbackRequestId || getRequestId(req);
+}
+
 function resolveAdminUiTraceId(req) {
   const traceHeader = req && req.headers ? req.headers['x-trace-id'] : null;
   if (typeof traceHeader === 'string' && traceHeader.trim().length > 0) return traceHeader.trim();
@@ -453,6 +459,7 @@ function serveHtml(res, filePath) {
 
 function handleWebhook(req, res) {
   const requestId = getRequestId(req);
+  const traceId = getTraceId(req, requestId);
   const signature = req.headers['x-line-signature'];
 
   let bytes = 0;
@@ -482,6 +489,7 @@ function handleWebhook(req, res) {
         signature: typeof signature === 'string' ? signature : '',
         body,
         requestId,
+        traceId,
         logger: (msg) => console.log(msg)
       });
       const obsResult = result.status >= 200 && result.status < 300 ? 'ok' : 'reject';
@@ -503,6 +511,7 @@ function handleWebhook(req, res) {
 
 function handleStripeWebhookRoute(req, res) {
   const requestId = getRequestId(req);
+  const traceId = getTraceId(req, requestId);
   const signature = req.headers['stripe-signature'];
 
   let bytes = 0;
@@ -531,6 +540,7 @@ function handleStripeWebhookRoute(req, res) {
         signature: typeof signature === 'string' ? signature : '',
         body,
         requestId,
+        traceId,
         logger: (msg) => console.log(msg)
       });
       res.writeHead(result.status, { 'content-type': 'text/plain; charset=utf-8' });

@@ -19,8 +19,8 @@ test('phase652: computeDashboardKpis includes billing and llm metrics', async ()
 
   try {
     const now = Date.now();
-    const t1 = new Date(now - 60 * 60 * 1000);
-    const t2 = new Date(now - 2 * 60 * 60 * 1000);
+    const t1 = new Date(now - 10 * 60 * 1000);
+    const t2 = new Date(now - 20 * 60 * 1000);
 
     await db.collection('users').doc('U1').set({
       createdAt: new Date(now - 24 * 60 * 60 * 1000),

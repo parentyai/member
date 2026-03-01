@@ -5,11 +5,17 @@ const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 
 const COLLECTION = 'system_flags';
 const DOC_ID = 'phase0';
+const DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE = 'warn';
+const DEFAULT_TRACK_AUDIT_WRITE_MODE = 'best_effort';
+const ALLOWED_PUBLIC_WRITE_FAIL_CLOSE_MODES = new Set(['off', 'warn', 'enforce']);
+const ALLOWED_TRACK_AUDIT_WRITE_MODES = new Set(['best_effort', 'await']);
 const DEFAULT_LLM_POLICY = Object.freeze({
   lawfulBasis: 'unspecified',
   consentVerified: false,
   crossBorder: false
 });
+const latestPublicWriteModeByRoute = Object.create(null);
+const latestTrackAuditModeByRoute = Object.create(null);
 
 function normalizeServicePhase(value) {
   if (value === null || value === undefined) return null;
@@ -77,6 +83,84 @@ function normalizeLlmPolicy(value) {
   };
 }
 
+function normalizePublicWriteFailCloseMode(value, fallback) {
+  const fallbackValue = fallback === null
+    ? null
+    : (typeof fallback === 'string' && ALLOWED_PUBLIC_WRITE_FAIL_CLOSE_MODES.has(fallback)
+      ? fallback
+      : DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE);
+  if (value === null || value === undefined) return fallbackValue;
+  if (typeof value !== 'string') return fallbackValue;
+  const normalized = value.trim().toLowerCase();
+  if (!ALLOWED_PUBLIC_WRITE_FAIL_CLOSE_MODES.has(normalized)) return fallbackValue;
+  return normalized;
+}
+
+function normalizeTrackAuditWriteMode(value, fallback) {
+  const fallbackValue = fallback === null
+    ? null
+    : (typeof fallback === 'string' && ALLOWED_TRACK_AUDIT_WRITE_MODES.has(fallback)
+      ? fallback
+      : DEFAULT_TRACK_AUDIT_WRITE_MODE);
+  if (value === null || value === undefined) return fallbackValue;
+  if (typeof value !== 'string') return fallbackValue;
+  const normalized = value.trim().toLowerCase();
+  if (!ALLOWED_TRACK_AUDIT_WRITE_MODES.has(normalized)) return fallbackValue;
+  return normalized;
+}
+
+function normalizeModeMap(value, normalizeModeFn) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out = {};
+  Object.keys(value).forEach((key) => {
+    if (typeof key !== 'string') return;
+    const normalizedKey = key.trim();
+    if (!normalizedKey) return;
+    out[normalizedKey] = normalizeModeFn(value[key], null);
+  });
+  return out;
+}
+
+function resolveModeByRoute(routeKey, routeMap, fallback) {
+  const key = typeof routeKey === 'string' ? routeKey.trim() : '';
+  if (key && routeMap && Object.prototype.hasOwnProperty.call(routeMap, key) && routeMap[key]) {
+    return routeMap[key];
+  }
+  return fallback;
+}
+
+function parseModeFromJsonEnv(raw, normalizeModeFn) {
+  if (typeof raw !== 'string') return {};
+  const value = raw.trim();
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return normalizeModeMap(parsed, normalizeModeFn);
+  } catch (_err) {
+    return {};
+  }
+}
+
+function resolvePublicWriteFailCloseModeFromData(data, routeKey) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const envGlobal = normalizePublicWriteFailCloseMode(process.env.PUBLIC_WRITE_FAIL_CLOSE_MODE, null);
+  const envByRoute = parseModeFromJsonEnv(process.env.PUBLIC_WRITE_FAIL_CLOSE_MODE_BY_ROUTE, normalizePublicWriteFailCloseMode);
+  const modeByRoute = normalizeModeMap(payload.publicWriteFailCloseModeByRoute, normalizePublicWriteFailCloseMode);
+  const baseMode = envGlobal || normalizePublicWriteFailCloseMode(payload.publicWriteFailCloseMode, DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE);
+  const persistedResolved = resolveModeByRoute(routeKey, modeByRoute, baseMode);
+  return resolveModeByRoute(routeKey, envByRoute, persistedResolved);
+}
+
+function resolveTrackAuditWriteModeFromData(data, routeKey) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const envGlobal = normalizeTrackAuditWriteMode(process.env.TRACK_AUDIT_WRITE_MODE, null);
+  const envByRoute = parseModeFromJsonEnv(process.env.TRACK_AUDIT_WRITE_MODE_BY_ROUTE, normalizeTrackAuditWriteMode);
+  const modeByRoute = normalizeModeMap(payload.trackAuditWriteModeByRoute, normalizeTrackAuditWriteMode);
+  const baseMode = envGlobal || normalizeTrackAuditWriteMode(payload.trackAuditWriteMode, DEFAULT_TRACK_AUDIT_WRITE_MODE);
+  const persistedResolved = resolveModeByRoute(routeKey, modeByRoute, baseMode);
+  return resolveModeByRoute(routeKey, envByRoute, persistedResolved);
+}
+
 async function getKillSwitch() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -84,6 +168,76 @@ async function getKillSwitch() {
   if (!snap.exists) return false;
   const data = snap.data() || {};
   return Boolean(data.killSwitch);
+}
+
+async function getPublicWriteFailCloseMode(routeKey) {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  const data = snap.exists ? (snap.data() || {}) : {};
+  return resolvePublicWriteFailCloseModeFromData(data, routeKey);
+}
+
+async function getTrackAuditWriteMode(routeKey) {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  const data = snap.exists ? (snap.data() || {}) : {};
+  return resolveTrackAuditWriteModeFromData(data, routeKey);
+}
+
+function resolveLatestModeByRoute(cacheMap, routeKey, fallbackMode) {
+  const key = typeof routeKey === 'string' ? routeKey.trim() : '';
+  if (key && typeof cacheMap[key] === 'string' && cacheMap[key]) return cacheMap[key];
+  if (typeof cacheMap.__default === 'string' && cacheMap.__default) return cacheMap.__default;
+  return fallbackMode;
+}
+
+async function getPublicWriteSafetySnapshot(routeKey) {
+  try {
+    const db = getDb();
+    const docRef = db.collection(COLLECTION).doc(DOC_ID);
+    const snap = await docRef.get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    const killSwitchOn = Boolean(data.killSwitch);
+    const failCloseMode = resolvePublicWriteFailCloseModeFromData(data, routeKey);
+    const trackAuditWriteMode = resolveTrackAuditWriteModeFromData(data, routeKey);
+    if (typeof routeKey === 'string' && routeKey.trim()) {
+      latestPublicWriteModeByRoute[routeKey.trim()] = failCloseMode;
+      latestTrackAuditModeByRoute[routeKey.trim()] = trackAuditWriteMode;
+    }
+    latestPublicWriteModeByRoute.__default = failCloseMode;
+    latestTrackAuditModeByRoute.__default = trackAuditWriteMode;
+    return {
+      killSwitchOn,
+      failCloseMode,
+      trackAuditWriteMode,
+      readError: false,
+      source: 'live'
+    };
+  } catch (err) {
+    const envFailCloseMode = normalizePublicWriteFailCloseMode(process.env.PUBLIC_WRITE_FAIL_CLOSE_MODE, null);
+    const envTrackAuditWriteMode = normalizeTrackAuditWriteMode(process.env.TRACK_AUDIT_WRITE_MODE, null);
+    const failCloseMode = resolveLatestModeByRoute(
+      latestPublicWriteModeByRoute,
+      routeKey,
+      envFailCloseMode || DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE
+    );
+    const trackAuditWriteMode = resolveLatestModeByRoute(
+      latestTrackAuditModeByRoute,
+      routeKey,
+      envTrackAuditWriteMode || DEFAULT_TRACK_AUDIT_WRITE_MODE
+    );
+    return {
+      killSwitchOn: false,
+      failCloseMode: envFailCloseMode || failCloseMode,
+      trackAuditWriteMode: envTrackAuditWriteMode || trackAuditWriteMode,
+      readError: true,
+      readErrorCode: 'kill_switch_read_failed',
+      readErrorMessage: err && err.message ? String(err.message) : 'kill switch read failed',
+      source: 'fallback'
+    };
+  }
 }
 
 async function setKillSwitch(isOn) {
@@ -216,8 +370,15 @@ async function setLlmPolicy(llmPolicy) {
 }
 
 module.exports = {
+  DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE,
+  DEFAULT_TRACK_AUDIT_WRITE_MODE,
   DEFAULT_LLM_POLICY,
   normalizeLlmPolicy,
+  normalizePublicWriteFailCloseMode,
+  normalizeTrackAuditWriteMode,
+  getPublicWriteFailCloseMode,
+  getTrackAuditWriteMode,
+  getPublicWriteSafetySnapshot,
   getKillSwitch,
   setKillSwitch,
   getServicePhase,
