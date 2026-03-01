@@ -20,6 +20,12 @@ const STEP_KEYS = Object.freeze({
 
 const STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
 
+const NOTIFICATION_TRIGGER = Object.freeze({
+  MANUAL: 'manual'
+});
+
+const NOTIFICATION_TRIGGER_VALUES = Object.freeze([NOTIFICATION_TRIGGER.MANUAL]);
+
 const RICH_MENU_ITEMS = Object.freeze([
   {
     key: 'faq',
@@ -40,5 +46,7 @@ module.exports = {
   PHASE0_SCENARIOS,
   STEP_KEYS,
   STEP_ORDER,
+  NOTIFICATION_TRIGGER,
+  NOTIFICATION_TRIGGER_VALUES,
   RICH_MENU_ITEMS
 };

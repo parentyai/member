@@ -8,6 +8,7 @@ const { getNotificationDecisionTrace } = require('../phase37/getNotificationDeci
 const { getNotificationReactionSummary } = require('../phase137/getNotificationReactionSummary');
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
 const { getLatestNotificationPlan, buildTemplateKey } = require('../adminOs/planNotificationSend');
+const { STEP_ORDER, NOTIFICATION_TRIGGER } = require('../../domain/constants');
 
 const WAIT_RULE_TYPE = 'TYPE_B';
 const WAIT_RULE_SOURCE_UNSET = 'ssot_unset';
@@ -126,6 +127,21 @@ function resolveWaitRule(stepKey) {
   };
 }
 
+function resolveNotificationTrigger(notification) {
+  const raw = notification && typeof notification.trigger === 'string'
+    ? notification.trigger.trim().toLowerCase()
+    : '';
+  return raw || NOTIFICATION_TRIGGER.MANUAL;
+}
+
+function resolveNotificationOrder(notification) {
+  const value = notification ? notification.order : null;
+  if (Number.isFinite(Number(value)) && Number(value) > 0) return Math.floor(Number(value));
+  const stepKey = notification && typeof notification.stepKey === 'string' ? notification.stepKey : '';
+  const index = STEP_ORDER.indexOf(stepKey);
+  return index >= 0 ? index + 1 : null;
+}
+
 async function resolveTargetCount(notificationId) {
   let targetCount = null;
   let targetCountSource = TARGET_COUNT_SOURCE_MISSING;
@@ -218,6 +234,8 @@ async function getNotificationReadModel(params) {
       title: notification.title || null,
       scenarioKey: notification.scenarioKey || null,
       stepKey: notification.stepKey || null,
+      trigger: resolveNotificationTrigger(notification),
+      order: resolveNotificationOrder(notification),
       ctaText: notification.ctaText || null,
       linkRegistryId: notification.linkRegistryId || null,
       targetCount,

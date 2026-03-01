@@ -12,7 +12,7 @@ test('phase311: developer matrix render uses scenario-step cells with count/stat
   assert.ok(js.includes("ui.label.repoMap.matrix.states"));
   assert.ok(js.includes('planHash='));
   assert.ok(js.includes('lastExecution='));
-  assert.ok(js.includes('trigger=UNKNOWN / order=UNKNOWN'));
+  assert.ok(js.includes('trigger=${entry.trigger || COMPOSER_DEFAULT_TRIGGER} / order=${Number.isFinite(Number(entry.order)) ? Number(entry.order) : \'-\'}'));
   assert.ok(js.includes('executeConfirm=planHash+confirmToken'));
   assert.ok(js.includes('function mergeNotificationMatrixFromItems'));
 

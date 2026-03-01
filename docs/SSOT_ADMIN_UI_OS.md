@@ -230,6 +230,10 @@ MUST:
   - `confirm` が `ADMIN_UI_COMPAT_CONFIRM_TOKEN` と一致
   - 条件不一致時は必ず `/admin/app` 側へ redirect
 - redirect/compat 判定は `traceId` / `actor` を含む server log を残す。
+- 通知Composer運用ゲート:
+  - 正規導線は `/admin/app?pane=composer` のみ
+  - `/admin/composer` は compat HTML 配信対象に含めない（redirect only）
+  - legacy表示は調査目的に限定し、運用実行（approve/plan/execute）は正規導線で行う
 
 ### ブックマーク更新ガイド（短縮版）
 - 推奨: `/admin/app?pane=<pane>` を保存する（例: `composer` / `monitor` / `errors` / `read-model` / `maintenance` / `audit`）。

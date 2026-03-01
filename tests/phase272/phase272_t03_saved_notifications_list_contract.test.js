@@ -42,6 +42,8 @@ test('phase272: GET /api/admin/os/notifications/list returns rows under admin gu
     linkRegistryId: 'link_phase272',
     scenarioKey: 'A',
     stepKey: 'week',
+    trigger: 'manual',
+    order: 3,
     target: { limit: 50 },
     notificationType: 'GENERAL',
     status: 'draft'
@@ -84,5 +86,12 @@ test('phase272: GET /api/admin/os/notifications/list returns rows under admin gu
   assert.strictEqual(body.ok, true);
   assert.ok(Array.isArray(body.items));
   assert.ok(body.items.length >= 1);
-  assert.ok(body.items.some((row) => row.title === 'Phase272 Notification' && row.notificationType === 'GENERAL'));
+  assert.ok(
+    body.items.some((row) => (
+      row.title === 'Phase272 Notification'
+      && row.notificationType === 'GENERAL'
+      && row.trigger === 'manual'
+      && row.order === 3
+    ))
+  );
 });

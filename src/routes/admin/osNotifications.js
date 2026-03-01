@@ -71,6 +71,8 @@ function summarizeComposerPayload(payload) {
   const notificationCategory = typeof body.notificationCategory === 'string' ? body.notificationCategory : null;
   const scenarioKey = typeof body.scenarioKey === 'string' ? body.scenarioKey : null;
   const stepKey = typeof body.stepKey === 'string' ? body.stepKey : null;
+  const trigger = typeof body.trigger === 'string' ? body.trigger : null;
+  const order = Number.isFinite(Number(body.order)) ? Number(body.order) : null;
   const linkRegistryId = typeof body.linkRegistryId === 'string' ? body.linkRegistryId : null;
   const targetLimit = Number.isFinite(Number(target.limit)) ? Number(target.limit) : null;
   return {
@@ -78,6 +80,8 @@ function summarizeComposerPayload(payload) {
     notificationCategory,
     scenarioKey,
     stepKey,
+    trigger,
+    order,
     linkRegistryId,
     targetLimit,
     targetRegionSet: typeof target.region === 'string' && target.region.trim().length > 0,
@@ -304,6 +308,8 @@ async function handleList(req, res) {
       notificationMeta: row.notificationMeta || null,
       scenarioKey: row.scenarioKey || null,
       stepKey: row.stepKey || null,
+      trigger: row.trigger || null,
+      order: Number.isFinite(Number(row.order)) ? Number(row.order) : null,
       target: row.target || null,
       planHash: row.lastPlanHash || null,
       createdAt: row.createdAt || null,

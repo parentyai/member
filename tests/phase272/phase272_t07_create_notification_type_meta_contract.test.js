@@ -47,4 +47,51 @@ test('phase272: createNotification stores notificationType and notificationMeta 
   assert.ok(row.notificationMeta);
   assert.strictEqual(row.notificationMeta.vendorId, 'v-001');
   assert.deepStrictEqual(row.notificationMeta.extra, { ok: true });
+  assert.strictEqual(row.trigger, 'manual');
+  assert.strictEqual(row.order, 3);
+});
+
+test('phase272: createNotification rejects invalid trigger/order contracts', async (t) => {
+  const db = createDbStub();
+  setDbForTest(db);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  t.after(() => {
+    clearDbForTest();
+    clearServerTimestampForTest();
+  });
+
+  const link = await linkRegistryRepo.createLink({
+    title: 'Phase272 invalid trigger link',
+    url: 'https://example.com/phase272-trigger',
+    lastHealth: { state: 'OK' }
+  });
+
+  await assert.rejects(
+    () => createNotification({
+      title: 'invalid trigger',
+      body: 'body',
+      ctaText: 'CTA',
+      linkRegistryId: link.id,
+      scenarioKey: 'A',
+      stepKey: 'week',
+      target: { limit: 10 },
+      trigger: 'auto'
+    }),
+    /trigger invalid/
+  );
+
+  await assert.rejects(
+    () => createNotification({
+      title: 'invalid order',
+      body: 'body',
+      ctaText: 'CTA',
+      linkRegistryId: link.id,
+      scenarioKey: 'A',
+      stepKey: 'week',
+      target: { limit: 10 },
+      order: 0
+    }),
+    /order invalid/
+  );
 });
