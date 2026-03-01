@@ -78,6 +78,7 @@
 - realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
 - ops-onlyナビ停止: `ENABLE_ADMIN_OPS_ONLY_NAV_V1=0`
 - developer導線再表示: `ENABLE_ADMIN_DEVELOPER_SURFACE_V1=1`
+- legacy導線（developer限定）再表示: `ENABLE_ADMIN_LEGACY_STATUS_V1=1`
 
 ## ローカル診断（Phase651）
 ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。
