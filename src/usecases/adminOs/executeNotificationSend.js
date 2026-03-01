@@ -97,7 +97,8 @@ async function executeNotificationSend(params, deps) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
-  if (notification.status !== 'active') throw new Error('notification not active');
+  const status = typeof notification.status === 'string' ? notification.status : 'draft';
+  if (status !== 'active' && status !== 'planned') throw new Error('notification not active/planned');
 
   const templateKey = buildTemplateKey(notificationId);
   const latestPlan = await auditLogsRepo.getLatestAuditLog({ action: 'notifications.send.plan', templateKey });
@@ -113,6 +114,7 @@ async function executeNotificationSend(params, deps) {
 
   const target = notification.target && typeof notification.target === 'object' ? notification.target : {};
   const limit = typeof target.limit === 'number' ? target.limit : null;
+  const region = typeof target.region === 'string' ? target.region.trim() : '';
   if (!limit) {
     await appendExecuteAudit({ reason: 'target_limit_required' });
     return { ok: false, reason: 'target_limit_required', traceId };
@@ -121,7 +123,7 @@ async function executeNotificationSend(params, deps) {
   const users = await usersRepo.listUsers({
     scenarioKey: notification.scenarioKey,
     stepKey: notification.stepKey,
-    region: target.region,
+    region: region || undefined,
     membersOnly: target.membersOnly,
     limit
   });

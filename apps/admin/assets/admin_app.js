@@ -11184,6 +11184,7 @@ function applyComposerTypeFields() {
 
 function mapComposerStatusLabel(statusLabelValue) {
   const raw = typeof statusLabelValue === 'string' ? statusLabelValue.toUpperCase() : '';
+  if (raw === 'PLANNED' || raw === 'PLAN') return 'planned';
   if (raw === 'ACTIVE') return 'approved';
   if (raw === 'SENT') return 'executed';
   return 'draft';
@@ -11195,6 +11196,7 @@ function updateComposerStatusPill() {
   const mapped = mapComposerStatusLabel(state.currentComposerStatus);
   pill.textContent = mapped;
   pill.className = 'badge badge-info';
+  if (mapped === 'planned') pill.className = 'badge badge-info';
   if (mapped === 'approved') pill.className = 'badge badge-warn';
   if (mapped === 'executed') pill.className = 'badge badge-ok';
 }
@@ -11388,14 +11390,19 @@ function buildTarget(notificationType) {
   if (type !== 'STEP') {
     return { limit: 50 };
   }
+  const rawLimit = Number(document.getElementById('targetLimit')?.value);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 50;
+  const region = (document.getElementById('targetRegion')?.value || '').trim();
   const target = {};
   if (membersOnly) target.membersOnly = true;
-  target.limit = 50;
+  if (region) target.region = region;
+  target.limit = limit;
   return target;
 }
 
 function normalizeComposerSavedStatus(status) {
   const raw = typeof status === 'string' ? status.toLowerCase() : '';
+  if (raw === 'planned') return 'planned';
   if (raw === 'active') return 'approved';
   if (raw === 'sent') return 'executed';
   return raw || 'draft';
@@ -11568,8 +11575,10 @@ function loadComposerFormFromRow(row, duplicateMode) {
   document.getElementById('notificationType').value = normalizeComposerType(row.notificationType || 'STEP');
   document.getElementById('scenarioKey').value = row.scenarioKey || 'A';
   document.getElementById('stepKey').value = row.stepKey || 'week';
-  document.getElementById('targetRegion').value = '';
-  document.getElementById('targetLimit').value = '50';
+  document.getElementById('targetRegion').value = row.target && typeof row.target.region === 'string' ? row.target.region : '';
+  document.getElementById('targetLimit').value = row.target && Number.isFinite(Number(row.target.limit))
+    ? String(Math.max(1, Math.floor(Number(row.target.limit))))
+    : '50';
   document.getElementById('membersOnly').checked = Boolean(row.target && row.target.membersOnly);
 
   const meta = row.notificationMeta && typeof row.notificationMeta === 'object' ? row.notificationMeta : {};
@@ -11737,6 +11746,12 @@ function validateComposerPayload(payload) {
     const vendorId = payload.notificationMeta && payload.notificationMeta.vendorId ? String(payload.notificationMeta.vendorId).trim() : '';
     if (!vendorId) return t('ui.toast.composer.needVendorId', 'VENDORタイプにはベンダーIDが必要です');
   }
+  if (payload.notificationType === 'STEP') {
+    const limit = payload && payload.target ? Number(payload.target.limit) : NaN;
+    if (!Number.isFinite(limit) || limit <= 0) {
+      return t('ui.toast.composer.needLimit', 'STEPタイプには上限件数が必要です');
+    }
+  }
   return '';
 }
 
@@ -11763,6 +11778,7 @@ function composerCategoryLabel(value) {
 function composerStatusLabel(value) {
   const raw = normalizeComposerSavedStatus(value);
   let fallback = t('ui.value.composer.status.draft', '下書き');
+  if (raw === 'planned') fallback = t('ui.value.composer.status.planned', '計画済み');
   if (raw === 'approved' || raw === 'active') fallback = t('ui.value.composer.status.approved', '承認済み');
   if (raw === 'executed' || raw === 'sent') fallback = t('ui.value.composer.status.executed', '実行済み');
   return resolveDomainLabel('status', raw, fallback);
@@ -11882,6 +11898,15 @@ function setupComposerActions() {
         setComposerStatus('warn', 'WARN');
         return;
       }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      const resultEl = document.getElementById('draft-result');
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
     const confirmed = window.confirm(t('ui.confirm.composer.approve', '承認（有効化）を実行しますか？'));
     if (!confirmed) {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
@@ -11918,6 +11943,14 @@ function setupComposerActions() {
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
     const traceId = ensureTraceInput('traceId');
     const result = await postJson('/api/admin/os/notifications/send/plan', { notificationId: state.composerCurrentNotificationId }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
@@ -11946,6 +11979,14 @@ function setupComposerActions() {
       if (!state.composerCurrentNotificationId || !state.composerCurrentPlanHash || !state.composerCurrentConfirmToken) {
         if (resultEl) resultEl.textContent = t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です');
       showToast(t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です'), 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
       setComposerStatus('warn', 'WARN');
       return;
     }

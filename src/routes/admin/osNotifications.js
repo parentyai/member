@@ -32,6 +32,51 @@ function requireTargetLimit(payload) {
   }
 }
 
+function normalizeDraftPayload(payload) {
+  const body = payload && typeof payload === 'object' ? Object.assign({}, payload) : {};
+  const targetRaw = body.target && typeof body.target === 'object' ? Object.assign({}, body.target) : {};
+  const limit = Number(targetRaw.limit);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    throw new Error('target.limit required');
+  }
+  const target = Object.assign({}, targetRaw, { limit: Math.min(500, Math.max(1, Math.floor(limit))) });
+  if (targetRaw.region !== undefined && targetRaw.region !== null) {
+    if (typeof targetRaw.region !== 'string') throw new Error('target.region invalid');
+    const region = targetRaw.region.trim();
+    if (region) target.region = region;
+    else delete target.region;
+  }
+  body.target = target;
+  return body;
+}
+
+function summarizeComposerPayload(payload) {
+  const body = payload && typeof payload === 'object' ? payload : {};
+  const target = body.target && typeof body.target === 'object' ? body.target : {};
+  const title = typeof body.title === 'string' ? body.title : '';
+  const text = typeof body.body === 'string' ? body.body : '';
+  const ctaText = typeof body.ctaText === 'string' ? body.ctaText : '';
+  const notificationType = typeof body.notificationType === 'string' ? body.notificationType : null;
+  const notificationCategory = typeof body.notificationCategory === 'string' ? body.notificationCategory : null;
+  const scenarioKey = typeof body.scenarioKey === 'string' ? body.scenarioKey : null;
+  const stepKey = typeof body.stepKey === 'string' ? body.stepKey : null;
+  const linkRegistryId = typeof body.linkRegistryId === 'string' ? body.linkRegistryId : null;
+  const targetLimit = Number.isFinite(Number(target.limit)) ? Number(target.limit) : null;
+  return {
+    notificationType,
+    notificationCategory,
+    scenarioKey,
+    stepKey,
+    linkRegistryId,
+    targetLimit,
+    targetRegionSet: typeof target.region === 'string' && target.region.trim().length > 0,
+    targetMembersOnly: target.membersOnly === true,
+    titleLength: title.length,
+    bodyLength: text.length,
+    ctaLength: ctaText.length
+  };
+}
+
 async function handleDraft(req, res, body) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -41,7 +86,8 @@ async function handleDraft(req, res, body) {
   if (!payload) return;
   try {
     requireTargetLimit(payload);
-    const created = await createNotification(Object.assign({}, payload, { createdBy: actor, status: 'draft' }));
+    const normalizedPayload = normalizeDraftPayload(payload);
+    const created = await createNotification(Object.assign({}, normalizedPayload, { createdBy: actor, status: 'draft' }));
     await appendAuditLog({
       actor,
       action: 'notifications.create',
@@ -49,7 +95,7 @@ async function handleDraft(req, res, body) {
       entityId: created.id,
       traceId,
       requestId,
-      payloadSummary: { title: payload.title || null, notificationCategory: payload.notificationCategory || null }
+      payloadSummary: summarizeComposerPayload(normalizedPayload)
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
@@ -74,7 +120,9 @@ async function handlePreview(req, res, body) {
       entityId: result.notificationId || 'draft',
       traceId,
       requestId,
-      payloadSummary: { trackEnabled: Boolean(result.trackEnabled) }
+      payloadSummary: Object.assign(summarizeComposerPayload(payload), {
+        trackEnabled: Boolean(result.trackEnabled)
+      })
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
@@ -201,6 +249,16 @@ function parseListLimit(url) {
   return Math.min(Math.floor(limitRaw), 500);
 }
 
+function normalizeListStatus(value) {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!raw) return '';
+  if (raw === 'approved') return 'active';
+  if (raw === 'executed') return 'sent';
+  if (raw === 'planned') return 'planned';
+  if (raw === 'draft' || raw === 'active' || raw === 'sent') return raw;
+  return raw;
+}
+
 async function handleList(req, res) {
   const actor = requireActor(req, res);
   if (!actor) return;
@@ -208,10 +266,11 @@ async function handleList(req, res) {
   const requestId = resolveRequestId(req);
   const url = new URL(req.url, 'http://localhost');
   const limit = parseListLimit(url);
+  const normalizedStatus = normalizeListStatus(url.searchParams.get('status'));
   try {
     const rows = await notificationsRepo.listNotifications({
       limit,
-      status: url.searchParams.get('status') || undefined,
+      status: normalizedStatus || undefined,
       scenarioKey: url.searchParams.get('scenarioKey') || undefined,
       stepKey: url.searchParams.get('stepKey') || undefined
     });
@@ -247,7 +306,7 @@ async function handleList(req, res) {
       requestId,
       payloadSummary: {
         limit,
-        status: url.searchParams.get('status') || null,
+        status: normalizedStatus || null,
         scenarioKey: url.searchParams.get('scenarioKey') || null,
         stepKey: url.searchParams.get('stepKey') || null
       }

@@ -90,7 +90,7 @@ test('phase161: execute failure writes notifications.send.execute audit with ok=
   assert.ok(thrown, 'expected execute to throw');
 
   const after = await notificationsRepo.getNotification(created.id);
-  assert.strictEqual(after.status, 'active', 'notification should not be marked sent on failure');
+  assert.strictEqual(after.status, 'planned', 'notification should remain planned on failure');
 
   const deliveries = await deliveriesRepo.listDeliveriesByNotificationId(created.id);
   assert.strictEqual(deliveries.length, 1, 'delivery should be reserved and marked failed if push fails (prevents duplicates)');

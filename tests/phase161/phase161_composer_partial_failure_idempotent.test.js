@@ -94,7 +94,7 @@ test('phase161: partial send failure -> rerun executes remaining only (no double
   assert.ok(firstErr, 'expected first execute to throw');
 
   const afterFail = await notificationsRepo.getNotification(created.id);
-  assert.strictEqual(afterFail.status, 'active', 'should remain active when send fails');
+  assert.strictEqual(afterFail.status, 'planned', 'should remain planned when send fails');
 
   const d1 = computeNotificationDeliveryId({ notificationId: created.id, lineUserId: 'U1' });
   const delivery1 = await deliveriesRepo.getDelivery(d1);
@@ -125,4 +125,3 @@ test('phase161: partial send failure -> rerun executes remaining only (no double
   const afterOk = await notificationsRepo.getNotification(created.id);
   assert.strictEqual(afterOk.status, 'sent');
 });
-
