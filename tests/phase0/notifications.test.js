@@ -51,6 +51,41 @@ test('createNotification: stores draft notification', async () => {
   assert.strictEqual(stored.stepKey, '3mo');
 });
 
+test('createNotification: normalizes legacy scenario input into canonical scenarioKey write', async () => {
+  const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
+  const result = await createNotification({
+    title: 'Title',
+    body: 'Body',
+    ctaText: 'Go',
+    linkRegistryId: link.id,
+    scenario: 'A',
+    stepKey: '3mo',
+    target: { all: true }
+  });
+
+  const stored = await notificationsRepo.getNotification(result.id);
+  assert.strictEqual(stored.scenarioKey, 'A');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(stored, 'scenario'), false);
+});
+
+test('createNotification: keeps explicit scenarioKey when legacy scenario is also provided', async () => {
+  const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
+  const result = await createNotification({
+    title: 'Title',
+    body: 'Body',
+    ctaText: 'Go',
+    linkRegistryId: link.id,
+    scenarioKey: 'B',
+    scenario: 'A',
+    stepKey: '3mo',
+    target: { all: true }
+  });
+
+  const stored = await notificationsRepo.getNotification(result.id);
+  assert.strictEqual(stored.scenarioKey, 'B');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(stored, 'scenario'), false);
+});
+
 test('createNotification: stores normalized notificationCategory', async () => {
   const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
   const result = await createNotification({
