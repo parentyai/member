@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T06:48:38-05:00",
-  "gitCommit": "f7a4a542c0453311d90b38b0990f586004da8916",
+  "generatedAt": "2026-03-01T06:51:34-05:00",
+  "gitCommit": "31aaf1226dae19ff78cc10f0c2f9e06a391458e3",
   "branch": "codex/notifications-redesign-planned-contract-v1",
-  "sourceDigest": "9ad723290ff1d0c97c58eab8e4488fa7f74d6a83612d208a361ebc8279cc57b1",
+  "sourceDigest": "0e184979b2e0f99c1ab9528828a634ff7b76f4986ebc9a78d1e02345dee1e80f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

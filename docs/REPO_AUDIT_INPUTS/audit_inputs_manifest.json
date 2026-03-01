@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T06:48:38-05:00",
-  "gitCommit": "f7a4a542c0453311d90b38b0990f586004da8916",
+  "generatedAt": "2026-03-01T06:51:34-05:00",
+  "gitCommit": "31aaf1226dae19ff78cc10f0c2f9e06a391458e3",
   "branch": "codex/notifications-redesign-planned-contract-v1",
-  "sourceDigest": "d5a776982f6a7762cb32971be1fdfdf6d146b65835051d5805321e093d2d4309",
+  "sourceDigest": "d8f9f13268347ef691ce4396b49f11c5d1d9ba81044deb509dc2c24979be5322",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "334466e8dd38d0111f19b0e22e8359aaac95957f7d09ddd5089ea1ffabd28856",
+      "sha256": "4878dcc3379160b769e70a16ee98aa0c25cd02718be3db04e612aa56248bf7c3",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "19910f81df2da5b1614b7e177d186100bbb1796e00a22512ec87d1ee49fdb1ee",
+      "sha256": "4920396e58f8368c885db73b919424b9d28f750540096e82230ad3061c58660b",
       "bytes": 487
     },
     {
@@ -136,7 +136,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "f6161db185ae15635ae709ec359af792db275b37ac8a74bdd55c59f5e9ba8617",
+      "sha256": "3929c0545b807d52e6e09e170cd7b75920051f2266023448e3301638119f81e0",
       "bytes": 740
     },
     {
@@ -146,12 +146,12 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "17cad7b0cba4ae5127e607ed6c673a93bb40c73e7787204ab722cdee0bde19e0",
+      "sha256": "bb5eac57f84ff1ae8ba2e41299e7f716f2b2dcb7d248711b159f7f1218f3eac2",
       "bytes": 5235
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "88ab3d8478d40b7e865e19a15bffabe0407ee150e2717826b59309e2fbfa770e",
+      "sha256": "9b2a0c1633d8e17fd6cd336640c1e5837e340a2295f70eccd5ceb38e62270a0f",
       "bytes": 2434
     }
   ],
