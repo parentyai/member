@@ -294,6 +294,24 @@
    - execute（confirm token 必須）
 2) Monitor で反応/CTR を確認
 
+## Composer Category Wizard（Phase676 / add-only）
+対象: `/admin/app?pane=composer`（`/admin/composer` は互換redirect）
+
+### フラグ
+- `ENABLE_COMPOSER_CATEGORY_WIZARD_V1=1`: カテゴリ主導導線を有効化（admin/operator 同一表示）
+- `ENABLE_COMPOSER_CATEGORY_WIZARD_V1=0`: 旧導線に即時復帰
+
+### 日次運用手順
+1) `notificationCategory` を先に選択し、`カテゴリ導線` の必須チェックを埋める。  
+2) 操作帯は `下書き作成 -> 承認（有効化） -> 送信計画 -> 送信実行` の順で実行する。  
+3) `承認済み` フィルタは `approved|active` を同時抽出する（表示は1項目）。  
+4) type切替時に入力が戻ること（`composerDraftByType`）を確認してから保存/承認する。  
+
+### 障害時の切り分け
+1) `window.ADMIN_APP_BUILD_META.composerWizardMode` が想定値か確認。  
+2) 状態フィルタが重複する場合は `ENABLE_COMPOSER_CATEGORY_WIZARD_V1` を確認。  
+3) 送信計画/送信実行が失敗した場合は既存 `notifications.send.plan` / `notifications.send.execute` の監査ログを優先確認する。
+
 ## Automation Config（Segment Execute Guard）
 `/admin/master` の Automation Config で `mode` を運用する。
 
