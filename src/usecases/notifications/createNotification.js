@@ -3,6 +3,7 @@
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { PHASE0_SCENARIOS, STEP_ORDER } = require('../../domain/constants');
+const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const {
   validateSingleCta,
@@ -96,15 +97,19 @@ function normalizeCityPackFallback(payload) {
 
 async function createNotification(data) {
   const payload = data || {};
+  const normalizedScenarioKey = normalizeScenarioKey({
+    scenarioKey: payload.scenarioKey,
+    scenario: payload.scenario
+  });
 
   requireField('title', payload.title);
   requireField('body', payload.body);
   requireField('ctaText', payload.ctaText);
   requireField('linkRegistryId', payload.linkRegistryId);
-  requireField('scenarioKey', payload.scenarioKey);
+  requireField('scenarioKey', normalizedScenarioKey);
   requireField('stepKey', payload.stepKey);
 
-  requireInList('scenarioKey', payload.scenarioKey, PHASE0_SCENARIOS);
+  requireInList('scenarioKey', normalizedScenarioKey, PHASE0_SCENARIOS);
   requireInList('stepKey', payload.stepKey, STEP_ORDER);
 
   const linkEntry = await linkRegistryRepo.getLink(payload.linkRegistryId);
@@ -131,7 +136,7 @@ async function createNotification(data) {
     body: payload.body,
     ctaText: payload.ctaText,
     linkRegistryId: payload.linkRegistryId,
-    scenarioKey: payload.scenarioKey,
+    scenarioKey: normalizedScenarioKey,
     stepKey: payload.stepKey,
     target: payload.target || null,
     sourceRefs,
