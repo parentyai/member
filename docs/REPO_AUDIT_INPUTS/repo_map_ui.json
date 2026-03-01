@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "8f5a6fdeb7740e72990772138d8917a090d0d4d9",
+      "hash": "109bfac5b3547868d356aa8803f1715dd2c01509",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 973
+    "testCount": 975
   },
   "systemOverview": {
     "what": [
@@ -3872,7 +3872,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 210,
+              "testsCount": 211,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5422,7 +5422,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 136,
+              "testsCount": 137,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6482,7 +6482,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 153,
+              "testsCount": 154,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7191,7 +7191,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 8,
+              "testsCount": 9,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -7297,7 +7297,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 41,
+              "testsCount": 42,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7381,7 +7381,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 10,
+              "testsCount": 11,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7417,7 +7417,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 47,
+              "testsCount": 48,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [

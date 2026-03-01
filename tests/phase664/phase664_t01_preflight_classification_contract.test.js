@@ -4,10 +4,14 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { runLocalPreflight } = require('../../tools/admin_local_preflight');
 
-test('phase664: local preflight requires SA key in local strict mode and skips firestore probe', async () => {
+test('phase664: local preflight requires SA key when strict mode is explicitly enabled and skips firestore probe', async () => {
   let probeCalled = 0;
   const result = await runLocalPreflight({
-    env: { FIRESTORE_PROJECT_ID: 'member-485303' },
+    env: {
+      FIRESTORE_PROJECT_ID: 'member-485303',
+      ENV_NAME: 'local',
+      ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1: '1'
+    },
     probeFirestore: async () => {
       probeCalled += 1;
       return {
@@ -32,6 +36,31 @@ test('phase664: local preflight requires SA key in local strict mode and skips f
   assert.ok(result.summary.recoveryCommands.some((entry) => String(entry).includes('export GOOGLE_APPLICATION_CREDENTIALS')));
   assert.ok(!result.summary.recoveryCommands.some((entry) => String(entry).includes('gcloud auth application-default login')));
   assert.equal(probeCalled, 0);
+});
+
+test('phase664: local preflight default profile keeps strict SA disabled and allows probe via ADC path', async () => {
+  let probeCalled = 0;
+  const result = await runLocalPreflight({
+    env: {
+      FIRESTORE_PROJECT_ID: 'member-485303',
+      ENV_NAME: 'local'
+    },
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+
+  assert.equal(result.ready, true);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(result.summary.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(result.summary.tone, 'warn');
+  assert.equal(probeCalled, 1);
 });
 
 test('phase664: local preflight auto-applies local SA key path and avoids ADC reauth fallback noise', async () => {
@@ -78,6 +107,7 @@ test('phase664: local preflight can disable auto SA key fallback via flag', asyn
     FIRESTORE_PROJECT_ID: 'member-485303',
     HOME: '/tmp/member-home',
     ENV_NAME: 'local',
+    ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1: '1',
     ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1: '0'
   };
   const expectedPath = '/tmp/member-home/.secrets/member-dev-sa.json';

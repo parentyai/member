@@ -38,9 +38,7 @@ function resolveRequireSaKey(options) {
   const opts = options && typeof options === 'object' ? options : {};
   if (typeof opts.requireSaKey === 'boolean') return opts.requireSaKey;
   const envSource = opts.env && typeof opts.env === 'object' ? opts.env : process.env;
-  const envName = typeof envSource.ENV_NAME === 'string' ? envSource.ENV_NAME.trim().toLowerCase() : '';
-  const nodeEnv = typeof envSource.NODE_ENV === 'string' ? envSource.NODE_ENV.trim().toLowerCase() : '';
-  const defaultValue = !envName || envName === 'local' || nodeEnv === 'test';
+  const defaultValue = false;
   return resolveBooleanFlag(envSource.ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1, defaultValue);
 }
 
@@ -702,7 +700,7 @@ function buildSaKeyRequiredSummary(saKeyPathCheck) {
     tone: 'danger',
     category: 'auth',
     cause: 'ローカルSA鍵が未設定または無効のため診断を停止しました。',
-    impact: 'ADC経路へフォールバックせず、Firestore依存APIの初期ロードを停止します。',
+    impact: 'Firestore依存APIで認証失敗が継続するため、管理画面で NOT AVAILABLE が増えます。',
     action: 'GOOGLE_APPLICATION_CREDENTIALS に読み取り可能なローカルSA鍵を設定して再診断してください。',
     recoveryActionCode: 'SET_SA_KEY_REQUIRED',
     recoveryCommands: resolveRecoveryCommands('SET_SA_KEY_REQUIRED'),

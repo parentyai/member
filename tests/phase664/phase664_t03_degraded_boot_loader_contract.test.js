@@ -8,6 +8,7 @@ test('phase664: admin app defines degraded boot loader path for local preflight 
   const src = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   assert.ok(src.includes('async function runInitialDataLoads(options)'));
   assert.ok(src.includes('if (isLocalPreflightBlockingDataLoads()) {'));
+  assert.ok(src.includes('&& ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1'));
   assert.ok(src.includes("mode: 'degraded'"));
   assert.ok(src.includes("pendingBootstrapLoads: true"));
   assert.ok(src.includes("currentEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');"));
