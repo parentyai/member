@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T08:07:10-05:00",
-  "gitCommit": "2377bad9da08e4723969ec431f611b4ce4b025a7",
-  "branch": "HEAD",
-  "sourceDigest": "6468400abb8b1d5866c0e14e999a59aea37bcc1cde6166fc339b09aa992d27d9",
+  "generatedAt": "2026-03-01T08:10:37-05:00",
+  "gitCommit": "fd416f8fa02e9c5fcec56da1240dbed76a80abc6",
+  "branch": "codex/p0-local-preflight-auto-sa-fallback-v1",
+  "sourceDigest": "bb000208cb101bf53484665475d4056c1fd5f3116dd5849b532fbbc70411fbf5",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "1dc8fb0533ee097d41c49b921df6e48f915db77e432a86ea26ba838e9b1c7962",
-      "bytes": 2390
+      "sha256": "30ee6f1a1479be852c1deece0ea2bf1616b3a183ff9abf854fd40a8195a51739",
+      "bytes": 2430
     }
   ],
   "diff_detection_rules": [
