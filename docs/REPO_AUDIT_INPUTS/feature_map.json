@@ -639,7 +639,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 40,
+      "tests_count": 41,
       "ssot_refs": [],
       "completion": "completed"
     },

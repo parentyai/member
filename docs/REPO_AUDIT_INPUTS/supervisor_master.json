@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T06:51:34-05:00",
-  "gitCommit": "31aaf1226dae19ff78cc10f0c2f9e06a391458e3",
-  "branch": "codex/notifications-redesign-planned-contract-v1",
-  "sourceDigest": "0e184979b2e0f99c1ab9528828a634ff7b76f4986ebc9a78d1e02345dee1e80f",
+  "generatedAt": "2026-03-01T07:01:25-05:00",
+  "gitCommit": "a0fd48fe3bf76aad4ed28c196ba56fd0a9513505",
+  "branch": "codex/p0-legacy-status-surface-flag-v1",
+  "sourceDigest": "b56763f46e51e14bd2eade604dd39383199ce80da65660c6f3e27459ed090657",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
