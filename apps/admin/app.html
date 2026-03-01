@@ -743,7 +743,9 @@
                     </div>
                     <div class="composer-primary-actions">
                       <button id="create-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
+                      <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
                       <button id="approve" type="button" data-workbench-zone="true" data-workbench-action="notifications.approve" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                      <button id="plan" type="button" data-workbench-zone="true" data-workbench-action="notifications.send.plan" data-dict-key="ui.label.composer.plan">送信計画</button>
                       <button id="execute" type="button" data-workbench-zone="true" data-workbench-action="notifications.send.execute" data-dict-key="ui.label.composer.execute">送信実行</button>
                     </div>
                   </div>
@@ -786,6 +788,10 @@
                         <select id="linkRegistryId">
                           <option value="">Link Registryから選択</option>
                         </select>
+                        <div class="composer-link-filter">
+                          <label for="composer-link-search" data-dict-key="ui.label.composer.linkSearch">リンク検索</label>
+                          <input id="composer-link-search" data-dict-placeholder="ui.desc.composer.linkSearchPlaceholder" placeholder="" />
+                        </div>
                       </div>
                       <div>
                         <label for="notificationCategory" data-dict-key="ui.label.composer.category" data-dict-tip="ui.help.composer.category">カテゴリ</label>
@@ -799,6 +805,21 @@
                       </div>
                     </div>
                     <div id="composer-type-hint" class="note" data-dict-key="ui.desc.composer.typeHint.step">ステップ通知: シナリオとステップを指定して対象を絞り込みます。</div>
+                    <div id="composer-category-wizard" class="composer-category-wizard">
+                      <div class="composer-category-wizard-header">
+                        <div class="composer-category-wizard-title-wrap">
+                          <div class="composer-category-wizard-title" data-dict-key="ui.label.composer.wizard.title">カテゴリ導線</div>
+                          <div class="composer-category-wizard-subtitle" id="composer-category-summary">-</div>
+                        </div>
+                        <div class="composer-category-wizard-recommend" id="composer-category-recommend">-</div>
+                      </div>
+                      <ol id="composer-category-steps" class="composer-category-steps"></ol>
+                      <div class="composer-category-required-wrap">
+                        <div class="composer-category-required-title" data-dict-key="ui.label.composer.wizard.required">カテゴリ必須チェック</div>
+                        <ul id="composer-category-required" class="composer-category-required"></ul>
+                      </div>
+                      <div id="composer-category-next" class="composer-category-next">-</div>
+                    </div>
                     <div id="composer-type-fields" class="composer-type-fields">
                       <div class="input-grid type-fields" data-type-fields="ANNOUNCEMENT">
                         <div class="row">
@@ -879,10 +900,6 @@
                         <label class="checkbox" data-dict-tip="ui.help.composer.membersOnly"><input id="membersOnly" type="checkbox" /> <span data-dict-key="ui.label.composer.membersOnly">会員のみ</span></label>
                       </div>
                     </div>
-                    <div class="row row-top">
-                      <button id="preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
-                      <button id="plan" type="button" data-role="admin" data-workbench-zone="true" data-workbench-action="notifications.send.plan" data-dict-key="ui.label.composer.plan">送信計画</button>
-                    </div>
                   </div>
                 </div>
 
@@ -923,7 +940,6 @@
                           <option value="" data-dict-key="ui.value.common.all">すべて</option>
                           <option value="draft" data-dict-key="ui.value.composer.status.draft">下書き</option>
                           <option value="approved" data-dict-key="ui.value.composer.status.approved">承認済み</option>
-                          <option value="active" data-dict-key="ui.value.composer.status.approved">承認済み</option>
                           <option value="planned" data-dict-key="ui.value.composer.status.planned">計画済み</option>
                           <option value="sent" data-dict-key="ui.value.composer.status.executed">実行済み</option>
                         </select>

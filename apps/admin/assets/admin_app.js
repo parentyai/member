@@ -117,6 +117,10 @@ const OPS_SYSTEM_SNAPSHOT_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1 : null,
   true
 );
+const COMPOSER_CATEGORY_WIZARD_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1 : null,
+  false
+);
 
 function isOpsRealtimeSnapshotEnabled() {
   return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
@@ -194,6 +198,9 @@ const state = {
   composerCurrentPlanHash: null,
   composerCurrentConfirmToken: null,
   composerKillSwitch: false,
+  composerDraftByType: {},
+  composerActionGateState: null,
+  composerLinkSearch: '',
   repoMapKillSwitch: null,
   usersSummaryItems: [],
   usersSummaryFilteredItems: [],
@@ -285,6 +292,68 @@ if (!ADMIN_TREND_UI_ENABLED) {
 
 const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_ALLOWED_STEPS = new Set(['3mo', '1mo', 'week', 'after1w']);
+const COMPOSER_CATEGORY_FLOW_DEFS = Object.freeze({
+  DEADLINE_REQUIRED: Object.freeze({
+    recommendedType: 'ANNOUNCEMENT',
+    summaryKey: 'ui.desc.composer.wizard.category.deadline',
+    requiredIds: Object.freeze(['title', 'body', 'ctaText', 'linkRegistryId']),
+    stepKeys: Object.freeze([
+      'ui.desc.composer.wizard.step.input',
+      'ui.desc.composer.wizard.step.approve',
+      'ui.desc.composer.wizard.step.plan',
+      'ui.desc.composer.wizard.step.execute'
+    ]),
+    nextKey: 'ui.desc.composer.wizard.next.deadline'
+  }),
+  IMMEDIATE_ACTION: Object.freeze({
+    recommendedType: 'GENERAL',
+    summaryKey: 'ui.desc.composer.wizard.category.immediate',
+    requiredIds: Object.freeze(['title', 'body', 'ctaText', 'linkRegistryId']),
+    stepKeys: Object.freeze([
+      'ui.desc.composer.wizard.step.input',
+      'ui.desc.composer.wizard.step.approve',
+      'ui.desc.composer.wizard.step.plan',
+      'ui.desc.composer.wizard.step.execute'
+    ]),
+    nextKey: 'ui.desc.composer.wizard.next.immediate'
+  }),
+  SEQUENCE_GUIDANCE: Object.freeze({
+    recommendedType: 'STEP',
+    summaryKey: 'ui.desc.composer.wizard.category.sequence',
+    requiredIds: Object.freeze(['title', 'body', 'ctaText', 'linkRegistryId', 'scenarioKey', 'stepKey', 'targetLimit']),
+    stepKeys: Object.freeze([
+      'ui.desc.composer.wizard.step.input',
+      'ui.desc.composer.wizard.step.approve',
+      'ui.desc.composer.wizard.step.plan',
+      'ui.desc.composer.wizard.step.execute'
+    ]),
+    nextKey: 'ui.desc.composer.wizard.next.sequence'
+  }),
+  TARGETED_ONLY: Object.freeze({
+    recommendedType: 'STEP',
+    summaryKey: 'ui.desc.composer.wizard.category.targeted',
+    requiredIds: Object.freeze(['title', 'body', 'ctaText', 'linkRegistryId', 'scenarioKey', 'stepKey', 'targetLimit']),
+    stepKeys: Object.freeze([
+      'ui.desc.composer.wizard.step.input',
+      'ui.desc.composer.wizard.step.approve',
+      'ui.desc.composer.wizard.step.plan',
+      'ui.desc.composer.wizard.step.execute'
+    ]),
+    nextKey: 'ui.desc.composer.wizard.next.targeted'
+  }),
+  COMPLETION_CONFIRMATION: Object.freeze({
+    recommendedType: 'STEP',
+    summaryKey: 'ui.desc.composer.wizard.category.completion',
+    requiredIds: Object.freeze(['title', 'body', 'ctaText', 'linkRegistryId', 'scenarioKey', 'stepKey', 'targetLimit']),
+    stepKeys: Object.freeze([
+      'ui.desc.composer.wizard.step.input',
+      'ui.desc.composer.wizard.step.approve',
+      'ui.desc.composer.wizard.step.plan',
+      'ui.desc.composer.wizard.step.execute'
+    ]),
+    nextKey: 'ui.desc.composer.wizard.next.completion'
+  })
+});
 const COMPOSER_SAVED_SORT_TYPES = Object.freeze({
   createdAt: 'date',
   title: 'string',
@@ -11199,9 +11268,137 @@ function normalizeComposerType(value) {
   return 'STEP';
 }
 
+function normalizeComposerCategory(value) {
+  const raw = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (COMPOSER_CATEGORY_FLOW_DEFS[raw]) return raw;
+  return 'SEQUENCE_GUIDANCE';
+}
+
 function selectedComposerType() {
   const typeEl = document.getElementById('notificationType');
   return normalizeComposerType(typeEl ? typeEl.value : '');
+}
+
+function selectedComposerCategory() {
+  const categoryEl = document.getElementById('notificationCategory');
+  return normalizeComposerCategory(categoryEl ? categoryEl.value : '');
+}
+
+function resolveComposerCategoryFlow(category) {
+  const key = normalizeComposerCategory(category);
+  return COMPOSER_CATEGORY_FLOW_DEFS[key] || COMPOSER_CATEGORY_FLOW_DEFS.SEQUENCE_GUIDANCE;
+}
+
+function resolveComposerRequiredFieldLabel(fieldId) {
+  if (fieldId === 'title') return t('ui.label.composer.title', 'タイトル');
+  if (fieldId === 'body') return t('ui.label.composer.body', '本文');
+  if (fieldId === 'ctaText') return t('ui.label.composer.cta1', 'CTA1');
+  if (fieldId === 'linkRegistryId') return t('ui.label.composer.link', 'リンクID');
+  if (fieldId === 'scenarioKey') return t('ui.label.composer.scenario', 'シナリオ');
+  if (fieldId === 'stepKey') return t('ui.label.composer.step', 'ステップ');
+  if (fieldId === 'targetLimit') return t('ui.label.composer.limit', '上限件数（必須）');
+  return fieldId;
+}
+
+function isComposerRequiredFieldSatisfied(fieldId, payload) {
+  if (fieldId === 'title') return Boolean(payload && payload.title && String(payload.title).trim());
+  if (fieldId === 'body') return Boolean(payload && payload.body && String(payload.body).trim());
+  if (fieldId === 'ctaText') return Boolean(payload && payload.ctaText && String(payload.ctaText).trim());
+  if (fieldId === 'linkRegistryId') return Boolean(payload && payload.linkRegistryId && String(payload.linkRegistryId).trim());
+  if (fieldId === 'scenarioKey') return COMPOSER_ALLOWED_SCENARIOS.has(String(payload && payload.scenarioKey || ''));
+  if (fieldId === 'stepKey') return COMPOSER_ALLOWED_STEPS.has(String(payload && payload.stepKey || ''));
+  if (fieldId === 'targetLimit') {
+    const limit = payload && payload.target ? Number(payload.target.limit) : NaN;
+    return Number.isFinite(limit) && limit > 0;
+  }
+  return true;
+}
+
+function computeComposerActionGateState(payload, issues) {
+  const validationError = validateComposerPayload(payload);
+  const hasSafetyIssue = Array.isArray(issues) && issues.length > 0;
+  const hasNotificationId = Boolean(state.composerCurrentNotificationId);
+  const hasPlanToken = Boolean(state.composerCurrentPlanHash && state.composerCurrentConfirmToken);
+  const canDraft = !validationError;
+  const canApprove = canDraft && hasNotificationId;
+  const canPlan = canDraft && hasNotificationId;
+  const canExecute = canDraft && hasNotificationId && hasPlanToken && !hasSafetyIssue;
+  return {
+    canDraft,
+    canPreview: canDraft,
+    canApprove,
+    canPlan,
+    canExecute,
+    validationError: validationError || '',
+    hasNotificationId,
+    hasPlanToken,
+    hasSafetyIssue
+  };
+}
+
+function applyComposerActionGateState(gateState) {
+  const gate = gateState && typeof gateState === 'object'
+    ? gateState
+    : { canDraft: true, canPreview: true, canApprove: true, canPlan: true, canExecute: true };
+  const createBtn = document.getElementById('create-draft');
+  const previewBtn = document.getElementById('preview');
+  const approveBtn = document.getElementById('approve');
+  const planBtn = document.getElementById('plan');
+  const executeBtn = document.getElementById('execute');
+  if (createBtn) createBtn.disabled = !gate.canDraft;
+  if (previewBtn) previewBtn.disabled = !gate.canPreview;
+  if (approveBtn) approveBtn.disabled = !gate.canApprove;
+  if (planBtn) planBtn.disabled = !gate.canPlan;
+  if (executeBtn) executeBtn.disabled = !gate.canExecute;
+}
+
+function renderComposerCategoryWizard(payload, gateState) {
+  const pane = document.getElementById('pane-composer');
+  const wizard = document.getElementById('composer-category-wizard');
+  if (!pane || !wizard) return;
+  pane.classList.toggle('composer-wizard-enabled', COMPOSER_CATEGORY_WIZARD_V1);
+  if (!COMPOSER_CATEGORY_WIZARD_V1) return;
+  const flow = resolveComposerCategoryFlow(selectedComposerCategory());
+  const categorySummaryEl = document.getElementById('composer-category-summary');
+  const categoryRecommendEl = document.getElementById('composer-category-recommend');
+  const categoryStepsEl = document.getElementById('composer-category-steps');
+  const categoryRequiredEl = document.getElementById('composer-category-required');
+  const categoryNextEl = document.getElementById('composer-category-next');
+  if (categorySummaryEl) categorySummaryEl.textContent = t(flow.summaryKey, '-');
+  if (categoryRecommendEl) {
+    const typeLabel = composerTypeLabel(flow.recommendedType);
+    categoryRecommendEl.textContent = `${t('ui.label.composer.wizard.recommendType', '推奨タイプ')}: ${typeLabel}`;
+  }
+  if (categoryStepsEl) {
+    categoryStepsEl.innerHTML = '';
+    const steps = Array.isArray(flow.stepKeys) ? flow.stepKeys : [];
+    steps.forEach((stepKey) => {
+      const li = document.createElement('li');
+      li.textContent = t(stepKey, stepKey);
+      categoryStepsEl.appendChild(li);
+    });
+  }
+  if (categoryRequiredEl) {
+    categoryRequiredEl.innerHTML = '';
+    const requiredIds = Array.isArray(flow.requiredIds) ? flow.requiredIds : [];
+    requiredIds.forEach((fieldId) => {
+      const ok = isComposerRequiredFieldSatisfied(fieldId, payload);
+      const li = document.createElement('li');
+      li.textContent = `${resolveComposerRequiredFieldLabel(fieldId)}: ${ok ? t('ui.value.boolean.yes', 'はい') : t('ui.value.boolean.no', 'いいえ')}`;
+      categoryRequiredEl.appendChild(li);
+    });
+  }
+  if (categoryNextEl) {
+    if (gateState && gateState.validationError) {
+      categoryNextEl.textContent = gateState.validationError;
+    } else if (gateState && !gateState.hasNotificationId) {
+      categoryNextEl.textContent = t('ui.desc.composer.wizard.next.createDraft', '次の一手: 下書き作成で通知IDを確定します。');
+    } else if (gateState && !gateState.hasPlanToken) {
+      categoryNextEl.textContent = t('ui.desc.composer.wizard.next.createPlan', '次の一手: 送信計画で確認トークンを発行します。');
+    } else {
+      categoryNextEl.textContent = t(flow.nextKey, '-');
+    }
+  }
 }
 
 function composerTypeHint(type) {
@@ -11238,8 +11435,8 @@ function applyComposerTypeFields() {
 function mapComposerStatusLabel(statusLabelValue) {
   const raw = typeof statusLabelValue === 'string' ? statusLabelValue.toUpperCase() : '';
   if (raw === 'PLANNED' || raw === 'PLAN') return 'planned';
-  if (raw === 'ACTIVE') return 'approved';
-  if (raw === 'SENT') return 'executed';
+  if (raw === 'ACTIVE' || raw === 'APPROVED') return 'approved';
+  if (raw === 'SENT' || raw === 'EXECUTED') return 'executed';
   return 'draft';
 }
 
@@ -11388,6 +11585,10 @@ function updateComposerSummary() {
   const payload = buildDraftPayload();
   const issues = buildComposerLocalSafetyIssues(payload);
   renderComposerSafety(issues);
+  const gateState = computeComposerActionGateState(payload, issues);
+  state.composerActionGateState = gateState;
+  applyComposerActionGateState(COMPOSER_CATEGORY_WIZARD_V1 ? gateState : null);
+  renderComposerCategoryWizard(payload, gateState);
 }
 
 function setComposerStatus(tone, label) {
@@ -11430,7 +11631,7 @@ function buildDraftPayload() {
     linkRegistryId: document.getElementById('linkRegistryId')?.value?.trim() || '',
     scenarioKey,
     stepKey,
-    notificationCategory: document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE',
+    notificationCategory: normalizeComposerCategory(document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE'),
     notificationType,
     notificationMeta,
     target: buildTarget(notificationType)
@@ -11453,11 +11654,61 @@ function buildTarget(notificationType) {
   return target;
 }
 
+function captureComposerDraftSnapshot(type) {
+  const snapshotType = normalizeComposerType(type);
+  state.composerDraftByType[snapshotType] = {
+    title: document.getElementById('title')?.value || '',
+    body: document.getElementById('body')?.value || '',
+    ctaText: document.getElementById('ctaText')?.value || '',
+    ctaText2: document.getElementById('ctaText2')?.value || '',
+    linkRegistryId: document.getElementById('linkRegistryId')?.value || '',
+    notificationCategory: normalizeComposerCategory(document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE'),
+    scenarioKey: document.getElementById('scenarioKey')?.value || 'A',
+    stepKey: document.getElementById('stepKey')?.value || 'week',
+    targetRegion: document.getElementById('targetRegion')?.value || '',
+    targetLimit: document.getElementById('targetLimit')?.value || '50',
+    membersOnly: Boolean(document.getElementById('membersOnly')?.checked),
+    metaAnnouncementExpiry: document.getElementById('metaAnnouncementExpiry')?.value || '',
+    metaAnnouncementPriority: document.getElementById('metaAnnouncementPriority')?.value || '',
+    metaVendorId: document.getElementById('metaVendorId')?.value || '',
+    metaVendorTargeting: document.getElementById('metaVendorTargeting')?.value || '',
+    metaAbVariants: document.getElementById('metaAbVariants')?.value || '',
+    metaAbRatio: document.getElementById('metaAbRatio')?.value || '',
+    metaAbMetric: document.getElementById('metaAbMetric')?.value || ''
+  };
+}
+
+function restoreComposerDraftSnapshot(type) {
+  const snapshot = state.composerDraftByType[normalizeComposerType(type)];
+  if (!snapshot || typeof snapshot !== 'object') return false;
+  if (document.getElementById('title')) document.getElementById('title').value = snapshot.title || '';
+  if (document.getElementById('body')) document.getElementById('body').value = snapshot.body || '';
+  if (document.getElementById('ctaText')) document.getElementById('ctaText').value = snapshot.ctaText || '';
+  if (document.getElementById('ctaText2')) document.getElementById('ctaText2').value = snapshot.ctaText2 || '';
+  if (document.getElementById('linkRegistryId')) document.getElementById('linkRegistryId').value = snapshot.linkRegistryId || '';
+  if (document.getElementById('notificationCategory')) {
+    document.getElementById('notificationCategory').value = normalizeComposerCategory(snapshot.notificationCategory || 'SEQUENCE_GUIDANCE');
+  }
+  if (document.getElementById('scenarioKey')) document.getElementById('scenarioKey').value = snapshot.scenarioKey || 'A';
+  if (document.getElementById('stepKey')) document.getElementById('stepKey').value = snapshot.stepKey || 'week';
+  if (document.getElementById('targetRegion')) document.getElementById('targetRegion').value = snapshot.targetRegion || '';
+  if (document.getElementById('targetLimit')) document.getElementById('targetLimit').value = snapshot.targetLimit || '50';
+  if (document.getElementById('membersOnly')) document.getElementById('membersOnly').checked = Boolean(snapshot.membersOnly);
+  if (document.getElementById('metaAnnouncementExpiry')) document.getElementById('metaAnnouncementExpiry').value = snapshot.metaAnnouncementExpiry || '';
+  if (document.getElementById('metaAnnouncementPriority')) document.getElementById('metaAnnouncementPriority').value = snapshot.metaAnnouncementPriority || '';
+  if (document.getElementById('metaVendorId')) document.getElementById('metaVendorId').value = snapshot.metaVendorId || '';
+  if (document.getElementById('metaVendorTargeting')) document.getElementById('metaVendorTargeting').value = snapshot.metaVendorTargeting || '';
+  if (document.getElementById('metaAbVariants')) document.getElementById('metaAbVariants').value = snapshot.metaAbVariants || '';
+  if (document.getElementById('metaAbRatio')) document.getElementById('metaAbRatio').value = snapshot.metaAbRatio || '';
+  if (document.getElementById('metaAbMetric')) document.getElementById('metaAbMetric').value = snapshot.metaAbMetric || '';
+  return true;
+}
+
 function normalizeComposerSavedStatus(status) {
   const raw = typeof status === 'string' ? status.toLowerCase() : '';
   if (raw === 'planned') return 'planned';
   if (raw === 'active') return 'approved';
-  if (raw === 'sent') return 'executed';
+  if (raw === 'sent' || raw === 'executed') return 'sent';
   return raw || 'draft';
 }
 
@@ -11550,16 +11801,31 @@ function formatComposerLinkOption(item) {
   return `${title} / ${domain} / ${id}`;
 }
 
+function filterComposerLinkOptions(items, selectedId) {
+  const source = Array.isArray(items) ? items : [];
+  const keyword = String(state.composerLinkSearch || '').trim().toLowerCase();
+  if (!keyword) return source.slice();
+  return source.filter((item) => {
+    const id = item && typeof item.id === 'string' ? item.id : '';
+    if (selectedId && id === selectedId) return true;
+    const title = item && typeof (item.title || item.label) === 'string' ? String(item.title || item.label) : '';
+    const domain = extractComposerLinkDomain(item && item.url);
+    const haystack = `${title}\n${domain}\n${id}`.toLowerCase();
+    return haystack.includes(keyword);
+  });
+}
+
 function setComposerLinkRegistryOptions(items, selectedId) {
   const select = document.getElementById('linkRegistryId');
   if (!select) return;
   const previous = typeof selectedId === 'string' ? selectedId : (select.value || '');
+  const filtered = filterComposerLinkOptions(items, previous);
   select.innerHTML = '';
   const placeholder = document.createElement('option');
   placeholder.value = '';
   placeholder.textContent = 'Link Registryから選択';
   select.appendChild(placeholder);
-  (Array.isArray(items) ? items : []).forEach((item) => {
+  filtered.forEach((item) => {
     const id = item && typeof item.id === 'string' ? item.id : '';
     if (!id) return;
     const option = document.createElement('option');
@@ -11656,7 +11922,7 @@ function loadComposerFormFromRow(row, duplicateMode) {
     showToast(t('ui.toast.composer.duplicated', '複製して新規に読み込みました'), 'ok');
   } else {
     document.getElementById('notificationId').textContent = row.id || '-';
-    state.currentComposerStatus = String(row.status || 'draft').toUpperCase();
+    state.currentComposerStatus = normalizeComposerSavedStatus(row && row.status).toUpperCase();
     state.composerSelectedNotificationId = row.id || null;
     state.composerCurrentNotificationId = row.id || null;
     state.composerCurrentPlanHash = null;
@@ -11664,6 +11930,7 @@ function loadComposerFormFromRow(row, duplicateMode) {
     if (document.getElementById('planHash')) document.getElementById('planHash').textContent = '-';
     if (document.getElementById('confirmToken')) document.getElementById('confirmToken').textContent = '-';
   }
+  captureComposerDraftSnapshot(selectedComposerType());
   updateComposerSummary();
   void loadComposerLinkPreview();
 }
@@ -11722,6 +11989,16 @@ function renderComposerSavedRows() {
       tr.appendChild(td);
     });
     const actionTd = document.createElement('td');
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'button-subtle';
+    editBtn.textContent = t('ui.label.composer.saved.edit', '編集');
+    editBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      loadComposerFormFromRow(item, false);
+      renderComposerSavedRows();
+    });
+    actionTd.appendChild(editBtn);
     const cloneBtn = document.createElement('button');
     cloneBtn.type = 'button';
     cloneBtn.className = 'button-subtle';
@@ -11730,6 +12007,7 @@ function renderComposerSavedRows() {
       event.stopPropagation();
       loadComposerFormFromRow(item, true);
     });
+    actionTd.appendChild(document.createTextNode(' '));
     actionTd.appendChild(cloneBtn);
     tr.appendChild(actionTd);
     tr.addEventListener('click', () => {
@@ -11830,11 +12108,10 @@ function composerCategoryLabel(value) {
 
 function composerStatusLabel(value) {
   const raw = normalizeComposerSavedStatus(value);
-  let fallback = t('ui.value.composer.status.draft', '下書き');
-  if (raw === 'planned') fallback = t('ui.value.composer.status.planned', '計画済み');
-  if (raw === 'approved' || raw === 'active') fallback = t('ui.value.composer.status.approved', '承認済み');
-  if (raw === 'executed' || raw === 'sent') fallback = t('ui.value.composer.status.executed', '実行済み');
-  return resolveDomainLabel('status', raw, fallback);
+  if (raw === 'planned') return t('ui.value.composer.status.planned', '計画済み');
+  if (raw === 'approved' || raw === 'active') return t('ui.value.composer.status.approved', '承認済み');
+  if (raw === 'executed' || raw === 'sent') return t('ui.value.composer.status.executed', '実行済み');
+  return t('ui.value.composer.status.draft', '下書き');
 }
 
 async function adminFetchJson(options) {
@@ -11890,6 +12167,9 @@ function setupComposerActions() {
   state.composerCurrentPlanHash = null;
   state.composerCurrentConfirmToken = null;
   state.composerSelectedNotificationId = null;
+  state.composerDraftByType = {};
+  state.composerActionGateState = null;
+  state.composerLinkSearch = '';
 
   document.getElementById('create-draft')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('draft-result');
@@ -12072,7 +12352,7 @@ function setupComposerActions() {
     }
   });
 
-  ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'notificationType', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
+  ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') {
@@ -12084,6 +12364,27 @@ function setupComposerActions() {
   const linkRegistryInput = document.getElementById('linkRegistryId');
   if (linkRegistryInput) {
     linkRegistryInput.addEventListener('change', () => {
+      updateComposerSummary();
+      void loadComposerLinkPreview();
+    });
+  }
+  const linkSearchInput = document.getElementById('composer-link-search');
+  if (linkSearchInput) {
+    linkSearchInput.value = state.composerLinkSearch || '';
+    linkSearchInput.addEventListener('input', () => {
+      state.composerLinkSearch = (linkSearchInput.value || '').trim();
+      setComposerLinkRegistryOptions(state.composerLinkOptions, document.getElementById('linkRegistryId')?.value || '');
+    });
+  }
+  const typeSelect = document.getElementById('notificationType');
+  if (typeSelect) {
+    let previousType = selectedComposerType();
+    captureComposerDraftSnapshot(previousType);
+    typeSelect.addEventListener('change', () => {
+      captureComposerDraftSnapshot(previousType);
+      const nextType = selectedComposerType();
+      restoreComposerDraftSnapshot(nextType);
+      previousType = nextType;
       updateComposerSummary();
       void loadComposerLinkPreview();
     });
@@ -12118,6 +12419,7 @@ function setupComposerActions() {
   });
 
   applyComposerTypeFields();
+  captureComposerDraftSnapshot(selectedComposerType());
   updateComposerSummary();
   void loadComposerLinkRegistryOptions({ notify: false });
   void loadComposerSavedNotifications({ notify: false });

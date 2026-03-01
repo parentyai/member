@@ -12,6 +12,18 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
 - `writeActions[].handlerFile` は server guard 適用漏れ検知の照合元とする（CI fail対象）。
 - `confirmMode` は flow単位の段階導入スイッチ（`warn_only` / `required`）とする。
 
+## Phase676 Addendum（Composer Category Wizard / add-only）
+- 対象UI: `/admin/app?pane=composer`
+- 追加フラグ: `ENABLE_COMPOSER_CATEGORY_WIZARD_V1`（既定 `0`）
+- 追加メタ: `window.ADMIN_APP_BUILD_META.composerWizardMode`（`legacy` / `category_wizard_v1`）
+- 互換条件:
+  - 既存 flow (`composer.notification.approve_plan` / `composer.notification.execute`) は不変。
+  - 既存 action id (`create-draft`, `preview`, `approve`, `plan`, `execute`) は不変。
+  - backend API 契約 (`/api/admin/os/notifications/*`) は不変。
+- 運用補足:
+  - 保存済み通知の状態フィルタは `承認済み` を単一表示とし、内部判定は `approved|active` を同一扱いとする。
+  - `ENABLE_COMPOSER_CATEGORY_WIZARD_V1=0` で旧導線へ即時復帰できる。
+
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
   "version": "2026-02-27.v1.3",

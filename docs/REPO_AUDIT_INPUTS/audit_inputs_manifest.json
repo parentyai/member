@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T14:14:12-05:00",
-  "gitCommit": "b0d17e57c2dc0a075185645c707a6d869824bcf7",
-  "branch": "codex/feature-catalog-visibility",
-  "sourceDigest": "3abc36347774e8c7d566a85289a90b2e0f6633d31ee3225c9776afe6118639d5",
+  "generatedAt": "2026-03-01T14:19:15-05:00",
+  "gitCommit": "f31bd18d8770ac481c683757b56aa16a3c3fae12",
+  "branch": "main",
+  "sourceDigest": "dafc8dc09cc0134816c446f1373c82f4874ba39cc3e5a399d55e84b4e772ed5e",
   "counts": {
     "endpoints": 260,
     "routes": 120,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "782f5d4a191f60418a12d0ec69a09a8223d235cacd6059de40d26ece9af34ba4",
+      "sha256": "308e9f2335fe5b4da428a34bfb7d3db7aad01c93df26c654825c566a61d11eaa",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "175bc5cdf96a1c113dfa73f95b50f3797f931b7f0db94f0608525fd36a1389c1",
+      "sha256": "c473cb3534da9fba0e6c817ca72151234fa3d4cbc125801053396e9a2bbbde45",
       "bytes": 487
     },
     {
@@ -121,8 +121,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "a06bd83ae422040e464f23c0796c793115d2d3157ed7cdbdb8b0ea8c27b7182d",
-      "bytes": 199669
+      "sha256": "2f0e259b0ca98ceee00d06b27b5cbeac4f15bb94b7de349cfeedde844314d3d6",
+      "bytes": 199671
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
@@ -131,7 +131,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "9b02fa5188bd0c6d8c2dd94ad5d593c3ca4808ee201306bcdef6cc5085356c5d",
+      "sha256": "2d926dd922d43972c3ad4cf9ddbd61ccd6e5b5889176b3d7e6d6c372f72dba2c",
       "bytes": 412859
     },
     {
@@ -151,8 +151,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "7e36682d3826fcef4e33978a5f8c8385c24dff85a799e35ecfd25b17581b8410",
-      "bytes": 2418
+      "sha256": "439aa1fb23c66fbe93e0e0f7d60e089ed0e02abb4dfb3c81fe29aeab090d0545",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [
