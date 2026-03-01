@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T20:28:03-05:00",
-  "gitCommit": "785b07a227de7ce714eed30f1e95c153f9fdf616",
-  "branch": "codex/p0-add-public-write-safety-net",
-  "sourceDigest": "9a4465808d26fbce59d8f3539731f4a3ac5c0970698467b9731f6822f3d4b95d",
+  "generatedAt": "2026-02-28T20:32:50-05:00",
+  "gitCommit": "bbf7e135ba2bf828c2ab55dc28be5de6b038293a",
+  "branch": "codex/artifacts-head-sync",
+  "sourceDigest": "8a0861236fad506560f3b4b013a60df11e53df02f8d8d35d6d855336eecbc57c",
   "counts": {
     "endpoints": 259,
     "routes": 120,
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "bfc6706b8bda898cc7aefd2ccc2d05f1e3a669f5322a703a248b6f9ffa74193e",
+      "sha256": "584cd4aec808a1eb46924c1449d56a2f2894ad315b787a8b23522e16e0eb7b8e",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "46a324a16c5755f218167cf1802311e79d93148b2e6f361d30df42d93056c406",
+      "sha256": "76fd142dcc816e673df9e6c7b30821897e46f0c9bdded02431685aa114e5202d",
       "bytes": 487
     },
     {
@@ -136,7 +136,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "96a7db5b63960c0883ac5ba14ff108ae749e0f7d9a9566eb7c82750cc9548174",
+      "sha256": "12546a084130e47f3937baa741a6bf96d17d9f2b1c7fb48af93eee173fd959d3",
       "bytes": 740
     },
     {
@@ -146,13 +146,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "15c43ac96e001226306c105d82c6ed8afe9bc2f0dce70221b35b4498cbb7c8ba",
+      "sha256": "3b580208db1d409f214211d72cf862041cb52d2788f41c50f888fb7496399e8d",
       "bytes": 5235
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "6f6a99da896be3f2a08ada2343c1cdc74415d9921793e88f440e371501004e48",
-      "bytes": 2422
+      "sha256": "73df778023a8425b99b2f6d6f8d54eefdd15c469619bbdee5f4fa4c376edb4fa",
+      "bytes": 2411
     }
   ],
   "diff_detection_rules": [

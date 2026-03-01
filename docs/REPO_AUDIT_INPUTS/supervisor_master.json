@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-02-28T20:28:03-05:00",
-  "gitCommit": "785b07a227de7ce714eed30f1e95c153f9fdf616",
-  "branch": "codex/p0-add-public-write-safety-net",
-  "sourceDigest": "7868dbe653f7123963c27bab13199e5819f5573ffb7aa392ff34b9c573e85dda",
+  "generatedAt": "2026-02-28T20:32:50-05:00",
+  "gitCommit": "bbf7e135ba2bf828c2ab55dc28be5de6b038293a",
+  "branch": "codex/artifacts-head-sync",
+  "sourceDigest": "b243447c8c52bbb1080ba247ba8f1c09069e88705c7f854a00c65db172847c97",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
