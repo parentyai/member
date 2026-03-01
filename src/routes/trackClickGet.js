@@ -65,8 +65,9 @@ function logTrackAuditEnqueueFailure(payload, err) {
 async function appendTrackClickAuditWithPolicy(payload, options) {
   if (!isTrackClickAuditEnabled()) return;
   const data = payload && typeof payload === 'object' ? payload : {};
+  const nonBlocking = Boolean(options && options.nonBlocking === true);
   const modeRaw = options && typeof options.auditWriteMode === 'string' ? options.auditWriteMode.trim().toLowerCase() : '';
-  const auditWriteMode = modeRaw === 'await' ? 'await' : 'best_effort';
+  const auditWriteMode = nonBlocking ? 'best_effort' : (modeRaw === 'await' ? 'await' : 'best_effort');
   const writeAudit = () => auditLogUsecase.appendAuditLog({
       actor: 'public_click',
       action: data.action || 'track.click.get',
@@ -180,13 +181,13 @@ async function handleTrackClickGet(req, res, token) {
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId
     });
-    await appendTrackClickAuditWithPolicy({
+    appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
       result: 'ok'
-    }, { auditWriteMode });
+    }, { auditWriteMode, nonBlocking: true });
     res.writeHead(302, { location: result.url });
     res.end();
   } catch (err) {

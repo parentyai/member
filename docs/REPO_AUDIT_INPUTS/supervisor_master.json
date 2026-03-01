@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T07:01:25-05:00",
-  "gitCommit": "a0fd48fe3bf76aad4ed28c196ba56fd0a9513505",
-  "branch": "codex/p0-legacy-status-surface-flag-v1",
-  "sourceDigest": "b56763f46e51e14bd2eade604dd39383199ce80da65660c6f3e27459ed090657",
+  "generatedAt": "2026-03-01T08:03:35-05:00",
+  "gitCommit": "d0aa7f09bd3686dbaa38ffaac982eb56d9a63be9",
+  "branch": "HEAD",
+  "sourceDigest": "79e7c20cfa95a9f7d5baf412a1c4fa864137eccfde3601c36b3170a592943181",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
