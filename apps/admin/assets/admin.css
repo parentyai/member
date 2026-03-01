@@ -2456,6 +2456,19 @@ details:not([open]) > *:not(summary) {
   min-width: 120px;
 }
 
+.repo-map-matrix-entry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.repo-map-matrix-entry-title {
+  font-size: var(--font-12);
+  color: var(--text-base);
+}
+
 #pane-developer-map .pane-grid {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
 }

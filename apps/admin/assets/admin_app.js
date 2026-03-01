@@ -294,6 +294,11 @@ const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
 const COMPOSER_ALLOWED_STEPS = new Set(COMPOSER_STEP_ORDER);
 const COMPOSER_DEFAULT_TRIGGER = 'manual';
+const REPO_MAP_MATRIX_TYPE_ORDER = Object.freeze(['STEP', 'GENERAL', 'ANNOUNCEMENT', 'VENDOR', 'AB']);
+const REPO_MAP_MATRIX_TYPE_RANK = Object.freeze(REPO_MAP_MATRIX_TYPE_ORDER.reduce((acc, type, index) => {
+  acc[type] = index;
+  return acc;
+}, {}));
 const COMPOSER_CATEGORY_FLOW_DEFS = Object.freeze({
   DEADLINE_REQUIRED: Object.freeze({
     recommendedType: 'ANNOUNCEMENT',
@@ -2898,7 +2903,11 @@ function formatRepoMapMatrixTarget(target) {
   const region = typeof row.region === 'string' && row.region.trim() ? row.region.trim() : '-';
   const limit = Number.isFinite(Number(row.limit)) ? Math.floor(Number(row.limit)) : '-';
   const membersOnly = row.membersOnly === true ? 'Y' : 'N';
-  return `region=${region}, limit=${limit}, membersOnly=${membersOnly}`;
+  return {
+    region,
+    limit,
+    membersOnly
+  };
 }
 
 function resolveComposerOrderFromStep(stepKey) {
@@ -2907,28 +2916,105 @@ function resolveComposerOrderFromStep(stepKey) {
   return index + 1;
 }
 
+function resolveRepoMapMatrixTypeRank(type) {
+  const normalizedType = normalizeComposerType(type || 'STEP');
+  return Object.prototype.hasOwnProperty.call(REPO_MAP_MATRIX_TYPE_RANK, normalizedType)
+    ? REPO_MAP_MATRIX_TYPE_RANK[normalizedType]
+    : Number.MAX_SAFE_INTEGER;
+}
+
+function sortRepoMapMatrixSteps(stepKeys) {
+  const steps = Array.isArray(stepKeys) ? stepKeys.slice() : [];
+  return steps.sort((left, right) => {
+    const leftKey = String(left || '');
+    const rightKey = String(right || '');
+    const leftIndex = COMPOSER_STEP_ORDER.indexOf(leftKey);
+    const rightIndex = COMPOSER_STEP_ORDER.indexOf(rightKey);
+    if (leftIndex >= 0 && rightIndex >= 0) return leftIndex - rightIndex;
+    if (leftIndex >= 0) return -1;
+    if (rightIndex >= 0) return 1;
+    return leftKey.localeCompare(rightKey, 'ja');
+  });
+}
+
+function compareRepoMapMatrixEntries(left, right) {
+  const leftType = normalizeComposerType(left && left.type ? left.type : 'STEP');
+  const rightType = normalizeComposerType(right && right.type ? right.type : 'STEP');
+  const typeDiff = resolveRepoMapMatrixTypeRank(leftType) - resolveRepoMapMatrixTypeRank(rightType);
+  if (typeDiff !== 0) return typeDiff;
+  const leftTitle = left && typeof left.title === 'string' ? left.title.trim() : '';
+  const rightTitle = right && typeof right.title === 'string' ? right.title.trim() : '';
+  const titleDiff = leftTitle.localeCompare(rightTitle, 'ja');
+  if (titleDiff !== 0) return titleDiff;
+  const leftId = left && typeof left.notificationId === 'string' ? left.notificationId : '';
+  const rightId = right && typeof right.notificationId === 'string' ? right.notificationId : '';
+  return leftId.localeCompare(rightId, 'ja');
+}
+
+function resolveRepoMapMatrixTypeBadgeClass(type) {
+  const normalizedType = normalizeComposerType(type || 'STEP');
+  if (normalizedType === 'STEP') return 'badge badge-ok';
+  if (normalizedType === 'GENERAL') return 'badge badge-warn';
+  if (normalizedType === 'ANNOUNCEMENT') return 'badge';
+  if (normalizedType === 'VENDOR') return 'badge badge-danger';
+  return 'badge badge-warn';
+}
+
+function resolveRepoMapMatrixStatusBadgeClass(status) {
+  const normalizedStatus = normalizeComposerSavedStatus(status);
+  if (normalizedStatus === 'executed' || normalizedStatus === 'sent') return 'badge badge-ok';
+  if (normalizedStatus === 'approved' || normalizedStatus === 'planned' || normalizedStatus === 'active') return 'badge badge-warn';
+  if (normalizedStatus === 'draft') return 'badge';
+  return 'badge badge-danger';
+}
+
 function renderRepoMapMatrixEntry(cellEl, entry) {
   const block = document.createElement('div');
-  block.className = 'cell-muted';
-  const title = document.createElement('div');
-  title.textContent = `${entry.notificationId || '-'} | ${entry.title || '-'}`;
-  block.appendChild(title);
-  const statusLine = document.createElement('div');
-  statusLine.textContent = `type=${entry.type || '-'} status=${entry.status || '-'}`;
-  block.appendChild(statusLine);
-  const targetLine = document.createElement('div');
-  targetLine.textContent = `target(${formatRepoMapMatrixTarget(entry.target)})`;
-  block.appendChild(targetLine);
-  const resultLine = document.createElement('div');
-  resultLine.textContent = `planHash=${entry.planHash || '-'} / lastExecution=${entry.lastExecution || '-'} / result=${entry.result || '-'}`;
-  block.appendChild(resultLine);
-  const actions = entry.actions && typeof entry.actions === 'object' ? entry.actions : {};
-  const actionLine = document.createElement('div');
-  actionLine.textContent = `actions[draft=${actions.draft ? 'Y' : 'N'},preview=${actions.preview ? 'Y' : 'N'},approve=${actions.approve ? 'Y' : 'N'},plan=${actions.plan ? 'Y' : 'N'},execute=${actions.execute ? 'Y' : 'N'}] / guard=actor+trace / executeConfirm=planHash+confirmToken`;
-  block.appendChild(actionLine);
-  const triggerLine = document.createElement('div');
-  triggerLine.textContent = `trigger=${entry.trigger || COMPOSER_DEFAULT_TRIGGER} / order=${Number.isFinite(Number(entry.order)) ? Number(entry.order) : '-'}`;
-  block.appendChild(triggerLine);
+  block.className = 'repo-map-matrix-entry';
+
+  const topRow = document.createElement('div');
+  topRow.className = 'row';
+  const typeBadge = document.createElement('span');
+  typeBadge.className = resolveRepoMapMatrixTypeBadgeClass(entry && entry.type ? entry.type : 'STEP');
+  typeBadge.textContent = normalizeComposerType(entry && entry.type ? entry.type : 'STEP');
+  topRow.appendChild(typeBadge);
+  const title = document.createElement('strong');
+  title.className = 'repo-map-matrix-entry-title flex-1';
+  title.textContent = entry && typeof entry.title === 'string' && entry.title.trim() ? entry.title.trim() : '-';
+  topRow.appendChild(title);
+  const statusBadge = document.createElement('span');
+  statusBadge.className = resolveRepoMapMatrixStatusBadgeClass(entry && entry.status ? entry.status : 'draft');
+  statusBadge.textContent = composerStatusLabel(entry && entry.status ? entry.status : 'draft');
+  topRow.appendChild(statusBadge);
+  block.appendChild(topRow);
+
+  const bottomRow = document.createElement('div');
+  bottomRow.className = 'row row-top';
+  const target = formatRepoMapMatrixTarget(entry && entry.target ? entry.target : null);
+  const targetInfo = document.createElement('span');
+  targetInfo.className = 'cell-muted';
+  targetInfo.textContent = `対象 limit:${target.limit} / region:${target.region} / membersOnly:${target.membersOnly}`;
+  bottomRow.appendChild(targetInfo);
+
+  const deliveredCount = Number.isFinite(Number(entry && entry.deliveredCount)) ? Number(entry.deliveredCount) : 0;
+  const clickCount = Number.isFinite(Number(entry && entry.clickCount)) ? Number(entry.clickCount) : 0;
+  const ctr = Number.isFinite(Number(entry && entry.ctr)) ? formatRatioPercent(Number(entry.ctr)) : '-';
+  const metrics = document.createElement('span');
+  metrics.className = 'cell-muted';
+  metrics.textContent = `配信:${deliveredCount} / click:${clickCount} / CTR:${ctr}`;
+  bottomRow.appendChild(metrics);
+
+  const triggerOrder = document.createElement('span');
+  triggerOrder.className = 'cell-muted';
+  triggerOrder.textContent = 'trigger/order: UNKNOWN';
+  bottomRow.appendChild(triggerOrder);
+
+  const planHash = document.createElement('span');
+  planHash.className = 'metric-label';
+  planHash.textContent = `planHash: ${entry && entry.planHash ? entry.planHash : '-'}`;
+  bottomRow.appendChild(planHash);
+  block.appendChild(bottomRow);
+
   cellEl.appendChild(block);
 }
 
@@ -2943,7 +3029,7 @@ function renderRepoMapMatrix(matrix, options) {
   clearElementChildren(body);
 
   const scenarios = Array.isArray(matrix && matrix.scenarios) ? matrix.scenarios : [];
-  const steps = Array.isArray(matrix && matrix.steps) ? matrix.steps : [];
+  const steps = sortRepoMapMatrixSteps(Array.isArray(matrix && matrix.steps) ? matrix.steps : []);
   const cells = Array.isArray(matrix && matrix.cells) ? matrix.cells : [];
   if (!scenarios.length || !steps.length || !cells.length) {
     const tr = document.createElement('tr');
@@ -2976,13 +3062,6 @@ function renderRepoMapMatrix(matrix, options) {
       if (!cell) {
         td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
       } else {
-        const count = Number.isFinite(Number(cell.notificationCount)) ? Number(cell.notificationCount) : 0;
-        const states = cell.states && typeof cell.states === 'object' ? cell.states : {};
-        const summary = document.createElement('div');
-        summary.className = 'cell-muted';
-        summary.textContent = `${t('ui.label.repoMap.matrix.notifications', '通知数')}: ${count} / ${t('ui.label.repoMap.matrix.states', '状態')}: ${Number(states.draft || 0)}/${Number(states.active || 0)}/${Number(states.sent || 0)}`;
-        td.appendChild(summary);
-
         const entries = Array.isArray(cell.entries) ? cell.entries : [];
         if (!entries.length) {
           const empty = document.createElement('div');
@@ -2990,14 +3069,8 @@ function renderRepoMapMatrix(matrix, options) {
           empty.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
           td.appendChild(empty);
         } else {
-          const maxRows = 5;
-          entries.slice(0, maxRows).forEach((entry) => renderRepoMapMatrixEntry(td, entry));
-          if (entries.length > maxRows) {
-            const remain = document.createElement('div');
-            remain.className = 'cell-muted';
-            remain.textContent = `... ${entries.length - maxRows} more`;
-            td.appendChild(remain);
-          }
+          entries.sort(compareRepoMapMatrixEntries);
+          entries.forEach((entry) => renderRepoMapMatrixEntry(td, entry));
         }
       }
       tr.appendChild(td);
@@ -3128,6 +3201,11 @@ function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
       order: rowOrder,
       target: item && item.target && typeof item.target === 'object' ? item.target : null,
       planHash: item && typeof item.planHash === 'string' && item.planHash.trim() ? item.planHash.trim() : null,
+      deliveredCount: readModelRow && Number.isFinite(Number(readModelRow.deliveredCount)) ? Number(readModelRow.deliveredCount) : 0,
+      clickCount: readModelRow && Number.isFinite(Number(readModelRow.clickCount)) ? Number(readModelRow.clickCount) : 0,
+      ctr: readModelRow && readModelRow.reactionSummary && Number.isFinite(Number(readModelRow.reactionSummary.ctr))
+        ? Number(readModelRow.reactionSummary.ctr)
+        : null,
       lastExecution: readModelRow && typeof readModelRow.lastSentAt === 'string' ? readModelRow.lastSentAt : null,
       result: buildRepoMapMatrixResultLabel(readModelRow)
     };
