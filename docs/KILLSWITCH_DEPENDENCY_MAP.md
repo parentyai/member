@@ -24,8 +24,6 @@
 | `src/routes/admin/osDashboardKpi.js` | 201 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
 | `src/routes/admin/osKillSwitch.js` | 26 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/phase1Notifications.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/phase1Notifications.js` | 86 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/productReadiness.js` | 285 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/richMenuConfig.js` | 447 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/internal/cityPackDraftGeneratorJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -50,6 +48,8 @@
 | `src/routes/internal/userContextSnapshotJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/webhookLine.js` | 750 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
+| `src/routes/webhookLine.js` | 751 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 346 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
 | `src/usecases/adminOs/executeNotificationSend.js` | 203 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |

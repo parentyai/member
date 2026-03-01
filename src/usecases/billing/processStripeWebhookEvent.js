@@ -80,6 +80,7 @@ async function appendStripeAudit(action, payload) {
       action,
       entityType: 'billing_subscription',
       entityId: payload && payload.entityId ? payload.entityId : 'stripe_webhook',
+      traceId: payload && payload.traceId ? payload.traceId : null,
       requestId: payload && payload.requestId ? payload.requestId : null,
       payloadSummary: payload && payload.payloadSummary ? payload.payloadSummary : {}
     });
@@ -106,6 +107,9 @@ async function processStripeWebhookEvent(params) {
   const eventId = normalizeEventId(event && event.id);
   const eventType = typeof event === 'object' && typeof event.type === 'string' ? event.type : '';
   const requestId = typeof payload.requestId === 'string' ? payload.requestId : null;
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim()
+    ? payload.traceId.trim()
+    : requestId;
 
   if (!event || !eventId) {
     return { ok: false, status: 'invalid', reason: 'event_id_missing' };
@@ -120,6 +124,7 @@ async function processStripeWebhookEvent(params) {
   if (!reserved.created) {
     await appendStripeAudit('webhook_replay', {
       entityId: eventId,
+      traceId,
       requestId,
       payloadSummary: {
         eventId,
@@ -175,6 +180,7 @@ async function processStripeWebhookEvent(params) {
       });
       await appendStripeAudit('sub_conflict', {
         entityId: lineUserId,
+        traceId,
         requestId,
         payloadSummary: {
           eventId,
@@ -231,6 +237,7 @@ async function processStripeWebhookEvent(params) {
     }
     await appendStripeAudit('sub_updated', {
       entityId: lineUserId,
+      traceId,
       requestId,
       payloadSummary: {
         eventId,

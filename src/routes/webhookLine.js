@@ -19,6 +19,7 @@ const { getUserContextSnapshot } = require('../usecases/context/getUserContextSn
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const { getPublicWriteSafetySnapshot } = require('../repos/firestore/systemFlagsRepo');
 const journeyGraphCatalogRepo = require('../repos/firestore/journeyGraphCatalogRepo');
 const {
   detectExplicitPaidIntent,
@@ -49,6 +50,7 @@ const {
   declareUsage,
   declareServerMisconfigured
 } = require('../domain/redacLineMessages');
+const ROUTE_KEY = 'webhook_line';
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -347,6 +349,28 @@ async function appendJourneyEventBestEffort(data) {
       type,
       createdAt: payload.createdAt || new Date().toISOString()
     }));
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+async function appendWebhookBlockedAuditBestEffort(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  try {
+    await appendAuditLog({
+      actor: 'line_webhook',
+      action: payload.action || 'line_webhook.blocked',
+      entityType: 'line_webhook',
+      entityId: 'line_webhook',
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      payloadSummary: {
+        reason: payload.reason || 'unknown',
+        eventCount: Number.isFinite(Number(payload.eventCount)) ? Number(payload.eventCount) : 0,
+        failCloseMode: payload.failCloseMode || null,
+        guardRoute: ROUTE_KEY
+      }
+    });
   } catch (_err) {
     // best effort only
   }
@@ -695,7 +719,10 @@ async function handleLineWebhook(options) {
   const signature = options && options.signature;
   const body = options && options.body;
   const logger = (options && options.logger) || (() => {});
-  const requestId = (options && options.requestId) || 'unknown';
+  const optionRequestId = options && typeof options.requestId === 'string' ? options.requestId.trim() : '';
+  const optionTraceId = options && typeof options.traceId === 'string' ? options.traceId.trim() : '';
+  const requestId = optionRequestId || `line_webhook_${crypto.randomUUID()}`;
+  const traceId = optionTraceId || requestId;
   const isWebhookEdge = process.env.SERVICE_MODE === 'webhook';
   const allowWelcome = Boolean(options && options.allowWelcome === true);
 
@@ -718,6 +745,65 @@ async function handleLineWebhook(options) {
   } catch (err) {
     logger(`[webhook] requestId=${requestId} reject=invalid-json`);
     return { status: 400, body: 'invalid json' };
+  }
+
+  const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'
+    ? options.getKillSwitchFn
+    : null;
+  let safety = null;
+  if (customKillSwitchFn) {
+    try {
+      const killSwitchOn = await customKillSwitchFn();
+      safety = {
+        killSwitchOn: Boolean(killSwitchOn),
+        failCloseMode: 'warn',
+        readError: false
+      };
+    } catch (err) {
+      const fallback = await getPublicWriteSafetySnapshot(ROUTE_KEY);
+      safety = Object.assign({}, fallback, {
+        killSwitchOn: false,
+        readError: true,
+        readErrorCode: 'kill_switch_read_failed',
+        readErrorMessage: err && err.message ? String(err.message) : 'kill switch read failed'
+      });
+    }
+  } else {
+    safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
+  }
+  if (safety && safety.readError) {
+    if (safety.failCloseMode === 'enforce') {
+      await appendWebhookBlockedAuditBestEffort({
+        action: 'line_webhook.blocked',
+        traceId,
+        requestId,
+        reason: 'kill_switch_read_failed_fail_closed',
+        failCloseMode: safety.failCloseMode,
+        eventCount: Array.isArray(payload && payload.events) ? payload.events.length : 0
+      });
+      logger(`[webhook] requestId=${requestId} reject=kill_switch_read_failed_fail_closed`);
+      return { status: 503, body: 'temporarily unavailable' };
+    }
+    if (safety.failCloseMode === 'warn') {
+      await appendWebhookBlockedAuditBestEffort({
+        action: 'line_webhook.guard_warn',
+        traceId,
+        requestId,
+        reason: 'kill_switch_read_failed_fail_open',
+        failCloseMode: safety.failCloseMode,
+        eventCount: Array.isArray(payload && payload.events) ? payload.events.length : 0
+      });
+    }
+  }
+  if (safety && safety.killSwitchOn) {
+    await appendWebhookBlockedAuditBestEffort({
+      traceId,
+      requestId,
+      reason: 'kill_switch_on',
+      eventCount: Array.isArray(payload && payload.events) ? payload.events.length : 0
+    });
+    logger(`[webhook] requestId=${requestId} reject=kill_switch_on`);
+    return { status: 409, body: 'kill switch on' };
   }
 
   await logLineWebhookEventsBestEffort({ payload, requestId });

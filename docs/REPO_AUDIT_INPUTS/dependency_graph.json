@@ -1020,6 +1020,7 @@
       "appendAuditLog"
     ],
     "src/routes/admin/phase1Notifications.js": [
+      "appendAuditLog",
       "createNotificationPhase1",
       "sendNotificationPhase1"
     ],
@@ -1120,6 +1121,7 @@
       "sendOpsNotice"
     ],
     "src/routes/phase1Events.js": [
+      "appendAuditLog",
       "logEventBestEffort"
     ],
     "src/routes/phase24DecisionLogs.js": [
@@ -1264,6 +1266,7 @@
       "sendWelcomeMessage"
     ],
     "src/routes/webhookStripe.js": [
+      "appendAuditLog",
       "processStripeWebhookEvent"
     ]
   },
