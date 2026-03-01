@@ -31,7 +31,7 @@ function withEnv(patch) {
   };
 }
 
-function httpRequest({ port, method, path, headers, body }) {
+function httpRequest({ port, method, path, headers, body, timeoutMs }) {
   return new Promise((resolve, reject) => {
     const req = http.request({
       hostname: '127.0.0.1',
@@ -48,6 +48,11 @@ function httpRequest({ port, method, path, headers, body }) {
         resolve({ status: res.statusCode, headers: res.headers, body: data });
       });
     });
+    if (Number.isFinite(Number(timeoutMs)) && Number(timeoutMs) > 0) {
+      req.setTimeout(Number(timeoutMs), () => {
+        req.destroy(new Error('request_timeout'));
+      });
+    }
     req.on('error', reject);
     if (body) req.write(body);
     req.end();
@@ -484,6 +489,75 @@ test('phase675: ENFORCE mode fail-closes track click when killSwitch read fails'
   });
   assert.ok(blocked);
   assert.equal(blocked.payloadSummary.failCloseMode, 'enforce');
+});
+
+test('phase675: track click success redirect stays non-blocking even when audit mode is await', async (t) => {
+  const restoreEnv = withEnv({
+    SERVICE_MODE: 'track',
+    TRACK_TOKEN_SECRET: 'phase675_track_secret'
+  });
+  const db = createDbStub();
+  setDbForTest(db);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+  await db.collection('system_flags').doc('phase0').set({
+    killSwitch: false,
+    trackAuditWriteMode: 'await'
+  }, { merge: true });
+  const restoreAdminStub = stubFirebaseAdminIncrement();
+
+  await db.collection('link_registry').doc('l1').set({ url: 'https://example.com', createdAt: 1 });
+  await db.collection('notifications').doc('n1').set({
+    title: 'title',
+    body: 'body',
+    ctaText: 'openA',
+    linkRegistryId: 'l1',
+    createdAt: 1
+  });
+  const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
+  const delivery = await deliveriesRepo.createDelivery({
+    notificationId: 'n1',
+    lineUserId: 'U_PHASE675_AUDIT_NONBLOCK',
+    delivered: true
+  });
+
+  const token = createTrackToken({
+    deliveryId: delivery.id,
+    linkRegistryId: 'l1'
+  }, { secret: process.env.TRACK_TOKEN_SECRET });
+
+  const auditLogUsecase = require('../../src/usecases/audit/appendAuditLog');
+  const prevAppendAuditLog = auditLogUsecase.appendAuditLog;
+  auditLogUsecase.appendAuditLog = async () => new Promise(() => {});
+
+  const boot = await startServer();
+  t.after(async () => {
+    await new Promise((resolve) => boot.server.close(resolve));
+    auditLogUsecase.appendAuditLog = prevAppendAuditLog;
+    restoreAdminStub();
+    clearDbForTest();
+    clearServerTimestampForTest();
+    restoreEnv();
+  });
+
+  const postRes = await httpRequest({
+    port: boot.port,
+    method: 'POST',
+    path: '/track/click',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deliveryId: delivery.id, linkRegistryId: 'l1' }),
+    timeoutMs: 300
+  });
+  assert.equal(postRes.status, 302);
+  assert.equal(postRes.headers.location, 'https://example.com');
+
+  const getRes = await httpRequest({
+    port: boot.port,
+    method: 'GET',
+    path: `/t/${encodeURIComponent(token)}`,
+    timeoutMs: 300
+  });
+  assert.equal(getRes.status, 302);
+  assert.equal(getRes.headers.location, 'https://example.com');
 });
 
 test('phase675: track audit enqueue failure emits observable detection log', async (t) => {
