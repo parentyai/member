@@ -68,6 +68,14 @@
 3) 成功後に `GET /api/admin/ops-system-snapshot` と `GET /api/admin/ops-feature-catalog-status` を再確認  
 4) `GET /api/admin/ops-feature-catalog-status` の応答で `warnings=["ROW_DOCS_UNAVAILABLE"]` が返る場合は、Feature Catalogは `catalog.rows` で継続表示中（`rowSource="catalog"`）と判断する。Firestore index/権限を復旧後に再確認する。
 
+### Retry Queue（pending滞留）の解消手順
+1) `GET /api/phase73/retry-queue?limit=200` で `PENDING` 一覧を取得  
+2) 各 `queueId` で `POST /api/phase73/retry-queue/plan` を実行して `planHash` / `confirmToken` を取得  
+3) 再送しない判断の場合は `POST /api/phase73/retry-queue/give-up` を実行  
+   - body: `{"queueId":"...","planHash":"...","confirmToken":"...","reason":"manual_cleanup"}`  
+4) `GET /api/admin/ops-feature-catalog-status` を再取得し、`delivery_results` の `pendingCount` 減少を確認  
+5) 停止が必要な場合は `ENABLE_RETRY_QUEUE_GIVEUP_V1=0` で導線を即時停止する。
+
 ### internal job（5分 cadence）
 - route: `POST /internal/jobs/ops-snapshot-build`
 - body 例: `{"targets":["ops_system_snapshot"],"dryRun":false,"scanLimit":3000}`

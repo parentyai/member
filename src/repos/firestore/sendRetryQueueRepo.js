@@ -71,10 +71,32 @@ async function markFailed(id, error) {
   return { id, status: 'PENDING' };
 }
 
+async function markGivenUp(id, params) {
+  if (!id) throw new Error('queueId required');
+  const payload = params && typeof params === 'object' ? params : {};
+  const reason = typeof payload.reason === 'string' && payload.reason.trim()
+    ? payload.reason.trim()
+    : 'manual_give_up';
+  const resolvedBy = typeof payload.actor === 'string' && payload.actor.trim()
+    ? payload.actor.trim()
+    : 'unknown';
+  const resolvedAt = payload.resolvedAt || resolveTimestamp();
+  const db = getDb();
+  await db.collection(COLLECTION).doc(id).set({
+    status: 'GAVE_UP',
+    giveUpReason: reason,
+    resolvedBy,
+    resolvedAt,
+    updatedAt: resolveTimestamp()
+  }, { merge: true });
+  return { id, status: 'GAVE_UP' };
+}
+
 module.exports = {
   enqueueFailure,
   getQueueItem,
   listPending,
   markDone,
-  markFailed
+  markFailed,
+  markGivenUp
 };
