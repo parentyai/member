@@ -194,9 +194,9 @@ function resolveLatestModeByRoute(cacheMap, routeKey, fallbackMode) {
 }
 
 async function getPublicWriteSafetySnapshot(routeKey) {
-  const db = getDb();
-  const docRef = db.collection(COLLECTION).doc(DOC_ID);
   try {
+    const db = getDb();
+    const docRef = db.collection(COLLECTION).doc(DOC_ID);
     const snap = await docRef.get();
     const data = snap.exists ? (snap.data() || {}) : {};
     const killSwitchOn = Boolean(data.killSwitch);
