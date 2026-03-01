@@ -73,10 +73,16 @@ async function handleOpsFeatureCatalogStatus(req, res) {
   }
 
   try {
-    const [catalogDoc, rowDocs] = await Promise.all([
-      opsSnapshotsRepo.getSnapshot('ops_feature_status', 'catalog'),
-      opsSnapshotsRepo.listSnapshots({ snapshotType: 'ops_feature_status', limit: 250 })
-    ]);
+    const catalogDoc = await opsSnapshotsRepo.getSnapshot('ops_feature_status', 'catalog');
+    let rowDocs = [];
+    let rowDocsFailed = false;
+    try {
+      rowDocs = await opsSnapshotsRepo.listSnapshots({ snapshotType: 'ops_feature_status', limit: 250 });
+    } catch (rowErr) {
+      rowDocsFailed = true;
+      logRouteError('admin.ops_feature_catalog_status.list', rowErr, { actor, traceId, requestId });
+      rowDocs = [];
+    }
 
     const catalogData = catalogDoc && catalogDoc.data && typeof catalogDoc.data === 'object'
       ? catalogDoc.data
@@ -86,6 +92,10 @@ async function handleOpsFeatureCatalogStatus(req, res) {
       .filter((row) => row && row.snapshotKey !== 'catalog')
       .map((row) => normalizeRow(row));
     const rows = sortRows(rowsFromCatalog.length ? rowsFromCatalog : rowsFromDocs);
+    const rowSource = rowsFromCatalog.length ? 'catalog' : 'docs';
+    const warnings = rowDocsFailed
+      ? ['ROW_DOCS_UNAVAILABLE']
+      : [];
     const catalog = catalogData
       ? Object.assign({}, catalogData, {
           updatedAt: normalizeTimestamp(catalogDoc.updatedAt),
@@ -103,7 +113,9 @@ async function handleOpsFeatureCatalogStatus(req, res) {
         requestId: requestId || undefined,
         payloadSummary: {
           available: Boolean(catalog),
-          rowCount: rows.length
+          rowCount: rows.length,
+          rowSource,
+          rowDocsFailed
         }
       });
     } catch (auditErr) {
@@ -118,7 +130,9 @@ async function handleOpsFeatureCatalogStatus(req, res) {
       source: 'snapshot',
       available: Boolean(catalog || rows.length),
       catalog,
-      rows
+      rows,
+      rowSource,
+      warnings
     }));
   } catch (err) {
     logRouteError('admin.ops_feature_catalog_status.view', err, { actor, traceId, requestId });
@@ -130,4 +144,3 @@ async function handleOpsFeatureCatalogStatus(req, res) {
 module.exports = {
   handleOpsFeatureCatalogStatus
 };
-

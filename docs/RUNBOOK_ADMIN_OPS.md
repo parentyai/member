@@ -66,6 +66,7 @@
 1) UI: `Snapshot手動再計算` ボタン  
 2) API: `POST /api/admin/ops-system-snapshot/rebuild`  
 3) 成功後に `GET /api/admin/ops-system-snapshot` と `GET /api/admin/ops-feature-catalog-status` を再確認  
+4) `GET /api/admin/ops-feature-catalog-status` の応答で `warnings=["ROW_DOCS_UNAVAILABLE"]` が返る場合は、Feature Catalogは `catalog.rows` で継続表示中（`rowSource="catalog"`）と判断する。Firestore index/権限を復旧後に再確認する。
 
 ### internal job（5分 cadence）
 - route: `POST /internal/jobs/ops-snapshot-build`
@@ -107,6 +108,16 @@
   - `Database not found` の場合は Console URL の databaseId が `-default-` か確認
   - 上記で解消しない場合のみ `gcloud auth application-default login` を再実行（ADCフォールバック）
 
+### SA鍵発行不可プロファイル（ADC-only）
+- 前提: 組織ポリシーによりローカルSA鍵の新規発行が不可。
+- local 実行時は `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0` を既定運用とし、ADCで preflight probe を継続する。
+- 実行例:
+  - `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0 npm run admin:preflight`
+  - `unset GOOGLE_APPLICATION_CREDENTIALS`
+  - `gcloud auth application-default login`
+  - `gcloud auth application-default print-access-token`
+  - `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0 npm run admin:preflight`
+
 ### strict SA policy の緊急退避（ロールバック）
 - 既定（推奨）: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=1`
 - 緊急時のみ一時退避: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0`
@@ -115,6 +126,17 @@
 - SA自動適用の停止（必要時のみ）: `ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1=0`
   - 既定ON時は `GOOGLE_APPLICATION_CREDENTIALS` 未設定でも既定パス探索で鍵を自動適用する
   - 固定パスを使う場合は `ADMIN_LOCAL_PREFLIGHT_SA_KEY_PATH=/absolute/path/to/member-dev-sa.json` を設定する
+
+### ダッシュボード12カードのローカル初期化（seed）
+- 目的: `NOT AVAILABLE` 固定の切り分けのため、非prod環境で最小データを投入する。
+- 実行:
+  1) `npm run seed:trial -- --users 240 --kind dashboard12`
+  2) 標準出力 JSON の `seedRunId` を控える（運用記録に保存）
+  3) `/admin/app?pane=home` で12カード表示を再確認
+- 巻き戻し:
+  - `SEED_RUN_ID=<控えたseedRunId>`
+  - `npm run seed:purge -- --seedRunId "$SEED_RUN_ID" --confirm SEED_DELETE`
+- 注意: `seed:trial` / `seed:purge` は `ENV_NAME=prod|production` では実行不可（安全ガード）。
 
 ### Phase21系の注意（挙動変更なし）
 - `node scripts/phase21_verify_day_window.js` は `GOOGLE_APPLICATION_CREDENTIALS` を既定で拒否する契約（`--allow-gac` 未指定時）。
@@ -194,12 +216,15 @@
 5) preflight が復旧したら Dashboard / Alerts などの初期ロードは自動再開される
 
 補足:
-- preflight未復旧時は degraded モードになり、Dashboard KPIは `BLOCKED` 表示になる。
+- 既定（`ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=0`）では、preflight未復旧でもデータロードは継続し、バナー警告のみ表示する。
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=1` の場合のみ degraded モードで Dashboard KPI を `BLOCKED` 表示にする。
 - preflight異常時は汎用ガードバナーを重複表示しない。
 
 ### フラグ
 - `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=1`（既定）: UIバナーで原因/影響/操作を表示
 - `ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=0`: 診断経路を停止（既存挙動へ復帰）
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=0`（既定）: preflight未復旧でもデータロードは停止しない
+- `ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=1`: 旧互換。preflight未復旧時は degraded + `BLOCKED` 表示
 
 ### nav回帰インシデント手順（追加）
 1) `/admin/app?pane=home&role=operator|admin|developer` で3ロールを確認。  

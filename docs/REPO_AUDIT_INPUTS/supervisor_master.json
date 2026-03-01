@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T08:10:37-05:00",
-  "gitCommit": "fd416f8fa02e9c5fcec56da1240dbed76a80abc6",
-  "branch": "codex/p0-local-preflight-auto-sa-fallback-v1",
-  "sourceDigest": "5cd60c2eccd263e36225a37482816966618a95a9e8ed0509e9047a4e0f213fc6",
+  "generatedAt": "2026-03-01T08:43:17-05:00",
+  "gitCommit": "eda61692bb07a9c1f9e6e4ae22c71bd6ced985f9",
+  "branch": "codex/feature-catalog-visibility",
+  "sourceDigest": "d3cd210f32a0591797f691f56d58d4e277f0246623a4d691e5b9da1bf1d4952f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

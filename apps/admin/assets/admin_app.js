@@ -69,6 +69,10 @@ const ADMIN_LOCAL_PREFLIGHT_ENABLED = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1 : null,
   true
 );
+const ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1 : null,
+  false
+);
 const ADMIN_NO_COLLAPSE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_NO_COLLAPSE_V1 : null,
   true
@@ -247,7 +251,11 @@ const state = {
   navPolicyHashApp: null,
   opsSystemSnapshot: null,
   opsFeatureCatalogStatus: null,
-  opsFeatureRows: []
+  opsFeatureRows: [],
+  opsFeatureCatalogRowSource: null,
+  opsFeatureCatalogWarnings: [],
+  opsFeatureCatalogLoadError: false,
+  opsFeatureCatalogLoadMessage: null
 };
 
 const LOCAL_PREFLIGHT_CODE_SET = new Set([
@@ -430,6 +438,9 @@ const OPS_ONLY_BASE_GROUPS = Object.freeze(['dashboard', 'run', 'control']);
 
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
 const DASHBOARD_DEFAULT_WINDOW = 1;
+const DASHBOARD_FALLBACK_MODE_ALLOW = 'allow';
+const DASHBOARD_FALLBACK_MODE_BLOCK = 'block';
+const DASHBOARD_FALLBACK_MODE_DEFAULT = DASHBOARD_FALLBACK_MODE_ALLOW;
 const POLICY_INTENT_ALIASES = Object.freeze({
   next_action: 'next_action_generation'
 });
@@ -988,6 +999,7 @@ function isLocalPreflightCode(code) {
 function isLocalPreflightBlockingDataLoads() {
   return Boolean(
     ADMIN_LOCAL_PREFLIGHT_ENABLED
+    && ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1
     && state.localPreflight
     && state.localPreflight.ready === false
   );
@@ -1005,7 +1017,11 @@ function applyRecoveryUxFromPreflight(payload) {
   const commands = Array.isArray(summary.recoveryCommands)
     ? summary.recoveryCommands.map((entry) => String(entry || '').trim()).filter((entry) => entry)
     : [];
-  const blocked = source.ready === false;
+  const blocked = Boolean(
+    ADMIN_LOCAL_PREFLIGHT_ENABLED
+    && ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1
+    && source.ready === false
+  );
   state.recoveryUx = Object.assign({}, state.recoveryUx, {
     mode: blocked ? 'degraded' : 'normal',
     blockingReasonCode: blocked ? String(summary.code || 'LOCAL_PREFLIGHT_NOT_READY') : null,
@@ -1489,9 +1505,20 @@ function renderOpsFeatureCatalogRows() {
   const catalog = state.opsFeatureCatalogStatus && typeof state.opsFeatureCatalogStatus === 'object'
     ? state.opsFeatureCatalogStatus
     : null;
+  const rowSource = typeof state.opsFeatureCatalogRowSource === 'string' && state.opsFeatureCatalogRowSource
+    ? state.opsFeatureCatalogRowSource
+    : '-';
+  const warnings = Array.isArray(state.opsFeatureCatalogWarnings)
+    ? state.opsFeatureCatalogWarnings.map((entry) => String(entry || '').trim()).filter((entry) => entry)
+    : [];
+  const warningText = warnings.length ? warnings.join(', ') : '-';
+  const loadError = state.opsFeatureCatalogLoadError === true;
+  const loadMessage = typeof state.opsFeatureCatalogLoadMessage === 'string' && state.opsFeatureCatalogLoadMessage.trim()
+    ? state.opsFeatureCatalogLoadMessage.trim()
+    : 'Feature Catalog statusの取得に失敗しました';
 
   if (!rows.length) {
-    summaryEl.textContent = 'Feature Catalog snapshot未取得';
+    summaryEl.textContent = loadError ? loadMessage : 'Feature Catalog snapshot未取得';
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 6;
@@ -1505,7 +1532,7 @@ function renderOpsFeatureCatalogRows() {
   const updatedAt = catalog && (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
     ? (catalog.lastUpdatedAt || catalog.updatedAt || catalog.asOf)
     : null;
-  summaryEl.textContent = `rows=${rows.length} / ok=${Number(counts.ok || 0)} / warn=${Number(counts.warn || 0)} / alert=${Number(counts.alert || 0)} / unknown=${Number(counts.unknown || 0)} / updated=${formatDateLabel(updatedAt)}`;
+  summaryEl.textContent = `rows=${rows.length} / source=${rowSource} / warnings=${warningText} / ok=${Number(counts.ok || 0)} / warn=${Number(counts.warn || 0)} / alert=${Number(counts.alert || 0)} / unknown=${Number(counts.unknown || 0)} / updated=${formatDateLabel(updatedAt)}`;
 
   rows.forEach((item) => {
     const row = item && typeof item === 'object' ? item : {};
@@ -1695,6 +1722,10 @@ async function loadOpsFeatureCatalogStatus(options) {
   if (!isOpsRealtimeSnapshotEnabled()) {
     state.opsFeatureCatalogStatus = null;
     state.opsFeatureRows = [];
+    state.opsFeatureCatalogRowSource = null;
+    state.opsFeatureCatalogWarnings = [];
+    state.opsFeatureCatalogLoadError = false;
+    state.opsFeatureCatalogLoadMessage = null;
     renderOpsFeatureCatalogRows();
     return { ok: true, skipped: true };
   }
@@ -1708,6 +1739,10 @@ async function loadOpsFeatureCatalogStatus(options) {
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'feature catalog status load failed');
     state.opsFeatureCatalogStatus = data.catalog && typeof data.catalog === 'object' ? data.catalog : null;
     state.opsFeatureRows = Array.isArray(data.rows) ? data.rows : [];
+    state.opsFeatureCatalogRowSource = data && typeof data.rowSource === 'string' ? data.rowSource : null;
+    state.opsFeatureCatalogWarnings = Array.isArray(data && data.warnings) ? data.warnings : [];
+    state.opsFeatureCatalogLoadError = false;
+    state.opsFeatureCatalogLoadMessage = null;
     syncOpsPaneUpdatedAt(state.opsSystemSnapshot, state.opsFeatureCatalogStatus);
     renderOpsFeatureCatalogRows();
     renderOpsHomeDashboard();
@@ -1716,6 +1751,12 @@ async function loadOpsFeatureCatalogStatus(options) {
   } catch (_err) {
     state.opsFeatureCatalogStatus = null;
     state.opsFeatureRows = [];
+    state.opsFeatureCatalogRowSource = null;
+    state.opsFeatureCatalogWarnings = [];
+    state.opsFeatureCatalogLoadError = true;
+    state.opsFeatureCatalogLoadMessage = _err && _err.message
+      ? `Feature Catalog statusの取得に失敗しました (${String(_err.message)})`
+      : 'Feature Catalog statusの取得に失敗しました';
     renderOpsFeatureCatalogRows();
     renderOpsHomeDashboard();
     if (notify) showToast('Feature Catalog statusの取得に失敗しました', 'danger');
@@ -3822,6 +3863,17 @@ function renderDashboardJourneyKpi() {
   if (rawEl) rawEl.textContent = JSON.stringify(payload, null, 2);
 }
 
+function resolveDashboardFallbackMode() {
+  if (typeof globalThis === 'undefined' || !globalThis.location || typeof globalThis.location.search !== 'string') {
+    return DASHBOARD_FALLBACK_MODE_DEFAULT;
+  }
+  const params = new URLSearchParams(globalThis.location.search);
+  const raw = String(params.get('dashboardFallbackMode') || '').trim().toLowerCase();
+  if (raw === DASHBOARD_FALLBACK_MODE_BLOCK) return DASHBOARD_FALLBACK_MODE_BLOCK;
+  if (raw === DASHBOARD_FALLBACK_MODE_ALLOW) return DASHBOARD_FALLBACK_MODE_ALLOW;
+  return DASHBOARD_FALLBACK_MODE_DEFAULT;
+}
+
 async function loadDashboardJourneyKpi(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const notify = opts.notify === true;
@@ -3843,8 +3895,9 @@ async function loadDashboardJourneyKpi(options) {
 async function fetchDashboardKpiByMonths(windowMonths, traceId) {
   const key = String(normalizeDashboardWindow(windowMonths));
   if (state.dashboardCacheByMonths[key]) return state.dashboardCacheByMonths[key];
+  const fallbackMode = resolveDashboardFallbackMode();
   const res = await fetch(
-    `/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(key)}&fallbackMode=block`,
+    `/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(key)}&fallbackMode=${encodeURIComponent(fallbackMode)}&fallbackOnEmpty=true`,
     { headers: buildHeaders({}, traceId) }
   );
   const data = await readJsonResponse(res);
@@ -3945,6 +3998,7 @@ async function loadDashboardKpis(options) {
     return;
   }
   const traceId = ensureTraceInput('traceId') || newTraceId();
+  await loadDashboardJourneyKpi({ notify: false });
   const monthsNeeded = Array.from(new Set(Object.keys(DASHBOARD_CARD_CONFIG).map((metricKey) => getDashboardWindowMonths(metricKey))));
   let failed = false;
   for (const months of monthsNeeded) {
@@ -3958,7 +4012,6 @@ async function loadDashboardKpis(options) {
   const defaultWindow = normalizeDashboardWindow(document.getElementById('dashboard-window-months')?.value || DASHBOARD_DEFAULT_WINDOW);
   state.dashboardKpis = resolveDashboardPayload(defaultWindow)?.kpis || null;
   renderDashboardKpis();
-  await loadDashboardJourneyKpi({ notify: false });
   if (failed) {
     renderDataLoadFailureGuard('dashboard_kpi_failed', new Error('dashboard kpi failed'));
   }
