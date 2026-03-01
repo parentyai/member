@@ -8,7 +8,7 @@ const { getPublicWriteSafetySnapshot } = require('../../repos/firestore/systemFl
 
 const LEGACY_SUNSET = 'Wed, 30 Sep 2026 00:00:00 GMT';
 const LEGACY_SUCCESSOR = '/api/admin/os/notifications/list';
-const ROUTE_KEY = 'legacy_phase1_notifications';
+const ROUTE_KEY = 'legacy_p1_notif';
 
 function isLegacyRouteFreezeEnabled() {
   const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
