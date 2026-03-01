@@ -4,11 +4,16 @@ const assert = require('assert');
 const fs = require('fs');
 const { test } = require('node:test');
 
-test('phase311: developer matrix render uses scenario-step cells with count and state labels', () => {
+test('phase311: developer matrix render uses scenario-step cells with count/state and notification entity details', () => {
   const js = fs.readFileSync('apps/admin/assets/admin_app.js', 'utf8');
   assert.ok(js.includes("'/api/admin/os/notifications/list?limit=500'"));
+  assert.ok(js.includes("'/admin/read-model/notifications?limit=500'"));
   assert.ok(js.includes("ui.label.repoMap.matrix.notifications"));
   assert.ok(js.includes("ui.label.repoMap.matrix.states"));
+  assert.ok(js.includes('planHash='));
+  assert.ok(js.includes('lastExecution='));
+  assert.ok(js.includes('trigger=UNKNOWN / order=UNKNOWN'));
+  assert.ok(js.includes('executeConfirm=planHash+confirmToken'));
   assert.ok(js.includes('function mergeNotificationMatrixFromItems'));
 
   const repoMap = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/repo_map_ui.json', 'utf8'));

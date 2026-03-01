@@ -81,6 +81,12 @@ function normalizeNotificationMeta(meta) {
   return Object.keys(out).length ? out : null;
 }
 
+function createStatusError(message, statusCode) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
 function normalizeCityPackFallback(payload) {
   const raw = payload && payload.cityPackFallback && typeof payload.cityPackFallback === 'object'
     ? payload.cityPackFallback
@@ -130,6 +136,14 @@ async function createNotification(data) {
   const sourceRefs = normalizeStringArray(payload.sourceRefs);
   const notificationType = normalizeNotificationType(payload.notificationType);
   const notificationMeta = normalizeNotificationMeta(payload.notificationMeta);
+  if (notificationType === 'VENDOR') {
+    const vendorId = notificationMeta && typeof notificationMeta.vendorId === 'string'
+      ? notificationMeta.vendorId.trim()
+      : '';
+    if (!vendorId) {
+      throw createStatusError('notificationMeta.vendorId required', 422);
+    }
+  }
 
   const record = {
     title: payload.title,

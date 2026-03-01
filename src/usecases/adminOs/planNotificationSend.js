@@ -142,6 +142,7 @@ async function planNotificationSend(params, deps) {
       notificationId,
       stateFrom: status,
       stateTo: 'planned',
+      checkedAt: serverTime,
       count: lineUserIds.length,
       planHash,
       bucket,

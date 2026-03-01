@@ -18,8 +18,8 @@
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackReviewInbox.js` | 132 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/notifications.js` | 120 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/notifications.js` | 172 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 126 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 178 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 201 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
@@ -51,7 +51,7 @@
 | `src/routes/webhookLine.js` | 750 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 751 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
-| `src/usecases/adminOs/executeNotificationSend.js` | 205 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/adminOs/executeNotificationSend.js` | 208 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `: systemFlagsRepo.getKillSwitch;` |

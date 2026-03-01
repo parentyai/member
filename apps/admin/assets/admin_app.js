@@ -2864,6 +2864,66 @@ function renderRepoMapCategories(categories) {
   });
 }
 
+function buildRepoMapMatrixResultLabel(readModelRow) {
+  const row = readModelRow && typeof readModelRow === 'object' ? readModelRow : null;
+  if (!row) return t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+  const health = typeof row.notificationHealth === 'string' ? row.notificationHealth : '-';
+  const deliveredCount = Number.isFinite(Number(row.deliveredCount)) ? Number(row.deliveredCount) : 0;
+  const clickCount = Number.isFinite(Number(row.clickCount)) ? Number(row.clickCount) : 0;
+  const ctrRaw = row.reactionSummary && Number.isFinite(Number(row.reactionSummary.ctr))
+    ? Number(row.reactionSummary.ctr)
+    : null;
+  const ctr = ctrRaw === null ? '-' : `${Math.round(ctrRaw * 1000) / 10}%`;
+  return `${health} / delivered=${deliveredCount} / click=${clickCount} / ctr=${ctr}`;
+}
+
+function buildRepoMapMatrixActionState(status, planHash) {
+  const normalized = normalizeComposerSavedStatus(status);
+  const approve = normalized === 'draft';
+  const plan = normalized === 'approved' || normalized === 'planned';
+  const execute = plan && Boolean(planHash);
+  return {
+    draft: true,
+    preview: true,
+    approve,
+    plan,
+    execute
+  };
+}
+
+function formatRepoMapMatrixTarget(target) {
+  const row = target && typeof target === 'object' ? target : {};
+  const region = typeof row.region === 'string' && row.region.trim() ? row.region.trim() : '-';
+  const limit = Number.isFinite(Number(row.limit)) ? Math.floor(Number(row.limit)) : '-';
+  const membersOnly = row.membersOnly === true ? 'Y' : 'N';
+  return `region=${region}, limit=${limit}, membersOnly=${membersOnly}`;
+}
+
+function renderRepoMapMatrixEntry(cellEl, entry) {
+  const block = document.createElement('div');
+  block.className = 'cell-muted';
+  const title = document.createElement('div');
+  title.textContent = `${entry.notificationId || '-'} | ${entry.title || '-'}`;
+  block.appendChild(title);
+  const statusLine = document.createElement('div');
+  statusLine.textContent = `type=${entry.type || '-'} status=${entry.status || '-'}`;
+  block.appendChild(statusLine);
+  const targetLine = document.createElement('div');
+  targetLine.textContent = `target(${formatRepoMapMatrixTarget(entry.target)})`;
+  block.appendChild(targetLine);
+  const resultLine = document.createElement('div');
+  resultLine.textContent = `planHash=${entry.planHash || '-'} / lastExecution=${entry.lastExecution || '-'} / result=${entry.result || '-'}`;
+  block.appendChild(resultLine);
+  const actions = entry.actions && typeof entry.actions === 'object' ? entry.actions : {};
+  const actionLine = document.createElement('div');
+  actionLine.textContent = `actions[draft=${actions.draft ? 'Y' : 'N'},preview=${actions.preview ? 'Y' : 'N'},approve=${actions.approve ? 'Y' : 'N'},plan=${actions.plan ? 'Y' : 'N'},execute=${actions.execute ? 'Y' : 'N'}] / guard=actor+trace / executeConfirm=planHash+confirmToken`;
+  block.appendChild(actionLine);
+  const unknownLine = document.createElement('div');
+  unknownLine.textContent = 'trigger=UNKNOWN / order=UNKNOWN';
+  block.appendChild(unknownLine);
+  cellEl.appendChild(block);
+}
+
 function renderRepoMapMatrix(matrix) {
   const head = document.getElementById('repo-map-matrix-head');
   const body = document.getElementById('repo-map-matrix-rows');
@@ -2907,7 +2967,27 @@ function renderRepoMapMatrix(matrix) {
       } else {
         const count = Number.isFinite(Number(cell.notificationCount)) ? Number(cell.notificationCount) : 0;
         const states = cell.states && typeof cell.states === 'object' ? cell.states : {};
-        td.textContent = `${t('ui.label.repoMap.matrix.notifications', '通知数')}: ${count} / ${t('ui.label.repoMap.matrix.states', '状態')}: ${Number(states.draft || 0)}/${Number(states.active || 0)}/${Number(states.sent || 0)}`;
+        const summary = document.createElement('div');
+        summary.className = 'cell-muted';
+        summary.textContent = `${t('ui.label.repoMap.matrix.notifications', '通知数')}: ${count} / ${t('ui.label.repoMap.matrix.states', '状態')}: ${Number(states.draft || 0)}/${Number(states.active || 0)}/${Number(states.sent || 0)}`;
+        td.appendChild(summary);
+
+        const entries = Array.isArray(cell.entries) ? cell.entries : [];
+        if (!entries.length) {
+          const empty = document.createElement('div');
+          empty.className = 'cell-muted';
+          empty.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
+          td.appendChild(empty);
+        } else {
+          const maxRows = 5;
+          entries.slice(0, maxRows).forEach((entry) => renderRepoMapMatrixEntry(td, entry));
+          if (entries.length > maxRows) {
+            const remain = document.createElement('div');
+            remain.className = 'cell-muted';
+            remain.textContent = `... ${entries.length - maxRows} more`;
+            td.appendChild(remain);
+          }
+        }
       }
       tr.appendChild(td);
     });
@@ -2973,12 +3053,19 @@ async function loadLegacyStatus(options) {
   }
 }
 
-function mergeNotificationMatrixFromItems(baseMatrix, items) {
+function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
   const matrix = baseMatrix && typeof baseMatrix === 'object' ? JSON.parse(JSON.stringify(baseMatrix)) : { scenarios: [], steps: [], cells: [] };
   const cells = Array.isArray(matrix.cells) ? matrix.cells : [];
+  const readModelIndex = new Map();
+  (Array.isArray(readModelItems) ? readModelItems : []).forEach((entry) => {
+    const key = entry && typeof entry.notificationId === 'string' ? entry.notificationId : '';
+    if (!key) return;
+    readModelIndex.set(key, entry);
+  });
   const index = new Map();
   cells.forEach((cell) => {
     const key = `${cell.scenarioKey || ''}::${cell.stepKey || ''}`;
+    cell.entries = Array.isArray(cell.entries) ? cell.entries : [];
     index.set(key, cell);
   });
   (items || []).forEach((item) => {
@@ -2992,6 +3079,7 @@ function mergeNotificationMatrixFromItems(baseMatrix, items) {
         stepKey,
         notificationCount: 0,
         states: { draft: 0, active: 0, sent: 0 },
+        entries: [],
         note: 'OK'
       };
       cells.push(next);
@@ -3005,6 +3093,20 @@ function mergeNotificationMatrixFromItems(baseMatrix, items) {
     if (status === 'draft') target.states.draft = Number(target.states.draft || 0) + 1;
     else if (status === 'active') target.states.active = Number(target.states.active || 0) + 1;
     else if (status === 'sent') target.states.sent = Number(target.states.sent || 0) + 1;
+    const notificationId = item && typeof item.id === 'string' ? item.id : '';
+    const readModelRow = notificationId ? readModelIndex.get(notificationId) : null;
+    const entry = {
+      notificationId: notificationId || null,
+      title: item && typeof item.title === 'string' ? item.title : null,
+      type: normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP'),
+      status: normalizeComposerSavedStatus(status || 'draft'),
+      target: item && item.target && typeof item.target === 'object' ? item.target : null,
+      planHash: item && typeof item.planHash === 'string' && item.planHash.trim() ? item.planHash.trim() : null,
+      lastExecution: readModelRow && typeof readModelRow.lastSentAt === 'string' ? readModelRow.lastSentAt : null,
+      result: buildRepoMapMatrixResultLabel(readModelRow)
+    };
+    entry.actions = buildRepoMapMatrixActionState(entry.status, entry.planHash);
+    target.entries.push(entry);
     target.note = 'OK';
   });
   matrix.cells = cells;
@@ -3013,13 +3115,22 @@ function mergeNotificationMatrixFromItems(baseMatrix, items) {
 
 async function loadNotificationMatrixOverlay() {
   const traceId = newTraceId();
-  const res = await fetch('/api/admin/os/notifications/list?limit=500', {
-    headers: buildHeaders({}, traceId)
-  });
-  const data = await readJsonResponse(res);
-  if (!data || data.ok !== true) throw new Error((data && data.error) || 'notification matrix load failed');
-  const items = Array.isArray(data.items) ? data.items : [];
-  return mergeNotificationMatrixFromItems(state.repoMap && state.repoMap.scenarioStepMatrix, items);
+  const [listRes, readModelRes] = await Promise.all([
+    fetch('/api/admin/os/notifications/list?limit=500', {
+      headers: buildHeaders({}, traceId)
+    }),
+    fetch('/admin/read-model/notifications?limit=500', {
+      headers: buildHeaders({}, traceId)
+    })
+  ]);
+  const listData = await readJsonResponse(listRes);
+  if (!listData || listData.ok !== true) throw new Error((listData && listData.error) || 'notification matrix load failed');
+  const readModelData = await readJsonResponse(readModelRes).catch(() => ({ ok: false, items: [] }));
+  const items = Array.isArray(listData.items) ? listData.items : [];
+  const readItems = readModelData && readModelData.ok === true && Array.isArray(readModelData.items)
+    ? readModelData.items
+    : [];
+  return mergeNotificationMatrixFromItems(state.repoMap && state.repoMap.scenarioStepMatrix, items, readItems);
 }
 
 function renderRepoMapCommunication(layers) {
@@ -11516,6 +11627,14 @@ function renderComposerLivePreview() {
   }
 }
 
+function renderComposerCta2Notice() {
+  const noticeEl = document.getElementById('composer-cta2-notice');
+  if (!noticeEl) return;
+  const cta2 = document.getElementById('ctaText2')?.value?.trim() || '';
+  noticeEl.textContent = t('ui.desc.composer.cta2.notice', 'CTA2はプレビュー専用です。保存・送信には使われません。');
+  noticeEl.classList.toggle('admin-guard-text-danger', Boolean(cta2));
+}
+
 function buildComposerLocalSafetyIssues(payload) {
   const issues = [];
   if (state.composerKillSwitch) {
@@ -11582,6 +11701,7 @@ function updateComposerSummary() {
   applyComposerTypeFields();
   updateComposerStatusPill();
   renderComposerLivePreview();
+  renderComposerCta2Notice();
   const payload = buildDraftPayload();
   const issues = buildComposerLocalSafetyIssues(payload);
   renderComposerSafety(issues);
