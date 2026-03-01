@@ -20,6 +20,7 @@ test('phase671: docs include ops-only nav and realtime snapshot contracts', () =
   assert.ok(ssot.includes('/api/admin/ops-feature-catalog-status'));
   assert.ok(ssot.includes('ENABLE_ADMIN_OPS_ONLY_NAV_V1'));
   assert.ok(ssot.includes('ENABLE_ADMIN_DEVELOPER_SURFACE_V1'));
+  assert.ok(ssot.includes('ENABLE_ADMIN_LEGACY_STATUS_V1'));
   assert.ok(ssot.includes('ENABLE_OPS_REALTIME_DASHBOARD_V1'));
   assert.ok(ssot.includes('ENABLE_OPS_SYSTEM_SNAPSHOT_V1'));
 
@@ -27,6 +28,7 @@ test('phase671: docs include ops-only nav and realtime snapshot contracts', () =
   assert.ok(runbook.includes('/internal/jobs/ops-snapshot-build'));
   assert.ok(runbook.includes('targets":["ops_system_snapshot"]'));
   assert.ok(runbook.includes('/api/admin/ops-system-snapshot/rebuild'));
+  assert.ok(runbook.includes('ENABLE_ADMIN_LEGACY_STATUS_V1=1'));
 
   assert.ok(indexRequirements.includes('Phase671 Addendum（Ops Snapshot Read Model）'));
   assert.ok(indexRequirements.includes('ops_read_model_snapshots'));
