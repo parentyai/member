@@ -10,6 +10,8 @@ test('phase272: composer danger actions require confirm and keep trace-aware cal
   assert.ok(js.includes("window.confirm(t('ui.confirm.composer.approve'"));
   assert.ok(js.includes("window.confirm(t('ui.confirm.composer.execute'"));
   assert.ok(js.includes("ensureTraceInput('traceId')"));
+  assert.ok(js.includes('const draftPayload = buildDraftPayload();'));
+  assert.ok(js.includes('const validationError = validateComposerPayload(draftPayload);'));
   assert.ok(js.includes("postJson('/api/admin/os/notifications/approve'"));
   assert.ok(js.includes("postJson('/api/admin/os/notifications/send/execute'"));
 });

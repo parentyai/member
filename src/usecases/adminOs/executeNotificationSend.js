@@ -114,6 +114,7 @@ async function executeNotificationSend(params, deps) {
 
   const target = notification.target && typeof notification.target === 'object' ? notification.target : {};
   const limit = typeof target.limit === 'number' ? target.limit : null;
+  const region = typeof target.region === 'string' ? target.region.trim() : '';
   if (!limit) {
     await appendExecuteAudit({ reason: 'target_limit_required' });
     return { ok: false, reason: 'target_limit_required', traceId };
@@ -122,7 +123,7 @@ async function executeNotificationSend(params, deps) {
   const users = await usersRepo.listUsers({
     scenarioKey: notification.scenarioKey,
     stepKey: notification.stepKey,
-    region: target.region,
+    region: region || undefined,
     membersOnly: target.membersOnly,
     limit
   });

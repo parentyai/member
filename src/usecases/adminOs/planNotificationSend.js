@@ -104,11 +104,12 @@ async function planNotificationSend(params, deps) {
 
   const target = notification.target && typeof notification.target === 'object' ? notification.target : {};
   const limit = requireNumber(target.limit, 'target.limit');
+  const region = typeof target.region === 'string' ? target.region.trim() : '';
 
   const users = await usersRepo.listUsers({
     scenarioKey: notification.scenarioKey,
     stepKey: notification.stepKey,
-    region: target.region,
+    region: region || undefined,
     membersOnly: target.membersOnly,
     limit
   });

@@ -11898,6 +11898,15 @@ function setupComposerActions() {
         setComposerStatus('warn', 'WARN');
         return;
       }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      const resultEl = document.getElementById('draft-result');
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
     const confirmed = window.confirm(t('ui.confirm.composer.approve', '承認（有効化）を実行しますか？'));
     if (!confirmed) {
       showToast(t('ui.toast.composer.canceled', '操作を中止しました'), 'warn');
@@ -11934,6 +11943,14 @@ function setupComposerActions() {
       setComposerStatus('warn', 'WARN');
       return;
     }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
     const traceId = ensureTraceInput('traceId');
     const result = await postJson('/api/admin/os/notifications/send/plan', { notificationId: state.composerCurrentNotificationId }, traceId);
     if (resultEl) resultEl.textContent = JSON.stringify(result, null, 2);
@@ -11962,6 +11979,14 @@ function setupComposerActions() {
       if (!state.composerCurrentNotificationId || !state.composerCurrentPlanHash || !state.composerCurrentConfirmToken) {
         if (resultEl) resultEl.textContent = t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です');
       showToast(t('ui.toast.composer.needPlan', '計画ハッシュと確認トークンが必要です'), 'warn');
+      setComposerStatus('warn', 'WARN');
+      return;
+    }
+    const draftPayload = buildDraftPayload();
+    const validationError = validateComposerPayload(draftPayload);
+    if (validationError) {
+      if (resultEl) resultEl.textContent = validationError;
+      showToast(validationError, 'warn');
       setComposerStatus('warn', 'WARN');
       return;
     }

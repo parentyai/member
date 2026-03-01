@@ -32,6 +32,24 @@ function requireTargetLimit(payload) {
   }
 }
 
+function normalizeDraftPayload(payload) {
+  const body = payload && typeof payload === 'object' ? Object.assign({}, payload) : {};
+  const targetRaw = body.target && typeof body.target === 'object' ? Object.assign({}, body.target) : {};
+  const limit = Number(targetRaw.limit);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    throw new Error('target.limit required');
+  }
+  const target = Object.assign({}, targetRaw, { limit: Math.min(500, Math.max(1, Math.floor(limit))) });
+  if (targetRaw.region !== undefined && targetRaw.region !== null) {
+    if (typeof targetRaw.region !== 'string') throw new Error('target.region invalid');
+    const region = targetRaw.region.trim();
+    if (region) target.region = region;
+    else delete target.region;
+  }
+  body.target = target;
+  return body;
+}
+
 function summarizeComposerPayload(payload) {
   const body = payload && typeof payload === 'object' ? payload : {};
   const target = body.target && typeof body.target === 'object' ? body.target : {};
@@ -68,7 +86,8 @@ async function handleDraft(req, res, body) {
   if (!payload) return;
   try {
     requireTargetLimit(payload);
-    const created = await createNotification(Object.assign({}, payload, { createdBy: actor, status: 'draft' }));
+    const normalizedPayload = normalizeDraftPayload(payload);
+    const created = await createNotification(Object.assign({}, normalizedPayload, { createdBy: actor, status: 'draft' }));
     await appendAuditLog({
       actor,
       action: 'notifications.create',
@@ -76,7 +95,7 @@ async function handleDraft(req, res, body) {
       entityId: created.id,
       traceId,
       requestId,
-      payloadSummary: summarizeComposerPayload(payload)
+      payloadSummary: summarizeComposerPayload(normalizedPayload)
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
