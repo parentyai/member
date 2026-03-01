@@ -44,6 +44,66 @@ function resolveRequireSaKey(options) {
   return resolveBooleanFlag(envSource.ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1, defaultValue);
 }
 
+function resolveAutoSaKeyEnabled(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  if (typeof opts.autoLocalSaKey === 'boolean') return opts.autoLocalSaKey;
+  const envSource = opts.env && typeof opts.env === 'object' ? opts.env : process.env;
+  const envName = typeof envSource.ENV_NAME === 'string' ? envSource.ENV_NAME.trim().toLowerCase() : '';
+  const nodeEnv = typeof envSource.NODE_ENV === 'string' ? envSource.NODE_ENV.trim().toLowerCase() : '';
+  const defaultValue = !envName || envName === 'local' || nodeEnv === 'test';
+  return resolveBooleanFlag(envSource.ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1, defaultValue);
+}
+
+function resolveAutoSaKeyCandidates(envSource) {
+  const source = envSource && typeof envSource === 'object' ? envSource : {};
+  const explicit = typeof source.ADMIN_LOCAL_PREFLIGHT_SA_KEY_PATH === 'string'
+    ? source.ADMIN_LOCAL_PREFLIGHT_SA_KEY_PATH.trim()
+    : '';
+  const home = typeof source.HOME === 'string' ? source.HOME.trim() : '';
+  const defaults = home ? [path.join(home, '.secrets', 'member-dev-sa.json')] : [];
+  return Array.from(new Set([explicit].concat(defaults).filter((entry) => entry)));
+}
+
+function isReadableFilePath(filePath, fsSource) {
+  if (!filePath || !fsSource || typeof fsSource.statSync !== 'function') return false;
+  let stats;
+  try {
+    stats = fsSource.statSync(filePath);
+  } catch (_err) {
+    return false;
+  }
+  if (!stats || typeof stats.isFile !== 'function' || !stats.isFile()) return false;
+  if (typeof fsSource.accessSync === 'function') {
+    const readMode = fsSource.constants && Number.isFinite(fsSource.constants.R_OK)
+      ? fsSource.constants.R_OK
+      : fs.constants.R_OK;
+    try {
+      fsSource.accessSync(filePath, readMode);
+    } catch (_err) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function maybeApplyAutoLocalSaKey(env, fsApi, options) {
+  const envSource = env && typeof env === 'object' ? env : process.env;
+  const fsSource = fsApi && typeof fsApi === 'object' ? fsApi : fs;
+  const enabled = resolveAutoSaKeyEnabled({ autoLocalSaKey: options && options.autoLocalSaKey, env: envSource });
+  if (!enabled) return null;
+  const existing = typeof envSource.GOOGLE_APPLICATION_CREDENTIALS === 'string'
+    ? envSource.GOOGLE_APPLICATION_CREDENTIALS.trim()
+    : '';
+  if (existing) return null;
+  const candidates = resolveAutoSaKeyCandidates(envSource);
+  for (const candidate of candidates) {
+    if (!isReadableFilePath(candidate, fsSource)) continue;
+    envSource.GOOGLE_APPLICATION_CREDENTIALS = candidate;
+    return candidate;
+  }
+  return null;
+}
+
 function evaluateCredentialsPath(env, fsApi) {
   const envSource = env && typeof env === 'object' ? env : process.env;
   const fsSource = fsApi && typeof fsApi === 'object' ? fsApi : fs;
@@ -691,6 +751,7 @@ async function runLocalPreflight(options) {
   const probeFirestore = typeof opts.probeFirestore === 'function'
     ? opts.probeFirestore
     : probeFirestoreReadOnly;
+  const autoSaKeyPath = maybeApplyAutoLocalSaKey(env, fsApi, { autoLocalSaKey: opts.autoLocalSaKey });
   const requireSaKey = resolveRequireSaKey({ requireSaKey: opts.requireSaKey, env });
   const allowGcloudProjectIdDetect = opts.allowGcloudProjectIdDetect === true
     || (!opts.env && opts.allowGcloudProjectIdDetect !== false);
@@ -719,6 +780,7 @@ async function runLocalPreflight(options) {
     ok: true,
     ready,
     checkedAt: new Date().toISOString(),
+    autoSaKeyPath: autoSaKeyPath || null,
     checks,
     summary
   };

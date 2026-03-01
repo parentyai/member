@@ -83,6 +83,7 @@
 ## ローカル診断（Phase651）
 ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。
 方針: ローカル診断は `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1`（local既定ON）により `GOOGLE_APPLICATION_CREDENTIALS` のローカルSA鍵を必須化する。strict無効時のみ `gcloud auth application-default login` をフォールバックとして扱う。
+補助: `ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1`（local既定ON）により、`GOOGLE_APPLICATION_CREDENTIALS` が未設定でも `ADMIN_LOCAL_PREFLIGHT_SA_KEY_PATH`（任意）→ `$HOME/.secrets/member-dev-sa.json` を自動探索して適用する。
 
 ### 実行コマンド
 1) `npm run admin:preflight`  
@@ -111,6 +112,9 @@
 - 緊急時のみ一時退避: `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=0`
   - 退避後は `npm run admin:preflight` で `ADC_REAUTH_REQUIRED` など既存分類に戻ることを確認する
   - 恒久運用は必ず `ENABLE_ADMIN_LOCAL_PREFLIGHT_STRICT_SA_V1=1` に戻す
+- SA自動適用の停止（必要時のみ）: `ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1=0`
+  - 既定ON時は `GOOGLE_APPLICATION_CREDENTIALS` 未設定でも既定パス探索で鍵を自動適用する
+  - 固定パスを使う場合は `ADMIN_LOCAL_PREFLIGHT_SA_KEY_PATH=/absolute/path/to/member-dev-sa.json` を設定する
 
 ### Phase21系の注意（挙動変更なし）
 - `node scripts/phase21_verify_day_window.js` は `GOOGLE_APPLICATION_CREDENTIALS` を既定で拒否する契約（`--allow-gac` 未指定時）。

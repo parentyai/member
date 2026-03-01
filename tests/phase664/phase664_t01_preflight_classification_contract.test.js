@@ -34,6 +34,83 @@ test('phase664: local preflight requires SA key in local strict mode and skips f
   assert.equal(probeCalled, 0);
 });
 
+test('phase664: local preflight auto-applies local SA key path and avoids ADC reauth fallback noise', async () => {
+  let probeCalled = 0;
+  const env = {
+    FIRESTORE_PROJECT_ID: 'member-485303',
+    HOME: '/tmp/member-home',
+    ENV_NAME: 'local'
+  };
+  const expectedPath = '/tmp/member-home/.secrets/member-dev-sa.json';
+  const result = await runLocalPreflight({
+    env,
+    fsApi: {
+      statSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('ENOENT');
+        return { isFile: () => true };
+      },
+      accessSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('EACCES');
+      },
+      constants: { R_OK: 4 }
+    },
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+
+  assert.equal(result.ready, true);
+  assert.equal(result.autoSaKeyPath, expectedPath);
+  assert.equal(env.GOOGLE_APPLICATION_CREDENTIALS, expectedPath);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_OK');
+  assert.equal(probeCalled, 1);
+});
+
+test('phase664: local preflight can disable auto SA key fallback via flag', async () => {
+  let probeCalled = 0;
+  const env = {
+    FIRESTORE_PROJECT_ID: 'member-485303',
+    HOME: '/tmp/member-home',
+    ENV_NAME: 'local',
+    ENABLE_ADMIN_LOCAL_PREFLIGHT_AUTO_SA_V1: '0'
+  };
+  const expectedPath = '/tmp/member-home/.secrets/member-dev-sa.json';
+  const result = await runLocalPreflight({
+    env,
+    fsApi: {
+      statSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('ENOENT');
+        return { isFile: () => true };
+      },
+      accessSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('EACCES');
+      },
+      constants: { R_OK: 4 }
+    },
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+
+  assert.equal(result.ready, false);
+  assert.equal(result.autoSaKeyPath, null);
+  assert.equal(result.summary.code, 'SA_KEY_REQUIRED');
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
+  assert.equal(probeCalled, 0);
+});
+
 test('phase664: compatibility mode keeps ADC reauth classification when strict SA requirement is disabled', async () => {
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
