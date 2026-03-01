@@ -12,17 +12,28 @@ const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError
 
 function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
+  const explicitStatusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : null;
+  const traceId = context && context.traceId ? context.traceId : null;
+  const requestId = context && context.requestId ? context.requestId : null;
+  if (explicitStatusCode && explicitStatusCode >= 400 && explicitStatusCode < 500) {
+    res.writeHead(explicitStatusCode, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+    return;
+  }
   if (message.includes('required') || message.includes('invalid') || message.includes('not editable')
     || message.includes('not active') || message.includes('not found') || message.includes('no recipients')) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message }));
     return;
   }
-  const traceId = context && context.traceId ? context.traceId : null;
-  const requestId = context && context.requestId ? context.requestId : null;
   logRouteError('admin.os_notifications', err, context);
   res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
+}
+
+function addCheckedAt(summary) {
+  const base = summary && typeof summary === 'object' ? summary : {};
+  return Object.assign({}, base, { checkedAt: new Date().toISOString() });
 }
 
 function requireTargetLimit(payload) {
@@ -95,7 +106,7 @@ async function handleDraft(req, res, body) {
       entityId: created.id,
       traceId,
       requestId,
-      payloadSummary: summarizeComposerPayload(normalizedPayload)
+      payloadSummary: addCheckedAt(summarizeComposerPayload(normalizedPayload))
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, notificationId: created.id }));
@@ -120,9 +131,9 @@ async function handlePreview(req, res, body) {
       entityId: result.notificationId || 'draft',
       traceId,
       requestId,
-      payloadSummary: Object.assign(summarizeComposerPayload(payload), {
+      payloadSummary: addCheckedAt(Object.assign(summarizeComposerPayload(payload), {
         trackEnabled: Boolean(result.trackEnabled)
-      })
+      }))
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({ traceId, requestId }, result)));
@@ -156,7 +167,7 @@ async function handleApprove(req, res, body) {
       entityId: payload.notificationId,
       traceId: guardedTraceId,
       requestId,
-      payloadSummary: { status: 'active' }
+      payloadSummary: addCheckedAt({ status: 'active' })
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({ traceId: guardedTraceId, requestId }, result)));
@@ -221,10 +232,10 @@ async function handleStatus(req, res) {
       entityId: notificationId,
       traceId,
       requestId,
-      payloadSummary: {
+      payloadSummary: addCheckedAt({
         status: notification.status || null,
         notificationCategory: notification.notificationCategory || null
-      }
+      })
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
@@ -294,6 +305,7 @@ async function handleList(req, res) {
       scenarioKey: row.scenarioKey || null,
       stepKey: row.stepKey || null,
       target: row.target || null,
+      planHash: row.lastPlanHash || null,
       createdAt: row.createdAt || null,
       scheduledAt: row.scheduledAt || null
     }));
@@ -304,12 +316,12 @@ async function handleList(req, res) {
       entityId: 'list',
       traceId,
       requestId,
-      payloadSummary: {
+      payloadSummary: addCheckedAt({
         limit,
         status: normalizedStatus || null,
         scenarioKey: url.searchParams.get('scenarioKey') || null,
         stepKey: url.searchParams.get('stepKey') || null
-      }
+      })
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, items }));

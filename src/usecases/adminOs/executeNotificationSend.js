@@ -63,7 +63,10 @@ async function executeNotificationSend(params, deps) {
   }
 
   async function appendExecuteAudit(summary) {
-    const payloadSummary = Object.assign({ ok: false }, summary || {});
+    const payloadSummary = Object.assign({
+      ok: false,
+      checkedAt: new Date().toISOString()
+    }, summary || {});
     await audit({
       actor,
       action: 'notifications.send.execute',
@@ -335,6 +338,7 @@ async function executeNotificationSend(params, deps) {
       templateKey,
       payloadSummary: {
         ok: true,
+        checkedAt: new Date().toISOString(),
         deliveredCount: result.deliveredCount,
         skippedCount: result.skippedCount || 0,
         capBlockedCount,

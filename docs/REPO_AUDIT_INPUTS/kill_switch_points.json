@@ -227,22 +227,22 @@
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 120,
+      "line": 126,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 126,
+      "line": 132,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 172,
+      "line": 178,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 176,
+      "line": 182,
       "symbol": "killSwitch"
     },
     {
@@ -567,18 +567,8 @@
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 205,
+      "line": 208,
       "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 206,
-      "symbol": "killSwitch"
-    },
-    {
-      "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 207,
-      "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
@@ -587,7 +577,17 @@
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 297,
+      "line": 210,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/adminOs/executeNotificationSend.js",
+      "line": 212,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/adminOs/executeNotificationSend.js",
+      "line": 300,
       "symbol": "killSwitch"
     },
     {

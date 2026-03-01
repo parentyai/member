@@ -47,6 +47,12 @@ function parseJson(body, res) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
+  const explicitStatusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : null;
+  if (explicitStatusCode && explicitStatusCode >= 400 && explicitStatusCode < 500) {
+    res.writeHead(explicitStatusCode, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(message);
+    return;
+  }
   if (message.includes('not found')) {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('not found');
