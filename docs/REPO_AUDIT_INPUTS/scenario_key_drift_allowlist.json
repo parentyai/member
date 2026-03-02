@@ -74,6 +74,8 @@
       "src/usecases/deliveries/getNotificationDeliveries.js",
       "src/usecases/journey/handleJourneyLineCommand.js",
       "src/usecases/journey/syncJourneyTodoPlan.js",
+      "src/usecases/notifications/createNotification.js",
+      "src/usecases/notifications/createNotificationPhase1.js",
       "src/usecases/phase140/getNotificationHealthSummary.js",
       "src/usecases/phase5/getUserStateSummary.js",
       "src/usecases/tasks/runTaskNudgeJob.js",

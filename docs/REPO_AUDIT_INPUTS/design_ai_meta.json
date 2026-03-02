@@ -104,8 +104,6 @@
       "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
       "src/usecases/journey/runJourneyParamDryRun.js",
-      "src/usecases/notifications/createNotification.js",
-      "src/usecases/notifications/createNotificationPhase1.js",
       "src/usecases/notifications/sendNotification.js",
       "src/usecases/notifications/sendNotificationPhase1.js",
       "src/usecases/phase2/runAutomation.js",
