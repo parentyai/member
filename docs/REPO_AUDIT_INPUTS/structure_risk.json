@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T21:40:43.662Z",
+  "generatedAt": "2026-03-02T21:46:07.081Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "735d1b6dbf32f21af1350a9f556a88c2dd64b208d59ff33b5134cbbd51e1858d",
+  "sourceDigest": "8683d00713229fbddf5f30ca6df101031f7d0dd8a771dedd27f3e0a10f0c3fa2",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 25,
+  "naming_drift_scenarioKey_count": 23,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -113,7 +113,6 @@
       "src/repos/firestore/userJourneyProfilesRepo.js",
       "src/repos/firestore/usersPhase1Repo.js",
       "src/repos/firestore/usersRepo.js",
-      "src/usecases/admin/getUserOperationalSummary.js",
       "src/usecases/adminOs/executeNotificationSend.js",
       "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
@@ -124,7 +123,6 @@
       "src/usecases/notifications/sendNotificationPhase1.js",
       "src/usecases/phase2/runAutomation.js",
       "src/usecases/phase33/executeOpsNextAction.js",
-      "src/usecases/phase5/getUserStateSummary.js",
       "src/usecases/structure/runStructDriftBackfill.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]

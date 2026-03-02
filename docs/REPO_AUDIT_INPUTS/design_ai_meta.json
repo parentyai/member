@@ -102,7 +102,6 @@
       "src/repos/firestore/userJourneyProfilesRepo.js",
       "src/repos/firestore/usersPhase1Repo.js",
       "src/repos/firestore/usersRepo.js",
-      "src/usecases/admin/getUserOperationalSummary.js",
       "src/usecases/adminOs/executeNotificationSend.js",
       "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
@@ -113,7 +112,6 @@
       "src/usecases/notifications/sendNotificationPhase1.js",
       "src/usecases/phase2/runAutomation.js",
       "src/usecases/phase33/executeOpsNextAction.js",
-      "src/usecases/phase5/getUserStateSummary.js",
       "src/usecases/structure/runStructDriftBackfill.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]

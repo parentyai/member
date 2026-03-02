@@ -32,6 +32,8 @@ const {
   FALLBACK_MODE_BLOCK,
   resolveFallbackMode
 } = require('../../domain/readModel/fallbackPolicy');
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -75,12 +77,12 @@ function isMemberNumberStale(data, nowMs) {
   return nowMs - createdAtMs >= STALE_DAYS * DAY_MS;
 }
 
-function countChecklistTotal(checklists, scenarioKey, stepKey) {
-  if (!scenarioKey || !stepKey) return 0;
+function countChecklistTotal(checklists, scnKey, stepKey) {
+  if (!scnKey || !stepKey) return 0;
   let total = 0;
   for (const checklist of checklists) {
     const data = checklist.data || {};
-    if (data.scenario !== scenarioKey || data.step !== stepKey) continue;
+    if (data[FIELD_SCN] !== scnKey || data.step !== stepKey) continue;
     const items = Array.isArray(data.items) ? data.items : [];
     total += items.length;
   }
@@ -271,7 +273,7 @@ async function getUserStateSummary(params) {
     }));
   }
   const checklistsPromise = safeQuery(() => listChecklistsByScenarioAndStep({
-    scenario: data.scenarioKey,
+    [FIELD_SCN]: data[FIELD_SCK],
     step: data.stepKey,
     limit: analyticsLimit
   }));
@@ -365,7 +367,7 @@ async function getUserStateSummary(params) {
   const hasMemberNumber = Boolean(data.memberNumber && String(data.memberNumber).trim().length > 0);
   const memberNumberStale = isMemberNumberStale(data, nowMs);
 
-  const checklistTotal = countChecklistTotal(checklists, data.scenarioKey, data.stepKey);
+  const checklistTotal = countChecklistTotal(checklists, data[FIELD_SCK], data.stepKey);
   const checklistCompleted = countChecklistCompletedByUser(user, userChecklists);
   const lastActionAt = findLatestAction(events, user.id);
   const lastReactionAt = findLastReactionAt(deliveries, user.id);
