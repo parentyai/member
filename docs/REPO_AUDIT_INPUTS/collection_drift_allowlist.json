@@ -16,8 +16,6 @@
       "journey_reminder_runs",
       "journey_todo_items",
       "journey_todo_stats",
-      "step_rules",
-      "tasks",
       "user_journey_profiles",
       "user_journey_schedules"
     ],

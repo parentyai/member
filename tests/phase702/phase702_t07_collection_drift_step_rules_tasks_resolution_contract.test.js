@@ -1,0 +1,37 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { spawnSync } = require('node:child_process');
+const { test } = require('node:test');
+
+function uniqSorted(items) {
+  return Array.from(new Set((items || []).map((item) => String(item || '').trim()).filter(Boolean))).sort();
+}
+
+function computeDataModelOnlyCollections() {
+  const dataModelMap = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/data_model_map.json', 'utf8'));
+  const dataLifecycle = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/data_lifecycle.json', 'utf8'));
+
+  const modelCollections = uniqSorted((dataModelMap.collections || []).map((row) => row && row.collection));
+  const lifecycleCollections = uniqSorted((dataLifecycle || []).map((row) => row && row.collection));
+  const lifecycleSet = new Set(lifecycleCollections);
+  return modelCollections.filter((name) => !lifecycleSet.has(name));
+}
+
+test('phase702: step_rules/tasks are covered in data_lifecycle and removed from data_model_only drift', () => {
+  const dataModelOnly = computeDataModelOnlyCollections();
+  assert.equal(dataModelOnly.includes('step_rules'), false, 'step_rules should not remain in data_model_only drift');
+  assert.equal(dataModelOnly.includes('tasks'), false, 'tasks should not remain in data_model_only drift');
+});
+
+test('phase702: consistency status reflects reduced collection drift baseline', () => {
+  const result = spawnSync(process.execPath, ['scripts/report_consistency_status.js'], {
+    cwd: process.cwd(),
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout || 'consistency status report failed');
+  const out = result.stdout || '';
+  assert.ok(out.includes('"dataModelOnly": 11'));
+  assert.ok(out.includes('"dataLifecycleOnly": 11'));
+});

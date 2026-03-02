@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 10 |
-| config | 40 |
+| config | 42 |
 | event | 6 |
 | evidence | 8 |
 | transient | 3 |
@@ -77,9 +77,11 @@
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |
 | `source_refs` | config | INDEFINITE | false | false |
+| `step_rules` | config | INDEFINITE | false | false |
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
+| `tasks` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
