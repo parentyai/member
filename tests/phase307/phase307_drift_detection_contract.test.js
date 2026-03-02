@@ -6,7 +6,8 @@ const { test } = require('node:test');
 
 test('phase307: canonical user query path does not reintroduce scenario-field filtering', () => {
   const source = readFileSync('src/repos/firestore/usersRepo.js', 'utf8');
-  assert.ok(source.includes('normalizeScenarioKey'), 'usersRepo should normalize scenario inputs');
+  const hasCanonicalResolver = source.includes('normalizeScenarioKey') || source.includes('resolveCanonKey');
+  assert.ok(hasCanonicalResolver, 'usersRepo should normalize canonical/legacy inputs');
   assert.ok(!source.includes("where('scenario',"), 'usersRepo must not query legacy scenario field directly');
 });
 

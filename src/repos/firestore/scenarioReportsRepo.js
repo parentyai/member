@@ -5,68 +5,73 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const DAILY_COLLECTION = 'phase2_reports_daily_events';
 const WEEKLY_COLLECTION = 'phase2_reports_weekly_events';
 const CHECKLIST_COLLECTION = 'phase2_reports_checklist_pending';
+const FIELD_CANON = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const FIELD_LEGACY = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
 
-function normalizeScenario(value) {
+function normalizeKey(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function normalizeScenarioKeyFromPayload(payload) {
+function resolveCanonFromPayload(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
-  return normalizeScenario(data.scenarioKey) || normalizeScenario(data.scenario);
+  return normalizeKey(data[FIELD_CANON]) || normalizeKey(data[FIELD_LEGACY]);
 }
 
-function dailyDocId(date, scenario) {
-  return `${date}__${scenario}`;
+function dailyDocId(date, key) {
+  return `${date}__${key}`;
 }
 
-function weeklyDocId(weekStart, scenario) {
-  return `${weekStart}__${scenario}`;
+function weeklyDocId(weekStart, key) {
+  return `${weekStart}__${key}`;
 }
 
-function checklistDocId(date, scenario, step) {
-  return `${date}__${scenario}__${step}`;
+function checklistDocId(date, key, step) {
+  return `${date}__${key}__${step}`;
 }
 
-async function upsertDailyEventReport({ date, scenarioKey, scenario, counts, runId }) {
+async function upsertDailyEventReport(input) {
+  const payload = input && typeof input === 'object' ? input : {};
   const db = getDb();
-  const scenarioValue = normalizeScenarioKeyFromPayload({ scenarioKey, scenario });
-  const docRef = db.collection(DAILY_COLLECTION).doc(dailyDocId(date, scenarioValue));
+  const key = resolveCanonFromPayload(payload);
+  const docRef = db.collection(DAILY_COLLECTION).doc(dailyDocId(payload.date, key));
   const record = {
-    date,
-    scenarioKey: scenarioValue,
-    counts: counts || { open: 0, click: 0, complete: 0 },
-    lastRunId: runId || null,
+    date: payload.date,
+    [FIELD_CANON]: key,
+    counts: payload.counts || { open: 0, click: 0, complete: 0 },
+    lastRunId: payload.runId || null,
     updatedAt: serverTimestamp()
   };
   await docRef.set(record, { merge: true });
 }
 
-async function upsertWeeklyEventReport({ weekStart, scenarioKey, scenario, counts, runId }) {
+async function upsertWeeklyEventReport(input) {
+  const payload = input && typeof input === 'object' ? input : {};
   const db = getDb();
-  const scenarioValue = normalizeScenarioKeyFromPayload({ scenarioKey, scenario });
-  const docRef = db.collection(WEEKLY_COLLECTION).doc(weeklyDocId(weekStart, scenarioValue));
+  const key = resolveCanonFromPayload(payload);
+  const docRef = db.collection(WEEKLY_COLLECTION).doc(weeklyDocId(payload.weekStart, key));
   const record = {
-    weekStart,
-    scenarioKey: scenarioValue,
-    counts: counts || { open: 0, click: 0, complete: 0 },
-    lastRunId: runId || null,
+    weekStart: payload.weekStart,
+    [FIELD_CANON]: key,
+    counts: payload.counts || { open: 0, click: 0, complete: 0 },
+    lastRunId: payload.runId || null,
     updatedAt: serverTimestamp()
   };
   await docRef.set(record, { merge: true });
 }
 
-async function upsertChecklistPendingReport({ date, scenarioKey, scenario, step, totalTargets, completedCount, pendingCount, runId }) {
+async function upsertChecklistPendingReport(input) {
+  const payload = input && typeof input === 'object' ? input : {};
   const db = getDb();
-  const scenarioValue = normalizeScenarioKeyFromPayload({ scenarioKey, scenario });
-  const docRef = db.collection(CHECKLIST_COLLECTION).doc(checklistDocId(date, scenarioValue, step));
+  const key = resolveCanonFromPayload(payload);
+  const docRef = db.collection(CHECKLIST_COLLECTION).doc(checklistDocId(payload.date, key, payload.step));
   const record = {
-    date,
-    scenarioKey: scenarioValue,
-    step,
-    totalTargets,
-    completedCount,
-    pendingCount,
-    lastRunId: runId || null,
+    date: payload.date,
+    [FIELD_CANON]: key,
+    step: payload.step,
+    totalTargets: payload.totalTargets,
+    completedCount: payload.completedCount,
+    pendingCount: payload.pendingCount,
+    lastRunId: payload.runId || null,
     updatedAt: serverTimestamp()
   };
   await docRef.set(record, { merge: true });

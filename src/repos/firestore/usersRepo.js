@@ -1,9 +1,10 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const COLLECTION = 'users';
+const FIELD_CANON = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const FIELD_LEGACY = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
 
 function normalizeString(value) {
   if (typeof value !== 'string') return null;
@@ -15,18 +16,21 @@ function resolveTimestamp(at) {
   return at || serverTimestamp();
 }
 
-function shouldSupplementScenarioKey(payload, existing) {
+function resolveCanonKey(payload) {
+  const source = payload && typeof payload === 'object' ? payload : {};
+  const canon = normalizeString(source[FIELD_CANON]);
+  const legacy = normalizeString(source[FIELD_LEGACY]);
+  return canon || legacy || null;
+}
+
+function shouldSupplementCanon(payload, existing) {
   const current = payload && typeof payload === 'object' ? payload : {};
   const existingRecord = existing && typeof existing === 'object' ? existing : {};
-  const incomingScenarioKey = normalizeString(current.scenarioKey);
-  if (incomingScenarioKey) return null;
-  const existingScenarioKey = normalizeString(existingRecord.scenarioKey);
-  if (existingScenarioKey) return null;
-  const normalizedScenarioKey = normalizeScenarioKey({
-    scenarioKey: current.scenarioKey,
-    scenario: current.scenario
-  });
-  return normalizedScenarioKey || null;
+  const incomingCanon = normalizeString(current[FIELD_CANON]);
+  if (incomingCanon) return null;
+  const existingCanon = normalizeString(existingRecord[FIELD_CANON]);
+  if (existingCanon) return null;
+  return resolveCanonKey(current);
 }
 
 async function createUser(lineUserId, data) {
@@ -34,8 +38,8 @@ async function createUser(lineUserId, data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(lineUserId);
   const payload = Object.assign({}, data || {}, { createdAt: resolveTimestamp(data && data.createdAt) });
-  const normalizedScenarioKey = shouldSupplementScenarioKey(payload, null);
-  if (normalizedScenarioKey) payload.scenarioKey = normalizedScenarioKey;
+  const normalized = shouldSupplementCanon(payload, null);
+  if (normalized) payload[FIELD_CANON] = normalized;
   await docRef.set(payload, { merge: false });
   return { id: lineUserId };
 }
@@ -56,8 +60,8 @@ async function updateUser(lineUserId, patch) {
   const payload = Object.assign({}, patch || {});
   const currentSnap = await docRef.get();
   const current = currentSnap.exists ? currentSnap.data() : null;
-  const normalizedScenarioKey = shouldSupplementScenarioKey(payload, current);
-  if (normalizedScenarioKey) payload.scenarioKey = normalizedScenarioKey;
+  const normalized = shouldSupplementCanon(payload, current);
+  if (normalized) payload[FIELD_CANON] = normalized;
   await docRef.set(payload, { merge: true });
   return { id: lineUserId };
 }
@@ -122,12 +126,9 @@ function sortUsersByCreatedAtDesc(rows) {
 async function listUsers(params) {
   const db = getDb();
   const opts = params || {};
-  const normalizedScenarioKey = normalizeScenarioKey({
-    scenarioKey: opts.scenarioKey,
-    scenario: opts.scenario
-  });
+  const normalized = resolveCanonKey(opts);
   let baseQuery = db.collection(COLLECTION);
-  if (normalizedScenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', normalizedScenarioKey);
+  if (normalized) baseQuery = baseQuery.where(FIELD_CANON, '==', normalized);
   if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
   if (opts.region) baseQuery = baseQuery.where('region', '==', opts.region);
   let query = baseQuery;

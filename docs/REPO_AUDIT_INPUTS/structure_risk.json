@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T22:58:59.402Z",
+  "generatedAt": "2026-03-02T23:06:59.375Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "77ba38fdf8b530af7b779c8018fd3bd49bbf348497cb048ad3807db3d55f3d17",
+  "sourceDigest": "e06b83c9135e5badbe3e707018fb6595cf582f0f197342eccf7eef19576261f0",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 13,
+  "naming_drift_scenarioKey_count": 11,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -103,8 +103,6 @@
     "scenario": [],
     "scenarioKey": [
       "src/repos/firestore/analyticsReadRepo.js",
-      "src/repos/firestore/scenarioReportsRepo.js",
-      "src/repos/firestore/usersRepo.js",
       "src/usecases/adminOs/executeNotificationSend.js",
       "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
