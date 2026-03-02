@@ -14,6 +14,7 @@ test('phase702: collection drift details report prints model/lifecycle detail bl
   assert.ok(out.includes('[collection-drift-details] report'));
   assert.ok(out.includes('"dataModelOnly"'));
   assert.ok(out.includes('"dataLifecycleOnly"'));
-  assert.ok(out.includes('"repos"'));
   assert.ok(out.includes('"policy"'));
+  assert.ok(out.includes('"dataModelOnlyAdded"'));
+  assert.ok(out.includes('"dataLifecycleOnlyAdded"'));
 });

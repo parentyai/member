@@ -177,6 +177,72 @@
     ]
   },
   {
+    "collection": "emergency_bulletins",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyBulletinsRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:21"
+    ]
+  },
+  {
+    "collection": "emergency_diffs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyDiffsRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:22"
+    ]
+  },
+  {
+    "collection": "emergency_events_normalized",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyEventsRepo.js:6",
+      "src/domain/retention/retentionPolicy.js:23"
+    ]
+  },
+  {
+    "collection": "emergency_providers",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyProvidersRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:24"
+    ]
+  },
+  {
+    "collection": "emergency_snapshots",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencySnapshotsRepo.js:6",
+      "src/domain/retention/retentionPolicy.js:25"
+    ]
+  },
+  {
+    "collection": "emergency_unmapped_events",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyUnmappedEventsRepo.js:6",
+      "src/domain/retention/retentionPolicy.js:26"
+    ]
+  },
+  {
     "collection": "events",
     "kind": "event",
     "recomputable": true,
@@ -269,6 +335,39 @@
       "src/repos/firestore/journeyParamVersionsRepo.js:6",
       "src/repos/firestore/journeyParamVersionsRepo.js:168",
       "src/routes/admin/journeyParamConfig.js:248"
+    ]
+  },
+  {
+    "collection": "journey_reminder_runs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyReminderRunsRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:35"
+    ]
+  },
+  {
+    "collection": "journey_todo_items",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyTodoItemsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:36"
+    ]
+  },
+  {
+    "collection": "journey_todo_stats",
+    "kind": "aggregate",
+    "recomputable": false,
+    "retention": "90d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyTodoStatsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:37"
     ]
   },
   {
@@ -783,6 +882,28 @@
       "src/repos/firestore/userContextSnapshotsRepo.js:5",
       "src/repos/firestore/userContextSnapshotsRepo.js:127",
       "src/repos/firestore/userContextSnapshotsRepo.js:138"
+    ]
+  },
+  {
+    "collection": "user_journey_profiles",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userJourneyProfilesRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:82"
+    ]
+  },
+  {
+    "collection": "user_journey_schedules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/userJourneySchedulesRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:83"
     ]
   },
   {
