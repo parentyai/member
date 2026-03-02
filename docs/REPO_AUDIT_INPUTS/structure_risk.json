@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T22:30:51.975Z",
+  "generatedAt": "2026-03-02T22:51:12.425Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "ef63a1dcb654c18f74332e6547f12704f4183217d83e85a6699dcd9bad096b7c",
+  "sourceDigest": "458462cda2c02a43c5d9422b6545338b686672bc2271724c2f394c6a22d0373c",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 17,
+  "naming_drift_scenarioKey_count": 15,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -103,9 +103,7 @@
     "scenario": [],
     "scenarioKey": [
       "src/repos/firestore/analyticsReadRepo.js",
-      "src/repos/firestore/notificationsRepo.js",
       "src/repos/firestore/scenarioReportsRepo.js",
-      "src/repos/firestore/stepRulesRepo.js",
       "src/repos/firestore/userJourneyProfilesRepo.js",
       "src/repos/firestore/usersPhase1Repo.js",
       "src/repos/firestore/usersRepo.js",

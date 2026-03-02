@@ -6,7 +6,7 @@
 | field | count | paths |
 | --- | --- | --- |
 | scenario (legacy) | 0 |  |
-| scenarioKey (canonical) | 17 | `src/repos/firestore/analyticsReadRepo.js`<br>`src/repos/firestore/notificationsRepo.js`<br>`src/repos/firestore/scenarioReportsRepo.js`<br>`src/repos/firestore/stepRulesRepo.js`<br>`src/repos/firestore/userJourneyProfilesRepo.js`<br>`src/repos/firestore/usersPhase1Repo.js`<br>`src/repos/firestore/usersRepo.js`<br>`src/usecases/adminOs/executeNotificationSend.js`<br>`src/usecases/adminOs/planNotificationSend.js`<br>`src/usecases/emergency/approveEmergencyBulletin.js`<br>`src/usecases/journey/runJourneyParamDryRun.js`<br>`src/usecases/notifications/sendNotification.js`<br>`src/usecases/notifications/sendNotificationPhase1.js`<br>`src/usecases/phase2/runAutomation.js`<br>`src/usecases/phase33/executeOpsNextAction.js`<br>`src/usecases/structure/runStructDriftBackfill.js`<br>`src/usecases/tasks/computeUserTasks.js` |
+| scenarioKey (canonical) | 15 | `src/repos/firestore/analyticsReadRepo.js`<br>`src/repos/firestore/scenarioReportsRepo.js`<br>`src/repos/firestore/userJourneyProfilesRepo.js`<br>`src/repos/firestore/usersPhase1Repo.js`<br>`src/repos/firestore/usersRepo.js`<br>`src/usecases/adminOs/executeNotificationSend.js`<br>`src/usecases/adminOs/planNotificationSend.js`<br>`src/usecases/emergency/approveEmergencyBulletin.js`<br>`src/usecases/journey/runJourneyParamDryRun.js`<br>`src/usecases/notifications/sendNotification.js`<br>`src/usecases/notifications/sendNotificationPhase1.js`<br>`src/usecases/phase2/runAutomation.js`<br>`src/usecases/phase33/executeOpsNextAction.js`<br>`src/usecases/structure/runStructDriftBackfill.js`<br>`src/usecases/tasks/computeUserTasks.js` |
 
 ## 移行方針
 1. read: `scenarioKey` 優先、`scenario` fallback

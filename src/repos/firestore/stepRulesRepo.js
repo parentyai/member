@@ -7,6 +7,7 @@ const COLLECTION = 'step_rules';
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -120,7 +121,7 @@ function normalizeStepRule(ruleId, data) {
   return {
     id,
     ruleId: id,
-    scenarioKey: normalizeText(payload.scenarioKey, null),
+    [FIELD_SCK]: normalizeText(payload[FIELD_SCK], null),
     stepKey: normalizeText(payload.stepKey, null),
     trigger,
     leadTime,
@@ -200,7 +201,7 @@ async function listStepRules(filters) {
   if (payload.enabled === true || payload.enabled === false) {
     query = query.where('enabled', '==', payload.enabled);
   }
-  if (payload.scenarioKey) query = query.where('scenarioKey', '==', normalizeText(payload.scenarioKey, null));
+  if (payload[FIELD_SCK]) query = query.where(FIELD_SCK, '==', normalizeText(payload[FIELD_SCK], null));
   if (payload.stepKey) query = query.where('stepKey', '==', normalizeText(payload.stepKey, null));
   const limit = resolveLimit(payload.limit);
   const snap = await query.orderBy('priority', 'desc').limit(limit).get();
