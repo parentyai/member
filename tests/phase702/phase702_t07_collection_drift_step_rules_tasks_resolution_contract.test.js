@@ -19,6 +19,16 @@ function computeDataModelOnlyCollections() {
   return modelCollections.filter((name) => !lifecycleSet.has(name));
 }
 
+function computeDataLifecycleOnlyCollections() {
+  const dataModelMap = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/data_model_map.json', 'utf8'));
+  const dataLifecycle = JSON.parse(fs.readFileSync('docs/REPO_AUDIT_INPUTS/data_lifecycle.json', 'utf8'));
+
+  const modelCollections = uniqSorted((dataModelMap.collections || []).map((row) => row && row.collection));
+  const lifecycleCollections = uniqSorted((dataLifecycle || []).map((row) => row && row.collection));
+  const modelSet = new Set(modelCollections);
+  return lifecycleCollections.filter((name) => !modelSet.has(name));
+}
+
 test('phase702: step_rules/tasks are covered in data_lifecycle and removed from data_model_only drift', () => {
   const dataModelOnly = computeDataModelOnlyCollections();
   assert.equal(dataModelOnly.includes('step_rules'), false, 'step_rules should not remain in data_model_only drift');
@@ -33,5 +43,10 @@ test('phase702: consistency status reflects reduced collection drift baseline', 
   assert.equal(result.status, 0, result.stderr || result.stdout || 'consistency status report failed');
   const out = result.stdout || '';
   assert.ok(out.includes('"dataModelOnly": 0'));
-  assert.ok(out.includes('"dataLifecycleOnly": 11'));
+  assert.ok(out.includes('"dataLifecycleOnly": 0'));
+});
+
+test('phase702: lifecycle-only drift is fully resolved for queued collections', () => {
+  const dataLifecycleOnly = computeDataLifecycleOnlyCollections();
+  assert.equal(dataLifecycleOnly.length, 0, `expected no lifecycle-only drift: ${dataLifecycleOnly.join(', ')}`);
 });
