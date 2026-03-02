@@ -13,10 +13,13 @@ test('phase241: admin app removes status summary panels from operational panes',
   assert.ok(!html.includes('read-model-status-panel'));
 });
 
-test('phase241: admin app includes monitor user timeline and insights sections', () => {
+test('phase241: admin app monitor pane uses user search + global list layout and hides deprecated sections', () => {
   const html = readFileSync('apps/admin/app.html', 'utf8');
   assert.ok(html.includes('id="monitor-user-search"'));
-  assert.ok(html.includes('id="monitor-window-days"'));
-  assert.ok(html.includes('id="monitor-vendor-rows"'));
-  assert.ok(html.includes('id="monitor-faq-rows"'));
+  assert.ok(html.includes('id="monitor-user-member-id"'));
+  assert.ok(html.includes('id="monitor-global-reload"'));
+  assert.ok(html.includes('id="monitor-rows"'));
+  assert.ok(html.includes('class="pane-detail is-hidden"'));
+  assert.ok(html.includes('class="pane-actions is-hidden"'));
+  assert.ok(html.includes('Journey Map / Rule Editor'));
 });

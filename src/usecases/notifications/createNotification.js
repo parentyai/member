@@ -128,6 +128,17 @@ function normalizeCityPackFallback(payload) {
   return { fallbackLinkRegistryId, fallbackCtaText };
 }
 
+function normalizeSeedMetadata(payload) {
+  const seedTag = typeof payload.seedTag === 'string' ? payload.seedTag.trim() : '';
+  const seedRunId = typeof payload.seedRunId === 'string' ? payload.seedRunId.trim() : '';
+  const seededAt = typeof payload.seededAt === 'string' ? payload.seededAt.trim() : '';
+  return {
+    seedTag: seedTag || null,
+    seedRunId: seedRunId || null,
+    seededAt: seededAt || null
+  };
+}
+
 async function createNotification(data) {
   const payload = data || {};
   const normalizedScenarioKey = normalizeScenarioKey({
@@ -165,6 +176,7 @@ async function createNotification(data) {
   const notificationMeta = normalizeNotificationMeta(payload.notificationMeta);
   const trigger = normalizeNotificationTrigger(payload.trigger);
   const order = normalizeNotificationOrder(payload.order, payload.stepKey);
+  const seedMetadata = normalizeSeedMetadata(payload);
   if (notificationType === 'VENDOR') {
     const vendorId = notificationMeta && typeof notificationMeta.vendorId === 'string'
       ? notificationMeta.vendorId.trim()
@@ -195,6 +207,9 @@ async function createNotification(data) {
     createdBy: payload.createdBy || null,
     createdAt: payload.createdAt
   };
+  if (seedMetadata.seedTag) record.seedTag = seedMetadata.seedTag;
+  if (seedMetadata.seedRunId) record.seedRunId = seedMetadata.seedRunId;
+  if (seedMetadata.seededAt) record.seededAt = seedMetadata.seededAt;
 
   return notificationsRepo.createNotification(record);
 }

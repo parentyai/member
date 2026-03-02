@@ -127,4 +127,16 @@ test('phase241: notification deliveries API supports memberNumber search and ven
   assert.strictEqual(body.items[0].vendorLabel, 'fallback.example');
   assert.strictEqual(body.items[1].vendorLabel, 'Vendor A');
   assert.ok(body.summary.danger >= 1);
+
+  const resByMemberId = await httpRequest({
+    port,
+    method: 'GET',
+    path: '/api/admin/notification-deliveries?memberId=M-001&limit=20',
+    headers: { 'x-admin-token': 'test_admin_token', 'x-actor': 'phase241_test' }
+  });
+  assert.strictEqual(resByMemberId.status, 200);
+  const bodyByMemberId = JSON.parse(resByMemberId.body);
+  assert.strictEqual(bodyByMemberId.ok, true);
+  assert.strictEqual(bodyByMemberId.query.memberId, 'M-001');
+  assert.strictEqual(bodyByMemberId.items.length, 2);
 });

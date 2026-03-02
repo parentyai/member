@@ -1477,6 +1477,11 @@ th {
   cursor: not-allowed;
 }
 
+.composer-card-actions {
+  margin-top: var(--space-2);
+  justify-content: flex-start;
+}
+
 .composer-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);

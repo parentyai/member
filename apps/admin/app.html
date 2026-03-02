@@ -805,6 +805,13 @@
                         </select>
                       </div>
                     </div>
+                    <div class="composer-card-actions composer-primary-actions">
+                      <button id="composer-card-draft" type="button" data-dict-key="ui.label.composer.create">下書き作成</button>
+                      <button id="composer-card-preview" type="button" data-dict-key="ui.label.composer.preview">プレビュー</button>
+                      <button id="composer-card-approve" type="button" data-dict-key="ui.label.composer.approve">承認（有効化）</button>
+                      <button id="composer-card-plan" type="button" data-dict-key="ui.label.composer.plan">送信計画</button>
+                      <button id="composer-card-execute" type="button" data-dict-key="ui.label.composer.execute">送信実行</button>
+                    </div>
                     <div id="composer-type-hint" class="note" data-dict-key="ui.desc.composer.typeHint.step">ステップ通知: シナリオとステップを指定して対象を絞り込みます。</div>
                     <div id="composer-category-wizard" class="composer-category-wizard">
                       <div class="composer-category-wizard-header">
@@ -882,9 +889,11 @@
                             <label for="stepKey" data-dict-key="ui.label.composer.step" data-dict-tip="ui.help.composer.step">ステップ</label>
                             <select id="stepKey">
                               <option value="3mo" data-dict-key="ui.value.step.3mo">Day-90</option>
+                              <option value="2mo" data-dict-key="ui.value.step.2mo">Day-60</option>
                               <option value="1mo" data-dict-key="ui.value.step.1mo">Day-30</option>
                               <option value="week" selected data-dict-key="ui.value.step.week">Day-7</option>
                               <option value="after1w" data-dict-key="ui.value.step.after1w">赴任後1週</option>
+                              <option value="after1mo" data-dict-key="ui.value.step.after1mo">赴任後1か月</option>
                             </select>
                           </div>
                         </div>
@@ -985,9 +994,11 @@
                         <select id="composer-saved-step">
                           <option value="" data-dict-key="ui.value.common.all">すべて</option>
                           <option value="3mo" data-dict-key="ui.value.step.3mo">Day-90</option>
+                          <option value="2mo" data-dict-key="ui.value.step.2mo">Day-60</option>
                           <option value="1mo" data-dict-key="ui.value.step.1mo">Day-30</option>
                           <option value="week" data-dict-key="ui.value.step.week">Day-7</option>
                           <option value="after1w" data-dict-key="ui.value.step.after1w">赴任後1週</option>
+                          <option value="after1mo" data-dict-key="ui.value.step.after1mo">赴任後1か月</option>
                         </select>
                       </div>
                     </div>
@@ -1018,6 +1029,9 @@
                   <div id="composer-scenario-step-matrix" class="panel">
                     <div class="panel-title" data-dict-key="ui.label.developer.matrix">ステップ通知マップ</div>
                     <div class="panel-body">
+                      <div id="composer-seed-archive-toggle-wrap" class="note" hidden>
+                        <label class="checkbox"><input id="composer-include-archived-seed" type="checkbox" /> seed archive を表示（developer）</label>
+                      </div>
                       <div class="table-wrap">
                         <table class="table table-compact repo-map-matrix-table">
                           <thead id="composer-matrix-head"></thead>
@@ -1089,12 +1103,13 @@
                       <input type="text" id="monitor-user-line-user-id" />
                     </label>
                     <label class="flex-1" data-dict-key="ui.label.monitor.userMemberNumber" data-dict-tip="ui.help.monitor.userMemberNumber">会員番号
-                      <input type="text" id="monitor-user-member-number" />
+                      <input type="text" id="monitor-user-member-id" />
                     </label>
                     <label data-dict-key="ui.label.monitor.userLimit" data-dict-tip="ui.help.monitor.userLimit">件数
                       <input type="number" id="monitor-user-limit" class="input-sm" min="1" max="200" value="50" />
                     </label>
                   </div>
+                  <div class="note">LINEユーザーIDと会員番号の両方を入力した場合、LINEユーザーIDを優先して検索します。</div>
                   <div class="row row-top">
                     <button id="monitor-user-search" type="button" data-dict-key="ui.label.monitor.userSearch">履歴を検索</button>
                   </div>
@@ -1113,7 +1128,7 @@
                   </table>
                 </div>
               </div>
-              <div class="panel">
+              <div class="panel is-hidden" aria-hidden="true">
                 <div class="panel-title">Journey Map / Rule Editor</div>
                 <div class="panel-body">
                   <details class="section" open>
@@ -1611,19 +1626,24 @@
 	                </div>
 	              </div>
 
-	              <details class="table-section section">
-	                <summary data-dict-key="ui.label.monitor.table">配信結果（参照）</summary>
+	              <details class="table-section section" open>
+	                <summary>全体の通知一覧</summary>
+                  <div class="row row-top">
+                    <button id="monitor-global-reload" type="button">全体一覧を更新</button>
+                  </div>
 	                <div class="table-scroll">
 	                  <table class="table-compact">
 	                    <thead>
 	                      <tr>
-	                        <th data-dict-key="ui.label.monitor.col.title" data-dict-tip="ui.help.monitor.title">タイトル</th>
-	                        <th data-dict-key="ui.label.monitor.col.scenario" data-dict-tip="ui.help.monitor.scenario">シナリオ</th>
-	                        <th data-dict-key="ui.label.monitor.col.step" data-dict-tip="ui.help.monitor.step">ステップ</th>
-	                        <th data-dict-key="ui.label.monitor.col.target" data-dict-tip="ui.help.monitor.target">対象数</th>
-	                        <th data-dict-key="ui.label.monitor.col.last" data-dict-tip="ui.help.monitor.last">最終結果</th>
-	                        <th data-dict-key="ui.label.monitor.col.ctr" data-dict-tip="ui.help.monitor.ctr">反応率</th>
-	                        <th data-dict-key="ui.label.monitor.col.health" data-dict-tip="ui.help.monitor.health">健康度</th>
+	                        <th>作成日時</th>
+	                        <th>状態</th>
+	                        <th>type</th>
+	                        <th>タイトル</th>
+	                        <th>シナリオ</th>
+	                        <th>ステップ</th>
+	                        <th>target概要</th>
+	                        <th>lastPlanHash</th>
+	                        <th>lastExecution概要</th>
 	                      </tr>
 	                    </thead>
 	                    <tbody id="monitor-rows"></tbody>
@@ -1631,7 +1651,7 @@
 	                </div>
 	              </details>
             </div>
-            <div class="pane-detail">
+            <div class="pane-detail is-hidden" aria-hidden="true">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.detail">詳細</div>
                 <div class="panel-body">
@@ -1644,7 +1664,7 @@
                 </div>
               </div>
             </div>
-            <aside class="pane-actions">
+            <aside class="pane-actions is-hidden" aria-hidden="true">
               <div class="action-panel">
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">

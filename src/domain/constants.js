@@ -13,12 +13,14 @@ const PHASE0_SCENARIOS = Object.freeze(['A', 'B', 'C', 'D']);
 
 const STEP_KEYS = Object.freeze({
   THREE_MONTHS: '3mo',
+  TWO_MONTHS: '2mo',
   ONE_MONTH: '1mo',
   WEEK: 'week',
-  AFTER_ONE_WEEK: 'after1w'
+  AFTER_ONE_WEEK: 'after1w',
+  AFTER_ONE_MONTH: 'after1mo'
 });
 
-const STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
+const STEP_ORDER = Object.freeze(['3mo', '2mo', '1mo', 'week', 'after1w', 'after1mo']);
 
 const NOTIFICATION_TRIGGER = Object.freeze({
   MANUAL: 'manual'

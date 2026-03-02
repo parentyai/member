@@ -1008,6 +1008,9 @@
       "planNotificationSend",
       "previewNotification"
     ],
+    "src/routes/admin/osNotificationSeed.js": [
+      "appendAuditLog"
+    ],
     "src/routes/admin/osRedacStatus.js": [
       "appendAuditLog"
     ],
