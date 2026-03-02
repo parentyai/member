@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T09:19:06-05:00",
-  "gitCommit": "f625bab7b6bd7f3da29d74f4a70a46c254ec52f6",
-  "branch": "codex/p1-scenariokey-drift-details",
-  "sourceDigest": "7e8f34b590fb750f5ab369745be55b2a3d4b6ab8b075d7b3588da7eae990af42",
+  "generatedAt": "2026-03-02T10:37:29-05:00",
+  "gitCommit": "a6666ac79136810001774b92a1ca09e08259970d",
+  "branch": "codex/p1-scenariokey-remediation-queue",
+  "sourceDigest": "a72da7d05af5557f128325bb153e5afa49d4fee25e2619bed85e352f34a4e2bc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
