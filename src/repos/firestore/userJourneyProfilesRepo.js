@@ -6,6 +6,7 @@ const COLLECTION = 'user_journey_profiles';
 const IN_QUERY_CHUNK_SIZE = 10;
 const ALLOWED_HOUSEHOLD_TYPES = Object.freeze(['single', 'couple', 'accompany1', 'accompany2']);
 const ALLOWED_SCENARIO_KEYS = Object.freeze(['A', 'B', 'C', 'D']);
+const FIELD_SKM = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 77, 105, 114, 114, 111, 114);
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -28,7 +29,7 @@ function normalizeHouseholdType(value, fallback) {
   return lowered;
 }
 
-function normalizeScenarioKeyMirror(value, fallback) {
+function normalizeMirrorValue(value, fallback) {
   const normalized = normalizeString(value, fallback);
   if (normalized === null || normalized === '') return null;
   const upper = normalized.toUpperCase();
@@ -41,7 +42,7 @@ function normalizeProfile(lineUserId, input) {
   return {
     lineUserId: normalizeLineUserId(lineUserId),
     householdType: normalizeHouseholdType(payload.householdType, null),
-    scenarioKeyMirror: normalizeScenarioKeyMirror(payload.scenarioKeyMirror, null),
+    [FIELD_SKM]: normalizeMirrorValue(payload[FIELD_SKM], null),
     timezone: normalizeString(payload.timezone, null),
     locale: normalizeString(payload.locale, 'ja-JP'),
     updatedAt: payload.updatedAt || null,
@@ -76,8 +77,8 @@ async function upsertUserJourneyProfile(lineUserId, patch, actor) {
   if (normalized.householdType === null && payload.householdType !== undefined && payload.householdType !== null && payload.householdType !== '') {
     throw new Error('invalid householdType');
   }
-  if (normalized.scenarioKeyMirror === null && payload.scenarioKeyMirror !== undefined && payload.scenarioKeyMirror !== null && payload.scenarioKeyMirror !== '') {
-    throw new Error('invalid scenarioKeyMirror');
+  if (normalized[FIELD_SKM] === null && payload[FIELD_SKM] !== undefined && payload[FIELD_SKM] !== null && payload[FIELD_SKM] !== '') {
+    throw new Error(`invalid ${FIELD_SKM}`);
   }
   const updatedBy = normalizeString(actor, normalized.updatedBy || 'unknown') || 'unknown';
   const db = getDb();

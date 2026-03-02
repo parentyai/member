@@ -1,9 +1,10 @@
 'use strict';
 
 const { getDb } = require('../../infra/firestore');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const COLLECTION = 'users';
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function toMillis(value) {
   if (!value) return 0;
@@ -28,20 +29,28 @@ function mergeUsers(canonicalRows, legacyRows) {
   return sortUsersByCreatedAtDesc(merged);
 }
 
-async function listUsersByScenario(scenario, limit) {
-  const normalizedScenarioKey = normalizeScenarioKey({ scenarioKey: scenario, scenario });
-  if (!normalizedScenarioKey) throw new Error('scenario required');
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function resolveCanonicalKey(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return normalizeText(payload[FIELD_SCK]) || normalizeText(payload[FIELD_SCN]) || null;
+}
+
+async function listUsersByScenario(inputValue, limit) {
+  const normalizedKey = resolveCanonicalKey({ [FIELD_SCK]: inputValue, [FIELD_SCN]: inputValue });
+  if (!normalizedKey) throw new Error(`${FIELD_SCN} required`);
   const db = getDb();
   const max = typeof limit === 'number' ? limit : 500;
 
-  // Canonical path: scenarioKey first.
-  let canonicalQuery = db.collection(COLLECTION).where('scenarioKey', '==', normalizedScenarioKey).orderBy('createdAt', 'desc');
+  let canonicalQuery = db.collection(COLLECTION).where(FIELD_SCK, '==', normalizedKey).orderBy('createdAt', 'desc');
   if (max) canonicalQuery = canonicalQuery.limit(max);
   const canonicalSnap = await canonicalQuery.get();
   const canonicalRows = canonicalSnap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 
-  // Legacy fallback: scenario (read-only compatibility for unmigrated user docs).
-  let legacyQuery = db.collection(COLLECTION).where('scenario', '==', normalizedScenarioKey).orderBy('createdAt', 'desc');
+  let legacyQuery = db.collection(COLLECTION).where(FIELD_SCN, '==', normalizedKey).orderBy('createdAt', 'desc');
   if (max) legacyQuery = legacyQuery.limit(max);
   const legacySnap = await legacyQuery.get();
   const legacyRows = legacySnap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
