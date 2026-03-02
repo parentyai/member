@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T10:37:29-05:00",
-  "gitCommit": "a6666ac79136810001774b92a1ca09e08259970d",
+  "generatedAt": "2026-03-02T10:41:39-05:00",
+  "gitCommit": "3cac924477dbe1b791a7a406dfb15eb2bdb490c7",
   "branch": "codex/p1-scenariokey-remediation-queue",
-  "sourceDigest": "a72da7d05af5557f128325bb153e5afa49d4fee25e2619bed85e352f34a4e2bc",
+  "sourceDigest": "4ee2f6bb7c9acaaa0e3e99d3eb9f3bea000da28caefda0f16226d4b854478ad3",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

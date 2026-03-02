@@ -54,6 +54,7 @@
     "missing-index-surface:generate": "node scripts/generate_missing_index_surface.js",
     "missing-index-surface:check": "node scripts/generate_missing_index_surface.js --check",
     "audit:collection-drift:check": "node scripts/check_collection_drift.js",
+    "audit:collection-drift:queue": "node scripts/report_collection_drift_remediation_queue.js",
     "audit:phase-origin:check": "node scripts/check_phase_origin.js",
     "audit:unreachable:check": "node scripts/check_unreachable_classification.js",
     "audit:unreachable:status": "node scripts/report_unreachable_finalization_status.js",

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T10:37:29-05:00",
-  "gitCommit": "a6666ac79136810001774b92a1ca09e08259970d",
+  "generatedAt": "2026-03-02T10:41:39-05:00",
+  "gitCommit": "3cac924477dbe1b791a7a406dfb15eb2bdb490c7",
   "branch": "codex/p1-scenariokey-remediation-queue",
-  "sourceDigest": "5348b5a0cef94cd10664aa5d1393372d571fa49c507def024c8321208262c8fa",
+  "sourceDigest": "1222007478a108eda9baae62491a139fd2a86704826dcd43a049c4c178618940",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "dcb0b9b81538a614886442f86ada8662501e5b744a37d8909746f85e85e48583",
+      "sha256": "adcdad050797ab0e00653f39c6a584ac3d2b3e29f1b81e41f412c2775d4bf111",
       "bytes": 425683
     },
     {
@@ -166,7 +166,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "f20a68df84f7a2bc253023d185f84592db73c7b1194cf5c45b2af79d2c55885e",
+      "sha256": "bfbddcf6274483087328c1c5c1ae4adef15fe6b43e4a6aede50ae987423a2e71",
       "bytes": 2424
     },
     {
