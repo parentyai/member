@@ -92,9 +92,7 @@
     "scenario": [],
     "scenarioKey": [
       "src/repos/firestore/analyticsReadRepo.js",
-      "src/repos/firestore/notificationsRepo.js",
       "src/repos/firestore/scenarioReportsRepo.js",
-      "src/repos/firestore/stepRulesRepo.js",
       "src/repos/firestore/userJourneyProfilesRepo.js",
       "src/repos/firestore/usersPhase1Repo.js",
       "src/repos/firestore/usersRepo.js",

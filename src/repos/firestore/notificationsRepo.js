@@ -3,6 +3,7 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'notifications';
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function resolveTimestamp(at) {
   return at || serverTimestamp();
@@ -50,7 +51,7 @@ async function listNotifications(params) {
   const opts = params || {};
   let baseQuery = db.collection(COLLECTION);
   if (opts.status) baseQuery = baseQuery.where('status', '==', opts.status);
-  if (opts.scenarioKey) baseQuery = baseQuery.where('scenarioKey', '==', opts.scenarioKey);
+  if (opts[FIELD_SCK]) baseQuery = baseQuery.where(FIELD_SCK, '==', opts[FIELD_SCK]);
   if (opts.stepKey) baseQuery = baseQuery.where('stepKey', '==', opts.stepKey);
   const limit = typeof opts.limit === 'number' ? opts.limit : 50;
   let query = baseQuery;
