@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T23:06:59.375Z",
+  "generatedAt": "2026-03-02T23:14:44.436Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "e06b83c9135e5badbe3e707018fb6595cf582f0f197342eccf7eef19576261f0",
+  "sourceDigest": "69ff52a93b303c6cbdc6e9a5a5dc1e6303da12aea84b3886b6e51f81a28b4047",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 11,
+  "naming_drift_scenarioKey_count": 9,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -109,9 +109,7 @@
       "src/usecases/journey/runJourneyParamDryRun.js",
       "src/usecases/notifications/sendNotification.js",
       "src/usecases/notifications/sendNotificationPhase1.js",
-      "src/usecases/phase2/runAutomation.js",
       "src/usecases/phase33/executeOpsNextAction.js",
-      "src/usecases/structure/runStructDriftBackfill.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]
   },
