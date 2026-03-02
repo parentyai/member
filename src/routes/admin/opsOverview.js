@@ -3,6 +3,7 @@
 const { getUserOperationalSummary } = require('../../usecases/admin/getUserOperationalSummary');
 const { getNotificationOperationalSummary } = require('../../usecases/admin/getNotificationOperationalSummary');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
@@ -99,6 +100,7 @@ async function appendFallbackAudit(req, action, meta, extra) {
 }
 
 async function handleUsersSummary(req, res) {
+  const startedAt = Date.now();
   try {
     const url = new URL(req.url, 'http://localhost');
     const limitRaw = url.searchParams.get('limit');
@@ -133,6 +135,19 @@ async function handleUsersSummary(req, res) {
     });
     const normalizedItems = Array.isArray(items) ? items : (Array.isArray(items.items) ? items.items : []);
     const meta = items && !Array.isArray(items) && items.meta ? items.meta : null;
+    logReadPathLoadMetric({
+      cluster: 'analytics_read_model',
+      operation: 'users_summary',
+      scannedCount: meta && Number.isFinite(Number(meta.scannedCount)) ? Number(meta.scannedCount) : normalizedItems.length,
+      resultCount: normalizedItems.length,
+      durationMs: Date.now() - startedAt,
+      fallbackUsed: Boolean(meta && meta.fallbackUsed),
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      traceId: resolveHeader(req, 'x-trace-id'),
+      requestId: resolveHeader(req, 'x-request-id'),
+      limit: Number.isFinite(Number(limit)) ? Number(limit) : null,
+      readLimitUsed: Number.isFinite(Number(analyticsLimit)) ? Number(analyticsLimit) : null
+    });
     await appendFallbackAudit(req, 'read_path.fallback.users_summary', meta, {
       scope: 'phase4_users_summary',
       snapshotMode: snapshotMode || null,
@@ -156,6 +171,7 @@ async function handleUsersSummary(req, res) {
 }
 
 async function handleNotificationsSummary(req, res) {
+  const startedAt = Date.now();
   const url = new URL(req.url, 'http://localhost');
   const limitRaw = url.searchParams.get('limit');
   const eventsLimitRaw = url.searchParams.get('eventsLimit');
@@ -196,6 +212,19 @@ async function handleNotificationsSummary(req, res) {
     });
     const items = Array.isArray(summary) ? summary : (Array.isArray(summary.items) ? summary.items : []);
     const meta = summary && !Array.isArray(summary) && summary.meta ? summary.meta : null;
+    logReadPathLoadMetric({
+      cluster: 'analytics_read_model',
+      operation: 'notifications_summary',
+      scannedCount: meta && Number.isFinite(Number(meta.scannedCount)) ? Number(meta.scannedCount) : items.length,
+      resultCount: items.length,
+      durationMs: Date.now() - startedAt,
+      fallbackUsed: Boolean(meta && meta.fallbackUsed),
+      dataSource: meta && meta.dataSource ? meta.dataSource : null,
+      traceId: resolveHeader(req, 'x-trace-id'),
+      requestId: resolveHeader(req, 'x-request-id'),
+      limit: Number.isFinite(Number(limit)) ? Number(limit) : null,
+      readLimitUsed: Number.isFinite(Number(eventsLimit)) ? Number(eventsLimit) : null
+    });
     await appendFallbackAudit(req, 'read_path.fallback.notifications_summary', meta, {
       scope: 'phase4_notifications_summary',
       snapshotMode: snapshotMode || null,

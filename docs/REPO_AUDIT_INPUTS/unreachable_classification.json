@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "policy": "add-only classification for JS files unreachable from src/index.js static require graph",
+  "items": [
+    {
+      "file": "src/repos/firestore/indexFallbackPolicy.js",
+      "status": "frozen",
+      "reachability": "non_reachable_runtime",
+      "disposition": "future_deletion_candidate",
+      "reason": "runtime route graph では未到達だが、fallback policy仕様のSSOT参照を維持するため凍結管理",
+      "ssot_refs": [
+        "scripts/check_structural_cleanup.js",
+        "docs/INDEX_PLAN.md",
+        "docs/REPO_FULL_AUDIT_REPORT_2026-02-27.md"
+      ]
+    },
+    {
+      "file": "src/shared/phaseDocPathResolver.js",
+      "status": "monitor",
+      "reachability": "build_time_only",
+      "disposition": "keep_as_build_helper",
+      "reason": "runtime graphでは未到達だが、phase path map生成スクリプトが利用する build-time helper",
+      "ssot_refs": [
+        "scripts/generate_phase_path_map.js",
+        "scripts/check_structural_cleanup.js",
+        "docs/PHASE_PATH_MAP.json"
+      ]
+    }
+  ]
+}

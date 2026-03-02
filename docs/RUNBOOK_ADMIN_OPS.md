@@ -87,7 +87,31 @@
 - realtime画面停止: `ENABLE_OPS_REALTIME_DASHBOARD_V1=0`
 - ops-onlyナビ停止: `ENABLE_ADMIN_OPS_ONLY_NAV_V1=0`
 - developer導線再表示: `ENABLE_ADMIN_DEVELOPER_SURFACE_V1=1`
-- legacy導線（developer限定）再表示: `ENABLE_ADMIN_LEGACY_STATUS_V1=1`
+- legacy導線（admin/developer）表示: `ENABLE_ADMIN_LEGACY_STATUS_V1=1`
+
+### Legacy Routes 一覧（read-only）
+- 導線: `/admin/app?pane=developer-map&role=admin` の `LEGACY導線` パネル。
+- 一覧は read-only。legacy route の `旧URL / 後継導線 / 注意 / 根拠(SSOT)` のみを表示し、実行操作は置かない。
+- データ取得API: `GET /api/admin/legacy-status`。
+- 注意: 旧導線は凍結（互換維持のみ）とし、後継導線は `/admin/app` へ統一する。
+
+### High-risk Read Path 観測ログ（P0）
+- 対象クラスタ:
+  - `city_pack_review_inbox`
+  - `notifications`
+  - `analytics_read_model`
+- 形式: `[OBS] action=read_path_load ...`（console/stdout）
+- 主要フィールド:
+  - `cluster`
+  - `operation`
+  - `scannedCount`
+  - `resultCount`
+  - `durationMs`
+  - `fallbackUsed`
+- 監視手順（例）:
+  1) `tail -f` でアプリログを監視
+  2) `action=read_path_load` を抽出
+  3) `durationMs` のスパイクと `fallbackUsed=true` を優先確認
 
 ## ローカル診断（Phase651）
 ダッシュボードや運用APIが `NOT AVAILABLE` で埋まる場合は、先にローカル診断で環境不備を切り分ける。

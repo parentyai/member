@@ -7,6 +7,7 @@ const { approveNotification } = require('../../usecases/adminOs/approveNotificat
 const { previewNotification } = require('../../usecases/adminOs/previewNotification');
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../usecases/adminOs/executeNotificationSend');
+const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
 
@@ -283,6 +284,7 @@ function normalizeListStatus(value) {
 }
 
 async function handleList(req, res) {
+  const startedAt = Date.now();
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
@@ -331,6 +333,17 @@ async function handleList(req, res) {
       createdAt: row.createdAt || null,
       scheduledAt: row.scheduledAt || null
     }));
+    logReadPathLoadMetric({
+      cluster: 'notifications',
+      operation: 'list_notifications',
+      scannedCount: rows.length,
+      resultCount: items.length,
+      durationMs: Date.now() - startedAt,
+      fallbackUsed: false,
+      traceId,
+      requestId,
+      limit
+    });
     await appendAuditLog({
       actor,
       action: 'notifications.list',

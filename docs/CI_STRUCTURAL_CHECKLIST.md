@@ -21,3 +21,4 @@
 ## catchup:drift-checkで検証すること
 - repo map / docs artifacts が再生成差分なし
 - retention/structure/load/missing-index が予算以内
+- collection drift / phase origin / unreachable分類 / scenarioKey drift の増悪がない

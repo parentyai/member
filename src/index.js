@@ -107,7 +107,7 @@ function resolveAdminDeveloperSurfaceFlag() {
 }
 
 function resolveAdminLegacyStatusFlag() {
-  return resolveBooleanEnvFlag('ENABLE_ADMIN_LEGACY_STATUS_V1', false);
+  return resolveBooleanEnvFlag('ENABLE_ADMIN_LEGACY_STATUS_V1', true);
 }
 
 function resolveOpsRealtimeDashboardFlag() {
