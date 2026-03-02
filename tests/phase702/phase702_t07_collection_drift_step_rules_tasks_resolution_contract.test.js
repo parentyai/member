@@ -32,6 +32,6 @@ test('phase702: consistency status reflects reduced collection drift baseline', 
   });
   assert.equal(result.status, 0, result.stderr || result.stdout || 'consistency status report failed');
   const out = result.stdout || '';
-  assert.ok(out.includes('"dataModelOnly": 11'));
+  assert.ok(out.includes('"dataModelOnly": 0'));
   assert.ok(out.includes('"dataLifecycleOnly": 11'));
 });

@@ -9,10 +9,10 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 10 |
-| config | 42 |
+| aggregate | 11 |
+| config | 47 |
 | event | 6 |
-| evidence | 8 |
+| evidence | 13 |
 | transient | 3 |
 
 ## Collection方針
@@ -34,6 +34,12 @@
 | `decision_drifts` | config | INDEFINITE | false | false |
 | `decision_logs` | evidence | 365d | false | false |
 | `decision_timeline` | evidence | 365d | false | false |
+| `emergency_bulletins` | config | INDEFINITE | false | false |
+| `emergency_diffs` | evidence | 365d | false | false |
+| `emergency_events_normalized` | evidence | 365d | false | false |
+| `emergency_providers` | config | INDEFINITE | false | false |
+| `emergency_snapshots` | evidence | 365d | false | false |
+| `emergency_unmapped_events` | evidence | 365d | false | false |
 | `events` | event | 180d | CONDITIONAL | true |
 | `faq_answer_logs` | event | 180d | CONDITIONAL | true |
 | `faq_articles` | config | INDEFINITE | false | false |
@@ -42,6 +48,9 @@
 | `journey_kpi_daily` | aggregate | 90d | CONDITIONAL | true |
 | `journey_param_change_logs` | evidence | 365d | false | false |
 | `journey_param_versions` | config | INDEFINITE | false | false |
+| `journey_reminder_runs` | evidence | 365d | false | false |
+| `journey_todo_items` | config | INDEFINITE | false | false |
+| `journey_todo_stats` | aggregate | 90d | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
@@ -86,5 +95,7 @@
 | `user_checklists` | config | INDEFINITE | false | false |
 | `user_consents` | config | INDEFINITE | false | false |
 | `user_context_snapshots` | aggregate | 90d | CONDITIONAL | true |
+| `user_journey_profiles` | config | INDEFINITE | false | false |
+| `user_journey_schedules` | config | INDEFINITE | false | false |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |

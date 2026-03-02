@@ -6,19 +6,7 @@
     "data_lifecycle": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json"
   },
   "allowlist": {
-    "data_model_only": [
-      "emergency_bulletins",
-      "emergency_diffs",
-      "emergency_events_normalized",
-      "emergency_providers",
-      "emergency_snapshots",
-      "emergency_unmapped_events",
-      "journey_reminder_runs",
-      "journey_todo_items",
-      "journey_todo_stats",
-      "user_journey_profiles",
-      "user_journey_schedules"
-    ],
+    "data_model_only": [],
     "data_lifecycle_only": [
       "billing_lifecycle_automation_logs",
       "city_pack_metrics_daily",
