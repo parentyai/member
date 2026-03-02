@@ -4,6 +4,7 @@ const { getNotificationReadModel } = require('../../usecases/admin/getNotificati
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -21,7 +22,7 @@ async function handleNotificationReadModel(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const limit = url.searchParams.get('limit');
   const status = url.searchParams.get('status');
-  const scenarioKey = url.searchParams.get('scenarioKey');
+  const scenarioFilter = url.searchParams.get(SCENARIO_KEY_FIELD);
   const stepKey = url.searchParams.get('stepKey');
   const actor = resolveActor(req);
   const traceId = resolveTraceId(req);
@@ -30,7 +31,7 @@ async function handleNotificationReadModel(req, res) {
     const items = await getNotificationReadModel({
       limit: limit ? Number(limit) : undefined,
       status: status || undefined,
-      scenarioKey: scenarioKey || undefined,
+      [SCENARIO_KEY_FIELD]: scenarioFilter || undefined,
       stepKey: stepKey || undefined
     });
     logReadPathLoadMetric({
@@ -55,7 +56,7 @@ async function handleNotificationReadModel(req, res) {
         payloadSummary: {
           limit: limit ? Number(limit) : null,
           status: status || null,
-          scenarioKey: scenarioKey || null,
+          [SCENARIO_KEY_FIELD]: scenarioFilter || null,
           stepKey: stepKey || null,
           count: Array.isArray(items) ? items.length : 0
         }

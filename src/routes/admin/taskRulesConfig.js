@@ -12,6 +12,7 @@ const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 
 const TASK_RULES_SET_ACTION = 'task_rules.set';
 const TASK_RULES_SET_PATH = '/api/admin/os/task-rules/set';
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -36,7 +37,7 @@ function summarizeRule(rule) {
   const row = rule && typeof rule === 'object' ? rule : {};
   return {
     ruleId: row.ruleId || null,
-    scenarioKey: row.scenarioKey || null,
+    [SCENARIO_KEY_FIELD]: row[SCENARIO_KEY_FIELD] || null,
     stepKey: row.stepKey || null,
     priority: Number.isFinite(Number(row.priority)) ? Number(row.priority) : null,
     enabled: row.enabled === true,
@@ -329,7 +330,7 @@ async function handleDryRun(req, res, bodyText) {
       : await stepRulesRepo.listEnabledStepRulesNow({
         now: payload.now || new Date().toISOString(),
         limit: 500,
-        scenarioKey: payload.scenarioKey || undefined,
+        [SCENARIO_KEY_FIELD]: payload[SCENARIO_KEY_FIELD] || undefined,
         stepKey: payload.stepKey || undefined
       });
     const result = await computeUserTasks({

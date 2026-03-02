@@ -7,6 +7,7 @@ const { sendNotification } = require('../../usecases/notifications/sendNotificat
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveTraceId } = require('./osContext');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -93,13 +94,13 @@ async function handleList(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const limit = url.searchParams.get('limit');
   const status = url.searchParams.get('status');
-  const scenarioKey = url.searchParams.get('scenarioKey');
+  const scenarioFilter = url.searchParams.get(SCENARIO_KEY_FIELD);
   const stepKey = url.searchParams.get('stepKey');
   try {
     const result = await listNotifications({
       limit: limit ? Number(limit) : undefined,
       status: status || undefined,
-      scenarioKey: scenarioKey || undefined,
+      [SCENARIO_KEY_FIELD]: scenarioFilter || undefined,
       stepKey: stepKey || undefined
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });

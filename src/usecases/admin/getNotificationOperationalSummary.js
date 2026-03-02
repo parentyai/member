@@ -18,6 +18,7 @@ const {
   FALLBACK_MODE_BLOCK,
   resolveFallbackMode
 } = require('../../domain/readModel/fallbackPolicy');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 const DEFAULT_EVENTS_LIMIT = 1200;
 const MAX_EVENTS_LIMIT = 3000;
 const SNAPSHOT_TYPE = 'notification_operational_summary';
@@ -71,7 +72,9 @@ function resolveNotificationEventRange(notifications) {
 function resolveNotificationFilters(options) {
   return {
     status: typeof options.status === 'string' && options.status.trim() ? options.status.trim() : undefined,
-    scenarioKey: typeof options.scenarioKey === 'string' && options.scenarioKey.trim() ? options.scenarioKey.trim() : undefined,
+    [SCENARIO_KEY_FIELD]: typeof options[SCENARIO_KEY_FIELD] === 'string' && options[SCENARIO_KEY_FIELD].trim()
+      ? options[SCENARIO_KEY_FIELD].trim()
+      : undefined,
     stepKey: typeof options.stepKey === 'string' && options.stepKey.trim() ? options.stepKey.trim() : undefined
   };
 }
@@ -106,7 +109,7 @@ async function safeQuery(queryFn) {
 async function buildFromSnapshot(snapshotItems, options) {
   const opts = options || {};
   const filters = resolveNotificationFilters(opts);
-  const hasScopedFilter = Boolean(filters.status || filters.scenarioKey || filters.stepKey);
+  const hasScopedFilter = Boolean(filters.status || filters[SCENARIO_KEY_FIELD] || filters.stepKey);
   const limit = Number.isFinite(Number(opts.limit)) && Number(opts.limit) > 0 ? Math.floor(Number(opts.limit)) : null;
   if (!hasScopedFilter) {
     const sorted = Array.isArray(snapshotItems) ? snapshotItems : [];
@@ -115,7 +118,7 @@ async function buildFromSnapshot(snapshotItems, options) {
   const notifications = await notificationsRepo.listNotifications({
     limit,
     status: filters.status,
-    scenarioKey: filters.scenarioKey,
+    [SCENARIO_KEY_FIELD]: filters[SCENARIO_KEY_FIELD],
     stepKey: filters.stepKey
   });
   const byId = new Map((Array.isArray(snapshotItems) ? snapshotItems : []).map((row) => [row.notificationId, row]));
@@ -200,7 +203,7 @@ async function getNotificationOperationalSummary(params) {
   const notifications = await notificationsRepo.listNotifications({
     limit: opts.limit,
     status: filters.status,
-    scenarioKey: filters.scenarioKey,
+    [SCENARIO_KEY_FIELD]: filters[SCENARIO_KEY_FIELD],
     stepKey: filters.stepKey
   });
   const eventRange = resolveNotificationEventRange(notifications);

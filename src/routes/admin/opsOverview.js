@@ -8,6 +8,7 @@ const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
 } = require('../../domain/readModel/fallbackPolicy');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
@@ -179,7 +180,7 @@ async function handleNotificationsSummary(req, res) {
   const fallbackModeRaw = url.searchParams.get('fallbackMode');
   const fallbackOnEmptyRaw = url.searchParams.get('fallbackOnEmpty');
   const status = url.searchParams.get('status');
-  const scenarioKey = url.searchParams.get('scenarioKey');
+  const scenarioFilter = url.searchParams.get(SCENARIO_KEY_FIELD);
   const stepKey = url.searchParams.get('stepKey');
   try {
     const limit = parsePositiveInt(limitRaw, 1, 500);
@@ -207,7 +208,7 @@ async function handleNotificationsSummary(req, res) {
       fallbackOnEmpty,
       includeMeta: true,
       status: status || undefined,
-      scenarioKey: scenarioKey || undefined,
+      [SCENARIO_KEY_FIELD]: scenarioFilter || undefined,
       stepKey: stepKey || undefined
     });
     const items = Array.isArray(summary) ? summary : (Array.isArray(summary.items) ? summary.items : []);

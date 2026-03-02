@@ -227,22 +227,22 @@
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 126,
+      "line": 127,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 132,
+      "line": 133,
       "symbol": "killSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 178,
+      "line": 179,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/notifications.js",
-      "line": 182,
+      "line": 183,
       "symbol": "killSwitch"
     },
     {
@@ -352,7 +352,7 @@
     },
     {
       "file": "src/routes/admin/taskRulesConfig.js",
-      "line": 340,
+      "line": 341,
       "symbol": "killSwitch"
     },
     {

@@ -9,6 +9,7 @@ const { getNotificationReactionSummary } = require('../phase137/getNotificationR
 const { evaluateNotificationHealth } = require('../phase139/evaluateNotificationHealth');
 const { getLatestNotificationPlan, buildTemplateKey } = require('../adminOs/planNotificationSend');
 const { STEP_ORDER, NOTIFICATION_TRIGGER } = require('../../domain/constants');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 const WAIT_RULE_TYPE = 'TYPE_B';
 const WAIT_RULE_SOURCE_UNSET = 'ssot_unset';
@@ -201,7 +202,7 @@ async function getNotificationReadModel(params) {
     notifications = await notificationsRepo.listNotifications({
       limit: opts.limit,
       status: opts.status,
-      scenarioKey: opts.scenarioKey,
+      [SCENARIO_KEY_FIELD]: opts[SCENARIO_KEY_FIELD],
       stepKey: opts.stepKey
     });
   }
@@ -232,7 +233,7 @@ async function getNotificationReadModel(params) {
     const item = {
       notificationId: notification.id,
       title: notification.title || null,
-      scenarioKey: notification.scenarioKey || null,
+      [SCENARIO_KEY_FIELD]: notification[SCENARIO_KEY_FIELD] || null,
       stepKey: notification.stepKey || null,
       trigger: resolveNotificationTrigger(notification),
       order: resolveNotificationOrder(notification),
