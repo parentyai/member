@@ -7,19 +7,7 @@
   },
   "allowlist": {
     "data_model_only": [],
-    "data_lifecycle_only": [
-      "billing_lifecycle_automation_logs",
-      "city_pack_metrics_daily",
-      "city_pack_template_library",
-      "city_pack_update_proposals",
-      "journey_graph_change_logs",
-      "ops_state",
-      "phase18_cta_stats",
-      "phase22_kpi_snapshots",
-      "redac_membership_links",
-      "rich_menu_rollout_runs",
-      "school_calendar_links"
-    ]
+    "data_lifecycle_only": []
   },
   "ssot_refs": [
     "docs/REPO_AUDIT_INPUTS/data_model_map.json",

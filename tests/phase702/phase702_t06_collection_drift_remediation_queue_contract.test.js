@@ -19,7 +19,8 @@ test('phase702: collection drift remediation queue report prints required sectio
   const out = result.stdout || '';
   assert.ok(out.includes('[collection-drift-remediation-queue] report'));
   assert.ok(out.includes('"topQueue"'));
-  assert.ok(out.includes('"priorityBand"'));
+  assert.ok(out.includes('"priorityBreakdown"'));
   assert.ok(out.includes('"dataModelOnlyCount"'));
   assert.ok(out.includes('"dataLifecycleOnlyCount"'));
+  assert.ok(out.includes('"items"'));
 });

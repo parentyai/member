@@ -12,6 +12,7 @@ const USECASES_DIR = path.join(ROOT, 'src', 'usecases');
 const REPOS_DIR = path.join(ROOT, 'src', 'repos', 'firestore');
 const TESTS_DIR = path.join(ROOT, 'tests');
 const OUTPUT_DIR = path.join(ROOT, 'docs', 'REPO_AUDIT_INPUTS');
+const DATA_LIFECYCLE_PATH = path.join(OUTPUT_DIR, 'data_lifecycle.json');
 
 const OUTPUT_FILES = Object.freeze({
   featureMap: path.join(OUTPUT_DIR, 'feature_map.json'),
@@ -65,6 +66,15 @@ function toRepoRelative(absPath) {
 
 function readText(filePath) {
   return fs.readFileSync(filePath, 'utf8');
+}
+
+function readJsonIfExists(filePath, fallback) {
+  if (!fs.existsSync(filePath)) return fallback;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (_err) {
+    return fallback;
+  }
 }
 
 function listJsFiles(dir) {
@@ -173,6 +183,14 @@ function parseCollectionNames(repoFilePath) {
   }
 
   return Array.from(names.values()).sort((a, b) => a.localeCompare(b));
+}
+
+function parseRepoNameFromEvidence(evidenceEntry) {
+  const text = String(evidenceEntry || '').trim();
+  if (!text) return null;
+  const match = text.match(/src\/repos\/firestore\/([A-Za-z0-9_]+)\.js/);
+  if (!match) return null;
+  return match[1];
 }
 
 function extractExportSymbols(usecaseFilePath) {
@@ -476,12 +494,23 @@ function buildDataModelMap(core) {
     repoNameToFile[path.basename(repoRel, '.js')] = repoRel;
   });
 
+  const repoSignalCache = new Map();
+  function getRepoSignals(repoFile) {
+    if (!repoFile) return { hasFallback: false, hasFullScan: false };
+    if (repoSignalCache.has(repoFile)) return repoSignalCache.get(repoFile);
+    const repoSource = readText(path.join(ROOT, repoFile));
+    const signals = {
+      hasFallback: /withIndexFallback|fallbackOnMissingIndex|missing.?index|fallback/i.test(repoSource),
+      hasFullScan: /\blistAll[A-Za-z0-9_]*\s*\(/.test(repoSource)
+    };
+    repoSignalCache.set(repoFile, signals);
+    return signals;
+  }
+
   const collectionRows = new Map();
   Object.entries(core.repoToCollection).forEach(([repoName, collections]) => {
     const repoFile = repoNameToFile[repoName];
-    const repoSource = repoFile ? readText(path.join(ROOT, repoFile)) : '';
-    const hasFallback = /withIndexFallback|fallbackOnMissingIndex|missing.?index|fallback/i.test(repoSource);
-    const hasFullScan = /\blistAll[A-Za-z0-9_]*\s*\(/.test(repoSource);
+    const signals = getRepoSignals(repoFile);
 
     (collections || []).forEach((collection) => {
       if (!collectionRows.has(collection)) {
@@ -499,10 +528,43 @@ function buildDataModelMap(core) {
         row.writePaths.add(repoFile);
         row.readPaths.add(repoFile);
       }
-      row.hasFallback = row.hasFallback || hasFallback;
-      row.hasFullScan = row.hasFullScan || hasFullScan;
+      row.hasFallback = row.hasFallback || signals.hasFallback;
+      row.hasFullScan = row.hasFullScan || signals.hasFullScan;
     });
   });
+
+  // Add-only supplement: keep data_model_map aligned with retention lifecycle rows
+  // when a collection is policy-defined but not reachable from live route graph.
+  const lifecycleRows = readJsonIfExists(DATA_LIFECYCLE_PATH, []);
+  if (Array.isArray(lifecycleRows)) {
+    lifecycleRows.forEach((lifecycleRow) => {
+      const collection = String((lifecycleRow && lifecycleRow.collection) || '').trim();
+      if (!collection) return;
+      if (!collectionRows.has(collection)) {
+        collectionRows.set(collection, {
+          repos: new Set(),
+          writePaths: new Set(),
+          readPaths: new Set(),
+          hasFallback: false,
+          hasFullScan: false
+        });
+      }
+      const row = collectionRows.get(collection);
+      const evidence = Array.isArray(lifecycleRow && lifecycleRow.evidence) ? lifecycleRow.evidence : [];
+      evidence.forEach((entry) => {
+        const repoName = parseRepoNameFromEvidence(entry);
+        if (!repoName) return;
+        const repoFile = repoNameToFile[repoName];
+        if (!repoFile) return;
+        const signals = getRepoSignals(repoFile);
+        row.repos.add(repoName);
+        row.writePaths.add(repoFile);
+        row.readPaths.add(repoFile);
+        row.hasFallback = row.hasFallback || signals.hasFallback;
+        row.hasFullScan = row.hasFullScan || signals.hasFullScan;
+      });
+    });
+  }
 
   const collections = Array.from(collectionRows.keys()).sort((a, b) => a.localeCompare(b)).map((collection) => {
     const row = collectionRows.get(collection);
@@ -1007,16 +1069,16 @@ function buildLiveCounts() {
     (names || []).forEach((name) => repoNames.add(name));
   });
 
-  const collectionNames = new Set();
-  Object.values(core.repoToCollection || {}).forEach((names) => {
-    (names || []).forEach((name) => collectionNames.add(name));
-  });
+  const dataModelMap = buildDataModelMap(core);
+  const modelCollections = Array.isArray(dataModelMap && dataModelMap.collections)
+    ? dataModelMap.collections
+    : [];
 
   return {
     routes: Object.keys(core.routeToUsecase || {}).length,
     usecases: usecaseNames.size,
     repos: repoNames.size,
-    collections: collectionNames.size
+    collections: modelCollections.length
   };
 }
 
