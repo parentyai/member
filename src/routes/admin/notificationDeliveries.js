@@ -11,7 +11,8 @@ function writeJson(res, statusCode, payload) {
 async function handleNotificationDeliveries(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const lineUserId = (url.searchParams.get('lineUserId') || '').trim();
-  const memberNumber = (url.searchParams.get('memberNumber') || '').trim();
+  const memberId = (url.searchParams.get('memberId') || '').trim();
+  const memberNumber = (url.searchParams.get('memberNumber') || memberId || '').trim();
   const limit = url.searchParams.get('limit');
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
@@ -20,6 +21,7 @@ async function handleNotificationDeliveries(req, res) {
   try {
     const payload = await getNotificationDeliveries({
       lineUserId,
+      memberId,
       memberNumber,
       limit,
       traceId,

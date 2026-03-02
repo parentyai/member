@@ -201,6 +201,7 @@ const state = {
   composerDraftByType: {},
   composerActionGateState: null,
   composerLinkSearch: '',
+  composerIncludeArchivedSeed: false,
   repoMapKillSwitch: null,
   usersSummaryItems: [],
   usersSummaryFilteredItems: [],
@@ -291,7 +292,7 @@ if (!ADMIN_TREND_UI_ENABLED) {
 }
 
 const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
-const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '1mo', 'week', 'after1w']);
+const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '2mo', '1mo', 'week', 'after1w', 'after1mo']);
 const COMPOSER_ALLOWED_STEPS = new Set(COMPOSER_STEP_ORDER);
 const COMPOSER_DEFAULT_TRIGGER = 'manual';
 const REPO_MAP_MATRIX_TYPE_ORDER = Object.freeze(['STEP', 'GENERAL', 'ANNOUNCEMENT', 'VENDOR', 'AB']);
@@ -2448,8 +2449,17 @@ function setRole(role, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const navCore = resolveCoreSlice('navCore');
   const nextRole = normalizeRoleValue(role);
+  const previousIncludeArchivedSeed = state.composerIncludeArchivedSeed === true;
   state.role = nextRole;
   persistRoleState(nextRole);
+  const includeArchivedSeedChanged = applyComposerSeedArchiveToggleVisibility();
+  if (
+    includeArchivedSeedChanged
+    && previousIncludeArchivedSeed
+    && state.activePane === 'composer'
+  ) {
+    void loadComposerSavedNotifications({ notify: false });
+  }
   if (appShell) appShell.setAttribute('data-role', nextRole);
   applyOpsOnlyChrome(nextRole);
   document.querySelectorAll('.role-btn').forEach((btn) => {
@@ -2910,6 +2920,39 @@ function formatRepoMapMatrixTarget(target) {
   };
 }
 
+function formatComposerTitleForDisplay(value) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return '-';
+  const dummyPrefix = raw.match(/^\[DUMMY\](?:\[[^\]]+\]){1,2}\s*(.+)$/i);
+  if (dummyPrefix && dummyPrefix[1]) {
+    const suffix = raw.slice(0, raw.length - dummyPrefix[1].length).trim();
+    return `${dummyPrefix[1].trim()} ${suffix}`.trim();
+  }
+  return raw;
+}
+
+function resolveRepoMapMatrixDependencyLabel(entry) {
+  const meta = entry && entry.notificationMeta && typeof entry.notificationMeta === 'object'
+    ? entry.notificationMeta
+    : null;
+  if (!meta) return '-';
+  const explicit = typeof meta.dummyDependencyLabel === 'string' ? meta.dummyDependencyLabel.trim() : '';
+  if (explicit) return explicit;
+  const step = typeof meta.dummyDependsOnStep === 'string' ? meta.dummyDependsOnStep.trim() : '';
+  const order = Number.isFinite(Number(meta.dummyDependsOnOrder)) ? Math.floor(Number(meta.dummyDependsOnOrder)) : null;
+  if (step && order && order > 0) return `${step}#${order}`;
+  if (step) return step;
+  return '-';
+}
+
+function formatRepoMapMatrixEntryHeading(entry) {
+  const baseTitle = formatComposerTitleForDisplay(entry && typeof entry.title === 'string' ? entry.title : '');
+  const type = normalizeComposerType(entry && entry.type ? entry.type : 'STEP');
+  const order = Number.isFinite(Number(entry && entry.order)) ? Math.floor(Number(entry.order)) : null;
+  if (type === 'STEP' && order && order > 0) return `#${order} ${baseTitle}`;
+  return baseTitle;
+}
+
 function resolveComposerOrderFromStep(stepKey) {
   const index = COMPOSER_STEP_ORDER.indexOf(String(stepKey || ''));
   if (index < 0) return null;
@@ -2942,8 +2985,15 @@ function compareRepoMapMatrixEntries(left, right) {
   const rightType = normalizeComposerType(right && right.type ? right.type : 'STEP');
   const typeDiff = resolveRepoMapMatrixTypeRank(leftType) - resolveRepoMapMatrixTypeRank(rightType);
   if (typeDiff !== 0) return typeDiff;
-  const leftTitle = left && typeof left.title === 'string' ? left.title.trim() : '';
-  const rightTitle = right && typeof right.title === 'string' ? right.title.trim() : '';
+  if (leftType === 'STEP' && rightType === 'STEP') {
+    const leftOrder = Number.isFinite(Number(left && left.order)) ? Math.floor(Number(left.order)) : null;
+    const rightOrder = Number.isFinite(Number(right && right.order)) ? Math.floor(Number(right.order)) : null;
+    if (leftOrder !== null && rightOrder !== null && leftOrder !== rightOrder) return leftOrder - rightOrder;
+    if (leftOrder !== null && rightOrder === null) return -1;
+    if (leftOrder === null && rightOrder !== null) return 1;
+  }
+  const leftTitle = formatComposerTitleForDisplay(left && typeof left.title === 'string' ? left.title : '');
+  const rightTitle = formatComposerTitleForDisplay(right && typeof right.title === 'string' ? right.title : '');
   const titleDiff = leftTitle.localeCompare(rightTitle, 'ja');
   if (titleDiff !== 0) return titleDiff;
   const leftId = left && typeof left.notificationId === 'string' ? left.notificationId : '';
@@ -2974,45 +3024,19 @@ function renderRepoMapMatrixEntry(cellEl, entry) {
 
   const topRow = document.createElement('div');
   topRow.className = 'row';
-  const typeBadge = document.createElement('span');
-  typeBadge.className = resolveRepoMapMatrixTypeBadgeClass(entry && entry.type ? entry.type : 'STEP');
-  typeBadge.textContent = normalizeComposerType(entry && entry.type ? entry.type : 'STEP');
-  topRow.appendChild(typeBadge);
   const title = document.createElement('strong');
   title.className = 'repo-map-matrix-entry-title flex-1';
-  title.textContent = entry && typeof entry.title === 'string' && entry.title.trim() ? entry.title.trim() : '-';
+  title.textContent = formatRepoMapMatrixEntryHeading(entry);
   topRow.appendChild(title);
-  const statusBadge = document.createElement('span');
-  statusBadge.className = resolveRepoMapMatrixStatusBadgeClass(entry && entry.status ? entry.status : 'draft');
-  statusBadge.textContent = composerStatusLabel(entry && entry.status ? entry.status : 'draft');
-  topRow.appendChild(statusBadge);
   block.appendChild(topRow);
 
   const bottomRow = document.createElement('div');
   bottomRow.className = 'row row-top';
-  const target = formatRepoMapMatrixTarget(entry && entry.target ? entry.target : null);
-  const targetInfo = document.createElement('span');
-  targetInfo.className = 'cell-muted';
-  targetInfo.textContent = `対象 limit:${target.limit} / region:${target.region} / membersOnly:${target.membersOnly}`;
-  bottomRow.appendChild(targetInfo);
 
-  const deliveredCount = Number.isFinite(Number(entry && entry.deliveredCount)) ? Number(entry.deliveredCount) : 0;
-  const clickCount = Number.isFinite(Number(entry && entry.clickCount)) ? Number(entry.clickCount) : 0;
-  const ctr = Number.isFinite(Number(entry && entry.ctr)) ? formatRatioPercent(Number(entry.ctr)) : '-';
-  const metrics = document.createElement('span');
-  metrics.className = 'cell-muted';
-  metrics.textContent = `配信:${deliveredCount} / click:${clickCount} / CTR:${ctr}`;
-  bottomRow.appendChild(metrics);
-
-  const triggerOrder = document.createElement('span');
-  triggerOrder.className = 'cell-muted';
-  triggerOrder.textContent = 'trigger/order: UNKNOWN';
-  bottomRow.appendChild(triggerOrder);
-
-  const planHash = document.createElement('span');
-  planHash.className = 'metric-label';
-  planHash.textContent = `planHash: ${entry && entry.planHash ? entry.planHash : '-'}`;
-  bottomRow.appendChild(planHash);
+  const dependency = document.createElement('span');
+  dependency.className = 'cell-muted';
+  dependency.textContent = `依存: ${resolveRepoMapMatrixDependencyLabel(entry)}`;
+  bottomRow.appendChild(dependency);
   block.appendChild(bottomRow);
 
   cellEl.appendChild(block);
@@ -3080,10 +3104,57 @@ function renderRepoMapMatrix(matrix, options) {
 }
 
 function renderComposerMatrix(matrix) {
-  renderRepoMapMatrix(matrix, {
+  const scenarios = ['A', 'B', 'C', 'D'];
+  const steps = COMPOSER_STEP_ORDER.slice();
+  const source = matrix && typeof matrix === 'object' ? matrix : {};
+  const normalized = {
+    scenarios,
+    steps,
+    cells: []
+  };
+  const cells = Array.isArray(source.cells) ? source.cells : [];
+  scenarios.forEach((scenarioKey) => {
+    steps.forEach((stepKey) => {
+      const cell = cells.find((row) => row && row.scenarioKey === scenarioKey && row.stepKey === stepKey);
+      const entries = Array.isArray(cell && cell.entries) ? cell.entries : [];
+      const stepOnly = entries.filter((entry) => normalizeComposerType(entry && entry.type ? entry.type : 'STEP') === 'STEP');
+      normalized.cells.push({
+        scenarioKey,
+        stepKey,
+        entries: stepOnly,
+        note: 'OK'
+      });
+    });
+  });
+  renderRepoMapMatrix(normalized, {
     headId: 'composer-matrix-head',
     bodyId: 'composer-matrix-rows'
   });
+}
+
+function shouldShowComposerArchivedSeedToggle() {
+  return normalizeRoleValue(state.role || 'operator') === 'developer';
+}
+
+function resolveComposerIncludeArchivedSeedFlag() {
+  return shouldShowComposerArchivedSeedToggle() && state.composerIncludeArchivedSeed === true;
+}
+
+function applyComposerSeedArchiveToggleVisibility() {
+  const wrap = document.getElementById('composer-seed-archive-toggle-wrap');
+  const checkbox = document.getElementById('composer-include-archived-seed');
+  const visible = shouldShowComposerArchivedSeedToggle();
+  const before = state.composerIncludeArchivedSeed === true;
+  if (!visible) {
+    state.composerIncludeArchivedSeed = false;
+  }
+  const nextChecked = resolveComposerIncludeArchivedSeedFlag();
+  if (checkbox) checkbox.checked = nextChecked;
+  if (wrap) {
+    wrap.hidden = !visible;
+    wrap.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
+  return before !== (state.composerIncludeArchivedSeed === true);
 }
 
 function renderLegacyStatus(payload) {
@@ -3197,6 +3268,7 @@ function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
       title: item && typeof item.title === 'string' ? item.title : null,
       type: normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP'),
       status: normalizeComposerSavedStatus(status || 'draft'),
+      notificationMeta: item && item.notificationMeta && typeof item.notificationMeta === 'object' ? item.notificationMeta : null,
       trigger,
       order: rowOrder,
       target: item && item.target && typeof item.target === 'object' ? item.target : null,
@@ -3217,10 +3289,15 @@ function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
   return matrix;
 }
 
-async function loadNotificationMatrixOverlay() {
+async function loadNotificationMatrixOverlay(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const includeArchivedSeed = opts.includeArchivedSeed === true;
+  const listQuery = new URLSearchParams({ limit: '500' });
+  listQuery.set('notificationType', 'STEP');
+  if (includeArchivedSeed) listQuery.set('includeArchivedSeed', '1');
   const traceId = newTraceId();
   const [listRes, readModelRes] = await Promise.all([
-    fetch('/api/admin/os/notifications/list?limit=500', {
+    fetch(`/api/admin/os/notifications/list?${listQuery.toString()}`, {
       headers: buildHeaders({}, traceId)
     }),
     fetch('/admin/read-model/notifications?limit=500', {
@@ -4514,6 +4591,26 @@ function renderSafeNextStep(el, message) {
   el.textContent = message || t('ui.desc.common.safeStepFallback', '次にやる安全な1手: 更新して最新状態を確認');
 }
 
+function formatMonitorTargetSummary(target) {
+  const value = target && typeof target === 'object' ? target : null;
+  if (!value) return '-';
+  const parts = [];
+  if (value.all === true) parts.push('all');
+  if (Number.isFinite(Number(value.limit))) parts.push(`limit:${Math.floor(Number(value.limit))}`);
+  if (typeof value.region === 'string' && value.region.trim()) parts.push(`region:${value.region.trim()}`);
+  if (typeof value.membersOnly === 'boolean') parts.push(`membersOnly:${value.membersOnly ? 'yes' : 'no'}`);
+  return parts.length ? parts.join(' / ') : '-';
+}
+
+function buildMonitorLastExecutionSummary(item) {
+  const lastSentAt = item && item.lastSentAt ? formatDateLabel(item.lastSentAt) : '-';
+  const reason = item && item.lastExecuteReason ? reasonLabel(item.lastExecuteReason) : '-';
+  const delivered = Number.isFinite(Number(item && item.deliveredCount)) ? Number(item.deliveredCount) : 0;
+  const click = Number.isFinite(Number(item && item.clickCount)) ? Number(item.clickCount) : 0;
+  const ctr = delivered > 0 ? formatPercent(click, delivered) : '-';
+  return `${lastSentAt} / ${reason} / 配信:${delivered} click:${click} CTR:${ctr}`;
+}
+
 function renderMonitorRows(items) {
   const tbody = document.getElementById('monitor-rows');
   if (!tbody) return;
@@ -4529,44 +4626,25 @@ function renderMonitorRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    tr.className = 'clickable-row';
     if (item.notificationHealth === 'DANGER') tr.classList.add('row-health-danger');
     if (item.notificationHealth === 'WARN') tr.classList.add('row-health-warn');
     if (item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
     const cols = [
+      formatDateLabel(item.createdAt || item.scheduledAt || item.lastSentAt),
+      composerStatusLabel(item.status || 'draft'),
+      normalizeComposerType(item.notificationType || 'STEP'),
       item.title || '-',
       withTip(scenarioLabel(item.scenarioKey), buildTip('ui.help.scenarioCode', item.scenarioKey)),
       withTip(stepLabel(item.stepKey), buildTip('ui.help.stepCode', item.stepKey)),
-      item.targetCount != null ? String(item.targetCount) : '-',
-      withTip(reasonLabel(item.lastExecuteReason), buildTip('ui.help.reasonCode', item.lastExecuteReason)),
-      item.ctr != null ? String(item.ctr) : '-',
-      withTip(statusLabel(item.notificationHealth), buildTip('ui.help.healthCode', item.notificationHealth))
+      formatMonitorTargetSummary(item.target),
+      item.planHash || '-',
+      buildMonitorLastExecutionSummary(item)
     ];
-    cols.forEach((value, idx) => {
+    cols.forEach((value) => {
       const td = document.createElement('td');
-      if (idx === 3 || idx === 5) td.classList.add('cell-num');
       if (value instanceof Node) td.appendChild(value);
       else td.textContent = value;
       tr.appendChild(td);
-    });
-    tr.addEventListener('click', () => {
-      tbody.querySelectorAll('tr').forEach((row) => row.classList.remove('row-active'));
-      tr.classList.add('row-active');
-      const detail = document.getElementById('monitor-detail');
-      const raw = document.getElementById('monitor-raw');
-      if (detail) {
-        const parts = [
-          `${t('ui.label.monitor.col.title', 'タイトル')}: ${item.title || '-'}`,
-          `${t('ui.label.monitor.col.scenario', 'シナリオ')}: ${scenarioLabel(item.scenarioKey)}`,
-          `${t('ui.label.monitor.col.step', 'ステップ')}: ${stepLabel(item.stepKey)}`,
-          `${t('ui.label.monitor.col.target', '対象数')}: ${item.targetCount != null ? item.targetCount : '-'}`,
-          `${t('ui.label.monitor.col.last', '最終結果')}: ${reasonLabel(item.lastExecuteReason)}`,
-          `${t('ui.label.monitor.col.ctr', '反応率')}: ${item.ctr != null ? item.ctr : '-'}`,
-          `${t('ui.label.monitor.col.health', '健康度')}: ${statusLabel(item.notificationHealth)}`
-        ];
-        detail.textContent = parts.join('\n');
-      }
-      if (raw) raw.textContent = JSON.stringify(item, null, 2);
     });
     tbody.appendChild(tr);
   });
@@ -4712,8 +4790,8 @@ function userCategoryLabel(scenarioKey) {
 
 function resolveUserStatus(stepKey) {
   const step = typeof stepKey === 'string' ? stepKey.trim().toLowerCase() : '';
-  if (step === '3mo' || step === '1mo' || step === 'week') return '赴任前';
-  if (step === 'after1w') return '着任中';
+  if (step === '3mo' || step === '2mo' || step === '1mo' || step === 'week') return '赴任前';
+  if (step === 'after1w' || step === 'after1mo') return '着任中';
   return '';
 }
 
@@ -5671,7 +5749,7 @@ function renderMonitorUserRows(items) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 6;
-    td.textContent = t('ui.label.common.empty', 'データなし');
+    td.textContent = '該当する通知履歴がありません';
     tr.appendChild(td);
     tbody.appendChild(tr);
     return;
@@ -5693,21 +5771,6 @@ function renderMonitorUserRows(items) {
       const td = document.createElement('td');
       td.textContent = value;
       tr.appendChild(td);
-    });
-    tr.addEventListener('click', () => {
-      const detail = document.getElementById('monitor-detail');
-      const raw = document.getElementById('monitor-raw');
-      tbody.querySelectorAll('tr').forEach((row) => row.classList.remove('row-active'));
-      tr.classList.add('row-active');
-      if (detail) {
-        detail.textContent = [
-          `${t('ui.label.monitor.userCol.user', '対象ユーザー')}: ${item.lineUserId || '-'}`,
-          `${t('ui.label.monitor.userCol.notification', '通知')}: ${item.title || item.notificationId || '-'}`,
-          `${t('ui.label.monitor.userCol.status', '状態')}: ${item.statusLabel || '-'}`,
-          `${t('ui.label.traceId', '追跡ID')}: ${item.traceId || '-'}`
-        ].join('\n');
-      }
-      if (raw) raw.textContent = JSON.stringify(item.raw || item, null, 2);
     });
     tbody.appendChild(tr);
   });
@@ -7877,23 +7940,58 @@ function renderErrors(summary) {
 
 async function loadMonitorData(options) {
   const notify = options && options.notify;
-  const limit = document.getElementById('monitor-limit');
-  const status = document.getElementById('monitor-status');
-  const scenario = document.getElementById('monitor-scenario');
-  const step = document.getElementById('monitor-step');
   const traceId = ensureTraceInput('monitor-trace');
-  const params = new URLSearchParams();
-  if (limit && limit.value) params.set('limit', limit.value);
-  if (status && status.value) params.set('status', status.value);
-  if (scenario && scenario.value) params.set('scenarioKey', scenario.value);
-  if (step && step.value) params.set('stepKey', step.value);
+  const listParams = new URLSearchParams({ limit: '100' });
 
   const skeleton = document.getElementById('monitor-skeleton');
   if (skeleton) skeleton.classList.remove('is-hidden');
   try {
-    const res = await fetch(`/admin/read-model/notifications?${params.toString()}`, { headers: buildHeaders({}, traceId) });
-    const data = await res.json();
-    state.monitorItems = data && data.items ? data.items : [];
+    const [listRes, readModelRes] = await Promise.all([
+      fetch(`/api/admin/os/notifications/list?${listParams.toString()}`, { headers: buildHeaders({}, traceId) }),
+      fetch('/admin/read-model/notifications?limit=500', { headers: buildHeaders({}, traceId) })
+    ]);
+    const listData = await readJsonResponse(listRes);
+    const readModelData = await readJsonResponse(readModelRes).catch(() => ({ ok: false, items: [] }));
+    if (!listData || listData.ok !== true) {
+      throw new Error((listData && listData.error) || 'monitor list failed');
+    }
+    const readModelItems = readModelData && readModelData.ok === true && Array.isArray(readModelData.items)
+      ? readModelData.items
+      : [];
+    const readModelMap = new Map();
+    readModelItems.forEach((item) => {
+      const key = item && typeof item.notificationId === 'string' ? item.notificationId : '';
+      if (!key) return;
+      readModelMap.set(key, item);
+    });
+    const listItems = Array.isArray(listData.items) ? listData.items : [];
+    state.monitorItems = listItems.map((item) => {
+      const readModel = item && typeof item.id === 'string' ? readModelMap.get(item.id) || null : null;
+      const fallbackHealth = item && item.status === 'sent'
+        ? 'OK'
+        : item && item.status === 'active'
+          ? 'WARN'
+          : 'UNKNOWN';
+      return {
+        id: item && item.id ? item.id : null,
+        createdAt: item && item.createdAt ? item.createdAt : null,
+        scheduledAt: item && item.scheduledAt ? item.scheduledAt : null,
+        title: item && item.title ? item.title : null,
+        status: item && item.status ? item.status : 'draft',
+        notificationType: item && item.notificationType ? item.notificationType : 'STEP',
+        scenarioKey: item && item.scenarioKey ? item.scenarioKey : null,
+        stepKey: item && item.stepKey ? item.stepKey : null,
+        target: item && item.target && typeof item.target === 'object' ? item.target : null,
+        planHash: item && item.planHash ? item.planHash : null,
+        lastSentAt: readModel && readModel.lastSentAt ? readModel.lastSentAt : null,
+        lastExecuteReason: readModel && readModel.lastExecuteReason ? readModel.lastExecuteReason : null,
+        notificationHealth: readModel && readModel.notificationHealth ? readModel.notificationHealth : fallbackHealth,
+        deliveredCount: readModel && Number.isFinite(Number(readModel.deliveredCount)) ? Number(readModel.deliveredCount) : 0,
+        clickCount: readModel && Number.isFinite(Number(readModel.clickCount)) ? Number(readModel.clickCount) : 0,
+        weekOverWeek: readModel && readModel.weekOverWeek ? readModel.weekOverWeek : null
+      };
+    });
+    state.monitorItems.sort((a, b) => toMillis(b.createdAt || b.scheduledAt || b.lastSentAt) - toMillis(a.createdAt || a.scheduledAt || a.lastSentAt));
     renderMonitorRows(state.monitorItems);
 
     const causes = computeTopCauses(state.monitorItems);
@@ -7908,7 +8006,7 @@ async function loadMonitorData(options) {
     renderComposerScenarioCompare(state.monitorItems);
     renderAllDecisionCards();
 
-    if (notify) showToast(data && data.ok ? t('ui.toast.monitor.ok', 'monitor OK') : t('ui.toast.monitor.fail', 'monitor 失敗'), data && data.ok ? 'ok' : 'danger');
+    if (notify) showToast(t('ui.toast.monitor.ok', 'monitor OK'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.monitor.fail', 'monitor 失敗'), 'danger');
   } finally {
@@ -8562,17 +8660,22 @@ async function loadErrors(options) {
 async function loadMonitorUserDeliveries(options) {
   const notify = options && options.notify;
   const lineUserId = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
-  const memberNumber = document.getElementById('monitor-user-member-number')?.value?.trim() || '';
+  const memberId = document.getElementById('monitor-user-member-id')?.value?.trim()
+    || document.getElementById('monitor-user-member-number')?.value?.trim()
+    || '';
   const limit = document.getElementById('monitor-user-limit')?.value || '50';
   const traceId = ensureTraceInput('monitor-trace');
-  if (!lineUserId && !memberNumber) {
+  if (!lineUserId && !memberId) {
     if (notify) showToast(t('ui.toast.monitor.userQueryRequired', 'LINEユーザーIDか会員番号を入力してください'), 'warn');
     renderMonitorUserRows([]);
     return;
   }
   const params = new URLSearchParams();
-  if (lineUserId) params.set('lineUserId', lineUserId);
-  if (memberNumber) params.set('memberNumber', memberNumber);
+  if (lineUserId) {
+    params.set('lineUserId', lineUserId);
+  } else if (memberId) {
+    params.set('memberId', memberId);
+  }
   params.set('limit', limit);
   params.set('traceId', traceId);
   try {
@@ -12210,7 +12313,7 @@ function renderComposerSavedRows() {
     const ctr = resolveComposerSavedCtr(item);
     const cells = [
       formatTimestampForList(item.createdAt),
-      item.title || '-',
+      formatComposerTitleForDisplay(item && item.title),
       composerStatusLabel(item.status),
       composerCategoryLabel(item.notificationCategory),
       scenarioLabel(item.scenarioKey),
@@ -12261,13 +12364,16 @@ async function loadComposerSavedNotifications(options) {
   try {
     const limit = 200;
     const query = new URLSearchParams({ limit: String(limit) });
+    if (resolveComposerIncludeArchivedSeedFlag()) query.set('includeArchivedSeed', '1');
     const res = await fetch(`/api/admin/os/notifications/list?${query.toString()}`, { headers: buildHeaders({}, traceId) });
     const data = await res.json();
     if (!data || !data.ok) throw new Error((data && data.error) || 'list failed');
     state.composerSavedItems = Array.isArray(data.items) ? data.items : [];
     state.composerListLoadedAt = new Date().toISOString();
     renderComposerSavedRows();
-    const matrix = await loadNotificationMatrixOverlay().catch(() => ({ scenarios: [], steps: [], cells: [] }));
+    const matrix = await loadNotificationMatrixOverlay({
+      includeArchivedSeed: resolveComposerIncludeArchivedSeedFlag()
+    }).catch(() => ({ scenarios: [], steps: [], cells: [] }));
     state.composerScenarioStepMatrix = matrix;
     renderComposerMatrix(matrix);
     if (notify) showToast(t('ui.toast.composer.listOk', '保存済み通知を更新しました'), 'ok');
@@ -12396,6 +12502,28 @@ async function postJson(url, payload, traceId) {
     method: 'POST',
     traceId,
     payload
+  });
+}
+
+function bindComposerCardActionMirrors() {
+  const mappings = [
+    { mirrorId: 'composer-card-draft', sourceId: 'create-draft' },
+    { mirrorId: 'composer-card-preview', sourceId: 'preview' },
+    { mirrorId: 'composer-card-approve', sourceId: 'approve' },
+    { mirrorId: 'composer-card-plan', sourceId: 'plan' },
+    { mirrorId: 'composer-card-execute', sourceId: 'execute' }
+  ];
+  mappings.forEach((mapping) => {
+    const mirror = document.getElementById(mapping.mirrorId);
+    if (!mirror) return;
+    const source = document.getElementById(mapping.sourceId);
+    mirror.disabled = !source || source.disabled;
+    mirror.addEventListener('click', (event) => {
+      event.preventDefault();
+      const linked = document.getElementById(mapping.sourceId);
+      if (!linked || linked.disabled) return;
+      linked.click();
+    });
   });
 }
 
@@ -12592,6 +12720,21 @@ function setupComposerActions() {
     }
   });
 
+  bindComposerCardActionMirrors();
+  const includeArchivedSeedInput = document.getElementById('composer-include-archived-seed');
+  if (includeArchivedSeedInput) {
+    includeArchivedSeedInput.checked = resolveComposerIncludeArchivedSeedFlag();
+    includeArchivedSeedInput.addEventListener('change', () => {
+      if (!shouldShowComposerArchivedSeedToggle()) {
+        includeArchivedSeedInput.checked = false;
+        return;
+      }
+      state.composerIncludeArchivedSeed = includeArchivedSeedInput.checked === true;
+      void loadComposerSavedNotifications({ notify: false });
+    });
+  }
+  applyComposerSeedArchiveToggleVisibility();
+
   ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -12690,19 +12833,11 @@ function setupMonitorControls() {
     const el = document.getElementById('monitor-trace');
     if (el) el.value = newTraceId();
   });
-  document.getElementById('monitor-reload')?.addEventListener('click', () => {
+  document.getElementById('monitor-global-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
   });
   document.getElementById('monitor-user-search')?.addEventListener('click', () => {
-    const runtimeLineUserIdEl = document.getElementById('journey-graph-line-user-id');
-    if (runtimeLineUserIdEl && !runtimeLineUserIdEl.value.trim()) {
-      runtimeLineUserIdEl.value = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
-    }
-    const branchQueueLineUserIdEl = document.getElementById('journey-graph-branch-queue-line-user-id');
-    if (branchQueueLineUserIdEl && !branchQueueLineUserIdEl.value.trim()) {
-      branchQueueLineUserIdEl.value = document.getElementById('monitor-user-line-user-id')?.value?.trim() || '';
-    }
-    loadMonitorUserDeliveries({ notify: true });
+    void loadMonitorUserDeliveries({ notify: true });
   });
   document.getElementById('monitor-insights-reload')?.addEventListener('click', () => {
     loadMonitorInsights({ notify: true });
@@ -12725,127 +12860,16 @@ function setupMonitorControls() {
   document.getElementById('monitor-insights-limit')?.addEventListener('change', () => {
     loadMonitorInsights({ notify: false });
   });
-  document.getElementById('monitor-open-trace')?.addEventListener('click', async () => {
-    const trace = ensureTraceInput('monitor-trace');
-    const auditTrace = document.getElementById('audit-trace');
-    if (auditTrace) auditTrace.value = trace;
-    activatePane('audit');
-    await loadAudit().catch(() => {
-      showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+  ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      void loadMonitorUserDeliveries({ notify: true });
     });
   });
-  document.getElementById('journey-graph-runtime-reload')?.addEventListener('click', () => {
-    void loadJourneyGraphRuntime({ notify: true });
-  });
-  document.getElementById('journey-graph-runtime-history')?.addEventListener('click', () => {
-    void loadJourneyGraphRuntimeHistory({ notify: true });
-  });
-  document.getElementById('journey-graph-status-reload')?.addEventListener('click', () => {
-    void loadJourneyGraphStatus({ notify: true });
-  });
-  document.getElementById('journey-graph-plan')?.addEventListener('click', () => {
-    void planJourneyGraphCatalog();
-  });
-  document.getElementById('journey-graph-set')?.addEventListener('click', () => {
-    void setJourneyGraphCatalog();
-  });
-  document.getElementById('journey-graph-history')?.addEventListener('click', () => {
-    void loadJourneyGraphHistory({ notify: true });
-  });
-  document.getElementById('journey-graph-plan-unlock-apply')?.addEventListener('click', () => {
-    applyJourneyGraphPlanUnlockEditor();
-  });
-  document.getElementById('journey-graph-edge-editor-apply')?.addEventListener('click', () => {
-    applyJourneyGraphEdgeQuickEditor();
-  });
-  document.getElementById('journey-graph-branch-editor-apply')?.addEventListener('click', () => {
-    applyJourneyGraphBranchQuickEditor();
-  });
-  document.getElementById('journey-graph-branch-queue-reload')?.addEventListener('click', () => {
-    void loadJourneyGraphBranchQueueStatus({ notify: true });
-  });
-  document.getElementById('journey-graph-branch-queue-status-filter')?.addEventListener('change', () => {
-    void loadJourneyGraphBranchQueueStatus({ notify: false });
-  });
-  document.getElementById('journey-graph-branch-queue-line-user-id')?.addEventListener('change', () => {
-    void loadJourneyGraphBranchQueueStatus({ notify: false });
-  });
-  document.getElementById('journey-graph-filter-state')?.addEventListener('change', () => {
-    void loadJourneyGraphRuntime({ notify: false });
-  });
-  document.getElementById('journey-graph-filter-plan')?.addEventListener('change', () => {
-    void loadJourneyGraphRuntime({ notify: false });
-  });
-  document.getElementById('journey-graph-line-user-id')?.addEventListener('change', () => {
-    void loadJourneyGraphRuntime({ notify: false });
-  });
-  document.getElementById('journey-graph-filter-phase')?.addEventListener('change', () => {
-    void loadJourneyGraphRuntime({ notify: false });
-  });
-  document.getElementById('journey-graph-filter-domain')?.addEventListener('change', () => {
-    void loadJourneyGraphRuntime({ notify: false });
-  });
-  document.getElementById('journey-param-status-reload')?.addEventListener('click', () => {
-    void loadJourneyParamStatus({ notify: true });
-  });
-  document.getElementById('journey-param-plan')?.addEventListener('click', () => {
-    void planJourneyParamVersion();
-  });
-  document.getElementById('journey-param-validate')?.addEventListener('click', () => {
-    void validateJourneyParamVersionAction();
-  });
-  document.getElementById('journey-param-dry-run')?.addEventListener('click', () => {
-    void dryRunJourneyParamVersionAction();
-  });
-  document.getElementById('journey-param-apply')?.addEventListener('click', () => {
-    void applyJourneyParamVersionAction();
-  });
-  document.getElementById('journey-param-rollback')?.addEventListener('click', () => {
-    void rollbackJourneyParamVersionAction();
-  });
-  document.getElementById('journey-param-history')?.addEventListener('click', () => {
-    void loadJourneyParamHistory({ notify: true });
-  });
-  document.getElementById('rich-menu-status-reload')?.addEventListener('click', () => {
-    void loadRichMenuStatus({ notify: true });
-  });
-  document.getElementById('rich-menu-history')?.addEventListener('click', () => {
-    void loadRichMenuHistory({ notify: true });
-  });
-  document.getElementById('rich-menu-resolve-preview')?.addEventListener('click', () => {
-    void runRichMenuResolvePreview();
-  });
-  document.getElementById('rich-menu-plan')?.addEventListener('click', () => {
-    void planRichMenuAction();
-  });
-  document.getElementById('rich-menu-set')?.addEventListener('click', () => {
-    void setRichMenuAction();
-  });
-  document.getElementById('rich-menu-action-select')?.addEventListener('change', () => {
-    const action = resolveRichMenuAction();
-    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(action));
-  });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
-  if (document.getElementById('journey-graph-line-user-id') && document.getElementById('monitor-user-line-user-id')) {
-    const monitorLineUserId = document.getElementById('monitor-user-line-user-id').value || '';
-    if (!document.getElementById('journey-graph-line-user-id').value.trim()) {
-      document.getElementById('journey-graph-line-user-id').value = monitorLineUserId.trim();
-    }
-  }
-  const richMenuPreviewLineUserId = document.getElementById('rich-menu-preview-line-user-id');
-  if (richMenuPreviewLineUserId && !richMenuPreviewLineUserId.value.trim()) {
-    richMenuPreviewLineUserId.value = resolveRichMenuReferenceLineUserId();
-  }
-  if (document.getElementById('rich-menu-action-payload-json')) {
-    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(resolveRichMenuAction() || 'set_policy'));
-  }
-  void loadJourneyGraphStatus({ notify: false });
-  void loadJourneyGraphHistory({ notify: false });
-  void loadJourneyGraphBranchQueueStatus({ notify: false });
-  void loadJourneyParamStatus({ notify: false });
-  void loadJourneyParamHistory({ notify: false });
-  void loadRichMenuStatus({ notify: false });
-  void loadRichMenuHistory({ notify: false });
 }
 
 function setupErrorsControls() {

@@ -74,14 +74,16 @@ function resolveHealth(item) {
 async function getNotificationDeliveries(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
-  const memberNumber = typeof payload.memberNumber === 'string' ? payload.memberNumber.trim() : '';
+  const memberId = typeof payload.memberId === 'string' ? payload.memberId.trim() : '';
+  const memberNumberRaw = typeof payload.memberNumber === 'string' ? payload.memberNumber.trim() : '';
+  const memberNumber = memberNumberRaw || memberId;
   const limit = normalizeLimit(payload.limit, 50, 200);
   const traceId = payload.traceId || null;
   const requestId = payload.requestId || null;
   const actor = payload.actor || 'unknown';
 
   if (!lineUserId && !memberNumber) {
-    throw createHttpError(400, 'lineUserId or memberNumber required');
+    throw createHttpError(400, 'lineUserId or memberId required');
   }
 
   const deliveries = deps && deps.deliveriesRepo ? deps.deliveriesRepo : deliveriesRepo;
@@ -109,7 +111,7 @@ async function getNotificationDeliveries(params, deps) {
       ok: true,
       serverTime: new Date().toISOString(),
       traceId,
-      query: { lineUserId: lineUserId || null, memberNumber: memberNumber || null, resolvedLineUserIds: [] },
+      query: { lineUserId: lineUserId || null, memberId: memberNumber || null, memberNumber: memberNumber || null, resolvedLineUserIds: [] },
       items: [],
       summary: { total: 0, danger: 0, warn: 0, ok: 0, unknown: 0 }
     };
@@ -186,6 +188,7 @@ async function getNotificationDeliveries(params, deps) {
       requestId,
       payloadSummary: {
         lineUserId: lineUserId || null,
+        memberId: memberNumber || null,
         memberNumber: memberNumber || null,
         resolvedUsers: resolvedLineUserIds.length,
         count: items.length
@@ -199,7 +202,7 @@ async function getNotificationDeliveries(params, deps) {
     ok: true,
     serverTime: new Date().toISOString(),
     traceId,
-    query: { lineUserId: lineUserId || null, memberNumber: memberNumber || null, resolvedLineUserIds },
+    query: { lineUserId: lineUserId || null, memberId: memberNumber || null, memberNumber: memberNumber || null, resolvedLineUserIds },
     items,
     summary
   };

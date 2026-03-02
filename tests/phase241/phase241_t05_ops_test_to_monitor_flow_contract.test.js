@@ -11,4 +11,6 @@ test('phase241: ops safe test flow propagates traceId into monitor pane', () => 
   assert.ok(js.includes('function navigateToMonitorWithTrace(traceId, lineUserId)'));
   assert.ok(js.includes("activatePane('monitor')"));
   assert.ok(js.includes('loadMonitorUserDeliveries({ notify: false })'));
+  assert.ok(js.includes('/api/admin/os/notifications/list?'));
+  assert.ok(js.includes("fetch('/admin/read-model/notifications?limit=500'"));
 });

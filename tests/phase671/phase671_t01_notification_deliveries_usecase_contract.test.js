@@ -5,12 +5,12 @@ const { test } = require('node:test');
 
 const { getNotificationDeliveries } = require('../../src/usecases/deliveries/getNotificationDeliveries');
 
-test('phase671: notification deliveries usecase requires lineUserId or memberNumber', async () => {
+test('phase671: notification deliveries usecase requires lineUserId or memberId', async () => {
   await assert.rejects(
     () => getNotificationDeliveries({}, {}),
     (err) => {
       assert.equal(err.statusCode, 400);
-      assert.equal(err.message, 'lineUserId or memberNumber required');
+      assert.equal(err.message, 'lineUserId or memberId required');
       return true;
     }
   );
@@ -108,6 +108,7 @@ test('phase671: notification deliveries usecase resolves rows, joins metadata, a
 
   assert.equal(result.ok, true);
   assert.equal(result.traceId, 'TRACE_671');
+  assert.equal(result.query.memberId, 'MEM-671');
   assert.equal(result.query.memberNumber, 'MEM-671');
   assert.deepEqual(result.query.resolvedLineUserIds, ['U671_A', 'U671_B']);
   assert.equal(result.items.length, 2);
