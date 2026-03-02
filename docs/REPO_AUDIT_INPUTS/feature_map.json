@@ -1000,7 +1000,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 157,
+      "tests_count": 158,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2146,7 +2146,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 137,
+      "tests_count": 138,
       "ssot_refs": [],
       "completion": "completed"
     },

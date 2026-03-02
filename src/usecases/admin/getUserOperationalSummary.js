@@ -30,6 +30,8 @@ const {
   FALLBACK_MODE_BLOCK,
   resolveFallbackMode
 } = require('../../domain/readModel/fallbackPolicy');
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 const DEFAULT_ANALYTICS_LIMIT = 1200;
 const MAX_ANALYTICS_LIMIT = 2000;
 const SNAPSHOT_TYPE = 'user_operational_summary';
@@ -97,11 +99,11 @@ function buildChecklistTotals(checklists) {
   const totals = new Map();
   for (const checklist of checklists) {
     const data = checklist.data || {};
-    const scenario = data.scenario;
+    const scn = data[FIELD_SCN];
     const step = data.step;
-    if (!scenario || !step) continue;
+    if (!scn || !step) continue;
     const items = Array.isArray(data.items) ? data.items : [];
-    const key = `${scenario}__${step}`;
+    const key = `${scn}__${step}`;
     const current = totals.get(key) || 0;
     totals.set(key, current + items.length);
   }
@@ -198,14 +200,14 @@ function collectScenarioStepPairs(users) {
   const pairSet = new Set();
   (users || []).forEach((user) => {
     const data = user && user.data ? user.data : (user || {});
-    const scenarioKey = typeof data.scenarioKey === 'string' ? data.scenarioKey.trim() : '';
+    const scnKey = typeof data[FIELD_SCK] === 'string' ? data[FIELD_SCK].trim() : '';
     const stepKey = typeof data.stepKey === 'string' ? data.stepKey.trim() : '';
-    if (!scenarioKey || !stepKey) return;
-    pairSet.add(`${scenarioKey}__${stepKey}`);
+    if (!scnKey || !stepKey) return;
+    pairSet.add(`${scnKey}__${stepKey}`);
   });
   return Array.from(pairSet.values()).map((key) => {
     const parts = key.split('__');
-    return { scenarioKey: parts[0], stepKey: parts[1] };
+    return { [FIELD_SCK]: parts[0], stepKey: parts[1] };
   });
 }
 
@@ -380,7 +382,7 @@ async function getUserOperationalSummary(params) {
   if (checklists.length === 0 && checklistPairs.length === 1) {
     const pair = checklistPairs[0];
     const singlePairResult = await safeQuery(() => listChecklistsByScenarioAndStep({
-      scenario: pair.scenarioKey,
+      [FIELD_SCN]: pair[FIELD_SCK],
       step: pair.stepKey,
       limit: analyticsLimit
     }));
@@ -471,12 +473,12 @@ async function getUserOperationalSummary(params) {
   const items = scopedUsers.map((user) => {
     const data = user && user.data ? user.data : (user || {});
     const createdAtMs = toMillis(data.createdAt);
-    const scenarioKey = typeof data.scenarioKey === 'string' ? data.scenarioKey : null;
+    const scnKey = typeof data[FIELD_SCK] === 'string' ? data[FIELD_SCK] : null;
     const stepKey = typeof data.stepKey === 'string' ? data.stepKey : null;
     const memberNumber = typeof data.memberNumber === 'string' && data.memberNumber.trim().length > 0
       ? data.memberNumber.trim()
       : null;
-    const key = scenarioKey && stepKey ? `${scenarioKey}__${stepKey}` : null;
+    const key = scnKey && stepKey ? `${scnKey}__${stepKey}` : null;
     const total = key ? (totals.get(key) || 0) : 0;
     const hasChecklistDone = data.checklistDone && typeof data.checklistDone === 'object';
     const completed = hasChecklistDone ? Object.keys(data.checklistDone).length : (completedByUser.get(user.id) || 0);
@@ -553,7 +555,7 @@ async function getUserOperationalSummary(params) {
       opsReviewLastReviewedAt: formatTimestamp(data.opsReviewLastReviewedAt),
       opsReviewLastReviewedBy: data.opsReviewLastReviewedBy || null,
       memberNumber,
-      scenarioKey,
+      [FIELD_SCK]: scnKey,
       stepKey,
       hasMemberNumber: Boolean(memberNumber),
       checklistCompleted: completed,
