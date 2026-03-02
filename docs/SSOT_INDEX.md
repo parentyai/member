@@ -79,3 +79,4 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `tests/phase596/*`（productReadiness threshold 契約テスト）
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
 - `docs/REPO_AUDIT_INPUTS/missing_index_surface.json`（missing-index fallback surface 集計）
+- `docs/SSOT_UNREACHABLE_FINALIZATION_V1.md`（unreachable 2ファイルの最終処置方針）

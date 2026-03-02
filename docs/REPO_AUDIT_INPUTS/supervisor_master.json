@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T12:12:06-05:00",
-  "gitCommit": "104c683aa1d040a2c41c22b11339fda2e8c52216",
-  "branch": "codex/p1-collection-drift-lifecycle-only-zero",
-  "sourceDigest": "5580549edc077a9d841d69fc3ef9d783664e67689f5189c1db50c8a1919add14",
+  "generatedAt": "2026-03-02T12:25:12-05:00",
+  "gitCommit": "a6523fbab4407cf56ccbc85de0587c1960d71c2b",
+  "branch": "codex/p1-unreachable-finalization-ssot",
+  "sourceDigest": "806377d1e2e1e603098e5c53c4db5da5e7bce4c7dc2e846da77ad6db50dc00ed",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
