@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T21:46:07.081Z",
+  "generatedAt": "2026-03-02T22:18:18.873Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "8683d00713229fbddf5f30ca6df101031f7d0dd8a771dedd27f3e0a10f0c3fa2",
+  "sourceDigest": "228e8ef9d6b621360a744248f5a5c32d4696a30bc02c6da2c8a161da64881d6b",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 23,
+  "naming_drift_scenarioKey_count": 21,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -102,8 +102,6 @@
   "naming_drift": {
     "scenario": [],
     "scenarioKey": [
-      "src/domain/journey/lineCommandParsers.js",
-      "src/domain/normalizers/scenarioKeyNormalizer.js",
       "src/repos/firestore/analyticsReadRepo.js",
       "src/repos/firestore/journeyTodoItemsRepo.js",
       "src/repos/firestore/notificationsRepo.js",
