@@ -264,6 +264,14 @@ function parseListLimit(url) {
   return Math.min(Math.floor(limitRaw), 500);
 }
 
+function parseBooleanQuery(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback === true;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes') return true;
+  if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') return false;
+  return fallback === true;
+}
+
 function normalizeListStatus(value) {
   const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
   if (!raw) return '';
@@ -282,12 +290,14 @@ async function handleList(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const limit = parseListLimit(url);
   const normalizedStatus = normalizeListStatus(url.searchParams.get('status'));
+  const includeArchivedSeed = parseBooleanQuery(url.searchParams.get('includeArchivedSeed'), false);
   try {
     const rows = await notificationsRepo.listNotifications({
       limit,
       status: normalizedStatus || undefined,
       scenarioKey: url.searchParams.get('scenarioKey') || undefined,
-      stepKey: url.searchParams.get('stepKey') || undefined
+      stepKey: url.searchParams.get('stepKey') || undefined,
+      includeArchivedSeed
     });
     const category = url.searchParams.get('notificationCategory') || '';
     const notificationType = (url.searchParams.get('notificationType') || '').trim().toUpperCase();
@@ -312,6 +322,12 @@ async function handleList(req, res) {
       order: Number.isFinite(Number(row.order)) ? Number(row.order) : null,
       target: row.target || null,
       planHash: row.lastPlanHash || null,
+      seedTag: row.seedTag || null,
+      seedRunId: row.seedRunId || null,
+      seededAt: row.seededAt || null,
+      seedArchivedAt: row.seedArchivedAt || null,
+      seedArchivedBy: row.seedArchivedBy || null,
+      seedArchiveReason: row.seedArchiveReason || null,
       createdAt: row.createdAt || null,
       scheduledAt: row.scheduledAt || null
     }));
@@ -325,6 +341,7 @@ async function handleList(req, res) {
       payloadSummary: addCheckedAt({
         limit,
         status: normalizedStatus || null,
+        includeArchivedSeed,
         scenarioKey: url.searchParams.get('scenarioKey') || null,
         stepKey: url.searchParams.get('stepKey') || null
       })

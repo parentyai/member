@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T17:23:35-05:00",
-  "gitCommit": "f13ca03363b20c2d2bd86f5b7dc5766c106b4a7f",
-  "branch": "codex/notification-trigger-order-v1",
-  "sourceDigest": "ea65fae7caf8514be51386c34c59aae68076766b4821aecf74dbeef6b338fc53",
+  "generatedAt": "2026-03-01T21:06:33-05:00",
+  "gitCommit": "7fb8361fcdc42414195822a1ad3a95b86076deb5",
+  "branch": "codex/composer-card-actions-seed-v1",
+  "sourceDigest": "132e79625f906540215906fccc9e7cce2a1b7cf5b08c5ddece188d5de7340f25",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

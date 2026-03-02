@@ -3292,12 +3292,15 @@ function mergeNotificationMatrixFromItems(baseMatrix, items, readModelItems) {
 async function loadNotificationMatrixOverlay(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const includeArchivedSeed = opts.includeArchivedSeed === true;
-  const listQuery = new URLSearchParams({ limit: '500' });
+  const listBaseUrl = '/api/admin/os/notifications/list?limit=500';
+  const listQuery = new URLSearchParams();
   listQuery.set('notificationType', 'STEP');
   if (includeArchivedSeed) listQuery.set('includeArchivedSeed', '1');
+  const listQuerySuffix = listQuery.toString();
+  const listUrl = listQuerySuffix ? `${listBaseUrl}&${listQuerySuffix}` : listBaseUrl;
   const traceId = newTraceId();
   const [listRes, readModelRes] = await Promise.all([
-    fetch(`/api/admin/os/notifications/list?${listQuery.toString()}`, {
+    fetch(listUrl, {
       headers: buildHeaders({}, traceId)
     }),
     fetch('/admin/read-model/notifications?limit=500', {

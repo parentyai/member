@@ -11,8 +11,8 @@ test('phase311: matrix render uses entity-first blocks with canonical step/type/
   assert.ok(js.includes("const REPO_MAP_MATRIX_TYPE_ORDER = Object.freeze(['STEP', 'GENERAL', 'ANNOUNCEMENT', 'VENDOR', 'AB'])"));
   assert.ok(js.includes('function sortRepoMapMatrixSteps(stepKeys)'));
   assert.ok(js.includes('entries.sort(compareRepoMapMatrixEntries);'));
-  assert.ok(js.includes('trigger/order: UNKNOWN'));
-  assert.ok(js.includes('planHash: ${entry && entry.planHash ? entry.planHash : \'-\'}'));
+  assert.ok(js.includes('title.textContent = formatRepoMapMatrixEntryHeading(entry);'));
+  assert.ok(js.includes('dependency.textContent = `依存: ${resolveRepoMapMatrixDependencyLabel(entry)}`;'));
   assert.ok(js.includes('function mergeNotificationMatrixFromItems'));
   assert.ok(js.includes("headId: 'composer-matrix-head'"));
   assert.ok(js.includes("bodyId: 'composer-matrix-rows'"));

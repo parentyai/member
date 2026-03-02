@@ -48,7 +48,7 @@ test('phase272: createNotification stores notificationType and notificationMeta 
   assert.strictEqual(row.notificationMeta.vendorId, 'v-001');
   assert.deepStrictEqual(row.notificationMeta.extra, { ok: true });
   assert.strictEqual(row.trigger, 'manual');
-  assert.strictEqual(row.order, 3);
+  assert.strictEqual(row.order, 4);
 });
 
 test('phase272: createNotification rejects invalid trigger/order contracts', async (t) => {

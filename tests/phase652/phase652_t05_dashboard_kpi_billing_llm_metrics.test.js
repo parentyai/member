@@ -23,11 +23,11 @@ test('phase652: computeDashboardKpis includes billing and llm metrics', async ()
     const t2 = new Date(now - 20 * 60 * 1000);
 
     await db.collection('users').doc('U1').set({
-      createdAt: new Date(now - 24 * 60 * 60 * 1000),
+      createdAt: t1,
       redacMembershipIdHash: 'hash_u1'
     }, { merge: true });
     await db.collection('users').doc('U2').set({
-      createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      createdAt: t2
     }, { merge: true });
 
     await db.collection('notifications').doc('N1').set({ createdAt: t1 }, { merge: true });

@@ -326,7 +326,14 @@
 
   const DOMAIN_LABELS = Object.freeze({
     scenario: Object.freeze({ A: 'A単身', B: 'B夫婦', C: 'C帯同1', D: 'D帯同2' }),
-    step: Object.freeze({ '3mo': '3か月前', '1mo': '1か月前', week: '1週間前', after1w: '着任後1週間' }),
+    step: Object.freeze({
+      '3mo': '3か月前',
+      '2mo': '2か月前',
+      '1mo': '1か月前',
+      week: '1週間前',
+      after1w: '1週間後',
+      after1mo: '1か月後'
+    }),
     status: Object.freeze({
       draft: '下書き',
       active: '有効',

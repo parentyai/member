@@ -146,6 +146,34 @@
   - `npm run seed:purge -- --seedRunId "$SEED_RUN_ID" --confirm SEED_DELETE`
 - 注意: `seed:trial` / `seed:purge` は `ENV_NAME=prod|production` では実行不可（安全ガード）。
 
+### 通知Composerダミー投入（type横断）
+- 目的: Composer の `create -> approve -> plan -> execute` を type 横断で検証する。
+- 実行前提:
+  - `ADMIN_OS_TOKEN`（または token file）を設定する
+  - `LINE_CHANNEL_ACCESS_TOKEN` が未設定の場合、`execute` は `LINE_CHANNEL_ACCESS_TOKEN required` で失敗する
+  - `/admin/app?pane=composer` から対象link/設定を確認する
+
+1) dry-run（計画のみ）
+- `npm run admin:seed-notifications -- --dry-run --count-per-type 3 --target-region nyc`
+- `--target-region` 省略時の既定値は `nyc`（環境変数 `SEED_NOTIFICATIONS_REGION` で上書き可）
+- シナリオ×期間を均等投入したい場合: `--scenario-period-count 5`（A/B/C/D × 3mo/2mo/1mo/week/after1w/after1mo の各セルに5件）
+- STEP通知だけ均等投入したい場合: `--types STEP --scenario-period-count 5`
+- seed titleは「内容先頭 + [DUMMY][seedTag][seedRunId] 末尾」で出力される
+- `--scenario-period-count` 指定時は `notificationMeta.dummyDependency*` に依存関係を付与する
+
+2) 作成 + typeごと1件 execute
+- `npm run admin:seed-notifications -- --apply --count-per-type 3 --target-region nyc`
+- シナリオ×期間均等投入 + 実行確認: `npm run admin:seed-notifications -- --apply --scenario-period-count 5 --target-region nyc`
+- 実行結果は `artifacts/admin-seed-notifications/<seedRunId>.json` に保存される
+
+3) archive（非表示化・非破壊）
+- `npm run admin:seed-notifications -- --archive --seedRunId "<seedRunId>"`
+- 削除は行わず、seed archive フィールドで除外する
+
+4) composer画面での確認
+- 既定: archive済みseedは一覧/Matrixで非表示
+- developer role のみ `seed archive を表示` トグルで再表示可能
+
 ### Phase21系の注意（挙動変更なし）
 - `node scripts/phase21_verify_day_window.js` は `GOOGLE_APPLICATION_CREDENTIALS` を既定で拒否する契約（`--allow-gac` 未指定時）。
 - phase21実行時は次のいずれかで対応する:

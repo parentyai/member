@@ -1833,6 +1833,7 @@ function createServer() {
       handleSendPlan,
       handleSendExecute
     } = require('./routes/admin/osNotifications');
+    const { handleSeedArchive: handleNotificationSeedArchive } = require('./routes/admin/osNotificationSeed');
     const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
     const { handleUserBillingDetail } = require('./routes/admin/osUserBillingDetail');
     const { handleUsersSummaryAnalyze } = require('./routes/admin/osUsersSummaryAnalyze');
@@ -2145,6 +2146,11 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/execute') {
         const body = await collectBody();
         await handleSendExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/seed/archive') {
+        const body = await collectBody();
+        await handleNotificationSeedArchive(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {
