@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T13:48:34-05:00",
-  "gitCommit": "910ae87e8f6cb79e384ee339861411ba12860e3f",
-  "branch": "codex/p1-scenariokey-burndown-batch2",
-  "sourceDigest": "ba88ee14453c0aa2c3624cd3cb90e222906c0446d346bc3b37d966302e3d2a77",
+  "generatedAt": "2026-03-02T15:31:19-05:00",
+  "gitCommit": "f1276e262f7d26c7de3fa6f5a4e34d29481054c0",
+  "branch": "codex/p1-scenariokey-burndown-batch3",
+  "sourceDigest": "30902c7eeb9ba22e9856c92944b362fef1e720c12f7d314ee45271da18c2cce6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

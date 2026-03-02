@@ -18,8 +18,8 @@
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackReviewInbox.js` | 133 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/notifications.js` | 126 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/notifications.js` | 178 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 127 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 179 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 201 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |

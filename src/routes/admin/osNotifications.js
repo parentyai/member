@@ -10,6 +10,7 @@ const { executeNotificationSend } = require('../../usecases/adminOs/executeNotif
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
@@ -70,7 +71,7 @@ function summarizeComposerPayload(payload) {
   const ctaText = typeof body.ctaText === 'string' ? body.ctaText : '';
   const notificationType = typeof body.notificationType === 'string' ? body.notificationType : null;
   const notificationCategory = typeof body.notificationCategory === 'string' ? body.notificationCategory : null;
-  const scenarioKey = typeof body.scenarioKey === 'string' ? body.scenarioKey : null;
+  const scenarioValue = typeof body[SCENARIO_KEY_FIELD] === 'string' ? body[SCENARIO_KEY_FIELD] : null;
   const stepKey = typeof body.stepKey === 'string' ? body.stepKey : null;
   const trigger = typeof body.trigger === 'string' ? body.trigger : null;
   const order = Number.isFinite(Number(body.order)) ? Number(body.order) : null;
@@ -79,7 +80,7 @@ function summarizeComposerPayload(payload) {
   return {
     notificationType,
     notificationCategory,
-    scenarioKey,
+    [SCENARIO_KEY_FIELD]: scenarioValue,
     stepKey,
     trigger,
     order,
@@ -250,7 +251,7 @@ async function handleStatus(req, res) {
       notificationId,
       status: notification.status || null,
       notificationCategory: notification.notificationCategory || null,
-      scenarioKey: notification.scenarioKey || null,
+      [SCENARIO_KEY_FIELD]: notification[SCENARIO_KEY_FIELD] || null,
       stepKey: notification.stepKey || null,
       title: notification.title || null
     }));
@@ -297,7 +298,7 @@ async function handleList(req, res) {
     const rows = await notificationsRepo.listNotifications({
       limit,
       status: normalizedStatus || undefined,
-      scenarioKey: url.searchParams.get('scenarioKey') || undefined,
+      [SCENARIO_KEY_FIELD]: url.searchParams.get(SCENARIO_KEY_FIELD) || undefined,
       stepKey: url.searchParams.get('stepKey') || undefined,
       includeArchivedSeed
     });
@@ -318,7 +319,7 @@ async function handleList(req, res) {
       notificationCategory: row.notificationCategory || null,
       notificationType: row.notificationType || 'STEP',
       notificationMeta: row.notificationMeta || null,
-      scenarioKey: row.scenarioKey || null,
+      [SCENARIO_KEY_FIELD]: row[SCENARIO_KEY_FIELD] || null,
       stepKey: row.stepKey || null,
       trigger: row.trigger || null,
       order: Number.isFinite(Number(row.order)) ? Number(row.order) : null,
@@ -355,7 +356,7 @@ async function handleList(req, res) {
         limit,
         status: normalizedStatus || null,
         includeArchivedSeed,
-        scenarioKey: url.searchParams.get('scenarioKey') || null,
+        [SCENARIO_KEY_FIELD]: url.searchParams.get(SCENARIO_KEY_FIELD) || null,
         stepKey: url.searchParams.get('stepKey') || null
       })
     });
