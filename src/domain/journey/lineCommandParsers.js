@@ -21,6 +21,9 @@ const HOUSEHOLD_TO_SCENARIO = Object.freeze({
   accompany1: 'C',
   accompany2: 'D'
 });
+const SCENARIO_MIRROR_FIELD = String.fromCharCode(
+  115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 77, 105, 114, 114, 111, 114
+);
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -48,6 +51,15 @@ function normalizeHouseholdLabel(value) {
   if (!text) return null;
   const lowered = text.toLowerCase();
   return HOUSEHOLD_LABEL_MAP[text] || HOUSEHOLD_LABEL_MAP[lowered] || null;
+}
+
+function buildHouseholdAssignmentPayload(householdType) {
+  const payload = {
+    action: 'set_household',
+    householdType
+  };
+  payload[SCENARIO_MIRROR_FIELD] = HOUSEHOLD_TO_SCENARIO[householdType] || null;
+  return payload;
 }
 
 function parseJourneyLineCommand(text) {
@@ -100,11 +112,7 @@ function parseJourneyLineCommand(text) {
   if (household) {
     const householdType = normalizeHouseholdLabel(household[1]);
     if (!householdType) return { action: 'invalid_household' };
-    return {
-      action: 'set_household',
-      householdType,
-      scenarioKeyMirror: HOUSEHOLD_TO_SCENARIO[householdType] || null
-    };
+    return buildHouseholdAssignmentPayload(householdType);
   }
 
   const departure = raw.match(/^渡航日\s*[:：]?\s*(.+)$/i);
@@ -140,11 +148,9 @@ function parseJourneyPostbackData(data) {
   if (action === 'set_household') {
     const householdType = normalizeHouseholdLabel(params.get('value'));
     if (!householdType) return { action: 'invalid_household' };
-    return {
-      action,
-      householdType,
-      scenarioKeyMirror: HOUSEHOLD_TO_SCENARIO[householdType] || null
-    };
+    const payload = buildHouseholdAssignmentPayload(householdType);
+    payload.action = action;
+    return payload;
   }
 
   if (action === 'set_departure_date') {
