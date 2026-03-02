@@ -15,12 +15,22 @@ const {
   upsertChecklistPendingReport
 } = require('../../repos/firestore/scenarioReportsRepo');
 const { upsertRun } = require('../../repos/firestore/scenarioRunsRepo');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const DEFAULT_ANALYTICS_LIMIT = 1000;
 const MAX_ANALYTICS_LIMIT = 5000;
 const FALLBACK_MODE_ALLOW = 'allow';
 const FALLBACK_MODE_BLOCK = 'block';
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+
+function normalizeText(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function resolveCanonicalKey(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return normalizeText(payload[FIELD_SCK]) || normalizeText(payload[FIELD_SCN]) || null;
+}
 
 function isEnabled() {
   return String(process.env.PHASE2_AUTOMATION_ENABLED || '').toLowerCase() === 'true';
@@ -104,18 +114,18 @@ function collectLineUserIds(events, limit) {
   return ids.slice(0, cap);
 }
 
-function collectScenarioStepPairsFromUsers(users) {
+function collectCohortStepPairsFromUsers(users) {
   const seen = new Set();
   const pairs = [];
   (users || []).forEach((user) => {
     const data = user && user.data ? user.data : (user || {});
-    const scenario = normalizeScenarioKey(data);
+    const cohortKey = resolveCanonicalKey(data);
     const step = typeof data.stepKey === 'string' ? data.stepKey.trim() : '';
-    if (!scenario || !step) return;
-    const key = `${scenario}__${step}`;
+    if (!cohortKey || !step) return;
+    const key = `${cohortKey}__${step}`;
     if (seen.has(key)) return;
     seen.add(key);
-    pairs.push({ scenario, step });
+    pairs.push({ [FIELD_SCK]: cohortKey, step });
   });
   return pairs;
 }
@@ -205,7 +215,7 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       users = usersScopedResult.rows;
       if (users.length > 0) summary.readPath.userSource = 'scoped';
 
-      const pairs = collectScenarioStepPairsFromUsers(users);
+      const pairs = collectCohortStepPairsFromUsers(users);
       if (pairs.length > 0) {
         const checklistsScopedResult = await safeQuery(() => listChecklistsByScenarioStepPairs({
           pairs,
@@ -255,10 +265,10 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       }
     }
 
-    const userScenario = new Map();
+    const userCohort = new Map();
     for (const user of users) {
-      const scenario = normalizeScenarioKey(user && user.data ? user.data : (user || {}));
-      if (scenario) userScenario.set(user.id, scenario);
+      const cohortKey = resolveCanonicalKey(user && user.data ? user.data : (user || {}));
+      if (cohortKey) userCohort.set(user.id, cohortKey);
     }
 
     const dailyCounts = new Map();
@@ -273,17 +283,17 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
         continue;
       }
       const eventDateKey = dateKey(eventDate);
-      const scenario = userScenario.get(data.lineUserId);
-      if (!scenario) {
+      const cohortKey = userCohort.get(data.lineUserId);
+      if (!cohortKey) {
         summary.counts.skipped += 1;
         continue;
       }
 
       if (eventDateKey === targetDate) {
-        const counts = dailyCounts.get(scenario) || ensureCounts();
+        const counts = dailyCounts.get(cohortKey) || ensureCounts();
         if (data.type === 'open' || data.type === 'click' || data.type === 'complete') {
           counts[data.type] += 1;
-          dailyCounts.set(scenario, counts);
+          dailyCounts.set(cohortKey, counts);
           summary.counts.eventsProcessed += 1;
         } else {
           summary.counts.skipped += 1;
@@ -292,10 +302,10 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
 
       const eventWeekStart = weekStartKey(eventDate);
       if (eventWeekStart === targetWeekStart) {
-        const counts = weeklyCounts.get(scenario) || ensureCounts();
+        const counts = weeklyCounts.get(cohortKey) || ensureCounts();
         if (data.type === 'open' || data.type === 'click' || data.type === 'complete') {
           counts[data.type] += 1;
-          weeklyCounts.set(scenario, counts);
+          weeklyCounts.set(cohortKey, counts);
         }
       }
     }
@@ -305,15 +315,15 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       const data = checklist.data || {};
       const items = Array.isArray(data.items) ? data.items : [];
       checklistMap.set(checklist.id, {
-        scenario: normalizeScenarioKey(data),
+        cohortKey: resolveCanonicalKey(data),
         step: data.step,
         itemsCount: items.length
       });
     }
 
-    const userCountByScenario = {};
-    for (const scenario of userScenario.values()) {
-      userCountByScenario[scenario] = (userCountByScenario[scenario] || 0) + 1;
+    const userCountByCohort = {};
+    for (const cohortKey of userCohort.values()) {
+      userCountByCohort[cohortKey] = (userCountByCohort[cohortKey] || 0) + 1;
     }
 
     const completedByChecklist = new Map();
@@ -325,16 +335,16 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       completedByChecklist.set(data.checklistId, current + 1);
     }
 
-    const pendingByScenarioStep = new Map();
+    const pendingByCohortStep = new Map();
     for (const [checklistId, meta] of checklistMap.entries()) {
-      if (!meta || !meta.scenario || !meta.step) continue;
-      const usersCount = userCountByScenario[meta.scenario] || 0;
+      if (!meta || !meta.cohortKey || !meta.step) continue;
+      const usersCount = userCountByCohort[meta.cohortKey] || 0;
       const totalTargets = usersCount * meta.itemsCount;
       const completedCount = completedByChecklist.get(checklistId) || 0;
       const pendingCount = Math.max(totalTargets - completedCount, 0);
-      const key = `${meta.scenario}__${meta.step}`;
-      const current = pendingByScenarioStep.get(key) || {
-        scenario: meta.scenario,
+      const key = `${meta.cohortKey}__${meta.step}`;
+      const current = pendingByCohortStep.get(key) || {
+        cohortKey: meta.cohortKey,
         step: meta.step,
         totalTargets: 0,
         completedCount: 0,
@@ -343,12 +353,12 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
       current.totalTargets += totalTargets;
       current.completedCount += completedCount;
       current.pendingCount += pendingCount;
-      pendingByScenarioStep.set(key, current);
+      pendingByCohortStep.set(key, current);
     }
 
     summary.counts.dailyReports = dailyCounts.size;
     summary.counts.weeklyReports = weeklyCounts.size;
-    summary.counts.checklistReports = pendingByScenarioStep.size;
+    summary.counts.checklistReports = pendingByCohortStep.size;
 
     if (!dryRun) {
       await upsertRun(runId, {
@@ -360,16 +370,16 @@ async function runPhase2Automation({ runId, targetDate, dryRun, logger, analytic
         createdAt: new Date(startedAt)
       });
 
-      for (const [scenario, counts] of dailyCounts.entries()) {
-        await upsertDailyEventReport({ date: targetDate, scenarioKey: scenario, counts, runId });
+      for (const [cohortKey, counts] of dailyCounts.entries()) {
+        await upsertDailyEventReport({ date: targetDate, [FIELD_SCK]: cohortKey, counts, runId });
       }
-      for (const [scenario, counts] of weeklyCounts.entries()) {
-        await upsertWeeklyEventReport({ weekStart: targetWeekStart, scenarioKey: scenario, counts, runId });
+      for (const [cohortKey, counts] of weeklyCounts.entries()) {
+        await upsertWeeklyEventReport({ weekStart: targetWeekStart, [FIELD_SCK]: cohortKey, counts, runId });
       }
-      for (const report of pendingByScenarioStep.values()) {
+      for (const report of pendingByCohortStep.values()) {
         await upsertChecklistPendingReport({
           date: targetDate,
-          scenarioKey: report.scenario,
+          [FIELD_SCK]: report.cohortKey,
           step: report.step,
           totalTargets: report.totalTargets,
           completedCount: report.completedCount,

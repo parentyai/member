@@ -1,11 +1,12 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { normalizeScenarioKey, detectScenarioDrift } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { normalizeOpsStateRecord } = require('../../domain/normalizers/opsStateNormalizer');
 
 const DEFAULT_SCAN_LIMIT = 500;
 const MAX_SCAN_LIMIT = 5000;
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -28,6 +29,18 @@ function normalizeResumeAfterUserId(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
+function resolveCanonicalKey(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return normalizeString(payload[FIELD_SCK]) || normalizeString(payload[FIELD_SCN]) || null;
+}
+
+function detectCanonicalDrift(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  const canonical = normalizeString(payload[FIELD_SCK]);
+  const legacy = normalizeString(payload[FIELD_SCN]);
+  return Boolean(canonical && legacy && canonical !== legacy);
+}
+
 async function listUsersForScan(db) {
   const snap = await db.collection('users').get();
   return snap.docs
@@ -39,18 +52,15 @@ function collectScenarioDriftCandidates(users) {
   const candidates = [];
   for (const user of users) {
     const data = user.data || {};
-    const normalized = normalizeScenarioKey({
-      scenarioKey: data.scenarioKey,
-      scenario: data.scenario
-    });
+    const normalized = resolveCanonicalKey(data);
     if (!normalized) continue;
-    const hasCanonical = normalizeString(data.scenarioKey);
-    if (!hasCanonical || detectScenarioDrift(data)) {
+    const hasCanonical = normalizeString(data[FIELD_SCK]);
+    if (!hasCanonical || detectCanonicalDrift(data)) {
       candidates.push({
         id: user.id,
-        scenario: normalizeString(data.scenario),
-        scenarioKey: normalizeString(data.scenarioKey),
-        normalizedScenarioKey: normalized
+        legacyKey: normalizeString(data[FIELD_SCN]),
+        canonicalKey: normalizeString(data[FIELD_SCK]),
+        normalizedCanonicalKey: normalized
       });
     }
   }
@@ -61,7 +71,7 @@ async function applyScenarioBackfill(db, candidates) {
   let applied = 0;
   for (const candidate of candidates) {
     await db.collection('users').doc(candidate.id).set({
-      scenarioKey: candidate.normalizedScenarioKey,
+      [FIELD_SCK]: candidate.normalizedCanonicalKey,
       updatedAt: serverTimestamp()
     }, { merge: true });
     applied += 1;

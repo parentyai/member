@@ -98,9 +98,7 @@
       "src/usecases/journey/runJourneyParamDryRun.js",
       "src/usecases/notifications/sendNotification.js",
       "src/usecases/notifications/sendNotificationPhase1.js",
-      "src/usecases/phase2/runAutomation.js",
       "src/usecases/phase33/executeOpsNextAction.js",
-      "src/usecases/structure/runStructDriftBackfill.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]
   },

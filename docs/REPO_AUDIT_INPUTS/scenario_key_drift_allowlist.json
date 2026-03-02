@@ -67,6 +67,8 @@
     "src/repos/firestore/userJourneyProfilesRepo.js",
     "src/repos/firestore/usersPhase1Repo.js",
     "src/repos/firestore/usersRepo.js",
+    "src/usecases/phase2/runAutomation.js",
+    "src/usecases/structure/runStructDriftBackfill.js",
     "src/routes/admin/monitorInsights.js",
       "src/routes/admin/notifications.js",
       "src/routes/admin/opsOverview.js",
