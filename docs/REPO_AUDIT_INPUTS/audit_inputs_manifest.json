@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T09:08:51-05:00",
-  "gitCommit": "46a64e058d3a1f6a2c205683f1dbfbb7d1a4821e",
-  "branch": "codex/p1-collection-drift-detail-report",
-  "sourceDigest": "f12cdbf6fdeeb741b7f8ba28cbb30d2676e880ad1999d3cdc932c1c9122e6113",
+  "generatedAt": "2026-03-02T09:19:06-05:00",
+  "gitCommit": "f625bab7b6bd7f3da29d74f4a70a46c254ec52f6",
+  "branch": "codex/p1-scenariokey-drift-details",
+  "sourceDigest": "3c6d4d9dcc71187906253cacc0166f04c12b765adbc7e1158196619d3143fc97",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,8 +141,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "428c1ffaabdc41c65c5b1444231ee941acedaf505d9d0ed32b2a8c3ee4f5058d",
-      "bytes": 425682
+      "sha256": "8b3b31f765f904a8f0256a58b8cbfc38e0effaf089e6f2506178735f99169aa5",
+      "bytes": 425683
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "cb95bc60843def8fef3281460f283ef527b9629d4b7f37f669e85a8d4449fe52",
-      "bytes": 2425
+      "sha256": "99c706f229b5b9722fd945a1d94d1aef1e21f5018d9183306e900f546a58ab99",
+      "bytes": 2420
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
