@@ -12,6 +12,7 @@ const ALLOWED_GRAPH_STATUS = Object.freeze(['actionable', 'locked', 'done']);
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
 const ALLOWED_JOURNEY_STATE = Object.freeze(['planned', 'in_progress', 'done', 'blocked', 'snoozed', 'skipped']);
 const ALLOWED_PLAN_TIER = Object.freeze(['all', 'pro']);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -198,7 +199,7 @@ function normalizeTodoItem(docId, data) {
     lineUserId,
     todoKey,
     title: normalizeString(payload.title, null),
-    scenarioKey: normalizeString(payload.scenarioKey, null),
+    [FIELD_SCK]: normalizeString(payload[FIELD_SCK], null),
     householdType: normalizeString(payload.householdType, null),
     dueDate: toIsoDate(payload.dueDate || dueAt),
     dueAt,

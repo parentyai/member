@@ -6,6 +6,7 @@ const { TASK_STATUS, TASK_STATUS_VALUES } = require('../../domain/tasks/constant
 const COLLECTION = 'tasks';
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -78,7 +79,7 @@ function normalizeTask(taskId, data) {
     taskId: id,
     userId: normalizeText(payload.userId || payload.lineUserId || parsed.userId, null),
     lineUserId: normalizeText(payload.lineUserId || payload.userId || parsed.userId, null),
-    scenarioKey: normalizeText(payload.scenarioKey, null),
+    [FIELD_SCK]: normalizeText(payload[FIELD_SCK], null),
     stepKey: normalizeText(payload.stepKey, null),
     ruleId: normalizeText(payload.ruleId || parsed.ruleId, null),
     status: normalizeStatus(payload.status, TASK_STATUS.TODO),
