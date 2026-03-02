@@ -6,6 +6,7 @@ const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { mapFailureCode } = require('../../domain/notificationFailureTaxonomy');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function createHttpError(statusCode, message) {
   const err = new Error(message);
@@ -154,7 +155,9 @@ async function getNotificationDeliveries(params, deps) {
       deliveryId: delivery.id || null,
       notificationId: delivery.notificationId || null,
       title: notification && notification.title ? notification.title : null,
-      scenarioKey: notification && notification.scenarioKey ? notification.scenarioKey : null,
+      [USER_SCENARIO_FIELD]: (
+        notification && notification[USER_SCENARIO_FIELD] ? notification[USER_SCENARIO_FIELD] : null
+      ),
       stepKey: notification && notification.stepKey ? notification.stepKey : null,
       sentAt: delivery.sentAt || null,
       deliveredAt: delivery.deliveredAt || delivery.sentAt || null,

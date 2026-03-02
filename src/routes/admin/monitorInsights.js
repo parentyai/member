@@ -18,6 +18,7 @@ const {
   normalizeFallbackMode,
   resolveFallbackModeDefault
 } = require('../../domain/readModel/fallbackPolicy');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_DELIVERIES_READ_LIMIT = 1000;
@@ -211,7 +212,9 @@ async function handleMonitorInsights(req, res) {
       const notifEntry = notificationAgg.get(notifKey) || {
         notificationId: delivery.notificationId || null,
         title: notification && notification.title ? notification.title : null,
-        scenarioKey: notification && notification.scenarioKey ? notification.scenarioKey : null,
+        [USER_SCENARIO_FIELD]: (
+          notification && notification[USER_SCENARIO_FIELD] ? notification[USER_SCENARIO_FIELD] : null
+        ),
         stepKey: notification && notification.stepKey ? notification.stepKey : null,
         sent: 0,
         clicked: 0,

@@ -952,17 +952,17 @@
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 94,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 97,
+      "line": 95,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
       "line": 98,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 99,
       "symbol": "killSwitch"
     }
   ]

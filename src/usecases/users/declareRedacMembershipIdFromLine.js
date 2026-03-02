@@ -3,7 +3,7 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
-const { SCENARIO_KEYS, STEP_KEYS } = require('../../domain/constants');
+const { SCENARIO_KEYS, STEP_KEYS, USER_SCENARIO_FIELD } = require('../../domain/constants');
 const {
   normalizeRedacMembershipId,
   extractLast4,
@@ -41,7 +41,7 @@ async function ensureUserExistsInTx(tx, lineUserId) {
 
   // Create minimal defaults consistent with ensureUserFromWebhook().
   const data = {
-    scenarioKey: SCENARIO_KEYS.A,
+    [USER_SCENARIO_FIELD]: SCENARIO_KEYS.A,
     stepKey: STEP_KEYS.THREE_MONTHS,
     memberNumber: null,
     memberCardAsset: null,

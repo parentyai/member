@@ -6,6 +6,7 @@ const { computeUserTasks } = require('./computeUserTasks');
 const { toJourneyPatchFromTaskStatus } = require('../../domain/tasks/statusMapping');
 const { recomputeJourneyTaskGraph } = require('../journey/recomputeJourneyTaskGraph');
 const { isTaskEngineEnabled } = require('../../domain/tasks/featureFlags');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -18,7 +19,7 @@ function buildJourneyTodoPatch(task) {
   return Object.assign({}, mapped, {
     todoKey: row.ruleId,
     title: row.ruleId,
-    scenarioKey: row.scenarioKey || null,
+    [USER_SCENARIO_FIELD]: row && row[USER_SCENARIO_FIELD] || null,
     dueAt: row.dueAt || null,
     dueDate: row.dueAt ? String(row.dueAt).slice(0, 10) : null,
     nextReminderAt: row.nextNudgeAt || null,
