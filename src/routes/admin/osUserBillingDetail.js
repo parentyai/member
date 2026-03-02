@@ -7,6 +7,7 @@ const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfil
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
+const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 function normalizeLineUserId(value) {
@@ -67,7 +68,11 @@ async function handleUserBillingDetail(req, res) {
       journey: {
         profile: {
           householdType: journeyProfile && journeyProfile.householdType ? journeyProfile.householdType : null,
-          scenarioKeyMirror: journeyProfile && journeyProfile.scenarioKeyMirror ? journeyProfile.scenarioKeyMirror : null,
+          [JOURNEY_SCENARIO_MIRROR_FIELD]: (
+            journeyProfile && journeyProfile[JOURNEY_SCENARIO_MIRROR_FIELD]
+              ? journeyProfile[JOURNEY_SCENARIO_MIRROR_FIELD]
+              : null
+          ),
           timezone: journeyProfile && journeyProfile.timezone ? journeyProfile.timezone : null,
           locale: journeyProfile && journeyProfile.locale ? journeyProfile.locale : null,
           updatedAt: journeyProfile && journeyProfile.updatedAt ? journeyProfile.updatedAt : null

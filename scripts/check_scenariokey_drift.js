@@ -15,6 +15,33 @@ function uniqSorted(items) {
   return Array.from(new Set((items || []).map((item) => String(item || '').trim()).filter(Boolean))).sort();
 }
 
+function evaluateDrift(current, baseline, resolved) {
+  const currentScenario = uniqSorted(current && current.scenario || []);
+  const currentScenarioKey = uniqSorted(current && current.scenarioKey || []);
+  const baselineScenario = uniqSorted(baseline && baseline.scenario || []);
+  const baselineScenarioKey = uniqSorted(baseline && baseline.scenarioKey || []);
+  const resolvedScenario = uniqSorted(resolved && resolved.scenario || []);
+  const resolvedScenarioKey = uniqSorted(resolved && resolved.scenarioKey || []);
+
+  const scenarioAdded = currentScenario.filter((item) => !baselineScenario.includes(item));
+  const scenarioKeyAdded = currentScenarioKey.filter((item) => !baselineScenarioKey.includes(item));
+  const scenarioRevived = currentScenario.filter((item) => resolvedScenario.includes(item));
+  const scenarioKeyRevived = currentScenarioKey.filter((item) => resolvedScenarioKey.includes(item));
+
+  return {
+    currentScenario,
+    currentScenarioKey,
+    baselineScenario,
+    baselineScenarioKey,
+    resolvedScenario,
+    resolvedScenarioKey,
+    scenarioAdded,
+    scenarioKeyAdded,
+    scenarioRevived,
+    scenarioKeyRevived
+  };
+}
+
 function run() {
   if (!fs.existsSync(ALLOWLIST_PATH)) {
     process.stderr.write(`scenarioKey allowlist missing: ${path.relative(ROOT, ALLOWLIST_PATH)}\n`);
@@ -27,27 +54,33 @@ function run() {
     ? designMeta.naming_drift
     : {};
 
-  const currentScenario = uniqSorted(namingDrift.scenario || []);
-  const currentScenarioKey = uniqSorted(namingDrift.scenarioKey || []);
-
-  const baselineScenario = uniqSorted(allowlist.allowlist && allowlist.allowlist.scenario || []);
-  const baselineScenarioKey = uniqSorted(allowlist.allowlist && allowlist.allowlist.scenarioKey || []);
-
-  const scenarioAdded = currentScenario.filter((item) => !baselineScenario.includes(item));
-  const scenarioKeyAdded = currentScenarioKey.filter((item) => !baselineScenarioKey.includes(item));
-
-  process.stdout.write(
-    `scenariokey_drift current scenario=${currentScenario.length} scenarioKey=${currentScenarioKey.length}`
-    + ` baseline_scenario=${baselineScenario.length} baseline_scenarioKey=${baselineScenarioKey.length}\n`
+  const report = evaluateDrift(
+    {
+      scenario: namingDrift.scenario || [],
+      scenarioKey: namingDrift.scenarioKey || []
+    },
+    allowlist.allowlist || {},
+    allowlist.resolved || {}
   );
 
-  if (scenarioAdded.length || scenarioKeyAdded.length) {
+  process.stdout.write(
+    `scenariokey_drift current scenario=${report.currentScenario.length} scenarioKey=${report.currentScenarioKey.length}`
+    + ` baseline_scenario=${report.baselineScenario.length} baseline_scenarioKey=${report.baselineScenarioKey.length}\n`
+  );
+
+  if (report.scenarioAdded.length || report.scenarioKeyAdded.length || report.scenarioRevived.length || report.scenarioKeyRevived.length) {
     process.stderr.write('scenarioKey drift budget exceeded\n');
-    if (scenarioAdded.length) {
-      process.stderr.write(`new scenario alias paths:\n - ${scenarioAdded.join('\n - ')}\n`);
+    if (report.scenarioAdded.length) {
+      process.stderr.write(`new scenario alias paths:\n - ${report.scenarioAdded.join('\n - ')}\n`);
     }
-    if (scenarioKeyAdded.length) {
-      process.stderr.write(`new scenarioKey drift paths:\n - ${scenarioKeyAdded.join('\n - ')}\n`);
+    if (report.scenarioKeyAdded.length) {
+      process.stderr.write(`new scenarioKey drift paths:\n - ${report.scenarioKeyAdded.join('\n - ')}\n`);
+    }
+    if (report.scenarioRevived.length) {
+      process.stderr.write(`resolved scenario alias reintroduced:\n - ${report.scenarioRevived.join('\n - ')}\n`);
+    }
+    if (report.scenarioKeyRevived.length) {
+      process.stderr.write(`resolved scenarioKey drift reintroduced:\n - ${report.scenarioKeyRevived.join('\n - ')}\n`);
     }
     process.stderr.write(`update SSOT only with explicit review: ${path.relative(ROOT, ALLOWLIST_PATH)}\n`);
     process.exit(1);
@@ -56,4 +89,9 @@ function run() {
   process.stdout.write('scenarioKey drift baseline is stable\n');
 }
 
-run();
+if (require.main === module) run();
+
+module.exports = {
+  evaluateDrift,
+  uniqSorted
+};

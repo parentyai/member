@@ -1,6 +1,7 @@
 'use strict';
 
 const { getNotificationReadModel } = require('../admin/getNotificationReadModel');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function resolveLimit(value) {
   if (value === undefined || value === null) return 20;
@@ -36,7 +37,7 @@ function buildTopUnhealthy(items, limit) {
     list.push({
       notificationId: item.notificationId || null,
       title: item.title || null,
-      scenarioKey: item.scenarioKey || null,
+      [USER_SCENARIO_FIELD]: item && item[USER_SCENARIO_FIELD] ? item[USER_SCENARIO_FIELD] : null,
       stepKey: item.stepKey || null,
       health,
       sent: toNumber(summary.sent),
@@ -91,4 +92,3 @@ async function getNotificationHealthSummary(params, deps) {
 module.exports = {
   getNotificationHealthSummary
 };
-

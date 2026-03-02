@@ -34,20 +34,25 @@ function groupByArea(paths) {
   return groups;
 }
 
-function buildAliasDetail({ alias, current, baseline }) {
+function buildAliasDetail({ alias, current, baseline, resolved }) {
   const added = current.filter((item) => !baseline.includes(item));
   const resolvedFromBaseline = baseline.filter((item) => !current.includes(item));
+  const revivedResolved = current.filter((item) => resolved.includes(item));
   return {
     alias,
     counts: {
       current: current.length,
       baseline: baseline.length,
+      resolved: resolved.length,
       added: added.length,
-      resolvedFromBaseline: resolvedFromBaseline.length
+      resolvedFromBaseline: resolvedFromBaseline.length,
+      revivedResolved: revivedResolved.length
     },
     details: {
       addedPaths: added,
       resolvedFromBaselinePaths: resolvedFromBaseline,
+      revivedResolvedPaths: revivedResolved,
+      resolvedLockPaths: resolved,
       groupedCurrentPaths: groupByArea(current)
     }
   };
@@ -62,11 +67,16 @@ function run() {
   const baseline = allowlist && allowlist.allowlist && typeof allowlist.allowlist === 'object'
     ? allowlist.allowlist
     : {};
+  const resolved = allowlist && allowlist.resolved && typeof allowlist.resolved === 'object'
+    ? allowlist.resolved
+    : {};
 
   const currentScenario = uniqSorted(namingDrift.scenario || []);
   const currentScenarioKey = uniqSorted(namingDrift.scenarioKey || []);
   const baselineScenario = uniqSorted(baseline.scenario || []);
   const baselineScenarioKey = uniqSorted(baseline.scenarioKey || []);
+  const resolvedScenario = uniqSorted(resolved.scenario || []);
+  const resolvedScenarioKey = uniqSorted(resolved.scenarioKey || []);
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -78,12 +88,14 @@ function run() {
       buildAliasDetail({
         alias: 'scenario',
         current: currentScenario,
-        baseline: baselineScenario
+        baseline: baselineScenario,
+        resolved: resolvedScenario
       }),
       buildAliasDetail({
         alias: 'scenarioKey',
         current: currentScenarioKey,
-        baseline: baselineScenarioKey
+        baseline: baselineScenarioKey,
+        resolved: resolvedScenarioKey
       })
     ]
   };

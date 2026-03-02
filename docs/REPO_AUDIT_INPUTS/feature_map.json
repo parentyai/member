@@ -1500,7 +1500,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 1,
+      "tests_count": 2,
       "ssot_refs": [],
       "completion": "completed"
     },
