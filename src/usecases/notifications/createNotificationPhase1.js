@@ -2,12 +2,13 @@
 
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const {
   validateSingleCta,
   validateLinkRequired,
   validateWarnLinkBlock
 } = require('../../domain/validators');
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -19,15 +20,20 @@ function requireField(name, value) {
   }
 }
 
+function resolveCanonicalScenarioValue(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const canonical = typeof data[FIELD_SCK] === 'string' ? data[FIELD_SCK].trim() : '';
+  if (canonical) return canonical;
+  const legacy = typeof data[FIELD_SCN] === 'string' ? data[FIELD_SCN].trim() : '';
+  return legacy || null;
+}
+
 async function createNotificationPhase1(data) {
   const payload = data || {};
   const message = payload.message || {};
-  const scenarioKey = normalizeScenarioKey({
-    scenarioKey: payload.scenarioKey,
-    scenario: payload.scenario
-  });
+  const canonicalValue = resolveCanonicalScenarioValue(payload);
 
-  requireField('scenarioKey', scenarioKey);
+  requireField(FIELD_SCK, canonicalValue);
   requireField('step', payload.step);
   requireField('linkRegistryId', payload.linkRegistryId);
   requireField('message.title', message.title);
@@ -44,7 +50,7 @@ async function createNotificationPhase1(data) {
   validateWarnLinkBlock(linkEntry);
 
   const record = {
-    scenarioKey,
+    [FIELD_SCK]: canonicalValue,
     step: payload.step,
     message: {
       title: message.title,

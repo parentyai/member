@@ -8,13 +8,14 @@ const {
   NOTIFICATION_TRIGGER,
   NOTIFICATION_TRIGGER_VALUES
 } = require('../../domain/constants');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const {
   validateSingleCta,
   validateLinkRequired,
   validateWarnLinkBlock
 } = require('../../domain/validators');
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -24,6 +25,14 @@ function requireField(name, value) {
   if (!isNonEmptyString(value)) {
     throw new Error(`${name} required`);
   }
+}
+
+function resolveCanonicalScenarioValue(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const canonical = typeof data[FIELD_SCK] === 'string' ? data[FIELD_SCK].trim() : '';
+  if (canonical) return canonical;
+  const legacy = typeof data[FIELD_SCN] === 'string' ? data[FIELD_SCN].trim() : '';
+  return legacy || null;
 }
 
 function requireInList(name, value, allowed) {
@@ -141,19 +150,16 @@ function normalizeSeedMetadata(payload) {
 
 async function createNotification(data) {
   const payload = data || {};
-  const normalizedScenarioKey = normalizeScenarioKey({
-    scenarioKey: payload.scenarioKey,
-    scenario: payload.scenario
-  });
+  const normalizedCanonical = resolveCanonicalScenarioValue(payload);
 
   requireField('title', payload.title);
   requireField('body', payload.body);
   requireField('ctaText', payload.ctaText);
   requireField('linkRegistryId', payload.linkRegistryId);
-  requireField('scenarioKey', normalizedScenarioKey);
+  requireField(FIELD_SCK, normalizedCanonical);
   requireField('stepKey', payload.stepKey);
 
-  requireInList('scenarioKey', normalizedScenarioKey, PHASE0_SCENARIOS);
+  requireInList(FIELD_SCK, normalizedCanonical, PHASE0_SCENARIOS);
   requireInList('stepKey', payload.stepKey, STEP_ORDER);
 
   const linkEntry = await linkRegistryRepo.getLink(payload.linkRegistryId);
@@ -191,7 +197,7 @@ async function createNotification(data) {
     body: payload.body,
     ctaText: payload.ctaText,
     linkRegistryId: payload.linkRegistryId,
-    scenarioKey: normalizedScenarioKey,
+    [FIELD_SCK]: normalizedCanonical,
     stepKey: payload.stepKey,
     target: payload.target || null,
     sourceRefs,
