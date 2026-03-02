@@ -81,6 +81,10 @@
             <span class="nav-icon" aria-hidden="true">A</span>
             <span data-dict-key="ui.label.nav.opsDecision">判断ログ</span>
           </button>
+          <button class="nav-item" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="admin" data-role-allow="admin,developer" data-nav-priority="222">
+            <span class="nav-icon" aria-hidden="true">LR</span>
+            <span>Legacy Routes</span>
+          </button>
         </div>
 
         <div class="nav-group nav-group-notifications" data-nav-group="notifications" data-nav-surface="primary" data-ops-nav-legacy="1">
@@ -3459,21 +3463,23 @@
                 <div class="panel-title" data-dict-key="ui.label.developer.legacyStatus">LEGACY導線</div>
                 <div class="panel-body">
                   <div class="row row-top">
-                    <button id="repo-map-load-legacy" type="button" data-dict-key="ui.label.developer.loadLegacyStatus">LEGACY導線を再読込</button>
+                    <button id="repo-map-load-legacy" type="button" data-dict-key="ui.label.developer.loadLegacyStatus" disabled hidden aria-hidden="true">LEGACY導線を再読込</button>
                   </div>
                   <div class="table-wrap">
                     <table class="table table-compact snapshot-health-table">
                       <thead>
                         <tr>
                           <th data-dict-key="ui.label.developer.legacy.path">旧URL</th>
-                          <th data-dict-key="ui.label.developer.legacy.mode">動作</th>
-                          <th data-dict-key="ui.label.developer.legacy.target">推奨遷移</th>
+                          <th>後継導線</th>
+                          <th>注意</th>
+                          <th>根拠</th>
                         </tr>
                       </thead>
                       <tbody id="repo-map-legacy-status-rows"></tbody>
                     </table>
                   </div>
                   <div id="repo-map-legacy-status-note" class="cell-muted">-</div>
+                  <p class="note">この一覧は参照専用です。legacy導線は凍結状態で、/admin/app への移行先のみ案内します。</p>
                 </div>
               </div>
             </div>
@@ -3483,7 +3489,7 @@
                 <div class="panel-body">
                   <button id="repo-map-open-settings" type="button" data-dict-key="ui.label.developer.systemState">システム状態</button>
                   <button id="repo-map-open-audit" type="button" data-dict-key="ui.label.developer.audit">監査ログ</button>
-                  <button id="repo-map-open-legacy-review" type="button" data-dict-key="ui.label.developer.openLegacyReview">/admin/review を開く</button>
+                  <button id="repo-map-open-legacy-review" type="button" data-dict-key="ui.label.developer.openLegacyReview" disabled hidden aria-hidden="true">/admin/review を開く</button>
                   <button id="repo-map-open-manual-redac" type="button" data-dict-key="ui.label.developer.manualRedac">取説（Redac）</button>
                   <button id="repo-map-open-manual-user" type="button" data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</button>
                 </div>

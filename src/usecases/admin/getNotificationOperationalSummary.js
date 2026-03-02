@@ -155,6 +155,9 @@ async function getNotificationOperationalSummary(params) {
       const items = await buildFromSnapshot(snapshot.data.items, opts);
       return withMeta(items, {
         dataSource: 'snapshot',
+        scannedCount: items.length,
+        notificationCount: items.length,
+        eventCount: 0,
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
@@ -167,6 +170,9 @@ async function getNotificationOperationalSummary(params) {
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
+        scannedCount: 0,
+        notificationCount: 0,
+        eventCount: 0,
         asOf: null,
         freshnessMinutes,
         fallbackUsed: false,
@@ -178,6 +184,9 @@ async function getNotificationOperationalSummary(params) {
   if (!isFallbackAllowed(snapshotMode)) {
     return withMeta([], {
       dataSource: 'not_available',
+      scannedCount: 0,
+      notificationCount: 0,
+      eventCount: 0,
       asOf: null,
       freshnessMinutes,
       fallbackUsed: false,
@@ -270,6 +279,9 @@ async function getNotificationOperationalSummary(params) {
   const computedAsOf = new Date().toISOString();
   return withMeta(items, {
     dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
+    scannedCount: notifications.length + events.length,
+    notificationCount: notifications.length,
+    eventCount: events.length,
     asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
     freshnessMinutes: null,
     note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null,

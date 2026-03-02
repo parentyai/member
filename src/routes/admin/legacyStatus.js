@@ -15,12 +15,19 @@ const LEGACY_ITEMS = Object.freeze(
     .map((entry) => {
       const compatLegacyHtml = resolveLegacyHtmlForAdminRoute(entry.route);
       const hasCompatLegacy = typeof compatLegacyHtml === 'string' && compatLegacyHtml.length > 0;
+      const successor = buildAdminAppPaneLocation(entry.pane);
       return Object.freeze({
         path: entry.route,
         mode: hasCompatLegacy ? 'redirect_with_compat' : 'redirect',
-        target: buildAdminAppPaneLocation(entry.pane),
+        target: successor,
+        successor,
         status: hasCompatLegacy ? 'compat_legacy' : 'legacy_redirect',
-        legacySource: entry.legacySource || null
+        legacySource: entry.legacySource || null,
+        caution: hasCompatLegacy
+          ? 'legacy_html_compat_is_frozen'
+          : 'redirect_only_frozen',
+        frozen: true,
+        ssotRef: 'docs/SSOT_ADMIN_UI_ROUTES_V2.md'
       });
     })
 );
@@ -34,6 +41,7 @@ async function handleLegacyStatus(req, res) {
 
   const summary = {
     total: LEGACY_ITEMS.length,
+    frozenCount: LEGACY_ITEMS.filter((item) => item.frozen === true).length,
     legacyHtmlCount: LEGACY_ITEMS.filter((item) => item.mode === 'redirect_with_compat').length,
     redirectCount: LEGACY_ITEMS.filter((item) => String(item.mode || '').startsWith('redirect')).length
   };

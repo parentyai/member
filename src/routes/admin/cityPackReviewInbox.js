@@ -6,6 +6,7 @@ const sourceAuditRunsRepo = require('../../repos/firestore/sourceAuditRunsRepo')
 const cityPackMetricsDailyRepo = require('../../repos/firestore/cityPackMetricsDailyRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
+const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { reviewSourceRefDecision } = require('../../usecases/cityPack/reviewSourceRefDecision');
 const { runCityPackSourceAuditJob } = require('../../usecases/cityPack/runCityPackSourceAuditJob');
@@ -193,6 +194,7 @@ async function resolveUsedByDetails(sourceRef) {
 }
 
 async function handleReviewInbox(req, res, context) {
+  const startedAt = Date.now();
   const url = new URL(req.url, 'http://localhost');
   const status = (url.searchParams.get('status') || '').trim() || null;
   const packClass = normalizePackClassFilter(url.searchParams.get('packClass'));
@@ -260,6 +262,17 @@ async function handleReviewInbox(req, res, context) {
     return toMillis(b.validUntil) - toMillis(a.validUntil);
   });
   const limitedItems = items.slice(0, limit);
+  logReadPathLoadMetric({
+    cluster: 'city_pack_review_inbox',
+    operation: 'list_source_refs',
+    scannedCount: refs.length,
+    resultCount: limitedItems.length,
+    durationMs: Date.now() - startedAt,
+    fallbackUsed: false,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    limit
+  });
 
   await appendAuditLog({
     actor: context.actor,

@@ -264,6 +264,12 @@ async function getUserOperationalSummary(params) {
     if (snapshot && snapshot.data && Array.isArray(snapshot.data.items) && isSnapshotFresh(snapshot, freshnessMinutes)) {
       return withMeta(snapshot.data.items, {
         dataSource: 'snapshot',
+        scannedCount: snapshot.data.items.length,
+        userCount: snapshot.data.items.length,
+        eventCount: 0,
+        deliveryCount: 0,
+        checklistCount: 0,
+        userChecklistCount: 0,
         asOf: snapshot.asOf || null,
         freshnessMinutes: Number.isFinite(Number(snapshot.freshnessMinutes))
           ? Number(snapshot.freshnessMinutes)
@@ -276,6 +282,12 @@ async function getUserOperationalSummary(params) {
     if (isSnapshotRequired(snapshotMode)) {
       return withMeta([], {
         dataSource: 'not_available',
+        scannedCount: 0,
+        userCount: 0,
+        eventCount: 0,
+        deliveryCount: 0,
+        checklistCount: 0,
+        userChecklistCount: 0,
         asOf: null,
         freshnessMinutes,
         fallbackUsed: false,
@@ -287,6 +299,12 @@ async function getUserOperationalSummary(params) {
   if (!isFallbackAllowed(snapshotMode)) {
     return withMeta([], {
       dataSource: 'not_available',
+      scannedCount: 0,
+      userCount: 0,
+      eventCount: 0,
+      deliveryCount: 0,
+      checklistCount: 0,
+      userChecklistCount: 0,
       asOf: null,
       freshnessMinutes,
       fallbackUsed: false,
@@ -575,6 +593,12 @@ async function getUserOperationalSummary(params) {
   const computedAsOf = new Date().toISOString();
   return withMeta(items, {
     dataSource: fallbackBlockedNotAvailable ? 'not_available' : 'computed',
+    scannedCount: scopedUsers.length + events.length + checklists.length + userChecklists.length + deliveries.length,
+    userCount: scopedUsers.length,
+    eventCount: events.length,
+    deliveryCount: deliveries.length,
+    checklistCount: checklists.length,
+    userChecklistCount: userChecklists.length,
     asOf: fallbackBlockedNotAvailable ? null : computedAsOf,
     freshnessMinutes: null,
     note: fallbackBlockedNotAvailable ? 'NOT AVAILABLE' : null,

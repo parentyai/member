@@ -2503,6 +2503,11 @@
       "archivePath": "docs/archive/phases/PHASE6_PLAN.md"
     },
     {
+      "fileName": "PHASE700_EXECUTION_LOG.md",
+      "legacyPath": "docs/PHASE700_EXECUTION_LOG.md",
+      "archivePath": "docs/archive/phases/PHASE700_EXECUTION_LOG.md"
+    },
+    {
       "fileName": "PHASE70_74_EXECUTION_LOG.md",
       "legacyPath": "docs/PHASE70_74_EXECUTION_LOG.md",
       "archivePath": "docs/archive/phases/PHASE70_74_EXECUTION_LOG.md"

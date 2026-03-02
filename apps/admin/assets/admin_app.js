@@ -1047,7 +1047,7 @@ function applyOpsOnlyChrome(role) {
     if (shouldHide) el.setAttribute('aria-hidden', 'true');
     else el.removeAttribute('aria-hidden');
   });
-  const hideLegacyStatusSurface = !ADMIN_LEGACY_STATUS_V1 || nextRole !== 'developer';
+  const hideLegacyStatusSurface = !ADMIN_LEGACY_STATUS_V1 || (nextRole !== 'developer' && nextRole !== 'admin');
   document.querySelectorAll('[data-legacy-status-surface="1"]').forEach((el) => {
     el.classList.toggle('is-hidden', hideLegacyStatusSurface);
     if (hideLegacyStatusSurface) el.setAttribute('aria-hidden', 'true');
@@ -3167,7 +3167,7 @@ function renderLegacyStatus(payload) {
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 3;
+    td.colSpan = 4;
     td.textContent = t('ui.value.repoMap.notAvailable', 'NOT AVAILABLE');
     tr.appendChild(td);
     rowsEl.appendChild(tr);
@@ -3179,13 +3179,16 @@ function renderLegacyStatus(payload) {
     const tr = document.createElement('tr');
     const pathTd = document.createElement('td');
     pathTd.textContent = asText(item && item.path, '-');
-    const modeTd = document.createElement('td');
-    modeTd.textContent = asText(item && item.mode, '-');
-    const targetTd = document.createElement('td');
-    targetTd.textContent = asText(item && item.target, '-');
+    const successorTd = document.createElement('td');
+    successorTd.textContent = asText(item && (item.successor || item.target), '-');
+    const cautionTd = document.createElement('td');
+    cautionTd.textContent = asText(item && item.caution, asText(item && item.status, '-'));
+    const ssotTd = document.createElement('td');
+    ssotTd.textContent = asText(item && item.ssotRef, '-');
     tr.appendChild(pathTd);
-    tr.appendChild(modeTd);
-    tr.appendChild(targetTd);
+    tr.appendChild(successorTd);
+    tr.appendChild(cautionTd);
+    tr.appendChild(ssotTd);
     rowsEl.appendChild(tr);
   });
 
@@ -3193,7 +3196,8 @@ function renderLegacyStatus(payload) {
   if (noteEl) {
     const legacyHtml = Number.isFinite(Number(summary.legacyHtmlCount)) ? Number(summary.legacyHtmlCount) : 0;
     const redirectCount = Number.isFinite(Number(summary.redirectCount)) ? Number(summary.redirectCount) : 0;
-    noteEl.textContent = `${t('ui.label.developer.legacy.summary', 'legacy HTML / redirect')}: ${legacyHtml} / ${redirectCount}`;
+    const frozenCount = Number.isFinite(Number(summary.frozenCount)) ? Number(summary.frozenCount) : items.length;
+    noteEl.textContent = `${t('ui.label.developer.legacy.summary', 'legacy HTML / redirect')}: ${legacyHtml} / ${redirectCount} | frozen=${frozenCount}`;
   }
 }
 
@@ -3517,18 +3521,13 @@ function setupDeveloperMenu() {
   reload?.addEventListener('click', () => {
     void loadRepoMap({ notify: true });
   });
-  reloadLegacy?.addEventListener('click', () => {
-    void loadLegacyStatus({ notify: true });
-  });
+  // Legacy routes surface is read-only (P0): keep element IDs for compatibility, but disable manual actions.
   paneSystem?.addEventListener('click', () => activatePane('settings'));
   paneAudit?.addEventListener('click', async () => {
     activatePane('audit');
     await loadAudit().catch(() => {
       showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
     });
-  });
-  paneLegacyReview?.addEventListener('click', () => {
-    globalThis.location.href = '/admin/review';
   });
   paneManualRedac?.addEventListener('click', () => activatePane('developer-manual-redac'));
   paneManualUser?.addEventListener('click', () => activatePane('developer-manual-user'));

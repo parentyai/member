@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "policy": "add-only baseline allowlist for known collection drift between data_model_map and data_lifecycle",
+  "source": {
+    "data_model_map": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
+    "data_lifecycle": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json"
+  },
+  "allowlist": {
+    "data_model_only": [
+      "emergency_bulletins",
+      "emergency_diffs",
+      "emergency_events_normalized",
+      "emergency_providers",
+      "emergency_snapshots",
+      "emergency_unmapped_events",
+      "journey_reminder_runs",
+      "journey_todo_items",
+      "journey_todo_stats",
+      "step_rules",
+      "tasks",
+      "user_journey_profiles",
+      "user_journey_schedules"
+    ],
+    "data_lifecycle_only": [
+      "billing_lifecycle_automation_logs",
+      "city_pack_metrics_daily",
+      "city_pack_template_library",
+      "city_pack_update_proposals",
+      "journey_graph_change_logs",
+      "ops_state",
+      "phase18_cta_stats",
+      "phase22_kpi_snapshots",
+      "redac_membership_links",
+      "rich_menu_rollout_runs",
+      "school_calendar_links"
+    ]
+  },
+  "ssot_refs": [
+    "docs/REPO_AUDIT_INPUTS/data_model_map.json",
+    "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
+    "docs/SSOT_RETENTION_ADDENDUM.md",
+    "docs/DATA_MAP.md"
+  ],
+  "rationale": "既存本番互換を維持しつつ drift を可視化して増悪のみ CI で停止する。"
+}

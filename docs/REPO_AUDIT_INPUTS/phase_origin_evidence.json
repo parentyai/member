@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "policy": "tests-first phase origin evidence for previously unknown targets",
+  "targets": [
+    {
+      "feature": "taskNudgeJob",
+      "phaseOrigin": 700,
+      "evidence": {
+        "tests": [
+          "tests/phase700/phase700_t04_task_engine_route_and_ui_contract.test.js"
+        ],
+        "routes": [
+          "src/routes/internal/taskNudgeJob.js",
+          "src/index.js"
+        ],
+        "phaseDocs": [
+          "docs/archive/phases/PHASE700_EXECUTION_LOG.md"
+        ]
+      },
+      "status": "confirmed"
+    },
+    {
+      "feature": "userTimeline",
+      "phaseOrigin": 206,
+      "evidence": {
+        "tests": [
+          "tests/phase206/phase206_user_timeline_api.test.js"
+        ],
+        "routes": [
+          "src/routes/admin/userTimeline.js",
+          "src/index.js"
+        ],
+        "phaseDocs": [
+          "docs/archive/phases/PHASE206_EXECUTION_LOG.md"
+        ]
+      },
+      "status": "confirmed"
+    }
+  ],
+  "ssot_refs": [
+    "docs/REPO_AUDIT_INPUTS/feature_map.json",
+    "docs/PHASE_PATH_MAP.json"
+  ]
+}

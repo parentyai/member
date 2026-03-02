@@ -10,7 +10,7 @@
 # Tests
 - [ ] Not run (explain why)
 - [ ] Run (list commands and results)
-- [ ] `npm run catchup:drift-check` 実行済み（repo-map / docs-artifacts / cleanup / retention / structure / load-risk / missing-index）
+- [ ] `npm run catchup:drift-check` 実行済み（repo-map / docs-artifacts / cleanup / retention / structure / load-risk / missing-index / collection-drift / phase-origin / unreachable / scenariokey-drift）
 - [ ] `npm run test:admin-nav-contract` 実行済み（Admin UI導線変更あり）
 - [ ] `npm run firestore-indexes:check -- --contracts-only` 実行済み（admin/read path変更あり）
 

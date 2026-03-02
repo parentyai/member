@@ -2,6 +2,7 @@
 
 const { getNotificationReadModel } = require('../../usecases/admin/getNotificationReadModel');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
 function handleError(res, err) {
@@ -16,6 +17,7 @@ function handleError(res, err) {
 }
 
 async function handleNotificationReadModel(req, res) {
+  const startedAt = Date.now();
   const url = new URL(req.url, 'http://localhost');
   const limit = url.searchParams.get('limit');
   const status = url.searchParams.get('status');
@@ -30,6 +32,17 @@ async function handleNotificationReadModel(req, res) {
       status: status || undefined,
       scenarioKey: scenarioKey || undefined,
       stepKey: stepKey || undefined
+    });
+    logReadPathLoadMetric({
+      cluster: 'notifications',
+      operation: 'read_model_notifications',
+      scannedCount: Array.isArray(items) ? items.length : 0,
+      resultCount: Array.isArray(items) ? items.length : 0,
+      durationMs: Date.now() - startedAt,
+      fallbackUsed: false,
+      traceId,
+      requestId,
+      limit: limit ? Number(limit) : null
     });
     try {
       await appendAuditLog({
