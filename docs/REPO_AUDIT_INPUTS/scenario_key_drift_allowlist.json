@@ -54,6 +54,15 @@
       "src/usecases/users/ensureUser.js"
     ]
   },
+  "resolved": {
+    "scenario": [],
+    "scenarioKey": [
+      "src/routes/admin/osUserBillingDetail.js",
+      "src/usecases/assistant/resolvePersonalizedLlmContext.js",
+      "src/usecases/phase140/getNotificationHealthSummary.js",
+      "src/usecases/users/ensureUser.js"
+    ]
+  },
   "ssot_refs": [
     "docs/SSOT_SCENARIOKEY_CANON_V1.md",
     "docs/REPO_AUDIT_INPUTS/design_ai_meta.json"

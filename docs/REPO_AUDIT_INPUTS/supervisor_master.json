@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T12:25:12-05:00",
-  "gitCommit": "a6523fbab4407cf56ccbc85de0587c1960d71c2b",
-  "branch": "codex/p1-unreachable-finalization-ssot",
-  "sourceDigest": "806377d1e2e1e603098e5c53c4db5da5e7bce4c7dc2e846da77ad6db50dc00ed",
+  "generatedAt": "2026-03-02T13:10:49-05:00",
+  "gitCommit": "35f67b10f0837d3de67c95867e854ea964cf52ad",
+  "branch": "codex/p1-scenariokey-burndown-lowrisk",
+  "sourceDigest": "3886b570601eaeb77bc7dbc7ee4a479f1180ddedff2d1a9d4bbad31c249b5eff",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

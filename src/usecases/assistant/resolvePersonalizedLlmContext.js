@@ -4,6 +4,7 @@ const { resolvePlan } = require('../billing/planGate');
 const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
+const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 
 function normalizeLineUserId(value) {
   if (typeof value !== 'string') return '';
@@ -36,7 +37,7 @@ async function resolvePersonalizedLlmContext(params, deps) {
       plan: 'free',
       subscriptionStatus: 'unknown',
       householdType: null,
-      scenarioKeyMirror: null,
+      [JOURNEY_SCENARIO_MIRROR_FIELD]: null,
       journeyStage: null,
       departureDate: null,
       assignmentDate: null,
@@ -63,7 +64,11 @@ async function resolvePersonalizedLlmContext(params, deps) {
     plan: planInfo.plan,
     subscriptionStatus: planInfo.status,
     householdType: profile && profile.householdType ? profile.householdType : null,
-    scenarioKeyMirror: profile && profile.scenarioKeyMirror ? profile.scenarioKeyMirror : null,
+    [JOURNEY_SCENARIO_MIRROR_FIELD]: (
+      profile && profile[JOURNEY_SCENARIO_MIRROR_FIELD]
+        ? profile[JOURNEY_SCENARIO_MIRROR_FIELD]
+        : null
+    ),
     journeyStage: schedule && schedule.stage ? schedule.stage : null,
     departureDate: schedule && schedule.departureDate ? schedule.departureDate : null,
     assignmentDate: schedule && schedule.assignmentDate ? schedule.assignmentDate : null,

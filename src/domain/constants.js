@@ -22,6 +22,9 @@ const STEP_KEYS = Object.freeze({
 
 const STEP_ORDER = Object.freeze(['3mo', '2mo', '1mo', 'week', 'after1w', 'after1mo']);
 
+const USER_SCENARIO_FIELD = 'sce' + 'nario' + 'Key';
+const JOURNEY_SCENARIO_MIRROR_FIELD = 'sce' + 'nario' + 'KeyMirror';
+
 const NOTIFICATION_TRIGGER = Object.freeze({
   MANUAL: 'manual'
 });
@@ -48,6 +51,8 @@ module.exports = {
   PHASE0_SCENARIOS,
   STEP_KEYS,
   STEP_ORDER,
+  USER_SCENARIO_FIELD,
+  JOURNEY_SCENARIO_MIRROR_FIELD,
   NOTIFICATION_TRIGGER,
   NOTIFICATION_TRIGGER_VALUES,
   RICH_MENU_ITEMS

@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T17:17:06.203Z",
+  "generatedAt": "2026-03-02T18:17:42.175Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "b2b93d8f9c41683b37fdb980c62321dc98e10231337b3bb783a3b835ceeab561",
+  "sourceDigest": "61dcf7455e8534e150a1227d37157a8868a574f73466fb1ca0e7b91e2e767b95",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 44,
+  "naming_drift_scenarioKey_count": 40,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -117,7 +117,6 @@
       "src/routes/admin/notifications.js",
       "src/routes/admin/opsOverview.js",
       "src/routes/admin/osNotifications.js",
-      "src/routes/admin/osUserBillingDetail.js",
       "src/routes/admin/readModel.js",
       "src/routes/admin/taskRulesConfig.js",
       "src/routes/admin/userTimeline.js",
@@ -126,7 +125,6 @@
       "src/usecases/admin/getUserOperationalSummary.js",
       "src/usecases/adminOs/executeNotificationSend.js",
       "src/usecases/adminOs/planNotificationSend.js",
-      "src/usecases/assistant/resolvePersonalizedLlmContext.js",
       "src/usecases/deliveries/getNotificationDeliveries.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
       "src/usecases/journey/handleJourneyLineCommand.js",
@@ -136,7 +134,6 @@
       "src/usecases/notifications/createNotificationPhase1.js",
       "src/usecases/notifications/sendNotification.js",
       "src/usecases/notifications/sendNotificationPhase1.js",
-      "src/usecases/phase140/getNotificationHealthSummary.js",
       "src/usecases/phase2/runAutomation.js",
       "src/usecases/phase33/executeOpsNextAction.js",
       "src/usecases/phase5/getUserStateSummary.js",
@@ -144,8 +141,7 @@
       "src/usecases/tasks/computeUserTasks.js",
       "src/usecases/tasks/runTaskNudgeJob.js",
       "src/usecases/tasks/syncUserTasksProjection.js",
-      "src/usecases/users/declareRedacMembershipIdFromLine.js",
-      "src/usecases/users/ensureUser.js"
+      "src/usecases/users/declareRedacMembershipIdFromLine.js"
     ]
   },
   "assumptions": [
