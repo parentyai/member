@@ -57,9 +57,17 @@
   "resolved": {
     "scenario": [],
     "scenarioKey": [
+      "src/routes/admin/monitorInsights.js",
       "src/routes/admin/osUserBillingDetail.js",
+      "src/routes/admin/userTimeline.js",
       "src/usecases/assistant/resolvePersonalizedLlmContext.js",
+      "src/usecases/deliveries/getNotificationDeliveries.js",
+      "src/usecases/journey/handleJourneyLineCommand.js",
+      "src/usecases/journey/syncJourneyTodoPlan.js",
       "src/usecases/phase140/getNotificationHealthSummary.js",
+      "src/usecases/tasks/runTaskNudgeJob.js",
+      "src/usecases/tasks/syncUserTasksProjection.js",
+      "src/usecases/users/declareRedacMembershipIdFromLine.js",
       "src/usecases/users/ensureUser.js"
     ]
   },

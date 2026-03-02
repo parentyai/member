@@ -11,6 +11,7 @@ const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
+const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -151,7 +152,7 @@ async function handleJourneyLineCommand(params, deps) {
   if (command.action === 'set_household') {
     const saved = await profileRepo.upsertUserJourneyProfile(lineUserId, {
       householdType: command.householdType,
-      scenarioKeyMirror: command.scenarioKeyMirror,
+      [JOURNEY_SCENARIO_MIRROR_FIELD]: command ? command[JOURNEY_SCENARIO_MIRROR_FIELD] : null,
       source: 'line_command'
     }, lineUserId);
     const syncResult = await syncJourneyTodoPlan({

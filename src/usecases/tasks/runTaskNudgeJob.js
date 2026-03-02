@@ -10,6 +10,7 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { TASK_STATUS } = require('../../domain/tasks/constants');
 const { isTaskNudgeEnabled } = require('../../domain/tasks/featureFlags');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -164,7 +165,7 @@ async function runTaskNudgeJob(params, deps) {
       body: buildNudgeBody(row, rule),
       ctaText,
       linkRegistryId,
-      scenarioKey: row.scenarioKey,
+      [USER_SCENARIO_FIELD]: row && row[USER_SCENARIO_FIELD],
       stepKey: row.stepKey,
       target: { limit: 1 },
       notificationCategory,

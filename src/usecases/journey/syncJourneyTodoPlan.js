@@ -7,6 +7,7 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { syncJourneyDagCatalogToTodos } = require('./syncJourneyDagCatalogToTodos');
+const { USER_SCENARIO_FIELD, JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -263,7 +264,9 @@ async function syncJourneyTodoPlan(params, deps) {
       lineUserId,
       todoKey,
       title: template.title,
-      scenarioKey: profile && profile.scenarioKeyMirror ? profile.scenarioKeyMirror : null,
+      [USER_SCENARIO_FIELD]: (
+        profile && profile[JOURNEY_SCENARIO_MIRROR_FIELD] ? profile[JOURNEY_SCENARIO_MIRROR_FIELD] : null
+      ),
       householdType: profile && profile.householdType ? profile.householdType : null,
       dueDate: due.dueDate,
       dueAt: due.dueAt,

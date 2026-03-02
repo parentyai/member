@@ -7,6 +7,7 @@ const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { buildTemplateKey } = require('../../usecases/adminOs/planNotificationSend');
 const { mapFailureCode } = require('../../domain/notificationFailureTaxonomy');
+const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function normalizeLimit(value, fallback, max) {
   const num = Number(value);
@@ -78,7 +79,7 @@ async function handleUserTimeline(req, res) {
         failureCode,
         lastError: delivery.lastError || null,
         notificationCategory: delivery.notificationCategory || null,
-        scenarioKey: notification ? notification.scenarioKey || null : null,
+        [USER_SCENARIO_FIELD]: notification ? notification[USER_SCENARIO_FIELD] || null : null,
         stepKey: notification ? notification.stepKey || null : null,
         templateKey: notificationId ? buildTemplateKey(notificationId) : null,
         traceId
