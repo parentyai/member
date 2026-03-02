@@ -56,6 +56,7 @@
     "audit:collection-drift:check": "node scripts/check_collection_drift.js",
     "audit:phase-origin:check": "node scripts/check_phase_origin.js",
     "audit:unreachable:check": "node scripts/check_unreachable_classification.js",
+    "audit:unreachable:status": "node scripts/report_unreachable_finalization_status.js",
     "audit:scenariokey-drift:check": "node scripts/check_scenariokey_drift.js",
     "audit:scenariokey-drift:details": "node scripts/report_scenariokey_drift_details.js",
     "audit:consistency:status": "node scripts/report_consistency_status.js",

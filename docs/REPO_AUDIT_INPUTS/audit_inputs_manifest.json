@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T09:12:44-05:00",
-  "gitCommit": "35d2203b7f8db7031b5c51927b143b1706dd6ba1",
+  "generatedAt": "2026-03-02T09:19:06-05:00",
+  "gitCommit": "f625bab7b6bd7f3da29d74f4a70a46c254ec52f6",
   "branch": "codex/p1-scenariokey-drift-details",
-  "sourceDigest": "fd2fc6ce61a5fbe771ce2571f55624f02d87ca3167349190779b449f87ac1c57",
+  "sourceDigest": "3c6d4d9dcc71187906253cacc0166f04c12b765adbc7e1158196619d3143fc97",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,8 +141,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "fd03495e95d77da18483150a78783c2d5a087a8d8694057c9632bbf04ed8d4de",
-      "bytes": 425682
+      "sha256": "8b3b31f765f904a8f0256a58b8cbfc38e0effaf089e6f2506178735f99169aa5",
+      "bytes": 425683
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
@@ -166,7 +166,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "fc82a97762d8bf78db39649a62db60ff24ad5088cee33ec9cf66ed7c1a51b758",
+      "sha256": "99c706f229b5b9722fd945a1d94d1aef1e21f5018d9183306e900f546a58ab99",
       "bytes": 2420
     },
     {
