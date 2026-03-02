@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T22:16:12-05:00",
-  "gitCommit": "ff8a21bdc827824dedcaf0152e3ba9238dac80ee",
-  "branch": "main",
-  "sourceDigest": "21b42a3342348d3746dcfdc41528b90e1b27a5a52abe507bbe39f5ed7d627515",
+  "generatedAt": "2026-03-02T09:01:04-05:00",
+  "gitCommit": "00c5ce16605387d5ea6e03c7b98935cee3399e54",
+  "branch": "codex/p1-consistency-status-report",
+  "sourceDigest": "25fafd7abbd1b2186b7110cabdd466b85876dc8949da7ce0ef0ede6c280bf2a6",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "b930aa6c85630cd35fc8c1649bee952a89740b49b721603ac4d0614c7a28e84a",
+      "sha256": "7259326855ab34926ea3d8ac3d02bf7e3103d6d93ec83ba69bcbb4d52edb43ba",
       "bytes": 425682
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "a09d70c0a0da2cc823fab2ff6027e146c81b6f41e9a881bdc46c9da7067a4bb9",
-      "bytes": 2390
+      "sha256": "5df1d2c24ee3c8970f25e77cec6a88d5ed75bb9239e6859fe7fadf456703fb7c",
+      "bytes": 2420
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
