@@ -658,3 +658,34 @@ API:
 ### 即時停止
 - `ENABLE_JOURNEY_PARAM_VERSIONING_V1=0`  
 - `ENABLE_JOURNEY_PARAM_CANARY_V1=0`  
+
+## Task Engine / Step Rules（Phase700）
+
+### Step Rules status / plan / set
+1) `GET /api/admin/os/task-rules/status` で現行ルールを確認する。  
+2) `POST /api/admin/os/task-rules/plan` で `planHash` / `confirmToken` を取得する。  
+3) `POST /api/admin/os/task-rules/set` で適用する。  
+4) `GET /api/admin/os/task-rules/history` で変更証跡を確認する。  
+
+### Dry-run（説明可能性）
+1) `POST /api/admin/os/task-rules/dry-run` に `userId` を指定して実行する。  
+2) `tasks/nextActions/blocked/explain` を確認する。  
+3) `blockedReason` が想定外の場合は `enabled=false` で段階停止する。  
+
+### LINE/公開API連携
+1) Task一覧取得: `GET /api/tasks?userId=...&ts=...&sig=...`  
+2) Task更新: `PATCH /api/tasks/{taskId}?userId=...&ts=...&sig=...`  
+3) 署名エラー時は `TASK_API_SIGNING_SECRET` と clock skew を確認する。  
+
+### Task派生通知ジョブ
+1) route: `POST /internal/jobs/task-nudge`  
+2) header: `x-task-job-token` もしくは `Authorization: Bearer ...`  
+3) body: `dryRun`, `limit`, `now`（任意）  
+4) 監査確認:
+   - `tasks.nudge.send`
+   - delivery payload に `taskId/ruleId/decision/checkedAt/blockedReason`
+
+### 即時停止（Phase700）
+- `ENABLE_TASK_ENGINE_V1=0`
+- `ENABLE_TASK_NUDGE_V1=0`
+- `step_rules.enabled=false`（対象ruleのみ段階停止可）

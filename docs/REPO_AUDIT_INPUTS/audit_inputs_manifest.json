@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-03-01T21:06:33-05:00",
-  "gitCommit": "7fb8361fcdc42414195822a1ad3a95b86076deb5",
-  "branch": "codex/composer-card-actions-seed-v1",
-  "sourceDigest": "d95636463853f0e8ace2682fa73cca612f037363583ebac1252353521dd2bcf8",
+  "generatedAt": "2026-03-01T21:17:28-05:00",
+  "gitCommit": "cd1d81853c2e88b3757334d3768191a0e3955abf",
+  "branch": "main",
+  "sourceDigest": "3502aabe966d90f70ded06706396c26fb5b12dc9641fb8fe5e471f651812b180",
   "counts": {
-    "endpoints": 261,
-    "routes": 121,
-    "usecases": 133,
-    "repos": 69,
-    "collections": 67
+    "endpoints": 269,
+    "routes": 124,
+    "usecases": 137,
+    "repos": 71,
+    "collections": 69
   },
   "live_counts": {
-    "routes": 121,
-    "usecases": 133,
-    "repos": 69,
-    "collections": 67
+    "routes": 124,
+    "usecases": 137,
+    "repos": 71,
+    "collections": 69
   },
   "count_drift": {
     "routes": 0,
@@ -46,8 +46,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
-      "sha256": "a22da0dcf588bcc35c0c7507f39bdbab0f0d9de0fe72d601151d530ec4cb26f8",
-      "bytes": 32312
+      "sha256": "3f8e48ca452e29b629efe3b53e5e688aeb73da7434c99d5633920153b1d45aba",
+      "bytes": 33187
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/decision_timeline_map.json",
@@ -56,23 +56,23 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-      "sha256": "7f3706fbfd53aee37ba49522a008a4d4bb7ee08b8087577b1e22a413dcada678",
-      "bytes": 31034
+      "sha256": "74fac265ad4bd633e588a1d770e8284068dcb3f3acc1396ff9799d850f5cd76a",
+      "bytes": 31750
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-      "sha256": "c5fe7988733eccd6de92381881f0acbe89c08629253bf344dfe30fa54925a51e",
-      "bytes": 4687
+      "sha256": "b2b93d8f9c41683b37fdb980c62321dc98e10231337b3bb783a3b835ceeab561",
+      "bytes": 5038
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "2c4a368c230adb86ea3c69e7dead6f8b24c2b770173bdd38a2dac3c96600deb1",
-      "bytes": 70257
+      "sha256": "5f44d236430450a6911408a0f17204d33b677cf6653b0ad470f40ab442a257d9",
+      "bytes": 71962
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
-      "sha256": "e0f6475bc95e5ad78b71e5b7f1341f4a5335a70f191940069ffb547be4c2e46a",
-      "bytes": 23819
+      "sha256": "de20ccc62e8436f805df2a25b43fcf4952401f5bd35bbab47e42edb0b8b26376",
+      "bytes": 30055
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/impact_radius.json",
@@ -86,8 +86,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
-      "sha256": "baeca643fbca1c7adba2249ca3cac8ac39b1eb2922417d4abbe6eab16d6110d5",
-      "bytes": 21720
+      "sha256": "e8c2fbead1995ca622ef25303f20b3bdb8207291dcb87fd7c4d0828b43b6f1ab",
+      "bytes": 23234
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json",
@@ -96,7 +96,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "c269c7526c7dbb6cfbb3c36bf47aa25ad389e178a9c30affce4c3b154f7e2a3c",
+      "sha256": "43d9ef3735d24e9e4bd5da19415ab74bee8db43a3ed2248bb0f1b202b0468871",
       "bytes": 828
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "0885c45a10ac5fab991e155edc1b7b74ab8e61e9d48cc0b673e8605c1835c591",
+      "sha256": "f6db372ad54cb4f2c6d626e3e09d429a409201b3ae69a9711ed3e7996b5b0a5c",
       "bytes": 487
     },
     {
@@ -121,8 +121,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "0ea4ba50f20626c1ebb7d4ae7a6b54fefde175eb34266d5355f8c230215f4fdd",
-      "bytes": 200340
+      "sha256": "788990782353a330b03483cd837f3589eb5849b46fd344ef18560f41f3a0723f",
+      "bytes": 206126
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
@@ -131,8 +131,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "81e347c99066e63e99004db77c2f3fe2cd7f3bb215140a84262622d7d2d33dcc",
-      "bytes": 416342
+      "sha256": "e80f151cba33e8035e8ff33f49bffa06b82c7142de100cbb3408e45ae951ff7e",
+      "bytes": 425682
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
@@ -146,13 +146,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "9d647567994c490ad890f7643e2b70828516d06aefbb3481d4e9d74c2a32b137",
-      "bytes": 5235
+      "sha256": "7ad28fcd2b814ca6984db36966d7b523186a6d0cabfe2c95dd3fd0f882cd047a",
+      "bytes": 5586
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "3ec921059573cb1d2a4e89072b7aa4b37c236ab4514bd0e11d2fc0216f63f59e",
-      "bytes": 2421
+      "sha256": "ce1846532773b02fa70986c4b974b17065235c295c14b27da52a0a4a36349f6a",
+      "bytes": 2390
     }
   ],
   "diff_detection_rules": [

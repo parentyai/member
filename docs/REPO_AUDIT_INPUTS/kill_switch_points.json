@@ -351,6 +351,11 @@
       "symbol": "getKillSwitch"
     },
     {
+      "file": "src/routes/admin/taskRulesConfig.js",
+      "line": 340,
+      "symbol": "killSwitch"
+    },
+    {
       "file": "src/routes/internal/cityPackDraftGeneratorJob.js",
       "line": 5,
       "symbol": "getKillSwitch"
@@ -478,6 +483,21 @@
     {
       "file": "src/routes/internal/schoolCalendarAuditJob.js",
       "line": 28,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/taskNudgeJob.js",
+      "line": 3,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/taskNudgeJob.js",
+      "line": 48,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/taskNudgeJob.js",
+      "line": 49,
       "symbol": "killSwitch"
     },
     {
@@ -898,6 +918,51 @@
     {
       "file": "src/usecases/phase73/retryQueuedSend.js",
       "line": 320,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 126,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 192,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 194,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 199,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 228,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/computeUserTasks.js",
+      "line": 342,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 94,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 97,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 98,
       "symbol": "killSwitch"
     }
   ]

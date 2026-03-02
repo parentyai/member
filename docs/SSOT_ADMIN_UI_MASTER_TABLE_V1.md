@@ -24,6 +24,14 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
   - 保存済み通知の状態フィルタは `承認済み` を単一表示とし、内部判定は `approved|active` を同一扱いとする。
   - `ENABLE_COMPOSER_CATEGORY_WIZARD_V1=0` で旧導線へ即時復帰できる。
 
+## Phase700 Addendum（Task Engine / Step Rules / add-only）
+- 対象UI: `/admin/app?pane=monitor`
+- 追加API: `/api/admin/os/task-rules/*`（status/plan/set/history/dry-run）
+- 互換条件:
+  - 既存 managed flow（composer / city-pack / vendors / emergency）は不変。
+  - 追加 managed flow action は `task_rules.set` のみ（`/api/admin/os/task-rules/set`）。
+  - Task Rules は `managedFlowGuard + planHash + confirmToken` の二段階適用を必須とする。
+
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
   "version": "2026-02-27.v1.3",
@@ -476,6 +484,52 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
         "deny": []
       },
       "confirmMode": "warn_only"
+    },
+    {
+      "flowId": "task_rules.set",
+      "stateMachine": {
+        "initial": "planned",
+        "transitions": [
+          {
+            "event": "set",
+            "from": "planned",
+            "to": "applied"
+          }
+        ]
+      },
+      "guardRules": {
+        "actorMode": "required",
+        "traceMode": "required",
+        "confirmMode": "required",
+        "killSwitchCheck": "none",
+        "auditMode": "required"
+      },
+      "writeActions": [
+        {
+          "actionKey": "task_rules.set",
+          "method": "POST",
+          "pathPattern": "/api/admin/os/task-rules/set",
+          "dangerClass": "set",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/taskRulesConfig.js"
+        }
+      ],
+      "evidenceBindings": {
+        "auditActionHints": [
+          "task_rules.set"
+        ],
+        "defaultPane": "audit"
+      },
+      "roleRestrictions": {
+        "allow": [
+          "admin",
+          "developer"
+        ],
+        "deny": [
+          "operator"
+        ]
+      },
+      "confirmMode": "required"
     }
   ]
 }

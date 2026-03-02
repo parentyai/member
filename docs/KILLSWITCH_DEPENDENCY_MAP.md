@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 83
+- 抽出件数: 88
 
 | file | line | reference |
 | --- | --- | --- |
@@ -44,6 +44,8 @@
 | `src/routes/internal/opsSnapshotJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/schoolCalendarAuditJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/internal/taskNudgeJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
+| `src/routes/internal/taskNudgeJob.js` | 48 | `const killSwitch = await getKillSwitch().catch(() => false);` |
 | `src/routes/internal/userContextSnapshotJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -88,3 +90,6 @@
 | `src/usecases/phase40/getOpsAssistSuggestion.js` | 121 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase68/executeSegmentSend.js` | 148 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase73/retryQueuedSend.js` | 35 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/tasks/computeUserTasks.js` | 192 | `const killSwitchFn = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/tasks/runTaskNudgeJob.js` | 94 | `const getKillSwitch = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/tasks/runTaskNudgeJob.js` | 97 | `const killSwitch = await getKillSwitch().catch(() => false);` |

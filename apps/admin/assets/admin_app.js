@@ -9478,6 +9478,143 @@ function applyJourneyGraphPlanTokens(planHash, confirmToken) {
   setTextContent('journey-graph-confirm-token', journeyGraphConfirmToken ? 'set' : '-');
 }
 
+function buildTaskRuleEditorPayload() {
+  return {
+    ruleId: document.getElementById('task-rules-rule-id')?.value?.trim() || '',
+    scenarioKey: document.getElementById('task-rules-scenario-key')?.value?.trim() || '',
+    stepKey: document.getElementById('task-rules-step-key')?.value?.trim() || '',
+    trigger: {
+      eventKey: document.getElementById('task-rules-trigger-event-key')?.value?.trim() || '',
+      source: document.getElementById('task-rules-trigger-source')?.value?.trim() || ''
+    },
+    leadTime: {
+      kind: document.getElementById('task-rules-lead-kind')?.value?.trim() || 'after',
+      days: Number(document.getElementById('task-rules-lead-days')?.value || 0)
+    },
+    constraints: {
+      maxActions: Number(document.getElementById('task-rules-max-actions')?.value || 0),
+      planLimit: Number(document.getElementById('task-rules-plan-limit')?.value || 0)
+    },
+    priority: Number(document.getElementById('task-rules-priority')?.value || 100),
+    enabled: Boolean(document.getElementById('task-rules-enabled')?.checked),
+    riskLevel: document.getElementById('task-rules-risk-level')?.value?.trim() || 'medium'
+  };
+}
+
+function applyTaskRulesPlanTokens(planHash, confirmToken) {
+  taskRulesPlanHash = planHash || null;
+  taskRulesConfirmToken = confirmToken || null;
+  setTextContent('task-rules-plan-hash', taskRulesPlanHash || '-');
+  setTextContent('task-rules-confirm-token', taskRulesConfirmToken ? 'set' : '-');
+}
+
+async function loadTaskRulesStatus(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/task-rules/status?limit=200', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-status-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('Task Rules statusを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Task Rules statusの取得に失敗しました', 'danger');
+  }
+}
+
+async function planTaskRuleAction() {
+  const rule = buildTaskRuleEditorPayload();
+  if (!rule.ruleId) {
+    showToast('ruleId が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/plan', {
+      action: 'upsert_rule',
+      ruleId: rule.ruleId,
+      rule
+    }, traceId);
+    setJsonTextResult('task-rules-plan-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesPlanTokens(data.planHash, data.confirmToken);
+    showToast('Task Rule planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rule planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setTaskRuleAction() {
+  if (!taskRulesPlanHash || !taskRulesConfirmToken) {
+    setJsonTextResult('task-rules-set-result', { ok: false, error: 'plan required' });
+    showToast('Task Rule setには先にplanが必要です', 'warn');
+    return;
+  }
+  const rule = buildTaskRuleEditorPayload();
+  if (!rule.ruleId) {
+    showToast('ruleId が必要です', 'warn');
+    return;
+  }
+  if (!window.confirm(`Task Rule ${rule.ruleId} を更新しますか？`)) {
+    showToast('Task Rule更新を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/set', {
+      action: 'upsert_rule',
+      ruleId: rule.ruleId,
+      rule,
+      planHash: taskRulesPlanHash,
+      confirmToken: taskRulesConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-set-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesPlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesHistory({ notify: false });
+    showToast('Task Ruleを更新しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rule更新に失敗しました', 'danger');
+  }
+}
+
+async function loadTaskRulesHistory(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const res = await fetch('/api/admin/os/task-rules/history?limit=20', { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-history-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (notify) showToast('Task Rules historyを取得しました', 'ok');
+  } catch (_err) {
+    if (notify) showToast('Task Rules historyの取得に失敗しました', 'danger');
+  }
+}
+
+async function runTaskRulesDryRunAction() {
+  const lineUserId = document.getElementById('task-rules-dry-run-user-id')?.value?.trim()
+    || document.getElementById('monitor-user-line-user-id')?.value?.trim()
+    || '';
+  if (!lineUserId) {
+    showToast('dry-runにはLINEユーザーIDが必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/dry-run', {
+      lineUserId,
+      userId: lineUserId
+    }, traceId);
+    setJsonTextResult('task-rules-dry-run-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    showToast('Task Rules dry-runを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rules dry-runに失敗しました', 'danger');
+  }
+}
+
 async function loadJourneyGraphStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
@@ -12863,6 +13000,21 @@ function setupMonitorControls() {
   document.getElementById('monitor-insights-limit')?.addEventListener('change', () => {
     loadMonitorInsights({ notify: false });
   });
+  document.getElementById('task-rules-status-reload')?.addEventListener('click', () => {
+    void loadTaskRulesStatus({ notify: true });
+  });
+  document.getElementById('task-rules-plan')?.addEventListener('click', () => {
+    void planTaskRuleAction();
+  });
+  document.getElementById('task-rules-set')?.addEventListener('click', () => {
+    void setTaskRuleAction();
+  });
+  document.getElementById('task-rules-history')?.addEventListener('click', () => {
+    void loadTaskRulesHistory({ notify: true });
+  });
+  document.getElementById('task-rules-dry-run')?.addEventListener('click', () => {
+    void runTaskRulesDryRunAction();
+  });
   ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -12873,6 +13025,8 @@ function setupMonitorControls() {
     });
   });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
+  void loadTaskRulesStatus({ notify: false });
+  void loadTaskRulesHistory({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -13966,6 +14120,8 @@ let journeyParamConfirmToken = null;
 let journeyParamDryRunHash = null;
 let richMenuPlanHash = null;
 let richMenuConfirmToken = null;
+let taskRulesPlanHash = null;
+let taskRulesConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();

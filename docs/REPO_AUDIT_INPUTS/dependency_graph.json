@@ -78,6 +78,13 @@
     "computePlanHash": [
       "deliveriesRepo"
     ],
+    "computeUserTasks": [
+      "deliveriesRepo",
+      "eventsRepo",
+      "stepRulesRepo",
+      "systemFlagsRepo",
+      "tasksRepo"
+    ],
     "confirmTokenData": [
       "auditLogsRepo",
       "decisionLogsRepo",
@@ -338,6 +345,9 @@
     "listRetryQueue": [
       "sendRetryQueueRepo"
     ],
+    "listUserTasks": [
+      "tasksRepo"
+    ],
     "logEventBestEffort": [
       "decisionTimelineRepo",
       "eventsRepo"
@@ -399,6 +409,10 @@
       "analyticsReadRepo",
       "notificationsRepo",
       "sourceRefsRepo"
+    ],
+    "patchTaskState": [
+      "journeyTodoItemsRepo",
+      "tasksRepo"
     ],
     "planBackfill": [
       "deliveriesRepo"
@@ -533,6 +547,11 @@
       "scenarioRunsRepo"
     ],
     "runStructDriftBackfill": [],
+    "runTaskNudgeJob": [
+      "stepRulesRepo",
+      "systemFlagsRepo",
+      "tasksRepo"
+    ],
     "sendNotice": [
       "auditLogsRepo",
       "deliveriesRepo",
@@ -777,6 +796,9 @@
     "sourceRefsRepo": [
       "source_refs"
     ],
+    "stepRulesRepo": [
+      "step_rules"
+    ],
     "stripeWebhookDeadLettersRepo": [
       "stripe_webhook_dead_letters"
     ],
@@ -785,6 +807,9 @@
     ],
     "systemFlagsRepo": [
       "system_flags"
+    ],
+    "tasksRepo": [
+      "tasks"
     ],
     "templatesVRepo": [
       "templates_v"
@@ -1063,6 +1088,10 @@
       "appendAuditLog",
       "runStructDriftBackfill"
     ],
+    "src/routes/admin/taskRulesConfig.js": [
+      "appendAuditLog",
+      "computeUserTasks"
+    ],
     "src/routes/admin/traceSearch.js": [
       "appendAuditLog",
       "getTraceBundle"
@@ -1114,6 +1143,9 @@
     "src/routes/internal/structDriftBackfillJob.js": [
       "appendAuditLog",
       "runStructDriftBackfill"
+    ],
+    "src/routes/internal/taskNudgeJob.js": [
+      "runTaskNudgeJob"
     ],
     "src/routes/internal/userContextSnapshotJob.js": [
       "buildUserContextSnapshot"
@@ -1241,6 +1273,10 @@
     ],
     "src/routes/phaseLLM4FaqAnswer.js": [
       "answerFaqFromKb"
+    ],
+    "src/routes/tasks.js": [
+      "listUserTasks",
+      "patchTaskState"
     ],
     "src/routes/trackClick.js": [
       "appendAuditLog",

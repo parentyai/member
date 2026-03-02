@@ -73,6 +73,46 @@ Typical fields:
 - `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
 - `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 
+### `step_rules/{ruleId}`
+Purpose: Step=Task 決定のルール定義（Task Engine v1）。
+
+Typical fields:
+- `scenarioKey`, `stepKey`
+- `trigger.eventKey`, `trigger.source`
+- `leadTime.kind`, `leadTime.days`
+- `dependsOn[]`
+- `constraints.quietHours`, `constraints.maxActions`, `constraints.planLimit`
+- `priority`, `enabled`, `validFrom`, `validUntil`, `riskLevel`
+- `nudgeTemplate`（任意）
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+
+### `tasks/{taskId}`
+Purpose: Task Engine のユーザー向け read model（Task API の応答母体）。
+
+Typical fields:
+- `taskId` (`lineUserId__ruleId`)
+- `userId`, `lineUserId`
+- `scenarioKey`, `stepKey`, `ruleId`
+- `status` (`todo|doing|done|blocked|snoozed`)
+- `dueAt`, `nextNudgeAt`, `blockedReason`
+- `sourceEvent`
+- `engineVersion`, `decisionHash`, `checkedAt`
+- `nudgeCount`, `lastNotifiedAt`
+- `createdAt`, `updatedAt`
+
+### `step_rule_change_logs/{id}`
+Purpose: Step Rules の変更履歴（append-only）。
+
+Typical fields:
+- `action` (`upsert_rule|set_enabled`)
+- `ruleId`
+- `actor`
+- `traceId`, `requestId`
+- `planHash`
+- `rule`（適用後スナップショット）
+- `summary`
+- `createdAt`
+
 ### `send_retry_queue/{id}`
 Purpose: 送信失敗の再送/解決キュー（phase73運用導線）。
 

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-01T21:06:33-05:00",
-  "gitCommit": "7fb8361fcdc42414195822a1ad3a95b86076deb5",
-  "branch": "codex/composer-card-actions-seed-v1",
-  "sourceDigest": "132e79625f906540215906fccc9e7cce2a1b7cf5b08c5ddece188d5de7340f25",
+  "generatedAt": "2026-03-01T21:17:28-05:00",
+  "gitCommit": "cd1d81853c2e88b3757334d3768191a0e3955abf",
+  "branch": "main",
+  "sourceDigest": "dd8e19aa0b68f6e6c8c6c8507f6f5190e82dd9877798568d012cdf96c0b41c9e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
