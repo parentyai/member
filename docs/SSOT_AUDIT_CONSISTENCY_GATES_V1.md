@@ -16,6 +16,7 @@
   - command: `npm run audit:unreachable:check`
   - script: `scripts/check_unreachable_classification.js`
   - ssot: `docs/REPO_AUDIT_INPUTS/unreachable_classification.json`
+  - finalization policy: `docs/SSOT_UNREACHABLE_FINALIZATION_V1.md`
 - scenarioKey drift
   - command: `npm run audit:scenariokey-drift:check`
   - script: `scripts/check_scenariokey_drift.js`

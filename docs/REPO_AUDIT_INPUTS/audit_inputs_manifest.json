@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T12:12:06-05:00",
-  "gitCommit": "104c683aa1d040a2c41c22b11339fda2e8c52216",
-  "branch": "codex/p1-collection-drift-lifecycle-only-zero",
-  "sourceDigest": "48258a559b2edca58f71e9a035c02a8cd60ba062ed08f7c045795cf6af418f3f",
+  "generatedAt": "2026-03-02T12:25:12-05:00",
+  "gitCommit": "a6523fbab4407cf56ccbc85de0587c1960d71c2b",
+  "branch": "codex/p1-unreachable-finalization-ssot",
+  "sourceDigest": "f85b2afcd67396ce2f033d4f9113d6dec2a5e33a3e63b3ce591380ee49b3b57b",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "4bb8002238cfba96fce173df8438b5fb3c5cfc2937271ea773b76ef73be71cf8",
+      "sha256": "35cbd4f1431121a40fc0be8e01cf2b09dfa9b3c0045541e4a8967cbaaf10771e",
       "bytes": 425683
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "341fd3957f51630e1167fc0daba0a5ad2398e96b0a57b945fa70200226cdc4fd",
-      "bytes": 2431
+      "sha256": "f218133af11d8a14b208dd45c319ac34f243541ddcef637fea1095d02521421f",
+      "bytes": 2424
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
