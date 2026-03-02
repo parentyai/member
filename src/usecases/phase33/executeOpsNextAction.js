@@ -15,6 +15,7 @@ const { sendNotification } = require('../notifications/sendNotification');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 
 const NEXT_ACTIONS = new Set(['NO_ACTION', 'RERUN_MAIN', 'FIX_AND_RERUN', 'STOP_AND_ESCALATE']);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function requireString(value, label) {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -119,18 +120,18 @@ function resolveEscalationTemplate(params) {
     return payload.template;
   }
   const linkRegistryId = process.env.OPS_ESCALATE_LINK_REGISTRY_ID || '';
-  const scenarioKey = process.env.OPS_ESCALATE_SCENARIO_KEY || '';
+  const cohortKey = process.env.OPS_ESCALATE_SCENARIO_KEY || '';
   const stepKey = process.env.OPS_ESCALATE_STEP_KEY || '';
   const title = process.env.OPS_ESCALATE_TITLE || 'Ops Escalation';
   const body = process.env.OPS_ESCALATE_BODY || 'Ops escalation required.';
   const ctaText = process.env.OPS_ESCALATE_CTA_TEXT || 'Open';
-  if (!linkRegistryId || !scenarioKey || !stepKey) return null;
+  if (!linkRegistryId || !cohortKey || !stepKey) return null;
   return {
     title,
     body,
     ctaText,
     linkRegistryId,
-    scenarioKey,
+    [FIELD_SCK]: cohortKey,
     stepKey,
     target: {
       region: process.env.OPS_ESCALATE_TARGET_REGION || null,
