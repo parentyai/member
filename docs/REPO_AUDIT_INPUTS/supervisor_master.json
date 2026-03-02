@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T09:08:51-05:00",
-  "gitCommit": "46a64e058d3a1f6a2c205683f1dbfbb7d1a4821e",
-  "branch": "codex/p1-collection-drift-detail-report",
-  "sourceDigest": "ca34134c5d35249b13f7f471e72163aacbf73be6142aabda4cefff3d2ecaa3dc",
+  "generatedAt": "2026-03-02T09:12:44-05:00",
+  "gitCommit": "35d2203b7f8db7031b5c51927b143b1706dd6ba1",
+  "branch": "codex/p1-scenariokey-drift-details",
+  "sourceDigest": "0b29d0e4b5ce7cbfdd4806fee5edc3654e061b8742d4cc26b6c9572141b1e9e8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

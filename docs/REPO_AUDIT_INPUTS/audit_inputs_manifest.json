@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T09:08:51-05:00",
-  "gitCommit": "46a64e058d3a1f6a2c205683f1dbfbb7d1a4821e",
-  "branch": "codex/p1-collection-drift-detail-report",
-  "sourceDigest": "f12cdbf6fdeeb741b7f8ba28cbb30d2676e880ad1999d3cdc932c1c9122e6113",
+  "generatedAt": "2026-03-02T09:12:44-05:00",
+  "gitCommit": "35d2203b7f8db7031b5c51927b143b1706dd6ba1",
+  "branch": "codex/p1-scenariokey-drift-details",
+  "sourceDigest": "fd2fc6ce61a5fbe771ce2571f55624f02d87ca3167349190779b449f87ac1c57",
   "counts": {
     "endpoints": 269,
     "routes": 124,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "428c1ffaabdc41c65c5b1444231ee941acedaf505d9d0ed32b2a8c3ee4f5058d",
+      "sha256": "fd03495e95d77da18483150a78783c2d5a087a8d8694057c9632bbf04ed8d4de",
       "bytes": 425682
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "cb95bc60843def8fef3281460f283ef527b9629d4b7f37f669e85a8d4449fe52",
-      "bytes": 2425
+      "sha256": "fc82a97762d8bf78db39649a62db60ff24ad5088cee33ec9cf66ed7c1a51b758",
+      "bytes": 2420
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
