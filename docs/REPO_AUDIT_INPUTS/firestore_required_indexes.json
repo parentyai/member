@@ -581,6 +581,185 @@
         "service": "member",
         "route": "admin.journey_param_history"
       }
+    },
+    {
+      "id": "step_rules_enabled_priority_desc",
+      "collectionGroup": "step_rules",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "enabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 201
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 206
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-02",
+        "service": "member",
+        "route": "task_engine_compute_enabled_rules"
+      }
+    },
+    {
+      "id": "step_rules_enabled_scenarioKey_stepKey_priority_desc",
+      "collectionGroup": "step_rules",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "enabled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scenarioKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "stepKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 201
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 203
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 204
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+          "line": 206
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-02",
+        "service": "member",
+        "route": "admin.task_rules_dry_run"
+      }
+    },
+    {
+      "id": "tasks_userId_dueAt_asc",
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dueAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 166
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 168
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-02",
+        "service": "member",
+        "route": "api.tasks_list"
+      }
+    },
+    {
+      "id": "tasks_userId_status_dueAt_asc",
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dueAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 166
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 167
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 168
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-02",
+        "service": "member",
+        "route": "tasks_repo_list_by_user_status"
+      }
+    },
+    {
+      "id": "tasks_status_nextNudgeAt_asc",
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextNudgeAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 179
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+          "line": 181
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-02",
+        "service": "member",
+        "route": "internal.task_nudge_job"
+      }
     }
   ],
   "criticalContracts": [
@@ -813,6 +992,58 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/journeyParamConfig.js",
           "line": 549
+        }
+      ]
+    },
+    {
+      "contractId": "api_tasks_get",
+      "routeOrUsecase": "GET /api/tasks",
+      "requiredIndexIds": [
+        "tasks_userId_dueAt_asc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1832
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/tasks.js",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "contractId": "internal_task_nudge_job",
+      "routeOrUsecase": "POST /internal/jobs/task-nudge",
+      "requiredIndexIds": [
+        "tasks_status_nextNudgeAt_asc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 1568
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/usecases/tasks/runTaskNudgeJob.js",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "contractId": "admin_task_rules_dry_run",
+      "routeOrUsecase": "POST /api/admin/os/task-rules/dry-run",
+      "requiredIndexIds": [
+        "step_rules_enabled_priority_desc",
+        "step_rules_enabled_scenarioKey_stepKey_priority_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 2078
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/taskRulesConfig.js",
+          "line": 316
         }
       ]
     }

@@ -1128,6 +1128,95 @@
                   </table>
                 </div>
               </div>
+              <div class="panel">
+                <div class="panel-title">Task Engine / Step Rules</div>
+                <div class="panel-body">
+                  <div class="note">Step Rules を編集し、指定ユーザーで dry-run できます（add-only）。</div>
+                  <div class="row row-top">
+                    <button id="task-rules-status-reload" type="button">status</button>
+                    <button id="task-rules-plan" type="button">plan</button>
+                    <button id="task-rules-set" type="button">set</button>
+                    <button id="task-rules-history" type="button">history</button>
+                    <button id="task-rules-dry-run" type="button">dry-run</button>
+                  </div>
+                  <div class="note">
+                    planHash: <span id="task-rules-plan-hash">-</span>
+                    / confirmToken: <span id="task-rules-confirm-token">-</span>
+                  </div>
+                  <div class="row">
+                    <label class="flex-1">ruleId
+                      <input type="text" id="task-rules-rule-id" value="rule_sample_001" />
+                    </label>
+                    <label>scenario
+                      <input type="text" id="task-rules-scenario-key" value="A" />
+                    </label>
+                    <label>step
+                      <input type="text" id="task-rules-step-key" value="3mo" />
+                    </label>
+                    <label>priority
+                      <input type="number" id="task-rules-priority" class="input-sm" min="0" max="100000" value="100" />
+                    </label>
+                    <label class="checkbox"><input type="checkbox" id="task-rules-enabled" checked /> enabled</label>
+                  </div>
+                  <div class="row">
+                    <label class="flex-1">trigger.eventKey
+                      <input type="text" id="task-rules-trigger-event-key" value="journey_reaction" />
+                    </label>
+                    <label class="flex-1">trigger.source
+                      <input type="text" id="task-rules-trigger-source" value="line_webhook" />
+                    </label>
+                    <label>leadTime.kind
+                      <select id="task-rules-lead-kind" class="select-inline">
+                        <option value="after">after</option>
+                        <option value="before_deadline">before_deadline</option>
+                      </select>
+                    </label>
+                    <label>leadTime.days
+                      <input type="number" id="task-rules-lead-days" class="input-sm" min="0" max="3650" value="3" />
+                    </label>
+                  </div>
+                  <div class="row">
+                    <label>maxActions
+                      <input type="number" id="task-rules-max-actions" class="input-sm" min="0" max="50" value="3" />
+                    </label>
+                    <label>planLimit
+                      <input type="number" id="task-rules-plan-limit" class="input-sm" min="0" max="1000" value="10" />
+                    </label>
+                    <label>riskLevel
+                      <select id="task-rules-risk-level" class="select-inline">
+                        <option value="low">low</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="high">high</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="row">
+                    <label class="flex-1">dry-run LINEユーザーID
+                      <input type="text" id="task-rules-dry-run-user-id" />
+                    </label>
+                  </div>
+                  <details class="section">
+                    <summary>status</summary>
+                    <pre id="task-rules-status-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary>plan</summary>
+                    <pre id="task-rules-plan-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary>set</summary>
+                    <pre id="task-rules-set-result">-</pre>
+                  </details>
+                  <details class="section">
+                    <summary>history</summary>
+                    <pre id="task-rules-history-result">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>dry-run</summary>
+                    <pre id="task-rules-dry-run-result">-</pre>
+                  </details>
+                </div>
+              </div>
               <div class="panel is-hidden" aria-hidden="true">
                 <div class="panel-title">Journey Map / Rule Editor</div>
                 <div class="panel-body">

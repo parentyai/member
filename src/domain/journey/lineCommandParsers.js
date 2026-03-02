@@ -82,6 +82,20 @@ function parseJourneyLineCommand(text) {
     };
   }
 
+  const snooze = raw.match(/^TODO(?:スヌーズ|後で)\s*[:：]?\s*([A-Za-z0-9_\-]+)(?:\s*[:：]\s*(.+))?$/i);
+  if (snooze) {
+    const todoKey = normalizeText(snooze[1]);
+    const value = normalizeText(snooze[2] || '');
+    const date = normalizeDateText(value);
+    const days = Number(value);
+    return {
+      action: 'todo_snooze',
+      todoKey,
+      snoozeUntil: date || null,
+      snoozeDays: Number.isInteger(days) && days >= 1 && days <= 30 ? days : null
+    };
+  }
+
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
   if (household) {
     const householdType = normalizeHouseholdLabel(household[1]);
@@ -161,6 +175,20 @@ function parseJourneyPostbackData(data) {
     const todoKey = normalizeText(params.get('todoKey'));
     if (!todoKey) return { action: 'todo_not_started_missing' };
     return { action, todoKey };
+  }
+
+  if (action === 'todo_snooze') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_snooze_missing' };
+    const until = normalizeDateText(params.get('until'));
+    const daysRaw = normalizeText(params.get('days'));
+    const days = Number(daysRaw);
+    return {
+      action,
+      todoKey,
+      snoozeUntil: until,
+      snoozeDays: Number.isInteger(days) && days >= 1 && days <= 30 ? days : null
+    };
   }
 
   if (action === 'todo_list') {

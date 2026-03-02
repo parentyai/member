@@ -8,6 +8,9 @@ const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
+const { listUserTasks } = require('../tasks/listUserTasks');
+const { patchTaskState } = require('../tasks/patchTaskState');
+const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -23,6 +26,11 @@ function normalizeText(value) {
 
 function formatTodoStateLabel(item) {
   const row = item && typeof item === 'object' ? item : {};
+  const taskStatus = String(row.taskStatus || row.status || '').toLowerCase();
+  if (taskStatus === 'done') return '🟢 完了';
+  if (taskStatus === 'blocked') return '⚫ ロック中';
+  if (taskStatus === 'doing') return '🔵 進行中';
+  if (taskStatus === 'snoozed') return '🟣 スヌーズ中';
   const dueMs = Date.parse(row.dueAt || '');
   const nowMs = Date.now();
   if (row.status === 'completed' || row.status === 'skipped') return '🟢 完了';
@@ -65,7 +73,39 @@ function formatTodoList(items, graphResult) {
   if (topActionable) lines.push(topActionable);
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
+  lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
   return lines.join('\n');
+}
+
+function formatTaskList(tasks, graphResult) {
+  const rows = Array.isArray(tasks) ? tasks : [];
+  if (!rows.length) return formatTodoList([], graphResult);
+  const lines = ['現在のやること一覧です。'];
+  rows.slice(0, 10).forEach((task, index) => {
+    const key = task && task.ruleId ? task.ruleId : (task && task.taskId ? task.taskId : `task_${index + 1}`);
+    const dueAt = task && task.dueAt ? String(task.dueAt).slice(0, 10) : '-';
+    const label = formatTodoStateLabel({ taskStatus: task && task.status ? task.status : null, dueAt: task && task.dueAt ? task.dueAt : null });
+    const blocked = task && task.blockedReason ? ` / 理由: ${task.blockedReason}` : '';
+    lines.push(`${index + 1}. [${key}] 期限:${dueAt} / 状態:${label}${blocked}`);
+  });
+  const topActionable = formatTopActionableTasks(graphResult);
+  if (topActionable) lines.push(topActionable);
+  lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
+  lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
+  lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  return lines.join('\n');
+}
+
+function resolveSnoozeUntil(command, nowIso) {
+  if (command && command.snoozeUntil) {
+    const date = String(command.snoozeUntil).trim();
+    if (date) return `${date}T09:00:00.000Z`;
+  }
+  const days = Number(command && command.snoozeDays);
+  const safeDays = Number.isInteger(days) && days >= 1 && days <= 30 ? days : 3;
+  const base = Date.parse(nowIso || new Date().toISOString());
+  const ms = Number.isFinite(base) ? base + (safeDays * 24 * 60 * 60 * 1000) : Date.now() + (safeDays * 24 * 60 * 60 * 1000);
+  return new Date(ms).toISOString();
 }
 
 function resolveScheduleStage(schedule) {
@@ -119,6 +159,11 @@ async function handleJourneyLineCommand(params, deps) {
       profile: saved,
       source: 'line_command_household'
     }, resolvedDeps);
+    await syncUserTasksProjection({
+      userId: lineUserId,
+      lineUserId,
+      actor: 'line_command_household'
+    }, resolvedDeps).catch(() => null);
 
     try {
       const planInfo = await resolvePlan(lineUserId);
@@ -152,6 +197,11 @@ async function handleJourneyLineCommand(params, deps) {
       schedule: savedSchedule,
       source: 'line_command_schedule'
     }, resolvedDeps);
+    await syncUserTasksProjection({
+      userId: lineUserId,
+      lineUserId,
+      actor: 'line_command_schedule'
+    }, resolvedDeps).catch(() => null);
 
     const dateLabel = command.action === 'set_departure_date' ? '渡航日' : '着任日';
     const dateValue = command.action === 'set_departure_date' ? command.departureDate : command.assignmentDate;
@@ -167,6 +217,19 @@ async function handleJourneyLineCommand(params, deps) {
       actor: 'line_command_todo_list',
       failOnCycle: false
     }, resolvedDeps).catch(() => ({ ok: false }));
+    const taskResult = await listUserTasks({
+      userId: lineUserId,
+      lineUserId,
+      forceRefresh: false,
+      actor: 'line_command_todo_list'
+    }, resolvedDeps).catch(() => ({ ok: false, tasks: [] }));
+    const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
+    if (tasks.length > 0) {
+      return {
+        handled: true,
+        replyText: formatTaskList(tasks, graph)
+      };
+    }
     const items = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 50 });
     return {
       handled: true,
@@ -182,14 +245,24 @@ async function handleJourneyLineCommand(params, deps) {
         replyText: 'TODOキーが必要です。例: TODO完了:visa_documents'
       };
     }
-    const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
-    if (!existing) {
+    const taskId = `${lineUserId}__${todoKey}`;
+    const patchedTask = await patchTaskState({
+      userId: lineUserId,
+      taskId,
+      action: 'done',
+      actor: 'line_command_todo_complete'
+    }, resolvedDeps).catch(async () => {
+      const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
+      if (!existing) return null;
+      await todoRepo.markJourneyTodoCompleted(lineUserId, todoKey, {});
+      return { ok: true };
+    });
+    if (!patchedTask) {
       return {
         handled: true,
-        replyText: `TODOキー「${todoKey}」が見つかりません。` 
+        replyText: `TODOキー「${todoKey}」が見つかりません。`
       };
     }
-    await todoRepo.markJourneyTodoCompleted(lineUserId, todoKey, {});
     const graph = await recomputeJourneyTaskGraph({
       lineUserId,
       actor: 'line_command_todo_complete',
@@ -211,21 +284,32 @@ async function handleJourneyLineCommand(params, deps) {
         replyText: 'TODOキーが必要です。例: TODO進行中:visa_documents'
       };
     }
-    const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
-    if (!existing) {
+    const taskId = `${lineUserId}__${todoKey}`;
+    const progressState = command.action === 'todo_in_progress' ? 'in_progress' : 'not_started';
+    const patchedTask = await patchTaskState({
+      userId: lineUserId,
+      taskId,
+      action: progressState === 'in_progress' ? 'doing' : 'todo',
+      actor: 'line_command_todo_progress'
+    }, resolvedDeps).catch(async () => {
+      const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
+      if (!existing) return null;
+      if (existing.status === 'completed' || existing.status === 'skipped') return false;
+      await todoRepo.setJourneyTodoProgressState(lineUserId, todoKey, progressState, {});
+      return { ok: true };
+    });
+    if (patchedTask === null) {
       return {
         handled: true,
         replyText: `TODOキー「${todoKey}」が見つかりません。`
       };
     }
-    if (existing.status === 'completed' || existing.status === 'skipped') {
+    if (patchedTask === false) {
       return {
         handled: true,
         replyText: `TODO「${todoKey}」はすでに完了済みです。`
       };
     }
-    const progressState = command.action === 'todo_in_progress' ? 'in_progress' : 'not_started';
-    await todoRepo.setJourneyTodoProgressState(lineUserId, todoKey, progressState, {});
     const graph = await recomputeJourneyTaskGraph({
       lineUserId,
       actor: 'line_command_todo_progress',
@@ -236,6 +320,46 @@ async function handleJourneyLineCommand(params, deps) {
     return {
       handled: true,
       replyText: `TODO「${todoKey}」を${progressState === 'in_progress' ? '進行中' : '未着手'}に更新しました。\n未完了: ${stats.openCount}件 / 期限超過: ${stats.overdueCount}件${topActionable ? `\n${topActionable}` : ''}`
+    };
+  }
+
+  if (command.action === 'todo_snooze') {
+    const todoKey = normalizeText(command.todoKey);
+    if (!todoKey) {
+      return {
+        handled: true,
+        replyText: 'TODOキーが必要です。例: TODOスヌーズ:visa_documents:3'
+      };
+    }
+    const taskId = `${lineUserId}__${todoKey}`;
+    const nowIso = new Date().toISOString();
+    const snoozeUntil = resolveSnoozeUntil(command, nowIso);
+    const patched = await patchTaskState({
+      userId: lineUserId,
+      taskId,
+      action: 'snooze',
+      snoozeUntil,
+      actor: 'line_command_todo_snooze'
+    }, resolvedDeps).catch(async () => {
+      const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
+      if (!existing) return null;
+      await todoRepo.upsertJourneyTodoItem(lineUserId, todoKey, {
+        journeyState: 'snoozed',
+        snoozeUntil,
+        nextReminderAt: snoozeUntil
+      });
+      return { ok: true };
+    });
+    if (!patched) {
+      return {
+        handled: true,
+        replyText: `TODOキー「${todoKey}」が見つかりません。`
+      };
+    }
+    const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps);
+    return {
+      handled: true,
+      replyText: `TODO「${todoKey}」をスヌーズしました（解除予定: ${String(snoozeUntil).slice(0, 10)}）。\n未完了: ${stats.openCount}件 / 期限超過: ${stats.overdueCount}件`
     };
   }
 

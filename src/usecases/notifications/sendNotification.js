@@ -134,6 +134,26 @@ async function sendNotification(params) {
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0
     ? payload.actor.trim()
     : null;
+  const auditContext = payload.auditContext && typeof payload.auditContext === 'object'
+    ? payload.auditContext
+    : {};
+  const deliveryTaskMeta = {
+    taskId: typeof auditContext.taskId === 'string' && auditContext.taskId.trim().length > 0
+      ? auditContext.taskId.trim()
+      : null,
+    ruleId: typeof auditContext.ruleId === 'string' && auditContext.ruleId.trim().length > 0
+      ? auditContext.ruleId.trim()
+      : null,
+    decision: typeof auditContext.decision === 'string' && auditContext.decision.trim().length > 0
+      ? auditContext.decision.trim()
+      : null,
+    checkedAt: typeof auditContext.checkedAt === 'string' && auditContext.checkedAt.trim().length > 0
+      ? auditContext.checkedAt.trim()
+      : null,
+    blockedReason: typeof auditContext.blockedReason === 'string' && auditContext.blockedReason.trim().length > 0
+      ? auditContext.blockedReason.trim()
+      : null
+  };
   const skipStatusUpdate = payload.skipStatusUpdate === true;
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
@@ -146,7 +166,12 @@ async function sendNotification(params) {
     const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
       lineUserId: user.id,
-      notificationCategory: effectiveNotification.notificationCategory || null
+      notificationCategory: effectiveNotification.notificationCategory || null,
+      taskId: deliveryTaskMeta.taskId,
+      ruleId: deliveryTaskMeta.ruleId,
+      decision: deliveryTaskMeta.decision,
+      checkedAt: deliveryTaskMeta.checkedAt,
+      blockedReason: deliveryTaskMeta.blockedReason
     });
     const existing = reserved && reserved.existing ? reserved.existing : null;
     if (existing && existing.sealed === true) {
@@ -184,6 +209,11 @@ async function sendNotification(params) {
         notificationId,
         lineUserId: user.id,
         notificationCategory: effectiveNotification.notificationCategory || null,
+        taskId: deliveryTaskMeta.taskId,
+        ruleId: deliveryTaskMeta.ruleId,
+        decision: deliveryTaskMeta.decision,
+        checkedAt: deliveryTaskMeta.checkedAt,
+        blockedReason: deliveryTaskMeta.blockedReason,
         sentAt,
         delivered: true,
         state: 'delivered',
@@ -197,6 +227,11 @@ async function sendNotification(params) {
           notificationId,
           lineUserId: user.id,
           notificationCategory: notification.notificationCategory || null,
+          taskId: deliveryTaskMeta.taskId,
+          ruleId: deliveryTaskMeta.ruleId,
+          decision: deliveryTaskMeta.decision,
+          checkedAt: deliveryTaskMeta.checkedAt,
+          blockedReason: deliveryTaskMeta.blockedReason,
           sentAt: null,
           delivered: false,
           state: 'failed',
@@ -220,7 +255,12 @@ async function sendNotification(params) {
         actor: actor || undefined,
         snapshot: {
           delivered: true,
-          sentAt: sentAt || null
+          sentAt: sentAt || null,
+          taskId: deliveryTaskMeta.taskId,
+          ruleId: deliveryTaskMeta.ruleId,
+          decision: deliveryTaskMeta.decision,
+          checkedAt: deliveryTaskMeta.checkedAt,
+          blockedReason: deliveryTaskMeta.blockedReason
         }
       });
     } catch (err) {

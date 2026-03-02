@@ -921,6 +921,22 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "step_rules",
+      "repos": [
+        "stepRulesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/stepRulesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/stepRulesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "stripe_webhook_dead_letters",
       "repos": [
         "stripeWebhookDeadLettersRepo"
@@ -962,6 +978,22 @@
       ],
       "read_paths": [
         "src/repos/firestore/systemFlagsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "tasks",
+      "repos": [
+        "tasksRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/tasksRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/tasksRepo.js"
       ],
       "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
       "required_fields": "UNRESOLVED_STATIC_ONLY",

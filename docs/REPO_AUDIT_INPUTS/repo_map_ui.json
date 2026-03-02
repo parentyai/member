@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "b08c97736793bccdf1985a23c05e7dbe4428f90c",
+      "hash": "c81848ea0056c9a1bfa21faa821500ea4d469cb2",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 985
+    "testCount": 989
   },
   "systemOverview": {
     "what": [
@@ -16,7 +16,7 @@
       "操作履歴は追跡IDでたどれ、監査ログで確認できます。"
     ],
     "statusSummary": {
-      "implemented": 116,
+      "implemented": 119,
       "legacy": 5
     }
   },
@@ -3455,6 +3455,91 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceAuditRunsRepo.js:1"
+          ]
+        },
+        {
+          "id": "taskNudgeJob",
+          "nameJa": "共通基盤機能（taskNudgeJob）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/taskNudgeJob.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js:1"
+          ]
+        },
+        {
+          "id": "taskRulesConfig",
+          "nameJa": "共通基盤機能（taskRulesConfig）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js:1"
+          ]
+        },
+        {
+          "id": "tasks",
+          "nameJa": "共通基盤機能（tasks）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/tasks.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/tasks.js:1"
           ]
         },
         {
@@ -8791,6 +8876,137 @@
               ]
             },
             {
+              "id": "taskNudgeJob",
+              "nameJa": "共通基盤機能（taskNudgeJob）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 14,
+              "killSwitchDependent": true,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "stepRulesRepo",
+                "systemFlagsRepo",
+                "tasksRepo"
+              ],
+              "relatedCollections": [
+                "step_rules",
+                "system_flags",
+                "tasks"
+              ],
+              "entrypoints": [
+                "src/routes/internal/taskNudgeJob.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js:1"
+              ]
+            },
+            {
+              "id": "taskRulesConfig",
+              "nameJa": "共通基盤機能（taskRulesConfig）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 89,
+              "killSwitchDependent": true,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "auditLogsRepo",
+                "deliveriesRepo",
+                "eventsRepo",
+                "stepRulesRepo",
+                "systemFlagsRepo",
+                "tasksRepo"
+              ],
+              "relatedCollections": [
+                "audit_logs",
+                "events",
+                "notification_deliveries",
+                "step_rules",
+                "system_flags",
+                "tasks"
+              ],
+              "entrypoints": [
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js:1"
+              ]
+            },
+            {
+              "id": "tasks",
+              "nameJa": "共通基盤機能（tasks）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 11,
+              "killSwitchDependent": false,
+              "auditDependent": false,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "journeyTodoItemsRepo",
+                "tasksRepo"
+              ],
+              "relatedCollections": [
+                "journey_todo_items",
+                "tasks"
+              ],
+              "entrypoints": [
+                "src/routes/tasks.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js:1"
+              ]
+            },
+            {
               "id": "trackClick",
               "nameJa": "共通基盤機能（trackClick）",
               "categoryJa": "共通基盤",
@@ -9335,7 +9551,7 @@
           "作成（通知作成）: `/admin/composer`"
         ],
         "roadmap": [
-          "実装済み機能は 116 件です。",
+          "実装済み機能は 119 件です。",
           "非推奨機能は 5 件で、正本導線への集約対象です。",
           "構造監査入力JSONを基準に運用改善を継続します。"
         ],

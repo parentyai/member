@@ -1,0 +1,55 @@
+# SSOT_TASK_NOTIFICATION_LINKAGE_V1
+
+Task と Notification の連携契約（add-only）。
+
+## Principle
+- Notification は Task の派生（nudge）であり主語ではない。
+- 既存 Notification Composer 契約は維持する。
+
+## Source of Truth
+- Task state SSOT:
+  - `tasks`
+  - `journey_todo_items`（既存実行互換）
+- Notification SSOT:
+  - `notifications`
+  - `notification_deliveries`
+
+## Nudge Trigger
+- 対象条件:
+  - `now >= nextNudgeAt`
+  - `status in todo|doing`
+  - `status != blocked|snoozed|done`
+- 送信抑制:
+  - kill switch
+  - cap check
+  - quiet-hours/blocked reason
+
+## Send Path
+1. `runTaskNudgeJob` が対象 task を走査
+2. rule/template から通知 payload を構築
+3. `createNotification`（trigger=`manual`, order固定）
+4. `sendNotification({ lineUserIds: [userId], auditContext })`
+5. task 側へ `nudgeCount/lastNotifiedAt/nextNudgeAt` を反映
+
+## Audit Linkage (add-only)
+- `sendNotification` の delivery/timeline に以下を保持:
+  - `taskId`
+  - `ruleId`
+  - `decision`
+  - `checkedAt`
+  - `blockedReason`
+
+## planHash
+- task nudge の planHash:
+  - `sha256(taskId + ruleId + dueAtBucket + templateVersion)`
+- 目的:
+  - 冪等性の高い配信根拠を監査に残す
+
+## Compatibility
+- 既存 send/plan/execute API は非破壊
+- manual trigger/order 契約は維持
+- task起点経路は add-only で分離
+
+## Rollback
+- `ENABLE_TASK_NUDGE_V1=0` で即時停止
+- `tasks` 状態は保持し通知だけ止めることができる

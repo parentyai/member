@@ -35,6 +35,11 @@ function toCommandText(action) {
   if (action.action === 'todo_not_started') {
     return `TODO未着手:${action.todoKey || ''}`;
   }
+  if (action.action === 'todo_snooze') {
+    if (action.snoozeUntil) return `TODOスヌーズ:${action.todoKey || ''}:${action.snoozeUntil}`;
+    if (action.snoozeDays) return `TODOスヌーズ:${action.todoKey || ''}:${action.snoozeDays}`;
+    return `TODOスヌーズ:${action.todoKey || ''}`;
+  }
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }
