@@ -679,6 +679,18 @@
     ]
   },
   {
+    "collection": "step_rules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/stepRulesRepo.js:6",
+      "src/repos/firestore/stepRulesRepo.js:175",
+      "src/repos/firestore/stepRulesRepo.js:187"
+    ]
+  },
+  {
     "collection": "stripe_webhook_dead_letters",
     "kind": "transient",
     "recomputable": true,
@@ -712,6 +724,18 @@
       "src/repos/firestore/systemFlagsRepo.js:82",
       "src/repos/firestore/systemFlagsRepo.js:91",
       "src/repos/firestore/systemFlagsRepo.js:98"
+    ]
+  },
+  {
+    "collection": "tasks",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/tasksRepo.js:6",
+      "src/repos/firestore/tasksRepo.js:116",
+      "src/repos/firestore/tasksRepo.js:128"
     ]
   },
   {
