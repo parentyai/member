@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-02T09:01:04-05:00",
-  "gitCommit": "00c5ce16605387d5ea6e03c7b98935cee3399e54",
-  "branch": "codex/p1-consistency-status-report",
+  "generatedAt": "2026-03-02T09:08:51-05:00",
+  "gitCommit": "46a64e058d3a1f6a2c205683f1dbfbb7d1a4821e",
+  "branch": "codex/p1-collection-drift-detail-report",
   "sourceDigest": "ca34134c5d35249b13f7f471e72163aacbf73be6142aabda4cefff3d2ecaa3dc",
   "required": {
     "ssot": {
