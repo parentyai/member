@@ -54,14 +54,14 @@
 | `src/routes/webhookLine.js` | 751 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
 | `src/usecases/adminOs/executeNotificationSend.js` | 210 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `? deps.getKillSwitch` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `: systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 119 | `const killSwitchOn = await getKillSwitch();` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 273 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 274 | `? deps.getKillSwitch` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 275 | `: systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 284 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 119 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 120 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 274 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 275 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 276 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 285 | `const killSwitchOn = await getKillSwitch();` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 86 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 87 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 88 | `: systemFlagsRepo.getKillSwitch;` |

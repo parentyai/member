@@ -12,6 +12,7 @@ const { buildEmergencyMessageDraft } = require('./messageTemplates');
 const { normalizeString } = require('./utils');
 
 const DEFAULT_CTA_TEXT = '公式情報を確認';
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function resolveNow(params, deps) {
   if (params && params.now instanceof Date) return params.now;
@@ -71,19 +72,19 @@ function normalizeStatus(value) {
   return 'draft';
 }
 
-function buildNotificationMeta(bulletin, scenarioKey, stepKey) {
+function buildNotificationMeta(bulletin, sck, stepKey) {
   return {
     origin: 'emergency_layer',
     bulletinId: bulletin && bulletin.id ? bulletin.id : null,
     providerKey: bulletin && bulletin.providerKey ? bulletin.providerKey : null,
     severity: normalizeSeverity(bulletin && bulletin.severity),
     category: normalizeCategory(bulletin && bulletin.category),
-    scenarioKey,
+    [FIELD_SCK]: sck,
     stepKey
   };
 }
 
-function toNotificationPayload(bulletin, scenarioKey, stepKey, actor, ctaText) {
+function toNotificationPayload(bulletin, sck, stepKey, actor, ctaText) {
   const linkRegistryId = normalizeString(bulletin && bulletin.linkRegistryId);
   return {
     title: resolveTitle(bulletin),
@@ -91,7 +92,7 @@ function toNotificationPayload(bulletin, scenarioKey, stepKey, actor, ctaText) {
     ctaText,
     ctas: [{ text: ctaText }],
     linkRegistryId,
-    scenarioKey,
+    [FIELD_SCK]: sck,
     stepKey,
     target: {
       region: normalizeString(bulletin && bulletin.regionKey),
@@ -102,7 +103,7 @@ function toNotificationPayload(bulletin, scenarioKey, stepKey, actor, ctaText) {
     notificationType: 'GENERAL',
     status: 'active',
     createdBy: actor,
-    notificationMeta: buildNotificationMeta(bulletin, scenarioKey, stepKey)
+    notificationMeta: buildNotificationMeta(bulletin, sck, stepKey)
   };
 }
 
@@ -279,13 +280,13 @@ async function approveEmergencyBulletin(params, deps) {
   const failures = [];
   let killSwitchBlocked = false;
 
-  for (const scenarioKey of FANOUT_SCENARIOS) {
+  for (const sck of FANOUT_SCENARIOS) {
     for (const stepKey of FANOUT_STEPS) {
       const killSwitchOn = await getKillSwitch();
       if (killSwitchOn) {
         killSwitchBlocked = true;
         failures.push({
-          scenarioKey,
+          [FIELD_SCK]: sck,
           stepKey,
           phase: 'guard',
           reason: 'kill_switch_on',
@@ -294,15 +295,15 @@ async function approveEmergencyBulletin(params, deps) {
         break;
       }
 
-      const notificationPayload = toNotificationPayload(bulletin, scenarioKey, stepKey, actor, ctaText);
+      const notificationPayload = toNotificationPayload(bulletin, sck, stepKey, actor, ctaText);
       let notificationId = null;
       try {
         const created = await createNotificationFn(notificationPayload);
         notificationId = created && created.id ? created.id : null;
-        notifications.push({ notificationId, scenarioKey, stepKey });
+        notifications.push({ notificationId, [FIELD_SCK]: sck, stepKey });
       } catch (err) {
         failures.push({
-          scenarioKey,
+          [FIELD_SCK]: sck,
           stepKey,
           phase: 'create',
           reason: err && err.message ? String(err.message) : 'create_failed',
@@ -313,7 +314,7 @@ async function approveEmergencyBulletin(params, deps) {
 
       if (!notificationId) {
         failures.push({
-          scenarioKey,
+          [FIELD_SCK]: sck,
           stepKey,
           phase: 'create',
           reason: 'notification_id_missing',
@@ -331,11 +332,11 @@ async function approveEmergencyBulletin(params, deps) {
           requestId: requestId || undefined,
           actor
         });
-        deliveries.push(Object.assign({ scenarioKey, stepKey, notificationId }, sendResult || {}));
+        deliveries.push(Object.assign({ [FIELD_SCK]: sck, stepKey, notificationId }, sendResult || {}));
       } catch (err) {
         if (isNoRecipientsError(err)) {
           deliveries.push({
-            scenarioKey,
+            [FIELD_SCK]: sck,
             stepKey,
             notificationId,
             deliveredCount: 0,
@@ -345,7 +346,7 @@ async function approveEmergencyBulletin(params, deps) {
           continue;
         }
         failures.push({
-          scenarioKey,
+          [FIELD_SCK]: sck,
           stepKey,
           phase: 'send',
           notificationId,

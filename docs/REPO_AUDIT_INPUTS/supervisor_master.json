@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-02T20:56:32-05:00",
-  "gitCommit": "41bd99bc9be6c228124a32621029d572b93f6b63",
+  "generatedAt": "2026-03-02T21:04:23-05:00",
+  "gitCommit": "221ec817d6871c403b5f050441cbe6ff6e9ed131",
   "branch": "main",
-  "sourceDigest": "ccdc995972f257f4a00bfb0231da812ad3b39f9251d7b1ff364f219fe85cd4a3",
+  "sourceDigest": "6e3097209444671076395cb4c1459e135a4d175713d40fa7ed847e1dafdda0f0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

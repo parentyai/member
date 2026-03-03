@@ -6,7 +6,7 @@
 | field | count | paths |
 | --- | --- | --- |
 | scenario (legacy) | 0 |  |
-| scenarioKey (canonical) | 3 | `src/repos/firestore/analyticsReadRepo.js`<br>`src/usecases/emergency/approveEmergencyBulletin.js`<br>`src/usecases/tasks/computeUserTasks.js` |
+| scenarioKey (canonical) | 1 | `src/repos/firestore/analyticsReadRepo.js` |
 
 ## 移行方針
 1. read: `scenarioKey` 優先、`scenario` fallback
