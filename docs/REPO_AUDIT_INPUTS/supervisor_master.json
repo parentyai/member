@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T01:01:15-05:00",
-  "gitCommit": "481f3c31d32c47c37eca1bb18d3e05f03e35166c",
-  "branch": "codex/llm-concierge-safety-v1",
-  "sourceDigest": "9eff4c4ab4cbf23d5346d9ee077c032c3ac771d89d9ee15251419522fde75a90",
+  "generatedAt": "2026-03-03T08:55:04-05:00",
+  "gitCommit": "e6feebb570fb525b4f0be264b50a3ea771a0513a",
+  "branch": "codex/notifications-composer-archive-v1",
+  "sourceDigest": "061525fc7e1689517220be1c5202e229920491e8f13bb5dc9b5f5ecde8585d79",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
