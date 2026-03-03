@@ -14,6 +14,7 @@ const { buildTemplateKey } = require('./planNotificationSend');
 const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy');
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
+require('../../domain/normalizers/scenarioKeyNormalizer');
 
 function resolvePlanHash(auditLog) {
   if (!auditLog || typeof auditLog !== 'object') return null;

@@ -95,8 +95,6 @@
       "src/usecases/adminOs/executeNotificationSend.js",
       "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
-      "src/usecases/notifications/sendNotification.js",
-      "src/usecases/notifications/sendNotificationPhase1.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]
   },

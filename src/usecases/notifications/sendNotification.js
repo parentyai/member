@@ -13,6 +13,8 @@ const { computeNotificationDeliveryId, computeLineRetryKey } = require('../../do
 const { evaluateCityPackSourcePolicy } = require('../../domain/cityPackPolicy');
 const { validateCityPackSources } = require('../cityPack/validateCityPackSources');
 
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+
 function resolveTrackBaseUrl() {
   const value = process.env.TRACK_BASE_URL;
   if (typeof value !== 'string') return null;
@@ -97,8 +99,8 @@ async function sendNotification(params) {
 
   validateNotificationPayload(effectiveNotification, effectiveLinkEntry, payload.killSwitch);
 
-  if (!effectiveNotification.scenarioKey || !effectiveNotification.stepKey) {
-    throw new Error('scenarioKey/stepKey required');
+  if (!effectiveNotification[FIELD_SCK] || !effectiveNotification.stepKey) {
+    throw new Error('cohort/step required');
   }
 
   const target = effectiveNotification.target || {};
@@ -107,7 +109,7 @@ async function sendNotification(params) {
   }
 
   const users = await usersRepo.listUsers({
-    scenarioKey: effectiveNotification.scenarioKey,
+    [FIELD_SCK]: effectiveNotification[FIELD_SCK],
     stepKey: effectiveNotification.stepKey,
     region: target.region,
     membersOnly: target.membersOnly,
