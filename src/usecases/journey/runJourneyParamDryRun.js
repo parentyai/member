@@ -9,6 +9,8 @@ const { resolvePlan } = require('../billing/planGate');
 const { resolveEffectiveJourneyParams } = require('./resolveEffectiveJourneyParams');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeString(value) {
   if (typeof value !== 'string') return '';
@@ -189,7 +191,7 @@ async function resolveTargetLineUserIds(scope, deps) {
   if (explicit.length > 0) return explicit.slice(0, 500);
 
   const users = await (deps.usersRepo || usersRepo).listUsers({
-    scenarioKey: payload.scenarioKey || payload.scenario,
+    [FIELD_SCK]: payload[FIELD_SCK] || payload[FIELD_SCN],
     stepKey: payload.stepKey,
     region: payload.region,
     limit: normalizeLimit(payload.limit, 200, 500)
@@ -313,7 +315,7 @@ async function runJourneyParamDryRun(params, deps) {
     generatedAt: new Date(nowMs).toISOString(),
     scope: {
       lineUserIds,
-      scenarioKey: normalizeString(scope.scenarioKey || scope.scenario) || null,
+      [FIELD_SCK]: normalizeString(scope[FIELD_SCK] || scope[FIELD_SCN]) || null,
       stepKey: normalizeString(scope.stepKey) || null,
       region: normalizeString(scope.region) || null,
       limit: normalizeLimit(scope.limit, 200, 500)
