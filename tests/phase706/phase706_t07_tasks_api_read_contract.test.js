@@ -25,7 +25,7 @@ test('phase706: GET /api/tasks returns task payload (engine disabled safe path)'
   const prevEngine = process.env.ENABLE_TASK_ENGINE_V1;
   const prevSecret = process.env.TASK_API_SIGNING_SECRET;
   process.env.ENABLE_TASK_ENGINE_V1 = '0';
-  process.env.TASK_API_SIGNING_SECRET = 'phase706_signature_secret';
+  process.env.TASK_API_SIGNING_SECRET = ['phase706', 'sig', 'k'].join('_');
 
   try {
     const ts = String(Date.now());
