@@ -297,3 +297,52 @@
   - `crossBorder`
   - `fieldCategoriesUsed`
   - `blockedReasonCategory`
+
+## Phase716 Add-only Delta（LLM Concierge Safety）
+
+### GET /api/admin/llm/config/status
+- response add-only fields:
+```json
+{
+  "llmConciergeEnabled": false,
+  "effectiveConciergeEnabled": false
+}
+```
+
+### POST /api/admin/llm/config/plan
+- request add-only field:
+```json
+{
+  "llmEnabled": true,
+  "llmConciergeEnabled": true
+}
+```
+- `planHash` は `llmEnabled + llmPolicy + llmConciergeEnabled` の組で決定される。
+
+### POST /api/admin/llm/config/set
+- request add-only field:
+```json
+{
+  "llmEnabled": true,
+  "llmConciergeEnabled": true,
+  "planHash": "string",
+  "confirmToken": "string"
+}
+```
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only fields:
+  - `userTier` (`free|paid`)
+  - `mode` (`A|B|C|null`)
+  - `topic`
+  - `citationRanks[]`
+  - `urlCount`
+  - `urls[]` (`rank/domain/path/allowed/reason/source`)
+  - `guardDecisions[]`
+  - `blockedReasons[]`
+  - `injectionFindings`
+
+### Concierge response rendering rules
+- URLは本文末尾脚注 `(source: domain/path)` のみを許可する。
+- Mode AはURLを表示しない。
+- Mode B/Cのみ、許可ランクかつ上限内で表示する。

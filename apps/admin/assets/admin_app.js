@@ -14572,6 +14572,8 @@ async function loadLlmConfigStatus() {
     if (data && data.ok) {
       const select = document.getElementById('llm-config-enabled');
       if (select) select.value = data.llmEnabled ? 'true' : 'false';
+      const conciergeSelect = document.getElementById('llm-config-concierge-enabled');
+      if (conciergeSelect) conciergeSelect.value = data.llmConciergeEnabled ? 'true' : 'false';
       showToast(t('ui.toast.llm.configStatusOk', 'LLM設定状態を取得しました'), 'ok');
     } else {
       showToast(t('ui.toast.llm.configStatusFail', 'LLM設定状態の取得に失敗しました'), 'danger');
@@ -14585,13 +14587,19 @@ async function loadLlmConfigStatus() {
 async function planLlmConfig() {
   const traceId = ensureTraceInput('llm-trace');
   const llmEnabled = parseLlmEnabled(document.getElementById('llm-config-enabled')?.value);
+  const llmConciergeEnabled = parseLlmEnabled(document.getElementById('llm-config-concierge-enabled')?.value);
   if (llmEnabled === null) {
     renderLlmResult('llm-config-plan-result', { ok: false, error: t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です') });
     showToast(t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です'), 'warn');
     return;
   }
+  if (llmConciergeEnabled === null) {
+    renderLlmResult('llm-config-plan-result', { ok: false, error: 'LLMコンシェルジュ設定値が不正です' });
+    showToast('LLMコンシェルジュ設定値が不正です', 'warn');
+    return;
+  }
   try {
-    const data = await postJson('/api/admin/llm/config/plan', { llmEnabled }, traceId);
+    const data = await postJson('/api/admin/llm/config/plan', { llmEnabled, llmConciergeEnabled }, traceId);
     renderLlmResult('llm-config-plan-result', data);
     if (data && data.ok) {
       llmConfigPlanHash = data.planHash || null;
@@ -14608,9 +14616,15 @@ async function planLlmConfig() {
 
 async function setLlmConfig() {
   const llmEnabled = parseLlmEnabled(document.getElementById('llm-config-enabled')?.value);
+  const llmConciergeEnabled = parseLlmEnabled(document.getElementById('llm-config-concierge-enabled')?.value);
   if (llmEnabled === null) {
     renderLlmResult('llm-config-set-result', { ok: false, error: t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です') });
     showToast(t('ui.toast.llm.invalidEnabled', 'LLM設定値が不正です'), 'warn');
+    return;
+  }
+  if (llmConciergeEnabled === null) {
+    renderLlmResult('llm-config-set-result', { ok: false, error: 'LLMコンシェルジュ設定値が不正です' });
+    showToast('LLMコンシェルジュ設定値が不正です', 'warn');
     return;
   }
   if (!llmConfigPlanHash || !llmConfigConfirmToken) {
@@ -14629,6 +14643,7 @@ async function setLlmConfig() {
   try {
     const data = await postJson('/api/admin/llm/config/set', {
       llmEnabled,
+      llmConciergeEnabled,
       planHash: llmConfigPlanHash,
       confirmToken: llmConfigConfirmToken
     }, traceId);

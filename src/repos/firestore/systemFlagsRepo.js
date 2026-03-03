@@ -45,6 +45,12 @@ function normalizeLlmEnabled(value) {
   return null;
 }
 
+function normalizeLlmConciergeEnabled(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 function normalizeLawfulBasis(value) {
   if (value === null || value === undefined) return DEFAULT_LLM_POLICY.lawfulBasis;
   if (typeof value !== 'string') return null;
@@ -350,6 +356,25 @@ async function setLlmEnabled(llmEnabled) {
   return { id: DOC_ID, llmEnabled: normalized };
 }
 
+async function getLlmConciergeEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return false;
+  const data = snap.data() || {};
+  const normalized = normalizeLlmConciergeEnabled(data.llmConciergeEnabled);
+  return normalized === null ? false : normalized;
+}
+
+async function setLlmConciergeEnabled(llmConciergeEnabled) {
+  const normalized = normalizeLlmConciergeEnabled(llmConciergeEnabled);
+  if (normalized === null) throw new Error('invalid llmConciergeEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmConciergeEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, llmConciergeEnabled: normalized };
+}
+
 async function getLlmPolicy() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -391,6 +416,9 @@ module.exports = {
   setDeliveryCountLegacyFallback,
   getLlmEnabled,
   setLlmEnabled,
+  getLlmConciergeEnabled,
+  setLlmConciergeEnabled,
   getLlmPolicy,
-  setLlmPolicy
+  setLlmPolicy,
+  normalizeLlmConciergeEnabled
 };
