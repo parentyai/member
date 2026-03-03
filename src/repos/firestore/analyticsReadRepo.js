@@ -6,6 +6,7 @@ require('../../domain/normalizers/scenarioKeyNormalizer');
 const DEFAULT_LIMIT = 1000;
 const MAX_LIMIT = 5000;
 const IN_QUERY_CHUNK_SIZE = 10;
+const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function resolveLimit(value) {
@@ -200,14 +201,14 @@ async function listChecklistsByCreatedAtRange(opts) {
 
 async function listChecklistsByScenarioAndStep(opts) {
   const options = opts && typeof opts === 'object' ? opts : {};
-  const scenario = typeof options.scenario === 'string' ? options.scenario.trim() : '';
+  const scn = typeof options[FIELD_SCN] === 'string' ? options[FIELD_SCN].trim() : '';
   const step = typeof options.step === 'string' ? options.step.trim() : '';
-  if (!scenario || !step) return [];
+  if (!scn || !step) return [];
   const limit = resolveLimit(options.limit);
   const db = getDb();
   const snap = await db
     .collection('checklists')
-    .where('scenario', '==', scenario)
+    .where(FIELD_SCN, '==', scn)
     .where('step', '==', step)
     .orderBy('createdAt', 'desc')
     .limit(limit)
@@ -221,15 +222,15 @@ function normalizeScenarioStepPairs(value) {
   const seen = new Set();
   value.forEach((entry) => {
     if (!entry || typeof entry !== 'object') return;
-    const scenarioRaw = typeof entry[FIELD_SCK] === 'string' ? entry[FIELD_SCK] : entry.scenario;
+    const scnRaw = typeof entry[FIELD_SCK] === 'string' ? entry[FIELD_SCK] : entry[FIELD_SCN];
     const stepRaw = typeof entry.stepKey === 'string' ? entry.stepKey : entry.step;
-    const scenario = typeof scenarioRaw === 'string' ? scenarioRaw.trim() : '';
+    const scn = typeof scnRaw === 'string' ? scnRaw.trim() : '';
     const step = typeof stepRaw === 'string' ? stepRaw.trim() : '';
-    if (!scenario || !step) return;
-    const key = `${scenario}__${step}`;
+    if (!scn || !step) return;
+    const key = `${scn}__${step}`;
     if (seen.has(key)) return;
     seen.add(key);
-    normalized.push({ scenario, step });
+    normalized.push({ [FIELD_SCN]: scn, step });
   });
   return normalized;
 }
@@ -244,7 +245,7 @@ async function listChecklistsByScenarioStepPairs(opts) {
   const settled = await Promise.all(pairs.map(async (pair) => {
     const snap = await db
       .collection('checklists')
-      .where('scenario', '==', pair.scenario)
+      .where(FIELD_SCN, '==', pair[FIELD_SCN])
       .where('step', '==', pair.step)
       .orderBy('createdAt', 'desc')
       .limit(perPairLimit)

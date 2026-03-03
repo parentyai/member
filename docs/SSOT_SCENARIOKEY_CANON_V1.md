@@ -15,6 +15,7 @@
 ## Policy
 - `design_ai_meta.naming_drift.scenarioKey` の新規追加は CI fail。
 - `design_ai_meta.naming_drift.scenario` の新規追加は CI fail。
+- naming drift 抽出は import/require の path literal を除外し、実データキー/識別子の drift を対象にする。
 - `scenario_key_drift_allowlist.json` の `resolved.scenarioKey` / `resolved.scenario` に登録した解消済みpathの再導入は CI fail。
 - 既知baselineの削減（件数減少）は許容。
 

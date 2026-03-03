@@ -708,11 +708,17 @@ function buildDesignAiMeta(core) {
 
   const scenario = [];
   const scenarioKey = [];
+  function stripImportPathLiterals(source) {
+    return String(source || '')
+      .replace(/require\(\s*['"][^'"]+['"]\s*\)/g, '')
+      .replace(/from\s+['"][^'"]+['"]/g, '');
+  }
   const srcFiles = listJsFiles(SRC_DIR).map((file) => toRepoRelative(file));
   srcFiles.forEach((file) => {
     const text = readText(path.join(ROOT, file));
-    const hasScenarioKey = /scenarioKey/.test(text);
-    const hasScenarioOnly = /\bscenario\b/.test(text) && !hasScenarioKey;
+    const scanText = stripImportPathLiterals(text);
+    const hasScenarioKey = /scenarioKey/.test(scanText);
+    const hasScenarioOnly = /\bscenario\b/.test(scanText) && !hasScenarioKey;
     if (hasScenarioOnly) scenario.push(file);
     if (hasScenarioKey) scenarioKey.push(file);
   });

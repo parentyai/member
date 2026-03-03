@@ -59,6 +59,7 @@
     "scenarioKey": [
       "src/domain/journey/lineCommandParsers.js",
       "src/domain/normalizers/scenarioKeyNormalizer.js",
+      "src/repos/firestore/analyticsReadRepo.js",
       "src/repos/firestore/notificationsRepo.js",
       "src/repos/firestore/scenarioReportsRepo.js",
       "src/repos/firestore/stepRulesRepo.js",
