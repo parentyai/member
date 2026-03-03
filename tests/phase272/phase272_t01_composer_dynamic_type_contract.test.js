@@ -14,16 +14,25 @@ test('phase272: composer pane contains type-driven form, live preview, and saved
   assert.ok(html.includes('data-type-fields="VENDOR"'));
   assert.ok(html.includes('data-type-fields="AB"'));
   assert.ok(html.includes('data-type-fields="STEP"'));
+  assert.ok(!html.includes('<option value="AB" data-dict-key="ui.value.composer.type.ab">ABテスト</option>'));
 
+  assert.ok(html.includes('class="composer-preview-top panel composer-preview-panel"'));
+  assert.ok(html.includes('class="composer-main-layout"'));
+  assert.ok(html.includes('class="composer-left-stack"'));
   assert.ok(html.includes('id="composer-preview-title"'));
   assert.ok(html.includes('id="composer-preview-body"'));
   assert.ok(html.includes('id="composer-preview-cta"'));
   assert.ok(html.includes('id="composer-preview-link"'));
 
+  assert.ok(html.includes('通知一覧'));
   assert.ok(html.includes('id="composer-saved-search"'));
   assert.ok(html.includes('id="composer-saved-status"'));
   assert.ok(html.includes('id="composer-saved-type"'));
   assert.ok(html.includes('id="composer-saved-rows"'));
+  assert.ok(html.includes('id="composer-saved-select-all"'));
+  assert.ok(html.includes('id="composer-saved-bulk-edit"'));
+  assert.ok(html.includes('id="composer-saved-bulk-approve"'));
+  assert.ok(html.includes('id="composer-saved-bulk-delete"'));
   assert.ok(html.includes('id="composer-matrix-head"'));
   assert.ok(html.includes('id="composer-matrix-rows"'));
   assert.ok(html.includes('id="composer-card-draft"'));

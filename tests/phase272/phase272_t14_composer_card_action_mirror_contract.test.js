@@ -28,6 +28,13 @@ test('phase272: composer saved list and matrix accept includeArchivedSeed only v
   const html = readFileSync('apps/admin/app.html', 'utf8');
 
   assert.ok(html.includes('id="composer-include-archived-seed"'));
+  assert.ok(html.includes('id="composer-saved-select-all"'));
+  assert.ok(html.includes('id="composer-saved-bulk-edit"'));
+  assert.ok(html.includes('id="composer-saved-bulk-approve"'));
+  assert.ok(html.includes('id="composer-saved-bulk-delete"'));
+  assert.ok(js.includes('function updateComposerSavedBulkControls() {'));
+  assert.ok(js.includes('function approveComposerSavedSelection() {'));
+  assert.ok(js.includes('function archiveComposerSavedSelection() {'));
   assert.ok(js.includes('function shouldShowComposerArchivedSeedToggle() {'));
   assert.ok(js.includes('function resolveComposerIncludeArchivedSeedFlag() {'));
   assert.ok(js.includes("query.set('includeArchivedSeed', '1')"));

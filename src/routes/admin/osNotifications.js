@@ -294,13 +294,15 @@ async function handleList(req, res) {
   const limit = parseListLimit(url);
   const normalizedStatus = normalizeListStatus(url.searchParams.get('status'));
   const includeArchivedSeed = parseBooleanQuery(url.searchParams.get('includeArchivedSeed'), false);
+  const includeArchived = parseBooleanQuery(url.searchParams.get('includeArchived'), false);
   try {
     const rows = await notificationsRepo.listNotifications({
       limit,
       status: normalizedStatus || undefined,
       [SCENARIO_KEY_FIELD]: url.searchParams.get(SCENARIO_KEY_FIELD) || undefined,
       stepKey: url.searchParams.get('stepKey') || undefined,
-      includeArchivedSeed
+      includeArchivedSeed,
+      includeArchived
     });
     const category = url.searchParams.get('notificationCategory') || '';
     const notificationType = (url.searchParams.get('notificationType') || '').trim().toUpperCase();
@@ -331,6 +333,9 @@ async function handleList(req, res) {
       seedArchivedAt: row.seedArchivedAt || null,
       seedArchivedBy: row.seedArchivedBy || null,
       seedArchiveReason: row.seedArchiveReason || null,
+      archivedAt: row.archivedAt || null,
+      archivedBy: row.archivedBy || null,
+      archiveReason: row.archiveReason || null,
       createdAt: row.createdAt || null,
       scheduledAt: row.scheduledAt || null
     }));
@@ -355,6 +360,7 @@ async function handleList(req, res) {
       payloadSummary: addCheckedAt({
         limit,
         status: normalizedStatus || null,
+        includeArchived,
         includeArchivedSeed,
         [SCENARIO_KEY_FIELD]: url.searchParams.get(SCENARIO_KEY_FIELD) || null,
         stepKey: url.searchParams.get('stepKey') || null
@@ -362,6 +368,56 @@ async function handleList(req, res) {
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, traceId, requestId, items }));
+  } catch (err) {
+    handleError(res, err, { traceId, requestId, actor });
+  }
+}
+
+async function handleArchive(req, res, body) {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const traceId = resolveTraceId(req);
+  const requestId = resolveRequestId(req);
+  const payload = parseJson(body, res);
+  if (!payload) return;
+  const notificationIds = Array.isArray(payload.notificationIds)
+    ? Array.from(new Set(payload.notificationIds.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim())))
+    : [];
+  if (!notificationIds.length) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'notificationIds required', traceId, requestId }));
+    return;
+  }
+  const reason = typeof payload.reason === 'string' ? payload.reason.trim() : '';
+  const archivedAt = new Date().toISOString();
+  try {
+    const result = await notificationsRepo.markNotificationsArchived({
+      ids: notificationIds,
+      patch: {
+        archivedAt,
+        archivedBy: actor,
+        archiveReason: reason || null
+      }
+    });
+    await appendAuditLog({
+      actor,
+      action: 'notifications.archive',
+      entityType: 'notification',
+      entityId: 'bulk',
+      traceId,
+      requestId,
+      payloadSummary: addCheckedAt({
+        archivedCount: Number(result && result.updatedCount ? result.updatedCount : 0),
+        reason: reason || null
+      })
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: true,
+      traceId,
+      requestId,
+      archivedCount: Number(result && result.updatedCount ? result.updatedCount : 0)
+    }));
   } catch (err) {
     handleError(res, err, { traceId, requestId, actor });
   }
@@ -406,5 +462,6 @@ module.exports = {
   handleSendPlan,
   handleStatus,
   handleList,
-  handleSendExecute
+  handleSendExecute,
+  handleArchive
 };

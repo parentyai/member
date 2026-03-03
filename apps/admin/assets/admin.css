@@ -1482,10 +1482,59 @@ th {
   justify-content: flex-start;
 }
 
-.composer-layout {
+.composer-hidden-action {
+  display: none;
+}
+
+.composer-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
   gap: var(--space-3);
+  align-items: start;
+}
+
+.composer-left-stack {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.composer-preview-top {
+  position: relative;
+}
+
+#composer-inputs {
+  min-width: 0;
+}
+
+#composer-saved-panel {
+  min-width: 0;
+  align-self: start;
+}
+
+.composer-form-panel-compact .panel-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.composer-form-panel-compact .input-grid {
+  gap: var(--space-2);
+}
+
+.composer-form-panel-compact textarea {
+  min-height: 88px;
+}
+
+.composer-preview-top .panel-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.composer-preview-fixed-wrap {
+  display: grid;
+  justify-items: center;
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
 }
 
 .composer-link-filter {
@@ -1574,14 +1623,17 @@ th {
 }
 
 .line-preview-phone {
-  width: 100%;
-  max-width: 360px;
+  width: 360px;
+  height: 160px;
+  max-width: none;
   margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: 22px;
   background: #111111;
   padding: var(--space-2);
   box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
 }
 
 .line-preview-header {
@@ -1596,6 +1648,8 @@ th {
   padding: var(--space-3);
   display: grid;
   gap: var(--space-2);
+  flex: 1;
+  overflow-y: auto;
 }
 
 .line-preview-title {
@@ -1635,6 +1689,18 @@ th {
   white-space: nowrap;
 }
 
+.composer-saved-select-col {
+  width: 36px;
+  text-align: center;
+}
+
+.composer-saved-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .button-subtle {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1662,8 +1728,16 @@ th {
     justify-content: flex-start;
   }
 
-  .composer-layout {
+  .composer-main-layout {
     grid-template-columns: 1fr;
+  }
+
+  #composer-saved-panel {
+    order: 2;
+  }
+
+  .composer-preview-fixed-wrap {
+    justify-items: start;
   }
 }
 

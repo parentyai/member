@@ -29,6 +29,14 @@ function hasSeedArchivedAt(row) {
   return true;
 }
 
+function hasArchivedAt(row) {
+  if (!row || typeof row !== 'object') return false;
+  const value = row.archivedAt;
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+}
+
 async function createNotification(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
@@ -59,9 +67,13 @@ async function listNotifications(params) {
   const snap = await query.get();
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   const sorted = sortByCreatedAtDesc(rows);
-  const filtered = opts.includeArchivedSeed === true
-    ? sorted
-    : sorted.filter((row) => !hasSeedArchivedAt(row));
+  let filtered = sorted;
+  if (opts.includeArchived !== true) {
+    filtered = filtered.filter((row) => !hasArchivedAt(row));
+  }
+  if (opts.includeArchivedSeed !== true && opts.includeArchived !== true) {
+    filtered = filtered.filter((row) => !hasSeedArchivedAt(row));
+  }
   return limit ? filtered.slice(0, limit) : filtered;
 }
 
@@ -102,11 +114,24 @@ async function markNotificationsSeedArchived(params) {
   return { updatedCount: ids.length };
 }
 
+async function markNotificationsArchived(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const ids = Array.isArray(payload.ids) ? payload.ids.filter((id) => typeof id === 'string' && id.trim()) : [];
+  if (!ids.length) return { updatedCount: 0 };
+  const patch = payload.patch && typeof payload.patch === 'object' ? payload.patch : {};
+  const db = getDb();
+  for (const id of ids) {
+    await db.collection(COLLECTION).doc(id.trim()).set(patch, { merge: true });
+  }
+  return { updatedCount: ids.length };
+}
+
 module.exports = {
   createNotification,
   getNotification,
   listNotifications,
   updateNotificationStatus,
   listNotificationsBySeedTag,
-  markNotificationsSeedArchived
+  markNotificationsSeedArchived,
+  markNotificationsArchived
 };
