@@ -90,9 +90,7 @@
   "merge_candidates": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": [
-      "src/repos/firestore/analyticsReadRepo.js"
-    ]
+    "scenarioKey": []
   },
   "critical_guards": [
     "validateSingleCta",

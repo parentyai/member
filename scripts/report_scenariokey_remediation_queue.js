@@ -172,6 +172,19 @@ function run() {
       dependencyGraph: 'docs/REPO_AUDIT_INPUTS/dependency_graph.json',
       featureMap: 'docs/REPO_AUDIT_INPUTS/feature_map.json'
     },
+    schema: {
+      queueItem: {
+        file: 'string',
+        area: 'string',
+        priorityScore: 'number',
+        priorityBand: 'P1_high|P1_medium|P1_low',
+        featureCount: 'number',
+        usecaseCount: 'number',
+        repoCount: 'number',
+        collectionCount: 'number',
+        hasWriteSignal: 'boolean'
+      }
+    },
     summary: {
       scenarioKeyPathCount: scenarioKeyPaths.length,
       areaBreakdown,

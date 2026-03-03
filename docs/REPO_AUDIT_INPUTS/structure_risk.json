@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-03T02:10:42.625Z",
+  "generatedAt": "2026-03-03T02:26:25.309Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "c98d4552bccec9c6ae15517dca8859f397445931a0425afb99ab511698643cef",
+  "sourceDigest": "ab9cb04374d4cc21a7a24632763db6cbd49443eca436507dfa401d3a2d5ea30e",
   "canonical_repos_count": 85,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 1,
+  "naming_drift_scenarioKey_count": 0,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -101,9 +101,7 @@
   "unresolved_dynamic_dep": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": [
-      "src/repos/firestore/analyticsReadRepo.js"
-    ]
+    "scenarioKey": []
   },
   "assumptions": [
     "derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
