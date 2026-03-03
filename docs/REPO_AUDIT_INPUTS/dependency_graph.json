@@ -39,6 +39,12 @@
       "richMenuRateBucketsRepo",
       "richMenuTemplatesRepo"
     ],
+    "applyTaskRulesForUser": [],
+    "applyTaskRulesTemplateSet": [
+      "journeyTemplatesRepo",
+      "stepRuleChangeLogsRepo",
+      "stepRulesRepo"
+    ],
     "approveEmergencyBulletin": [
       "emergencyBulletinsRepo",
       "linkRegistryRepo",
@@ -433,6 +439,11 @@
       "notificationTemplatesRepo",
       "templatesVRepo"
     ],
+    "planTaskRulesApply": [
+      "stepRulesRepo",
+      "usersRepo"
+    ],
+    "planTaskRulesTemplateSet": [],
     "previewNotification": [
       "linkRegistryRepo",
       "notificationsRepo"
@@ -706,6 +717,9 @@
     "journeyReminderRunsRepo": [
       "journey_reminder_runs"
     ],
+    "journeyTemplatesRepo": [
+      "journey_templates"
+    ],
     "journeyTodoItemsRepo": [
       "journey_todo_items"
     ],
@@ -795,6 +809,9 @@
     ],
     "sourceRefsRepo": [
       "source_refs"
+    ],
+    "stepRuleChangeLogsRepo": [
+      "step_rule_change_logs"
     ],
     "stepRulesRepo": [
       "step_rules"
@@ -1090,7 +1107,11 @@
     ],
     "src/routes/admin/taskRulesConfig.js": [
       "appendAuditLog",
-      "computeUserTasks"
+      "applyTaskRulesForUser",
+      "applyTaskRulesTemplateSet",
+      "computeUserTasks",
+      "planTaskRulesApply",
+      "planTaskRulesTemplateSet"
     ],
     "src/routes/admin/traceSearch.js": [
       "appendAuditLog",

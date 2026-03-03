@@ -46,6 +46,13 @@ function verifySignature(req, pathname, taskId) {
   return Object.assign({ userId }, result);
 }
 
+function readHeader(req, key) {
+  const value = req && req.headers ? req.headers[key] : null;
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized || null;
+}
+
 async function handleTasksRoute(req, res, bodyText, pathname) {
   const normalizedPath = normalizePathname(pathname || req.url || '/');
   if (req.method === 'GET' && normalizedPath === '/api/tasks') {
@@ -92,7 +99,9 @@ async function handleTasksRoute(req, res, bodyText, pathname) {
         snoozeUntil: payload.snoozeUntil,
         nextNudgeAt: payload.nextNudgeAt,
         blockedReason: payload.blockedReason,
-        actor: 'task_api_patch'
+        actor: 'task_api_patch',
+        traceId: readHeader(req, 'x-trace-id'),
+        requestId: readHeader(req, 'x-request-id')
       });
       writeJson(res, 200, result);
     } catch (err) {

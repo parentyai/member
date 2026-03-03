@@ -760,6 +760,68 @@
         "service": "member",
         "route": "internal.task_nudge_job"
       }
+    },
+    {
+      "id": "task_events_taskId_checkedAt_desc",
+      "collectionGroup": "task_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "taskId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "checkedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskEventsRepo.js",
+          "line": 117
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskEventsRepo.js",
+          "line": 118
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-03",
+        "service": "member",
+        "route": "task_events_repo_list_by_task"
+      }
+    },
+    {
+      "id": "task_events_lineUserId_checkedAt_desc",
+      "collectionGroup": "task_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lineUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "checkedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskEventsRepo.js",
+          "line": 131
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskEventsRepo.js",
+          "line": 132
+        }
+      ],
+      "observedBy": {
+        "kind": "critical_contract_dependency",
+        "dateUtc": "2026-03-03",
+        "service": "member",
+        "route": "task_events_repo_list_by_user"
+      }
     }
   ],
   "criticalContracts": [
@@ -1044,6 +1106,53 @@
         {
           "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/taskRulesConfig.js",
           "line": 316
+        }
+      ]
+    },
+    {
+      "contractId": "admin_task_rules_apply_plan",
+      "routeOrUsecase": "POST /api/admin/os/task-rules/apply/plan",
+      "requiredIndexIds": [
+        "step_rules_enabled_priority_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 2089
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/taskRulesConfig.js",
+          "line": 541
+        }
+      ]
+    },
+    {
+      "contractId": "admin_task_rules_apply",
+      "routeOrUsecase": "POST /api/admin/os/task-rules/apply",
+      "requiredIndexIds": [
+        "step_rules_enabled_priority_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/index.js",
+          "line": 2094
+        },
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/routes/admin/taskRulesConfig.js",
+          "line": 613
+        }
+      ]
+    },
+    {
+      "contractId": "task_events_repo_list_by_user",
+      "routeOrUsecase": "taskEventsRepo.listTaskEventsByUser",
+      "requiredIndexIds": [
+        "task_events_lineUserId_checkedAt_desc"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "/Users/parentyai.com/Projects/Member/src/repos/firestore/taskEventsRepo.js",
+          "line": 124
         }
       ]
     }

@@ -352,7 +352,7 @@
     },
     {
       "file": "src/routes/admin/taskRulesConfig.js",
-      "line": 341,
+      "line": 819,
       "symbol": "killSwitch"
     },
     {
@@ -951,18 +951,23 @@
       "symbol": "killSwitch"
     },
     {
-      "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 95,
-      "symbol": "getKillSwitch"
+      "file": "src/usecases/tasks/planTaskRulesApply.js",
+      "line": 125,
+      "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 98,
+      "line": 96,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
       "line": 99,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 100,
       "symbol": "killSwitch"
     }
   ]

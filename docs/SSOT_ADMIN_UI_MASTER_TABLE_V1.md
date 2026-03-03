@@ -26,15 +26,15 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
 
 ## Phase700 Addendum（Task Engine / Step Rules / add-only）
 - 対象UI: `/admin/app?pane=monitor`
-- 追加API: `/api/admin/os/task-rules/*`（status/plan/set/history/dry-run）
+- 追加API: `/api/admin/os/task-rules/*`（status/plan/set/history/dry-run/template-plan/template-set/apply-plan/apply）
 - 互換条件:
   - 既存 managed flow（composer / city-pack / vendors / emergency）は不変。
-  - 追加 managed flow action は `task_rules.set` のみ（`/api/admin/os/task-rules/set`）。
+  - 追加 managed flow action は `task_rules.set` / `task_rules.template_set` / `task_rules.apply`。
   - Task Rules は `managedFlowGuard + planHash + confirmToken` の二段階適用を必須とする。
 
 <!-- ADMIN_UI_MASTER_TABLE_BEGIN -->
 {
-  "version": "2026-02-27.v1.3",
+  "version": "2026-03-03.v1.4",
   "flows": [
     {
       "flowId": "composer.notification.approve_plan",
@@ -517,6 +517,98 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
       "evidenceBindings": {
         "auditActionHints": [
           "task_rules.set"
+        ],
+        "defaultPane": "audit"
+      },
+      "roleRestrictions": {
+        "allow": [
+          "admin",
+          "developer"
+        ],
+        "deny": [
+          "operator"
+        ]
+      },
+      "confirmMode": "required"
+    },
+    {
+      "flowId": "task_rules.template_set",
+      "stateMachine": {
+        "initial": "planned",
+        "transitions": [
+          {
+            "event": "set",
+            "from": "planned",
+            "to": "applied"
+          }
+        ]
+      },
+      "guardRules": {
+        "actorMode": "required",
+        "traceMode": "required",
+        "confirmMode": "required",
+        "killSwitchCheck": "none",
+        "auditMode": "required"
+      },
+      "writeActions": [
+        {
+          "actionKey": "task_rules.template_set",
+          "method": "POST",
+          "pathPattern": "/api/admin/os/task-rules/template/set",
+          "dangerClass": "template_set",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/taskRulesConfig.js"
+        }
+      ],
+      "evidenceBindings": {
+        "auditActionHints": [
+          "task_rules.template_set"
+        ],
+        "defaultPane": "audit"
+      },
+      "roleRestrictions": {
+        "allow": [
+          "admin",
+          "developer"
+        ],
+        "deny": [
+          "operator"
+        ]
+      },
+      "confirmMode": "required"
+    },
+    {
+      "flowId": "task_rules.apply",
+      "stateMachine": {
+        "initial": "planned",
+        "transitions": [
+          {
+            "event": "apply",
+            "from": "planned",
+            "to": "applied"
+          }
+        ]
+      },
+      "guardRules": {
+        "actorMode": "required",
+        "traceMode": "required",
+        "confirmMode": "required",
+        "killSwitchCheck": "none",
+        "auditMode": "required"
+      },
+      "writeActions": [
+        {
+          "actionKey": "task_rules.apply",
+          "method": "POST",
+          "pathPattern": "/api/admin/os/task-rules/apply",
+          "dangerClass": "apply",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/taskRulesConfig.js"
+        }
+      ],
+      "evidenceBindings": {
+        "auditActionHints": [
+          "task_rules.apply"
         ],
         "defaultPane": "audit"
       },

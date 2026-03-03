@@ -5,6 +5,7 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const { TASK_STATUS } = require('../../domain/tasks/constants');
 const { normalizeTaskStatus, toJourneyPatchFromTaskStatus } = require('../../domain/tasks/statusMapping');
 const { recomputeJourneyTaskGraph } = require('../journey/recomputeJourneyTaskGraph');
+const { appendTaskEventIfStateChanged } = require('./recordTaskEvent');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -82,6 +83,16 @@ async function patchTaskState(params, deps) {
     lineUserId: userId,
     actor: payload.actor || 'task_engine_patch',
     failOnCycle: false
+  }, resolvedDeps).catch(() => null);
+
+  await appendTaskEventIfStateChanged({
+    beforeTask: currentTask,
+    afterTask: updatedTask,
+    checkedAt: nowIso,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    actor: payload.actor || 'task_engine_patch',
+    source: 'patch_task_state'
   }, resolvedDeps).catch(() => null);
 
   return {

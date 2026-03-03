@@ -346,6 +346,32 @@
    - execute（confirm token 必須）
 2) Monitor で反応/CTR を確認
 
+### Composer Layout V2（運用配置）
+- 上段: `ライブプレビュー`（固定サイズ `360x160`）
+- 下段左: `通知作成`（コンパクト入力）
+- 下段右: `通知一覧`（保存済み通知）
+- モバイル: `ライブプレビュー -> 通知作成 -> 通知一覧` の順で縦積み
+
+### 主導線アクション
+- 既定の主導線は `下書き作成` / `承認（有効化）`。
+- `送信計画` / `送信実行` は API互換のため維持されるが、既定UIでは主導線に出さない。
+
+### 通知一覧の一括操作
+- `編集`: 1件選択時のみ有効
+- `承認`: 複数選択可（逐次 approve）
+- `削除`: 物理削除ではなく archive（非破壊）
+
+### archive運用（非破壊）
+1) UIの「削除」または API `POST /api/admin/os/notifications/archive` を実行する
+2) 通知は `archivedAt/archivedBy/archiveReason` を付与して非表示化する
+3) 確認時のみ `GET /api/admin/os/notifications/list?includeArchived=1` で再取得する
+
+### Composer Layout V2.1（compact）
+- ライブプレビューの右側に通知一覧を配置する。
+- 通知作成フォームはライブプレビューの下段に配置する。
+- プレビュー固定サイズは `360x160`（縦1/4）を使用する。
+- モバイルは `ライブプレビュー -> 通知作成 -> 通知一覧` の順で縦積み。
+
 ### Legacy Composer運用ゲート（調査専用）
 - 方針: 通常運用は `app pane` 固定。`/admin/composer` 直アクセスは redirect を前提とする。
 - 例外利用（調査時のみ）:
@@ -691,10 +717,22 @@ API:
 3) `POST /api/admin/os/task-rules/set` で適用する。  
 4) `GET /api/admin/os/task-rules/history` で変更証跡を確認する。  
 
+### Journey Template plan / set
+1) `POST /api/admin/os/task-rules/template/plan` に `templateId/template` を渡し、`planHash` / `confirmToken` を取得する。  
+2) `POST /api/admin/os/task-rules/template/set` を `planHash + confirmToken` 付きで実行する。  
+3) 既存 namespace（`<templateId>__...`）で不要になった rule は `enabled=false` に自動反映される。  
+4) `GET /api/admin/os/task-rules/history` と監査ログで `task_rules.template_set` を確認する。  
+
 ### Dry-run（説明可能性）
 1) `POST /api/admin/os/task-rules/dry-run` に `userId` を指定して実行する。  
 2) `tasks/nextActions/blocked/explain` を確認する。  
 3) `blockedReason` が想定外の場合は `enabled=false` で段階停止する。  
+
+### Single User apply（lineUserId/memberNumber）
+1) `POST /api/admin/os/task-rules/apply/plan` に `lineUserId` または `memberNumber` を指定して計画する。  
+2) `memberNumber` が複数ユーザーへ解決される場合は `409 multiple_users` で停止する（単一化まで書込禁止）。  
+3) `POST /api/admin/os/task-rules/apply` を `planHash + confirmToken` 付きで実行する。  
+4) 実行後は `sync.syncedTaskCount/syncedTodoCount` と `task_events` を確認する。  
 
 ### LINE/公開API連携
 1) Task一覧取得: `GET /api/tasks?userId=...&ts=...&sig=...`  
@@ -712,4 +750,6 @@ API:
 ### 即時停止（Phase700）
 - `ENABLE_TASK_ENGINE_V1=0`
 - `ENABLE_TASK_NUDGE_V1=0`
+- `ENABLE_TASK_EVENTS_V1=0`
+- `ENABLE_JOURNEY_TEMPLATE_V1=0`
 - `step_rules.enabled=false`（対象ruleのみ段階停止可）

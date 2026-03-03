@@ -8,6 +8,9 @@
 
 ## Collection
 - `step_rules/{ruleId}`
+- template由来 namespace:
+  - `<templateId>__<phaseKey>__<stepKey>`
+  - 既存rule削除は禁止。不要ruleは `enabled=false` で停止する。
 
 ## Schema (v1)
 - `ruleId` (docId)
@@ -44,12 +47,18 @@
 - `GET /api/admin/os/task-rules/status`
 - `POST /api/admin/os/task-rules/plan`
 - `POST /api/admin/os/task-rules/set`
+- `POST /api/admin/os/task-rules/template/plan`
+- `POST /api/admin/os/task-rules/template/set`
+- `POST /api/admin/os/task-rules/apply/plan`
+- `POST /api/admin/os/task-rules/apply`
 - `GET /api/admin/os/task-rules/history`
 - `POST /api/admin/os/task-rules/dry-run`
 
 ## Plan/Set Safety
 - `planHash + confirmToken` 必須
 - `set` は `planHash` の再計算一致が必須
+- `template_set` / `apply` も `planHash` 再計算一致を必須化
+- `apply` は単一ユーザーのみ（`memberNumber` 多重解決時は `409 multiple_users`）
 - 変更履歴は `step_rule_change_logs` に append-only 記録
 
 ## Dry-run Explain Contract

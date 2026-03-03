@@ -80,3 +80,9 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/READ_PATH_BUDGETS.md`（read path予算上限と増悪ゲート）
 - `docs/REPO_AUDIT_INPUTS/missing_index_surface.json`（missing-index fallback surface 集計）
 - `docs/SSOT_UNREACHABLE_FINALIZATION_V1.md`（unreachable 2ファイルの最終処置方針）
+- `docs/SSOT_JOURNEY_TEMPLATE_V1.md`（Journey template 3フェーズSSOT）
+- `docs/SSOT_TASK_ENGINE_V1.md`（Task engine決定契約 / task_events）
+- `docs/SSOT_STEP_RULES_V1.md`（Step rules契約 / template namespace）
+- `docs/SSOT_TASK_NOTIFICATION_LINKAGE_V1.md`（Task通知連携契約）
+- `docs/SSOT_TASK_TO_NOTIFICATION_LINKAGE_V1.md`（Task通知連携の名称統一版）
+- `docs/RUNBOOK_TASK_ENGINE_OPS_V1.md`（Task engine運用runbook）

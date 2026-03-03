@@ -1,6 +1,7 @@
 # SSOT_TASK_NOTIFICATION_LINKAGE_V1
 
 Task と Notification の連携契約（add-only）。
+運用契約名の統一版は `docs/SSOT_TASK_TO_NOTIFICATION_LINKAGE_V1.md` を参照。
 
 ## Principle
 - Notification は Task の派生（nudge）であり主語ではない。
