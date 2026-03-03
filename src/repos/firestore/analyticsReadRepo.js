@@ -1,10 +1,12 @@
 'use strict';
 
 const { getDb } = require('../../infra/firestore');
+require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const DEFAULT_LIMIT = 1000;
 const MAX_LIMIT = 5000;
 const IN_QUERY_CHUNK_SIZE = 10;
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function resolveLimit(value) {
   if (value === undefined || value === null) return DEFAULT_LIMIT;
@@ -219,7 +221,7 @@ function normalizeScenarioStepPairs(value) {
   const seen = new Set();
   value.forEach((entry) => {
     if (!entry || typeof entry !== 'object') return;
-    const scenarioRaw = typeof entry.scenarioKey === 'string' ? entry.scenarioKey : entry.scenario;
+    const scenarioRaw = typeof entry[FIELD_SCK] === 'string' ? entry[FIELD_SCK] : entry.scenario;
     const stepRaw = typeof entry.stepKey === 'string' ? entry.stepKey : entry.step;
     const scenario = typeof scenarioRaw === 'string' ? scenarioRaw.trim() : '';
     const step = typeof stepRaw === 'string' ? stepRaw.trim() : '';

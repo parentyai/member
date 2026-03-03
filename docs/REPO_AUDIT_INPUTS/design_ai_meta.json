@@ -91,9 +91,7 @@
   "naming_drift": {
     "scenario": [],
     "scenarioKey": [
-      "src/repos/firestore/analyticsReadRepo.js",
-      "src/usecases/emergency/approveEmergencyBulletin.js",
-      "src/usecases/tasks/computeUserTasks.js"
+      "src/repos/firestore/analyticsReadRepo.js"
     ]
   },
   "critical_guards": [

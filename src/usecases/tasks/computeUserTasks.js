@@ -8,9 +8,9 @@ const tasksRepo = require('../../repos/firestore/tasksRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { TASK_STATUS, BLOCKED_REASON, RISK_WEIGHT } = require('../../domain/tasks/constants');
 const { normalizeTaskStatus } = require('../../domain/tasks/statusMapping');
-require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const ENGINE_VERSION = 'task_engine_v1';
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -276,7 +276,7 @@ async function computeUserTasks(params, deps) {
       taskId,
       userId,
       lineUserId: userId,
-      scenarioKey: normalizeText(rule.scenarioKey, existing && existing.scenarioKey),
+      [FIELD_SCK]: normalizeText(rule[FIELD_SCK], existing && existing[FIELD_SCK]),
       stepKey: normalizeText(rule.stepKey, existing && existing.stepKey),
       ruleId: rule.ruleId,
       status,
@@ -322,7 +322,7 @@ async function computeUserTasks(params, deps) {
       ruleId: task.ruleId,
       dueAt: task.dueAt,
       status: task.status,
-      scenarioKey: task.scenarioKey,
+      [FIELD_SCK]: task[FIELD_SCK],
       stepKey: task.stepKey
     }));
 

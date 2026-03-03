@@ -612,11 +612,6 @@
     },
     {
       "file": "src/usecases/emergency/approveEmergencyBulletin.js",
-      "line": 116,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/usecases/emergency/approveEmergencyBulletin.js",
       "line": 117,
       "symbol": "getKillSwitch"
     },
@@ -632,7 +627,7 @@
     },
     {
       "file": "src/usecases/emergency/approveEmergencyBulletin.js",
-      "line": 273,
+      "line": 120,
       "symbol": "getKillSwitch"
     },
     {
@@ -647,12 +642,17 @@
     },
     {
       "file": "src/usecases/emergency/approveEmergencyBulletin.js",
-      "line": 284,
+      "line": 276,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/emergency/approveEmergencyBulletin.js",
-      "line": 329,
+      "line": 285,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/usecases/emergency/approveEmergencyBulletin.js",
+      "line": 330,
       "symbol": "killSwitch"
     },
     {
