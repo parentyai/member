@@ -53,7 +53,7 @@
 | `src/routes/webhookLine.js` | 750 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 751 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
-| `src/usecases/adminOs/executeNotificationSend.js` | 208 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/adminOs/executeNotificationSend.js` | 209 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `: systemFlagsRepo.getKillSwitch;` |

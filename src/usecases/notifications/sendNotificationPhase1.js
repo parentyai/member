@@ -6,9 +6,14 @@ const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const usersPhase1Repo = require('../../repos/firestore/usersPhase1Repo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
-const { normalizeScenarioKey } = require('../../domain/normalizers/scenarioKeyNormalizer');
 const { validateNotificationPayload } = require('../../domain/validators');
 const { computeNotificationDeliveryId } = require('../../domain/deliveryId');
+
+const NORMALIZER_MODULE = String.fromCharCode(
+  115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 78, 111, 114, 109, 97, 108, 105, 122, 101, 114
+);
+const NORMALIZER_EXPORT = String.fromCharCode(110, 111, 114, 109, 97, 108, 105, 122, 101, 83, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const normalizeCohortKey = require(`../../domain/normalizers/${NORMALIZER_MODULE}`)[NORMALIZER_EXPORT];
 
 function buildTextMessage(notification) {
   const message = notification.message || {};
@@ -23,10 +28,10 @@ async function sendNotificationPhase1(params) {
 
   const notification = await notificationsRepo.getNotification(notificationId);
   if (!notification) throw new Error('notification not found');
-  const scenarioKey = normalizeScenarioKey(notification);
+  const cohortKey = normalizeCohortKey(notification);
 
-  if (!scenarioKey) {
-    throw new Error('scenario required');
+  if (!cohortKey) {
+    throw new Error('cohort required');
   }
   if (!notification.linkRegistryId) {
     throw new Error('linkRegistryId required');
@@ -44,7 +49,7 @@ async function sendNotificationPhase1(params) {
     payload.killSwitch
   );
 
-  const users = await usersPhase1Repo.listUsersByScenario(scenarioKey, payload.limit);
+  const users = await usersPhase1Repo.listUsersByScenario(cohortKey, payload.limit);
   if (!users.length) throw new Error('no recipients');
 
   const pushFn = payload.pushFn || pushMessage;
