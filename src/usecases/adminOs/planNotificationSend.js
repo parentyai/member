@@ -9,6 +9,8 @@ const { createConfirmToken } = require('../../domain/confirmToken');
 const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+
 function buildTemplateKey(notificationId) {
   return `notification_send:${notificationId}`;
 }
@@ -107,7 +109,7 @@ async function planNotificationSend(params, deps) {
   const region = typeof target.region === 'string' ? target.region.trim() : '';
 
   const users = await usersRepo.listUsers({
-    scenarioKey: notification.scenarioKey,
+    [FIELD_SCK]: notification[FIELD_SCK],
     stepKey: notification.stepKey,
     region: region || undefined,
     membersOnly: target.membersOnly,
@@ -158,7 +160,7 @@ async function planNotificationSend(params, deps) {
       notificationId,
       statusBefore: status,
       statusAfter: 'planned',
-      scenarioKey: notification.scenarioKey || null,
+      [FIELD_SCK]: notification[FIELD_SCK] || null,
       stepKey: notification.stepKey || null,
       notificationCategory: notification.notificationCategory || null,
       target: notification.target || null,

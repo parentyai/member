@@ -53,7 +53,7 @@
 | `src/routes/webhookLine.js` | 750 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 751 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
-| `src/usecases/adminOs/executeNotificationSend.js` | 209 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/adminOs/executeNotificationSend.js` | 210 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 116 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `: systemFlagsRepo.getKillSwitch;` |
@@ -90,6 +90,6 @@
 | `src/usecases/phase40/getOpsAssistSuggestion.js` | 121 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase68/executeSegmentSend.js` | 148 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase73/retryQueuedSend.js` | 35 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/tasks/computeUserTasks.js` | 192 | `const killSwitchFn = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/tasks/computeUserTasks.js` | 193 | `const killSwitchFn = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/tasks/runTaskNudgeJob.js` | 95 | `const getKillSwitch = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/tasks/runTaskNudgeJob.js` | 98 | `const killSwitch = await getKillSwitch().catch(() => false);` |

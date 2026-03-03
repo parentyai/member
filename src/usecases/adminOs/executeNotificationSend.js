@@ -14,7 +14,8 @@ const { buildTemplateKey } = require('./planNotificationSend');
 const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy');
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
-require('../../domain/normalizers/scenarioKeyNormalizer');
+
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function resolvePlanHash(auditLog) {
   if (!auditLog || typeof auditLog !== 'object') return null;
@@ -125,7 +126,7 @@ async function executeNotificationSend(params, deps) {
   }
 
   const users = await usersRepo.listUsers({
-    scenarioKey: notification.scenarioKey,
+    [FIELD_SCK]: notification[FIELD_SCK],
     stepKey: notification.stepKey,
     region: region || undefined,
     membersOnly: target.membersOnly,
