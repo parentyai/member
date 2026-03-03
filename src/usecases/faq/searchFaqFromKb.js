@@ -43,7 +43,8 @@ async function searchFaqFromKb(params) {
     articleId: typeof row.id === 'string' ? row.id : '',
     title: typeof row.title === 'string' ? row.title : '',
     searchScore: Number.isFinite(Number(row.searchScore)) ? Number(row.searchScore) : 0,
-    body: typeof row.body === 'string' ? row.body : ''
+    body: typeof row.body === 'string' ? row.body : '',
+    linkRegistryIds: Array.isArray(row.linkRegistryIds) ? row.linkRegistryIds.filter((item) => typeof item === 'string' && item.trim()) : []
   }));
 
   if (!candidates.length) {

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T00:43:36-05:00",
-  "gitCommit": "ff4645f1b950d8659ceb03f905327c53804ad831",
-  "branch": "codex/journey-task-engine-p0",
-  "sourceDigest": "ff6667a0f51c64310a6021e49af6a3baa7e7176b4aee28f48b2c2946e283cab0",
+  "generatedAt": "2026-03-03T01:01:15-05:00",
+  "gitCommit": "481f3c31d32c47c37eca1bb18d3e05f03e35166c",
+  "branch": "codex/llm-concierge-safety-v1",
+  "sourceDigest": "9eff4c4ab4cbf23d5346d9ee077c032c3ac771d89d9ee15251419522fde75a90",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -76,6 +76,7 @@
     "composeCityAndNationwidePacks": [
       "cityPacksRepo"
     ],
+    "composeConciergeReply": [],
     "computeCityPackMetrics": [
       "analyticsReadRepo",
       "notificationsRepo",
@@ -1310,6 +1311,7 @@
     "src/routes/webhookLine.js": [
       "appendAuditLog",
       "classifyPaidIntent",
+      "composeConciergeReply",
       "declareCityPackFeedbackFromLine",
       "declareCityRegionFromLine",
       "declareRedacMembershipIdFromLine",

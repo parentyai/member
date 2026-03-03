@@ -15,6 +15,14 @@ function normalizeLlmEnabled(value) {
   throw new Error('llmEnabled required');
 }
 
+function normalizeLlmConciergeEnabled(value, fallback) {
+  if (value === undefined) return Boolean(fallback);
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error('llmConciergeEnabled invalid');
+}
+
 function normalizeLlmPolicy(value, fallback) {
   if (value === undefined) return fallback;
   const normalized = systemFlagsRepo.normalizeLlmPolicy(value);
@@ -30,8 +38,8 @@ function serializeLlmPolicy(policy) {
   });
 }
 
-function computePlanHash(llmEnabled, llmPolicy) {
-  const text = `llmEnabled=${llmEnabled ? 'true' : 'false'};llmPolicy=${serializeLlmPolicy(llmPolicy)}`;
+function computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled) {
+  const text = `llmEnabled=${llmEnabled ? 'true' : 'false'};llmPolicy=${serializeLlmPolicy(llmPolicy)};llmConciergeEnabled=${llmConciergeEnabled ? 'true' : 'false'}`;
   return `llmcfg_${crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 24)}`;
 }
 
@@ -49,10 +57,14 @@ async function handleStatus(req, res) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const llmEnabled = await systemFlagsRepo.getLlmEnabled();
+  const [llmEnabled, llmConciergeEnabled] = await Promise.all([
+    systemFlagsRepo.getLlmEnabled(),
+    systemFlagsRepo.getLlmConciergeEnabled()
+  ]);
   const llmPolicy = await systemFlagsRepo.getLlmPolicy();
   const envEnabled = isLlmFeatureEnabled(process.env);
   const effectiveEnabled = Boolean(llmEnabled && envEnabled);
+  const effectiveConciergeEnabled = Boolean(llmEnabled && llmConciergeEnabled && envEnabled);
 
   await appendAuditLog({
     actor,
@@ -63,8 +75,10 @@ async function handleStatus(req, res) {
     requestId,
     payloadSummary: {
       llmEnabled,
+      llmConciergeEnabled,
       envLlmFeatureFlag: envEnabled,
       effectiveEnabled,
+      effectiveConciergeEnabled,
       lawfulBasis: llmPolicy.lawfulBasis,
       consentVerified: llmPolicy.consentVerified,
       crossBorder: llmPolicy.crossBorder
@@ -78,9 +92,11 @@ async function handleStatus(req, res) {
     requestId,
     serverTime: new Date().toISOString(),
     llmEnabled,
+    llmConciergeEnabled,
     llmPolicy,
     envLlmFeatureFlag: envEnabled,
-    effectiveEnabled
+    effectiveEnabled,
+    effectiveConciergeEnabled
   }));
 }
 
@@ -93,10 +109,13 @@ async function handlePlan(req, res, body) {
   if (!payload) return;
 
   let llmEnabled;
+  let llmConciergeEnabled;
   const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
+  const currentLlmConciergeEnabled = await systemFlagsRepo.getLlmConciergeEnabled();
   let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
+    llmConciergeEnabled = normalizeLlmConciergeEnabled(payload.llmConciergeEnabled, currentLlmConciergeEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
@@ -104,7 +123,7 @@ async function handlePlan(req, res, body) {
     return;
   }
 
-  const planHash = computePlanHash(llmEnabled, llmPolicy);
+  const planHash = computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled);
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
 
   await appendAuditLog({
@@ -116,6 +135,7 @@ async function handlePlan(req, res, body) {
     requestId,
     payloadSummary: {
       llmEnabled,
+      llmConciergeEnabled,
       llmPolicy,
       lawfulBasis: llmPolicy.lawfulBasis,
       consentVerified: llmPolicy.consentVerified,
@@ -131,6 +151,7 @@ async function handlePlan(req, res, body) {
     requestId,
     serverTime: new Date().toISOString(),
     llmEnabled,
+    llmConciergeEnabled,
     llmPolicy,
     planHash,
     confirmToken
@@ -146,10 +167,13 @@ async function handleSet(req, res, body) {
   if (!payload) return;
 
   let llmEnabled;
+  let llmConciergeEnabled;
   const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
+  const currentLlmConciergeEnabled = await systemFlagsRepo.getLlmConciergeEnabled();
   let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
+    llmConciergeEnabled = normalizeLlmConciergeEnabled(payload.llmConciergeEnabled, currentLlmConciergeEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
@@ -165,7 +189,7 @@ async function handleSet(req, res, body) {
     return;
   }
 
-  const expectedPlanHash = computePlanHash(llmEnabled, llmPolicy);
+  const expectedPlanHash = computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled);
   if (planHash !== expectedPlanHash) {
     await appendAuditLog({
       actor,
@@ -179,6 +203,7 @@ async function handleSet(req, res, body) {
         reason: 'plan_hash_mismatch',
         expectedPlanHash,
         llmEnabled,
+        llmConciergeEnabled,
         llmPolicy,
         lawfulBasis: llmPolicy.lawfulBasis,
         consentVerified: llmPolicy.consentVerified,
@@ -207,6 +232,7 @@ async function handleSet(req, res, body) {
   }
 
   await systemFlagsRepo.setLlmEnabled(llmEnabled);
+  await systemFlagsRepo.setLlmConciergeEnabled(llmConciergeEnabled);
   await systemFlagsRepo.setLlmPolicy(llmPolicy);
 
   await appendAuditLog({
@@ -219,6 +245,7 @@ async function handleSet(req, res, body) {
     payloadSummary: {
       ok: true,
       llmEnabled,
+      llmConciergeEnabled,
       llmPolicy,
       lawfulBasis: llmPolicy.lawfulBasis,
       consentVerified: llmPolicy.consentVerified,
@@ -233,6 +260,7 @@ async function handleSet(req, res, body) {
     requestId,
     serverTime: new Date().toISOString(),
     llmEnabled,
+    llmConciergeEnabled,
     llmPolicy
   }));
 }

@@ -227,6 +227,45 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3) `opsConfig/llmPolicy.allowed_intents_pro=[]`  
 4) `opsConfig/llmPolicy.enabled=false`  
 
+## Phase716 Addendum（LLMコンシェルジュ安全実装）
+
+### 起動/停止フラグ
+- `system_flags.phase0.llmConciergeEnabled` を利用する（default: false）。
+- `llmConciergeEnabled=true` かつ `llmEnabled=true` のときのみコンシェルジュ拡張を有効化する。
+- 既存 `llmEnabled` は従来どおりLLM全体ゲートとして維持する。
+
+### 即時停止手順（コンシェルジュのみ）
+1) `POST /api/admin/llm/config/plan` に `llmConciergeEnabled=false` を含める。  
+2) 返却 `planHash/confirmToken` で `POST /api/admin/llm/config/set` を実行する。  
+3) `GET /api/admin/llm/config/status` で `llmConciergeEnabled=false` を確認する。  
+
+### 外部検索運用
+- `WEB_SEARCH_PROVIDER=http_json` + `WEB_SEARCH_ENDPOINT` を設定したときのみ候補取得を試みる。
+- 未設定/障害時は fail-closed（候補0件）で継続する。
+- free tier は保存済みURLのみ利用し、外部候補を採用しない。
+
+### モード運用（要点）
+- Mode A: URLなし
+- Mode B: R0/R1のみ（free<=1, paid<=3）
+- Mode C: R0/R1/R2（free<=1, paid<=3）
+- 全体上限は3件、本文末尾の `(source: domain/path)` 脚注のみ許可
+
+### 監査確認（llm_gate.decision）
+- `mode`
+- `topic`
+- `userTier`
+- `citationRanks`
+- `urlCount`
+- `urls`
+- `guardDecisions`
+- `blockedReasons`
+- `injectionFindings`
+
+### ロールバック
+1) `llmConciergeEnabled=false`（コンシェルジュのみ停止）  
+2) 必要時 `llmEnabled=false`（LLM全体停止）  
+3) 外部検索のみ停止する場合は `WEB_SEARCH_PROVIDER=disabled` にする（fail-closed）。  
+
 ## Phase662 Addendum（Policy拡張）
 
 ### add-only policy fields

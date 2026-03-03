@@ -17,9 +17,17 @@ const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
 const { evaluateLlmAvailability } = require('../usecases/assistant/llmAvailabilityGate');
 const { getUserContextSnapshot } = require('../usecases/context/getUserContextSnapshot');
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
+const { composeConciergeReply } = require('../usecases/assistant/concierge/composeConciergeReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
-const { getPublicWriteSafetySnapshot } = require('../repos/firestore/systemFlagsRepo');
+const {
+  getPublicWriteSafetySnapshot,
+  getLlmConciergeEnabled
+} = require('../repos/firestore/systemFlagsRepo');
+const faqArticlesRepo = require('../repos/firestore/faqArticlesRepo');
+const linkRegistryRepo = require('../repos/firestore/linkRegistryRepo');
+const sourceRefsRepo = require('../repos/firestore/sourceRefsRepo');
+const cityPacksRepo = require('../repos/firestore/cityPacksRepo');
 const journeyGraphCatalogRepo = require('../repos/firestore/journeyGraphCatalogRepo');
 const {
   detectExplicitPaidIntent,
@@ -163,6 +171,14 @@ function resolveProPredictiveActionsEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PRO_PREDICTIVE_ACTIONS_V1', false);
 }
 
+async function resolveLlmConciergeEnabledBestEffort() {
+  try {
+    return await getLlmConciergeEnabled();
+  } catch (_err) {
+    return false;
+  }
+}
+
 function clampMaxNextActions(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return null;
@@ -302,11 +318,110 @@ function buildProDependencyAddendum(graphSummary) {
   return lines.join('\n');
 }
 
+function uniqueStringList(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const seen = new Set();
+  const out = [];
+  rows.forEach((item) => {
+    const text = normalizeReplyText(item);
+    if (!text) return;
+    const key = text.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(text);
+  });
+  return out;
+}
+
+async function resolveLinkRegistryCandidatesFromSourceIds(sourceIds, sourceLabel) {
+  const ids = uniqueStringList(sourceIds);
+  if (!ids.length) return [];
+  const rows = await Promise.all(ids.map(async (sourceId) => {
+    try {
+      const link = await linkRegistryRepo.getLink(sourceId);
+      if (!link || typeof link.url !== 'string' || !link.url.trim()) return null;
+      return {
+        url: link.url.trim(),
+        source: sourceLabel || 'link_registry',
+        sourceType: 'official',
+        domainClass: link.domainClass || 'unknown',
+        title: link.title || sourceId,
+        snippet: link.description || '',
+        sourceId
+      };
+    } catch (_err) {
+      return null;
+    }
+  }));
+  return rows.filter(Boolean);
+}
+
+async function resolveFaqStoredCandidatesFromRetrieval(retrieval) {
+  const faqCandidates = Array.isArray(retrieval && retrieval.faqCandidates) ? retrieval.faqCandidates : [];
+  const sourceIds = faqCandidates.flatMap((row) => (Array.isArray(row && row.linkRegistryIds) ? row.linkRegistryIds : []));
+  return resolveLinkRegistryCandidatesFromSourceIds(sourceIds, 'faq_link_registry');
+}
+
+async function resolveCityPackStoredCandidatesFromRetrieval(retrieval) {
+  const cityPackCandidates = Array.isArray(retrieval && retrieval.cityPackCandidates) ? retrieval.cityPackCandidates : [];
+  const cityPackIds = uniqueStringList(cityPackCandidates.map((row) => row && row.sourceId));
+  if (!cityPackIds.length) return [];
+  const sourceRefIds = [];
+  for (const cityPackId of cityPackIds.slice(0, 3)) {
+    try {
+      const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+      if (!cityPack || !Array.isArray(cityPack.sourceRefs)) continue;
+      sourceRefIds.push(...cityPack.sourceRefs);
+    } catch (_err) {
+      // fail closed
+    }
+  }
+  const refs = uniqueStringList(sourceRefIds);
+  if (!refs.length) return [];
+  const rows = await Promise.all(refs.map(async (sourceRefId) => {
+    try {
+      const sourceRef = await sourceRefsRepo.getSourceRef(sourceRefId);
+      if (!sourceRef || typeof sourceRef.url !== 'string' || !sourceRef.url.trim()) return null;
+      return {
+        url: sourceRef.url.trim(),
+        source: 'city_pack_source_ref',
+        sourceType: sourceRef.sourceType || 'other',
+        domainClass: sourceRef.domainClass || 'unknown',
+        title: sourceRefId,
+        snippet: '',
+        sourceRefId
+      };
+    } catch (_err) {
+      return null;
+    }
+  }));
+  return rows.filter(Boolean);
+}
+
+async function resolveStoredCandidatesForPaid(paid) {
+  const evidenceKeys = uniqueStringList([]
+    .concat(Array.isArray(paid && paid.citations) ? paid.citations : [])
+    .concat(Array.isArray(paid && paid.output && paid.output.evidenceKeys) ? paid.output.evidenceKeys : []));
+  if (!evidenceKeys.length) return [];
+  const articleRows = await Promise.all(evidenceKeys.slice(0, 8).map(async (articleId) => {
+    try {
+      return await faqArticlesRepo.getArticle(articleId);
+    } catch (_err) {
+      return null;
+    }
+  }));
+  const sourceIds = articleRows
+    .filter(Boolean)
+    .flatMap((row) => (Array.isArray(row.linkRegistryIds) ? row.linkRegistryIds : []));
+  return resolveLinkRegistryCandidatesFromSourceIds(sourceIds, 'faq_link_registry');
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
   if (!lineUserId) return;
   const policy = payload.policy && typeof payload.policy === 'object' ? payload.policy : null;
+  const conciergeMeta = payload.conciergeMeta && typeof payload.conciergeMeta === 'object' ? payload.conciergeMeta : null;
   const refusalStrategy = resolveRefusalStrategy(policy);
   const policyVersionId = payload.policyVersionId
     || (policy && typeof policy.policy_version_id === 'string' ? policy.policy_version_id : null)
@@ -330,7 +445,16 @@ async function appendLlmGateDecisionBestEffort(data) {
         costEstimate: Number.isFinite(Number(payload.costEstimate)) ? Number(payload.costEstimate) : null,
         model: payload.model || null,
         policyVersionId,
-        refusalMode: refusalStrategy.mode
+        refusalMode: refusalStrategy.mode,
+        userTier: conciergeMeta && conciergeMeta.userTier ? conciergeMeta.userTier : (payload.plan === 'pro' ? 'paid' : 'free'),
+        mode: conciergeMeta && conciergeMeta.mode ? conciergeMeta.mode : null,
+        topic: conciergeMeta && conciergeMeta.topic ? conciergeMeta.topic : null,
+        citationRanks: conciergeMeta && Array.isArray(conciergeMeta.citationRanks) ? conciergeMeta.citationRanks : [],
+        urlCount: conciergeMeta && Number.isFinite(Number(conciergeMeta.urlCount)) ? Number(conciergeMeta.urlCount) : 0,
+        urls: conciergeMeta && Array.isArray(conciergeMeta.urls) ? conciergeMeta.urls : [],
+        guardDecisions: conciergeMeta && Array.isArray(conciergeMeta.guardDecisions) ? conciergeMeta.guardDecisions : [],
+        blockedReasons: conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [],
+        injectionFindings: conciergeMeta ? conciergeMeta.injectionFindings === true : false
       }
     });
   } catch (_err) {
@@ -391,9 +515,50 @@ async function replyWithFreeRetrieval(params) {
     .join('\n\n');
   const extra = normalizeReplyText(mergedExtra);
   const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
-  const replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
+  let replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
+  let conciergeMeta = null;
+
+  if (payload.llmConciergeEnabled === true) {
+    try {
+      const [faqStored, cityPackStored] = await Promise.all([
+        resolveFaqStoredCandidatesFromRetrieval(retrieval),
+        resolveCityPackStoredCandidatesFromRetrieval(retrieval)
+      ]);
+      const concierge = await composeConciergeReply({
+        question: payload.text,
+        baseReplyText: replyText,
+        userTier: payload.plan === 'pro' ? 'paid' : 'free',
+        plan: payload.plan || 'free',
+        locale: 'ja',
+        storedCandidates: faqStored.concat(cityPackStored),
+        denylist: payload.llmPolicy && Array.isArray(payload.llmPolicy.forbidden_domains)
+          ? payload.llmPolicy.forbidden_domains
+          : [],
+        env: process.env
+      });
+      replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
+      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : null;
+    } catch (_err) {
+      // fail closed: keep retrieval-only reply text
+      conciergeMeta = {
+        topic: null,
+        mode: null,
+        userTier: payload.plan === 'pro' ? 'paid' : 'free',
+        citationRanks: [],
+        urlCount: 0,
+        urls: [],
+        guardDecisions: [],
+        blockedReasons: ['concierge_compose_failed'],
+        injectionFindings: false
+      };
+    }
+  }
+
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
-  return retrieval;
+  return Object.assign({}, retrieval, {
+    replyText,
+    conciergeMeta
+  });
 }
 
 async function handleAssistantMessage(params) {
@@ -405,6 +570,7 @@ async function handleAssistantMessage(params) {
   }
 
   const planInfo = await resolvePlan(lineUserId);
+  const llmConciergeEnabled = payload.llmConciergeEnabled === true;
   const explicitPaidIntent = detectExplicitPaidIntent(text);
   const paidIntent = classifyPaidIntent(text);
   const traceId = typeof payload.requestId === 'string' && payload.requestId.trim()
@@ -419,7 +585,9 @@ async function handleAssistantMessage(params) {
       : '';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       extraText: dependencyHint,
-      blockedReason
+      blockedReason,
+      plan: planInfo.plan,
+      llmConciergeEnabled
     }));
     if (explicitPaidIntent) {
       await appendJourneyEventBestEffort({
@@ -451,7 +619,8 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       costEstimate: usage && usage.costEstimate,
       traceId,
-      requestId
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
     });
     return {
       handled: true,
@@ -471,7 +640,9 @@ async function handleAssistantMessage(params) {
     const blockedReason = budget.blockedReason || 'plan_gate_blocked';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
-      llmPolicy: budget.policy || null
+      llmPolicy: budget.policy || null,
+      plan: planInfo.plan,
+      llmConciergeEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -496,7 +667,8 @@ async function handleAssistantMessage(params) {
       model: budget.policy && budget.policy.model,
       policy: budget.policy || null,
       traceId,
-      requestId
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
     });
     return {
       handled: true,
@@ -511,7 +683,9 @@ async function handleAssistantMessage(params) {
     const blockedReason = availability.reason || 'llm_unavailable';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
-      llmPolicy: budget.policy || null
+      llmPolicy: budget.policy || null,
+      plan: planInfo.plan,
+      llmConciergeEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -537,7 +711,8 @@ async function handleAssistantMessage(params) {
       model: budget.policy && budget.policy.model,
       policy: budget.policy || null,
       traceId,
-      requestId
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
     });
     return {
       handled: true,
@@ -558,7 +733,9 @@ async function handleAssistantMessage(params) {
       : 'snapshot_unavailable';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
-      llmPolicy: budget.policy || null
+      llmPolicy: budget.policy || null,
+      plan: planInfo.plan,
+      llmConciergeEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -584,7 +761,8 @@ async function handleAssistantMessage(params) {
       model: budget.policy && budget.policy.model,
       policy: budget.policy || null,
       traceId,
-      requestId
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
     });
     return {
       handled: true,
@@ -625,7 +803,9 @@ async function handleAssistantMessage(params) {
     const blockedReason = paid.blockedReason || 'llm_error';
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
-      llmPolicy: budget.policy || null
+      llmPolicy: budget.policy || null,
+      plan: planInfo.plan,
+      llmConciergeEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -651,7 +831,8 @@ async function handleAssistantMessage(params) {
       model: budget.policy && budget.policy.model,
       policy: budget.policy || null,
       traceId,
-      requestId
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
     });
     return {
       handled: true,
@@ -665,6 +846,38 @@ async function handleAssistantMessage(params) {
   if (resolveProPredictiveActionsEnabled()) {
     const addendum = buildProDependencyAddendum(await loadTaskGraphSummary(lineUserId));
     if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
+  }
+  let conciergeMeta = null;
+  if (llmConciergeEnabled) {
+    try {
+      const storedCandidates = await resolveStoredCandidatesForPaid(paid);
+      const concierge = await composeConciergeReply({
+        question: text,
+        baseReplyText: replyText,
+        userTier: 'paid',
+        plan: planInfo.plan,
+        locale: 'ja',
+        storedCandidates,
+        denylist: budget.policy && Array.isArray(budget.policy.forbidden_domains)
+          ? budget.policy.forbidden_domains
+          : [],
+        env: process.env
+      });
+      replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
+      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : null;
+    } catch (_err) {
+      conciergeMeta = {
+        topic: null,
+        mode: null,
+        userTier: 'paid',
+        citationRanks: [],
+        urlCount: 0,
+        urls: [],
+        guardDecisions: [],
+        blockedReasons: ['concierge_compose_failed'],
+        injectionFindings: false
+      };
+    }
   }
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
@@ -693,7 +906,8 @@ async function handleAssistantMessage(params) {
     model: paid.model || (budget.policy && budget.policy.model),
     policy: budget.policy || null,
     traceId,
-    requestId
+    requestId,
+    conciergeMeta
   });
 
   await appendJourneyEventBestEffort({
@@ -807,6 +1021,7 @@ async function handleLineWebhook(options) {
   }
 
   await logLineWebhookEventsBestEffort({ payload, requestId });
+  const llmConciergeEnabled = await resolveLlmConciergeEnabledBestEffort();
 
   const userIds = extractUserIds(payload);
   const firstUserId = userIds[0] || '';
@@ -981,7 +1196,8 @@ async function handleLineWebhook(options) {
             text,
             replyToken,
             replyFn,
-            requestId
+            requestId,
+            llmConciergeEnabled
           });
           if (assistant && assistant.handled) {
             const mode = assistant.mode || 'unknown';
