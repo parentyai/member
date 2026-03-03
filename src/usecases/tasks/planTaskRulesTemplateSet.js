@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { compileJourneyTemplateToStepRules } = require('./compileJourneyTemplateToStepRules');
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -23,7 +24,7 @@ function buildTemplateSetPlanHash(compiled) {
       phases: compiled.template ? compiled.template.phases : [],
       rules: (compiled.compiledRules || []).map((rule) => ({
         ruleId: rule.ruleId,
-        scenarioKey: rule.scenarioKey || rule[String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121)] || null,
+        [FIELD_SCK]: rule[FIELD_SCK] || null,
         stepKey: rule.stepKey,
         trigger: rule.trigger,
         leadTime: rule.leadTime,

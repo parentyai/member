@@ -484,6 +484,22 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "journey_templates",
+      "repos": [
+        "journeyTemplatesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/journeyTemplatesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/journeyTemplatesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "journey_todo_items",
       "repos": [
         "journeyTodoItemsRepo"
@@ -1084,6 +1100,22 @@
       ],
       "read_paths": [
         "src/repos/firestore/sourceRefsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "step_rule_change_logs",
+      "repos": [
+        "stepRuleChangeLogsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/stepRuleChangeLogsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/stepRuleChangeLogsRepo.js"
       ],
       "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
       "required_fields": "UNRESOLVED_STATIC_ONLY",

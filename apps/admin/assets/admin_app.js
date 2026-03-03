@@ -12984,7 +12984,10 @@ async function postJson(url, payload, traceId) {
 function bindComposerCardActionMirrors() {
   const mappings = [
     { mirrorId: 'composer-card-draft', sourceId: 'create-draft' },
-    { mirrorId: 'composer-card-approve', sourceId: 'approve' }
+    { mirrorId: 'composer-card-preview', sourceId: 'preview' },
+    { mirrorId: 'composer-card-approve', sourceId: 'approve' },
+    { mirrorId: 'composer-card-plan', sourceId: 'plan' },
+    { mirrorId: 'composer-card-execute', sourceId: 'execute' }
   ];
   mappings.forEach((mapping) => {
     const mirror = document.getElementById(mapping.mirrorId);

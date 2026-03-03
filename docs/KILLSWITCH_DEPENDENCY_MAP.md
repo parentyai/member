@@ -91,5 +91,5 @@
 | `src/usecases/phase68/executeSegmentSend.js` | 148 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase73/retryQueuedSend.js` | 35 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/tasks/computeUserTasks.js` | 193 | `const killSwitchFn = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/tasks/runTaskNudgeJob.js` | 95 | `const getKillSwitch = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/tasks/runTaskNudgeJob.js` | 98 | `const killSwitch = await getKillSwitch().catch(() => false);` |
+| `src/usecases/tasks/runTaskNudgeJob.js` | 96 | `const getKillSwitch = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/tasks/runTaskNudgeJob.js` | 99 | `const killSwitch = await getKillSwitch().catch(() => false);` |

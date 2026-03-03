@@ -349,6 +349,17 @@
     ]
   },
   {
+    "collection": "journey_templates",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/journeyTemplatesRepo.js:6",
+      "src/domain/retention/retentionPolicy.js:36"
+    ]
+  },
+  {
     "collection": "journey_todo_items",
     "kind": "config",
     "recomputable": false,
@@ -775,6 +786,17 @@
       "src/repos/firestore/sourceRefsRepo.js:130",
       "src/repos/firestore/sourceRefsRepo.js:154",
       "src/repos/firestore/sourceRefsRepo.js:164"
+    ]
+  },
+  {
+    "collection": "step_rule_change_logs",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/stepRuleChangeLogsRepo.js:5",
+      "src/domain/retention/retentionPolicy.js:74"
     ]
   },
   {

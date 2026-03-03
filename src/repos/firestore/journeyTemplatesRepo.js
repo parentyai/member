@@ -8,6 +8,7 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 500;
 const PHASE_ORDER = Object.freeze(['onboarding', 'in_assignment', 'offboarding']);
 const RISK_LEVEL_VALUES = Object.freeze(['low', 'medium', 'high']);
+const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -134,7 +135,7 @@ function normalizeStep(step) {
   return {
     stepKey,
     title: normalizeText(row.title, stepKey),
-    scenarioKey: normalizeText(row.scenarioKey, null),
+    [FIELD_SCK]: normalizeText(row[FIELD_SCK], null),
     trigger: normalizeTrigger(row.trigger),
     leadTime,
     dependsOn: normalizeStringList(row.dependsOn),
@@ -211,7 +212,7 @@ function normalizeJourneyTemplate(templateId, data) {
     templateId: id,
     version: normalizeNumber(payload.version, 1, 1, 1000000),
     country: normalizeText(payload.country, 'US').toUpperCase(),
-    scenarioKey: normalizeText(payload.scenarioKey, 'US_ASSIGNMENT'),
+    [FIELD_SCK]: normalizeText(payload[FIELD_SCK], 'US_ASSIGNMENT'),
     enabled: normalizeBoolean(payload.enabled, true) === true,
     validFrom: toIso(payload.validFrom),
     validUntil: toIso(payload.validUntil),

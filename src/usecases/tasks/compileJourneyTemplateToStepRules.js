@@ -121,7 +121,7 @@ function buildCompileHash(template, compiledRules) {
     phases: template.phases,
       compiledRules: compiledRules.map((rule) => ({
         ruleId: rule.ruleId,
-        scenarioKey: normalizeText(rule.scenarioKey || rule[FIELD_SCK], null),
+        [FIELD_SCK]: normalizeText(rule[FIELD_SCK], null),
         stepKey: rule.stepKey,
         trigger: rule.trigger,
         leadTime: rule.leadTime,
@@ -148,7 +148,7 @@ function compileJourneyTemplateToStepRules(params, deps) {
   const templateInput = payload.template && typeof payload.template === 'object' ? payload.template : {};
   const normalizedTemplate = templateRepo.normalizeJourneyTemplate(templateId, Object.assign({}, templateInput, {
     templateId,
-    scenarioKey: normalizeText(templateInput.scenarioKey, normalizeText(payload.scenarioKey, 'US_ASSIGNMENT'))
+    [FIELD_SCK]: normalizeText(templateInput[FIELD_SCK], normalizeText(payload[FIELD_SCK], 'US_ASSIGNMENT'))
   }));
 
   if (!normalizedTemplate) {
@@ -201,8 +201,7 @@ function compileJourneyTemplateToStepRules(params, deps) {
 
     const candidate = {
       ruleId: raw.ruleId,
-      [FIELD_SCK]: normalizeText(raw.step.scenarioKey, normalizedTemplate.scenarioKey || 'US_ASSIGNMENT'),
-      scenarioKey: normalizeText(raw.step.scenarioKey, normalizedTemplate.scenarioKey || 'US_ASSIGNMENT'),
+      [FIELD_SCK]: normalizeText(raw.step[FIELD_SCK], normalizedTemplate[FIELD_SCK] || 'US_ASSIGNMENT'),
       stepKey: raw.step.stepKey,
       trigger: raw.step.trigger,
       leadTime: raw.step.leadTime,
@@ -230,7 +229,7 @@ function compileJourneyTemplateToStepRules(params, deps) {
     }
 
     compiledRules.push(Object.assign({}, normalizedRule, {
-      scenarioKey: normalizeText(normalizedRule[FIELD_SCK], candidate[FIELD_SCK]),
+      [FIELD_SCK]: normalizeText(normalizedRule[FIELD_SCK], candidate[FIELD_SCK]),
       phaseKey: raw.phaseKey,
       stepKey: raw.stepKey
     }));

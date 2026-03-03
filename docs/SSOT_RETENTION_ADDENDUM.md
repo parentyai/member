@@ -10,9 +10,9 @@
 | kind | count |
 | --- | --- |
 | aggregate | 11 |
-| config | 47 |
+| config | 48 |
 | event | 6 |
-| evidence | 13 |
+| evidence | 14 |
 | transient | 3 |
 
 ## Collection方針
@@ -49,6 +49,7 @@
 | `journey_param_change_logs` | evidence | 365d | false | false |
 | `journey_param_versions` | config | INDEFINITE | false | false |
 | `journey_reminder_runs` | evidence | 365d | false | false |
+| `journey_templates` | config | INDEFINITE | false | false |
 | `journey_todo_items` | config | INDEFINITE | false | false |
 | `journey_todo_stats` | aggregate | 90d | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
@@ -86,6 +87,7 @@
 | `source_audit_runs` | transient | 30d | CONDITIONAL | true |
 | `source_evidence` | config | INDEFINITE | false | false |
 | `source_refs` | config | INDEFINITE | false | false |
+| `step_rule_change_logs` | evidence | 365d | false | false |
 | `step_rules` | config | INDEFINITE | false | false |
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
