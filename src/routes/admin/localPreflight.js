@@ -14,7 +14,10 @@ async function handleLocalPreflight(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   try {
-    const result = await runLocalPreflight({ env: process.env });
+    const result = await runLocalPreflight({
+      env: process.env,
+      allowGcloudProjectIdDetect: true
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
       ok: true,

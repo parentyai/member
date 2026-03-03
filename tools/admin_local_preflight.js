@@ -730,8 +730,7 @@ function normalizeProjectIdProbeClassification(checks) {
   if (probeClassification === 'FIRESTORE_PROJECT_ID_ERROR') return source;
 
   const shouldPromoteToProjectId = probeClassification === 'FIRESTORE_UNKNOWN'
-    || probeCode === 'FIRESTORE_PROJECT_ID_ERROR'
-    || probeCode === 'FIRESTORE_PROBE_FAILED';
+    || probeCode === 'FIRESTORE_PROJECT_ID_ERROR';
   if (!shouldPromoteToProjectId) return source;
 
   return Object.assign({}, source, {
