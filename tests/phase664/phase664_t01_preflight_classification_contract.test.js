@@ -169,6 +169,28 @@ test('phase664: compatibility mode keeps ADC reauth classification when strict S
   assert.ok(typeof result.summary.rawHint === 'string' && result.summary.rawHint.length > 0);
 });
 
+test('phase664: project id missing does not override ADC reauth classification for invalid_rapt probe failures', async () => {
+  const result = await runLocalPreflight({
+    env: {},
+    requireSaKey: false,
+    allowGcloudProjectIdDetect: false,
+    timeoutMs: 100,
+    getDb: () => ({
+      listCollections: async () => {
+        throw new Error('2 UNKNOWN: Getting metadata from plugin failed with error: {"error":"invalid_grant","error_description":"reauth related error (invalid_rapt)","error_subtype":"invalid_rapt"}');
+      }
+    })
+  });
+
+  assert.equal(result.ready, false);
+  assert.equal(result.checks.firestoreProjectId.code, 'FIRESTORE_PROJECT_ID_MISSING');
+  assert.equal(result.checks.firestoreProbe.code, 'FIRESTORE_PROBE_FAILED');
+  assert.equal(result.checks.firestoreProbe.classification, 'ADC_REAUTH_REQUIRED');
+  assert.equal(result.summary.code, 'ADC_REAUTH_REQUIRED');
+  assert.equal(result.summary.recoveryActionCode, 'RUN_ADC_REAUTH');
+  assert.equal(result.summary.primaryCheckKey, 'firestoreProbe');
+});
+
 test('phase664: local preflight classifies timeout and exposes timeout recovery action', async () => {
   const result = await runLocalPreflight({
     env: { FIRESTORE_PROJECT_ID: 'member-485303' },
