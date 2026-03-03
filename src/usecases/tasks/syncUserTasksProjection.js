@@ -6,6 +6,7 @@ const { computeUserTasks } = require('./computeUserTasks');
 const { toJourneyPatchFromTaskStatus } = require('../../domain/tasks/statusMapping');
 const { recomputeJourneyTaskGraph } = require('../journey/recomputeJourneyTaskGraph');
 const { isTaskEngineEnabled } = require('../../domain/tasks/featureFlags');
+const { appendTaskEventIfStateChanged } = require('./recordTaskEvent');
 const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function normalizeText(value) {
@@ -54,11 +55,26 @@ async function syncUserTasksProjection(params, deps) {
   const tasksRepository = resolvedDeps.tasksRepo || tasksRepo;
   const todoRepository = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
 
+  const beforeList = await tasksRepository.listTasksByUser({
+    userId,
+    limit: 1000
+  }).catch(() => []);
+  const beforeByTaskId = new Map(
+    (Array.isArray(beforeList) ? beforeList : [])
+      .filter((task) => task && task.taskId)
+      .map((task) => [task.taskId, task])
+  );
+
   const computed = payload.computed && typeof payload.computed === 'object'
     ? payload.computed
     : await computeUserTasks(Object.assign({}, payload, { userId }), resolvedDeps);
 
   const tasks = Array.isArray(computed.tasks) ? computed.tasks : [];
+  const computedByTaskId = new Map(
+    tasks
+      .filter((task) => task && task.taskId)
+      .map((task) => [task.taskId, task])
+  );
   const saved = await tasksRepository.upsertTasksBulk(tasks);
 
   let syncedTodoCount = 0;
@@ -69,6 +85,26 @@ async function syncUserTasksProjection(params, deps) {
     // eslint-disable-next-line no-await-in-loop
     await todoRepository.upsertJourneyTodoItem(userId, todoKey, patch);
     syncedTodoCount += 1;
+  }
+
+  for (const afterTask of saved) {
+    const beforeTask = beforeByTaskId.get(afterTask && afterTask.taskId);
+    const computedTask = computedByTaskId.get(afterTask && afterTask.taskId);
+    // eslint-disable-next-line no-await-in-loop
+    await appendTaskEventIfStateChanged({
+      beforeTask,
+      afterTask,
+      checkedAt: afterTask && afterTask.checkedAt,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      actor: payload.actor || 'task_engine_sync',
+      source: 'sync_user_tasks_projection',
+      explainKeys: Array.isArray(computedTask && computedTask.explain)
+        ? computedTask.explain
+          .map((entry) => entry && entry.decisionKey)
+          .filter(Boolean)
+        : []
+    }, resolvedDeps).catch(() => null);
   }
 
   await recomputeJourneyTaskGraph({

@@ -100,6 +100,31 @@ Typical fields:
 - `nudgeCount`, `lastNotifiedAt`
 - `createdAt`, `updatedAt`
 
+### `journey_templates/{templateId}`
+Purpose: Journey 3フェーズテンプレート（template起点 step_rules 生成元）。
+
+Typical fields:
+- `templateId`, `version`, `country`, `scenarioKey`
+- `enabled`, `validFrom`, `validUntil`
+- `phases[]`（`phaseKey`, `steps[]`）
+- `steps[].stepKey`, `steps[].title`
+- `steps[].trigger`, `steps[].leadTime`, `steps[].dependsOn`, `steps[].constraints`
+- `steps[].priority`, `steps[].riskLevel`, `steps[].enabled`, `steps[].nudgeTemplate`
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+
+### `task_events/{eventId}`
+Purpose: Task状態変化のappend-only監査ログ（dry-run非書込）。
+
+Typical fields:
+- `taskId`, `userId`, `lineUserId`, `ruleId`
+- `scenarioKey`, `stepKey`
+- `decision`（`created|updated|status_changed|blocked`）
+- `beforeStatus`, `afterStatus`
+- `beforeBlockedReason`, `afterBlockedReason`
+- `checkedAt`, `traceId`, `requestId`, `actor`, `source`
+- `explainKeys[]`
+- `createdAt`, `updatedAt`
+
 ### `step_rule_change_logs/{id}`
 Purpose: Step Rules の変更履歴（append-only）。
 

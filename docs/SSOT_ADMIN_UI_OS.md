@@ -396,12 +396,20 @@ MUST:
 ## Phase700 Add-only UI Contract（Task Engine / Step Rules）
 - monitor pane に Task Engine セクションを add-only で追加する。
   - status / plan / set / history / dry-run
+  - template-plan / template-set
+  - apply-plan / apply（単一ユーザー）
   - rule editor（`ruleId/scenarioKey/stepKey/trigger/leadTime/constraints/priority/enabled/riskLevel`）
+  - template editor（`templateId/version/country/enabled/phases[]`）
+  - single-user apply target（`lineUserId` または `memberNumber`）
   - planHash / confirmToken 表示
 - Admin OS API（add-only）:
   - `GET /api/admin/os/task-rules/status`
   - `POST /api/admin/os/task-rules/plan`
   - `POST /api/admin/os/task-rules/set`
+  - `POST /api/admin/os/task-rules/template/plan`
+  - `POST /api/admin/os/task-rules/template/set`
+  - `POST /api/admin/os/task-rules/apply/plan`
+  - `POST /api/admin/os/task-rules/apply`
   - `GET /api/admin/os/task-rules/history`
   - `POST /api/admin/os/task-rules/dry-run`
 - Public API（署名付き / add-only）:
@@ -410,7 +418,8 @@ MUST:
 - Internal Job API（add-only）:
   - `POST /internal/jobs/task-nudge`
 - Safety:
-  - `set` は `planHash + confirmToken` 必須
+  - `set/template-set/apply` は `planHash + confirmToken` 必須
+  - write API は managed flow action（`task_rules.set` / `task_rules.template_set` / `task_rules.apply`）で保護
   - `/api/tasks` は `TASK_API_SIGNING_SECRET` 署名必須
   - nudge job は `TASK_JOB_TOKEN` + kill switch 必須
 

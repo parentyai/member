@@ -10,6 +10,7 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { TASK_STATUS } = require('../../domain/tasks/constants');
 const { isTaskNudgeEnabled } = require('../../domain/tasks/featureFlags');
+const { appendTaskEventIfStateChanged } = require('./recordTaskEvent');
 const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 
 function normalizeText(value, fallback) {
@@ -151,10 +152,20 @@ async function runTaskNudgeJob(params, deps) {
 
     if (cap && cap.blocked) {
       skippedCount += 1;
-      await tasksRepository.patchTask(row.taskId, {
+      const capPatchedTask = await tasksRepository.patchTask(row.taskId, {
         blockedReason: cap.reason || 'cap_blocked',
         checkedAt: nowIso
       }).catch(() => null);
+      await appendTaskEventIfStateChanged({
+        beforeTask: row,
+        afterTask: capPatchedTask,
+        checkedAt: nowIso,
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        actor: payload.actor || 'task_nudge_job',
+        source: 'run_task_nudge_job',
+        explainKeys: ['cap_blocked']
+      }, resolvedDeps).catch(() => null);
       results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'cap_blocked' });
       continue;
     }
@@ -205,7 +216,7 @@ async function runTaskNudgeJob(params, deps) {
         }
       });
       sentCount += Number(sendResult && sendResult.deliveredCount) || 0;
-      await tasksRepository.patchTask(row.taskId, {
+      const patchedTask = await tasksRepository.patchTask(row.taskId, {
         status: row.status,
         blockedReason: null,
         checkedAt: nowIso,
@@ -213,6 +224,16 @@ async function runTaskNudgeJob(params, deps) {
         lastNotifiedAt: nowIso,
         nextNudgeAt: computeNextNudgeAt(row, nowIso)
       });
+      await appendTaskEventIfStateChanged({
+        beforeTask: row,
+        afterTask: patchedTask,
+        checkedAt: nowIso,
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        actor: payload.actor || 'task_nudge_job',
+        source: 'run_task_nudge_job',
+        explainKeys: ['nudge_sent']
+      }, resolvedDeps).catch(() => null);
       await appendAuditLog({
         actor: payload.actor || 'task_nudge_job',
         action: 'tasks.nudge.send',

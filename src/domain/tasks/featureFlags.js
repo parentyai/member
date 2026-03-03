@@ -17,7 +17,17 @@ function isTaskNudgeEnabled() {
   return parseFlag('ENABLE_TASK_NUDGE_V1', false);
 }
 
+function isTaskEventsEnabled() {
+  return parseFlag('ENABLE_TASK_EVENTS_V1', true);
+}
+
+function isJourneyTemplateEnabled() {
+  return parseFlag('ENABLE_JOURNEY_TEMPLATE_V1', true);
+}
+
 module.exports = {
   isTaskEngineEnabled,
-  isTaskNudgeEnabled
+  isTaskNudgeEnabled,
+  isTaskEventsEnabled,
+  isJourneyTemplateEnabled
 };

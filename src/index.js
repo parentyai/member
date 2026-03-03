@@ -1891,7 +1891,8 @@ function createServer() {
       handleStatus: handleNotificationStatus,
       handleList: handleNotificationList,
       handleSendPlan,
-      handleSendExecute
+      handleSendExecute,
+      handleArchive: handleNotificationArchive
     } = require('./routes/admin/osNotifications');
     const { handleSeedArchive: handleNotificationSeedArchive } = require('./routes/admin/osNotificationSeed');
     const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
@@ -1912,6 +1913,10 @@ function createServer() {
       handleStatus: handleTaskRulesStatus,
       handlePlan: handleTaskRulesPlan,
       handleSet: handleTaskRulesSet,
+      handleTemplatePlan: handleTaskRulesTemplatePlan,
+      handleTemplateSet: handleTaskRulesTemplateSet,
+      handleApplyPlan: handleTaskRulesApplyPlan,
+      handleApply: handleTaskRulesApply,
       handleHistory: handleTaskRulesHistory,
       handleDryRun: handleTaskRulesDryRun
     } = require('./routes/admin/taskRulesConfig');
@@ -2069,6 +2074,26 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/set') {
         const body = await collectBody();
         await handleTaskRulesSet(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/template/plan') {
+        const body = await collectBody();
+        await handleTaskRulesTemplatePlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/template/set') {
+        const body = await collectBody();
+        await handleTaskRulesTemplateSet(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/apply/plan') {
+        const body = await collectBody();
+        await handleTaskRulesApplyPlan(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/apply') {
+        const body = await collectBody();
+        await handleTaskRulesApply(req, res, body);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/task-rules/history') {
@@ -2236,6 +2261,11 @@ function createServer() {
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/execute') {
         const body = await collectBody();
         await handleSendExecute(req, res, body);
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/archive') {
+        const body = await collectBody();
+        await handleNotificationArchive(req, res, body);
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/os/notifications/seed/archive') {

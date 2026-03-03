@@ -188,6 +188,7 @@ const state = {
   composerUpdatedAt: null,
   composerSavedItems: [],
   composerSavedFilteredItems: [],
+  composerSavedSelectedIds: [],
   composerSavedSortKey: 'createdAt',
   composerSavedSortDir: 'desc',
   composerLinkOptions: [],
@@ -439,10 +440,10 @@ const CITY_PACK_MANAGE_SLOT_KEYS = Object.freeze([
 ]);
 const CITY_PACK_MANAGE_CITY_UNKNOWN = '__unknown__';
 const USER_CATEGORY_LABELS = Object.freeze({
-  A: 'A単身',
-  B: 'B夫婦',
-  C: 'C帯同1',
-  D: 'D帯同2'
+  A: 'A（単身）',
+  B: 'B（夫婦）',
+  C: 'C（帯同学齢前）',
+  D: 'D（帯同学齢以上）'
 });
 const USERS_QUICK_FILTER_LABELS = Object.freeze({
   all: 'All',
@@ -3303,21 +3304,34 @@ async function loadNotificationMatrixOverlay(options) {
   const listQuerySuffix = listQuery.toString();
   const listUrl = listQuerySuffix ? `${listBaseUrl}&${listQuerySuffix}` : listBaseUrl;
   const traceId = newTraceId();
-  const [listRes, readModelRes] = await Promise.all([
-    fetch(listUrl, {
-      headers: buildHeaders({}, traceId)
-    }),
-    fetch('/admin/read-model/notifications?limit=500', {
-      headers: buildHeaders({}, traceId)
-    })
-  ]);
+  const listRes = await fetch(listUrl, {
+    headers: buildHeaders({}, traceId)
+  });
   const listData = await readJsonResponse(listRes);
   if (!listData || listData.ok !== true) throw new Error((listData && listData.error) || 'notification matrix load failed');
-  const readModelData = await readJsonResponse(readModelRes).catch(() => ({ ok: false, items: [] }));
   const items = Array.isArray(listData.items) ? listData.items : [];
-  const readItems = readModelData && readModelData.ok === true && Array.isArray(readModelData.items)
-    ? readModelData.items
-    : [];
+  let readItems = [];
+  const readModelController = typeof AbortController === 'function' ? new AbortController() : null;
+  let readModelTimeoutId = null;
+  try {
+    if (readModelController) {
+      readModelTimeoutId = setTimeout(() => {
+        readModelController.abort();
+      }, 2000);
+    }
+    const readModelRes = await fetch('/admin/read-model/notifications?limit=500', {
+      headers: buildHeaders({}, traceId),
+      signal: readModelController ? readModelController.signal : undefined
+    });
+    const readModelData = await readJsonResponse(readModelRes).catch(() => ({ ok: false, items: [] }));
+    readItems = readModelData && readModelData.ok === true && Array.isArray(readModelData.items)
+      ? readModelData.items
+      : [];
+  } catch (_err) {
+    readItems = [];
+  } finally {
+    if (readModelTimeoutId) clearTimeout(readModelTimeoutId);
+  }
   return mergeNotificationMatrixFromItems(state.repoMap && state.repoMap.scenarioStepMatrix, items, readItems);
 }
 
@@ -9507,6 +9521,38 @@ function applyTaskRulesPlanTokens(planHash, confirmToken) {
   setTextContent('task-rules-confirm-token', taskRulesConfirmToken ? 'set' : '-');
 }
 
+function applyTaskRulesTemplatePlanTokens(planHash, confirmToken) {
+  taskRulesTemplatePlanHash = planHash || null;
+  taskRulesTemplateConfirmToken = confirmToken || null;
+  setTextContent('task-rules-template-plan-hash', taskRulesTemplatePlanHash || '-');
+  setTextContent('task-rules-template-confirm-token', taskRulesTemplateConfirmToken ? 'set' : '-');
+}
+
+function applyTaskRulesApplyPlanTokens(planHash, confirmToken) {
+  taskRulesApplyPlanHash = planHash || null;
+  taskRulesApplyConfirmToken = confirmToken || null;
+  setTextContent('task-rules-apply-plan-hash', taskRulesApplyPlanHash || '-');
+  setTextContent('task-rules-apply-confirm-token', taskRulesApplyConfirmToken ? 'set' : '-');
+}
+
+function readTaskRulesTemplatePhases() {
+  const raw = document.getElementById('task-rules-template-phases-json')?.value?.trim() || '';
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('template_phases_array_required');
+  return parsed;
+}
+
+function buildTaskRulesTemplatePayload() {
+  return {
+    templateId: document.getElementById('task-rules-template-id')?.value?.trim() || '',
+    version: Number(document.getElementById('task-rules-template-version')?.value || 1),
+    country: document.getElementById('task-rules-template-country')?.value?.trim() || 'US',
+    enabled: Boolean(document.getElementById('task-rules-template-enabled')?.checked),
+    phases: readTaskRulesTemplatePhases()
+  };
+}
+
 async function loadTaskRulesStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
@@ -9611,6 +9657,140 @@ async function runTaskRulesDryRunAction() {
     showToast('Task Rules dry-runを実行しました', 'ok');
   } catch (_err) {
     showToast('Task Rules dry-runに失敗しました', 'danger');
+  }
+}
+
+async function planTaskRulesTemplateAction() {
+  let template;
+  try {
+    template = buildTaskRulesTemplatePayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-template-result', { ok: false, error: 'template phases JSON invalid' });
+    showToast('template phases JSONが不正です', 'warn');
+    return;
+  }
+  if (!template.templateId) {
+    showToast('templateId が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/template/plan', {
+      templateId: template.templateId,
+      template
+    }, traceId);
+    setJsonTextResult('task-rules-template-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTemplatePlanTokens(data.planHash, data.confirmToken);
+    showToast('Task Rules template planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rules template planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setTaskRulesTemplateAction() {
+  if (!taskRulesTemplatePlanHash || !taskRulesTemplateConfirmToken) {
+    setJsonTextResult('task-rules-template-result', { ok: false, error: 'template plan required' });
+    showToast('template setには先にtemplate-planが必要です', 'warn');
+    return;
+  }
+  let template;
+  try {
+    template = buildTaskRulesTemplatePayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-template-result', { ok: false, error: 'template phases JSON invalid' });
+    showToast('template phases JSONが不正です', 'warn');
+    return;
+  }
+  if (!template.templateId) {
+    showToast('templateId が必要です', 'warn');
+    return;
+  }
+  if (!window.confirm(`template ${template.templateId} を適用しますか？`)) {
+    showToast('template適用を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/template/set', {
+      templateId: template.templateId,
+      template,
+      planHash: taskRulesTemplatePlanHash,
+      confirmToken: taskRulesTemplateConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-template-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTemplatePlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesHistory({ notify: false });
+    showToast('Task Rules templateを適用しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rules template適用に失敗しました', 'danger');
+  }
+}
+
+function resolveTaskRulesApplyTarget() {
+  const lineUserId = document.getElementById('task-rules-apply-line-user-id')?.value?.trim()
+    || document.getElementById('task-rules-dry-run-user-id')?.value?.trim()
+    || document.getElementById('monitor-user-line-user-id')?.value?.trim()
+    || '';
+  const memberNumber = document.getElementById('task-rules-apply-member-number')?.value?.trim()
+    || document.getElementById('monitor-user-member-id')?.value?.trim()
+    || '';
+  return { lineUserId, memberNumber };
+}
+
+async function planTaskRulesApplyAction() {
+  const target = resolveTaskRulesApplyTarget();
+  if (!target.lineUserId && !target.memberNumber) {
+    showToast('apply-planにはLINEユーザーIDまたは会員番号が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/apply/plan', {
+      lineUserId: target.lineUserId || undefined,
+      memberNumber: target.memberNumber || undefined
+    }, traceId);
+    setJsonTextResult('task-rules-apply-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesApplyPlanTokens(data.planHash, data.confirmToken);
+    showToast('Task Rules apply planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rules apply planの作成に失敗しました', 'danger');
+  }
+}
+
+async function applyTaskRulesForSingleUserAction() {
+  if (!taskRulesApplyPlanHash || !taskRulesApplyConfirmToken) {
+    setJsonTextResult('task-rules-apply-result', { ok: false, error: 'apply plan required' });
+    showToast('applyには先にapply-planが必要です', 'warn');
+    return;
+  }
+  const target = resolveTaskRulesApplyTarget();
+  if (!target.lineUserId && !target.memberNumber) {
+    showToast('applyにはLINEユーザーIDまたは会員番号が必要です', 'warn');
+    return;
+  }
+  const label = target.lineUserId || target.memberNumber;
+  if (!window.confirm(`Task Rules applyを ${label} に実行しますか？`)) {
+    showToast('Task Rules applyを中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/apply', {
+      lineUserId: target.lineUserId || undefined,
+      memberNumber: target.memberNumber || undefined,
+      planHash: taskRulesApplyPlanHash,
+      confirmToken: taskRulesApplyConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-apply-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesApplyPlanTokens(null, null);
+    showToast('Task Rules applyを実行しました', 'ok');
+  } catch (_err) {
+    showToast('Task Rules applyに失敗しました', 'danger');
   }
 }
 
@@ -12231,7 +12411,8 @@ function applyComposerSavedFilters() {
       if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
       return true;
     });
-  state.composerSavedFilteredItems = sortComposerSavedItems(filtered);
+  const visibleFiltered = filtered.filter((item) => normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP') !== 'AB');
+  state.composerSavedFilteredItems = sortComposerSavedItems(visibleFiltered);
 }
 
 function buildComposerSavedFilterChips() {
@@ -12436,18 +12617,36 @@ function renderComposerSavedRows() {
     activeCount: chips.length
   });
   persistListStateToStorage('composerSaved', readComposerSavedListState());
+  normalizeComposerSavedSelection();
   if (!items.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 9;
+    td.colSpan = 10;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    updateComposerSavedBulkControls();
     return;
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
     if (state.composerSelectedNotificationId && state.composerSelectedNotificationId === item.id) tr.classList.add('row-active');
+    if (isComposerSavedRowSelected(item.id)) tr.classList.add('is-selected');
+    const selectTd = document.createElement('td');
+    selectTd.className = 'composer-saved-select-col';
+    const selectInput = document.createElement('input');
+    selectInput.type = 'checkbox';
+    selectInput.checked = isComposerSavedRowSelected(item.id);
+    selectInput.setAttribute('aria-label', item && item.id ? String(item.id) : 'notification');
+    selectInput.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    selectInput.addEventListener('change', () => {
+      toggleComposerSavedRowSelection(item && item.id ? String(item.id) : '', selectInput.checked === true);
+      renderComposerSavedRows();
+    });
+    selectTd.appendChild(selectInput);
+    tr.appendChild(selectTd);
     const targetCount = resolveComposerSavedTargetCount(item);
     const ctr = resolveComposerSavedCtr(item);
     const cells = [
@@ -12495,6 +12694,131 @@ function renderComposerSavedRows() {
     });
     tbody.appendChild(tr);
   });
+  updateComposerSavedBulkControls();
+}
+
+function resolveComposerSavedFilteredIdSet() {
+  const set = new Set();
+  const items = Array.isArray(state.composerSavedFilteredItems) ? state.composerSavedFilteredItems : [];
+  items.forEach((item) => {
+    if (item && typeof item.id === 'string' && item.id.trim()) set.add(item.id.trim());
+  });
+  return set;
+}
+
+function normalizeComposerSavedSelection() {
+  const selected = Array.isArray(state.composerSavedSelectedIds) ? state.composerSavedSelectedIds : [];
+  const allowed = resolveComposerSavedFilteredIdSet();
+  const next = selected.filter((id) => typeof id === 'string' && id.trim() && allowed.has(id.trim())).map((id) => id.trim());
+  state.composerSavedSelectedIds = Array.from(new Set(next));
+}
+
+function isComposerSavedRowSelected(notificationId) {
+  const id = typeof notificationId === 'string' ? notificationId.trim() : '';
+  if (!id) return false;
+  const selected = Array.isArray(state.composerSavedSelectedIds) ? state.composerSavedSelectedIds : [];
+  return selected.includes(id);
+}
+
+function toggleComposerSavedRowSelection(notificationId, checked) {
+  const id = typeof notificationId === 'string' ? notificationId.trim() : '';
+  if (!id) return;
+  const selected = new Set(Array.isArray(state.composerSavedSelectedIds) ? state.composerSavedSelectedIds : []);
+  if (checked) selected.add(id);
+  else selected.delete(id);
+  state.composerSavedSelectedIds = Array.from(selected);
+}
+
+function setComposerSavedSelectAll(checked) {
+  const ids = Array.from(resolveComposerSavedFilteredIdSet());
+  if (checked) {
+    state.composerSavedSelectedIds = ids;
+    return;
+  }
+  state.composerSavedSelectedIds = [];
+}
+
+function resolveComposerSavedSelectedItems() {
+  const selected = new Set(Array.isArray(state.composerSavedSelectedIds) ? state.composerSavedSelectedIds : []);
+  if (!selected.size) return [];
+  const items = Array.isArray(state.composerSavedFilteredItems) ? state.composerSavedFilteredItems : [];
+  return items.filter((item) => item && typeof item.id === 'string' && selected.has(item.id));
+}
+
+function updateComposerSavedBulkControls() {
+  const selectedItems = resolveComposerSavedSelectedItems();
+  const selectedCount = selectedItems.length;
+  const totalCount = Array.isArray(state.composerSavedFilteredItems) ? state.composerSavedFilteredItems.length : 0;
+  const selectAll = document.getElementById('composer-saved-select-all');
+  if (selectAll) {
+    selectAll.checked = totalCount > 0 && selectedCount === totalCount;
+    selectAll.indeterminate = selectedCount > 0 && selectedCount < totalCount;
+  }
+  const selectedCountEl = document.getElementById('composer-saved-selected-count');
+  if (selectedCountEl) {
+    selectedCountEl.textContent = `選択: ${selectedCount}件`;
+  }
+  const editBtn = document.getElementById('composer-saved-bulk-edit');
+  if (editBtn) editBtn.disabled = selectedCount !== 1;
+  const approveBtn = document.getElementById('composer-saved-bulk-approve');
+  if (approveBtn) approveBtn.disabled = selectedCount === 0;
+  const deleteBtn = document.getElementById('composer-saved-bulk-delete');
+  if (deleteBtn) deleteBtn.disabled = selectedCount === 0;
+}
+
+function loadComposerSavedSelectionToForm(duplicateMode) {
+  const selectedItems = resolveComposerSavedSelectedItems();
+  if (selectedItems.length !== 1) {
+    showToast(t('ui.toast.composer.saved.singleSelect', '編集は1件選択してください'), 'warn');
+    return false;
+  }
+  loadComposerFormFromRow(selectedItems[0], duplicateMode === true);
+  renderComposerSavedRows();
+  return true;
+}
+
+async function approveComposerSavedSelection() {
+  const selectedItems = resolveComposerSavedSelectedItems();
+  if (!selectedItems.length) {
+    showToast(t('ui.toast.composer.saved.needSelect', '通知を選択してください'), 'warn');
+    return;
+  }
+  const confirmed = window.confirm(t('ui.confirm.composer.bulkApprove', `${selectedItems.length}件を承認（有効化）しますか？`));
+  if (!confirmed) return;
+  const traceId = ensureTraceInput('traceId');
+  let successCount = 0;
+  for (const item of selectedItems) {
+    const notificationId = item && typeof item.id === 'string' ? item.id : '';
+    if (!notificationId) continue;
+    const result = await postJson('/api/admin/os/notifications/approve', { notificationId }, traceId);
+    if (result && result.ok) successCount += 1;
+  }
+  showToast(`承認: ${successCount}/${selectedItems.length}`, successCount === selectedItems.length ? 'ok' : 'warn');
+  state.composerSavedSelectedIds = [];
+  await loadComposerSavedNotifications({ notify: false });
+}
+
+async function archiveComposerSavedSelection() {
+  const selectedItems = resolveComposerSavedSelectedItems();
+  if (!selectedItems.length) {
+    showToast(t('ui.toast.composer.saved.needSelect', '通知を選択してください'), 'warn');
+    return;
+  }
+  const confirmed = window.confirm(t('ui.confirm.composer.bulkDelete', `${selectedItems.length}件を通知一覧から非表示化しますか？`));
+  if (!confirmed) return;
+  const traceId = ensureTraceInput('traceId');
+  const notificationIds = selectedItems.map((item) => item.id).filter((id) => typeof id === 'string' && id.trim());
+  const result = await postJson('/api/admin/os/notifications/archive', {
+    notificationIds,
+    reason: 'ui_bulk_archive'
+  }, traceId);
+  if (result && result.ok) {
+    showToast(t('ui.toast.composer.saved.archiveOk', '通知を非表示化しました'), 'ok');
+    state.composerSavedSelectedIds = [];
+    await loadComposerSavedNotifications({ notify: false });
+    return;
+  }
+  showToast(t('ui.toast.composer.saved.archiveFail', '通知の非表示化に失敗しました'), 'danger');
 }
 
 async function loadComposerSavedNotifications(options) {
@@ -12510,11 +12834,24 @@ async function loadComposerSavedNotifications(options) {
     state.composerSavedItems = Array.isArray(data.items) ? data.items : [];
     state.composerListLoadedAt = new Date().toISOString();
     renderComposerSavedRows();
-    const matrix = await loadNotificationMatrixOverlay({
+    const quickItems = state.composerSavedItems.filter(
+      (item) => normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP') === 'STEP'
+    );
+    const quickMatrix = mergeNotificationMatrixFromItems(
+      state.repoMap && state.repoMap.scenarioStepMatrix,
+      quickItems,
+      []
+    );
+    state.composerScenarioStepMatrix = quickMatrix;
+    renderComposerMatrix(quickMatrix);
+    void loadNotificationMatrixOverlay({
       includeArchivedSeed: resolveComposerIncludeArchivedSeedFlag()
-    }).catch(() => ({ scenarios: [], steps: [], cells: [] }));
-    state.composerScenarioStepMatrix = matrix;
-    renderComposerMatrix(matrix);
+    }).then((matrix) => {
+      state.composerScenarioStepMatrix = matrix;
+      renderComposerMatrix(matrix);
+    }).catch(() => {
+      // keep quick matrix snapshot when overlay load fails
+    });
     if (notify) showToast(t('ui.toast.composer.listOk', '保存済み通知を更新しました'), 'ok');
   } catch (_err) {
     if (notify) showToast(t('ui.toast.composer.listFail', '保存済み通知の取得に失敗しました'), 'danger');
@@ -12647,10 +12984,7 @@ async function postJson(url, payload, traceId) {
 function bindComposerCardActionMirrors() {
   const mappings = [
     { mirrorId: 'composer-card-draft', sourceId: 'create-draft' },
-    { mirrorId: 'composer-card-preview', sourceId: 'preview' },
-    { mirrorId: 'composer-card-approve', sourceId: 'approve' },
-    { mirrorId: 'composer-card-plan', sourceId: 'plan' },
-    { mirrorId: 'composer-card-execute', sourceId: 'execute' }
+    { mirrorId: 'composer-card-approve', sourceId: 'approve' }
   ];
   mappings.forEach((mapping) => {
     const mirror = document.getElementById(mapping.mirrorId);
@@ -12676,6 +13010,7 @@ function setupComposerActions() {
   state.composerSelectedNotificationId = null;
   state.composerDraftByType = {};
   state.composerActionGateState = null;
+  state.composerSavedSelectedIds = [];
   state.composerLinkSearch = '';
 
   document.getElementById('create-draft')?.addEventListener('click', async () => {
@@ -12924,7 +13259,22 @@ function setupComposerActions() {
   });
   document.getElementById('composer-saved-clear')?.addEventListener('click', () => {
     clearComposerSavedFilters();
+    state.composerSavedSelectedIds = [];
     renderComposerSavedRows();
+  });
+  document.getElementById('composer-saved-select-all')?.addEventListener('change', (event) => {
+    const target = event && event.target ? event.target : null;
+    setComposerSavedSelectAll(Boolean(target && target.checked));
+    renderComposerSavedRows();
+  });
+  document.getElementById('composer-saved-bulk-edit')?.addEventListener('click', () => {
+    loadComposerSavedSelectionToForm(false);
+  });
+  document.getElementById('composer-saved-bulk-approve')?.addEventListener('click', () => {
+    void approveComposerSavedSelection();
+  });
+  document.getElementById('composer-saved-bulk-delete')?.addEventListener('click', () => {
+    void archiveComposerSavedSelection();
   });
   document.querySelectorAll('[data-composer-sort-key]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -13013,6 +13363,18 @@ function setupMonitorControls() {
   });
   document.getElementById('task-rules-dry-run')?.addEventListener('click', () => {
     void runTaskRulesDryRunAction();
+  });
+  document.getElementById('task-rules-template-plan')?.addEventListener('click', () => {
+    void planTaskRulesTemplateAction();
+  });
+  document.getElementById('task-rules-template-set')?.addEventListener('click', () => {
+    void setTaskRulesTemplateAction();
+  });
+  document.getElementById('task-rules-apply-plan')?.addEventListener('click', () => {
+    void planTaskRulesApplyAction();
+  });
+  document.getElementById('task-rules-apply')?.addEventListener('click', () => {
+    void applyTaskRulesForSingleUserAction();
   });
   ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
     const input = document.getElementById(id);
@@ -14121,6 +14483,10 @@ let richMenuPlanHash = null;
 let richMenuConfirmToken = null;
 let taskRulesPlanHash = null;
 let taskRulesConfirmToken = null;
+let taskRulesTemplatePlanHash = null;
+let taskRulesTemplateConfirmToken = null;
+let taskRulesApplyPlanHash = null;
+let taskRulesApplyConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();

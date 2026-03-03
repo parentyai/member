@@ -10,9 +10,13 @@ Task Engine v1 の add-only SSOT。
 
 ## Scope
 - in-scope:
+  - `journey_templates`（新規）
   - `step_rules`（新規）
   - `tasks`（新規）
+  - `task_events`（新規 append-only）
   - `computeUserTasks`（決定エンジン）
+  - `template compile/set`（`journey_templates -> step_rules`）
+  - `single-user apply`（lineUserId/memberNumber）
   - `/api/tasks`（署名付き）
   - `runTaskNudgeJob`（Task派生通知）
 - out-of-scope:
@@ -25,8 +29,9 @@ Task Engine v1 の add-only SSOT。
 2. enabled `step_rules` 取得
 3. `computeUserTasks` 実行（deterministic）
 4. `tasks` へ projection
-5. `journey_todo_items` へ非破壊同期
-6. nudge対象のみ `sendNotification` で送信
+5. 状態変化時のみ `task_events` へ append
+6. `journey_todo_items` へ非破壊同期
+7. nudge対象のみ `sendNotification` で送信
 
 ## Deterministic Decision Contract
 - 入力:
@@ -52,6 +57,12 @@ Task Engine v1 の add-only SSOT。
 - `ENABLE_TASK_NUDGE_V1`
   - `0`: Task nudge送信停止
   - `1`: Task nudge送信有効
+- `ENABLE_TASK_EVENTS_V1`
+  - `0`: task_events append停止
+  - `1`: 状態変化時のみ task_events append
+- `ENABLE_JOURNEY_TEMPLATE_V1`
+  - `0`: journey template plan/set停止
+  - `1`: journey template plan/set有効
 
 ## API Contract (Public Signed)
 - `GET /api/tasks?userId=...&ts=...&sig=...`
@@ -60,7 +71,16 @@ Task Engine v1 の add-only SSOT。
   - HMAC-SHA256
   - payload: `method|pathname|userId|ts|taskId`
   - secret: `TASK_API_SIGNING_SECRET`
-  - TTL: `TASK_API_SIGNATURE_TTL_SECONDS`（既定5分）
+- TTL: `TASK_API_SIGNATURE_TTL_SECONDS`（既定5分）
+
+## API Contract (Admin OS / Add-only)
+- `POST /api/admin/os/task-rules/template/plan`
+- `POST /api/admin/os/task-rules/template/set`
+- `POST /api/admin/os/task-rules/apply/plan`
+- `POST /api/admin/os/task-rules/apply`
+- write endpoint は managed flow action で保護:
+  - `task_rules.template_set`
+  - `task_rules.apply`
 
 ## Internal Job Contract
 - endpoint: `POST /internal/jobs/task-nudge`
@@ -80,10 +100,19 @@ Task Engine v1 の add-only SSOT。
 
 ## Explainability
 - `tasks.checkedAt`, `tasks.decisionHash`, `tasks.explain[]`
+- `task_events`:
+  - `decision(created|updated|status_changed|blocked)`
+  - `beforeStatus/afterStatus`
+  - `beforeBlockedReason/afterBlockedReason`
+  - `taskId/ruleId/scenarioKey/stepKey`
+  - `checkedAt/traceId/requestId/actor/source/explainKeys`
 - delivery/decision timeline に `taskId/ruleId/decision/checkedAt/blockedReason` を保持する。
 
 ## Rollback
 1. `ENABLE_TASK_ENGINE_V1=0`
 2. `ENABLE_TASK_NUDGE_V1=0`
-3. `step_rules.enabled=false`
-4. 必要時 PR revert（`step_rules/tasks` は add-only のため既存復旧不要）
+3. `ENABLE_TASK_EVENTS_V1=0`
+4. `ENABLE_JOURNEY_TEMPLATE_V1=0`
+5. `step_rules.enabled=false`（template namespaceのみ停止可）
+6. `journey_templates.enabled=false`
+7. 必要時 PR revert（add-only collectionは参照停止で無害化）
