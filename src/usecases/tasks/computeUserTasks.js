@@ -8,6 +8,7 @@ const tasksRepo = require('../../repos/firestore/tasksRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { TASK_STATUS, BLOCKED_REASON, RISK_WEIGHT } = require('../../domain/tasks/constants');
 const { normalizeTaskStatus } = require('../../domain/tasks/statusMapping');
+require('../../domain/normalizers/scenarioKeyNormalizer');
 
 const ENGINE_VERSION = 'task_engine_v1';
 

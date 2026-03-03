@@ -92,8 +92,6 @@
     "scenario": [],
     "scenarioKey": [
       "src/repos/firestore/analyticsReadRepo.js",
-      "src/usecases/adminOs/executeNotificationSend.js",
-      "src/usecases/adminOs/planNotificationSend.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
       "src/usecases/tasks/computeUserTasks.js"
     ]

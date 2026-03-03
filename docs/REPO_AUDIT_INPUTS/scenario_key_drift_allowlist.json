@@ -73,6 +73,8 @@
       "src/usecases/phase33/executeOpsNextAction.js",
       "src/usecases/notifications/sendNotification.js",
       "src/usecases/notifications/sendNotificationPhase1.js",
+      "src/usecases/adminOs/executeNotificationSend.js",
+      "src/usecases/adminOs/planNotificationSend.js",
       "src/routes/admin/monitorInsights.js",
       "src/routes/admin/notifications.js",
       "src/routes/admin/opsOverview.js",
