@@ -134,3 +134,34 @@ Task Engine v1 の add-only SSOT。
 5. `step_rules.enabled=false`（template namespaceのみ停止可）
 6. `journey_templates.enabled=false`
 7. 必要時 PR revert（add-only collectionは参照停止で無害化）
+
+## Phase730 Add-only（Task Detail LINE内完結）
+- 新規 collection:
+  - `task_contents/{taskKey}`（Task詳細本文/チェックリスト/リンク参照）
+- `taskKey` 解決規約（固定）:
+  - 1位: `tasks.ruleId`
+  - 2位: `tasks.taskId` から復元できる `ruleId`
+  - 3位: `todoKey` fallback（運用警告付き）
+  - “正”の識別子は `step_rules.ruleId`。`task_contents.taskKey` はこの値に合わせる。
+- `taskKey` 命名ルール（推奨）:
+  - 正規表現: `[a-z0-9][a-z0-9_-]{1,63}`
+  - 禁止/非推奨: 空白、大文字、`__`（runtime複合キーを連想）
+- LINE導線（add-only）:
+  - text command: `TODO詳細:{todoKey}`
+  - text command: `TODO詳細続き:{todoKey}:{manual|failure}:{startChunk}`
+  - postback action: `todo_detail_section`（`section=manual|failure`）
+  - Manual/Failure は LINE内テキスト追加送信（長文分割）
+- 安全弁（長文分割）:
+  - `TASK_DETAIL_SECTION_CHUNK_LIMIT` を超える場合、続きを自動送信せず continuation command を案内する
+  - 送信文面は `【手順マニュアル i/n】` / `【よくある失敗 i/n】` 形式で番号付与する
+- Link 解決:
+  - `videoLinkId` / `actionLinkId` は `link_registry` 参照
+  - link未登録/無効（`enabled=false` or `lastHealth.state=WARN`）は fail-close で非表示
+- Feature Flags（add-only）:
+  - `ENABLE_TASK_DETAIL_LINE_V1`（default: true）
+  - `ENABLE_TASK_CONTENT_ADMIN_EDITOR_V1`（default: true）
+  - `ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1`（default: true）
+- Admin OS（既存path add-only）:
+  - `POST /api/admin/os/task-rules/plan` action `upsert_task_content`
+  - `POST /api/admin/os/task-rules/set` action `upsert_task_content`
+  - managed flow action key は既存 `task_rules.set` を再利用（planHash + confirmToken 必須）

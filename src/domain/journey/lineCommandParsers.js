@@ -108,6 +108,25 @@ function parseJourneyLineCommand(text) {
     };
   }
 
+  const detail = raw.match(/^TODO(?:詳細|DETAIL)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (detail) {
+    return {
+      action: 'todo_detail',
+      todoKey: normalizeText(detail[1])
+    };
+  }
+
+  const detailContinue = raw.match(/^TODO(?:詳細)?続き\s*[:：]?\s*([A-Za-z0-9_\-]+)\s*[:：]\s*(manual|failure)(?:\s*[:：]\s*(\d+))?$/i);
+  if (detailContinue) {
+    const startChunk = Number(detailContinue[3] || '1');
+    return {
+      action: 'todo_detail_section_continue',
+      todoKey: normalizeText(detailContinue[1]),
+      section: normalizeText(detailContinue[2]).toLowerCase(),
+      startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
+    };
+  }
+
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
   if (household) {
     const householdType = normalizeHouseholdLabel(household[1]);
@@ -194,6 +213,26 @@ function parseJourneyPostbackData(data) {
       todoKey,
       snoozeUntil: until,
       snoozeDays: Number.isInteger(days) && days >= 1 && days <= 30 ? days : null
+    };
+  }
+
+  if (action === 'todo_detail') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_detail_missing' };
+    return { action, todoKey };
+  }
+
+  if (action === 'todo_detail_section') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    const section = normalizeText(params.get('section')).toLowerCase();
+    const chunk = Number(normalizeText(params.get('chunk')));
+    if (!todoKey || !section) return { action: 'todo_detail_section_missing' };
+    if (!['manual', 'failure'].includes(section)) return { action: 'todo_detail_section_missing' };
+    return {
+      action,
+      todoKey,
+      section,
+      startChunk: Number.isInteger(chunk) && chunk >= 1 ? chunk : 1
     };
   }
 

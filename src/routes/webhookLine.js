@@ -6,7 +6,7 @@ const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMes
 const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
 const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareRedacMembershipIdFromLine');
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
-const { replyMessage } = require('../infra/lineClient');
+const { replyMessage, pushMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
@@ -127,6 +127,59 @@ function isLlmConsentRevokeCommand(text) {
 function normalizeReplyText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeJourneyMessage(value) {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  if (!row || typeof row.type !== 'string' || !row.type.trim()) return null;
+  return row;
+}
+
+function createJourneyFallbackText(text) {
+  return {
+    type: 'text',
+    text: normalizeReplyText(text) || '設定を更新しました。'
+  };
+}
+
+async function sendJourneyResponse(options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
+  if (!journey || journey.handled !== true) return false;
+  const replyToken = payload.replyToken;
+  const lineUserId = payload.lineUserId;
+  const replyFn = payload.replyFn;
+  const pushFn = payload.pushFn;
+  if (!replyToken || typeof replyFn !== 'function') return false;
+
+  const replyMessages = [];
+  if (Array.isArray(journey.replyMessages)) {
+    journey.replyMessages.forEach((item) => {
+      const normalized = normalizeJourneyMessage(item);
+      if (normalized) replyMessages.push(normalized);
+    });
+  } else {
+    const single = normalizeJourneyMessage(journey.replyMessage);
+    if (single) replyMessages.push(single);
+  }
+  if (!replyMessages.length) {
+    replyMessages.push(createJourneyFallbackText(journey.replyText));
+  }
+
+  await replyFn(replyToken, replyMessages[0]);
+
+  const pushQueue = []
+    .concat(replyMessages.slice(1))
+    .concat(Array.isArray(journey.followupMessages)
+      ? journey.followupMessages.map((item) => normalizeJourneyMessage(item)).filter(Boolean)
+      : []);
+  if (pushQueue.length && lineUserId && typeof pushFn === 'function') {
+    for (const message of pushQueue) {
+      // eslint-disable-next-line no-await-in-loop
+      await pushFn(lineUserId, message);
+    }
+  }
+  return true;
 }
 
 function parseJourneyPhaseCommand(text) {
@@ -1454,6 +1507,7 @@ async function handleLineWebhook(options) {
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   const replyFn = (options && options.replyFn) || replyMessage;
+  const pushFn = (options && options.pushFn) || pushMessage || (async () => ({ status: 200 }));
 
   // Ensure users and run interactive commands (best-effort).
   const events = Array.isArray(payload && payload.events) ? payload.events : [];
@@ -1465,7 +1519,7 @@ async function handleLineWebhook(options) {
       await ensureUserFromWebhook(userId);
       ensured.add(userId);
       if (!isWebhookEdge || allowWelcome) {
-        await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+        await welcomeFn({ lineUserId: userId, pushFn });
       }
     }
 
@@ -1480,11 +1534,7 @@ async function handleLineWebhook(options) {
             lineUserId: userId,
             data: postbackData
           });
-          if (journey && journey.handled) {
-            await replyFn(replyToken, {
-              type: 'text',
-              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
-            });
+          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
             continue;
           }
         } catch (err) {
@@ -1501,11 +1551,7 @@ async function handleLineWebhook(options) {
       if (text && replyToken) {
         try {
           const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
-          if (journey && journey.handled) {
-            await replyFn(replyToken, {
-              type: 'text',
-              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
-            });
+          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
             continue;
           }
 

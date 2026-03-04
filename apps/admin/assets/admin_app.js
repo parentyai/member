@@ -147,6 +147,9 @@ const state = {
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
+  taskRulesRules: [],
+  taskRulesTaskContents: [],
+  taskRulesLinkRegistryItems: [],
   vendorItems: [],
   selectedVendorLinkId: null,
   selectedVendorRowIndex: null,
@@ -9560,6 +9563,450 @@ function applyTaskRulesApplyPlanTokens(planHash, confirmToken) {
   setTextContent('task-rules-apply-confirm-token', taskRulesApplyConfirmToken ? 'set' : '-');
 }
 
+function applyTaskRulesTaskContentPlanTokens(planHash, confirmToken) {
+  taskRulesTaskContentPlanHash = planHash || null;
+  taskRulesTaskContentConfirmToken = confirmToken || null;
+  setTextContent('task-rules-task-content-plan-hash', taskRulesTaskContentPlanHash || '-');
+  setTextContent('task-rules-task-content-confirm-token', taskRulesTaskContentConfirmToken ? 'set' : '-');
+}
+
+function normalizeTaskRulesChecklistItem(item, index) {
+  if (typeof item === 'string') {
+    const text = item.trim();
+    if (!text) return null;
+    return { id: `item_${index + 1}`, text, order: index + 1, enabled: true };
+  }
+  const row = item && typeof item === 'object' ? item : {};
+  const text = normalizeTaskRulesText(row.text, '');
+  if (!text) return null;
+  const id = normalizeTaskRulesText(row.id, `item_${index + 1}`);
+  const order = Number.isFinite(Number(row.order)) ? Math.max(1, Math.floor(Number(row.order))) : (index + 1);
+  const enabled = row.enabled !== false;
+  return { id, text, order, enabled };
+}
+
+function readTaskRulesChecklistItems() {
+  const raw = document.getElementById('task-rules-task-content-checklist-json')?.value?.trim() || '';
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('checklist_array_required');
+  return parsed
+    .map((item, index) => normalizeTaskRulesChecklistItem(item, index))
+    .filter(Boolean);
+}
+
+function buildTaskRulesTaskContentPayload() {
+  const keyInput = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+  const fallbackRuleId = document.getElementById('task-rules-rule-id')?.value?.trim() || '';
+  const taskKey = keyInput || fallbackRuleId;
+  const minRaw = document.getElementById('task-rules-task-content-time-min')?.value;
+  const maxRaw = document.getElementById('task-rules-task-content-time-max')?.value;
+  const timeMin = minRaw === '' ? null : Number(minRaw);
+  const timeMax = maxRaw === '' ? null : Number(maxRaw);
+  return {
+    taskKey,
+    title: document.getElementById('task-rules-task-content-title')?.value?.trim() || '',
+    timeMin: Number.isFinite(timeMin) ? Math.max(0, Math.floor(timeMin)) : null,
+    timeMax: Number.isFinite(timeMax) ? Math.max(0, Math.floor(timeMax)) : null,
+    checklistItems: readTaskRulesChecklistItems(),
+    manualText: document.getElementById('task-rules-task-content-manual-text')?.value || '',
+    failureText: document.getElementById('task-rules-task-content-failure-text')?.value || '',
+    videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
+    actionLinkId: document.getElementById('task-rules-task-content-action-link-id')?.value?.trim() || ''
+  };
+}
+
+function formatTaskRulesLinkOption(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const id = normalizeTaskRulesText(row.id, '-');
+  const title = normalizeTaskRulesText(row.title || row.label, '-');
+  const kind = normalizeTaskRulesText(row.kind, 'web');
+  const enabled = row.enabled === false ? 'disabled' : 'enabled';
+  return `${title} / ${kind} / ${enabled} / ${id}`;
+}
+
+function filterTaskRulesLinkOptions(items, selectedId, keyword) {
+  const source = Array.isArray(items) ? items : [];
+  const needle = normalizeTaskRulesText(keyword, '').toLowerCase();
+  if (!needle) return source.slice();
+  return source.filter((item) => {
+    const id = normalizeTaskRulesText(item && item.id, '');
+    if (selectedId && id === selectedId) return true;
+    const title = normalizeTaskRulesText(item && (item.title || item.label), '');
+    const url = normalizeTaskRulesText(item && item.url, '');
+    const haystack = `${id}\n${title}\n${url}`.toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+function setTaskRulesLinkRegistrySelectOptions(items) {
+  const keyword = document.getElementById('task-rules-link-registry-search')?.value?.trim() || '';
+  const specs = [
+    { id: 'task-rules-task-content-video-link-id' },
+    { id: 'task-rules-task-content-action-link-id' },
+    { id: 'task-rules-link-registry-select' }
+  ];
+  specs.forEach((spec) => {
+    const select = document.getElementById(spec.id);
+    if (!select) return;
+    const pending = select.dataset && typeof select.dataset.pendingValue === 'string'
+      ? select.dataset.pendingValue
+      : '';
+    const previous = select.value || pending || '';
+    const filtered = filterTaskRulesLinkOptions(items, previous, keyword);
+    select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Link Registryから選択';
+    select.appendChild(placeholder);
+    filtered.forEach((item) => {
+      const id = normalizeTaskRulesText(item && item.id, '');
+      if (!id) return;
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = formatTaskRulesLinkOption(item);
+      select.appendChild(option);
+    });
+    if (previous) select.value = previous;
+    if (select.value !== previous) select.value = '';
+    if (select.dataset) select.dataset.pendingValue = '';
+  });
+}
+
+function applyTaskRulesTaskContentEditor(taskContent) {
+  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
+  const checklist = Array.isArray(row.checklistItems) ? row.checklistItems : [];
+  const sorted = checklist.slice().sort((a, b) => {
+    const ao = Number(a && a.order ? a.order : 0);
+    const bo = Number(b && b.order ? b.order : 0);
+    return ao - bo;
+  });
+  if (document.getElementById('task-rules-task-content-key')) {
+    document.getElementById('task-rules-task-content-key').value = normalizeTaskRulesText(row.taskKey, '');
+  }
+  if (document.getElementById('task-rules-task-content-title')) {
+    document.getElementById('task-rules-task-content-title').value = normalizeTaskRulesText(row.title, '');
+  }
+  if (document.getElementById('task-rules-task-content-time-min')) {
+    document.getElementById('task-rules-task-content-time-min').value = Number.isFinite(Number(row.timeMin)) ? String(Math.floor(Number(row.timeMin))) : '';
+  }
+  if (document.getElementById('task-rules-task-content-time-max')) {
+    document.getElementById('task-rules-task-content-time-max').value = Number.isFinite(Number(row.timeMax)) ? String(Math.floor(Number(row.timeMax))) : '';
+  }
+  if (document.getElementById('task-rules-task-content-checklist-json')) {
+    document.getElementById('task-rules-task-content-checklist-json').value = JSON.stringify(sorted, null, 2);
+  }
+  if (document.getElementById('task-rules-task-content-manual-text')) {
+    document.getElementById('task-rules-task-content-manual-text').value = row.manualText || '';
+  }
+  if (document.getElementById('task-rules-task-content-failure-text')) {
+    document.getElementById('task-rules-task-content-failure-text').value = row.failureText || '';
+  }
+  if (document.getElementById('task-rules-task-content-video-link-id')) {
+    if (document.getElementById('task-rules-task-content-video-link-id').dataset) {
+      document.getElementById('task-rules-task-content-video-link-id').dataset.pendingValue = normalizeTaskRulesText(row.videoLinkId, '');
+    }
+    document.getElementById('task-rules-task-content-video-link-id').value = normalizeTaskRulesText(row.videoLinkId, '');
+  }
+  if (document.getElementById('task-rules-task-content-action-link-id')) {
+    if (document.getElementById('task-rules-task-content-action-link-id').dataset) {
+      document.getElementById('task-rules-task-content-action-link-id').dataset.pendingValue = normalizeTaskRulesText(row.actionLinkId, '');
+    }
+    document.getElementById('task-rules-task-content-action-link-id').value = normalizeTaskRulesText(row.actionLinkId, '');
+  }
+  refreshTaskRulesTaskContentWarnings();
+}
+
+function resolveTaskRulesTaskContentByKey(taskKey) {
+  const key = normalizeTaskRulesText(taskKey, '');
+  if (!key) return null;
+  const list = Array.isArray(state.taskRulesTaskContents) ? state.taskRulesTaskContents : [];
+  return list.find((item) => normalizeTaskRulesText(item && item.taskKey, '') === key) || null;
+}
+
+function resolveTaskRulesLinkById(linkId) {
+  const id = normalizeTaskRulesText(linkId, '');
+  if (!id) return null;
+  const list = Array.isArray(state.taskRulesLinkRegistryItems) ? state.taskRulesLinkRegistryItems : [];
+  return list.find((item) => normalizeTaskRulesText(item && item.id, '') === id) || null;
+}
+
+function readTaskRulesTaskContentForWarning() {
+  return {
+    taskKey: document.getElementById('task-rules-task-content-key')?.value?.trim() || '',
+    videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
+    actionLinkId: document.getElementById('task-rules-task-content-action-link-id')?.value?.trim() || ''
+  };
+}
+
+function collectTaskRulesTaskContentWarnings(taskContent, extraWarnings) {
+  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
+  const warnings = [];
+  const taskKey = normalizeTaskRulesText(row.taskKey, '');
+  if (!taskKey) {
+    warnings.push('taskKey が未入力です。');
+  } else {
+    if (!/^[a-z0-9][a-z0-9_-]{1,63}$/.test(taskKey)) {
+      warnings.push('taskKey は [a-z0-9][a-z0-9_-]{1,63} を推奨します。');
+    }
+    if (taskKey.includes('__')) {
+      warnings.push('taskKey に "__" が含まれています。runtime複合キーの可能性があります。');
+    }
+    const rules = Array.isArray(state.taskRulesRules) ? state.taskRulesRules : [];
+    const matches = rules.filter((rule) => normalizeTaskRulesText(rule && rule.ruleId, '') === taskKey);
+    if (matches.length === 0) {
+      warnings.push('step_rules.ruleId に未紐付けです（todoKey fallback運用のみ）。');
+    } else if (matches.length > 1) {
+      warnings.push('step_rules.ruleId が重複しており taskKey が曖昧です。');
+    }
+  }
+
+  const videoLinkId = normalizeTaskRulesText(row.videoLinkId, '');
+  if (videoLinkId) {
+    const link = resolveTaskRulesLinkById(videoLinkId);
+    if (!link) {
+      warnings.push('videoLinkId が Link Registry に存在しません。');
+    } else {
+      const kind = normalizeTaskRulesText(link.kind, 'web').toLowerCase();
+      if (kind !== 'youtube') warnings.push('videoLinkId は kind=youtube を指定してください。');
+      if (link.enabled === false) warnings.push('videoLinkId が disabled です。');
+      const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+      if (health === 'WARN') warnings.push('videoLinkId の health が WARN です。');
+    }
+  }
+
+  const actionLinkId = normalizeTaskRulesText(row.actionLinkId, '');
+  if (actionLinkId) {
+    const link = resolveTaskRulesLinkById(actionLinkId);
+    if (!link) {
+      warnings.push('actionLinkId が Link Registry に存在しません。');
+    } else {
+      if (link.enabled === false) warnings.push('actionLinkId が disabled です。');
+      const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+      if (health === 'WARN') warnings.push('actionLinkId の health が WARN です。');
+    }
+  }
+
+  if (Array.isArray(extraWarnings)) {
+    extraWarnings.forEach((item) => {
+      const text = normalizeTaskRulesText(item, '');
+      if (text) warnings.push(text);
+    });
+  }
+  return Array.from(new Set(warnings));
+}
+
+function refreshTaskRulesTaskContentWarnings(options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const row = payload.taskContent && typeof payload.taskContent === 'object'
+    ? payload.taskContent
+    : readTaskRulesTaskContentForWarning();
+  const warnings = collectTaskRulesTaskContentWarnings(row, payload.extraWarnings);
+  setTextContent('task-rules-task-content-warning', warnings.length ? warnings.join(' / ') : '-');
+  return warnings;
+}
+
+function applyTaskRulesLinkEditorFields(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  if (document.getElementById('task-rules-link-registry-id')) {
+    document.getElementById('task-rules-link-registry-id').value = normalizeTaskRulesText(row.id, '');
+  }
+  if (document.getElementById('task-rules-link-registry-title')) {
+    document.getElementById('task-rules-link-registry-title').value = normalizeTaskRulesText(row.title || row.label, '');
+  }
+  if (document.getElementById('task-rules-link-registry-url')) {
+    document.getElementById('task-rules-link-registry-url').value = normalizeTaskRulesText(row.url, '');
+  }
+  if (document.getElementById('task-rules-link-registry-kind')) {
+    document.getElementById('task-rules-link-registry-kind').value = normalizeTaskRulesText(row.kind, 'web') || 'web';
+  }
+  if (document.getElementById('task-rules-link-registry-enabled')) {
+    document.getElementById('task-rules-link-registry-enabled').checked = row.enabled !== false;
+  }
+}
+
+function buildTaskRulesLinkRegistryPayload() {
+  return {
+    title: document.getElementById('task-rules-link-registry-title')?.value?.trim() || '',
+    label: document.getElementById('task-rules-link-registry-title')?.value?.trim() || '',
+    url: document.getElementById('task-rules-link-registry-url')?.value?.trim() || '',
+    kind: document.getElementById('task-rules-link-registry-kind')?.value?.trim() || 'web',
+    enabled: Boolean(document.getElementById('task-rules-link-registry-enabled')?.checked)
+  };
+}
+
+async function loadTaskRulesLinkRegistryOptions(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const query = new URLSearchParams({ limit: '200' });
+    const res = await fetch(`/admin/link-registry?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-link-registry-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.taskRulesLinkRegistryItems = Array.isArray(data.items) ? data.items : [];
+    setTaskRulesLinkRegistrySelectOptions(state.taskRulesLinkRegistryItems);
+    refreshTaskRulesTaskContentWarnings();
+    if (notify) showToast('Task Detail用Link Registryを更新しました', 'ok');
+  } catch (_err) {
+    state.taskRulesLinkRegistryItems = [];
+    setTaskRulesLinkRegistrySelectOptions([]);
+    refreshTaskRulesTaskContentWarnings();
+    if (notify) showToast('Task Detail用Link Registryの取得に失敗しました', 'danger');
+  }
+}
+
+async function loadTaskRulesTaskContentAction() {
+  const taskKey = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+  if (!taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  const item = resolveTaskRulesTaskContentByKey(taskKey);
+  if (!item) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'task content not found in status cache', taskKey });
+    refreshTaskRulesTaskContentWarnings({ taskContent: { taskKey } });
+    showToast('statusキャッシュにtask contentが見つかりません', 'warn');
+    return;
+  }
+  applyTaskRulesTaskContentEditor(item);
+  refreshTaskRulesTaskContentWarnings({ taskContent: item });
+  setJsonTextResult('task-rules-task-content-result', { ok: true, taskContent: item });
+  showToast(`task content ${taskKey} を読み込みました`, 'ok');
+}
+
+async function planTaskRulesTaskContentAction() {
+  let taskContent;
+  try {
+    taskContent = buildTaskRulesTaskContentPayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'checklist JSON invalid' });
+    showToast('checklistItems JSONが不正です', 'warn');
+    return;
+  }
+  if (!taskContent.taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  refreshTaskRulesTaskContentWarnings({ taskContent });
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/plan', {
+      action: 'upsert_task_content',
+      taskKey: taskContent.taskKey,
+      taskContent
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (data.taskContent) applyTaskRulesTaskContentEditor(data.taskContent);
+    refreshTaskRulesTaskContentWarnings({
+      taskContent: data.taskContent || taskContent,
+      extraWarnings: Array.isArray(data.warnings) ? data.warnings : []
+    });
+    applyTaskRulesTaskContentPlanTokens(data.planHash, data.confirmToken);
+    showToast('Task Content planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Task Content planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setTaskRulesTaskContentAction() {
+  if (!taskRulesTaskContentPlanHash || !taskRulesTaskContentConfirmToken) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'task content plan required' });
+    showToast('task-content setには先にplanが必要です', 'warn');
+    return;
+  }
+  let taskContent;
+  try {
+    taskContent = buildTaskRulesTaskContentPayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'checklist JSON invalid' });
+    showToast('checklistItems JSONが不正です', 'warn');
+    return;
+  }
+  if (!taskContent.taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  refreshTaskRulesTaskContentWarnings({ taskContent });
+  if (!window.confirm(`task content ${taskContent.taskKey} を更新しますか？`)) {
+    showToast('task content更新を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/set', {
+      action: 'upsert_task_content',
+      taskKey: taskContent.taskKey,
+      taskContent,
+      planHash: taskRulesTaskContentPlanHash,
+      confirmToken: taskRulesTaskContentConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (data.taskContent) applyTaskRulesTaskContentEditor(data.taskContent);
+    refreshTaskRulesTaskContentWarnings({
+      taskContent: data.taskContent || taskContent,
+      extraWarnings: Array.isArray(data.warnings) ? data.warnings : []
+    });
+    applyTaskRulesTaskContentPlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    showToast('Task Contentを更新しました', 'ok');
+  } catch (_err) {
+    showToast('Task Content更新に失敗しました', 'danger');
+  }
+}
+
+async function createTaskRulesLinkRegistryAction() {
+  const payload = buildTaskRulesLinkRegistryPayload();
+  if (!payload.title || !payload.url) {
+    showToast('link title/url が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  const data = await adminFetchJson({
+    url: '/admin/link-registry',
+    method: 'POST',
+    traceId,
+    payload
+  });
+  setJsonTextResult('task-rules-link-registry-result', data);
+  if (!data || data.ok !== true) {
+    showToast('Link Registry作成に失敗しました', 'danger');
+    return;
+  }
+  if (document.getElementById('task-rules-link-registry-id') && data.id) {
+    document.getElementById('task-rules-link-registry-id').value = data.id;
+  }
+  await loadTaskRulesLinkRegistryOptions({ notify: false });
+  showToast('Link Registryを追加しました', 'ok');
+}
+
+async function setTaskRulesLinkRegistryAction() {
+  const selectedId = document.getElementById('task-rules-link-registry-id')?.value?.trim()
+    || document.getElementById('task-rules-link-registry-select')?.value?.trim()
+    || '';
+  if (!selectedId) {
+    showToast('linkId が必要です', 'warn');
+    return;
+  }
+  const payload = buildTaskRulesLinkRegistryPayload();
+  const traceId = ensureTraceInput('monitor-trace');
+  const data = await adminFetchJson({
+    url: `/admin/link-registry/${encodeURIComponent(selectedId)}`,
+    method: 'PATCH',
+    traceId,
+    payload
+  });
+  setJsonTextResult('task-rules-link-registry-result', data);
+  if (!data || data.ok !== true) {
+    showToast('Link Registry更新に失敗しました', 'danger');
+    return;
+  }
+  await loadTaskRulesLinkRegistryOptions({ notify: false });
+  showToast('Link Registryを更新しました', 'ok');
+}
+
 function readTaskRulesTemplatePhases() {
   const raw = document.getElementById('task-rules-template-phases-json')?.value?.trim() || '';
   if (!raw) return [];
@@ -9676,12 +10123,24 @@ async function loadTaskRulesStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
   try {
-    const res = await fetch('/api/admin/os/task-rules/status?limit=200', { headers: buildHeaders({}, traceId) });
+    const res = await fetch('/api/admin/os/task-rules/status?limit=200' + '&includeTaskContents=1&taskContentLimit=200', {
+      headers: buildHeaders({}, traceId)
+    });
     const data = await readJsonResponse(res);
     setJsonTextResult('task-rules-status-result', data);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.taskRulesRules = Array.isArray(data.rules) ? data.rules : [];
+    state.taskRulesTaskContents = Array.isArray(data.taskContents) ? data.taskContents : [];
+    const currentTaskKey = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+    const selectedTaskContent = resolveTaskRulesTaskContentByKey(currentTaskKey)
+      || (state.taskRulesTaskContents.length > 0 ? state.taskRulesTaskContents[0] : null);
+    if (selectedTaskContent) applyTaskRulesTaskContentEditor(selectedTaskContent);
+    else refreshTaskRulesTaskContentWarnings();
     if (notify) showToast('Task Rules statusを取得しました', 'ok');
   } catch (_err) {
+    state.taskRulesRules = [];
+    state.taskRulesTaskContents = [];
+    refreshTaskRulesTaskContentWarnings();
     if (notify) showToast('Task Rules statusの取得に失敗しました', 'danger');
   }
 }
@@ -13671,6 +14130,43 @@ function setupMonitorControls() {
   document.getElementById('task-rules-apply')?.addEventListener('click', () => {
     void applyTaskRulesForSingleUserAction();
   });
+  document.getElementById('task-rules-task-content-load')?.addEventListener('click', () => {
+    void loadTaskRulesTaskContentAction();
+  });
+  document.getElementById('task-rules-task-content-plan')?.addEventListener('click', () => {
+    void planTaskRulesTaskContentAction();
+  });
+  document.getElementById('task-rules-task-content-set')?.addEventListener('click', () => {
+    void setTaskRulesTaskContentAction();
+  });
+  ['task-rules-task-content-key', 'task-rules-task-content-video-link-id', 'task-rules-task-content-action-link-id']
+    .forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+      el.addEventListener(eventName, () => {
+        refreshTaskRulesTaskContentWarnings();
+      });
+    });
+  document.getElementById('task-rules-link-registry-reload')?.addEventListener('click', () => {
+    void loadTaskRulesLinkRegistryOptions({ notify: true });
+  });
+  document.getElementById('task-rules-link-registry-create')?.addEventListener('click', () => {
+    void createTaskRulesLinkRegistryAction();
+  });
+  document.getElementById('task-rules-link-registry-set')?.addEventListener('click', () => {
+    void setTaskRulesLinkRegistryAction();
+  });
+  document.getElementById('task-rules-link-registry-search')?.addEventListener('change', () => {
+    setTaskRulesLinkRegistrySelectOptions(state.taskRulesLinkRegistryItems);
+  });
+  document.getElementById('task-rules-link-registry-select')?.addEventListener('change', () => {
+    const selectedId = document.getElementById('task-rules-link-registry-select')?.value?.trim() || '';
+    const item = (Array.isArray(state.taskRulesLinkRegistryItems) ? state.taskRulesLinkRegistryItems : [])
+      .find((row) => normalizeTaskRulesText(row && row.id, '') === selectedId);
+    if (item) applyTaskRulesLinkEditorFields(item);
+    refreshTaskRulesTaskContentWarnings();
+  });
   ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -13681,8 +14177,10 @@ function setupMonitorControls() {
     });
   });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
+  refreshTaskRulesTaskContentWarnings();
   void loadTaskRulesStatus({ notify: false });
   void loadTaskRulesHistory({ notify: false });
+  void loadTaskRulesLinkRegistryOptions({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -15032,6 +15530,8 @@ let taskRulesTemplatePlanHash = null;
 let taskRulesTemplateConfirmToken = null;
 let taskRulesApplyPlanHash = null;
 let taskRulesApplyConfirmToken = null;
+let taskRulesTaskContentPlanHash = null;
+let taskRulesTaskContentConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();

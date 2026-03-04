@@ -100,6 +100,21 @@ Typical fields:
 - `nudgeCount`, `lastNotifiedAt`
 - `createdAt`, `updatedAt`
 
+### `task_contents/{taskKey}`
+Purpose: LINE内完結の Task詳細表示（Flex + Manual/Failure本文）を保持する add-only 編集モデル。
+
+Typical fields:
+- `taskKey`（doc id と同一）
+- `title`
+- `timeMin`, `timeMax`
+- `checklistItems[]`
+  - `id`, `text`, `order`, `enabled`
+- `manualText`（postbackでLINE内表示）
+- `failureText`（postbackでLINE内表示）
+- `videoLinkId`（`link_registry`参照）
+- `actionLinkId`（`link_registry`参照）
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+
 ### `journey_templates/{templateId}`
 Purpose: Journey 3フェーズテンプレート（template起点 step_rules 生成元）。
 
