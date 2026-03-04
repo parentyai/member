@@ -39,6 +39,7 @@ function logObs(action, result, fields) {
   if (fields && fields.requestId) parts.push(`requestId=${fields.requestId}`);
   if (fields && fields.deliveryId) parts.push(`deliveryId=${fields.deliveryId}`);
   if (fields && fields.linkRegistryId) parts.push(`linkRegistryId=${fields.linkRegistryId}`);
+  if (fields && fields.ctaSlot) parts.push(`ctaSlot=${fields.ctaSlot}`);
   console.log(parts.join(' '));
 }
 
@@ -56,6 +57,7 @@ function logTrackAuditEnqueueFailure(payload, err) {
   ];
   if (data.deliveryId) parts.push(`deliveryId=${String(data.deliveryId)}`);
   if (data.linkRegistryId) parts.push(`linkRegistryId=${String(data.linkRegistryId)}`);
+  if (data.ctaSlot) parts.push(`ctaSlot=${String(data.ctaSlot)}`);
   console.warn(parts.join(' '));
 }
 
@@ -87,6 +89,7 @@ async function appendTrackClickAuditWithPolicy(payload, options) {
         errorCode: data.errorCode || null,
         deliveryId: data.deliveryId || null,
         linkRegistryId: data.linkRegistryId || null,
+        ctaSlot: data.ctaSlot || null,
         failCloseMode: data.failCloseMode || null,
         auditWriteMode,
         guardRoute: ROUTE_KEY
@@ -179,18 +182,21 @@ async function handleTrackClick(req, res, body) {
     const result = await recordClickAndRedirect({
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot,
       at: payload.at
     });
     logObs('click', 'ok', {
       requestId,
       deliveryId: payload.deliveryId,
-      linkRegistryId: payload.linkRegistryId
+      linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot
     });
     appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot || null,
       result: 'ok'
     }, { auditWriteMode, nonBlocking: true });
     res.writeHead(302, { location: result.url });
@@ -203,13 +209,15 @@ async function handleTrackClick(req, res, body) {
       logObs('click', 'reject', {
         requestId,
         deliveryId: payload.deliveryId,
-        linkRegistryId: payload.linkRegistryId
+        linkRegistryId: payload.linkRegistryId,
+        ctaSlot: payload.ctaSlot
       });
       await appendTrackClickAuditWithPolicy({
         traceId,
         requestId,
         deliveryId: payload.deliveryId,
         linkRegistryId: payload.linkRegistryId,
+        ctaSlot: payload.ctaSlot || null,
         result: 'reject',
         errorCode: 'required_or_not_found'
       }, { auditWriteMode });
@@ -221,13 +229,15 @@ async function handleTrackClick(req, res, body) {
       logObs('click', 'reject', {
         requestId,
         deliveryId: payload.deliveryId,
-        linkRegistryId: payload.linkRegistryId
+        linkRegistryId: payload.linkRegistryId,
+        ctaSlot: payload.ctaSlot
       });
       await appendTrackClickAuditWithPolicy({
         traceId,
         requestId,
         deliveryId: payload.deliveryId,
         linkRegistryId: payload.linkRegistryId,
+        ctaSlot: payload.ctaSlot || null,
         result: 'reject',
         errorCode: 'warn_link'
       }, { auditWriteMode });
@@ -236,13 +246,15 @@ async function handleTrackClick(req, res, body) {
     logObs('click', 'error', {
       requestId,
       deliveryId: payload.deliveryId,
-      linkRegistryId: payload.linkRegistryId
+      linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot
     });
     await appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot || null,
       result: 'error',
       errorCode: 'unexpected'
     }, { auditWriteMode });

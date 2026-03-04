@@ -13,5 +13,7 @@ test('phase304: saved filter uses AND conditions and preview reflects CTA2', () 
   assert.ok(js.includes("if (scenarioKey && String(item.scenarioKey || '').toUpperCase() !== scenarioKey) return false;"));
   assert.ok(js.includes("if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;"));
   assert.ok(js.includes("const cta2 = document.getElementById('ctaText2')?.value?.trim() || ''"));
+  assert.ok(js.includes('const secondaryCtas = buildComposerSecondaryCtas();'));
+  assert.ok(js.includes('const selected = collectComposerSelectedLinkIds();'));
+  assert.ok(js.includes('parts.push(`副${index + 1}:${label}${url}`);'));
 });
-

@@ -59,6 +59,7 @@ function logTrackAuditEnqueueFailure(payload, err) {
   ];
   if (data.deliveryId) parts.push(`deliveryId=${String(data.deliveryId)}`);
   if (data.linkRegistryId) parts.push(`linkRegistryId=${String(data.linkRegistryId)}`);
+  if (data.ctaSlot) parts.push(`ctaSlot=${String(data.ctaSlot)}`);
   console.warn(parts.join(' '));
 }
 
@@ -80,6 +81,7 @@ async function appendTrackClickAuditWithPolicy(payload, options) {
         errorCode: data.errorCode || null,
         deliveryId: data.deliveryId || null,
         linkRegistryId: data.linkRegistryId || null,
+        ctaSlot: data.ctaSlot || null,
         failCloseMode: data.failCloseMode || null,
         auditWriteMode,
         guardRoute: ROUTE_KEY
@@ -179,13 +181,15 @@ async function handleTrackClickGet(req, res, token) {
   try {
     const result = await recordClickAndRedirect({
       deliveryId: payload.deliveryId,
-      linkRegistryId: payload.linkRegistryId
+      linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot
     });
     appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot || null,
       result: 'ok'
     }, { auditWriteMode, nonBlocking: true });
     res.writeHead(302, { location: result.url });
@@ -199,6 +203,7 @@ async function handleTrackClickGet(req, res, token) {
         requestId,
         deliveryId: payload.deliveryId,
         linkRegistryId: payload.linkRegistryId,
+        ctaSlot: payload.ctaSlot || null,
         result: 'reject',
         errorCode: message.includes('WARN') ? 'warn_link' : 'required_or_not_found'
       }, { auditWriteMode });
@@ -210,6 +215,7 @@ async function handleTrackClickGet(req, res, token) {
       requestId,
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
+      ctaSlot: payload.ctaSlot || null,
       result: 'error',
       errorCode: 'unexpected'
     }, { auditWriteMode });

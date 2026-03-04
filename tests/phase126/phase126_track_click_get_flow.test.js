@@ -82,6 +82,9 @@ test('phase126: GET /t/{token} records clickAt + stats and redirects', async (t)
     body: 'b',
     ctaText: 'openA',
     linkRegistryId: 'l1',
+    secondaryCtas: [
+      { ctaText: 'openB', linkRegistryId: 'l1' }
+    ],
     createdAt: 1
   });
 
@@ -94,7 +97,8 @@ test('phase126: GET /t/{token} records clickAt + stats and redirects', async (t)
 
   const token = createTrackToken({
     deliveryId: delivery.id,
-    linkRegistryId: 'l1'
+    linkRegistryId: 'l1',
+    ctaSlot: 'secondary1'
   }, { secret: process.env.TRACK_TOKEN_SECRET });
 
   const res = await httpRequest({
@@ -114,4 +118,6 @@ test('phase126: GET /t/{token} records clickAt + stats and redirects', async (t)
   const statsDoc = db._state.collections.phase18_cta_stats.docs.n1;
   assert.ok(statsDoc);
   assert.ok(Object.prototype.hasOwnProperty.call(statsDoc.data, 'clickCount'));
+  assert.ok(Object.prototype.hasOwnProperty.call(statsDoc.data, 'clickSecondary1Count'));
+  assert.strictEqual(statsDoc.data.ctaText, 'openB');
 });

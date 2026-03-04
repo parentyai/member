@@ -12,7 +12,7 @@ const {
   setServerTimestampForTest,
   clearServerTimestampForTest
 } = require('../../src/infra/firestore');
-const { createTrackToken } = require('../../src/domain/trackToken');
+const { createTrackToken, decodeTrackToken } = require('../../src/domain/trackToken');
 
 function httpRequest({ port, method, path, headers, body }) {
   return new Promise((resolve, reject) => {
@@ -174,3 +174,20 @@ test('phase126: expired token is rejected and does not write clickAt/stats', asy
   assert.ok(!db._state.collections.phase18_cta_stats);
 });
 
+test('phase126: track token keeps backward compatibility and optional ctaSlot', () => {
+  const secret = 'test_track_secret';
+  const legacy = createTrackToken(
+    { deliveryId: 'd1', linkRegistryId: 'l1' },
+    { secret, nowSec: 1000, ttlSec: 100 }
+  );
+  const withSlot = createTrackToken(
+    { deliveryId: 'd2', linkRegistryId: 'l2', ctaSlot: 'secondary2' },
+    { secret, nowSec: 1000, ttlSec: 100 }
+  );
+
+  const decodedLegacy = decodeTrackToken(legacy, { secret, nowSec: 1001 });
+  const decodedWithSlot = decodeTrackToken(withSlot, { secret, nowSec: 1001 });
+
+  assert.strictEqual(decodedLegacy.ctaSlot, undefined);
+  assert.strictEqual(decodedWithSlot.ctaSlot, 'secondary2');
+});

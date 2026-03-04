@@ -10,8 +10,7 @@ const {
 } = require('../../domain/constants');
 const { normalizeNotificationCategory } = require('../../domain/notificationCategory');
 const {
-  validateSingleCta,
-  validateLinkRequired,
+  resolveNotificationCtas,
   validateWarnLinkBlock
 } = require('../../domain/validators');
 const FIELD_SCN = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111);
@@ -39,6 +38,15 @@ function requireInList(name, value, allowed) {
   if (!allowed.includes(value)) {
     throw new Error(`${name} invalid`);
   }
+}
+
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
 }
 
 function normalizeStringArray(values) {
@@ -162,14 +170,26 @@ async function createNotification(data) {
   requireInList(FIELD_SCK, normalizedCanonical, PHASE0_SCENARIOS);
   requireInList('stepKey', payload.stepKey, STEP_ORDER);
 
-  const linkEntry = await linkRegistryRepo.getLink(payload.linkRegistryId);
-  if (!linkEntry) {
-    throw new Error('link registry entry not found');
+  const multiCtaEnabled = resolveBooleanEnvFlag('ENABLE_NOTIFICATION_CTA_MULTI_V1', false);
+  const ctaSlots = resolveNotificationCtas(payload, {
+    allowSecondary: multiCtaEnabled,
+    ignoreSecondary: false,
+    minTotal: 1,
+    maxSecondary: multiCtaEnabled ? 2 : 0,
+    maxTotal: multiCtaEnabled ? 3 : 1
+  });
+  const ctaLinkIds = Array.from(new Set(ctaSlots.map((slot) => slot.linkRegistryId)));
+  for (const linkRegistryId of ctaLinkIds) {
+    const linkEntry = await linkRegistryRepo.getLink(linkRegistryId);
+    if (!linkEntry) throw new Error('link registry entry not found');
+    validateWarnLinkBlock(linkEntry);
   }
 
-  validateSingleCta(payload);
-  validateLinkRequired(payload);
-  validateWarnLinkBlock(linkEntry);
+  const primaryCta = ctaSlots[0];
+  const secondaryCtas = ctaSlots.slice(1).map((slot) => ({
+    ctaText: slot.ctaText,
+    linkRegistryId: slot.linkRegistryId
+  }));
   const cityPackFallback = normalizeCityPackFallback(payload);
   if (cityPackFallback) {
     const fallbackLink = await linkRegistryRepo.getLink(cityPackFallback.fallbackLinkRegistryId);
@@ -195,8 +215,8 @@ async function createNotification(data) {
   const record = {
     title: payload.title,
     body: payload.body,
-    ctaText: payload.ctaText,
-    linkRegistryId: payload.linkRegistryId,
+    ctaText: primaryCta.ctaText,
+    linkRegistryId: primaryCta.linkRegistryId,
     [FIELD_SCK]: normalizedCanonical,
     stepKey: payload.stepKey,
     target: payload.target || null,
@@ -213,6 +233,9 @@ async function createNotification(data) {
     createdBy: payload.createdBy || null,
     createdAt: payload.createdAt
   };
+  if (secondaryCtas.length > 0) {
+    record.secondaryCtas = secondaryCtas;
+  }
   if (seedMetadata.seedTag) record.seedTag = seedMetadata.seedTag;
   if (seedMetadata.seedRunId) record.seedRunId = seedMetadata.seedRunId;
   if (seedMetadata.seededAt) record.seededAt = seedMetadata.seededAt;

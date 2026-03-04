@@ -13,7 +13,8 @@ test('phase272: CTA2 keeps preview-only notice and remains payload-disconnected'
   assert.ok(js.includes('function renderComposerCta2Notice() {'));
   assert.ok(js.includes("ui.desc.composer.cta2.notice"));
   assert.ok(js.includes("ctaText2: document.getElementById('ctaText2')?.value || ''"));
+  assert.ok(js.includes('function buildComposerSecondaryCtas() {'));
+  assert.ok(js.includes('secondaryCtas,'));
   assert.ok(js.includes('ctaText: document.getElementById(\'ctaText\')?.value?.trim() || \'\','));
   assert.ok(!js.includes('ctaText2: document.getElementById(\'ctaText2\')?.value?.trim() || \'\','));
 });
-
