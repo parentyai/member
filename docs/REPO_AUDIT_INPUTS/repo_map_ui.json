@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "b79e870e65dbd1b6ae2d3cf671d807131f244396",
+      "hash": "4bdd94c3296656e5562e221e96166c4627dbc44c",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1097
+    "testCount": 1098
   },
   "systemOverview": {
     "what": [
@@ -1995,10 +1995,10 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyEventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyProvidersRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyRulesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencySnapshotsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyUnmappedEventsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/emergencyLayer.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js:1",
@@ -6836,7 +6836,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 26,
+              "testsCount": 27,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6856,6 +6856,7 @@
                 "emergencyDiffsRepo",
                 "emergencyEventsRepo",
                 "emergencyProvidersRepo",
+                "emergencyRulesRepo",
                 "emergencySnapshotsRepo",
                 "emergencyUnmappedEventsRepo",
                 "systemFlagsRepo"
@@ -6865,6 +6866,7 @@
                 "emergency_diffs",
                 "emergency_events_normalized",
                 "emergency_providers",
+                "emergency_rules",
                 "emergency_snapshots",
                 "emergency_unmapped_events",
                 "system_flags"
@@ -6886,7 +6888,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 102,
+              "testsCount": 103,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [

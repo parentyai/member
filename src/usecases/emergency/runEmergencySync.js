@@ -2,11 +2,16 @@
 
 const crypto = require('crypto');
 const emergencyProvidersRepo = require('../../repos/firestore/emergencyProvidersRepo');
+const emergencyRulesRepo = require('../../repos/firestore/emergencyRulesRepo');
+const emergencyBulletinsRepo = require('../../repos/firestore/emergencyBulletinsRepo');
+const emergencyDiffsRepo = require('../../repos/firestore/emergencyDiffsRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { ensureEmergencyProviders } = require('./ensureEmergencyProviders');
 const { fetchProviderSnapshot } = require('./fetchProviderSnapshot');
 const { normalizeAndDiffProvider } = require('./normalizeAndDiffProvider');
 const { summarizeDraftWithLLM } = require('./summarizeDraftWithLLM');
+const { selectBestEmergencyRule, resolveEmergencyEventType } = require('./emergencyRuleEngine');
+const { autoDispatchEmergencyBulletin } = require('./autoDispatchEmergencyBulletin');
 const { appendEmergencyAudit } = require('./audit');
 const { normalizeString } = require('./utils');
 
@@ -33,6 +38,23 @@ function normalizeProviderKeyArray(values) {
   return Array.from(new Set(values
     .map((value) => (typeof value === 'string' ? value.trim().toLowerCase() : ''))
     .filter(Boolean)));
+}
+
+function resolveBooleanEnvFlag(name, fallback) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return fallback === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on' || normalized === 'yes') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off' || normalized === 'no') return false;
+  return fallback === true;
+}
+
+function normalizeMaxRecipients(value, fallback, max) {
+  const parsed = Number(value);
+  const fallbackValue = Number.isFinite(Number(fallback)) && Number(fallback) > 0 ? Math.floor(Number(fallback)) : 2000;
+  const maxValue = Number.isFinite(Number(max)) && Number(max) > 0 ? Math.floor(Number(max)) : 50000;
+  if (!Number.isFinite(parsed) || parsed <= 0) return Math.min(Math.max(fallbackValue, 1), maxValue);
+  return Math.min(Math.max(Math.floor(parsed), 1), maxValue);
 }
 
 function toMillis(value) {
@@ -69,6 +91,31 @@ function shouldRunNormalize(fetchResult) {
   if (fetchResult.changed === false) return false;
   if (Number(fetchResult.statusCode) === 304) return false;
   return true;
+}
+
+async function resolveDiffByBulletin(bulletin, deps) {
+  const payload = bulletin && typeof bulletin === 'object' ? bulletin : {};
+  const refs = payload.evidenceRefs && typeof payload.evidenceRefs === 'object' ? payload.evidenceRefs : {};
+  const diffId = normalizeString(refs.diffId);
+  if (!diffId) return null;
+  const getDiff = deps && typeof deps.getDiff === 'function' ? deps.getDiff : emergencyDiffsRepo.getDiff;
+  return getDiff(diffId).catch(() => null);
+}
+
+function buildRuleInputFromBulletin(bulletin, diff) {
+  const row = bulletin && typeof bulletin === 'object' ? bulletin : {};
+  const diffRow = diff && typeof diff === 'object' ? diff : {};
+  return {
+    providerKey: normalizeString(row.providerKey),
+    severity: normalizeString(row.severity),
+    regionKey: normalizeString(row.regionKey),
+    category: normalizeString(row.category) || normalizeString(diffRow.category),
+    diffType: normalizeString(diffRow.diffType) || 'update',
+    eventType: resolveEmergencyEventType({
+      category: normalizeString(row.category) || normalizeString(diffRow.category),
+      diffType: normalizeString(diffRow.diffType) || 'update'
+    })
+  };
 }
 
 async function runProviderPipeline(input, deps) {
@@ -136,6 +183,7 @@ async function runEmergencySync(params, deps) {
   const traceId = resolveTraceId(payload, now);
   const runId = resolveRunId(payload, now);
   const actor = normalizeString(payload.actor) || 'emergency_sync_job';
+  const dryRun = payload.dryRun === true;
 
   const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'
     ? deps.getKillSwitch
@@ -183,7 +231,8 @@ async function runEmergencySync(params, deps) {
       requestedProviderCount: requestedProviderKeys.length,
       forceProviderCount: forceProviderKeys.size,
       forceRefresh: payload.forceRefresh === true,
-      skipSummarize: payload.skipSummarize === true
+      skipSummarize: payload.skipSummarize === true,
+      dryRun
     }
   }, deps);
 
@@ -214,6 +263,131 @@ async function runEmergencySync(params, deps) {
     providerResults.push(providerResult);
   }
 
+  const listEnabledRules = deps && typeof deps.listEnabledRules === 'function'
+    ? deps.listEnabledRules
+    : emergencyRulesRepo.listEnabledRulesNow;
+  const getBulletin = deps && typeof deps.getBulletin === 'function'
+    ? deps.getBulletin
+    : emergencyBulletinsRepo.getBulletin;
+  const autoDispatch = deps && typeof deps.autoDispatchEmergencyBulletin === 'function'
+    ? deps.autoDispatchEmergencyBulletin
+    : autoDispatchEmergencyBulletin;
+  const getEmergencyAutoSendEnabled = deps && typeof deps.getEmergencyAutoSendEnabled === 'function'
+    ? deps.getEmergencyAutoSendEnabled
+    : (typeof systemFlagsRepo.getEmergencyAutoSendEnabled === 'function'
+      ? systemFlagsRepo.getEmergencyAutoSendEnabled
+      : async () => false);
+  const envAutoSendEnabled = resolveBooleanEnvFlag('ENABLE_EMERGENCY', false);
+  const flagAutoSendEnabled = await getEmergencyAutoSendEnabled();
+  const autoSendGateEnabled = envAutoSendEnabled && flagAutoSendEnabled;
+  const maxRecipientsPerRun = normalizeMaxRecipients(
+    payload.maxRecipientsPerRun,
+    process.env.EMERGENCY_MAX_RECIPIENTS_PER_RUN || 2000,
+    50000
+  );
+
+  let remainingRecipients = maxRecipientsPerRun;
+  const autoDispatchPlan = [];
+  const autoDispatchResults = [];
+
+  for (const providerResult of providerResults) {
+    const providerKey = normalizeString(providerResult && providerResult.providerKey);
+    const normalizeResult = providerResult && providerResult.normalizeResult && typeof providerResult.normalizeResult === 'object'
+      ? providerResult.normalizeResult
+      : null;
+    const draftBulletinIds = normalizeResult && Array.isArray(normalizeResult.draftBulletinIds)
+      ? Array.from(new Set(normalizeResult.draftBulletinIds.map((item) => normalizeString(item)).filter(Boolean)))
+      : [];
+    if (!providerKey || draftBulletinIds.length === 0) continue;
+
+    // eslint-disable-next-line no-await-in-loop
+    const providerRules = await listEnabledRules({ providerKey, limit: 200 });
+    for (const bulletinId of draftBulletinIds) {
+      // eslint-disable-next-line no-await-in-loop
+      const bulletin = await getBulletin(bulletinId);
+      if (!bulletin) {
+        autoDispatchPlan.push({
+          providerKey,
+          bulletinId,
+          reason: 'bulletin_not_found'
+        });
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const diff = await resolveDiffByBulletin(bulletin, deps);
+      const ruleInput = buildRuleInputFromBulletin(bulletin, diff);
+      const selected = selectBestEmergencyRule(providerRules, ruleInput);
+      if (!selected.rule) {
+        autoDispatchPlan.push({
+          providerKey,
+          bulletinId,
+          reason: 'no_matching_rule',
+          eventType: ruleInput.eventType
+        });
+        continue;
+      }
+      if (selected.rule.autoSend !== true) {
+        autoDispatchPlan.push({
+          providerKey,
+          bulletinId,
+          ruleId: selected.rule.id || null,
+          reason: 'rule_auto_send_off',
+          eventType: ruleInput.eventType
+        });
+        continue;
+      }
+      if (!autoSendGateEnabled) {
+        autoDispatchPlan.push({
+          providerKey,
+          bulletinId,
+          ruleId: selected.rule.id || null,
+          reason: 'auto_send_gate_off',
+          eventType: ruleInput.eventType,
+          envAutoSendEnabled,
+          flagAutoSendEnabled
+        });
+        continue;
+      }
+      if (!dryRun && remainingRecipients <= 0) {
+        autoDispatchPlan.push({
+          providerKey,
+          bulletinId,
+          ruleId: selected.rule.id || null,
+          reason: 'max_recipients_per_run_reached',
+          eventType: ruleInput.eventType
+        });
+        continue;
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const dispatchResult = await autoDispatch({
+        bulletinId,
+        rule: selected.rule,
+        runId,
+        traceId,
+        actor,
+        dryRun,
+        dispatchReason: 'rule_match_auto_send',
+        maxRecipientsPerRun: remainingRecipients
+      }, deps);
+
+      autoDispatchResults.push(dispatchResult);
+      autoDispatchPlan.push({
+        providerKey,
+        bulletinId,
+        ruleId: selected.rule.id || null,
+        reason: dispatchResult && dispatchResult.ok ? 'dispatched' : (dispatchResult && dispatchResult.reason ? dispatchResult.reason : 'dispatch_failed'),
+        eventType: ruleInput.eventType,
+        dryRun: dispatchResult && dispatchResult.dryRun === true
+      });
+
+      if (!dryRun && dispatchResult && dispatchResult.ok) {
+        const applied = Number(dispatchResult.recipientCountApplied) || 0;
+        if (applied > 0) remainingRecipients = Math.max(remainingRecipients - applied, 0);
+      }
+    }
+  }
+
   const skippedProviderCount = (requestedSet ? requestedSet.size : providers.length) - candidates.length;
 
   await appendEmergencyAudit({
@@ -226,7 +400,13 @@ async function runEmergencySync(params, deps) {
     payloadSummary: {
       providerCount: providerResults.length,
       skippedProviderCount: skippedProviderCount > 0 ? skippedProviderCount : 0,
-      providerKeys: providerResults.map((item) => item.providerKey)
+      providerKeys: providerResults.map((item) => item.providerKey),
+      dryRun,
+      autoSendGateEnabled,
+      envAutoSendEnabled,
+      flagAutoSendEnabled,
+      autoDispatchPlannedCount: autoDispatchPlan.length,
+      autoDispatchAttemptedCount: autoDispatchResults.length
     }
   }, deps);
 
@@ -235,7 +415,17 @@ async function runEmergencySync(params, deps) {
     runId,
     traceId,
     providerCount: providerResults.length,
-    providerResults
+    providerResults,
+    dryRun,
+    autoSendGate: {
+      enabled: autoSendGateEnabled,
+      envEnabled: envAutoSendEnabled,
+      systemFlagEnabled: flagAutoSendEnabled
+    },
+    maxRecipientsPerRun,
+    remainingRecipients,
+    autoDispatchPlan,
+    autoDispatchResults
   };
 }
 

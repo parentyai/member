@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T17:20:31-05:00",
-  "gitCommit": "677ddb5dd69d19804851484fca188aa8097c0865",
-  "branch": "codex/emergency-pr1-rule-engine",
-  "sourceDigest": "22e57f1a83d5ba47bcb4ed57bb89149160a98c92c50287d93346b04dec3a2f2f",
+  "generatedAt": "2026-03-04T17:31:58-05:00",
+  "gitCommit": "ece462795edecc7c078fd4ac01d7d8fe9dd0401c",
+  "branch": "codex/emergency-pr2-provider-polling",
+  "sourceDigest": "8ce3808577f00f5c2be637b5e0ed8cfa6194ec7bfeea723d88ab3b04e4855c8e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
