@@ -61,6 +61,15 @@ function parseFallbackOnEmpty(req) {
   throw new Error('invalid fallbackOnEmpty');
 }
 
+function parseSnapshotRefresh(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const raw = url.searchParams.get('snapshotRefresh');
+  if (raw === null || raw === undefined || raw === '') return false;
+  if (raw === 'true' || raw === '1') return true;
+  if (raw === 'false' || raw === '0') return false;
+  throw new Error('invalid snapshotRefresh');
+}
+
 function toMillis(value) {
   if (!value) return null;
   if (typeof value === 'string') {
@@ -510,9 +519,11 @@ async function handleDashboardKpi(req, res) {
   const scanLimit = parseScanLimit(req);
   let fallbackMode;
   let fallbackOnEmpty;
+  let snapshotRefresh;
   try {
     fallbackMode = parseFallbackMode(req);
     fallbackOnEmpty = parseFallbackOnEmpty(req);
+    snapshotRefresh = parseSnapshotRefresh(req);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: err.message, traceId, requestId }));
@@ -523,7 +534,8 @@ async function handleDashboardKpi(req, res) {
   const snapshotReadEnabled = isSnapshotReadEnabled(snapshotMode);
   const snapshotKey = String(windowMonths);
   try {
-    if (snapshotReadEnabled) {
+    const skipSnapshotRead = snapshotRefresh === true && !isSnapshotRequired(snapshotMode);
+    if (snapshotReadEnabled && !skipSnapshotRead) {
       const snapshot = await opsSnapshotsRepo.getSnapshot('dashboard_kpi', snapshotKey);
       if (isSnapshotFresh(snapshot, freshnessMinutes) && snapshot && snapshot.data && snapshot.data.kpis) {
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -537,6 +549,7 @@ async function handleDashboardKpi(req, res) {
           source: 'snapshot',
           asOf: snapshot.asOf || null,
           freshnessMinutes: snapshot.freshnessMinutes || freshnessMinutes,
+          snapshotRefresh,
           fallbackUsed: false,
           fallbackBlocked: false,
           fallbackSources: [],
@@ -562,6 +575,7 @@ async function handleDashboardKpi(req, res) {
           fallbackUsed: false,
           fallbackBlocked: true,
           fallbackSources: [],
+          snapshotRefresh,
           kpis
         }));
         return;
@@ -583,6 +597,7 @@ async function handleDashboardKpi(req, res) {
         fallbackUsed: false,
         fallbackBlocked: true,
         fallbackSources: [],
+        snapshotRefresh,
         kpis
       }));
       return;
@@ -627,13 +642,14 @@ async function handleDashboardKpi(req, res) {
         const fallbackPayloadSummary = {
           fallbackUsed: computed.fallbackUsed === true,
           fallbackBlocked: computed.fallbackBlocked === true,
-          fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
-          snapshotMode,
-          fallbackMode,
-          fallbackOnEmpty,
-          windowMonths,
-          scanLimit
-        };
+        fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],
+        snapshotMode,
+        snapshotRefresh,
+        fallbackMode,
+        fallbackOnEmpty,
+        windowMonths,
+        scanLimit
+      };
         await appendAuditLog({
           actor,
           action: 'read_path.fallback.dashboard_kpi',
@@ -672,6 +688,7 @@ async function handleDashboardKpi(req, res) {
       freshnessMinutes,
       note: computed.fallbackBlocked ? 'NOT AVAILABLE' : null,
       fallbackOnEmpty,
+      snapshotRefresh,
       fallbackUsed: computed.fallbackUsed === true,
       fallbackBlocked: computed.fallbackBlocked === true,
       fallbackSources: Array.isArray(computed.fallbackSources) ? computed.fallbackSources : [],

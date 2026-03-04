@@ -9,5 +9,7 @@ test('phase579: dashboard UI requests fallbackMode=allow with fallbackOnEmpty=tr
   assert.ok(js.includes('/api/admin/os/dashboard/kpi?windowMonths='));
   assert.ok(js.includes('fallbackMode=${encodeURIComponent(fallbackMode)}'));
   assert.ok(js.includes('&fallbackOnEmpty=true'));
+  assert.ok(js.includes('&snapshotRefresh=${encodeURIComponent(snapshotRefresh)}'));
+  assert.ok(js.includes("loadDashboardKpis({ notify: true, forceRefresh: true })"));
   assert.ok(js.includes("if (raw === DASHBOARD_FALLBACK_MODE_BLOCK) return DASHBOARD_FALLBACK_MODE_BLOCK;"));
 });
