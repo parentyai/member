@@ -524,7 +524,7 @@ const NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
 const OPS_ONLY_BASE_GROUPS = Object.freeze(['dashboard', 'run', 'control']);
 
 const DASHBOARD_ALLOWED_WINDOWS = Object.freeze([1, 3, 6, 12, 36]);
-const DASHBOARD_DEFAULT_WINDOW = 1;
+const DASHBOARD_DEFAULT_WINDOW = 36;
 const DASHBOARD_FALLBACK_MODE_ALLOW = 'allow';
 const DASHBOARD_FALLBACK_MODE_BLOCK = 'block';
 const DASHBOARD_FALLBACK_MODE_DEFAULT = DASHBOARD_FALLBACK_MODE_ALLOW;
@@ -2028,7 +2028,7 @@ function readVendorUnifiedListState() {
 function readDashboardWindowState() {
   const out = {};
   Object.keys(DASHBOARD_CARD_CONFIG).forEach((metricKey) => {
-    out[metricKey] = String(getDashboardWindowMonths(metricKey));
+    out[metricKey] = String(DASHBOARD_DEFAULT_WINDOW);
   });
   return out;
 }
@@ -2129,7 +2129,7 @@ function hydrateListState() {
   applyUsersSummaryListState(resolveListStateFromPersistence('usersSummary', readUsersSummaryListState()));
   applyCityPackUnifiedListState(resolveListStateFromPersistence('cityPackUnified', readCityPackUnifiedListState()));
   applyVendorUnifiedListState(resolveListStateFromPersistence('vendorUnified', readVendorUnifiedListState()));
-  applyDashboardWindowState(resolveListStateFromPersistence('dashboardWindow', readDashboardWindowState()));
+  applyDashboardWindowState(resolveListStateFromPersistence('dashboardWindowV2', readDashboardWindowState()));
   state.role = resolveRoleFromPersistence(state.role);
 }
 
@@ -4409,7 +4409,7 @@ async function loadDashboardKpis(options) {
   if (failed) {
     renderDataLoadFailureGuard('dashboard_kpi_failed', new Error('dashboard kpi failed'));
   }
-  persistListStateToStorage('dashboardWindow', readDashboardWindowState());
+  persistListStateToStorage('dashboardWindowV2', readDashboardWindowState());
   await loadTopbarStatus();
   if (notify) {
     showToast(
