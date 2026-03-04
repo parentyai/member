@@ -24,6 +24,7 @@ const {
 const { buildContextualFeatures } = require('../../../domain/llm/bandit/contextualFeatures');
 const { buildCounterfactualSnapshot } = require('../../../domain/llm/bandit/counterfactualSnapshot');
 const { buildContextSignature } = require('../../../domain/llm/bandit/contextualSignature');
+const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/counterfactualEvaluator');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -195,6 +196,24 @@ function normalizeCounterfactualTopArms(value) {
     .filter((row) => row.armId);
 }
 
+function normalizeCounterfactualEval(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  return {
+    version: normalizeText(payload.version) || 'v1',
+    eligible: payload.eligible === true,
+    selectedArmId: normalizeText(payload.selectedArmId) || null,
+    selectedRank: Number.isFinite(Number(payload.selectedRank))
+      ? Math.max(1, Math.floor(Number(payload.selectedRank)))
+      : null,
+    bestArmId: normalizeText(payload.bestArmId) || null,
+    bestScore: Number.isFinite(Number(payload.bestScore)) ? Number(payload.bestScore) : 0,
+    selectedScore: Number.isFinite(Number(payload.selectedScore)) ? Number(payload.selectedScore) : 0,
+    scoreGap: Number.isFinite(Number(payload.scoreGap)) ? Math.max(0, Number(payload.scoreGap)) : 0,
+    minGap: Number.isFinite(Number(payload.minGap)) ? Math.max(0, Number(payload.minGap)) : 0.12,
+    opportunityDetected: payload.opportunityDetected === true
+  };
+}
+
 function buildAuditMeta(input) {
   const payload = input && typeof input === 'object' ? input : {};
   const selected = Array.isArray(payload.selected) ? payload.selected : [];
@@ -257,7 +276,8 @@ function buildAuditMeta(input) {
     counterfactualSelectedRank: Number.isFinite(Number(payload.counterfactualSelectedRank))
       ? Math.max(1, Math.floor(Number(payload.counterfactualSelectedRank)))
       : null,
-    counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms)
+    counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms),
+    counterfactualEval: normalizeCounterfactualEval(payload.counterfactualEval)
   };
 }
 
@@ -445,6 +465,14 @@ async function composeConciergeReply(params) {
     selectedArmId: chosenAction && chosenAction.armId ? chosenAction.armId : null,
     maxArms: 3
   });
+  const counterfactualEval = evaluateCounterfactualChoice({
+    selectedArmId: counterfactual.selectedArmId,
+    selectedRank: counterfactual.selectedRank,
+    topArms: counterfactual.topArms,
+    selectedScore: chosenAction && Number.isFinite(Number(chosenAction.score))
+      ? Number(chosenAction.score)
+      : 0
+  });
 
   const styleDecisionForRender = Object.assign({}, styleDecision, {
     styleId: chosenAction && chosenAction.styleId ? chosenAction.styleId : styleDecision.styleId,
@@ -549,6 +577,7 @@ async function composeConciergeReply(params) {
     counterfactualSelectedArmId: counterfactual.selectedArmId,
     counterfactualSelectedRank: counterfactual.selectedRank,
     counterfactualTopArms: counterfactual.topArms,
+    counterfactualEval,
     banditEnabled
   });
 

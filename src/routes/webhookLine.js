@@ -566,6 +566,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         counterfactualTopArms: conciergeMeta && Array.isArray(conciergeMeta.counterfactualTopArms)
           ? conciergeMeta.counterfactualTopArms
           : [],
+        counterfactualEval: conciergeMeta && conciergeMeta.counterfactualEval && typeof conciergeMeta.counterfactualEval === 'object'
+          ? conciergeMeta.counterfactualEval
+          : null,
         assistantQuality
       }
     });
@@ -670,6 +673,9 @@ async function appendLlmActionLogBestEffort(data) {
       counterfactualTopArms: Array.isArray(conciergeMeta.counterfactualTopArms)
         ? conciergeMeta.counterfactualTopArms
         : [],
+      counterfactualEval: conciergeMeta.counterfactualEval && typeof conciergeMeta.counterfactualEval === 'object'
+        ? conciergeMeta.counterfactualEval
+        : null,
       rewardPending: true,
       reward: null,
       rewardVersion: 'v1',
@@ -793,7 +799,8 @@ async function replyWithFreeRetrieval(params) {
         contextualFeatures: null,
         counterfactualSelectedArmId: null,
         counterfactualSelectedRank: null,
-        counterfactualTopArms: []
+        counterfactualTopArms: [],
+        counterfactualEval: null
       };
     }
   }
@@ -1269,7 +1276,8 @@ async function handleAssistantMessage(params) {
         contextualFeatures: null,
         counterfactualSelectedArmId: null,
         counterfactualSelectedRank: null,
-        counterfactualTopArms: []
+        counterfactualTopArms: [],
+        counterfactualEval: null
       };
     }
   }

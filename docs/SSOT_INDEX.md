@@ -64,6 +64,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_LLM_EVIDENCE_OUTCOME_AND_LINT_V1.md`（EvidenceOutcome/CLARIFY閾値/post-render lint契約）
 - `docs/SSOT_LLM_CONTEXTUAL_SIGNAL_AND_COUNTERFACTUAL_V1.md`（contextual特徴量/反実仮想監査キー契約）
 - `docs/SSOT_LLM_CONTEXTUAL_BANDIT_RUNTIME_V1.md`（contextSignature/contextual bandit runtime契約）
+- `docs/SSOT_LLM_COUNTERFACTUAL_EVALUATION_V1.md`（counterfactualEval/opportunityDetected契約）
 - `docs/LLM_PHASE_PLAN.md`（LLMフェーズ計画）
 - `docs/LLM_THREAT_MODEL.md`（LLM脅威モデル）
 - `docs/RUNBOOK_JA.md`（日本語RUNBOOK）

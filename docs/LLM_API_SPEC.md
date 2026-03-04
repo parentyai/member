@@ -534,3 +534,27 @@
   - `epsilon`
   - `version`
   - `updatedAt`
+
+## Phase727 Add-only Delta（Counterfactual evaluation metrics）
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only fields:
+  - `counterfactualEval`
+    - `version`
+    - `eligible`
+    - `selectedArmId`
+    - `selectedRank`
+    - `bestArmId`
+    - `bestScore`
+    - `selectedScore`
+    - `scoreGap`
+    - `minGap`
+    - `opportunityDetected`
+
+### `llm_action_logs` add-only fields
+- `counterfactualEval`
+
+### Internal Job `POST /internal/jobs/llm-action-reward-finalize`
+- response add-only fields:
+  - `counterfactualEvaluated`
+  - `counterfactualOpportunityDetected`
