@@ -3,6 +3,14 @@
 const { resolvePolicyForRequest, shouldAttachUrls } = require('../../../domain/llm/conciergePolicy');
 const { selectUrls } = require('../../../domain/llm/urlRanker');
 const { sanitizeCandidates } = require('../../../domain/llm/injectionGuard');
+const { selectResponseStyle } = require('../../../domain/llm/styleRouter');
+const { resolveConversationState } = require('../../../domain/llm/conversation/conversationState');
+const { resolveConversationMove } = require('../../../domain/llm/conversation/conversationMoves');
+const {
+  extractAnalysisFromBaseReply,
+  composeConversationDraft
+} = require('../../../domain/llm/conversation/conversationComposer');
+const { humanizeConciergeResponse } = require('../../../domain/llm/styleHumanizer');
 const { searchWebCandidates } = require('../../../infra/webSearch/provider');
 
 function normalizeText(value) {
@@ -16,14 +24,35 @@ function trimForLineMessage(value) {
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
-function formatSourceFooters(selectedUrls) {
+function resolveFlagEnabled(name, fallback) {
+  const raw = normalizeText(process.env[name]);
+  if (!raw) return fallback;
+  if (/^(0|false|off|no)$/i.test(raw)) return false;
+  if (/^(1|true|on|yes)$/i.test(raw)) return true;
+  return fallback;
+}
+
+function resolveTimeOfDay(input) {
+  const value = Number(input);
+  if (Number.isFinite(value) && value >= 0 && value <= 23) return Math.floor(value);
+  return new Date().getHours();
+}
+
+function formatSourceFooters(selectedUrls, maxUrls) {
   const rows = Array.isArray(selectedUrls) ? selectedUrls : [];
-  if (!rows.length) return '';
-  return rows.map((row) => {
-    const domain = normalizeText(row.domain);
-    const path = normalizeText(row.path || '/');
-    return `(source: ${domain}${path})`;
-  }).join('\n');
+  const cap = Number.isFinite(Number(maxUrls)) ? Math.max(0, Math.floor(Number(maxUrls))) : 0;
+  if (!rows.length || cap <= 0) return '';
+  const sources = rows
+    .slice(0, cap)
+    .map((row) => {
+      const domain = normalizeText(row && row.domain);
+      const path = normalizeText(row && row.path) || '/';
+      if (!domain) return '';
+      return `(source: ${domain}${path})`;
+    })
+    .filter(Boolean);
+  if (!sources.length) return '';
+  return `根拠: ${sources.join(', ')}`;
 }
 
 function buildGuardDecisions(decisions) {
@@ -59,7 +88,12 @@ function buildAuditMeta(input) {
     })),
     guardDecisions: buildGuardDecisions(decisions),
     blockedReasons,
-    injectionFindings: payload.injectionFindings === true
+    injectionFindings: payload.injectionFindings === true,
+    conversationState: payload.conversationState || null,
+    conversationMove: payload.conversationMove || null,
+    styleId: payload.styleId || null,
+    conversationPattern: payload.conversationPattern || null,
+    responseLength: Number.isFinite(Number(payload.responseLength)) ? Number(payload.responseLength) : 0
   };
 }
 
@@ -99,13 +133,54 @@ async function composeConciergeReply(params) {
     denylist: payload.denylist
   });
 
-  const sourceSection = shouldAttachUrls(policy.mode, ranked.selected.length)
-    ? formatSourceFooters(ranked.selected)
-    : '';
   const baseReplyText = normalizeText(payload.baseReplyText);
-  const replyText = sourceSection
-    ? trimForLineMessage(`${baseReplyText}\n\n${sourceSection}`)
-    : trimForLineMessage(baseReplyText);
+  const analysis = extractAnalysisFromBaseReply({ baseReplyText });
+  const state = resolveConversationState({
+    analysis,
+    blockedReasons,
+    question: payload.question
+  });
+  const move = resolveConversationMove({
+    state: state.to,
+    analysis,
+    question: payload.question
+  });
+  const draftPacket = composeConversationDraft({
+    analysis,
+    state: state.to,
+    move,
+    baseReplyText
+  });
+  const styleEngineEnabled = resolveFlagEnabled('STYLE_ENGINE_ENABLED', true);
+  const styleDecision = selectResponseStyle({
+    topic: policy.topic,
+    userTier: policy.userTier,
+    question: payload.question,
+    journeyPhase: payload.journeyPhase || '',
+    messageLength: normalizeText(payload.question).length,
+    timeOfDay: resolveTimeOfDay(payload.timeOfDay),
+    urgency: payload.urgency || ''
+  });
+  const humanized = styleEngineEnabled
+    ? humanizeConciergeResponse({
+      draftPacket,
+      styleDecision,
+      state: state.to,
+      move
+    })
+    : {
+      text: draftPacket.draft || baseReplyText,
+      styleId: null,
+      conversationPattern: null,
+      responseLength: normalizeText(draftPacket.draft || baseReplyText).length
+    };
+  const sourceSection = shouldAttachUrls(policy.mode, ranked.selected.length)
+    ? formatSourceFooters(ranked.selected, policy.maxUrls)
+    : '';
+  const mergedReply = sourceSection
+    ? `${normalizeText(humanized.text || draftPacket.draft || baseReplyText)}\n\n${sourceSection}`
+    : normalizeText(humanized.text || draftPacket.draft || baseReplyText);
+  const replyText = trimForLineMessage(mergedReply);
 
   return {
     ok: true,
@@ -124,7 +199,12 @@ async function composeConciergeReply(params) {
       selected: ranked.selected,
       decisions: ranked.decisions,
       blockedReasons,
-      injectionFindings: sanitized.injectionFindings
+      injectionFindings: sanitized.injectionFindings,
+      conversationState: state.to,
+      conversationMove: move,
+      styleId: humanized.styleId,
+      conversationPattern: humanized.conversationPattern,
+      responseLength: normalizeText(mergedReply).length
     })
   };
 }
