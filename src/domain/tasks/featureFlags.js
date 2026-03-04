@@ -25,9 +25,33 @@ function isJourneyTemplateEnabled() {
   return parseFlag('ENABLE_JOURNEY_TEMPLATE_V1', true);
 }
 
+function isJourneyUnifiedViewEnabled() {
+  return parseFlag('ENABLE_JOURNEY_UNIFIED_VIEW_V1', false);
+}
+
+function isLegacyTodoDeriveFromTemplatesEnabled() {
+  return parseFlag('ENABLE_LEGACY_TODO_DERIVE_FROM_TEMPLATES_V1', false);
+}
+
+function isLegacyTodoEmitDisabled() {
+  return parseFlag('ENABLE_LEGACY_TODO_EMIT_DISABLED_V1', false);
+}
+
+function getTaskNudgeLinkPolicy() {
+  const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
+    ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
+    : '';
+  if (raw === 'lenient') return 'lenient';
+  return 'strict';
+}
+
 module.exports = {
   isTaskEngineEnabled,
   isTaskNudgeEnabled,
   isTaskEventsEnabled,
-  isJourneyTemplateEnabled
+  isJourneyTemplateEnabled,
+  isJourneyUnifiedViewEnabled,
+  isLegacyTodoDeriveFromTemplatesEnabled,
+  isLegacyTodoEmitDisabled,
+  getTaskNudgeLinkPolicy
 };

@@ -7,6 +7,7 @@ const COLLECTION = 'step_rules';
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
+const MEANING_KEY_PATTERN = /^[a-z0-9_-]{2,64}$/;
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
@@ -66,6 +67,41 @@ function normalizeStringList(value) {
   return out;
 }
 
+function normalizeMeaningKey(value, fallback) {
+  const source = normalizeText(value, '') || normalizeText(fallback, '');
+  if (!source) return null;
+  const normalized = source
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!MEANING_KEY_PATTERN.test(normalized)) return null;
+  return normalized;
+}
+
+function normalizeMeaning(value, fallbackStepKey) {
+  const payload = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const meaningKey = normalizeMeaningKey(payload.meaningKey, fallbackStepKey);
+  const title = normalizeText(payload.title, null);
+  const summary = normalizeText(payload.summary, null);
+  const doneDefinition = normalizeText(payload.doneDefinition, null);
+  const whyNow = normalizeText(payload.whyNow, null);
+  const opsNotes = normalizeText(payload.opsNotes, null);
+  const helpLinkRegistryIds = normalizeStringList(payload.helpLinkRegistryIds || payload.helpLinks).slice(0, 3);
+  if (!meaningKey && !title && !summary && !doneDefinition && !whyNow && !opsNotes && helpLinkRegistryIds.length === 0) {
+    return null;
+  }
+  return {
+    meaningKey: meaningKey || normalizeMeaningKey(fallbackStepKey, null),
+    title,
+    summary,
+    doneDefinition,
+    whyNow,
+    helpLinkRegistryIds,
+    opsNotes
+  };
+}
+
 function normalizeQuietHours(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const startHourUtc = normalizeNumber(value.startHourUtc, null, 0, 23);
@@ -123,6 +159,7 @@ function normalizeStepRule(ruleId, data) {
     ruleId: id,
     [FIELD_SCK]: normalizeText(payload[FIELD_SCK], null),
     stepKey: normalizeText(payload.stepKey, null),
+    meaning: normalizeMeaning(payload.meaning, payload.stepKey),
     trigger,
     leadTime,
     dependsOn: normalizeStringList(payload.dependsOn),

@@ -16,6 +16,14 @@
 - `ruleId` (docId)
 - `scenarioKey`
 - `stepKey`
+- `meaning` (optional):
+  - `meaningKey` (`[a-z0-9_-]{2,64}`)
+  - `title`
+  - `summary`
+  - `doneDefinition`
+  - `whyNow`
+  - `helpLinkRegistryIds[]` (max 3)
+  - `opsNotes`
 - `trigger`:
   - `eventKey`
   - `source`
@@ -42,6 +50,7 @@
 - `dependsOn` は重複除去し順不同で扱う。
 - `enabled=true` かつ validity window 内のルールのみ engine 対象。
 - collection は add-only 運用（削除/意味変更禁止）。
+- `meaning` 未設定時は従来表示/通知フォールバック（ruleId/technical copy）を維持する。
 
 ## Admin OS Contract
 - `GET /api/admin/os/task-rules/status`

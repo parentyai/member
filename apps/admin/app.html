@@ -1253,12 +1253,20 @@
   {
     "phaseKey": "onboarding",
     "steps": [
-      {
-        "stepKey": "visa_precheck",
-        "title": "ビザ要件の再確認",
-        "trigger": { "eventKey": "assignment_created", "source": "admin" },
-        "leadTime": { "kind": "after", "days": 1 },
-        "dependsOn": [],
+	      {
+	        "stepKey": "visa_precheck",
+	        "title": "ビザ要件の再確認",
+	        "meaning": {
+	          "meaningKey": "visa_precheck",
+	          "title": "ビザ要件の再確認",
+	          "summary": "渡航直前の差戻しリスクを防ぐ",
+	          "doneDefinition": "必要書類の期限と不足有無を確認済みにする",
+	          "whyNow": "期限遅延すると渡航スケジュールへ影響する",
+	          "helpLinkRegistryIds": ["task_todo_list"]
+	        },
+	        "trigger": { "eventKey": "assignment_created", "source": "admin" },
+	        "leadTime": { "kind": "after", "days": 1 },
+	        "dependsOn": [],
         "constraints": { "maxActions": 3, "planLimit": 10 },
         "priority": 100,
         "riskLevel": "high"
@@ -1268,12 +1276,19 @@
   {
     "phaseKey": "in_assignment",
     "steps": [
-      {
-        "stepKey": "monthly_compliance_check",
-        "title": "月次コンプライアンス確認",
-        "trigger": { "eventKey": "assignment_monthly_tick", "source": "system" },
-        "leadTime": { "kind": "after", "days": 0 },
-        "dependsOn": ["visa_precheck"],
+	      {
+	        "stepKey": "monthly_compliance_check",
+	        "title": "月次コンプライアンス確認",
+	        "meaning": {
+	          "meaningKey": "monthly_compliance_check",
+	          "title": "月次コンプライアンス確認",
+	          "summary": "赴任中の法令・社内規程逸脱を予防する",
+	          "doneDefinition": "今月分の確認項目を全て確認済みにする",
+	          "whyNow": "未対応が累積すると是正コストが高くなる"
+	        },
+	        "trigger": { "eventKey": "assignment_monthly_tick", "source": "system" },
+	        "leadTime": { "kind": "after", "days": 0 },
+	        "dependsOn": ["visa_precheck"],
         "constraints": { "maxActions": 3, "planLimit": 10 },
         "priority": 80,
         "riskLevel": "medium"
@@ -1283,12 +1298,19 @@
   {
     "phaseKey": "offboarding",
     "steps": [
-      {
-        "stepKey": "return_flight_booking",
-        "title": "帰任便の手配",
-        "trigger": { "eventKey": "assignment_return_window_opened", "source": "admin" },
-        "leadTime": { "kind": "before_deadline", "days": 30 },
-        "dependsOn": [],
+	      {
+	        "stepKey": "return_flight_booking",
+	        "title": "帰任便の手配",
+	        "meaning": {
+	          "meaningKey": "return_flight_booking",
+	          "title": "帰任便の手配",
+	          "summary": "帰任直前の高額手配・座席不足を回避する",
+	          "doneDefinition": "帰任便を予約し、日程を関係者へ共有する",
+	          "whyNow": "繁忙期は空席が急減するため早期確保が必要"
+	        },
+	        "trigger": { "eventKey": "assignment_return_window_opened", "source": "admin" },
+	        "leadTime": { "kind": "before_deadline", "days": 30 },
+	        "dependsOn": [],
         "constraints": { "maxActions": 3, "planLimit": 10 },
         "priority": 120,
         "riskLevel": "high"
@@ -1297,10 +1319,13 @@
   }
 ]</textarea>
                     </label>
-                  </div>
-                  <div class="row">
-                    <label class="flex-1">dry-run LINEユーザーID
-                      <input type="text" id="task-rules-dry-run-user-id" />
+	                  </div>
+	                  <div class="note">
+	                    template warning summary: <span id="task-rules-template-warning-summary">-</span>
+	                  </div>
+	                  <div class="row">
+	                    <label class="flex-1">dry-run LINEユーザーID
+	                      <input type="text" id="task-rules-dry-run-user-id" />
                     </label>
                     <label class="flex-1">apply LINEユーザーID
                       <input type="text" id="task-rules-apply-line-user-id" />
@@ -1329,14 +1354,22 @@
                     <summary>dry-run</summary>
                     <pre id="task-rules-dry-run-result">-</pre>
                   </details>
-                  <details class="section">
-                    <summary>template plan/set</summary>
-                    <pre id="task-rules-template-result">-</pre>
-                  </details>
-                  <details class="section">
-                    <summary>apply plan/apply</summary>
-                    <pre id="task-rules-apply-result">-</pre>
-                  </details>
+	                  <details class="section">
+	                    <summary>template plan/set</summary>
+	                    <pre id="task-rules-template-result">-</pre>
+	                  </details>
+	                  <details class="section">
+	                    <summary>template LINE preview</summary>
+	                    <pre id="task-rules-template-preview-result">-</pre>
+	                  </details>
+	                  <details class="section">
+	                    <summary>template nudge preview</summary>
+	                    <pre id="task-rules-template-nudge-preview-result">-</pre>
+	                  </details>
+	                  <details class="section">
+	                    <summary>apply plan/apply</summary>
+	                    <pre id="task-rules-apply-result">-</pre>
+	                  </details>
                 </div>
               </div>
               <div class="panel is-hidden" aria-hidden="true">

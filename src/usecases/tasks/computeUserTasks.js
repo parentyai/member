@@ -10,6 +10,7 @@ const { TASK_STATUS, BLOCKED_REASON, RISK_WEIGHT } = require('../../domain/tasks
 const { normalizeTaskStatus } = require('../../domain/tasks/statusMapping');
 
 const ENGINE_VERSION = 'task_engine_v1';
+const MEANING_KEY_PATTERN = /^[a-z0-9_-]{2,64}$/;
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
@@ -45,6 +46,52 @@ function toMillis(value) {
   if (!iso) return null;
   const parsed = Date.parse(iso);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeStringList(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const normalized = normalizeText(item, '');
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeMeaningKey(value, fallback) {
+  const source = normalizeText(value, '') || normalizeText(fallback, '');
+  if (!source) return null;
+  const normalized = source
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!MEANING_KEY_PATTERN.test(normalized)) return null;
+  return normalized;
+}
+
+function normalizeMeaning(value, fallbackStepKey) {
+  const payload = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const meaningKey = normalizeMeaningKey(payload.meaningKey, fallbackStepKey);
+  const title = normalizeText(payload.title, null);
+  const summary = normalizeText(payload.summary, null);
+  const doneDefinition = normalizeText(payload.doneDefinition, null);
+  const whyNow = normalizeText(payload.whyNow, null);
+  const opsNotes = normalizeText(payload.opsNotes, null);
+  const helpLinkRegistryIds = normalizeStringList(payload.helpLinkRegistryIds || payload.helpLinks).slice(0, 3);
+  if (!meaningKey && !title && !summary && !doneDefinition && !whyNow && !opsNotes && helpLinkRegistryIds.length === 0) {
+    return null;
+  }
+  return {
+    meaningKey: meaningKey || normalizeMeaningKey(fallbackStepKey, null),
+    title,
+    summary,
+    doneDefinition,
+    whyNow,
+    helpLinkRegistryIds,
+    opsNotes
+  };
 }
 
 function hasQuietHours(rule, nowIso) {
@@ -137,6 +184,7 @@ function computeDecisionHash(task) {
   const payload = task && typeof task === 'object' ? task : {};
   const raw = JSON.stringify({
     taskId: payload.taskId,
+    meaning: payload.meaning || null,
     status: payload.status,
     dueAt: payload.dueAt,
     nextNudgeAt: payload.nextNudgeAt,
@@ -278,6 +326,7 @@ async function computeUserTasks(params, deps) {
       lineUserId: userId,
       [FIELD_SCK]: normalizeText(rule[FIELD_SCK], existing && existing[FIELD_SCK]),
       stepKey: normalizeText(rule.stepKey, existing && existing.stepKey),
+      meaning: normalizeMeaning(rule.meaning || (existing && existing.meaning), rule.stepKey || (existing && existing.stepKey)),
       ruleId: rule.ruleId,
       status,
       dueAt,
@@ -323,7 +372,8 @@ async function computeUserTasks(params, deps) {
       dueAt: task.dueAt,
       status: task.status,
       [FIELD_SCK]: task[FIELD_SCK],
-      stepKey: task.stepKey
+      stepKey: task.stepKey,
+      meaning: task.meaning || null
     }));
 
   const decisions = outputs.map((task) => ({

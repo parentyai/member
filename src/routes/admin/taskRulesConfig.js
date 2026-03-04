@@ -16,7 +16,11 @@ const {
   isTaskEngineEnabled,
   isTaskNudgeEnabled,
   isTaskEventsEnabled,
-  isJourneyTemplateEnabled
+  isJourneyTemplateEnabled,
+  isJourneyUnifiedViewEnabled,
+  isLegacyTodoDeriveFromTemplatesEnabled,
+  isLegacyTodoEmitDisabled,
+  getTaskNudgeLinkPolicy
 } = require('../../domain/tasks/featureFlags');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 
@@ -134,7 +138,11 @@ async function handleStatus(req, res) {
         taskEngineEnabled: isTaskEngineEnabled(),
         taskNudgeEnabled: isTaskNudgeEnabled(),
         taskEventsEnabled: isTaskEventsEnabled(),
-        journeyTemplateEnabled: isJourneyTemplateEnabled()
+        journeyTemplateEnabled: isJourneyTemplateEnabled(),
+        journeyUnifiedViewEnabled: isJourneyUnifiedViewEnabled(),
+        legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
+        legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
+        taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       }
     });
 
@@ -146,7 +154,11 @@ async function handleStatus(req, res) {
         taskEngineEnabled: isTaskEngineEnabled(),
         taskNudgeEnabled: isTaskNudgeEnabled(),
         taskEventsEnabled: isTaskEventsEnabled(),
-        journeyTemplateEnabled: isJourneyTemplateEnabled()
+        journeyTemplateEnabled: isJourneyTemplateEnabled(),
+        journeyUnifiedViewEnabled: isJourneyUnifiedViewEnabled(),
+        legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
+        legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
+        taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       },
       rules,
       templates

@@ -14,12 +14,44 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function resolveMeaning(task) {
+  const row = task && typeof task === 'object' ? task : {};
+  const meaning = row.meaning && typeof row.meaning === 'object' ? row.meaning : null;
+  if (!meaning) return null;
+  const meaningKey = normalizeText(meaning.meaningKey) || normalizeText(row.stepKey) || null;
+  const title = normalizeText(meaning.title) || null;
+  const summary = normalizeText(meaning.summary) || null;
+  const doneDefinition = normalizeText(meaning.doneDefinition) || null;
+  const whyNow = normalizeText(meaning.whyNow) || null;
+  const helpLinkRegistryIds = Array.isArray(meaning.helpLinkRegistryIds)
+    ? meaning.helpLinkRegistryIds.map((item) => normalizeText(item)).filter(Boolean).slice(0, 3)
+    : [];
+  const opsNotes = normalizeText(meaning.opsNotes) || null;
+  if (!meaningKey && !title && !summary && !doneDefinition && !whyNow && !helpLinkRegistryIds.length && !opsNotes) {
+    return null;
+  }
+  return {
+    meaningKey: meaningKey || normalizeText(row.stepKey) || null,
+    title,
+    summary,
+    doneDefinition,
+    whyNow,
+    helpLinkRegistryIds,
+    opsNotes
+  };
+}
+
 function buildJourneyTodoPatch(task) {
   const row = task && typeof task === 'object' ? task : {};
   const mapped = toJourneyPatchFromTaskStatus(row.status, row.blockedReason);
+  const meaning = resolveMeaning(row);
   return Object.assign({}, mapped, {
     todoKey: row.ruleId,
-    title: row.ruleId,
+    title: (meaning && meaning.title) || row.ruleId,
+    meaningKey: (meaning && meaning.meaningKey) || normalizeText(row.stepKey) || null,
+    meaning: meaning || null,
+    whyNow: meaning && meaning.whyNow ? meaning.whyNow : null,
+    doneDefinition: meaning && meaning.doneDefinition ? meaning.doneDefinition : null,
     [USER_SCENARIO_FIELD]: row && row[USER_SCENARIO_FIELD] || null,
     dueAt: row.dueAt || null,
     dueDate: row.dueAt ? String(row.dueAt).slice(0, 10) : null,

@@ -352,7 +352,7 @@
     },
     {
       "file": "src/routes/admin/taskRulesConfig.js",
-      "line": 819,
+      "line": 831,
       "symbol": "killSwitch"
     },
     {
@@ -937,32 +937,32 @@
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 127,
+      "line": 174,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 193,
+      "line": 241,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 195,
+      "line": 243,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 200,
+      "line": 248,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 229,
+      "line": 277,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/tasks/computeUserTasks.js",
-      "line": 343,
+      "line": 393,
       "symbol": "killSwitch"
     },
     {
@@ -972,17 +972,17 @@
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 96,
+      "line": 166,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 99,
+      "line": 169,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 100,
+      "line": 170,
       "symbol": "killSwitch"
     }
   ]

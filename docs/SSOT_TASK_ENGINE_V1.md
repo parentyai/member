@@ -31,7 +31,8 @@ Task Engine v1 の add-only SSOT。
 4. `tasks` へ projection
 5. 状態変化時のみ `task_events` へ append
 6. `journey_todo_items` へ非破壊同期
-7. nudge対象のみ `sendNotification` で送信
+7. LINE TODO一覧は Task/legacy を Unified View で正規化（flag制御）
+8. nudge対象のみ `sendNotification` で送信
 
 ## Deterministic Decision Contract
 - 入力:
@@ -63,6 +64,18 @@ Task Engine v1 の add-only SSOT。
 - `ENABLE_JOURNEY_TEMPLATE_V1`
   - `0`: journey template plan/set停止
   - `1`: journey template plan/set有効
+- `ENABLE_JOURNEY_UNIFIED_VIEW_V1`
+  - `0`: 既存表示（Task優先 -> legacy fallback）
+  - `1`: Task/legacy を meaningKey で重複抑止して表示
+- `ENABLE_LEGACY_TODO_DERIVE_FROM_TEMPLATES_V1`
+  - `0`: legacy TODO を既存ハードコードテンプレで生成
+  - `1`: legacy TODO を `journey_templates` 由来で生成（derive mode）
+- `ENABLE_LEGACY_TODO_EMIT_DISABLED_V1`
+  - `0`: legacy TODO の新規 upsert 有効
+  - `1`: legacy TODO の新規 upsert 停止（既存データは保持）
+- `TASK_NUDGE_LINK_POLICY`
+  - `strict`（default）: linkRegistryId 不足時は suppress
+  - `lenient`: link不足時に `task_todo_list` fallback を試行
 
 ## API Contract (Public Signed)
 - `GET /api/tasks?userId=...&ts=...&sig=...`
@@ -107,6 +120,11 @@ Task Engine v1 の add-only SSOT。
   - `taskId/ruleId/scenarioKey/stepKey`
   - `checkedAt/traceId/requestId/actor/source/explainKeys`
 - delivery/decision timeline に `taskId/ruleId/decision/checkedAt/blockedReason` を保持する。
+- `audit_logs` action（体験イベント）:
+  - `tasks.view.presented`
+  - `tasks.view.hidden_duplicate`
+  - `tasks.meaning.fallback_used`
+  - `tasks.nudge.suppressed`
 
 ## Rollback
 1. `ENABLE_TASK_ENGINE_V1=0`
