@@ -13,6 +13,7 @@ const { normalizeString } = require('./utils');
 
 const DEFAULT_CTA_TEXT = '公式情報を確認';
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const DEFAULT_PRIORITY = 'emergency';
 
 function resolveNow(params, deps) {
   if (params && params.now instanceof Date) return params.now;
@@ -72,7 +73,42 @@ function normalizeStatus(value) {
   return 'draft';
 }
 
-function buildNotificationMeta(bulletin, sck, stepKey) {
+function normalizeMaxRecipients(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 500;
+  return Math.min(Math.max(Math.floor(parsed), 1), 10000);
+}
+
+function resolveDispatchContext(value, bulletin) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const region = payload.region && typeof payload.region === 'object'
+    ? payload.region
+    : (payload.region && typeof payload.region === 'string' ? { regionKey: payload.region } : null);
+  const regionKey = normalizeString(region && region.regionKey) || normalizeString(bulletin && bulletin.regionKey);
+  const priorityRaw = normalizeString(payload.priority);
+  const priority = priorityRaw ? priorityRaw.toLowerCase() : DEFAULT_PRIORITY;
+  const bypassFlagsInput = payload.bypassFlags && typeof payload.bypassFlags === 'object' ? payload.bypassFlags : {};
+  return {
+    mode: normalizeString(payload.mode) || 'manual',
+    ruleId: normalizeString(payload.ruleId),
+    runId: normalizeString(payload.runId),
+    dispatchReason: normalizeString(payload.dispatchReason),
+    priority,
+    region: Object.assign({}, region || {}, regionKey ? { regionKey } : {}),
+    membersOnly: payload.membersOnly === true,
+    role: normalizeString(payload.role),
+    maxRecipients: normalizeMaxRecipients(payload.maxRecipients),
+    bypassFlags: {
+      quietHoursBypass: bypassFlagsInput.quietHoursBypass === true,
+      capBypass: bypassFlagsInput.capBypass === true
+    },
+    recipientPreview: payload.recipientPreview && typeof payload.recipientPreview === 'object'
+      ? payload.recipientPreview
+      : null
+  };
+}
+
+function buildNotificationMeta(bulletin, sck, stepKey, dispatchContext) {
   return {
     origin: 'emergency_layer',
     bulletinId: bulletin && bulletin.id ? bulletin.id : null,
@@ -80,12 +116,26 @@ function buildNotificationMeta(bulletin, sck, stepKey) {
     severity: normalizeSeverity(bulletin && bulletin.severity),
     category: normalizeCategory(bulletin && bulletin.category),
     [FIELD_SCK]: sck,
-    stepKey
+    stepKey,
+    dispatchMode: dispatchContext.mode,
+    ruleId: dispatchContext.ruleId || null,
+    runId: dispatchContext.runId || null,
+    dispatchReason: dispatchContext.dispatchReason || null,
+    priority: dispatchContext.priority || DEFAULT_PRIORITY,
+    bypassFlags: dispatchContext.bypassFlags || {
+      quietHoursBypass: false,
+      capBypass: false
+    }
   };
 }
 
-function toNotificationPayload(bulletin, sck, stepKey, actor, ctaText) {
+function toNotificationPayload(bulletin, sck, stepKey, actor, ctaText, dispatchContext) {
   const linkRegistryId = normalizeString(bulletin && bulletin.linkRegistryId);
+  const regionKey = normalizeString(dispatchContext && dispatchContext.region && dispatchContext.region.regionKey)
+    || normalizeString(bulletin && bulletin.regionKey);
+  const maxRecipients = dispatchContext
+    ? Math.min(normalizeMaxRecipients(dispatchContext.maxRecipients), 500)
+    : 500;
   return {
     title: resolveTitle(bulletin),
     body: resolveMessageDraft(bulletin),
@@ -95,15 +145,16 @@ function toNotificationPayload(bulletin, sck, stepKey, actor, ctaText) {
     [FIELD_SCK]: sck,
     stepKey,
     target: {
-      region: normalizeString(bulletin && bulletin.regionKey),
-      membersOnly: false,
-      limit: 500
+      region: regionKey,
+      membersOnly: dispatchContext ? dispatchContext.membersOnly === true : false,
+      role: dispatchContext ? dispatchContext.role || null : null,
+      limit: maxRecipients
     },
     notificationCategory: 'IMMEDIATE_ACTION',
     notificationType: 'GENERAL',
     status: 'active',
     createdBy: actor,
-    notificationMeta: buildNotificationMeta(bulletin, sck, stepKey)
+    notificationMeta: buildNotificationMeta(bulletin, sck, stepKey, dispatchContext || resolveDispatchContext(null, bulletin))
   };
 }
 
@@ -198,6 +249,7 @@ async function approveEmergencyBulletin(params, deps) {
   }
 
   const status = normalizeStatus(bulletin.status);
+  const effectiveDispatchContext = resolveDispatchContext(payload.dispatchContext, bulletin);
   if (status === 'sent') {
     return {
       ok: false,
@@ -229,7 +281,9 @@ async function approveEmergencyBulletin(params, deps) {
       requestId,
       payloadSummary: {
         reason: checks.reason,
-        failureCode: checks.failureCode
+        failureCode: checks.failureCode,
+        dispatchMode: effectiveDispatchContext.mode,
+        ruleId: effectiveDispatchContext.ruleId || null
       }
     }, deps);
     return {
@@ -261,7 +315,12 @@ async function approveEmergencyBulletin(params, deps) {
     requestId,
     payloadSummary: {
       statusBefore: status,
-      fanoutCount: FANOUT_SCENARIOS.length * FANOUT_STEPS.length
+      fanoutCount: FANOUT_SCENARIOS.length * FANOUT_STEPS.length,
+      dispatchMode: effectiveDispatchContext.mode,
+      ruleId: effectiveDispatchContext.ruleId || null,
+      runId: effectiveDispatchContext.runId || null,
+      dispatchReason: effectiveDispatchContext.dispatchReason || null,
+      bypassFlags: effectiveDispatchContext.bypassFlags
     }
   }, deps);
 
@@ -295,7 +354,7 @@ async function approveEmergencyBulletin(params, deps) {
         break;
       }
 
-      const notificationPayload = toNotificationPayload(bulletin, sck, stepKey, actor, ctaText);
+      const notificationPayload = toNotificationPayload(bulletin, sck, stepKey, actor, ctaText, effectiveDispatchContext);
       let notificationId = null;
       try {
         const created = await createNotificationFn(notificationPayload);
@@ -330,7 +389,14 @@ async function approveEmergencyBulletin(params, deps) {
           killSwitch: killSwitchOn,
           traceId,
           requestId: requestId || undefined,
-          actor
+          actor,
+          auditContext: effectiveDispatchContext.mode === 'auto'
+            ? {
+              ruleId: effectiveDispatchContext.ruleId || undefined,
+              decision: 'emergency_auto_dispatch',
+              checkedAt: approvedAt
+            }
+            : undefined
         });
         deliveries.push(Object.assign({ [FIELD_SCK]: sck, stepKey, notificationId }, sendResult || {}));
       } catch (err) {
@@ -395,7 +461,9 @@ async function approveEmergencyBulletin(params, deps) {
         deliveredCount,
         notificationCount: notificationIds.length,
         failureCount: failures.length,
-        skippedNoRecipientsCount
+        skippedNoRecipientsCount,
+        dispatchMode: effectiveDispatchContext.mode,
+        ruleId: effectiveDispatchContext.ruleId || null
       }
     }, deps);
 
@@ -438,7 +506,9 @@ async function approveEmergencyBulletin(params, deps) {
         deliveredCount,
         notificationCount: notificationIds.length,
         failureCount: failures.length,
-        skippedNoRecipientsCount
+        skippedNoRecipientsCount,
+        dispatchMode: effectiveDispatchContext.mode,
+        ruleId: effectiveDispatchContext.ruleId || null
       }
     }, deps);
 
@@ -478,7 +548,9 @@ async function approveEmergencyBulletin(params, deps) {
     payloadSummary: {
       deliveredCount,
       notificationCount: notificationIds.length,
-      skippedNoRecipientsCount
+      skippedNoRecipientsCount,
+      dispatchMode: effectiveDispatchContext.mode,
+      ruleId: effectiveDispatchContext.ruleId || null
     }
   }, deps);
 

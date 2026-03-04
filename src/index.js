@@ -1084,6 +1084,9 @@ function createServer() {
   const isEmergencyAdminRoute = pathname === '/api/admin/emergency/providers'
     || /^\/api\/admin\/emergency\/providers\/[^/]+$/.test(pathname)
     || /^\/api\/admin\/emergency\/providers\/[^/]+\/force-refresh$/.test(pathname)
+    || pathname === '/api/admin/emergency/rules'
+    || /^\/api\/admin\/emergency\/rules\/[^/]+$/.test(pathname)
+    || /^\/api\/admin\/emergency\/rules\/[^/]+\/preview$/.test(pathname)
     || pathname === '/api/admin/emergency/bulletins'
     || /^\/api\/admin\/emergency\/bulletins\/[^/]+$/.test(pathname)
     || /^\/api\/admin\/emergency\/bulletins\/[^/]+\/(approve|reject)$/.test(pathname)

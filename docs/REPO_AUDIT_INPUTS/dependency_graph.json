@@ -452,6 +452,11 @@
       "usersRepo"
     ],
     "planTaskRulesTemplateSet": [],
+    "previewEmergencyRule": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyRulesRepo"
+    ],
     "previewNotification": [
       "linkRegistryRepo",
       "notificationsRepo"
@@ -532,7 +537,10 @@
       "sourceRefsRepo"
     ],
     "runEmergencySync": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
       "emergencyProvidersRepo",
+      "emergencyRulesRepo",
       "systemFlagsRepo"
     ],
     "runJourneyBranchDispatchJob": [
@@ -685,6 +693,9 @@
     ],
     "emergencyProvidersRepo": [
       "emergency_providers"
+    ],
+    "emergencyRulesRepo": [
+      "emergency_rules"
     ],
     "emergencySnapshotsRepo": [
       "emergency_snapshots"
@@ -917,6 +928,7 @@
       "listEmergencyBulletins",
       "listEmergencyProviders",
       "normalizeAndDiffProvider",
+      "previewEmergencyRule",
       "rejectEmergencyBulletin",
       "summarizeDraftWithLLM",
       "updateEmergencyProvider"

@@ -404,6 +404,24 @@ Typical fields:
 - `traceId`
 - `createdAt`, `updatedAt`
 
+### `emergency_rules/{ruleId}`
+Purpose: Emergencyの事前承認ルール（自動配信条件）を管理する。
+
+Typical fields:
+- `providerKey`
+- `eventType`（例: `weather.new`）
+- `severity` (`ANY`/`INFO`/`WARN`/`CRITICAL`)
+- `region`（`regionKey` または `state/city`。`county/zip` はpreview fail-closed）
+- `membersOnly`
+- `role`（現在はpreview fail-closed）
+- `autoSend`
+- `enabled`
+- `priority` (`emergency`/`standard`)
+- `maxRecipients`
+- `traceId`
+- `createdBy`, `updatedBy`
+- `createdAt`, `updatedAt`
+
 ### `emergency_unmapped_events/{id}`
 Purpose: region解決できなかったイベントを監査隔離する。
 

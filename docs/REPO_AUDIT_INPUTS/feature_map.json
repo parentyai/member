@@ -319,6 +319,7 @@
         "emergencyDiffsRepo",
         "emergencyEventsRepo",
         "emergencyProvidersRepo",
+        "emergencyRulesRepo",
         "emergencySnapshotsRepo",
         "emergencyUnmappedEventsRepo",
         "systemFlagsRepo"
@@ -328,6 +329,7 @@
         "emergency_diffs",
         "emergency_events_normalized",
         "emergency_providers",
+        "emergency_rules",
         "emergency_snapshots",
         "emergency_unmapped_events",
         "system_flags"
@@ -336,7 +338,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 26,
+      "tests_count": 27,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -352,6 +354,7 @@
         "listEmergencyBulletins",
         "listEmergencyProviders",
         "normalizeAndDiffProvider",
+        "previewEmergencyRule",
         "rejectEmergencyBulletin",
         "summarizeDraftWithLLM",
         "updateEmergencyProvider"
@@ -362,6 +365,7 @@
         "emergencyDiffsRepo",
         "emergencyEventsRepo",
         "emergencyProvidersRepo",
+        "emergencyRulesRepo",
         "emergencySnapshotsRepo",
         "emergencyUnmappedEventsRepo",
         "linkRegistryRepo",
@@ -373,6 +377,7 @@
         "emergency_diffs",
         "emergency_events_normalized",
         "emergency_providers",
+        "emergency_rules",
         "emergency_snapshots",
         "emergency_unmapped_events",
         "link_registry",
@@ -382,7 +387,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 101,
+      "tests_count": 103,
       "ssot_refs": [],
       "completion": "completed"
     },

@@ -6,7 +6,7 @@
 | field | count | paths |
 | --- | --- | --- |
 | scenario (legacy) | 0 |  |
-| scenarioKey (canonical) | 0 |  |
+| scenarioKey (canonical) | 1 | `src/usecases/emergency/resolveEmergencyRecipients.js` |
 
 ## 移行方針
 1. read: `scenarioKey` 優先、`scenario` fallback

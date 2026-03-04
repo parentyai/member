@@ -69,6 +69,12 @@ function normalizeLlmBanditEnabled(value) {
   return null;
 }
 
+function normalizeEmergencyAutoSendEnabled(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 function normalizeLawfulBasis(value) {
   if (value === null || value === undefined) return DEFAULT_LLM_POLICY.lawfulBasis;
   if (typeof value !== 'string') return null;
@@ -450,6 +456,25 @@ async function setLlmBanditEnabled(llmBanditEnabled) {
   return { id: DOC_ID, llmBanditEnabled: normalized };
 }
 
+async function getEmergencyAutoSendEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return false;
+  const data = snap.data() || {};
+  const normalized = normalizeEmergencyAutoSendEnabled(data.emergencyAutoSendEnabled);
+  return normalized === null ? false : normalized;
+}
+
+async function setEmergencyAutoSendEnabled(emergencyAutoSendEnabled) {
+  const normalized = normalizeEmergencyAutoSendEnabled(emergencyAutoSendEnabled);
+  if (normalized === null) throw new Error('invalid emergencyAutoSendEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ emergencyAutoSendEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, emergencyAutoSendEnabled: normalized };
+}
+
 async function getLlmPolicy() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -499,10 +524,13 @@ module.exports = {
   setLlmStyleEngineEnabled,
   getLlmBanditEnabled,
   setLlmBanditEnabled,
+  getEmergencyAutoSendEnabled,
+  setEmergencyAutoSendEnabled,
   getLlmPolicy,
   setLlmPolicy,
   normalizeLlmConciergeEnabled,
   normalizeLlmWebSearchEnabled,
   normalizeLlmStyleEngineEnabled,
-  normalizeLlmBanditEnabled
+  normalizeLlmBanditEnabled,
+  normalizeEmergencyAutoSendEnabled
 };

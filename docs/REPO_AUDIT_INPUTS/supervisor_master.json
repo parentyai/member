@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T13:46:10-05:00",
-  "gitCommit": "c9c45b3bf5d7294eadc6d53945d5dd6e9cdd10c4",
-  "branch": "codex/dashboard-kpi-36m-default-and-billing-fix",
-  "sourceDigest": "3ba14a201c6502d77b7fadbba4ffe2c36bb779274ffdf20b0a450d4305f31f34",
+  "generatedAt": "2026-03-04T13:53:09-05:00",
+  "gitCommit": "5adc64ae97c1ecccba84443b09b2fee371aeaf85",
+  "branch": "main",
+  "sourceDigest": "ea194abfaf288179e21440f7e925a2100258136cc5293b74bba73fa069c32705",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
