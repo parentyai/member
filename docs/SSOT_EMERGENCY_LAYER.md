@@ -4,7 +4,8 @@ Emergency Layer（City Packとは別レイヤ）の add-only 契約。
 
 ## 1. Purpose
 - 全米公開APIを provider 単位で1回取得し、region差分だけを通知候補化する。
-- 送信は人手承認後のみ実行する。
+- 送信は事前承認済み `Emergency Rule` に一致した場合に自動実行する。
+- `approve` API は緊急退避導線として残す（通常導線は Rule 管理）。
 - 既存通知ガード（CTA=1 / link_registry必須 / WARN遮断 / 直URL禁止）を維持する。
 
 ## 2. Provider Contract
@@ -26,6 +27,7 @@ Default schedule:
 - `emergency_events_normalized`
 - `emergency_diffs`
 - `emergency_bulletins`
+- `emergency_rules`
 - `emergency_unmapped_events`
 
 ## 4. Region Resolution Contract
@@ -53,6 +55,10 @@ Routes:
 - `GET /api/admin/emergency/providers`
 - `POST /api/admin/emergency/providers/{providerKey}`
 - `POST /api/admin/emergency/providers/{providerKey}/force-refresh`
+- `GET /api/admin/emergency/rules`
+- `POST /api/admin/emergency/rules`
+- `POST /api/admin/emergency/rules/{ruleId}`
+- `POST /api/admin/emergency/rules/{ruleId}/preview`
 - `GET /api/admin/emergency/bulletins`
 - `GET /api/admin/emergency/bulletins/{bulletinId}`
 - `GET /api/admin/emergency/evidence/{bulletinId}`
@@ -65,11 +71,14 @@ UI pane:
 ## 7. Guardrails
 - kill switch優先: `systemFlagsRepo.getKillSwitch()` が true のとき fail-closed。
 - provider disabled 時は fetch/normalize対象外。
-- approve送信は既存 `createNotification -> sendNotification` 経路を使用。
+- auto dispatch は `ENABLE_EMERGENCY=1` かつ `system_flags.phase0.emergencyAutoSendEnabled=true` の二重ゲート。
+- auto dispatch は既存 `createNotification -> sendNotification` 経路を使用。
 - fan-out は `scenario(A-D) x step(3mo/1mo/week/after1w) = 16` 固定。
+- recipient 解決は `regionKey + membersOnly` を有効対象とし、`county/zip/role` は fail-closed（previewで明示）。
 - `officialLinkRegistryId` 未設定時は draft作成のみ（send不可）。
+- `rule.maxRecipients` と `maxRecipientsPerRun` を超える場合は fail-closed。
 
 ## 8. Audit/Trace
 - すべての job/admin action に `traceId` を付与。
 - `audit_logs` に `emergency.*` action を append-only 記録。
-
+- auto dispatch 監査では `ruleId/runId/dispatchReason/bypassFlags` を保持する。
