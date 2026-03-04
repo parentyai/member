@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T23:48:18-05:00",
-  "gitCommit": "a28d03d2af117e9223b40daf862a48a60c60c481",
-  "branch": "main",
-  "sourceDigest": "cfcfbeb306e7a03e6c0787434dd2a37a29dc7eebea76be59cd61d91cd45e5176",
+  "generatedAt": "2026-03-04T06:09:27-05:00",
+  "gitCommit": "3aacc2fd0487c566c7be8b7e46d78c1172027d09",
+  "branch": "codex/journey-meaning-unified-v1",
+  "sourceDigest": "85d8322e876368390e366e5fb10deb7f6771d8383c81076ddc2af034f1aeaafc",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
