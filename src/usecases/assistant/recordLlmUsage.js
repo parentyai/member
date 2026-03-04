@@ -63,6 +63,29 @@ function classifyBlockedReasonCategory(reason) {
   return 'other';
 }
 
+function normalizeAssistantQuality(input) {
+  const payload = input && typeof input === 'object' ? input : null;
+  if (!payload) return null;
+  const intentResolved = typeof payload.intentResolved === 'string' && payload.intentResolved.trim()
+    ? payload.intentResolved.trim()
+    : null;
+  const blockedStage = typeof payload.blockedStage === 'string' && payload.blockedStage.trim()
+    ? payload.blockedStage.trim()
+    : null;
+  const fallbackReason = typeof payload.fallbackReason === 'string' && payload.fallbackReason.trim()
+    ? payload.fallbackReason.trim()
+    : null;
+  const kbTopScore = Number.isFinite(Number(payload.kbTopScore)) ? Number(payload.kbTopScore) : 0;
+  const evidenceCoverage = Number.isFinite(Number(payload.evidenceCoverage)) ? Number(payload.evidenceCoverage) : 0;
+  return {
+    intentResolved,
+    kbTopScore,
+    evidenceCoverage,
+    blockedStage,
+    fallbackReason
+  };
+}
+
 async function recordLlmUsage(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const tokensIn = Math.max(0, toNumber(payload.tokensIn, 0));
@@ -74,6 +97,7 @@ async function recordLlmUsage(params) {
     : estimateCost(model, tokensIn, tokensOut);
   const createdAt = payload.createdAt || new Date().toISOString();
   const blockedReasonCategory = payload.blockedReasonCategory || classifyBlockedReasonCategory(payload.blockedReason);
+  const assistantQuality = normalizeAssistantQuality(payload.assistantQuality);
 
   const logResult = await llmUsageLogsRepo.appendLlmUsageLog({
     userId: payload.userId,
@@ -88,6 +112,7 @@ async function recordLlmUsage(params) {
     tokenUsed,
     costEstimate,
     model,
+    assistantQuality,
     createdAt
   });
 
@@ -106,6 +131,7 @@ async function recordLlmUsage(params) {
     logId: logResult && logResult.id ? logResult.id : null,
     costEstimate,
     blockedReasonCategory: blockedReasonCategory || null,
+    assistantQuality,
     stats
   };
 }

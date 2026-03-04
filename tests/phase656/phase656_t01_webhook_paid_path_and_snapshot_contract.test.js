@@ -251,6 +251,10 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
 
   const allowAudit = loaded.auditCalls.find((entry) => entry && entry.action === 'llm_gate.decision' && entry.payloadSummary && entry.payloadSummary.decision === 'allow');
   assert.ok(allowAudit, 'llm_gate.decision allow audit should be recorded');
+  assert.ok(allowAudit.payloadSummary.assistantQuality, 'assistantQuality must be attached');
+  assert.equal(typeof allowAudit.payloadSummary.assistantQuality.kbTopScore, 'number');
+  assert.equal(typeof allowAudit.payloadSummary.assistantQuality.evidenceCoverage, 'number');
+  assert.equal(allowAudit.payloadSummary.assistantQuality.intentResolved, 'situation_analysis');
 });
 
 test('phase656: snapshot strict mode blocks paid generation and falls back to free retrieval', async (t) => {
@@ -290,4 +294,7 @@ test('phase656: snapshot strict mode blocks paid generation and falls back to fr
   assert.ok(loaded.usageCalls.some((entry) => entry && entry.blockedReason === 'snapshot_stale'), 'snapshot_stale should be recorded in usage logs');
   const blockedAudit = loaded.auditCalls.find((entry) => entry && entry.action === 'llm_gate.decision' && entry.payloadSummary && entry.payloadSummary.blockedReason === 'snapshot_stale');
   assert.ok(blockedAudit, 'snapshot_stale should be recorded in llm_gate.decision audit');
+  assert.ok(blockedAudit.payloadSummary.assistantQuality, 'blocked audit should include assistantQuality');
+  assert.equal(blockedAudit.payloadSummary.assistantQuality.blockedStage, 'snapshot_gate');
+  assert.equal(blockedAudit.payloadSummary.assistantQuality.fallbackReason, 'snapshot_stale');
 });

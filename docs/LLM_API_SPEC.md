@@ -346,3 +346,40 @@
 - URLは本文末尾脚注 `(source: domain/path)` のみを許可する。
 - Mode AはURLを表示しない。
 - Mode B/Cのみ、許可ランクかつ上限内で表示する。
+
+## Phase720 Add-only Delta（Paid Assistant Quality）
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only field:
+  - `assistantQuality`
+    - `intentResolved`
+    - `kbTopScore`
+    - `evidenceCoverage`
+    - `blockedStage`
+    - `fallbackReason`
+
+### LLM usage log (collection=`llm_usage_logs`)
+- add-only field:
+  - `assistantQuality`
+    - `intentResolved`
+    - `kbTopScore`
+    - `evidenceCoverage`
+    - `blockedStage`
+    - `fallbackReason`
+
+### GET /api/admin/os/llm-usage/summary
+- `summary` add-only fields:
+  - `assistantQuality`
+    - `sampleCount`
+    - `avgKbTopScore`
+    - `avgEvidenceCoverage`
+    - `blockedStages[]`
+    - `fallbackReasons[]`
+    - `intents[]`
+    - `acceptedRateByIntent[]`
+  - `gateAuditBaseline`
+    - `callsTotal`
+    - `blockedCount`
+    - `acceptedRate`
+    - `blockedReasons[]`
+    - `blockedStages[]`

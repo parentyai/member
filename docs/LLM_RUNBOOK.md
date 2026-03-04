@@ -218,6 +218,35 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `per_user_daily_limit`
   - `global_qps_limit`
 - 変更履歴API:
+
+## Phase720 Addendum（Paid Assistant 品質運用）
+
+### 監査キー確認（action=`llm_gate.decision`）
+- `payloadSummary.assistantQuality.intentResolved`
+- `payloadSummary.assistantQuality.kbTopScore`
+- `payloadSummary.assistantQuality.evidenceCoverage`
+- `payloadSummary.assistantQuality.blockedStage`
+- `payloadSummary.assistantQuality.fallbackReason`
+
+### KPI確認（`GET /api/admin/os/llm-usage/summary?windowDays=7`）
+- `summary.assistantQuality.avgKbTopScore`
+- `summary.assistantQuality.avgEvidenceCoverage`
+- `summary.assistantQuality.acceptedRateByIntent[]`
+- `summary.gateAuditBaseline.acceptedRate`
+- `summary.gateAuditBaseline.blockedStages[]`
+
+### stg -> prod 段階解放（品質体験改善）
+1. stgで `ENABLE_PAID_INTENT_CLASSIFIER_V2=1` を適用する。
+2. 24時間観測し、以下を確認する。
+   - `citation_missing` と `template_violation` が直近7日基線より悪化していない。
+   - `summary.gateAuditBaseline.acceptedRate` が悪化していない。
+3. 異常時は `ENABLE_PAID_INTENT_CLASSIFIER_V2=0` で即時停止する。
+4. stg安定後に prod へ同一設定を反映する。
+
+### ロールバック
+- 即時: `ENABLE_PAID_INTENT_CLASSIFIER_V2=0`
+- 段階: 監視継続しつつ `llmConciergeEnabled=false` を併用
+- 完全: 変更PRをrevert
   - `GET /api/admin/os/llm-policy/history`
   - `GET /api/admin/llm/policy/history`（同ハンドラ）
 
