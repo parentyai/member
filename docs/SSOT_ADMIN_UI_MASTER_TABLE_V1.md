@@ -414,6 +414,21 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
             "to": "synced"
           },
           {
+            "event": "rule_upsert",
+            "from": "*",
+            "to": "configured"
+          },
+          {
+            "event": "rule_update",
+            "from": "configured",
+            "to": "configured"
+          },
+          {
+            "event": "rule_preview",
+            "from": "configured",
+            "to": "configured"
+          },
+          {
             "event": "bulletin_approve",
             "from": "draft",
             "to": "approved"
@@ -450,6 +465,30 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
           "handlerFile": "src/routes/admin/emergencyLayer.js"
         },
         {
+          "actionKey": "emergency.rule.upsert",
+          "method": "POST",
+          "pathPattern": "/api/admin/emergency/rules",
+          "dangerClass": "rule_upsert",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
+        },
+        {
+          "actionKey": "emergency.rule.update",
+          "method": "POST",
+          "pathPattern": "/api/admin/emergency/rules/:ruleId",
+          "dangerClass": "rule_update",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
+        },
+        {
+          "actionKey": "emergency.rule.preview",
+          "method": "POST",
+          "pathPattern": "/api/admin/emergency/rules/:ruleId/preview",
+          "dangerClass": "rule_preview",
+          "workbenchZoneRequired": true,
+          "handlerFile": "src/routes/admin/emergencyLayer.js"
+        },
+        {
           "actionKey": "emergency.bulletin.approve",
           "method": "POST",
           "pathPattern": "/api/admin/emergency/bulletins/:bulletinId/approve",
@@ -470,6 +509,9 @@ Admin UI の危険操作フローを定義する単一SSOT（add-only）。
         "auditActionHints": [
           "emergency.provider.update",
           "emergency.provider.force_refresh",
+          "emergency.rule.upsert",
+          "emergency.rule.update",
+          "emergency.rule.preview",
           "emergency.bulletin.approve",
           "emergency.bulletin.reject"
         ],
