@@ -79,6 +79,49 @@ function normalizeRewardSignals(value) {
   };
 }
 
+function normalizeContextualFeatures(value) {
+  if (!value || typeof value !== 'object') return null;
+  return {
+    featureVersion: normalizeString(value.featureVersion, 'bandit_ctx_v1'),
+    journeyPhase: normalizeString(value.journeyPhase, 'pre'),
+    tier: normalizeString(value.tier, 'free'),
+    mode: normalizeString(value.mode, 'A'),
+    topic: normalizeString(value.topic, 'general'),
+    riskBucket: normalizeString(value.riskBucket, 'low'),
+    evidenceNeed: normalizeString(value.evidenceNeed, 'none'),
+    styleId: normalizeString(value.styleId, null),
+    ctaCount: Math.max(0, Math.floor(normalizeNumber(value.ctaCount, 0))),
+    lengthBucket: normalizeString(value.lengthBucket, 'short'),
+    timingBucket: normalizeString(value.timingBucket, 'daytime'),
+    questionFlag: value.questionFlag === true,
+    intentConfidence: normalizeNumber(value.intentConfidence, 0),
+    contextConfidence: normalizeNumber(value.contextConfidence, 0),
+    intentConfidenceBucket: normalizeString(value.intentConfidenceBucket, 'low'),
+    contextConfidenceBucket: normalizeString(value.contextConfidenceBucket, 'low'),
+    taskLoadBucket: normalizeString(value.taskLoadBucket, 'none'),
+    topTaskCount: Math.max(0, Math.floor(normalizeNumber(value.topTaskCount, 0))),
+    blockedTaskPresent: value.blockedTaskPresent === true,
+    dueSoonTaskPresent: value.dueSoonTaskPresent === true
+  };
+}
+
+function normalizeCounterfactualTopArms(value) {
+  const rows = Array.isArray(value) ? value : [];
+  return rows
+    .slice(0, 5)
+    .map((item, index) => {
+      const row = item && typeof item === 'object' ? item : {};
+      return {
+        rank: Number.isFinite(Number(row.rank)) ? Math.max(1, Math.floor(Number(row.rank))) : index + 1,
+        armId: normalizeString(row.armId, null),
+        styleId: normalizeString(row.styleId, null),
+        ctaCount: Math.max(0, Math.floor(normalizeNumber(row.ctaCount, 0))),
+        score: normalizeNumber(row.score, 0)
+      };
+    })
+    .filter((row) => row.armId);
+}
+
 async function appendLlmActionLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
@@ -119,6 +162,12 @@ async function appendLlmActionLog(params) {
           modified: payload.postRenderLint.modified === true
         }
       : { findings: [], modified: false },
+    contextualFeatures: normalizeContextualFeatures(payload.contextualFeatures),
+    counterfactualSelectedArmId: normalizeString(payload.counterfactualSelectedArmId, null),
+    counterfactualSelectedRank: Number.isFinite(Number(payload.counterfactualSelectedRank))
+      ? Math.max(1, Math.floor(Number(payload.counterfactualSelectedRank)))
+      : null,
+    counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms),
     rewardPending: payload.rewardPending !== false,
     reward: Number.isFinite(Number(payload.reward)) ? Number(payload.reward) : null,
     rewardVersion: normalizeString(payload.rewardVersion, 'v1'),

@@ -549,6 +549,18 @@ async function appendLlmGateDecisionBestEffort(data) {
         postRenderLint: conciergeMeta && conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
           ? conciergeMeta.postRenderLint
           : { findings: [], modified: false },
+        contextualFeatures: conciergeMeta && conciergeMeta.contextualFeatures && typeof conciergeMeta.contextualFeatures === 'object'
+          ? conciergeMeta.contextualFeatures
+          : null,
+        counterfactualSelectedArmId: conciergeMeta && typeof conciergeMeta.counterfactualSelectedArmId === 'string'
+          ? conciergeMeta.counterfactualSelectedArmId
+          : null,
+        counterfactualSelectedRank: conciergeMeta && Number.isFinite(Number(conciergeMeta.counterfactualSelectedRank))
+          ? Number(conciergeMeta.counterfactualSelectedRank)
+          : null,
+        counterfactualTopArms: conciergeMeta && Array.isArray(conciergeMeta.counterfactualTopArms)
+          ? conciergeMeta.counterfactualTopArms
+          : [],
         assistantQuality
       }
     });
@@ -617,6 +629,18 @@ async function appendLlmActionLogBestEffort(data) {
       postRenderLint: conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
         ? conciergeMeta.postRenderLint
         : { findings: [], modified: false },
+      contextualFeatures: conciergeMeta.contextualFeatures && typeof conciergeMeta.contextualFeatures === 'object'
+        ? conciergeMeta.contextualFeatures
+        : null,
+      counterfactualSelectedArmId: typeof conciergeMeta.counterfactualSelectedArmId === 'string'
+        ? conciergeMeta.counterfactualSelectedArmId
+        : null,
+      counterfactualSelectedRank: Number.isFinite(Number(conciergeMeta.counterfactualSelectedRank))
+        ? Number(conciergeMeta.counterfactualSelectedRank)
+        : null,
+      counterfactualTopArms: Array.isArray(conciergeMeta.counterfactualTopArms)
+        ? conciergeMeta.counterfactualTopArms
+        : [],
       rewardPending: true,
       reward: null,
       rewardVersion: 'v1',
@@ -728,7 +752,11 @@ async function replyWithFreeRetrieval(params) {
         chosenAction: null,
         contextVersion: 'concierge_ctx_v1',
         featureHash: null,
-        postRenderLint: { findings: [], modified: false }
+        postRenderLint: { findings: [], modified: false },
+        contextualFeatures: null,
+        counterfactualSelectedArmId: null,
+        counterfactualSelectedRank: null,
+        counterfactualTopArms: []
       };
     }
   }
@@ -1191,7 +1219,11 @@ async function handleAssistantMessage(params) {
         chosenAction: null,
         contextVersion: 'concierge_ctx_v1',
         featureHash: null,
-        postRenderLint: { findings: [], modified: false }
+        postRenderLint: { findings: [], modified: false },
+        contextualFeatures: null,
+        counterfactualSelectedArmId: null,
+        counterfactualSelectedRank: null,
+        counterfactualTopArms: []
       };
     }
   }
