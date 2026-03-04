@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T06:09:27-05:00",
-  "gitCommit": "3aacc2fd0487c566c7be8b7e46d78c1172027d09",
-  "branch": "codex/journey-meaning-unified-v1",
-  "sourceDigest": "85d8322e876368390e366e5fb10deb7f6771d8383c81076ddc2af034f1aeaafc",
+  "generatedAt": "2026-03-04T08:18:02-05:00",
+  "gitCommit": "5fc6bbc1b665101da113502a132dfff3de735cf8",
+  "branch": "codex/dashboard-kpi-snapshot-refresh-v1",
+  "sourceDigest": "06faad706de0de05d2b39c2d7ef14a709721919ec270099a6988690decb47c52",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
