@@ -221,6 +221,16 @@
     ]
   },
   {
+    "collection": "emergency_rules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyRulesRepo.js:7"
+    ]
+  },
+  {
     "collection": "emergency_snapshots",
     "kind": "evidence",
     "recomputable": false,

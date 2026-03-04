@@ -21,6 +21,7 @@
     "emergencyDiffsRepo",
     "emergencyEventsRepo",
     "emergencyProvidersRepo",
+    "emergencyRulesRepo",
     "emergencySnapshotsRepo",
     "emergencyUnmappedEventsRepo",
     "eventsRepo",

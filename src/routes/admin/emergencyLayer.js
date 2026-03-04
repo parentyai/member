@@ -1,6 +1,7 @@
 'use strict';
 
 const emergencyProvidersRepo = require('../../repos/firestore/emergencyProvidersRepo');
+const emergencyRulesRepo = require('../../repos/firestore/emergencyRulesRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const {
   listEmergencyProviders,
@@ -14,6 +15,7 @@ const { fetchProviderSnapshot } = require('../../usecases/emergency/fetchProvide
 const { normalizeAndDiffProvider } = require('../../usecases/emergency/normalizeAndDiffProvider');
 const { summarizeDraftWithLLM } = require('../../usecases/emergency/summarizeDraftWithLLM');
 const { approveEmergencyBulletin } = require('../../usecases/emergency/approveEmergencyBulletin');
+const { previewEmergencyRule } = require('../../usecases/emergency/previewEmergencyRule');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
   resolveActor,
@@ -32,6 +34,22 @@ function parseProviderPath(pathname) {
   const match = pathname.match(/^\/api\/admin\/emergency\/providers\/([^/]+)$/);
   if (!match) return null;
   return decodeURIComponent(match[1]).trim().toLowerCase();
+}
+
+function parseRulesPath(pathname) {
+  return pathname === '/api/admin/emergency/rules';
+}
+
+function parseRulePath(pathname) {
+  const match = pathname.match(/^\/api\/admin\/emergency\/rules\/([^/]+)$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]).trim();
+}
+
+function parseRulePreviewPath(pathname) {
+  const match = pathname.match(/^\/api\/admin\/emergency\/rules\/([^/]+)\/preview$/);
+  if (!match) return null;
+  return decodeURIComponent(match[1]).trim();
 }
 
 function parseProviderForcePath(pathname) {
@@ -66,6 +84,102 @@ async function handleListProviders(req, res, context) {
     traceId: context.traceId
   });
   writeJson(res, 200, result);
+}
+
+function parseBooleanQuery(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return null;
+}
+
+async function handleListRules(req, res, context) {
+  const url = new URL(req.url, 'http://localhost');
+  const result = await emergencyRulesRepo.listRules({
+    providerKey: url.searchParams.get('providerKey'),
+    enabled: parseBooleanQuery(url.searchParams.get('enabled')),
+    limit: url.searchParams.get('limit')
+  });
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    items: result
+  });
+}
+
+async function handleUpsertRule(req, res, bodyText, context, ruleId) {
+  const payload = bodyText ? parseJson(bodyText, res) : {};
+  if (bodyText && !payload) return;
+  const actionKey = ruleId ? 'emergency.rule.update' : 'emergency.rule.upsert';
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey,
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
+  const item = await emergencyRulesRepo.upsertRule(ruleId || payload.ruleId, Object.assign({}, payload, {
+    traceId: context.traceId
+  }), context.actor);
+  await appendAuditLog({
+    actor: context.actor,
+    action: actionKey,
+    entityType: 'emergency_rule',
+    entityId: item && item.ruleId ? item.ruleId : (ruleId || payload.ruleId || 'unknown'),
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      providerKey: item && item.providerKey ? item.providerKey : null,
+      eventType: item && item.eventType ? item.eventType : null,
+      enabled: item && item.enabled === true,
+      autoSend: item && item.autoSend === true
+    }
+  });
+  writeJson(res, 200, {
+    ok: true,
+    traceId: context.traceId,
+    item
+  });
+}
+
+async function handlePreviewRule(req, res, bodyText, context, ruleId) {
+  const payload = bodyText ? parseJson(bodyText, res) : {};
+  if (bodyText && !payload) return;
+  const guard = await enforceManagedFlowGuard({
+    req,
+    res,
+    actionKey: 'emergency.rule.preview',
+    payload
+  });
+  if (!guard) return;
+  context.actor = guard.actor || context.actor;
+  context.traceId = guard.traceId || context.traceId;
+  const result = await previewEmergencyRule({
+    ruleId,
+    bulletinId: payload.bulletinId,
+    limit: payload.limit,
+    traceId: context.traceId
+  });
+  await appendAuditLog({
+    actor: context.actor,
+    action: 'emergency.rule.preview',
+    entityType: 'emergency_rule',
+    entityId: ruleId,
+    traceId: context.traceId,
+    requestId: context.requestId,
+    payloadSummary: {
+      ok: result && result.ok === true,
+      matchCount: result && Number.isFinite(Number(result.matchCount)) ? Number(result.matchCount) : 0
+    }
+  });
+  if (!result || result.ok !== true) {
+    writeJson(res, result && result.reason === 'rule_not_found' ? 404 : 400, Object.assign({ traceId: context.traceId }, result || { ok: false, error: 'preview_failed' }));
+    return;
+  }
+  writeJson(res, 200, Object.assign({ traceId: context.traceId }, result));
 }
 
 async function handleUpdateProvider(req, res, bodyText, context, providerKey) {
@@ -254,11 +368,29 @@ async function handleEmergencyLayer(req, res, bodyText) {
     traceId: resolveTraceId(req)
   };
   try {
+    if (req.method === 'GET' && parseRulesPath(pathname)) {
+      await handleListRules(req, res, context);
+      return;
+    }
     if (req.method === 'GET' && pathname === '/api/admin/emergency/providers') {
       await handleListProviders(req, res, context);
       return;
     }
     if (req.method === 'POST') {
+      if (parseRulesPath(pathname)) {
+        await handleUpsertRule(req, res, bodyText, context, null);
+        return;
+      }
+      const rulePreviewId = parseRulePreviewPath(pathname);
+      if (rulePreviewId) {
+        await handlePreviewRule(req, res, bodyText, context, rulePreviewId);
+        return;
+      }
+      const ruleId = parseRulePath(pathname);
+      if (ruleId) {
+        await handleUpsertRule(req, res, bodyText, context, ruleId);
+        return;
+      }
       const providerKey = parseProviderPath(pathname);
       if (providerKey) {
         await handleUpdateProvider(req, res, bodyText, context, providerKey);

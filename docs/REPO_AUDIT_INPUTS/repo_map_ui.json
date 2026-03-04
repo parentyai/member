@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "961e1adf700cccc18cc7d06edcc07fb3dea34636",
+      "hash": "b79e870e65dbd1b6ae2d3cf671d807131f244396",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1096
+    "testCount": 1097
   },
   "systemOverview": {
     "what": [
@@ -2028,9 +2028,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyEventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyProvidersRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyRulesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencySnapshotsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyUnmappedEventsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyUnmappedEventsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
@@ -6886,7 +6886,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 101,
+              "testsCount": 102,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6907,9 +6907,9 @@
                 "emergencyDiffsRepo",
                 "emergencyEventsRepo",
                 "emergencyProvidersRepo",
+                "emergencyRulesRepo",
                 "emergencySnapshotsRepo",
-                "emergencyUnmappedEventsRepo",
-                "linkRegistryRepo"
+                "emergencyUnmappedEventsRepo"
               ],
               "relatedCollections": [
                 "audit_logs",
@@ -6917,9 +6917,9 @@
                 "emergency_diffs",
                 "emergency_events_normalized",
                 "emergency_providers",
+                "emergency_rules",
                 "emergency_snapshots",
-                "emergency_unmapped_events",
-                "link_registry"
+                "emergency_unmapped_events"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",

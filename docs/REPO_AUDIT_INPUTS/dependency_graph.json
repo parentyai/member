@@ -452,6 +452,11 @@
       "usersRepo"
     ],
     "planTaskRulesTemplateSet": [],
+    "previewEmergencyRule": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
+      "emergencyRulesRepo"
+    ],
     "previewNotification": [
       "linkRegistryRepo",
       "notificationsRepo"
@@ -686,6 +691,9 @@
     "emergencyProvidersRepo": [
       "emergency_providers"
     ],
+    "emergencyRulesRepo": [
+      "emergency_rules"
+    ],
     "emergencySnapshotsRepo": [
       "emergency_snapshots"
     ],
@@ -917,6 +925,7 @@
       "listEmergencyBulletins",
       "listEmergencyProviders",
       "normalizeAndDiffProvider",
+      "previewEmergencyRule",
       "rejectEmergencyBulletin",
       "summarizeDraftWithLLM",
       "updateEmergencyProvider"
