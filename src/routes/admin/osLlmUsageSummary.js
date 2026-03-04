@@ -1,6 +1,7 @@
 'use strict';
 
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
+const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
@@ -149,6 +150,123 @@ function buildDecisionBreakdown(rows) {
     .sort((a, b) => b.count - a.count);
 }
 
+function extractAssistantQuality(row) {
+  const quality = row && row.assistantQuality && typeof row.assistantQuality === 'object'
+    ? row.assistantQuality
+    : null;
+  if (!quality) return null;
+  return {
+    intentResolved: typeof quality.intentResolved === 'string' ? quality.intentResolved.trim() : '',
+    kbTopScore: Number.isFinite(Number(quality.kbTopScore)) ? Number(quality.kbTopScore) : null,
+    evidenceCoverage: Number.isFinite(Number(quality.evidenceCoverage)) ? Number(quality.evidenceCoverage) : null,
+    blockedStage: typeof quality.blockedStage === 'string' ? quality.blockedStage.trim() : '',
+    fallbackReason: typeof quality.fallbackReason === 'string' ? quality.fallbackReason.trim() : ''
+  };
+}
+
+function sortCountEntries(map, keyName, limit) {
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : 20;
+  return Array.from(map.entries())
+    .map(([key, count]) => ({ [keyName]: key, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, cap);
+}
+
+function buildAssistantQualitySummary(rows) {
+  const source = Array.isArray(rows) ? rows : [];
+  const sampleRows = source
+    .map((row) => ({ row, quality: extractAssistantQuality(row) }))
+    .filter((entry) => Boolean(entry.quality));
+  const sampleCount = sampleRows.length;
+  const kbScores = sampleRows
+    .map((entry) => entry.quality.kbTopScore)
+    .filter((value) => Number.isFinite(value));
+  const evidenceCoverageValues = sampleRows
+    .map((entry) => entry.quality.evidenceCoverage)
+    .filter((value) => Number.isFinite(value));
+  const blockedStageMap = new Map();
+  const fallbackReasonMap = new Map();
+  const intentMap = new Map();
+  const intentDecisionMap = new Map();
+
+  sampleRows.forEach((entry) => {
+    const quality = entry.quality;
+    const row = entry.row || {};
+    const blockedStage = quality.blockedStage || 'none';
+    const fallbackReason = quality.fallbackReason || 'none';
+    const intentResolved = quality.intentResolved || 'unknown';
+    blockedStageMap.set(blockedStage, (blockedStageMap.get(blockedStage) || 0) + 1);
+    fallbackReasonMap.set(fallbackReason, (fallbackReasonMap.get(fallbackReason) || 0) + 1);
+    intentMap.set(intentResolved, (intentMap.get(intentResolved) || 0) + 1);
+    const decision = String(row && row.decision ? row.decision : '').toLowerCase() || 'unknown';
+    const current = intentDecisionMap.get(intentResolved) || { calls: 0, blocked: 0 };
+    current.calls += 1;
+    if (decision !== 'allow') current.blocked += 1;
+    intentDecisionMap.set(intentResolved, current);
+  });
+
+  const acceptedRateByIntent = Array.from(intentDecisionMap.entries())
+    .map(([intentResolved, stat]) => ({
+      intentResolved,
+      calls: stat.calls,
+      blocked: stat.blocked,
+      acceptedRate: stat.calls > 0
+        ? Math.round(((stat.calls - stat.blocked) / stat.calls) * 10000) / 10000
+        : 0
+    }))
+    .sort((a, b) => b.calls - a.calls)
+    .slice(0, 10);
+
+  return {
+    sampleCount,
+    avgKbTopScore: kbScores.length
+      ? Math.round((kbScores.reduce((sum, value) => sum + value, 0) / kbScores.length) * 10000) / 10000
+      : 0,
+    avgEvidenceCoverage: evidenceCoverageValues.length
+      ? Math.round((evidenceCoverageValues.reduce((sum, value) => sum + value, 0) / evidenceCoverageValues.length) * 10000) / 10000
+      : 0,
+    blockedStages: sortCountEntries(blockedStageMap, 'blockedStage', 20),
+    fallbackReasons: sortCountEntries(fallbackReasonMap, 'fallbackReason', 20),
+    intents: sortCountEntries(intentMap, 'intentResolved', 20),
+    acceptedRateByIntent
+  };
+}
+
+function buildGateAuditBaseline(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const filtered = list
+    .map((row) => (row && row.payloadSummary && typeof row.payloadSummary === 'object' ? row.payloadSummary : null))
+    .filter(Boolean);
+  const callsTotal = filtered.length;
+  const blockedReasons = new Map();
+  const blockedStages = new Map();
+  let allowCount = 0;
+  filtered.forEach((summary) => {
+    const decision = String(summary.decision || '').toLowerCase();
+    if (decision === 'allow') {
+      allowCount += 1;
+      return;
+    }
+    const reason = normalizeReason(summary.blockedReason);
+    blockedReasons.set(reason, (blockedReasons.get(reason) || 0) + 1);
+    const quality = summary.assistantQuality && typeof summary.assistantQuality === 'object'
+      ? summary.assistantQuality
+      : null;
+    const stage = quality && typeof quality.blockedStage === 'string' && quality.blockedStage.trim()
+      ? quality.blockedStage.trim()
+      : 'none';
+    blockedStages.set(stage, (blockedStages.get(stage) || 0) + 1);
+  });
+  const blockedCount = callsTotal - allowCount;
+  return {
+    callsTotal,
+    blockedCount,
+    acceptedRate: callsTotal > 0 ? Math.round((allowCount / callsTotal) * 10000) / 10000 : 0,
+    blockedReasons: sortCountEntries(blockedReasons, 'reason', 20),
+    blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20)
+  };
+}
+
 function buildMaskedTopUsers(rows, limit) {
   return buildTopUsers(rows, limit).map((row) => Object.assign({}, row, {
     userIdMasked: maskLineUserId(row.userId)
@@ -176,6 +294,21 @@ async function handleLlmUsageSummary(req, res) {
       toAt,
       limit: scanLimit
     });
+    let gateAuditRows = [];
+    try {
+      const rawAuditRows = await auditLogsRepo.listAuditLogs({
+        action: 'llm_gate.decision',
+        limit: scanLimit
+      });
+      const fromMs = fromAt.getTime();
+      const toMs = toAt.getTime();
+      gateAuditRows = (Array.isArray(rawAuditRows) ? rawAuditRows : []).filter((row) => {
+        const ms = toMillis(row && row.createdAt);
+        return Number.isFinite(ms) && ms >= fromMs && ms <= toMs;
+      });
+    } catch (_err) {
+      gateAuditRows = [];
+    }
 
     const callsTotal = Array.isArray(rows) ? rows.length : 0;
     const tokensTotal = sumBy(rows, (row) => row && row.tokenUsed);
@@ -198,7 +331,9 @@ async function handleLlmUsageSummary(req, res) {
       topUsers: buildTopUsers(rows, limit),
       maskedTopUsers: buildMaskedTopUsers(rows, limit),
       byPlan: buildPlanBreakdown(rows),
-      byDecision: buildDecisionBreakdown(rows)
+      byDecision: buildDecisionBreakdown(rows),
+      assistantQuality: buildAssistantQualitySummary(rows),
+      gateAuditBaseline: buildGateAuditBaseline(gateAuditRows)
     };
 
     await appendAuditLog({
@@ -245,5 +380,7 @@ module.exports = {
   buildMaskedTopUsers,
   buildPlanBreakdown,
   buildDecisionBreakdown,
+  buildAssistantQualitySummary,
+  buildGateAuditBaseline,
   maskLineUserId
 };

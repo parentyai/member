@@ -32,6 +32,22 @@ function normalizeNumber(value, fallback) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function normalizeAssistantQuality(value) {
+  if (!value || typeof value !== 'object') return null;
+  const intentResolved = normalizeString(value.intentResolved, null);
+  const blockedStage = normalizeString(value.blockedStage, null);
+  const fallbackReason = normalizeString(value.fallbackReason, null);
+  const kbTopScore = normalizeNumber(value.kbTopScore, 0);
+  const evidenceCoverage = normalizeNumber(value.evidenceCoverage, 0);
+  return {
+    intentResolved,
+    kbTopScore,
+    evidenceCoverage,
+    blockedStage,
+    fallbackReason
+  };
+}
+
 async function appendLlmUsageLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
@@ -51,6 +67,7 @@ async function appendLlmUsageLog(params) {
       ? null
       : normalizeString(payload.blockedReasonCategory, null),
     model: typeof payload.model === 'string' && payload.model.trim() ? payload.model.trim() : null,
+    assistantQuality: normalizeAssistantQuality(payload.assistantQuality),
     createdAt: payload.createdAt || serverTimestamp()
   };
   await docRef.set(data, { merge: false });

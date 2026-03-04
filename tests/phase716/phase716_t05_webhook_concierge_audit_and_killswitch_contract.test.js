@@ -243,6 +243,10 @@ test('phase716: concierge enabled appends citation footer and audit meta keys', 
   assert.ok(Array.isArray(summary.guardDecisions));
   assert.ok(Array.isArray(summary.blockedReasons));
   assert.equal(typeof summary.injectionFindings, 'boolean');
+  assert.ok(summary.assistantQuality);
+  assert.equal(typeof summary.assistantQuality.kbTopScore, 'number');
+  assert.equal(typeof summary.assistantQuality.evidenceCoverage, 'number');
+  assert.equal(summary.assistantQuality.blockedStage, 'plan_gate');
 });
 
 test('phase716: concierge kill-switch OFF keeps retrieval fallback without compose', async (t) => {
@@ -280,4 +284,6 @@ test('phase716: concierge kill-switch OFF keeps retrieval fallback without compo
   assert.equal(summary.mode, null);
   assert.equal(summary.urlCount, 0);
   assert.deepEqual(summary.citationRanks, []);
+  assert.ok(summary.assistantQuality);
+  assert.equal(summary.assistantQuality.blockedStage, 'plan_gate');
 });

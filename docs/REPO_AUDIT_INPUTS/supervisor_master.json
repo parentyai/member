@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T19:48:41-05:00",
-  "gitCommit": "e4f41630b18288f79735e2aaca314f6f317be7ae",
-  "branch": "codex/conversation-architecture-engine-v1",
-  "sourceDigest": "0dc7a3f143c2ffcb93217c39b8d40a12da68b0d12af652a8305956060e6a8fd0",
+  "generatedAt": "2026-03-03T19:55:42-05:00",
+  "gitCommit": "ebe33b879898daed6d990f09f444aa7d27c8c655",
+  "branch": "main",
+  "sourceDigest": "7d3061c1193c7efe44d7bed4db914db2d829240699bbe6c26ccdbfa362dae55a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

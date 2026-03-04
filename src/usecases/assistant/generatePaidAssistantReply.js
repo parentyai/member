@@ -27,10 +27,98 @@ const PAID_INTENTS = Object.freeze([
 const PAID_INTENT_ALIASES = Object.freeze({
   next_action: 'next_action_generation'
 });
+const INTENT_V2_KEYWORDS = Object.freeze({
+  situation_analysis: [
+    '状況',
+    '整理',
+    '把握',
+    '分析',
+    '全体像',
+    '要約',
+    'overview',
+    'summary',
+    'analyze'
+  ],
+  gap_check: [
+    '抜け漏れ',
+    '漏れ',
+    '不足',
+    '足りない',
+    '見落とし',
+    'チェック',
+    'checklist',
+    'missing'
+  ],
+  timeline_build: [
+    '時系列',
+    '期限',
+    '締切',
+    '締め切り',
+    'いつまで',
+    'スケジュール',
+    '日程',
+    'timeline',
+    'schedule',
+    'due'
+  ],
+  next_action_generation: [
+    '次',
+    'まず',
+    '何を',
+    'やること',
+    '対応',
+    '行動',
+    'next action',
+    'todo',
+    'step'
+  ],
+  risk_alert: [
+    'リスク',
+    '危険',
+    '注意',
+    '懸念',
+    '不安',
+    '問題',
+    'トラブル',
+    'risk',
+    'warning'
+  ]
+});
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeIntentText(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[。、，,！？!?:;；]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeIntentFeatureFlag(value, defaultValue) {
+  const text = normalizeText(value).toLowerCase();
+  if (!text) return defaultValue === true;
+  if (['1', 'true', 'on', 'yes'].includes(text)) return true;
+  if (['0', 'false', 'off', 'no'].includes(text)) return false;
+  return defaultValue === true;
+}
+
+function isIntentClassifierV2Enabled(env) {
+  const source = env && typeof env === 'object' ? env : process.env;
+  return normalizeIntentFeatureFlag(source.ENABLE_PAID_INTENT_CLASSIFIER_V2, true);
+}
+
+function scoreIntentV2(text, keywords) {
+  const normalized = normalizeIntentText(text);
+  if (!normalized) return 0;
+  return keywords.reduce((score, keyword) => {
+    const token = normalizeIntentText(keyword);
+    if (!token) return score;
+    return normalized.includes(token) ? score + 1 : score;
+  }, 0);
 }
 
 function detectExplicitPaidIntent(text) {
@@ -44,8 +132,29 @@ function detectExplicitPaidIntent(text) {
   return null;
 }
 
-function classifyPaidIntent(text) {
-  return detectExplicitPaidIntent(text) || 'situation_analysis';
+function detectKeywordIntentV2(text) {
+  const scores = Object.entries(INTENT_V2_KEYWORDS).map(([intent, keywords]) => ({
+    intent,
+    score: scoreIntentV2(text, keywords)
+  }));
+  scores.sort((left, right) => {
+    if (right.score !== left.score) return right.score - left.score;
+    return PAID_INTENTS.indexOf(left.intent) - PAID_INTENTS.indexOf(right.intent);
+  });
+  if (!scores.length || scores[0].score <= 0) return null;
+  const top = scores[0];
+  const second = scores[1] || { score: 0 };
+  // Require a small confidence margin to avoid ambiguous intent flips.
+  if (top.score < 2 && top.score <= second.score) return null;
+  return top.intent;
+}
+
+function classifyPaidIntent(text, options) {
+  const explicit = detectExplicitPaidIntent(text);
+  if (explicit) return explicit;
+  const env = options && typeof options === 'object' ? options.env : null;
+  if (!isIntentClassifierV2Enabled(env)) return 'situation_analysis';
+  return detectKeywordIntentV2(text) || 'situation_analysis';
 }
 
 function normalizePaidIntent(value) {
@@ -68,6 +177,25 @@ function sanitizeList(values, limit) {
   return out.slice(0, limit);
 }
 
+function normalizeActionDedupeKey(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[()\[\]{}「」『』【】]/g, '')
+    .replace(/\s+/g, '');
+}
+
+function collectEvidenceKeysFromNextActions(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const extracted = [];
+  rows.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const evidenceKey = normalizeText(item.evidenceKey || item.citation || item.sourceId || item.sourceKey);
+    if (!evidenceKey) return;
+    extracted.push(evidenceKey);
+  });
+  return sanitizeList(extracted, MAX_EVIDENCE_KEYS);
+}
+
 function ensureNextActionCitation(text, fallbackCitation) {
   const normalized = normalizeText(text);
   if (!normalized) return '';
@@ -81,11 +209,14 @@ function normalizeNextActions(value, evidenceKeys, limit) {
   const list = Array.isArray(value) ? value : [];
   const out = [];
   const fallbackCitation = evidenceKeys[0] || '';
+  const dedupe = new Set();
   list.forEach((item) => {
     if (out.length >= limit) return;
     if (typeof item === 'string') {
       const normalized = ensureNextActionCitation(item, fallbackCitation);
-      if (!normalized || out.includes(normalized)) return;
+      const dedupeKey = normalizeActionDedupeKey(normalized);
+      if (!normalized || !dedupeKey || dedupe.has(dedupeKey)) return;
+      dedupe.add(dedupeKey);
       out.push(normalized);
       return;
     }
@@ -94,7 +225,9 @@ function normalizeNextActions(value, evidenceKeys, limit) {
     if (!action) return;
     const citation = normalizeText(item.evidenceKey || item.citation || item.sourceId || fallbackCitation);
     const normalized = ensureNextActionCitation(action, citation);
-    if (!normalized || out.includes(normalized)) return;
+    const dedupeKey = normalizeActionDedupeKey(normalized);
+    if (!normalized || !dedupeKey || dedupe.has(dedupeKey)) return;
+    dedupe.add(dedupeKey);
     out.push(normalized);
   });
   return out.slice(0, limit);
@@ -229,6 +362,24 @@ function resolveContextSummary(contextSnapshot, personalizedContext) {
   return parts.join(', ');
 }
 
+function computeEvidenceCoverage(evidenceKeys, allowedSet) {
+  const keys = Array.isArray(evidenceKeys) ? evidenceKeys.map((item) => normalizeText(item)).filter(Boolean) : [];
+  if (!keys.length || !allowedSet || typeof allowedSet.has !== 'function') return 0;
+  const matchedCount = keys.filter((key) => allowedSet.has(key)).length;
+  return Number((matchedCount / keys.length).toFixed(4));
+}
+
+function buildAssistantQualitySnapshot(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return {
+    intentResolved: normalizeText(payload.intentResolved) || null,
+    kbTopScore: Number.isFinite(Number(payload.kbTopScore)) ? Number(payload.kbTopScore) : 0,
+    evidenceCoverage: Number.isFinite(Number(payload.evidenceCoverage)) ? Number(payload.evidenceCoverage) : 0,
+    blockedStage: normalizeText(payload.blockedStage) || null,
+    fallbackReason: normalizeText(payload.fallbackReason) || null
+  };
+}
+
 function buildPrompt(question, intent, kbCandidates, contextSnapshot, personalizedContext, constraints) {
   const compactedSnapshot = compactSnapshot(contextSnapshot);
   const contextSummary = resolveContextSummary(contextSnapshot, personalizedContext);
@@ -265,8 +416,9 @@ function buildPrompt(question, intent, kbCandidates, contextSnapshot, personaliz
   };
 }
 
-function normalizeAssistantOutput(raw, intent, constraints) {
+function normalizeAssistantOutput(raw, intent, constraints, options) {
   const payload = raw && typeof raw === 'object' ? raw : {};
+  const context = options && typeof options === 'object' ? options : {};
   const maxNextActions = Number.isFinite(Number(constraints && constraints.max_next_actions))
     ? Number(constraints.max_next_actions)
     : DEFAULT_OUTPUT_CONSTRAINTS.max_next_actions;
@@ -276,7 +428,12 @@ function normalizeAssistantOutput(raw, intent, constraints) {
   const maxRisks = Number.isFinite(Number(constraints && constraints.max_risks))
     ? Number(constraints.max_risks)
     : DEFAULT_OUTPUT_CONSTRAINTS.max_risks;
-  const evidenceKeys = sanitizeList(payload.evidenceKeys || payload.citations, MAX_EVIDENCE_KEYS);
+  const rawActions = payload.nextActions || payload.next_actions;
+  const fallbackEvidenceKeys = sanitizeList(context.fallbackEvidenceKeys, MAX_EVIDENCE_KEYS);
+  const extractedEvidenceKeys = collectEvidenceKeysFromNextActions(rawActions);
+  const explicitEvidenceKeys = sanitizeList(payload.evidenceKeys || payload.citations, MAX_EVIDENCE_KEYS);
+  const mergedEvidenceKeys = sanitizeList([].concat(explicitEvidenceKeys, extractedEvidenceKeys), MAX_EVIDENCE_KEYS);
+  const evidenceKeys = mergedEvidenceKeys.length ? mergedEvidenceKeys : fallbackEvidenceKeys.slice(0, 1);
   const normalized = {
     schemaId: PAID_ASSISTANT_REPLY_SCHEMA_ID,
     generatedAt: new Date().toISOString(),
@@ -285,7 +442,7 @@ function normalizeAssistantOutput(raw, intent, constraints) {
     situation: normalizeText(payload.situation || payload.summary),
     gaps: sanitizeList(payload.gaps || payload.missingItems, maxGaps),
     risks: sanitizeList(payload.risks || payload.alerts, maxRisks),
-    nextActions: normalizeNextActions(payload.nextActions || payload.next_actions, evidenceKeys, maxNextActions),
+    nextActions: normalizeNextActions(rawActions, evidenceKeys, maxNextActions),
     evidenceKeys
   };
   return normalized;
@@ -317,7 +474,14 @@ async function generatePaidAssistantReply(params) {
     return { ok: false, blockedReason: 'llm_adapter_missing' };
   }
 
-  const intent = normalizePaidIntent(payload.intent) || classifyPaidIntent(question);
+  const intent = normalizePaidIntent(payload.intent) || classifyPaidIntent(question, { env: payload.env || process.env });
+  const assistantQualityBase = {
+    intentResolved: intent,
+    kbTopScore: 0,
+    evidenceCoverage: 0,
+    blockedStage: null,
+    fallbackReason: null
+  };
   if (isIntentForbidden(payload.llmPolicy, intent)) {
     return {
       ok: false,
@@ -326,7 +490,11 @@ async function generatePaidAssistantReply(params) {
       citations: [],
       top1Score: 0,
       top2Score: 0,
-      retryCount: 0
+      retryCount: 0,
+      assistantQuality: buildAssistantQualitySnapshot(Object.assign({}, assistantQualityBase, {
+        blockedStage: 'policy_gate',
+        fallbackReason: 'forbidden_domain'
+      }))
     };
   }
   const outputConstraints = resolveOutputConstraints(payload.llmPolicy || null, payload.maxNextActionsCap);
@@ -344,6 +512,7 @@ async function generatePaidAssistantReply(params) {
   const top1Score = kbCandidates.length > 0 ? Number(kbCandidates[0].searchScore || 0) : 0;
   const top2Score = kbCandidates.length > 1 ? Number(kbCandidates[1].searchScore || 0) : 0;
   const evidenceSet = new Set(kbCandidates.map((item) => item.articleId).filter(Boolean));
+  assistantQualityBase.kbTopScore = top1Score;
   if (!kbCandidates.length) {
     return {
       ok: false,
@@ -353,7 +522,11 @@ async function generatePaidAssistantReply(params) {
       citations: [],
       top1Score,
       top2Score,
-      retryCount: 0
+      retryCount: 0,
+      assistantQuality: buildAssistantQualitySnapshot(Object.assign({}, assistantQualityBase, {
+        blockedStage: 'kb_retrieval',
+        fallbackReason: 'citation_missing'
+      }))
     };
   }
 
@@ -366,13 +539,17 @@ async function generatePaidAssistantReply(params) {
     outputConstraints
   );
   let lastFailure = 'template_violation';
+  let lastBlockedStage = 'generation_guard';
   let retryCount = 0;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     retryCount = attempt;
     try {
       const callResult = await invokeAssistant(adapter, requestPayload, payload.llmPolicy || null);
-      const output = normalizeAssistantOutput(callResult.answer, intent, outputConstraints);
+      const output = normalizeAssistantOutput(callResult.answer, intent, outputConstraints, {
+        fallbackEvidenceKeys: Array.from(evidenceSet)
+      });
+      const evidenceCoverage = computeEvidenceCoverage(output.evidenceKeys, evidenceSet);
       const guard = await guardLlmOutput({
         purpose: 'paid_assistant',
         schemaId: PAID_ASSISTANT_REPLY_SCHEMA_ID,
@@ -384,6 +561,7 @@ async function generatePaidAssistantReply(params) {
       });
       if (!guard.ok) {
         lastFailure = guard.blockedReason || 'template_violation';
+        lastBlockedStage = 'generation_guard';
         continue;
       }
 
@@ -401,11 +579,17 @@ async function generatePaidAssistantReply(params) {
         citations: output.evidenceKeys,
         top1Score,
         top2Score,
-        retryCount
+        retryCount,
+        assistantQuality: buildAssistantQualitySnapshot(Object.assign({}, assistantQualityBase, {
+          evidenceCoverage,
+          blockedStage: null,
+          fallbackReason: null
+        }))
       };
     } catch (err) {
       const message = err && err.message ? String(err.message) : 'llm_error';
       lastFailure = message.includes('timeout') ? 'llm_timeout' : 'llm_error';
+      lastBlockedStage = 'llm_call_exception';
     }
   }
 
@@ -417,7 +601,11 @@ async function generatePaidAssistantReply(params) {
     citations: faq.citations || [],
     top1Score,
     top2Score,
-    retryCount: retryCount + 1
+    retryCount: retryCount + 1,
+    assistantQuality: buildAssistantQualitySnapshot(Object.assign({}, assistantQualityBase, {
+      blockedStage: lastBlockedStage,
+      fallbackReason: lastFailure
+    }))
   };
 }
 

@@ -422,6 +422,25 @@ async function resolveStoredCandidatesForPaid(paid) {
   return resolveLinkRegistryCandidatesFromSourceIds(sourceIds, 'faq_link_registry');
 }
 
+function normalizeAssistantQuality(input, defaults) {
+  const payload = input && typeof input === 'object' ? input : {};
+  const base = defaults && typeof defaults === 'object' ? defaults : {};
+  const intentResolved = normalizeReplyText(payload.intentResolved || base.intentResolved || '');
+  const blockedStage = normalizeReplyText(payload.blockedStage || base.blockedStage || '');
+  const fallbackReason = normalizeReplyText(payload.fallbackReason || base.fallbackReason || '');
+  return {
+    intentResolved: intentResolved || null,
+    kbTopScore: Number.isFinite(Number(payload.kbTopScore))
+      ? Number(payload.kbTopScore)
+      : (Number.isFinite(Number(base.kbTopScore)) ? Number(base.kbTopScore) : 0),
+    evidenceCoverage: Number.isFinite(Number(payload.evidenceCoverage))
+      ? Number(payload.evidenceCoverage)
+      : (Number.isFinite(Number(base.evidenceCoverage)) ? Number(base.evidenceCoverage) : 0),
+    blockedStage: blockedStage || null,
+    fallbackReason: fallbackReason || null
+  };
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -432,6 +451,11 @@ async function appendLlmGateDecisionBestEffort(data) {
   const policyVersionId = payload.policyVersionId
     || (policy && typeof policy.policy_version_id === 'string' ? policy.policy_version_id : null)
     || null;
+  const assistantQuality = normalizeAssistantQuality(payload.assistantQuality, {
+    intentResolved: payload.intent || 'faq_search',
+    blockedStage: payload.decision === 'allow' ? null : 'route_gate',
+    fallbackReason: payload.blockedReason || null
+  });
   try {
     await appendAuditLog({
       actor: 'line_webhook',
@@ -471,7 +495,8 @@ async function appendLlmGateDecisionBestEffort(data) {
         conversationPattern: conciergeMeta && typeof conciergeMeta.conversationPattern === 'string' ? conciergeMeta.conversationPattern : null,
         responseLength: conciergeMeta && Number.isFinite(Number(conciergeMeta.responseLength))
           ? Number(conciergeMeta.responseLength)
-          : 0
+          : 0,
+        assistantQuality
       }
     });
   } catch (_err) {
@@ -597,6 +622,13 @@ async function handleAssistantMessage(params) {
 
   if (planInfo.plan !== 'pro') {
     const blockedReason = explicitPaidIntent ? 'plan_free' : 'free_retrieval_only';
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: 'plan_gate',
+      fallbackReason: blockedReason
+    });
     const dependencyHint = isDependencyHintIntent(text)
       ? buildFreeDependencyHint(await loadTaskGraphSummary(lineUserId))
       : '';
@@ -624,7 +656,8 @@ async function handleAssistantMessage(params) {
       blockedReason,
       tokensIn: 0,
       tokensOut: 0,
-      tokenUsed: 0
+      tokenUsed: 0,
+      assistantQuality
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
@@ -637,7 +670,8 @@ async function handleAssistantMessage(params) {
       costEstimate: usage && usage.costEstimate,
       traceId,
       requestId,
-      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      assistantQuality
     });
     return {
       handled: true,
@@ -655,6 +689,13 @@ async function handleAssistantMessage(params) {
 
   if (!budget.allowed) {
     const blockedReason = budget.blockedReason || 'plan_gate_blocked';
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: 'budget_gate',
+      fallbackReason: blockedReason
+    });
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
       llmPolicy: budget.policy || null,
@@ -670,7 +711,8 @@ async function handleAssistantMessage(params) {
       blockedReason,
       tokensIn: 0,
       tokensOut: 0,
-      tokenUsed: 0
+      tokenUsed: 0,
+      assistantQuality
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
@@ -685,7 +727,8 @@ async function handleAssistantMessage(params) {
       policy: budget.policy || null,
       traceId,
       requestId,
-      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      assistantQuality
     });
     return {
       handled: true,
@@ -698,6 +741,13 @@ async function handleAssistantMessage(params) {
   const availability = await evaluateLlmAvailability({ policy: budget.policy });
   if (!availability.available) {
     const blockedReason = availability.reason || 'llm_unavailable';
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: 'availability_gate',
+      fallbackReason: blockedReason
+    });
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
       llmPolicy: budget.policy || null,
@@ -714,7 +764,8 @@ async function handleAssistantMessage(params) {
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0,
-      model: budget.policy && budget.policy.model
+      model: budget.policy && budget.policy.model,
+      assistantQuality
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
@@ -729,7 +780,8 @@ async function handleAssistantMessage(params) {
       policy: budget.policy || null,
       traceId,
       requestId,
-      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      assistantQuality
     });
     return {
       handled: true,
@@ -748,6 +800,13 @@ async function handleAssistantMessage(params) {
     const blockedReason = snapshotResult && snapshotResult.ok === true && snapshotResult.stale === true
       ? 'snapshot_stale'
       : 'snapshot_unavailable';
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: 'snapshot_gate',
+      fallbackReason: blockedReason
+    });
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       blockedReason,
       llmPolicy: budget.policy || null,
@@ -764,7 +823,8 @@ async function handleAssistantMessage(params) {
       tokensIn: 0,
       tokensOut: 0,
       tokenUsed: 0,
-      model: budget.policy && budget.policy.model
+      model: budget.policy && budget.policy.model,
+      assistantQuality
     });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
@@ -779,7 +839,8 @@ async function handleAssistantMessage(params) {
       policy: budget.policy || null,
       traceId,
       requestId,
-      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      assistantQuality
     });
     return {
       handled: true,
@@ -818,6 +879,13 @@ async function handleAssistantMessage(params) {
 
   if (!paid.ok) {
     const blockedReason = paid.blockedReason || 'llm_error';
+    const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
+      intentResolved: paidIntent,
+      kbTopScore: paid.top1Score || 0,
+      evidenceCoverage: 0,
+      blockedStage: 'paid_generation',
+      fallbackReason: blockedReason
+    });
     const shouldFallbackToFree = !['low_confidence_soft'].includes(blockedReason);
     if (shouldFallbackToFree) {
       const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
@@ -836,7 +904,8 @@ async function handleAssistantMessage(params) {
         tokensIn: 0,
         tokensOut: 0,
         tokenUsed: 0,
-        model: budget.policy && budget.policy.model
+        model: budget.policy && budget.policy.model,
+        assistantQuality
       });
       await appendLlmGateDecisionBestEffort({
         lineUserId,
@@ -851,7 +920,8 @@ async function handleAssistantMessage(params) {
         policy: budget.policy || null,
         traceId,
         requestId,
-        conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+        conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+        assistantQuality
       });
       return {
         handled: true,
@@ -914,6 +984,15 @@ async function handleAssistantMessage(params) {
   replyText = trimForPaidLineMessage(replyText);
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
+  const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
+    intentResolved: paidIntent,
+    kbTopScore: paid.top1Score || 0,
+    evidenceCoverage: Array.isArray(paid && paid.output && paid.output.evidenceKeys) && paid.output.evidenceKeys.length > 0
+      ? 1
+      : 0,
+    blockedStage: null,
+    fallbackReason: null
+  });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
   const usage = await recordLlmUsage({
     userId: lineUserId,
@@ -925,7 +1004,8 @@ async function handleAssistantMessage(params) {
     tokensIn: paid.tokensIn || 0,
     tokensOut: paid.tokensOut || 0,
     tokenUsed,
-    model: paid.model || (budget.policy && budget.policy.model)
+    model: paid.model || (budget.policy && budget.policy.model),
+    assistantQuality
   });
   await appendLlmGateDecisionBestEffort({
     lineUserId,
@@ -940,7 +1020,8 @@ async function handleAssistantMessage(params) {
     policy: budget.policy || null,
     traceId,
     requestId,
-    conciergeMeta
+    conciergeMeta,
+    assistantQuality
   });
 
   await appendJourneyEventBestEffort({
