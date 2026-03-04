@@ -4,6 +4,8 @@ const { parseJourneyLineCommand } = require('../../domain/journey/lineCommandPar
 const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
+const tasksRepo = require('../../repos/firestore/tasksRepo');
+const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
@@ -11,10 +13,16 @@ const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
+const { resolveTaskContentLinks } = require('../tasks/validateTaskContent');
+const { renderTaskFlexMessage } = require('../tasks/renderTaskFlexMessage');
+const {
+  resolveTaskDetailTaskKey,
+  buildTaskDetailSectionReply
+} = require('./taskDetailSectionReply');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
-const { isJourneyUnifiedViewEnabled } = require('../../domain/tasks/featureFlags');
+const { isJourneyUnifiedViewEnabled, isTaskDetailLineEnabled } = require('../../domain/tasks/featureFlags');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -78,6 +86,7 @@ function formatTodoList(items, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return lines.join('\n');
 }
 
@@ -97,6 +106,7 @@ function formatTaskList(tasks, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return lines.join('\n');
 }
 
@@ -217,6 +227,7 @@ function formatUnifiedTaskList(tasks, legacyItems, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return {
     text: lines.join('\n'),
     hiddenDuplicateCount: unified.hiddenDuplicateCount,
@@ -301,6 +312,98 @@ function resolveScheduleStage(schedule) {
   if (assignment && now >= assignment) return 'arrived';
   if (departure && now >= departure) return 'departure_ready';
   return 'unspecified';
+}
+
+async function resolveTaskForDetail(lineUserId, todoKey, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const taskRepository = resolvedDeps.tasksRepo || tasksRepo;
+  const directTaskId = `${lineUserId}__${todoKey}`;
+  const direct = await taskRepository.getTask(directTaskId).catch(() => null);
+  if (direct) return direct;
+  const listed = await listUserTasks({
+    userId: lineUserId,
+    lineUserId,
+    forceRefresh: false,
+    actor: 'line_command_todo_detail'
+  }, resolvedDeps).catch(() => ({ tasks: [] }));
+  const tasks = Array.isArray(listed.tasks) ? listed.tasks : [];
+  return tasks.find((row) => normalizeText(row && row.ruleId, '') === todoKey)
+    || tasks.find((row) => normalizeText(row && row.taskId, '') === directTaskId)
+    || null;
+}
+
+async function handleTodoDetailCommand(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const todoKey = normalizeText(payload.todoKey);
+  if (!todoKey) {
+    return {
+      handled: true,
+      replyText: 'TODOキーが必要です。例: TODO詳細:visa_documents'
+    };
+  }
+  const task = await resolveTaskForDetail(lineUserId, todoKey, resolvedDeps);
+  if (!task) {
+    return {
+      handled: true,
+      replyText: `TODOキー「${todoKey}」が見つかりません。`
+    };
+  }
+
+  const taskKeyResolution = resolveTaskDetailTaskKey(task, todoKey);
+  const taskKey = normalizeText(taskKeyResolution && taskKeyResolution.taskKey, todoKey) || todoKey;
+  const taskContentRepository = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const taskContent = await taskContentRepository.getTaskContent(taskKey).catch(() => null);
+  const fallbackTitle = normalizeText(
+    task && task.meaning && task.meaning.title,
+    normalizeText(task && task.ruleId, normalizeText(task && task.taskId, todoKey))
+  );
+  const fallbackContent = {
+    taskKey,
+    title: fallbackTitle,
+    timeMin: null,
+    timeMax: null,
+    checklistItems: [],
+    manualText: null,
+    failureText: null,
+    videoLinkId: null,
+    actionLinkId: null
+  };
+  const links = await resolveTaskContentLinks(taskContent || fallbackContent, resolvedDeps).catch(() => ({
+    video: { ok: false, id: null, link: null, reason: 'resolver_error' },
+    action: { ok: false, id: null, link: null, reason: 'resolver_error' },
+    warnings: ['link resolver failed']
+  }));
+  const flexMessage = renderTaskFlexMessage({
+    task,
+    taskContent: taskContent || fallbackContent,
+    linkRefs: links,
+    todoKey
+  });
+  return {
+    handled: true,
+    replyMessage: flexMessage
+  };
+}
+
+async function handleTodoDetailSectionContinueCommand(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const todoKey = normalizeText(payload.todoKey);
+  const section = normalizeText(payload.section).toLowerCase();
+  const startChunk = Number(payload.startChunk);
+  if (!todoKey || !section) {
+    return {
+      handled: true,
+      replyText: '続き表示の形式が不正です。例: TODO詳細続き:todoKey:manual:2'
+    };
+  }
+  return buildTaskDetailSectionReply({
+    lineUserId: normalizeText(payload.lineUserId),
+    todoKey,
+    section,
+    startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
+  }, deps);
 }
 
 async function handleJourneyLineCommand(params, deps) {
@@ -436,6 +539,34 @@ async function handleJourneyLineCommand(params, deps) {
       handled: true,
       replyText: formatTodoList(items, graph)
     };
+  }
+
+  if (command.action === 'todo_detail') {
+    if (!isTaskDetailLineEnabled()) {
+      return {
+        handled: true,
+        replyText: 'タスク詳細表示は現在停止中です。'
+      };
+    }
+    return handleTodoDetailCommand({
+      lineUserId,
+      todoKey: command.todoKey
+    }, resolvedDeps);
+  }
+
+  if (command.action === 'todo_detail_section_continue') {
+    if (!isTaskDetailLineEnabled()) {
+      return {
+        handled: true,
+        replyText: 'タスク詳細表示は現在停止中です。'
+      };
+    }
+    return handleTodoDetailSectionContinueCommand({
+      lineUserId,
+      todoKey: command.todoKey,
+      section: command.section,
+      startChunk: command.startChunk
+    }, resolvedDeps);
   }
 
   if (command.action === 'todo_complete') {

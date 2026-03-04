@@ -317,6 +317,8 @@
     ],
     "handleJourneyLineCommand": [
       "journeyTodoItemsRepo",
+      "taskContentsRepo",
+      "tasksRepo",
       "userJourneyProfilesRepo",
       "userJourneySchedulesRepo"
     ],
@@ -506,6 +508,14 @@
       "richMenuPolicyRepo",
       "richMenuTemplatesRepo"
     ],
+    "resolveTaskContentLinks": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
+    ],
+    "resolveTaskKeyWarnings": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
+    ],
     "retryQueuedSend": [
       "decisionLogsRepo",
       "decisionTimelineRepo",
@@ -638,6 +648,10 @@
     ],
     "validateJourneyParamVersion": [
       "journeyParamVersionsRepo"
+    ],
+    "validateTaskContent": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
     ]
   },
   "repo_to_collection": {
@@ -852,6 +866,9 @@
     ],
     "systemFlagsRepo": [
       "system_flags"
+    ],
+    "taskContentsRepo": [
+      "task_contents"
     ],
     "tasksRepo": [
       "tasks"
@@ -1140,7 +1157,10 @@
       "applyTaskRulesTemplateSet",
       "computeUserTasks",
       "planTaskRulesApply",
-      "planTaskRulesTemplateSet"
+      "planTaskRulesTemplateSet",
+      "resolveTaskContentLinks",
+      "resolveTaskKeyWarnings",
+      "validateTaskContent"
     ],
     "src/routes/admin/traceSearch.js": [
       "appendAuditLog",

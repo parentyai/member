@@ -1323,9 +1323,9 @@
 	                  <div class="note">
 	                    template warning summary: <span id="task-rules-template-warning-summary">-</span>
 	                  </div>
-	                  <div class="row">
-	                    <label class="flex-1">dry-run LINEユーザーID
-	                      <input type="text" id="task-rules-dry-run-user-id" />
+                  <div class="row">
+                    <label class="flex-1">dry-run LINEユーザーID
+                      <input type="text" id="task-rules-dry-run-user-id" />
                     </label>
                     <label class="flex-1">apply LINEユーザーID
                       <input type="text" id="task-rules-apply-line-user-id" />
@@ -1334,6 +1334,116 @@
                       <input type="text" id="task-rules-apply-member-number" />
                     </label>
                   </div>
+                  <details class="section" open>
+                    <summary>Task Detail Editor（LINE内完結）</summary>
+                    <div class="note">
+                      役割固定: task-rules = 判定/配信ロジック、task-content = LINE表示/教材本文。task-content更新は表示に即時反映されますが、通知判定ロジックには影響しません。
+                    </div>
+                    <div class="row row-top">
+                      <button id="task-rules-task-content-load" type="button">task-content-load</button>
+                      <button id="task-rules-task-content-plan" type="button">task-content-plan</button>
+                      <button id="task-rules-task-content-set" type="button">task-content-set</button>
+                    </div>
+                    <div class="note">
+                      taskContentPlanHash: <span id="task-rules-task-content-plan-hash">-</span>
+                      / taskContentConfirmToken: <span id="task-rules-task-content-confirm-token">-</span>
+                    </div>
+                    <div class="note">
+                      task-content warning: <span id="task-rules-task-content-warning">-</span>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">taskKey（ruleId推奨）
+                        <input type="text" id="task-rules-task-content-key" value="rule_sample_001" />
+                      </label>
+                      <label class="flex-1">title
+                        <input type="text" id="task-rules-task-content-title" value="" />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>timeMin
+                        <input type="number" id="task-rules-task-content-time-min" class="input-sm" min="0" max="1440" value="20" />
+                      </label>
+                      <label>timeMax
+                        <input type="number" id="task-rules-task-content-time-max" class="input-sm" min="0" max="1440" value="40" />
+                      </label>
+                      <label class="flex-1">videoLinkId
+                        <select id="task-rules-task-content-video-link-id" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                      <label class="flex-1">actionLinkId
+                        <select id="task-rules-task-content-action-link-id" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">checklistItems JSON（[{id,text,order,enabled}]）
+                        <textarea id="task-rules-task-content-checklist-json" rows="6" class="input-mono">[
+  { "id": "passport", "text": "パスポート準備", "order": 1, "enabled": true },
+  { "id": "ssn_itin", "text": "SSNまたはITIN確認", "order": 2, "enabled": true },
+  { "id": "bank_reservation", "text": "銀行予約", "order": 3, "enabled": true }
+]</textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">manualText（LINE内表示）
+                        <textarea id="task-rules-task-content-manual-text" rows="5"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">failureText（LINE内表示）
+                        <textarea id="task-rules-task-content-failure-text" rows="5"></textarea>
+                      </label>
+                    </div>
+                    <details class="section">
+                      <summary>task-content result</summary>
+                      <pre id="task-rules-task-content-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
+                    <summary>Task Detail Link Registry（最小管理）</summary>
+                    <div class="row row-top">
+                      <button id="task-rules-link-registry-reload" type="button">link-registry-reload</button>
+                      <button id="task-rules-link-registry-create" type="button">link-registry-create</button>
+                      <button id="task-rules-link-registry-set" type="button">link-registry-set</button>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">search
+                        <input type="text" id="task-rules-link-registry-search" value="" />
+                      </label>
+                      <label class="flex-1">link select
+                        <select id="task-rules-link-registry-select" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>linkId（set時必須）
+                        <input type="text" id="task-rules-link-registry-id" value="" />
+                      </label>
+                      <label class="flex-1">title
+                        <input type="text" id="task-rules-link-registry-title" value="" />
+                      </label>
+                      <label class="flex-1">url
+                        <input type="text" id="task-rules-link-registry-url" value="" />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>kind
+                        <select id="task-rules-link-registry-kind" class="select-inline">
+                          <option value="web">web</option>
+                          <option value="youtube">youtube</option>
+                          <option value="liff">liff</option>
+                        </select>
+                      </label>
+                      <label class="checkbox"><input type="checkbox" id="task-rules-link-registry-enabled" checked /> enabled</label>
+                    </div>
+                    <details class="section">
+                      <summary>link-registry result</summary>
+                      <pre id="task-rules-link-registry-result">-</pre>
+                    </details>
+                  </details>
                   <details class="section">
                     <summary>status</summary>
                     <pre id="task-rules-status-result">-</pre>
