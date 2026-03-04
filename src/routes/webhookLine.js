@@ -146,6 +146,12 @@ function trimForLineMessage(value) {
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
+function trimForPaidLineMessage(value) {
+  const text = trimForLineMessage(value);
+  if (!text) return '';
+  return text.length > 420 ? `${text.slice(0, 420)}…` : text;
+}
+
 function resolveBooleanEnvFlag(name, defaultValue) {
   const raw = process.env[name];
   if (typeof raw !== 'string') return defaultValue === true;
@@ -454,7 +460,18 @@ async function appendLlmGateDecisionBestEffort(data) {
         urls: conciergeMeta && Array.isArray(conciergeMeta.urls) ? conciergeMeta.urls : [],
         guardDecisions: conciergeMeta && Array.isArray(conciergeMeta.guardDecisions) ? conciergeMeta.guardDecisions : [],
         blockedReasons: conciergeMeta && Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [],
-        injectionFindings: conciergeMeta ? conciergeMeta.injectionFindings === true : false
+        injectionFindings: conciergeMeta ? conciergeMeta.injectionFindings === true : false,
+        conversationState: conciergeMeta && typeof conciergeMeta.conversationState === 'string'
+          ? conciergeMeta.conversationState
+          : null,
+        conversationMove: conciergeMeta && typeof conciergeMeta.conversationMove === 'string'
+          ? conciergeMeta.conversationMove
+          : null,
+        styleId: conciergeMeta && typeof conciergeMeta.styleId === 'string' ? conciergeMeta.styleId : null,
+        conversationPattern: conciergeMeta && typeof conciergeMeta.conversationPattern === 'string' ? conciergeMeta.conversationPattern : null,
+        responseLength: conciergeMeta && Number.isFinite(Number(conciergeMeta.responseLength))
+          ? Number(conciergeMeta.responseLength)
+          : 0
       }
     });
   } catch (_err) {
@@ -801,54 +818,69 @@ async function handleAssistantMessage(params) {
 
   if (!paid.ok) {
     const blockedReason = paid.blockedReason || 'llm_error';
-    const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
-      blockedReason,
-      llmPolicy: budget.policy || null,
-      plan: planInfo.plan,
-      llmConciergeEnabled
-    }));
-    const usage = await recordLlmUsage({
-      userId: lineUserId,
-      plan: planInfo.plan,
-      subscriptionStatus: planInfo.status,
-      intent: paidIntent,
-      decision: 'blocked',
-      blockedReason,
-      tokensIn: 0,
-      tokensOut: 0,
-      tokenUsed: 0,
-      model: budget.policy && budget.policy.model
-    });
-    await appendLlmGateDecisionBestEffort({
-      lineUserId,
-      plan: planInfo.plan,
-      status: planInfo.status,
-      intent: paidIntent,
-      decision: 'blocked',
-      blockedReason,
-      tokenUsed: 0,
-      costEstimate: usage && usage.costEstimate,
-      model: budget.policy && budget.policy.model,
-      policy: budget.policy || null,
-      traceId,
-      requestId,
-      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
-    });
-    return {
-      handled: true,
-      mode: 'fallback',
-      fallback,
-      blockedReason
-    };
+    const shouldFallbackToFree = !['low_confidence_soft'].includes(blockedReason);
+    if (shouldFallbackToFree) {
+      const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
+        blockedReason,
+        llmPolicy: budget.policy || null,
+        plan: planInfo.plan,
+        llmConciergeEnabled
+      }));
+      const usage = await recordLlmUsage({
+        userId: lineUserId,
+        plan: planInfo.plan,
+        subscriptionStatus: planInfo.status,
+        intent: paidIntent,
+        decision: 'blocked',
+        blockedReason,
+        tokensIn: 0,
+        tokensOut: 0,
+        tokenUsed: 0,
+        model: budget.policy && budget.policy.model
+      });
+      await appendLlmGateDecisionBestEffort({
+        lineUserId,
+        plan: planInfo.plan,
+        status: planInfo.status,
+        intent: paidIntent,
+        decision: 'blocked',
+        blockedReason,
+        tokenUsed: 0,
+        costEstimate: usage && usage.costEstimate,
+        model: budget.policy && budget.policy.model,
+        policy: budget.policy || null,
+        traceId,
+        requestId,
+        conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null
+      });
+      return {
+        handled: true,
+        mode: 'fallback',
+        fallback,
+        blockedReason
+      };
+    }
   }
 
+  const isLowRelevanceWarning = paid.qualityWarning === 'low_relevance_query';
   let replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
-  if (resolveProPredictiveActionsEnabled()) {
+  if (isLowRelevanceWarning) {
+    replyText = [
+      '結論: いまの質問だけでは対象手続きを特定できません。',
+      '次にやること:',
+      '1. 手続きを1つ指定してください（例: ビザ更新 / 住居契約 / 税務）。',
+      '2. 期限を1つ添えてください（例: 1週間後）。'
+    ].join('\n');
+  }
+  if (paid.qualityWarning === 'low_confidence_soft') {
+    replyText = trimForLineMessage(`${replyText}\n\n補足: 根拠の一致度が低めのため、重要事項は運用担当へ最終確認してください。`);
+  }
+  if (resolveProPredictiveActionsEnabled() && isDependencyHintIntent(text) && !isLowRelevanceWarning) {
     const addendum = buildProDependencyAddendum(await loadTaskGraphSummary(lineUserId));
     if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
   }
   let conciergeMeta = null;
-  if (llmConciergeEnabled) {
+  if (llmConciergeEnabled && !isLowRelevanceWarning) {
     try {
       const storedCandidates = await resolveStoredCandidatesForPaid(paid);
       const concierge = await composeConciergeReply({
@@ -879,6 +911,7 @@ async function handleAssistantMessage(params) {
       };
     }
   }
+  replyText = trimForPaidLineMessage(replyText);
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);

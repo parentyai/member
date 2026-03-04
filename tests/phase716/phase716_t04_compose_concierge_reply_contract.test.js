@@ -6,7 +6,7 @@ const { test } = require('node:test');
 const { composeConciergeReply } = require('../../src/usecases/assistant/concierge/composeConciergeReply');
 
 function countSourceLines(text) {
-  return (String(text || '').match(/\(source:/g) || []).length;
+  return (String(text || '').match(/根拠:\s*\(source:/g) || []).length;
 }
 
 test('phase716: Mode A never appends URLs even when candidates exist', async () => {
@@ -24,6 +24,9 @@ test('phase716: Mode A never appends URLs even when candidates exist', async () 
   assert.equal(result.mode, 'A');
   assert.equal(result.auditMeta.urlCount, 0);
   assert.equal(countSourceLines(result.replyText), 0);
+  assert.ok(result.auditMeta.styleId);
+  assert.ok(result.auditMeta.conversationPattern);
+  assert.ok(Number.isFinite(Number(result.auditMeta.responseLength)));
 });
 
 test('phase716: free Mode B caps URL count to 1 and excludes disallowed ranks', async () => {
@@ -44,6 +47,7 @@ test('phase716: free Mode B caps URL count to 1 and excludes disallowed ranks', 
   assert.equal(result.auditMeta.urlCount, 1);
   assert.equal(countSourceLines(result.replyText), 1);
   assert.deepEqual(result.auditMeta.citationRanks, ['R0']);
+  assert.ok(result.replyText.includes('(source:'));
 });
 
 test('phase716: paid Mode C can append up to 3 URLs', async () => {
@@ -64,6 +68,7 @@ test('phase716: paid Mode C can append up to 3 URLs', async () => {
   assert.equal(result.mode, 'C');
   assert.equal(result.auditMeta.userTier, 'paid');
   assert.ok(result.auditMeta.urlCount <= 3);
-  assert.equal(result.auditMeta.urlCount, countSourceLines(result.replyText));
+  assert.equal(countSourceLines(result.replyText), 1);
   assert.ok(result.auditMeta.urlCount >= 1);
+  assert.ok(result.replyText.includes('根拠:'));
 });
