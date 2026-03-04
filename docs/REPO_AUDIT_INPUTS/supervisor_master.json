@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T17:31:58-05:00",
-  "gitCommit": "ece462795edecc7c078fd4ac01d7d8fe9dd0401c",
-  "branch": "codex/emergency-pr2-provider-polling",
-  "sourceDigest": "8ce3808577f00f5c2be637b5e0ed8cfa6194ec7bfeea723d88ab3b04e4855c8e",
+  "generatedAt": "2026-03-04T17:39:47-05:00",
+  "gitCommit": "3e835791232049923337d4bcc313ab08872dbae5",
+  "branch": "codex/emergency-pr3-region-docs",
+  "sourceDigest": "d6a5781366df89d4a0e82a80e71e23df0a2518412cc8fa8a8e6f77f1eeaf0444",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
