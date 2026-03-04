@@ -31,19 +31,6 @@ on:
         options:
           - "false"
           - "true"
-      dry_run:
-        description: "Run through rule/dispatch planning without actual send"
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
-      max_recipients_per_run:
-        description: "Optional global max recipients per run"
-        required: false
-        default: ""
-        type: string
       run_id:
         description: "Optional runId"
         required: false
@@ -141,8 +128,6 @@ jobs:
           INPUT_FORCE_PROVIDER_KEYS: ${{ github.event.inputs.force_provider_keys }}
           INPUT_FORCE_REFRESH: ${{ github.event.inputs.force_refresh }}
           INPUT_SKIP_SUMMARIZE: ${{ github.event.inputs.skip_summarize }}
-          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
-          INPUT_MAX_RECIPIENTS_PER_RUN: ${{ github.event.inputs.max_recipients_per_run }}
           INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
         run: |
           set -euo pipefail
@@ -183,7 +168,6 @@ jobs:
             --job-token "$CITY_PACK_JOB_TOKEN"
             --force-refresh "${INPUT_FORCE_REFRESH:-false}"
             --skip-summarize "${INPUT_SKIP_SUMMARIZE:-false}"
-            --dry-run "${INPUT_DRY_RUN:-false}"
           )
           if [ -n "${INPUT_PROVIDER_KEYS:-}" ]; then
             ARGS+=(--provider-keys "$INPUT_PROVIDER_KEYS")
@@ -193,9 +177,6 @@ jobs:
           fi
           if [ -n "${INPUT_RUN_ID:-}" ]; then
             ARGS+=(--run-id "$INPUT_RUN_ID")
-          fi
-          if [ -n "${INPUT_MAX_RECIPIENTS_PER_RUN:-}" ]; then
-            ARGS+=(--max-recipients-per-run "$INPUT_MAX_RECIPIENTS_PER_RUN")
           fi
 
           set +e
