@@ -56,7 +56,7 @@ test('phase652: computeDashboardKpis includes billing and llm metrics', async ()
     await db.collection('user_subscriptions').doc('U2').set({
       lineUserId: 'U2',
       plan: 'free',
-      status: 'canceled'
+      status: 'active'
     }, { merge: true });
 
     await db.collection('llm_usage_logs').doc('LOG1').set({

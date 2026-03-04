@@ -38,7 +38,9 @@ function parseWindowMonths(req) {
 
 function parseScanLimit(req) {
   const url = new URL(req.url, 'http://localhost');
-  const raw = Number(url.searchParams.get('scanLimit'));
+  const rawParam = url.searchParams.get('scanLimit');
+  if (rawParam === null || rawParam === undefined || rawParam === '') return DEFAULT_SCAN_LIMIT;
+  const raw = Number(rawParam);
   if (!Number.isFinite(raw)) return DEFAULT_SCAN_LIMIT;
   return Math.max(100, Math.min(MAX_SCAN_LIMIT, Math.floor(raw)));
 }
@@ -258,8 +260,9 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
     journeyKpiDailyRepo.getLatestJourneyKpiDaily().catch(() => null)
   ]);
   const proActiveCount = (subscriptions || []).filter((item) => {
+    const plan = String(item && item.plan ? item.plan : 'free').toLowerCase();
     const status = String(item && item.status ? item.status : 'unknown').toLowerCase();
-    return status === 'active' || status === 'trialing';
+    return plan === 'pro' && (status === 'active' || status === 'trialing');
   }).length;
   const totalUsers = normalizedUsers.length;
   const proRatioPercent = totalUsers > 0 ? (proActiveCount / totalUsers) * 100 : 0;
