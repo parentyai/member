@@ -80,6 +80,7 @@
     "stripeWebhookDeadLettersRepo",
     "stripeWebhookEventsRepo",
     "systemFlagsRepo",
+    "taskContentsRepo",
     "taskEventsRepo",
     "taskNodesRepo",
     "tasksRepo",

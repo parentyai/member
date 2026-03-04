@@ -3,7 +3,7 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "a91de932df406eb89b965be8f51c35d5947c71d7",
+      "hash": "8672c42185bf849bce08f118420abc855125af32",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
@@ -3536,10 +3536,10 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTemplatesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRuleChangeLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/tasksRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
@@ -4020,7 +4020,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 236,
+              "testsCount": 238,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4082,7 +4082,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 116,
+              "testsCount": 118,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4493,7 +4493,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 186,
+              "testsCount": 188,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4605,7 +4605,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 145,
+              "testsCount": 147,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4738,7 +4738,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 209,
+              "testsCount": 211,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5151,7 +5151,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 166,
+              "testsCount": 168,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5710,7 +5710,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 131,
+              "testsCount": 133,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6791,7 +6791,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 97,
+              "testsCount": 99,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6888,7 +6888,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 103,
+              "testsCount": 105,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7454,7 +7454,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 51,
+              "testsCount": 53,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8123,7 +8123,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 139,
+              "testsCount": 141,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8960,7 +8960,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 29,
+              "testsCount": 32,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9001,7 +9001,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 142,
+              "testsCount": 171,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9021,20 +9021,20 @@
                 "deliveriesRepo",
                 "eventsRepo",
                 "journeyTemplatesRepo",
+                "linkRegistryRepo",
                 "stepRuleChangeLogsRepo",
                 "stepRulesRepo",
-                "systemFlagsRepo",
-                "tasksRepo"
+                "systemFlagsRepo"
               ],
               "relatedCollections": [
                 "audit_logs",
                 "events",
                 "journey_templates",
+                "link_registry",
                 "notification_deliveries",
                 "step_rule_change_logs",
                 "step_rules",
-                "system_flags",
-                "tasks"
+                "system_flags"
               ],
               "entrypoints": [
                 "src/routes/admin/cityPackBulletins.js",
@@ -9059,7 +9059,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 34,
+              "testsCount": 38,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -9096,7 +9096,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 123,
+              "testsCount": 125,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9146,7 +9146,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 123,
+              "testsCount": 125,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9292,7 +9292,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 88,
+              "testsCount": 90,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [

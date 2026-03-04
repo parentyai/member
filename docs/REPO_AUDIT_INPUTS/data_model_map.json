@@ -1251,6 +1251,22 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "task_contents",
+      "repos": [
+        "taskContentsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/taskContentsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/taskContentsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "tasks",
       "repos": [
         "tasksRepo"
