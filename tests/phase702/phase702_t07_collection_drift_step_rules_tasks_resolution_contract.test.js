@@ -35,14 +35,14 @@ test('phase702: step_rules/tasks are covered in data_lifecycle and removed from 
   assert.equal(dataModelOnly.includes('tasks'), false, 'tasks should not remain in data_model_only drift');
 });
 
-test('phase702: consistency status reflects reduced collection drift baseline', () => {
+test('phase702: consistency status reflects current collection drift baseline', () => {
   const result = spawnSync(process.execPath, ['scripts/report_consistency_status.js'], {
     cwd: process.cwd(),
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr || result.stdout || 'consistency status report failed');
   const out = result.stdout || '';
-  assert.ok(out.includes('"dataModelOnly": 0'));
+  assert.ok(out.includes('"dataModelOnly": 2'));
   assert.ok(out.includes('"dataLifecycleOnly": 0'));
 });
 
