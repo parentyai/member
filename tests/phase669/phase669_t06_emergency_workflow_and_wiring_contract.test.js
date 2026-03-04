@@ -26,6 +26,8 @@ test('phase669: emergency workflow runs every 10 minutes and calls runner with j
   const runner = fs.readFileSync('scripts/emergency_sync_runner.js', 'utf8');
   assert.ok(workflow.includes('cron: "*/10 * * * *"'));
   assert.ok(workflow.includes('CITY_PACK_JOB_TOKEN'));
+  assert.ok(workflow.includes('INPUT_DRY_RUN'));
+  assert.ok(workflow.includes('INPUT_MAX_RECIPIENTS_PER_RUN'));
   assert.ok(workflow.includes('node scripts/emergency_sync_runner.js'));
   assert.ok(runner.includes('x-city-pack-job-token'));
   assert.ok(runner.includes('--dry-run'));
