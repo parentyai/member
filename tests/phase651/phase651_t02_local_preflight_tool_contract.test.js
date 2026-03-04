@@ -42,6 +42,10 @@ test('phase651: local preflight allows ready state when probe succeeds', async (
     fsApi: {
       statSync(filePath) {
         return { isFile: () => filePath === '/tmp/service-account.json' };
+      },
+      readFileSync(filePath) {
+        if (filePath !== '/tmp/service-account.json') throw new Error('ENOENT');
+        return JSON.stringify({ type: 'service_account', project_id: 'member-485303' });
       }
     },
     probeFirestore: async () => ({
@@ -112,4 +116,18 @@ test('phase651: SA key evaluator classifies unset, missing, and permission denie
   );
   assert.equal(denied.code, 'SA_KEY_PATH_PERMISSION_DENIED');
   assert.equal(denied.status, 'error');
+});
+
+test('phase651: SA key evaluator rejects non service_account credential JSON', () => {
+  const result = evaluateSaKeyPath(
+    { GOOGLE_APPLICATION_CREDENTIALS: '/tmp/authorized-user.json' },
+    {
+      statSync: () => ({ isFile: () => true }),
+      accessSync: () => undefined,
+      readFileSync: () => JSON.stringify({ type: 'authorized_user', refresh_token: 'dummy' }),
+      constants: { R_OK: 4 }
+    }
+  );
+  assert.equal(result.code, 'SA_KEY_PATH_NOT_SERVICE_ACCOUNT');
+  assert.equal(result.status, 'error');
 });

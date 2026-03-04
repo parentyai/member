@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { resolveFirestoreProjectId } = require('../src/infra/firestore');
 
 function normalizeMessage(err) {
@@ -84,6 +85,48 @@ function isReadableFilePath(filePath, fsSource) {
   return true;
 }
 
+function readCredentialFileJson(filePath, fsSource) {
+  if (typeof fsSource.readFileSync !== 'function') {
+    return { ok: true, type: null };
+  }
+  let raw;
+  try {
+    raw = fsSource.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'SA_KEY_PATH_UNREADABLE',
+      message: `ローカルSA鍵を読み取れません: ${normalizeMessage(err)}`
+    };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(String(raw || ''));
+  } catch (_err) {
+    return {
+      ok: false,
+      code: 'SA_KEY_PATH_JSON_INVALID',
+      message: 'ローカルSA鍵JSONが不正です。service_account鍵ファイルを指定してください。'
+    };
+  }
+  const type = typeof parsed.type === 'string' ? parsed.type.trim() : '';
+  if (!type) {
+    return {
+      ok: false,
+      code: 'SA_KEY_PATH_JSON_INVALID',
+      message: 'ローカルSA鍵JSONに type がありません。service_account鍵ファイルを指定してください。'
+    };
+  }
+  if (type !== 'service_account') {
+    return {
+      ok: false,
+      code: 'SA_KEY_PATH_NOT_SERVICE_ACCOUNT',
+      message: `ローカルSA鍵JSONの type=${type} は非対応です。service_account鍵ファイルを指定してください。`
+    };
+  }
+  return { ok: true, type };
+}
+
 function maybeApplyAutoLocalSaKey(env, fsApi, options) {
   const envSource = env && typeof env === 'object' ? env : process.env;
   const fsSource = fsApi && typeof fsApi === 'object' ? fsApi : fs;
@@ -96,6 +139,8 @@ function maybeApplyAutoLocalSaKey(env, fsApi, options) {
   const candidates = resolveAutoSaKeyCandidates(envSource);
   for (const candidate of candidates) {
     if (!isReadableFilePath(candidate, fsSource)) continue;
+    const parsed = readCredentialFileJson(candidate, fsSource);
+    if (!parsed.ok) continue;
     envSource.GOOGLE_APPLICATION_CREDENTIALS = candidate;
     return candidate;
   }
@@ -217,6 +262,17 @@ function evaluateSaKeyPath(env, fsApi) {
     }
   }
 
+  const parsed = readCredentialFileJson(raw, fsSource);
+  if (!parsed.ok) {
+    return {
+      key: 'saKeyPath',
+      status: 'error',
+      code: parsed.code || 'SA_KEY_PATH_UNREADABLE',
+      message: parsed.message || 'ローカルSA鍵JSONを確認できませんでした。',
+      value: raw
+    };
+  }
+
   return {
     key: 'saKeyPath',
     status: 'ok',
@@ -299,7 +355,9 @@ function classifyFirestoreProbeClassification(message) {
   if (text.includes('invalid_rapt')
     || text.includes('invalid_grant')
     || text.includes('reauth related error')
-    || text.includes('getting metadata from plugin failed')) {
+    || text.includes('getting metadata from plugin failed')
+    || text.includes('could not load the default credentials')
+    || text.includes('failed to read credentials')) {
     return 'ADC_REAUTH_REQUIRED';
   }
   if (text.includes('firestore_probe_timeout')
@@ -528,7 +586,9 @@ function buildErrorSummary(entry) {
   if (code === 'SA_KEY_PATH_INVALID'
     || code === 'SA_KEY_PATH_NOT_FILE'
     || code === 'SA_KEY_PATH_PERMISSION_DENIED'
-    || code === 'SA_KEY_PATH_UNREADABLE') {
+    || code === 'SA_KEY_PATH_UNREADABLE'
+    || code === 'SA_KEY_PATH_JSON_INVALID'
+    || code === 'SA_KEY_PATH_NOT_SERVICE_ACCOUNT') {
     return {
       code,
       tone: 'danger',
@@ -611,9 +671,75 @@ function buildWarnSummary(entry) {
 async function probeFirestoreReadOnly(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const timeoutMs = Number.isFinite(Number(opts.timeoutMs)) ? Number(opts.timeoutMs) : 2500;
-  const getDb = typeof opts.getDb === 'function'
-    ? opts.getDb
-    : require('../src/infra/firestore').getDb;
+  const getDb = typeof opts.getDb === 'function' ? opts.getDb : null;
+  if (!getDb) {
+    const probeScript = `
+      const { getDb } = require(${JSON.stringify(path.resolve(__dirname, '../src/infra/firestore'))});
+      (async () => {
+        try {
+          const db = getDb();
+          if (!db || typeof db.listCollections !== 'function') throw new Error('firestore_db_unavailable');
+          await db.listCollections();
+          process.stdout.write(JSON.stringify({ ok: true }) + '\\n');
+        } catch (err) {
+          const message = err && err.message ? String(err.message) : String(err);
+          process.stdout.write(JSON.stringify({ ok: false, message }) + '\\n');
+          process.exitCode = 1;
+        }
+      })();
+    `;
+    const envSource = opts.env && typeof opts.env === 'object' ? opts.env : process.env;
+    const spawned = spawnSync(process.execPath, ['-e', probeScript], {
+      env: envSource,
+      encoding: 'utf8',
+      timeout: timeoutMs
+    });
+    const timeoutError = spawned && spawned.error && normalizeLowerText(spawned.error.message).includes('timed out');
+    if (timeoutError) {
+      return {
+        key: 'firestoreProbe',
+        status: 'error',
+        code: 'FIRESTORE_PROBE_TIMEOUT',
+        classification: 'FIRESTORE_TIMEOUT',
+        message: `Firestore read-only probe failed: firestore_probe_timeout:${timeoutMs}`
+      };
+    }
+    const stdout = String((spawned && spawned.stdout) || '').trim();
+    const stderr = String((spawned && spawned.stderr) || '').trim();
+    let childPayload = null;
+    if (stdout) {
+      const lines = stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const tail = lines.length ? lines[lines.length - 1] : '';
+      if (tail) {
+        try {
+          childPayload = JSON.parse(tail);
+        } catch (_err) {
+          childPayload = null;
+        }
+      }
+    }
+    if (childPayload && childPayload.ok === true) {
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'Firestore read-only probe succeeded.'
+      };
+    }
+    const rawMessage = childPayload && childPayload.message
+      ? String(childPayload.message)
+      : String([stdout, stderr].filter(Boolean).join(' / ') || 'firestore_probe_failed');
+    const message = normalizeMessage(rawMessage);
+    const classification = classifyFirestoreProbeClassification(message);
+    return {
+      key: 'firestoreProbe',
+      status: 'error',
+      code: classifyProbeError(message),
+      classification,
+      message: `Firestore read-only probe failed: ${message}`
+    };
+  }
+
   let timer = null;
   const timeout = new Promise((_, reject) => {
     timer = setTimeout(() => {
@@ -633,6 +759,9 @@ async function probeFirestoreReadOnly(options) {
       message: 'Firestore read-only probe succeeded.'
     };
   })();
+  // If timeout wins Promise.race, keep a rejection handler attached so late failures
+  // from the Firestore client do not become unhandled rejections.
+  run.catch(() => undefined);
   try {
     return await Promise.race([run, timeout]);
   } catch (err) {
@@ -765,7 +894,7 @@ async function runLocalPreflight(options) {
     }),
     firestoreProbe: shouldSkipProbe
       ? buildFirestoreProbeSkippedForSaRequired(saKeyPath)
-      : await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb })
+      : await probeFirestore({ timeoutMs: opts.timeoutMs, getDb: opts.getDb, env })
   };
   const checks = normalizeProjectIdProbeClassification(rawChecks);
   const summary = shouldSkipProbe
