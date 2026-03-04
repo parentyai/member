@@ -1998,6 +1998,78 @@
             <div class="panel">
               <div class="panel-title" data-dict-key="ui.label.emergency.inbox">Emergency Inbox</div>
               <div class="panel-body">
+                <div class="panel">
+                  <div class="panel-title">Emergency Rules（事前承認ルール）</div>
+                  <div class="panel-body">
+                    <div class="row">
+                      <button id="emergency-rule-reload" type="button">Rulesを更新</button>
+                      <button id="emergency-rule-clear" type="button">入力クリア</button>
+                    </div>
+                    <div class="row">
+                      <label>ruleId
+                        <input id="emergency-rule-id" type="text" class="input-sm" placeholder="空欄で新規作成" />
+                      </label>
+                      <label>providerKey
+                        <input id="emergency-rule-provider-key" type="text" class="input-sm" placeholder="nws_alerts" />
+                      </label>
+                      <label>eventType
+                        <input id="emergency-rule-event-type" type="text" class="input-sm" placeholder="weather.new" />
+                      </label>
+                      <label>severity
+                        <select id="emergency-rule-severity" class="select-inline">
+                          <option value="ANY">ANY</option>
+                          <option value="INFO">INFO</option>
+                          <option value="WARN">WARN</option>
+                          <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                      </label>
+                      <label>priority
+                        <select id="emergency-rule-priority" class="select-inline">
+                          <option value="emergency">emergency</option>
+                          <option value="standard">standard</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>regionKey
+                        <input id="emergency-rule-region-key" type="text" class="input-sm" placeholder="TX::statewide" />
+                      </label>
+                      <label>role (previewではfail-closed)
+                        <input id="emergency-rule-role" type="text" class="input-sm" placeholder="member_role" />
+                      </label>
+                      <label>maxRecipients
+                        <input id="emergency-rule-max-recipients" type="number" min="1" max="10000" value="500" class="input-sm" />
+                      </label>
+                      <label><input id="emergency-rule-members-only" type="checkbox" /> membersOnly</label>
+                      <label><input id="emergency-rule-auto-send" type="checkbox" checked /> autoSend</label>
+                      <label><input id="emergency-rule-enabled" type="checkbox" checked /> enabled</label>
+                      <button id="emergency-rule-save" type="button">Ruleを保存</button>
+                    </div>
+                    <div class="table-scroll">
+                      <table class="table-compact">
+                        <thead>
+                          <tr>
+                            <th>ruleId</th>
+                            <th>providerKey</th>
+                            <th>eventType</th>
+                            <th>severity</th>
+                            <th>region</th>
+                            <th>autoSend</th>
+                            <th>enabled</th>
+                            <th>maxRecipients</th>
+                            <th>actions</th>
+                          </tr>
+                        </thead>
+                        <tbody id="emergency-rule-rows"></tbody>
+                      </table>
+                    </div>
+                    <div id="emergency-rule-preview-summary" class="note">Rule preview結果はここに表示されます。</div>
+                    <details data-json-collapsible="true">
+                      <summary>Rule Preview JSON</summary>
+                      <pre id="emergency-rule-preview-json">-</pre>
+                    </details>
+                  </div>
+                </div>
                 <div class="row">
                   <label data-dict-key="ui.label.emergency.filterStatus">状態
                     <select id="emergency-bulletin-status-filter" class="select-inline">

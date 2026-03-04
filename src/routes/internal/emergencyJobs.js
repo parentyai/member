@@ -53,7 +53,9 @@ async function handleEmergencyJobs(req, res, bodyText) {
       providerKey: payload.providerKey,
       forceProviderKeys: payload.forceProviderKeys,
       forceRefresh: payload.forceRefresh === true,
-      skipSummarize: payload.skipSummarize === true
+      skipSummarize: payload.skipSummarize === true,
+      dryRun: payload.dryRun === true,
+      maxRecipientsPerRun: payload.maxRecipientsPerRun
     });
     writeJson(res, 200, result);
     return;

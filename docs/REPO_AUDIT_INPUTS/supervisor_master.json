@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T17:20:31-05:00",
-  "gitCommit": "677ddb5dd69d19804851484fca188aa8097c0865",
-  "branch": "codex/emergency-pr1-rule-engine",
-  "sourceDigest": "22e57f1a83d5ba47bcb4ed57bb89149160a98c92c50287d93346b04dec3a2f2f",
+  "generatedAt": "2026-03-04T17:39:47-05:00",
+  "gitCommit": "3e835791232049923337d4bcc313ab08872dbae5",
+  "branch": "codex/emergency-pr3-region-docs",
+  "sourceDigest": "d6a5781366df89d4a0e82a80e71e23df0a2518412cc8fa8a8e6f77f1eeaf0444",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -537,7 +537,10 @@
       "sourceRefsRepo"
     ],
     "runEmergencySync": [
+      "emergencyBulletinsRepo",
+      "emergencyDiffsRepo",
       "emergencyProvidersRepo",
+      "emergencyRulesRepo",
       "systemFlagsRepo"
     ],
     "runJourneyBranchDispatchJob": [

@@ -125,6 +125,7 @@ const COMPOSER_AB_OPTION_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_COMPOSER_AB_OPTION_V1 : null,
   false
 );
+const EMERGENCY_MANUAL_APPROVE_FALLBACK = false;
 
 function isOpsRealtimeSnapshotEnabled() {
   return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
@@ -156,6 +157,9 @@ const state = {
   cityPackBulletinItems: [],
   cityPackProposalItems: [],
   emergencyProviderItems: [],
+  emergencyRuleItems: [],
+  emergencySelectedRuleId: null,
+  emergencyRulePreview: null,
   emergencyBulletinItems: [],
   emergencySelectedBulletinId: null,
   emergencyEvidenceItem: null,
@@ -1394,6 +1398,7 @@ async function runInitialDataLoads(options) {
   loadErrors({ notify: false });
   loadVendors({ notify: false });
   loadEmergencyProviders({ notify: false });
+  loadEmergencyRules({ notify: false });
   loadEmergencyBulletins({ notify: false });
   loadCityPackRequests({ notify: false });
   loadCityPackFeedback({ notify: false });
@@ -3799,6 +3804,9 @@ const MANAGED_FLOW_WRITE_ACTION_MATCHERS = Object.freeze([
   { actionKey: 'vendors.disable', method: 'POST', pathRegex: /^\/api\/admin\/vendors\/[^/]+\/disable\/?$/ },
   { actionKey: 'emergency.provider.update', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/providers\/[^/]+\/?$/ },
   { actionKey: 'emergency.provider.force_refresh', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/providers\/[^/]+\/force-refresh\/?$/ },
+  { actionKey: 'emergency.rule.upsert', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/rules\/?$/ },
+  { actionKey: 'emergency.rule.update', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/rules\/[^/]+\/?$/ },
+  { actionKey: 'emergency.rule.preview', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/rules\/[^/]+\/preview\/?$/ },
   { actionKey: 'emergency.bulletin.approve', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/approve\/?$/ },
   { actionKey: 'emergency.bulletin.reject', method: 'POST', pathRegex: /^\/api\/admin\/emergency\/bulletins\/[^/]+\/reject\/?$/ }
 ]);
@@ -13845,6 +13853,145 @@ function renderEmergencyProviderRows(items) {
   });
 }
 
+function formatEmergencyRuleRegion(rule) {
+  const row = rule && typeof rule === 'object' ? rule : {};
+  const region = row.region && typeof row.region === 'object' ? row.region : null;
+  if (!region) return '-';
+  if (region.regionKey) return String(region.regionKey);
+  const parts = [];
+  if (region.state) parts.push(`state=${region.state}`);
+  if (region.city) parts.push(`city=${region.city}`);
+  if (region.county) parts.push(`county=${region.county}`);
+  if (region.zip) parts.push(`zip=${region.zip}`);
+  return parts.length ? parts.join(', ') : '-';
+}
+
+function renderEmergencyRulePreview(result) {
+  const summaryEl = document.getElementById('emergency-rule-preview-summary');
+  const jsonEl = document.getElementById('emergency-rule-preview-json');
+  if (!summaryEl || !jsonEl) return;
+  if (!result) {
+    summaryEl.textContent = 'Rule preview結果はここに表示されます。';
+    jsonEl.textContent = '-';
+    return;
+  }
+  const matchCount = Number(result.matchCount || 0);
+  const blockedCount = Number(result.blockedCount || 0);
+  summaryEl.textContent = `ruleId=${result.ruleId || '-'} / match=${matchCount} / blocked=${blockedCount}`;
+  jsonEl.textContent = JSON.stringify(result, null, 2);
+}
+
+function readEmergencyRuleFormPayload() {
+  const ruleId = getInputValue('emergency-rule-id');
+  const providerKey = getInputValue('emergency-rule-provider-key');
+  const eventType = getInputValue('emergency-rule-event-type');
+  const severity = getSelectValue('emergency-rule-severity') || 'ANY';
+  const priority = getSelectValue('emergency-rule-priority') || 'emergency';
+  const regionKey = getInputValue('emergency-rule-region-key');
+  const role = getInputValue('emergency-rule-role');
+  const maxRecipientsRaw = getInputValue('emergency-rule-max-recipients');
+  const maxRecipients = Number(maxRecipientsRaw);
+  return {
+    ruleId: ruleId || null,
+    providerKey: providerKey || null,
+    eventType: eventType || null,
+    severity,
+    priority,
+    region: regionKey ? { regionKey } : null,
+    role: role || null,
+    membersOnly: document.getElementById('emergency-rule-members-only')?.checked === true,
+    autoSend: document.getElementById('emergency-rule-auto-send')?.checked === true,
+    enabled: document.getElementById('emergency-rule-enabled')?.checked === true,
+    maxRecipients: Number.isFinite(maxRecipients) && maxRecipients > 0 ? Math.floor(maxRecipients) : 500
+  };
+}
+
+function fillEmergencyRuleForm(rule) {
+  const row = rule && typeof rule === 'object' ? rule : {};
+  const region = row.region && typeof row.region === 'object' ? row.region : {};
+  const regionKey = region.regionKey || '';
+  const setInput = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+  };
+  setInput('emergency-rule-id', row.ruleId || row.id || '');
+  setInput('emergency-rule-provider-key', row.providerKey || '');
+  setInput('emergency-rule-event-type', row.eventType || '');
+  setInput('emergency-rule-region-key', regionKey);
+  setInput('emergency-rule-role', row.role || '');
+  setInput('emergency-rule-max-recipients', row.maxRecipients ? String(row.maxRecipients) : '500');
+  const severityEl = document.getElementById('emergency-rule-severity');
+  if (severityEl) severityEl.value = row.severity || 'ANY';
+  const priorityEl = document.getElementById('emergency-rule-priority');
+  if (priorityEl) priorityEl.value = row.priority || 'emergency';
+  const membersOnlyEl = document.getElementById('emergency-rule-members-only');
+  if (membersOnlyEl) membersOnlyEl.checked = row.membersOnly === true;
+  const autoSendEl = document.getElementById('emergency-rule-auto-send');
+  if (autoSendEl) autoSendEl.checked = row.autoSend === true;
+  const enabledEl = document.getElementById('emergency-rule-enabled');
+  if (enabledEl) enabledEl.checked = row.enabled === true;
+}
+
+function renderEmergencyRuleRows(items) {
+  const tbody = document.getElementById('emergency-rule-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 9;
+    td.textContent = 'ルールなし';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    const ruleId = row && (row.ruleId || row.id) ? String(row.ruleId || row.id) : '';
+    if (state.emergencySelectedRuleId && state.emergencySelectedRuleId === ruleId) {
+      tr.classList.add('is-selected');
+    }
+    [
+      ruleId || '-',
+      row && row.providerKey ? String(row.providerKey) : '-',
+      row && row.eventType ? String(row.eventType) : '-',
+      row && row.severity ? String(row.severity) : '-',
+      formatEmergencyRuleRegion(row),
+      row && row.autoSend === true ? 'true' : 'false',
+      row && row.enabled === true ? 'true' : 'false',
+      Number.isFinite(Number(row && row.maxRecipients)) ? String(Number(row.maxRecipients)) : '-'
+    ].forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    const actionsTd = document.createElement('td');
+    actionsTd.appendChild(createUnifiedActionButton(
+      'Edit',
+      () => {
+        state.emergencySelectedRuleId = ruleId;
+        fillEmergencyRuleForm(row);
+        renderEmergencyRuleRows(state.emergencyRuleItems);
+      }
+    ));
+    actionsTd.appendChild(createUnifiedActionButton(
+      row && row.enabled === true ? 'Disable' : 'Enable',
+      () => { void updateEmergencyRuleAction(ruleId, { enabled: !(row && row.enabled === true) }); },
+      { actionKey: 'emergency.rule.update' }
+    ));
+    actionsTd.appendChild(createUnifiedActionButton(
+      'Preview',
+      () => { void previewEmergencyRuleAction(ruleId); },
+      { actionKey: 'emergency.rule.preview' }
+    ));
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+  });
+}
+
 function renderEmergencyBulletinRows(items) {
   const tbody = document.getElementById('emergency-bulletin-rows');
   if (!tbody) return;
@@ -13891,11 +14038,13 @@ function renderEmergencyBulletinRows(items) {
     tr.appendChild(evidenceTd);
 
     const actionsTd = document.createElement('td');
-    actionsTd.appendChild(createUnifiedActionButton(
-      t('ui.label.emergency.approve', 'Approve'),
-      () => { void approveEmergencyBulletinAction(bulletinId); },
-      { actionKey: 'emergency.bulletin.approve' }
-    ));
+    if (EMERGENCY_MANUAL_APPROVE_FALLBACK) {
+      actionsTd.appendChild(createUnifiedActionButton(
+        t('ui.label.emergency.approve', 'Approve'),
+        () => { void approveEmergencyBulletinAction(bulletinId); },
+        { actionKey: 'emergency.bulletin.approve' }
+      ));
+    }
     actionsTd.appendChild(createUnifiedActionButton(
       t('ui.label.emergency.reject', 'Reject'),
       () => { void rejectEmergencyBulletinAction(bulletinId); },
@@ -13979,6 +14128,104 @@ async function loadEmergencyProviders(options) {
   state.emergencyProviderItems = [];
   renderEmergencyProviderRows([]);
   if (notify) showToast(t('ui.toast.emergency.providersLoadFail', 'Emergency provider一覧の取得に失敗しました'), 'danger');
+}
+
+function clearEmergencyRuleForm() {
+  fillEmergencyRuleForm({
+    ruleId: '',
+    providerKey: '',
+    eventType: '',
+    severity: 'ANY',
+    priority: 'emergency',
+    region: { regionKey: '' },
+    role: '',
+    membersOnly: false,
+    autoSend: true,
+    enabled: true,
+    maxRecipients: 500
+  });
+  state.emergencySelectedRuleId = null;
+  renderEmergencyRulePreview(null);
+}
+
+async function loadEmergencyRules(options) {
+  const notify = options && options.notify;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const data = await adminFetchJson({
+    url: '/api/admin/emergency/rules',
+    traceId
+  });
+  if (data && data.ok) {
+    state.emergencyRuleItems = Array.isArray(data.items) ? data.items : [];
+    if (state.emergencySelectedRuleId) {
+      const selected = state.emergencyRuleItems.find((item) => item && (item.ruleId || item.id) === state.emergencySelectedRuleId);
+      if (selected) fillEmergencyRuleForm(selected);
+    }
+    renderEmergencyRuleRows(state.emergencyRuleItems);
+    if (notify) showToast('Emergency rules を取得しました', 'ok');
+    return;
+  }
+  state.emergencyRuleItems = [];
+  renderEmergencyRuleRows([]);
+  if (notify) showToast('Emergency rules の取得に失敗しました', 'danger');
+}
+
+async function saveEmergencyRuleAction() {
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const payload = readEmergencyRuleFormPayload();
+  const ruleId = payload.ruleId;
+  const route = ruleId
+    ? `/api/admin/emergency/rules/${encodeURIComponent(ruleId)}`
+    : '/api/admin/emergency/rules';
+  const data = await postJson(route, payload, traceId);
+  if (data && data.ok && data.item) {
+    state.emergencySelectedRuleId = data.item.ruleId || data.item.id || null;
+    fillEmergencyRuleForm(data.item);
+    await loadEmergencyRules({ notify: false });
+    showToast('Emergency rule を保存しました', 'ok');
+    return;
+  }
+  showToast('Emergency rule の保存に失敗しました', 'danger');
+}
+
+async function updateEmergencyRuleAction(ruleId, patch) {
+  const id = typeof ruleId === 'string' ? ruleId.trim() : '';
+  if (!id) return;
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const payload = Object.assign({}, patch || {}, { ruleId: id });
+  const data = await postJson(`/api/admin/emergency/rules/${encodeURIComponent(id)}`, payload, traceId);
+  if (data && data.ok && data.item) {
+    state.emergencySelectedRuleId = data.item.ruleId || data.item.id || id;
+    await loadEmergencyRules({ notify: false });
+    showToast('Emergency rule を更新しました', 'ok');
+    return;
+  }
+  showToast('Emergency rule の更新に失敗しました', 'danger');
+}
+
+async function previewEmergencyRuleAction(ruleId) {
+  const id = typeof ruleId === 'string' && ruleId.trim()
+    ? ruleId.trim()
+    : (state.emergencySelectedRuleId || getInputValue('emergency-rule-id') || '');
+  if (!id) {
+    showToast('Preview対象の ruleId が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace') || newTraceId();
+  const payload = {
+    bulletinId: state.emergencySelectedBulletinId || null,
+    limit: 20
+  };
+  const data = await postJson(`/api/admin/emergency/rules/${encodeURIComponent(id)}/preview`, payload, traceId);
+  if (data && data.ok) {
+    state.emergencyRulePreview = data;
+    renderEmergencyRulePreview(data);
+    showToast('Emergency rule preview を取得しました', 'ok');
+    return;
+  }
+  state.emergencyRulePreview = null;
+  renderEmergencyRulePreview(data || null);
+  showToast('Emergency rule preview の取得に失敗しました', 'danger');
 }
 
 async function loadEmergencyBulletins(options) {
@@ -14146,6 +14393,15 @@ function setupEmergencyLayerControls() {
   document.getElementById('emergency-provider-reload')?.addEventListener('click', () => {
     void loadEmergencyProviders({ notify: true });
   });
+  document.getElementById('emergency-rule-reload')?.addEventListener('click', () => {
+    void loadEmergencyRules({ notify: true });
+  });
+  document.getElementById('emergency-rule-save')?.addEventListener('click', () => {
+    void saveEmergencyRuleAction();
+  });
+  document.getElementById('emergency-rule-clear')?.addEventListener('click', () => {
+    clearEmergencyRuleForm();
+  });
   document.getElementById('emergency-bulletin-reload')?.addEventListener('click', () => {
     void loadEmergencyBulletins({ notify: true });
   });
@@ -14158,6 +14414,7 @@ function setupEmergencyLayerControls() {
   document.getElementById('emergency-bulletin-limit')?.addEventListener('change', () => {
     void loadEmergencyBulletins({ notify: false });
   });
+  clearEmergencyRuleForm();
 }
 
 function setupCityPackControls() {
@@ -14570,6 +14827,7 @@ function setupDecisionActions() {
 
   document.getElementById('emergency-layer-action-edit')?.addEventListener('click', () => {
     activatePane('emergency-layer');
+    document.getElementById('emergency-rule-reload')?.click();
     document.getElementById('emergency-bulletin-reload')?.click();
   });
   document.getElementById('emergency-layer-action-activate')?.addEventListener('click', () => {

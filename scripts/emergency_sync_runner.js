@@ -20,6 +20,8 @@ function parseArgs(argv, env) {
     forceProviderKeys: [],
     forceRefresh: false,
     skipSummarize: false,
+    dryRun: false,
+    maxRecipientsPerRun: null,
     timeoutMs: 20000
   };
 
@@ -66,6 +68,17 @@ function parseArgs(argv, env) {
       i += 1;
       continue;
     }
+    if (key === '--dry-run') {
+      out.dryRun = parseBoolean(next, false);
+      i += 1;
+      continue;
+    }
+    if (key === '--max-recipients-per-run') {
+      const count = Number(next);
+      if (Number.isFinite(count) && count > 0) out.maxRecipientsPerRun = Math.floor(count);
+      i += 1;
+      continue;
+    }
     if (key === '--timeout-ms') {
       const ms = Number(next);
       if (Number.isFinite(ms) && ms > 0) out.timeoutMs = Math.floor(ms);
@@ -90,7 +103,11 @@ function buildPayload(options) {
     providerKeys: options.providerKeys,
     forceProviderKeys: options.forceProviderKeys,
     forceRefresh: options.forceRefresh === true,
-    skipSummarize: options.skipSummarize === true
+    skipSummarize: options.skipSummarize === true,
+    dryRun: options.dryRun === true,
+    maxRecipientsPerRun: Number.isFinite(Number(options.maxRecipientsPerRun))
+      ? Math.floor(Number(options.maxRecipientsPerRun))
+      : null
   };
 }
 
