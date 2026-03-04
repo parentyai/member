@@ -256,6 +256,46 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3) `opsConfig/llmPolicy.allowed_intents_pro=[]`  
 4) `opsConfig/llmPolicy.enabled=false`  
 
+## Phase723 Addendum（Week4 段階解放 / release readiness）
+
+### 目的
+- stg観測で品質閾値を満たした場合のみ prod へ反映する。
+- 判定は `GET /api/admin/os/llm-usage/summary` の `summary.releaseReadiness` を一次情報とする。
+
+### releaseReadiness の既定閾値
+- `minSampleCount=20`
+- `minAcceptedRate=0.70`
+- `maxCitationMissingRate=0.25`
+- `maxTemplateViolationRate=0.20`
+- `maxFallbackRate=0.35`
+- `minEvidenceCoverage=0.80`
+
+### stg -> prod 手順（固定）
+1. stgで有料改善フラグをON（`ENABLE_PAID_INTENT_CLASSIFIER_V2=1` を維持）。  
+2. 24時間以上の観測窓で `GET /api/admin/os/llm-usage/summary?windowDays=7` を確認する。  
+3. `summary.releaseReadiness.ready=true` かつ `blockedBy=[]` を確認する。  
+4. 監査ログ `action=llm_gate.decision` で `assistantQuality.blockedStage/fallbackReason` が急増していないことを確認する。  
+5. 条件を満たした場合のみ prod へ同設定を反映する。  
+
+### しきい値の一時上書き（検証用）
+- `GET /api/admin/os/llm-usage/summary` に以下クエリを付与して判定比較できる。  
+  - `rolloutMinSampleCount`
+  - `rolloutMinAcceptedRate`
+  - `rolloutMaxCitationMissingRate`
+  - `rolloutMaxTemplateViolationRate`
+  - `rolloutMaxFallbackRate`
+  - `rolloutMinEvidenceCoverage`
+- 上書き値は判定比較専用で、恒久運用の既定値を置換しない。  
+
+### 停止条件
+- `summary.releaseReadiness.ready=false` の場合は prod 反映を禁止する。  
+- `blockedBy` に `accepted_rate` / `citation_missing_rate` / `template_violation_rate` が含まれる場合は stg改善へ戻す。  
+
+### ロールバック
+1) `ENABLE_PAID_INTENT_CLASSIFIER_V2=0`（Week2/3改善停止）  
+2) 必要時 `llmConciergeEnabled=false`（コンシェルジュ拡張停止）  
+3) 重大時 `llmEnabled=false`（LLM全体停止）  
+
 ## Phase716 Addendum（LLMコンシェルジュ安全実装）
 
 ### 起動/停止フラグ

@@ -13,6 +13,23 @@ function parsePositiveInt(value, fallback, min, max) {
   return num;
 }
 
+function parseRate(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  if (num < 0 || num > 1) return null;
+  return Math.round(num * 10000) / 10000;
+}
+
+const DEFAULT_RELEASE_READINESS_THRESHOLDS = Object.freeze({
+  minSampleCount: 20,
+  minAcceptedRate: 0.7,
+  maxCitationMissingRate: 0.25,
+  maxTemplateViolationRate: 0.2,
+  maxFallbackRate: 0.35,
+  minEvidenceCoverage: 0.8
+});
+
 function toMillis(value) {
   if (!value) return null;
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
@@ -267,6 +284,112 @@ function buildGateAuditBaseline(rows) {
   };
 }
 
+function toCountMap(rows, keyField) {
+  const map = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const key = normalizeReason(row[keyField]);
+    const count = Number.isFinite(Number(row.count)) ? Number(row.count) : 0;
+    map.set(key, count);
+  });
+  return map;
+}
+
+function buildReleaseReadiness(payload, thresholdsInput) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const thresholds = Object.assign({}, DEFAULT_RELEASE_READINESS_THRESHOLDS, thresholdsInput || {});
+  const assistantQuality = data.assistantQuality && typeof data.assistantQuality === 'object' ? data.assistantQuality : {};
+  const gateAuditBaseline = data.gateAuditBaseline && typeof data.gateAuditBaseline === 'object' ? data.gateAuditBaseline : {};
+
+  const sampleCount = Number.isFinite(Number(assistantQuality.sampleCount)) ? Number(assistantQuality.sampleCount) : 0;
+  const acceptedRate = Number.isFinite(Number(gateAuditBaseline.acceptedRate)) ? Number(gateAuditBaseline.acceptedRate) : 0;
+  const blockedRate = Number.isFinite(Number(gateAuditBaseline.blockedCount)) && Number.isFinite(Number(gateAuditBaseline.callsTotal)) && Number(gateAuditBaseline.callsTotal) > 0
+    ? Math.round((Number(gateAuditBaseline.blockedCount) / Number(gateAuditBaseline.callsTotal)) * 10000) / 10000
+    : Math.max(0, Math.min(1, Math.round((1 - acceptedRate) * 10000) / 10000));
+  const avgEvidenceCoverage = Number.isFinite(Number(assistantQuality.avgEvidenceCoverage))
+    ? Number(assistantQuality.avgEvidenceCoverage)
+    : 0;
+
+  const blockedReasonMap = toCountMap(gateAuditBaseline.blockedReasons, 'reason');
+  const fallbackReasonMap = toCountMap(assistantQuality.fallbackReasons, 'fallbackReason');
+  const callsTotal = Number.isFinite(Number(gateAuditBaseline.callsTotal)) ? Number(gateAuditBaseline.callsTotal) : 0;
+
+  const citationMissingCount = blockedReasonMap.get('citation_missing') || 0;
+  const templateViolationCount = blockedReasonMap.get('template_violation') || 0;
+  const citationMissingRate = callsTotal > 0 ? Math.round((citationMissingCount / callsTotal) * 10000) / 10000 : 0;
+  const templateViolationRate = callsTotal > 0 ? Math.round((templateViolationCount / callsTotal) * 10000) / 10000 : 0;
+
+  const fallbackTotalCount = Array.from(fallbackReasonMap.entries()).reduce((sum, [reason, count]) => {
+    if (reason === 'none') return sum;
+    return sum + count;
+  }, 0);
+  const fallbackRate = sampleCount > 0 ? Math.round((fallbackTotalCount / sampleCount) * 10000) / 10000 : 0;
+
+  const checks = [
+    {
+      key: 'sample_count',
+      operator: '>=',
+      threshold: thresholds.minSampleCount,
+      actual: sampleCount,
+      ok: sampleCount >= thresholds.minSampleCount
+    },
+    {
+      key: 'accepted_rate',
+      operator: '>=',
+      threshold: thresholds.minAcceptedRate,
+      actual: acceptedRate,
+      ok: acceptedRate >= thresholds.minAcceptedRate
+    },
+    {
+      key: 'citation_missing_rate',
+      operator: '<=',
+      threshold: thresholds.maxCitationMissingRate,
+      actual: citationMissingRate,
+      ok: citationMissingRate <= thresholds.maxCitationMissingRate
+    },
+    {
+      key: 'template_violation_rate',
+      operator: '<=',
+      threshold: thresholds.maxTemplateViolationRate,
+      actual: templateViolationRate,
+      ok: templateViolationRate <= thresholds.maxTemplateViolationRate
+    },
+    {
+      key: 'fallback_rate',
+      operator: '<=',
+      threshold: thresholds.maxFallbackRate,
+      actual: fallbackRate,
+      ok: fallbackRate <= thresholds.maxFallbackRate
+    },
+    {
+      key: 'avg_evidence_coverage',
+      operator: '>=',
+      threshold: thresholds.minEvidenceCoverage,
+      actual: avgEvidenceCoverage,
+      ok: avgEvidenceCoverage >= thresholds.minEvidenceCoverage
+    }
+  ];
+
+  const blockedBy = checks.filter((item) => item.ok !== true).map((item) => item.key);
+  return {
+    ready: blockedBy.length === 0,
+    recommendation: blockedBy.length === 0 ? 'promote_to_prod' : 'hold_in_stg',
+    blockedBy,
+    thresholds,
+    metrics: {
+      sampleCount,
+      callsTotal,
+      acceptedRate,
+      blockedRate,
+      citationMissingRate,
+      templateViolationRate,
+      fallbackRate,
+      avgEvidenceCoverage
+    },
+    checks
+  };
+}
+
 function buildMaskedTopUsers(rows, limit) {
   return buildTopUsers(rows, limit).map((row) => Object.assign({}, row, {
     userIdMasked: maskLineUserId(row.userId)
@@ -285,7 +408,43 @@ async function handleLlmUsageSummary(req, res) {
     const windowDays = parsePositiveInt(url.searchParams.get('windowDays'), 7, 1, 90);
     const limit = parsePositiveInt(url.searchParams.get('limit'), 20, 1, 100);
     const scanLimit = parsePositiveInt(url.searchParams.get('scanLimit'), 3000, 100, 5000);
-    if (windowDays === null || limit === null || scanLimit === null) throw new Error('invalid limit');
+    const rolloutMinSampleCount = parsePositiveInt(
+      url.searchParams.get('rolloutMinSampleCount'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.minSampleCount,
+      1,
+      10000
+    );
+    const rolloutMinAcceptedRate = parseRate(
+      url.searchParams.get('rolloutMinAcceptedRate'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.minAcceptedRate
+    );
+    const rolloutMaxCitationMissingRate = parseRate(
+      url.searchParams.get('rolloutMaxCitationMissingRate'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.maxCitationMissingRate
+    );
+    const rolloutMaxTemplateViolationRate = parseRate(
+      url.searchParams.get('rolloutMaxTemplateViolationRate'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.maxTemplateViolationRate
+    );
+    const rolloutMaxFallbackRate = parseRate(
+      url.searchParams.get('rolloutMaxFallbackRate'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.maxFallbackRate
+    );
+    const rolloutMinEvidenceCoverage = parseRate(
+      url.searchParams.get('rolloutMinEvidenceCoverage'),
+      DEFAULT_RELEASE_READINESS_THRESHOLDS.minEvidenceCoverage
+    );
+    if (
+      windowDays === null
+      || limit === null
+      || scanLimit === null
+      || rolloutMinSampleCount === null
+      || rolloutMinAcceptedRate === null
+      || rolloutMaxCitationMissingRate === null
+      || rolloutMaxTemplateViolationRate === null
+      || rolloutMaxFallbackRate === null
+      || rolloutMinEvidenceCoverage === null
+    ) throw new Error('invalid limit');
 
     const toAt = new Date();
     const fromAt = new Date(Date.now() - ((windowDays - 1) * 24 * 60 * 60 * 1000));
@@ -319,6 +478,20 @@ async function handleLlmUsageSummary(req, res) {
       ? Math.round((proRows.length / Math.max(1, new Set(proRows.map((row) => String(row && row.userId ? row.userId : 'unknown'))).size)) * 100) / 100
       : 0;
 
+    const assistantQualitySummary = buildAssistantQualitySummary(rows);
+    const gateAuditBaselineSummary = buildGateAuditBaseline(gateAuditRows);
+    const releaseReadiness = buildReleaseReadiness({
+      assistantQuality: assistantQualitySummary,
+      gateAuditBaseline: gateAuditBaselineSummary
+    }, {
+      minSampleCount: rolloutMinSampleCount,
+      minAcceptedRate: rolloutMinAcceptedRate,
+      maxCitationMissingRate: rolloutMaxCitationMissingRate,
+      maxTemplateViolationRate: rolloutMaxTemplateViolationRate,
+      maxFallbackRate: rolloutMaxFallbackRate,
+      minEvidenceCoverage: rolloutMinEvidenceCoverage
+    });
+
     const summary = {
       windowDays,
       callsTotal,
@@ -332,8 +505,9 @@ async function handleLlmUsageSummary(req, res) {
       maskedTopUsers: buildMaskedTopUsers(rows, limit),
       byPlan: buildPlanBreakdown(rows),
       byDecision: buildDecisionBreakdown(rows),
-      assistantQuality: buildAssistantQualitySummary(rows),
-      gateAuditBaseline: buildGateAuditBaseline(gateAuditRows)
+      assistantQuality: assistantQualitySummary,
+      gateAuditBaseline: gateAuditBaselineSummary,
+      releaseReadiness
     };
 
     await appendAuditLog({
@@ -347,6 +521,8 @@ async function handleLlmUsageSummary(req, res) {
         windowDays,
         callsTotal,
         blockedRate,
+        releaseReady: releaseReadiness.ready === true,
+        releaseBlockedBy: releaseReadiness.blockedBy.slice(0, 6),
         scanLimit,
         topUserCount: summary.topUsers.length
       }
@@ -382,5 +558,6 @@ module.exports = {
   buildDecisionBreakdown,
   buildAssistantQualitySummary,
   buildGateAuditBaseline,
+  buildReleaseReadiness,
   maskLineUserId
 };

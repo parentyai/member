@@ -383,3 +383,37 @@
     - `acceptedRate`
     - `blockedReasons[]`
     - `blockedStages[]`
+  - `releaseReadiness`
+    - `ready`
+    - `recommendation` (`promote_to_prod|hold_in_stg`)
+    - `blockedBy[]`
+    - `thresholds`
+      - `minSampleCount`
+      - `minAcceptedRate`
+      - `maxCitationMissingRate`
+      - `maxTemplateViolationRate`
+      - `maxFallbackRate`
+      - `minEvidenceCoverage`
+    - `metrics`
+      - `sampleCount`
+      - `callsTotal`
+      - `acceptedRate`
+      - `blockedRate`
+      - `citationMissingRate`
+      - `templateViolationRate`
+      - `fallbackRate`
+      - `avgEvidenceCoverage`
+    - `checks[]`
+      - `key`
+      - `operator`
+      - `threshold`
+      - `actual`
+      - `ok`
+
+- query (add-only, optional):
+  - `rolloutMinSampleCount` (int)
+  - `rolloutMinAcceptedRate` (0..1)
+  - `rolloutMaxCitationMissingRate` (0..1)
+  - `rolloutMaxTemplateViolationRate` (0..1)
+  - `rolloutMaxFallbackRate` (0..1)
+  - `rolloutMinEvidenceCoverage` (0..1)
