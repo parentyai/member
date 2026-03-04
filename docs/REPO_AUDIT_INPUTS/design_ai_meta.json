@@ -21,6 +21,7 @@
     "emergencyDiffsRepo",
     "emergencyEventsRepo",
     "emergencyProvidersRepo",
+    "emergencyRulesRepo",
     "emergencySnapshotsRepo",
     "emergencyUnmappedEventsRepo",
     "eventsRepo",
@@ -95,7 +96,9 @@
   "merge_candidates": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": []
+    "scenarioKey": [
+      "src/usecases/emergency/resolveEmergencyRecipients.js"
+    ]
   },
   "critical_guards": [
     "validateSingleCta",

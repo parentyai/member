@@ -2,7 +2,7 @@
 
 | item | before | after | note |
 | --- | --- | --- | --- |
-| canonical repos | 90 | 90 | 変更なし |
+| canonical repos | 91 | 91 | 変更なし |
 | legacy repos | 0 | 0 | DEPRECATED/LEGACY_HEADER強化 |
 | duplicate groups | 0 | 0 | 削除なし、可視化のみ |
 | missing-index fallback points | 0 | 0 | 実行経路置換完了（fallback zero） |

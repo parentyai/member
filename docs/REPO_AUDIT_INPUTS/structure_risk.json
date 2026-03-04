@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-04T11:12:33.517Z",
+  "generatedAt": "2026-03-04T22:13:26.069Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "33b2a60f958f0491d3922cdc977864d328cd9baa241c3a5cfc3eb29929e1df78",
-  "canonical_repos_count": 90,
+  "sourceDigest": "9dbf223b613a8106ad0b1ee4e61adde06fc5a1b4d0d9a7d08acb156d2d644a8e",
+  "canonical_repos_count": 91,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 0,
+  "naming_drift_scenarioKey_count": 1,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -31,6 +31,7 @@
     "emergencyDiffsRepo",
     "emergencyEventsRepo",
     "emergencyProvidersRepo",
+    "emergencyRulesRepo",
     "emergencySnapshotsRepo",
     "emergencyUnmappedEventsRepo",
     "eventsRepo",
@@ -106,7 +107,9 @@
   "unresolved_dynamic_dep": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": []
+    "scenarioKey": [
+      "src/usecases/emergency/resolveEmergencyRecipients.js"
+    ]
   },
   "assumptions": [
     "derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json",

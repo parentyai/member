@@ -35,6 +35,7 @@
       "src/usecases/assistant/resolvePersonalizedLlmContext.js",
       "src/usecases/deliveries/getNotificationDeliveries.js",
       "src/usecases/emergency/approveEmergencyBulletin.js",
+      "src/usecases/emergency/resolveEmergencyRecipients.js",
       "src/usecases/journey/handleJourneyLineCommand.js",
       "src/usecases/journey/runJourneyParamDryRun.js",
       "src/usecases/journey/syncJourneyTodoPlan.js",
