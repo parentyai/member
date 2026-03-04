@@ -190,7 +190,8 @@
       "deliveriesRepo",
       "journeyTodoItemsRepo",
       "llmActionLogsRepo",
-      "llmBanditStateRepo"
+      "llmBanditStateRepo",
+      "llmContextualBanditStateRepo"
     ],
     "generateFreeRetrievalReply": [],
     "generateOpsDailyReport": [],
@@ -741,6 +742,9 @@
     ],
     "llmBanditStateRepo": [
       "llm_bandit_state"
+    ],
+    "llmContextualBanditStateRepo": [
+      "llm_contextual_bandit_state"
     ],
     "llmQualityLogsRepo": [
       "llm_quality_logs"

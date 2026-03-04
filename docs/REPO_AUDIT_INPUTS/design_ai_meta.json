@@ -43,6 +43,7 @@
     "linkRegistryRepo",
     "llmActionLogsRepo",
     "llmBanditStateRepo",
+    "llmContextualBanditStateRepo",
     "llmPolicyChangeLogsRepo",
     "llmQualityLogsRepo",
     "llmUsageLogsRepo",

@@ -29,6 +29,7 @@ const {
 } = require('../repos/firestore/systemFlagsRepo');
 const llmActionLogsRepo = require('../repos/firestore/llmActionLogsRepo');
 const llmBanditStateRepo = require('../repos/firestore/llmBanditStateRepo');
+const llmContextualBanditStateRepo = require('../repos/firestore/llmContextualBanditStateRepo');
 const faqArticlesRepo = require('../repos/firestore/faqArticlesRepo');
 const linkRegistryRepo = require('../repos/firestore/linkRegistryRepo');
 const sourceRefsRepo = require('../repos/firestore/sourceRefsRepo');
@@ -549,6 +550,10 @@ async function appendLlmGateDecisionBestEffort(data) {
         postRenderLint: conciergeMeta && conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
           ? conciergeMeta.postRenderLint
           : { findings: [], modified: false },
+        contextSignature: conciergeMeta && typeof conciergeMeta.contextSignature === 'string'
+          ? conciergeMeta.contextSignature
+          : null,
+        contextualBanditEnabled: conciergeMeta ? conciergeMeta.contextualBanditEnabled === true : false,
         contextualFeatures: conciergeMeta && conciergeMeta.contextualFeatures && typeof conciergeMeta.contextualFeatures === 'object'
           ? conciergeMeta.contextualFeatures
           : null,
@@ -573,6 +578,26 @@ async function loadBanditStateByArm(segmentKey) {
   const normalizedSegmentKey = normalizeReplyText(segmentKey);
   if (!normalizedSegmentKey) return {};
   const rows = await llmBanditStateRepo.listBanditArmStatesBySegment(normalizedSegmentKey, 200).catch(() => []);
+  const out = Object.create(null);
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const armId = normalizeReplyText(row.armId);
+    if (!armId) return;
+    out[armId] = {
+      pulls: Number.isFinite(Number(row.pulls)) ? Number(row.pulls) : 0,
+      avgReward: Number.isFinite(Number(row.avgReward)) ? Number(row.avgReward) : 0
+    };
+  });
+  return out;
+}
+
+async function loadContextualBanditStateByArm(segmentKey, contextSignature) {
+  const normalizedSegmentKey = normalizeReplyText(segmentKey);
+  const normalizedContextSignature = normalizeReplyText(contextSignature);
+  if (!normalizedSegmentKey || !normalizedContextSignature) return {};
+  const rows = await llmContextualBanditStateRepo
+    .listBanditArmStatesByContext(normalizedSegmentKey, normalizedContextSignature, 200)
+    .catch(() => []);
   const out = Object.create(null);
   rows.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -629,6 +654,10 @@ async function appendLlmActionLogBestEffort(data) {
       postRenderLint: conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
         ? conciergeMeta.postRenderLint
         : { findings: [], modified: false },
+      contextSignature: typeof conciergeMeta.contextSignature === 'string'
+        ? conciergeMeta.contextSignature
+        : null,
+      contextualBanditEnabled: conciergeMeta.contextualBanditEnabled === true,
       contextualFeatures: conciergeMeta.contextualFeatures && typeof conciergeMeta.contextualFeatures === 'object'
         ? conciergeMeta.contextualFeatures
         : null,
@@ -729,7 +758,13 @@ async function replyWithFreeRetrieval(params) {
         bandit: {
           enabled: payload.llmBanditEnabled === true,
           epsilon: 0.1,
-          stateFetcher: async ({ segmentKey }) => loadBanditStateByArm(segmentKey)
+          stateFetcher: async ({ segmentKey, contextSignature }) => {
+            const [stateByArm, contextualStateByArm] = await Promise.all([
+              loadBanditStateByArm(segmentKey),
+              loadContextualBanditStateByArm(segmentKey, contextSignature)
+            ]);
+            return { stateByArm, contextualStateByArm };
+          }
         },
         env: process.env
       });
@@ -753,6 +788,8 @@ async function replyWithFreeRetrieval(params) {
         contextVersion: 'concierge_ctx_v1',
         featureHash: null,
         postRenderLint: { findings: [], modified: false },
+        contextSignature: null,
+        contextualBanditEnabled: false,
         contextualFeatures: null,
         counterfactualSelectedArmId: null,
         counterfactualSelectedRank: null,
@@ -787,9 +824,16 @@ async function handleAssistantMessage(params) {
     ? payload.requestId.trim()
     : null;
   const requestId = traceId;
-  const banditStateFetcher = async ({ segmentKey }) => {
+  const banditStateFetcher = async ({ segmentKey, contextSignature }) => {
     if (llmBanditEnabled !== true) return {};
-    return loadBanditStateByArm(segmentKey);
+    const [stateByArm, contextualStateByArm] = await Promise.all([
+      loadBanditStateByArm(segmentKey),
+      loadContextualBanditStateByArm(segmentKey, contextSignature)
+    ]);
+    return {
+      stateByArm,
+      contextualStateByArm
+    };
   };
 
   if (planInfo.plan !== 'pro') {
@@ -1220,6 +1264,8 @@ async function handleAssistantMessage(params) {
         contextVersion: 'concierge_ctx_v1',
         featureHash: null,
         postRenderLint: { findings: [], modified: false },
+        contextSignature: null,
+        contextualBanditEnabled: false,
         contextualFeatures: null,
         counterfactualSelectedArmId: null,
         counterfactualSelectedRank: null,

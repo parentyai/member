@@ -511,3 +511,26 @@
 - `counterfactualSelectedArmId`
 - `counterfactualSelectedRank`
 - `counterfactualTopArms[]`
+
+## Phase726 Add-only Delta（Contextual bandit runtime）
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only fields:
+  - `contextSignature` (`ctxsig_v1_*`)
+  - `contextualBanditEnabled` (boolean)
+
+### `llm_action_logs` add-only fields
+- `contextSignature`
+- `contextualBanditEnabled`
+
+### New Firestore collection
+- `llm_contextual_bandit_state`
+  - `segmentKey`
+  - `contextSignature`
+  - `armId`
+  - `pulls`
+  - `totalReward`
+  - `avgReward`
+  - `epsilon`
+  - `version`
+  - `updatedAt`

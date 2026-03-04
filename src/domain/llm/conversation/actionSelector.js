@@ -149,6 +149,10 @@ function selectActionForConversation(params) {
   const bandit = payload.bandit && typeof payload.bandit === 'object' ? payload.bandit : {};
   const banditEnabled = bandit.enabled === true;
   const epsilon = Number.isFinite(Number(bandit.epsilon)) ? Number(bandit.epsilon) : DEFAULT_EPSILON;
+  const contextualStateByArm = bandit.contextualStateByArm && typeof bandit.contextualStateByArm === 'object'
+    ? bandit.contextualStateByArm
+    : {};
+  const hasContextualBanditState = Object.keys(contextualStateByArm).length > 0;
 
   if (!banditEnabled) {
     return {
@@ -156,22 +160,33 @@ function selectActionForConversation(params) {
       candidates,
       selectionSource: 'score',
       epsilon,
-      segmentKey: buildSegmentKey(payload)
+      segmentKey: buildSegmentKey(payload),
+      contextualBanditUsed: false
     };
   }
 
+  const banditStateByArm = hasContextualBanditState
+    ? contextualStateByArm
+    : (bandit.stateByArm || {});
+
   const picked = chooseArm(candidates, {
     epsilon,
-    stateByArm: bandit.stateByArm || {},
+    stateByArm: banditStateByArm,
     randomFn: bandit.randomFn
   });
+
+  const rawSelectionSource = picked.selectionSource || 'score';
+  const selectionSource = hasContextualBanditState
+    ? (rawSelectionSource === 'bandit_explore' ? 'bandit_contextual_explore' : (rawSelectionSource === 'bandit_exploit' ? 'bandit_contextual_exploit' : rawSelectionSource))
+    : rawSelectionSource;
 
   return {
     selected: picked.selected || fallback,
     candidates,
-    selectionSource: picked.selectionSource || 'score',
+    selectionSource,
     epsilon,
-    segmentKey: buildSegmentKey(payload)
+    segmentKey: buildSegmentKey(payload),
+    contextualBanditUsed: hasContextualBanditState
   };
 }
 

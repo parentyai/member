@@ -437,3 +437,15 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - `contextualFeatures` 欠損のみ: 継続運用可（best effort）。  
 - `counterfactualTopArms` が常に空: `composeConciergeReply` と `actionSelector` の連携を確認。  
 - 影響縮小は `llmBanditEnabled=false` を先に適用。  
+
+## Phase726 Addendum（contextual bandit runtime）
+
+### 監査確認項目（追加）
+`audit_logs(action=llm_gate.decision)` で次を確認する。  
+- `contextSignature` が `ctxsig_v1_` で始まる  
+- `contextualBanditEnabled=true` のとき `chosenAction.selectionSource` が `bandit_contextual_*` または `bandit_*`  
+
+### 学習状態確認
+`llm_contextual_bandit_state` で以下を確認する。  
+- `segmentKey/contextSignature/armId` 単位で `pulls` が増加している  
+- `avgReward` が極端値に偏った場合は `llmBanditEnabled=false` で即時停止可能  
