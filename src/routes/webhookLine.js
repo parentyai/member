@@ -22,8 +22,13 @@ const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const {
   getPublicWriteSafetySnapshot,
-  getLlmConciergeEnabled
+  getLlmConciergeEnabled,
+  getLlmWebSearchEnabled,
+  getLlmStyleEngineEnabled,
+  getLlmBanditEnabled
 } = require('../repos/firestore/systemFlagsRepo');
+const llmActionLogsRepo = require('../repos/firestore/llmActionLogsRepo');
+const llmBanditStateRepo = require('../repos/firestore/llmBanditStateRepo');
 const faqArticlesRepo = require('../repos/firestore/faqArticlesRepo');
 const linkRegistryRepo = require('../repos/firestore/linkRegistryRepo');
 const sourceRefsRepo = require('../repos/firestore/sourceRefsRepo');
@@ -180,6 +185,30 @@ function resolveProPredictiveActionsEnabled() {
 async function resolveLlmConciergeEnabledBestEffort() {
   try {
     return await getLlmConciergeEnabled();
+  } catch (_err) {
+    return false;
+  }
+}
+
+async function resolveLlmWebSearchEnabledBestEffort() {
+  try {
+    return await getLlmWebSearchEnabled();
+  } catch (_err) {
+    return true;
+  }
+}
+
+async function resolveLlmStyleEngineEnabledBestEffort() {
+  try {
+    return await getLlmStyleEngineEnabled();
+  } catch (_err) {
+    return true;
+  }
+}
+
+async function resolveLlmBanditEnabledBestEffort() {
+  try {
+    return await getLlmBanditEnabled();
   } catch (_err) {
     return false;
   }
@@ -496,8 +525,102 @@ async function appendLlmGateDecisionBestEffort(data) {
         responseLength: conciergeMeta && Number.isFinite(Number(conciergeMeta.responseLength))
           ? Number(conciergeMeta.responseLength)
           : 0,
+        intentConfidence: conciergeMeta && Number.isFinite(Number(conciergeMeta.intentConfidence))
+          ? Number(conciergeMeta.intentConfidence)
+          : 0,
+        contextConfidence: conciergeMeta && Number.isFinite(Number(conciergeMeta.contextConfidence))
+          ? Number(conciergeMeta.contextConfidence)
+          : 0,
+        evidenceNeed: conciergeMeta && typeof conciergeMeta.evidenceNeed === 'string'
+          ? conciergeMeta.evidenceNeed
+          : 'none',
+        evidenceOutcome: conciergeMeta && typeof conciergeMeta.evidenceOutcome === 'string'
+          ? conciergeMeta.evidenceOutcome
+          : 'SUPPORTED',
+        chosenAction: conciergeMeta && conciergeMeta.chosenAction && typeof conciergeMeta.chosenAction === 'object'
+          ? conciergeMeta.chosenAction
+          : null,
+        contextVersion: conciergeMeta && typeof conciergeMeta.contextVersion === 'string'
+          ? conciergeMeta.contextVersion
+          : null,
+        featureHash: conciergeMeta && typeof conciergeMeta.featureHash === 'string'
+          ? conciergeMeta.featureHash
+          : null,
+        postRenderLint: conciergeMeta && conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
+          ? conciergeMeta.postRenderLint
+          : { findings: [], modified: false },
         assistantQuality
       }
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
+async function loadBanditStateByArm(segmentKey) {
+  const normalizedSegmentKey = normalizeReplyText(segmentKey);
+  if (!normalizedSegmentKey) return {};
+  const rows = await llmBanditStateRepo.listBanditArmStatesBySegment(normalizedSegmentKey, 200).catch(() => []);
+  const out = Object.create(null);
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const armId = normalizeReplyText(row.armId);
+    if (!armId) return;
+    out[armId] = {
+      pulls: Number.isFinite(Number(row.pulls)) ? Number(row.pulls) : 0,
+      avgReward: Number.isFinite(Number(row.avgReward)) ? Number(row.avgReward) : 0
+    };
+  });
+  return out;
+}
+
+async function appendLlmActionLogBestEffort(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const lineUserId = normalizeReplyText(payload.lineUserId);
+  if (!lineUserId) return;
+  const conciergeMeta = payload.conciergeMeta && typeof payload.conciergeMeta === 'object' ? payload.conciergeMeta : {};
+  const chosenAction = conciergeMeta.chosenAction && typeof conciergeMeta.chosenAction === 'object'
+    ? conciergeMeta.chosenAction
+    : {};
+
+  try {
+    await llmActionLogsRepo.appendLlmActionLog({
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      lineUserId,
+      plan: payload.plan || 'free',
+      userTier: conciergeMeta.userTier || (payload.plan === 'pro' ? 'paid' : 'free'),
+      mode: conciergeMeta.mode || 'A',
+      topic: conciergeMeta.topic || 'general',
+      intentConfidence: Number.isFinite(Number(conciergeMeta.intentConfidence)) ? Number(conciergeMeta.intentConfidence) : 0,
+      contextConfidence: Number.isFinite(Number(conciergeMeta.contextConfidence)) ? Number(conciergeMeta.contextConfidence) : 0,
+      conversationState: conciergeMeta.conversationState || null,
+      conversationMove: conciergeMeta.conversationMove || null,
+      styleId: conciergeMeta.styleId || null,
+      contextVersion: conciergeMeta.contextVersion || 'concierge_ctx_v1',
+      featureHash: conciergeMeta.featureHash || null,
+      segmentKey: conciergeMeta.segmentKey || null,
+      banditEnabled: payload.llmBanditEnabled === true,
+      epsilon: 0.1,
+      chosenAction,
+      selectionSource: chosenAction.selectionSource || 'score',
+      score: Number.isFinite(Number(chosenAction.score)) ? Number(chosenAction.score) : 0,
+      scoreBreakdown: chosenAction.scoreBreakdown && typeof chosenAction.scoreBreakdown === 'object'
+        ? chosenAction.scoreBreakdown
+        : {},
+      evidenceNeed: conciergeMeta.evidenceNeed || 'none',
+      evidenceOutcome: conciergeMeta.evidenceOutcome || 'SUPPORTED',
+      urlCount: Number.isFinite(Number(conciergeMeta.urlCount)) ? Number(conciergeMeta.urlCount) : 0,
+      citationRanks: Array.isArray(conciergeMeta.citationRanks) ? conciergeMeta.citationRanks : [],
+      blockedReasons: Array.isArray(conciergeMeta.blockedReasons) ? conciergeMeta.blockedReasons : [],
+      injectionFindings: conciergeMeta.injectionFindings === true,
+      postRenderLint: conciergeMeta.postRenderLint && typeof conciergeMeta.postRenderLint === 'object'
+        ? conciergeMeta.postRenderLint
+        : { findings: [], modified: false },
+      rewardPending: true,
+      reward: null,
+      rewardVersion: 'v1',
+      rewardWindowHours: 48
     });
   } catch (_err) {
     // best effort only
@@ -572,10 +695,18 @@ async function replyWithFreeRetrieval(params) {
         userTier: payload.plan === 'pro' ? 'paid' : 'free',
         plan: payload.plan || 'free',
         locale: 'ja',
+        contextSnapshot: payload.contextSnapshot || null,
         storedCandidates: faqStored.concat(cityPackStored),
         denylist: payload.llmPolicy && Array.isArray(payload.llmPolicy.forbidden_domains)
           ? payload.llmPolicy.forbidden_domains
           : [],
+        webSearchEnabled: payload.llmWebSearchEnabled === true,
+        styleEngineEnabled: payload.llmStyleEngineEnabled !== false,
+        bandit: {
+          enabled: payload.llmBanditEnabled === true,
+          epsilon: 0.1,
+          stateFetcher: async ({ segmentKey }) => loadBanditStateByArm(segmentKey)
+        },
         env: process.env
       });
       replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
@@ -591,7 +722,13 @@ async function replyWithFreeRetrieval(params) {
         urls: [],
         guardDecisions: [],
         blockedReasons: ['concierge_compose_failed'],
-        injectionFindings: false
+        injectionFindings: false,
+        evidenceNeed: 'none',
+        evidenceOutcome: 'BLOCKED',
+        chosenAction: null,
+        contextVersion: 'concierge_ctx_v1',
+        featureHash: null,
+        postRenderLint: { findings: [], modified: false }
       };
     }
   }
@@ -613,12 +750,19 @@ async function handleAssistantMessage(params) {
 
   const planInfo = await resolvePlan(lineUserId);
   const llmConciergeEnabled = payload.llmConciergeEnabled === true;
+  const llmWebSearchEnabled = payload.llmWebSearchEnabled !== false;
+  const llmStyleEngineEnabled = payload.llmStyleEngineEnabled !== false;
+  const llmBanditEnabled = payload.llmBanditEnabled === true;
   const explicitPaidIntent = detectExplicitPaidIntent(text);
   const paidIntent = classifyPaidIntent(text);
   const traceId = typeof payload.requestId === 'string' && payload.requestId.trim()
     ? payload.requestId.trim()
     : null;
   const requestId = traceId;
+  const banditStateFetcher = async ({ segmentKey }) => {
+    if (llmBanditEnabled !== true) return {};
+    return loadBanditStateByArm(segmentKey);
+  };
 
   if (planInfo.plan !== 'pro') {
     const blockedReason = explicitPaidIntent ? 'plan_free' : 'free_retrieval_only';
@@ -636,7 +780,10 @@ async function handleAssistantMessage(params) {
       extraText: dependencyHint,
       blockedReason,
       plan: planInfo.plan,
-      llmConciergeEnabled
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled
     }));
     if (explicitPaidIntent) {
       await appendJourneyEventBestEffort({
@@ -673,6 +820,14 @@ async function handleAssistantMessage(params) {
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality
     });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      llmBanditEnabled
+    });
     return {
       handled: true,
       mode: 'free_retrieval',
@@ -700,7 +855,10 @@ async function handleAssistantMessage(params) {
       blockedReason,
       llmPolicy: budget.policy || null,
       plan: planInfo.plan,
-      llmConciergeEnabled
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -729,6 +887,14 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      llmBanditEnabled
     });
     return {
       handled: true,
@@ -752,7 +918,10 @@ async function handleAssistantMessage(params) {
       blockedReason,
       llmPolicy: budget.policy || null,
       plan: planInfo.plan,
-      llmConciergeEnabled
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -782,6 +951,14 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      llmBanditEnabled
     });
     return {
       handled: true,
@@ -811,7 +988,10 @@ async function handleAssistantMessage(params) {
       blockedReason,
       llmPolicy: budget.policy || null,
       plan: planInfo.plan,
-      llmConciergeEnabled
+      llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled
     }));
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -841,6 +1021,14 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+      llmBanditEnabled
     });
     return {
       handled: true,
@@ -892,7 +1080,11 @@ async function handleAssistantMessage(params) {
         blockedReason,
         llmPolicy: budget.policy || null,
         plan: planInfo.plan,
-        llmConciergeEnabled
+        llmConciergeEnabled,
+        llmWebSearchEnabled,
+        llmStyleEngineEnabled,
+        llmBanditEnabled,
+        contextSnapshot
       }));
       const usage = await recordLlmUsage({
         userId: lineUserId,
@@ -922,6 +1114,14 @@ async function handleAssistantMessage(params) {
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         assistantQuality
+      });
+      await appendLlmActionLogBestEffort({
+        lineUserId,
+        plan: planInfo.plan,
+        traceId,
+        requestId,
+        conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
+        llmBanditEnabled
       });
       return {
         handled: true,
@@ -959,10 +1159,18 @@ async function handleAssistantMessage(params) {
         userTier: 'paid',
         plan: planInfo.plan,
         locale: 'ja',
+        contextSnapshot,
         storedCandidates,
         denylist: budget.policy && Array.isArray(budget.policy.forbidden_domains)
           ? budget.policy.forbidden_domains
           : [],
+        webSearchEnabled: llmWebSearchEnabled,
+        styleEngineEnabled: llmStyleEngineEnabled,
+        bandit: {
+          enabled: llmBanditEnabled,
+          epsilon: 0.1,
+          stateFetcher: banditStateFetcher
+        },
         env: process.env
       });
       replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
@@ -977,7 +1185,13 @@ async function handleAssistantMessage(params) {
         urls: [],
         guardDecisions: [],
         blockedReasons: ['concierge_compose_failed'],
-        injectionFindings: false
+        injectionFindings: false,
+        evidenceNeed: 'none',
+        evidenceOutcome: 'BLOCKED',
+        chosenAction: null,
+        contextVersion: 'concierge_ctx_v1',
+        featureHash: null,
+        postRenderLint: { findings: [], modified: false }
       };
     }
   }
@@ -1022,6 +1236,14 @@ async function handleAssistantMessage(params) {
     requestId,
     conciergeMeta,
     assistantQuality
+  });
+  await appendLlmActionLogBestEffort({
+    lineUserId,
+    plan: planInfo.plan,
+    traceId,
+    requestId,
+    conciergeMeta,
+    llmBanditEnabled
   });
 
   await appendJourneyEventBestEffort({
@@ -1135,7 +1357,12 @@ async function handleLineWebhook(options) {
   }
 
   await logLineWebhookEventsBestEffort({ payload, requestId });
-  const llmConciergeEnabled = await resolveLlmConciergeEnabledBestEffort();
+  const [llmConciergeEnabled, llmWebSearchEnabled, llmStyleEngineEnabled, llmBanditEnabled] = await Promise.all([
+    resolveLlmConciergeEnabledBestEffort(),
+    resolveLlmWebSearchEnabledBestEffort(),
+    resolveLlmStyleEngineEnabledBestEffort(),
+    resolveLlmBanditEnabledBestEffort()
+  ]);
 
   const userIds = extractUserIds(payload);
   const firstUserId = userIds[0] || '';
@@ -1311,7 +1538,10 @@ async function handleLineWebhook(options) {
             replyToken,
             replyFn,
             requestId,
-            llmConciergeEnabled
+            llmConciergeEnabled,
+            llmWebSearchEnabled,
+            llmStyleEngineEnabled,
+            llmBanditEnabled
           });
           if (assistant && assistant.handled) {
             const mode = assistant.mode || 'unknown';

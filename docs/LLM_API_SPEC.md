@@ -417,3 +417,61 @@
   - `rolloutMaxTemplateViolationRate` (0..1)
   - `rolloutMaxFallbackRate` (0..1)
   - `rolloutMinEvidenceCoverage` (0..1)
+
+## Phase724 Add-only Delta（Next Level P2+P3）
+
+### GET /api/admin/llm/config/status
+- add-only response fields:
+  - `llmWebSearchEnabled` (boolean)
+  - `llmStyleEngineEnabled` (boolean)
+  - `llmBanditEnabled` (boolean)
+  - `effectiveWebSearchEnabled` (boolean)
+  - `effectiveStyleEngineEnabled` (boolean)
+  - `effectiveBanditEnabled` (boolean)
+
+### POST /api/admin/llm/config/plan
+- add-only request fields:
+  - `llmWebSearchEnabled` (boolean)
+  - `llmStyleEngineEnabled` (boolean)
+  - `llmBanditEnabled` (boolean)
+- `planHash` は次の組で固定:
+  - `llmEnabled + llmConciergeEnabled + llmWebSearchEnabled + llmStyleEngineEnabled + llmBanditEnabled + llmPolicy`
+
+### POST /api/admin/llm/config/set
+- add-only request fields:
+  - `llmWebSearchEnabled`
+  - `llmStyleEngineEnabled`
+  - `llmBanditEnabled`
+
+### Internal Job
+- `POST /internal/jobs/llm-action-reward-finalize`
+  - 認証: `LLM_ACTION_JOB_TOKEN`（header `x-llm-action-job-token` または Bearer）
+  - request (add-only):
+    - `dryRun` (boolean)
+    - `limit` (int)
+    - `rewardWindowHours` (int, default 48)
+  - response:
+    - `processed`
+    - `updated`
+    - `skipped`
+    - `errors`
+    - `traceId`
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only fields:
+  - `intentConfidence`
+  - `contextConfidence`
+  - `evidenceNeed` (`none|optional|required`)
+  - `evidenceOutcome` (`SUPPORTED|INSUFFICIENT|BLOCKED`)
+  - `chosenAction`
+    - `styleId`
+    - `ctaCount`
+    - `lengthBucket`
+    - `timingBucket`
+    - `questionFlag`
+    - `selectionSource`
+    - `score`
+    - `scoreBreakdown`
+  - `contextVersion`
+  - `featureHash`
+  - `postRenderLint`

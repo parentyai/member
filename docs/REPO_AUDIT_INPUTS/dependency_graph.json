@@ -186,6 +186,12 @@
       "emergencySnapshotsRepo",
       "systemFlagsRepo"
     ],
+    "finalizeLlmActionRewards": [
+      "deliveriesRepo",
+      "journeyTodoItemsRepo",
+      "llmActionLogsRepo",
+      "llmBanditStateRepo"
+    ],
     "generateFreeRetrievalReply": [],
     "generateOpsDailyReport": [],
     "generatePaidAssistantReply": [],
@@ -730,6 +736,12 @@
     "linkRegistryRepo": [
       "link_registry"
     ],
+    "llmActionLogsRepo": [
+      "llm_action_logs"
+    ],
+    "llmBanditStateRepo": [
+      "llm_bandit_state"
+    ],
     "llmQualityLogsRepo": [
       "llm_quality_logs"
     ],
@@ -1146,6 +1158,9 @@
     ],
     "src/routes/internal/journeyTodoReminderJob.js": [
       "runJourneyTodoReminderJob"
+    ],
+    "src/routes/internal/llmActionRewardFinalizeJob.js": [
+      "finalizeLlmActionRewards"
     ],
     "src/routes/internal/municipalitySchoolsImportJob.js": [
       "importMunicipalitySchools"

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T21:47:44-05:00",
-  "gitCommit": "cd8d10bd32e109133dd7decbbe42302ba9358b12",
-  "branch": "codex/line-cta-max3-v1",
-  "sourceDigest": "5ce23f7042e3581cfb225d61c7c73ecf4e7113696ae1f1ec5ddebbc8abd1b4be",
+  "generatedAt": "2026-03-03T21:52:55-05:00",
+  "gitCommit": "bf19bdaa9aece021d5391808a7a323499cd0d287",
+  "branch": "codex/llm-next-level-p2p3-v1",
+  "sourceDigest": "7d0a02bedfbd3507052a0107fdf7866b8f47f9f4ef51328e4a59d9cc6ea55e95",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

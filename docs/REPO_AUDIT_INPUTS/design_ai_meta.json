@@ -41,6 +41,8 @@
     "journeyTodoStatsRepo",
     "kpiSnapshotsReadRepo",
     "linkRegistryRepo",
+    "llmActionLogsRepo",
+    "llmBanditStateRepo",
     "llmPolicyChangeLogsRepo",
     "llmQualityLogsRepo",
     "llmUsageLogsRepo",

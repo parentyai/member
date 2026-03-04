@@ -23,6 +23,30 @@ function normalizeLlmConciergeEnabled(value, fallback) {
   throw new Error('llmConciergeEnabled invalid');
 }
 
+function normalizeLlmWebSearchEnabled(value, fallback) {
+  if (value === undefined) return Boolean(fallback);
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error('llmWebSearchEnabled invalid');
+}
+
+function normalizeLlmStyleEngineEnabled(value, fallback) {
+  if (value === undefined) return Boolean(fallback);
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error('llmStyleEngineEnabled invalid');
+}
+
+function normalizeLlmBanditEnabled(value, fallback) {
+  if (value === undefined) return Boolean(fallback);
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error('llmBanditEnabled invalid');
+}
+
 function normalizeLlmPolicy(value, fallback) {
   if (value === undefined) return fallback;
   const normalized = systemFlagsRepo.normalizeLlmPolicy(value);
@@ -38,9 +62,24 @@ function serializeLlmPolicy(policy) {
   });
 }
 
-function computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled) {
-  const text = `llmEnabled=${llmEnabled ? 'true' : 'false'};llmPolicy=${serializeLlmPolicy(llmPolicy)};llmConciergeEnabled=${llmConciergeEnabled ? 'true' : 'false'}`;
+function computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled, llmWebSearchEnabled, llmStyleEngineEnabled, llmBanditEnabled) {
+  const text = [
+    `llmEnabled=${llmEnabled ? 'true' : 'false'}`,
+    `llmPolicy=${serializeLlmPolicy(llmPolicy)}`,
+    `llmConciergeEnabled=${llmConciergeEnabled ? 'true' : 'false'}`,
+    `llmWebSearchEnabled=${llmWebSearchEnabled ? 'true' : 'false'}`,
+    `llmStyleEngineEnabled=${llmStyleEngineEnabled ? 'true' : 'false'}`,
+    `llmBanditEnabled=${llmBanditEnabled ? 'true' : 'false'}`
+  ].join(';');
   return `llmcfg_${crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 24)}`;
+}
+
+function envFlagEnabled(name, fallback) {
+  const raw = typeof process.env[name] === 'string' ? process.env[name].trim().toLowerCase() : '';
+  if (!raw) return fallback === true;
+  if (['1', 'true', 'on', 'yes'].includes(raw)) return true;
+  if (['0', 'false', 'off', 'no'].includes(raw)) return false;
+  return fallback === true;
 }
 
 function confirmTokenData(planHash) {
@@ -57,14 +96,29 @@ async function handleStatus(req, res) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
-  const [llmEnabled, llmConciergeEnabled] = await Promise.all([
+  const [llmEnabled, llmConciergeEnabled, llmWebSearchEnabled, llmStyleEngineEnabled, llmBanditEnabled] = await Promise.all([
     systemFlagsRepo.getLlmEnabled(),
-    systemFlagsRepo.getLlmConciergeEnabled()
+    systemFlagsRepo.getLlmConciergeEnabled(),
+    systemFlagsRepo.getLlmWebSearchEnabled(),
+    systemFlagsRepo.getLlmStyleEngineEnabled(),
+    systemFlagsRepo.getLlmBanditEnabled()
   ]);
   const llmPolicy = await systemFlagsRepo.getLlmPolicy();
   const envEnabled = isLlmFeatureEnabled(process.env);
+  const envWebSearchAvailable = (() => {
+    const provider = typeof process.env.WEB_SEARCH_PROVIDER === 'string'
+      ? process.env.WEB_SEARCH_PROVIDER.trim().toLowerCase()
+      : '';
+    if (!provider || provider === 'none' || provider === 'disabled') return false;
+    return true;
+  })();
+  const envStyleEngineAvailable = envFlagEnabled('STYLE_ENGINE_ENABLED', true);
+  const envBanditAvailable = envFlagEnabled('BANDIT_ENABLED', true);
   const effectiveEnabled = Boolean(llmEnabled && envEnabled);
   const effectiveConciergeEnabled = Boolean(llmEnabled && llmConciergeEnabled && envEnabled);
+  const effectiveWebSearchEnabled = Boolean(effectiveConciergeEnabled && llmWebSearchEnabled && envWebSearchAvailable);
+  const effectiveStyleEngineEnabled = Boolean(effectiveConciergeEnabled && llmStyleEngineEnabled && envStyleEngineAvailable);
+  const effectiveBanditEnabled = Boolean(effectiveConciergeEnabled && llmBanditEnabled && envBanditAvailable);
 
   await appendAuditLog({
     actor,
@@ -74,14 +128,23 @@ async function handleStatus(req, res) {
     traceId,
     requestId,
     payloadSummary: {
-      llmEnabled,
-      llmConciergeEnabled,
-      envLlmFeatureFlag: envEnabled,
-      effectiveEnabled,
-      effectiveConciergeEnabled,
-      lawfulBasis: llmPolicy.lawfulBasis,
-      consentVerified: llmPolicy.consentVerified,
-      crossBorder: llmPolicy.crossBorder
+        llmEnabled,
+        llmConciergeEnabled,
+        llmWebSearchEnabled,
+        llmStyleEngineEnabled,
+        llmBanditEnabled,
+        envLlmFeatureFlag: envEnabled,
+        envWebSearchAvailable,
+        envStyleEngineAvailable,
+        envBanditAvailable,
+        effectiveEnabled,
+        effectiveConciergeEnabled,
+        effectiveWebSearchEnabled,
+        effectiveStyleEngineEnabled,
+        effectiveBanditEnabled,
+        lawfulBasis: llmPolicy.lawfulBasis,
+        consentVerified: llmPolicy.consentVerified,
+        crossBorder: llmPolicy.crossBorder
     }
   });
 
@@ -93,10 +156,19 @@ async function handleStatus(req, res) {
     serverTime: new Date().toISOString(),
     llmEnabled,
     llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled,
     llmPolicy,
     envLlmFeatureFlag: envEnabled,
+    envWebSearchAvailable,
+    envStyleEngineAvailable,
+    envBanditAvailable,
     effectiveEnabled,
-    effectiveConciergeEnabled
+    effectiveConciergeEnabled,
+    effectiveWebSearchEnabled,
+    effectiveStyleEngineEnabled,
+    effectiveBanditEnabled
   }));
 }
 
@@ -110,12 +182,23 @@ async function handlePlan(req, res, body) {
 
   let llmEnabled;
   let llmConciergeEnabled;
+  let llmWebSearchEnabled;
+  let llmStyleEngineEnabled;
+  let llmBanditEnabled;
   const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
-  const currentLlmConciergeEnabled = await systemFlagsRepo.getLlmConciergeEnabled();
+  const [currentLlmConciergeEnabled, currentLlmWebSearchEnabled, currentLlmStyleEngineEnabled, currentLlmBanditEnabled] = await Promise.all([
+    systemFlagsRepo.getLlmConciergeEnabled(),
+    systemFlagsRepo.getLlmWebSearchEnabled(),
+    systemFlagsRepo.getLlmStyleEngineEnabled(),
+    systemFlagsRepo.getLlmBanditEnabled()
+  ]);
   let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
     llmConciergeEnabled = normalizeLlmConciergeEnabled(payload.llmConciergeEnabled, currentLlmConciergeEnabled);
+    llmWebSearchEnabled = normalizeLlmWebSearchEnabled(payload.llmWebSearchEnabled, currentLlmWebSearchEnabled);
+    llmStyleEngineEnabled = normalizeLlmStyleEngineEnabled(payload.llmStyleEngineEnabled, currentLlmStyleEngineEnabled);
+    llmBanditEnabled = normalizeLlmBanditEnabled(payload.llmBanditEnabled, currentLlmBanditEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
@@ -123,7 +206,14 @@ async function handlePlan(req, res, body) {
     return;
   }
 
-  const planHash = computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled);
+  const planHash = computePlanHash(
+    llmEnabled,
+    llmPolicy,
+    llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled
+  );
   const confirmToken = createConfirmToken(confirmTokenData(planHash), { now: new Date() });
 
   await appendAuditLog({
@@ -136,6 +226,9 @@ async function handlePlan(req, res, body) {
     payloadSummary: {
       llmEnabled,
       llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
       llmPolicy,
       lawfulBasis: llmPolicy.lawfulBasis,
       consentVerified: llmPolicy.consentVerified,
@@ -152,6 +245,9 @@ async function handlePlan(req, res, body) {
     serverTime: new Date().toISOString(),
     llmEnabled,
     llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled,
     llmPolicy,
     planHash,
     confirmToken
@@ -168,12 +264,23 @@ async function handleSet(req, res, body) {
 
   let llmEnabled;
   let llmConciergeEnabled;
+  let llmWebSearchEnabled;
+  let llmStyleEngineEnabled;
+  let llmBanditEnabled;
   const currentLlmPolicy = await systemFlagsRepo.getLlmPolicy();
-  const currentLlmConciergeEnabled = await systemFlagsRepo.getLlmConciergeEnabled();
+  const [currentLlmConciergeEnabled, currentLlmWebSearchEnabled, currentLlmStyleEngineEnabled, currentLlmBanditEnabled] = await Promise.all([
+    systemFlagsRepo.getLlmConciergeEnabled(),
+    systemFlagsRepo.getLlmWebSearchEnabled(),
+    systemFlagsRepo.getLlmStyleEngineEnabled(),
+    systemFlagsRepo.getLlmBanditEnabled()
+  ]);
   let llmPolicy;
   try {
     llmEnabled = normalizeLlmEnabled(payload.llmEnabled);
     llmConciergeEnabled = normalizeLlmConciergeEnabled(payload.llmConciergeEnabled, currentLlmConciergeEnabled);
+    llmWebSearchEnabled = normalizeLlmWebSearchEnabled(payload.llmWebSearchEnabled, currentLlmWebSearchEnabled);
+    llmStyleEngineEnabled = normalizeLlmStyleEngineEnabled(payload.llmStyleEngineEnabled, currentLlmStyleEngineEnabled);
+    llmBanditEnabled = normalizeLlmBanditEnabled(payload.llmBanditEnabled, currentLlmBanditEnabled);
     llmPolicy = normalizeLlmPolicy(payload.llmPolicy, currentLlmPolicy);
   } catch (err) {
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
@@ -189,7 +296,14 @@ async function handleSet(req, res, body) {
     return;
   }
 
-  const expectedPlanHash = computePlanHash(llmEnabled, llmPolicy, llmConciergeEnabled);
+  const expectedPlanHash = computePlanHash(
+    llmEnabled,
+    llmPolicy,
+    llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled
+  );
   if (planHash !== expectedPlanHash) {
     await appendAuditLog({
       actor,
@@ -204,6 +318,9 @@ async function handleSet(req, res, body) {
         expectedPlanHash,
         llmEnabled,
         llmConciergeEnabled,
+        llmWebSearchEnabled,
+        llmStyleEngineEnabled,
+        llmBanditEnabled,
         llmPolicy,
         lawfulBasis: llmPolicy.lawfulBasis,
         consentVerified: llmPolicy.consentVerified,
@@ -233,6 +350,9 @@ async function handleSet(req, res, body) {
 
   await systemFlagsRepo.setLlmEnabled(llmEnabled);
   await systemFlagsRepo.setLlmConciergeEnabled(llmConciergeEnabled);
+  await systemFlagsRepo.setLlmWebSearchEnabled(llmWebSearchEnabled);
+  await systemFlagsRepo.setLlmStyleEngineEnabled(llmStyleEngineEnabled);
+  await systemFlagsRepo.setLlmBanditEnabled(llmBanditEnabled);
   await systemFlagsRepo.setLlmPolicy(llmPolicy);
 
   await appendAuditLog({
@@ -246,6 +366,9 @@ async function handleSet(req, res, body) {
       ok: true,
       llmEnabled,
       llmConciergeEnabled,
+      llmWebSearchEnabled,
+      llmStyleEngineEnabled,
+      llmBanditEnabled,
       llmPolicy,
       lawfulBasis: llmPolicy.lawfulBasis,
       consentVerified: llmPolicy.consentVerified,
@@ -261,6 +384,9 @@ async function handleSet(req, res, body) {
     serverTime: new Date().toISOString(),
     llmEnabled,
     llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled,
     llmPolicy
   }));
 }

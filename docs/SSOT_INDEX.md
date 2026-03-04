@@ -60,6 +60,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_LLM_CONCIERGE_POLICY_V1.md`（LLMコンシェルジュのモード/無料有料境界/表示契約）
 - `docs/SSOT_URL_RANKING_AND_ALLOWLIST_V1.md`（URLランク/allowlist/denylistの採用契約）
 - `docs/SSOT_PROMPT_INJECTION_DEFENSE_V1.md`（外部命令無効化/注入検知/遮断契約）
+- `docs/SSOT_LLM_ACTION_SELECTION_AND_BANDIT_V1.md`（ActionSelectorスコアリング/ε-greedy/報酬確定契約）
+- `docs/SSOT_LLM_EVIDENCE_OUTCOME_AND_LINT_V1.md`（EvidenceOutcome/CLARIFY閾値/post-render lint契約）
 - `docs/LLM_PHASE_PLAN.md`（LLMフェーズ計画）
 - `docs/LLM_THREAT_MODEL.md`（LLM脅威モデル）
 - `docs/RUNBOOK_JA.md`（日本語RUNBOOK）
