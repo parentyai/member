@@ -7,6 +7,11 @@ const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo
 const journeyTodoStatsRepo = require('../../repos/firestore/journeyTodoStatsRepo');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { syncJourneyDagCatalogToTodos } = require('./syncJourneyDagCatalogToTodos');
+const { deriveLegacyTodosFromTemplates } = require('./deriveLegacyTodosFromTemplates');
+const {
+  isLegacyTodoDeriveFromTemplatesEnabled,
+  isLegacyTodoEmitDisabled
+} = require('../../domain/tasks/featureFlags');
 const { USER_SCENARIO_FIELD, JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -136,6 +141,24 @@ function computeNextReminderAt(dueAt, reminderOffsetsDays, remindedOffsetsDays, 
 }
 
 function resolveTemplateDueDate(template, schedule) {
+  if (template && template.dueAt) {
+    const dueAt = toIso(template.dueAt);
+    if (dueAt) {
+      return {
+        dueDate: dueAt.slice(0, 10),
+        dueAt
+      };
+    }
+  }
+  if (template && template.dueDate) {
+    const dueAt = shiftIsoDays(toIsoDate(template.dueDate), 0);
+    if (dueAt) {
+      return {
+        dueDate: dueAt.slice(0, 10),
+        dueAt
+      };
+    }
+  }
   const departureDate = toIsoDate(schedule && schedule.departureDate);
   const assignmentDate = toIsoDate(schedule && schedule.assignmentDate);
   const anchorDate = template.anchor === 'assignment' ? assignmentDate : departureDate;
@@ -249,43 +272,59 @@ async function syncJourneyTodoPlan(params, deps) {
     ? policy.reminder_offsets_days
     : [7, 3, 1];
   const nowIso = payload.now || new Date().toISOString();
-  const templates = buildBaseTodoTemplates().concat(buildHouseholdTodoTemplates(profile && profile.householdType));
+  let templates = buildBaseTodoTemplates().concat(buildHouseholdTodoTemplates(profile && profile.householdType));
+  if (isLegacyTodoDeriveFromTemplatesEnabled()) {
+    const derivedTemplates = await deriveLegacyTodosFromTemplates({
+      schedule,
+      now: nowIso,
+      country: 'US'
+    }, resolvedDeps).catch(() => []);
+    if (Array.isArray(derivedTemplates) && derivedTemplates.length > 0) {
+      templates = derivedTemplates;
+    }
+  }
 
   let syncedCount = 0;
-  for (const template of templates) {
-    const due = resolveTemplateDueDate(template, schedule || {});
-    if (!due) continue;
-    const todoKey = template.todoKey;
-    const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
-    const remindedOffsetsDays = existing && Array.isArray(existing.remindedOffsetsDays) ? existing.remindedOffsetsDays : [];
-    const nextReminderAt = computeNextReminderAt(due.dueAt, reminderOffsets, remindedOffsetsDays, nowIso);
+  if (!isLegacyTodoEmitDisabled()) {
+    for (const template of templates) {
+      const due = resolveTemplateDueDate(template, schedule || {});
+      if (!due) continue;
+      const todoKey = template.todoKey;
+      const existing = await todoRepo.getJourneyTodoItem(lineUserId, todoKey);
+      const remindedOffsetsDays = existing && Array.isArray(existing.remindedOffsetsDays) ? existing.remindedOffsetsDays : [];
+      const nextReminderAt = computeNextReminderAt(due.dueAt, reminderOffsets, remindedOffsetsDays, nowIso);
 
-    await todoRepo.upsertJourneyTodoItem(lineUserId, todoKey, {
-      lineUserId,
-      todoKey,
-      title: template.title,
-      [USER_SCENARIO_FIELD]: (
-        profile && profile[JOURNEY_SCENARIO_MIRROR_FIELD] ? profile[JOURNEY_SCENARIO_MIRROR_FIELD] : null
-      ),
-      householdType: profile && profile.householdType ? profile.householdType : null,
-      dueDate: due.dueDate,
-      dueAt: due.dueAt,
-      status: existing && (existing.status === 'completed' || existing.status === 'skipped') ? existing.status : 'open',
-      progressState: existing && existing.progressState ? existing.progressState : 'not_started',
-      graphStatus: existing && existing.graphStatus ? existing.graphStatus : 'actionable',
-      dependsOn: Array.isArray(template.dependsOn) ? template.dependsOn : [],
-      blocks: Array.isArray(template.blocks) ? template.blocks : [],
-      priority: Number.isFinite(Number(template.priority)) ? Number(template.priority) : 3,
-      riskLevel: template.riskLevel || 'medium',
-      lockReasons: existing && Array.isArray(existing.lockReasons) ? existing.lockReasons : [],
-      reminderOffsetsDays: reminderOffsets,
-      remindedOffsetsDays,
-      nextReminderAt,
-      reminderCount: existing && Number.isFinite(Number(existing.reminderCount)) ? Number(existing.reminderCount) : 0,
-      sourceTemplateVersion: 'journey_todo_v1',
-      source: payload.source || 'journey_sync'
-    });
-    syncedCount += 1;
+      await todoRepo.upsertJourneyTodoItem(lineUserId, todoKey, {
+        lineUserId,
+        todoKey,
+        title: template.title,
+        meaningKey: template.meaningKey || null,
+        meaning: template.meaning || null,
+        whyNow: template.whyNow || null,
+        doneDefinition: template.doneDefinition || null,
+        [USER_SCENARIO_FIELD]: (
+          profile && profile[JOURNEY_SCENARIO_MIRROR_FIELD] ? profile[JOURNEY_SCENARIO_MIRROR_FIELD] : null
+        ),
+        householdType: profile && profile.householdType ? profile.householdType : null,
+        dueDate: due.dueDate,
+        dueAt: due.dueAt,
+        status: existing && (existing.status === 'completed' || existing.status === 'skipped') ? existing.status : 'open',
+        progressState: existing && existing.progressState ? existing.progressState : 'not_started',
+        graphStatus: existing && existing.graphStatus ? existing.graphStatus : 'actionable',
+        dependsOn: Array.isArray(template.dependsOn) ? template.dependsOn : [],
+        blocks: Array.isArray(template.blocks) ? template.blocks : [],
+        priority: Number.isFinite(Number(template.priority)) ? Number(template.priority) : 3,
+        riskLevel: template.riskLevel || 'medium',
+        lockReasons: existing && Array.isArray(existing.lockReasons) ? existing.lockReasons : [],
+        reminderOffsetsDays: reminderOffsets,
+        remindedOffsetsDays,
+        nextReminderAt,
+        reminderCount: existing && Number.isFinite(Number(existing.reminderCount)) ? Number(existing.reminderCount) : 0,
+        sourceTemplateVersion: template.sourceTemplateVersion || 'journey_todo_v1',
+        source: payload.source || 'journey_sync'
+      });
+      syncedCount += 1;
+    }
   }
 
   const graph = await recomputeJourneyTaskGraph({
@@ -315,6 +354,8 @@ async function syncJourneyTodoPlan(params, deps) {
     ok: true,
     lineUserId,
     syncedCount,
+    legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
+    legacyTodoDerivedFromTemplates: isLegacyTodoDeriveFromTemplatesEnabled(),
     stage: resolveStage(schedule),
     stats,
     graph,

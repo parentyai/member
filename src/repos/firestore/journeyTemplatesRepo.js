@@ -8,6 +8,7 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 500;
 const PHASE_ORDER = Object.freeze(['onboarding', 'in_assignment', 'offboarding']);
 const RISK_LEVEL_VALUES = Object.freeze(['low', 'medium', 'high']);
+const MEANING_KEY_PATTERN = /^[a-z0-9_-]{2,64}$/;
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
@@ -65,6 +66,41 @@ function normalizeStringList(value) {
     if (!out.includes(normalized)) out.push(normalized);
   });
   return out;
+}
+
+function normalizeMeaningKey(value, fallback) {
+  const source = normalizeText(value, '') || normalizeText(fallback, '');
+  if (!source) return null;
+  const normalized = source
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!MEANING_KEY_PATTERN.test(normalized)) return null;
+  return normalized;
+}
+
+function normalizeMeaning(value, fallbackStepKey, fallbackTitle) {
+  const payload = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const meaningKey = normalizeMeaningKey(payload.meaningKey, fallbackStepKey);
+  const title = normalizeText(payload.title, normalizeText(fallbackTitle, null));
+  const summary = normalizeText(payload.summary, null);
+  const doneDefinition = normalizeText(payload.doneDefinition, null);
+  const whyNow = normalizeText(payload.whyNow, null);
+  const opsNotes = normalizeText(payload.opsNotes, null);
+  const helpLinkRegistryIds = normalizeStringList(payload.helpLinkRegistryIds || payload.helpLinks).slice(0, 3);
+  if (!meaningKey && !title && !summary && !doneDefinition && !whyNow && !opsNotes && helpLinkRegistryIds.length === 0) {
+    return null;
+  }
+  return {
+    meaningKey: meaningKey || normalizeMeaningKey(fallbackStepKey, null),
+    title,
+    summary,
+    doneDefinition,
+    whyNow,
+    helpLinkRegistryIds,
+    opsNotes
+  };
 }
 
 function normalizeQuietHours(value) {
@@ -135,6 +171,7 @@ function normalizeStep(step) {
   return {
     stepKey,
     title: normalizeText(row.title, stepKey),
+    meaning: normalizeMeaning(row.meaning, stepKey, row.title || stepKey),
     [FIELD_SCK]: normalizeText(row[FIELD_SCK], null),
     trigger: normalizeTrigger(row.trigger),
     leadTime,

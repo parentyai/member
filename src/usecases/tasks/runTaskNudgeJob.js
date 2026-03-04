@@ -9,9 +9,10 @@ const { sendNotification } = require('../notifications/sendNotification');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { TASK_STATUS } = require('../../domain/tasks/constants');
-const { isTaskNudgeEnabled } = require('../../domain/tasks/featureFlags');
+const { isTaskNudgeEnabled, getTaskNudgeLinkPolicy } = require('../../domain/tasks/featureFlags');
 const { appendTaskEventIfStateChanged } = require('./recordTaskEvent');
 const { USER_SCENARIO_FIELD } = require('../../domain/constants');
+const DEFAULT_LENIENT_LINK_REGISTRY_ID = 'task_todo_list';
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -53,21 +54,89 @@ function computeNextNudgeAt(task, nowIso) {
   return new Date(baseMs + (24 * 60 * 60 * 1000)).toISOString();
 }
 
-function buildNudgeBody(task, rule) {
+function normalizeStringList(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const normalized = normalizeText(item, '');
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function resolveMeaning(task, rule) {
+  const taskMeaning = task && task.meaning && typeof task.meaning === 'object' && !Array.isArray(task.meaning)
+    ? task.meaning
+    : null;
+  const ruleMeaning = rule && rule.meaning && typeof rule.meaning === 'object' && !Array.isArray(rule.meaning)
+    ? rule.meaning
+    : null;
+  const title = normalizeText(taskMeaning && taskMeaning.title, normalizeText(ruleMeaning && ruleMeaning.title, null));
+  const summary = normalizeText(taskMeaning && taskMeaning.summary, normalizeText(ruleMeaning && ruleMeaning.summary, null));
+  const doneDefinition = normalizeText(
+    taskMeaning && taskMeaning.doneDefinition,
+    normalizeText(ruleMeaning && ruleMeaning.doneDefinition, null)
+  );
+  const whyNow = normalizeText(taskMeaning && taskMeaning.whyNow, normalizeText(ruleMeaning && ruleMeaning.whyNow, null));
+  const helpLinkRegistryIds = normalizeStringList(
+    (taskMeaning && taskMeaning.helpLinkRegistryIds)
+    || (ruleMeaning && ruleMeaning.helpLinkRegistryIds)
+    || []
+  ).slice(0, 3);
+  if (!title && !summary && !doneDefinition && !whyNow && !helpLinkRegistryIds.length) return null;
+  return {
+    title,
+    summary,
+    doneDefinition,
+    whyNow,
+    helpLinkRegistryIds
+  };
+}
+
+function buildNudgeBody(task, rule, meaning, linkRegistryId) {
   const template = rule && rule.nudgeTemplate && typeof rule.nudgeTemplate === 'object'
     ? rule.nudgeTemplate
     : null;
+  if (meaning) {
+    const dueLabel = task && task.dueAt ? String(task.dueAt).slice(0, 10) : '-';
+    const whyNow = normalizeText(meaning.whyNow, normalizeText(meaning.summary, '期限に向けた準備が必要です。'));
+    const doneDefinition = normalizeText(meaning.doneDefinition, '完了条件を確認して、進捗を更新してください。');
+    const linkLabel = normalizeText(linkRegistryId, 'task_todo_list');
+    return `期限: ${dueLabel} / 理由: ${whyNow}\n具体ステップ: ${doneDefinition}\n次の一手: LINEで「TODO一覧」と送信\n参考リンク: ${linkLabel}`;
+  }
   if (template && template.body) return template.body;
   const stepKey = task && task.stepKey ? task.stepKey : '-';
   return `やることが未完了です。\nstep: ${stepKey}\n期限: ${task && task.dueAt ? String(task.dueAt).slice(0, 10) : '-'}\n完了したら一覧から更新してください。`;
 }
 
-function buildNudgeTitle(task, rule) {
+function buildNudgeTitle(task, rule, meaning) {
+  if (meaning && meaning.title) return `【やること】${meaning.title}`;
   const template = rule && rule.nudgeTemplate && typeof rule.nudgeTemplate === 'object'
     ? rule.nudgeTemplate
     : null;
   if (template && template.title) return template.title;
   return `Taskリマインド: ${task && task.ruleId ? task.ruleId : 'task'}`;
+}
+
+async function appendSuppressedAuditLog(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (payload.dryRun === true) return;
+  await appendAuditLog({
+    actor: payload.actor || 'task_nudge_job',
+    action: 'tasks.nudge.suppressed',
+    entityType: 'task',
+    entityId: payload.taskId || 'task',
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    payloadSummary: {
+      ok: true,
+      taskId: payload.taskId || null,
+      ruleId: payload.ruleId || null,
+      reason: payload.reason || 'suppressed',
+      checkedAt: payload.checkedAt || new Date().toISOString()
+    }
+  }).catch(() => null);
 }
 
 async function runTaskNudgeJob(params, deps) {
@@ -88,6 +157,7 @@ async function runTaskNudgeJob(params, deps) {
   const nowIso = toIso(payload.now) || new Date().toISOString();
   const dryRun = payload.dryRun === true;
   const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(1000, Number(payload.limit))) : 200;
+  const linkPolicy = getTaskNudgeLinkPolicy();
 
   const tasksRepository = resolvedDeps.tasksRepo || tasksRepo;
   const rulesRepository = resolvedDeps.stepRulesRepo || stepRulesRepo;
@@ -126,6 +196,16 @@ async function runTaskNudgeJob(params, deps) {
     if (row.status === TASK_STATUS.DONE || row.status === TASK_STATUS.BLOCKED || row.status === TASK_STATUS.SNOOZED) {
       skippedCount += 1;
       results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'status_not_sendable' });
+      await appendSuppressedAuditLog({
+        dryRun,
+        actor: payload.actor || 'task_nudge_job',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        taskId: row.taskId || null,
+        ruleId: row.ruleId || null,
+        reason: 'status_not_sendable',
+        checkedAt: nowIso
+      });
       continue;
     }
 
@@ -133,13 +213,28 @@ async function runTaskNudgeJob(params, deps) {
     const nudgeTemplate = rule && rule.nudgeTemplate && typeof rule.nudgeTemplate === 'object'
       ? rule.nudgeTemplate
       : {};
-
-    const linkRegistryId = normalizeText(nudgeTemplate.linkRegistryId, globalTemplate.linkRegistryId);
+    const meaning = resolveMeaning(row, rule);
+    const meaningLinkRegistryId = normalizeText(meaning && meaning.helpLinkRegistryIds && meaning.helpLinkRegistryIds[0], null);
+    const configuredLinkRegistryId = normalizeText(meaningLinkRegistryId, normalizeText(nudgeTemplate.linkRegistryId, globalTemplate.linkRegistryId));
+    let linkRegistryId = configuredLinkRegistryId;
+    if (!linkRegistryId && linkPolicy === 'lenient') {
+      linkRegistryId = DEFAULT_LENIENT_LINK_REGISTRY_ID;
+    }
     const ctaText = normalizeText(nudgeTemplate.ctaText, globalTemplate.ctaText);
     const notificationCategory = normalizeText(nudgeTemplate.notificationCategory, globalTemplate.notificationCategory);
     if (!linkRegistryId) {
       skippedCount += 1;
       results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'link_registry_missing' });
+      await appendSuppressedAuditLog({
+        dryRun,
+        actor: payload.actor || 'task_nudge_job',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        taskId: row.taskId || null,
+        ruleId: row.ruleId || null,
+        reason: 'link_registry_missing',
+        checkedAt: nowIso
+      });
       continue;
     }
 
@@ -167,13 +262,23 @@ async function runTaskNudgeJob(params, deps) {
         explainKeys: ['cap_blocked']
       }, resolvedDeps).catch(() => null);
       results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'cap_blocked' });
+      await appendSuppressedAuditLog({
+        dryRun,
+        actor: payload.actor || 'task_nudge_job',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        taskId: row.taskId || null,
+        ruleId: row.ruleId || null,
+        reason: 'cap_blocked',
+        checkedAt: nowIso
+      });
       continue;
     }
 
     const planHash = buildTaskPlanHash(row, rule, nowIso);
     const notificationPayload = {
-      title: buildNudgeTitle(row, rule),
-      body: buildNudgeBody(row, rule),
+      title: buildNudgeTitle(row, rule, meaning),
+      body: buildNudgeBody(row, rule, meaning, linkRegistryId),
       ctaText,
       linkRegistryId,
       [USER_SCENARIO_FIELD]: row && row[USER_SCENARIO_FIELD],

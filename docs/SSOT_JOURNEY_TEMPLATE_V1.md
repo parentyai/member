@@ -31,6 +31,15 @@ Task Engine v1における template 起点 rule 生成契約を定義する。
         {
           "stepKey": "visa_precheck",
           "title": "ビザ要件の再確認",
+          "meaning": {
+            "meaningKey": "visa_precheck",
+            "title": "ビザ要件の再確認",
+            "summary": "渡航直前の差戻しリスクを防ぐ",
+            "doneDefinition": "必要書類の期限と不足有無を確認済みにする",
+            "whyNow": "期限遅延すると渡航スケジュールへ影響する",
+            "helpLinkRegistryIds": ["task_todo_list"],
+            "opsNotes": null
+          },
           "trigger": { "eventKey": "assignment_created", "source": "admin" },
           "leadTime": { "kind": "after", "days": 1 },
           "dependsOn": [],
@@ -70,6 +79,8 @@ Task Engine v1における template 起点 rule 生成契約を定義する。
 3. compile結果の `ruleId` は `<templateId>__<phaseKey>__<stepKey>` とする。
 4. template namespace で不要になった rule は削除せず `enabled=false` で停止する。
 5. leadTime は v1 で `after | before_deadline` のみ許可する。
+6. `steps[].meaning` は add-only 補助メタとして扱い、`step_rules.meaning -> tasks.meaning -> LINE/nudge` へ伝播する。
+7. `meaning.meaningKey` は `[a-z0-9_-]{2,64}` を推奨し、重複時は compile warning として扱う（保存は可能）。
 
 ## 監査キー
 - template: `templateId`, `version`, `country`, `enabled`, `validFrom`, `validUntil`

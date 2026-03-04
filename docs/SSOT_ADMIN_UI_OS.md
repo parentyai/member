@@ -399,9 +399,10 @@ MUST:
   - template-plan / template-set
   - apply-plan / apply（単一ユーザー）
   - rule editor（`ruleId/scenarioKey/stepKey/trigger/leadTime/constraints/priority/enabled/riskLevel`）
-  - template editor（`templateId/version/country/enabled/phases[]`）
+  - template editor（`templateId/version/country/enabled/phases[]/steps[].meaning`）
   - single-user apply target（`lineUserId` または `memberNumber`）
   - planHash / confirmToken 表示
+  - template-plan result で `LINE preview` / `nudge preview` / `meaningKey duplicate warning` を表示
 - Admin OS API（add-only）:
   - `GET /api/admin/os/task-rules/status`
   - `POST /api/admin/os/task-rules/plan`

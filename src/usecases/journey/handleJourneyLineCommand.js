@@ -12,6 +12,9 @@ const { listUserTasks } = require('../tasks/listUserTasks');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
+const { appendAuditLog } = require('../audit/appendAuditLog');
+const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
+const { isJourneyUnifiedViewEnabled } = require('../../domain/tasks/featureFlags');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -95,6 +98,185 @@ function formatTaskList(tasks, graphResult) {
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
   return lines.join('\n');
+}
+
+function toDateLabel(value) {
+  const iso = typeof value === 'string' ? value : '';
+  if (!iso) return '-';
+  const parsed = Date.parse(iso);
+  if (!Number.isFinite(parsed)) return '-';
+  return new Date(parsed).toISOString().slice(0, 10);
+}
+
+function toSortMillis(value) {
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function resolveMeaning(taskLike, fallbackKey) {
+  const row = taskLike && typeof taskLike === 'object' ? taskLike : {};
+  const meaning = row.meaning && typeof row.meaning === 'object' ? row.meaning : {};
+  const meaningKey = normalizeText(meaning.meaningKey || row.meaningKey || fallbackKey);
+  const title = normalizeText(meaning.title || row.title);
+  const whyNow = normalizeText(meaning.whyNow || row.whyNow);
+  return {
+    meaningKey: meaningKey || null,
+    title: title || null,
+    whyNow: whyNow || null
+  };
+}
+
+function buildUnifiedRows(tasks, legacyItems) {
+  const taskRows = Array.isArray(tasks) ? tasks : [];
+  const legacyRows = Array.isArray(legacyItems) ? legacyItems : [];
+  const rows = [];
+  const dedupeTaskKeys = new Set();
+  let hiddenDuplicateCount = 0;
+  let meaningFallbackCount = 0;
+
+  taskRows.forEach((task, index) => {
+    const key = normalizeText(task && task.ruleId) || normalizeText(task && task.taskId) || `task_${index + 1}`;
+    const meaning = resolveMeaning(task, key);
+    const dedupeKey = meaning.meaningKey || key;
+    dedupeTaskKeys.add(dedupeKey);
+    const title = meaning.title || key;
+    if (!meaning.title || !meaning.whyNow) meaningFallbackCount += 1;
+    rows.push({
+      source: 'task',
+      key,
+      dedupeKey,
+      dueAt: task && task.dueAt ? task.dueAt : null,
+      dueDate: toDateLabel(task && task.dueAt),
+      statusLabel: formatTodoStateLabel({
+        taskStatus: task && task.status ? task.status : null,
+        dueAt: task && task.dueAt ? task.dueAt : null
+      }),
+      blockedReasonJa: toBlockedReasonJa(task && task.blockedReason),
+      title,
+      whyNow: meaning.whyNow || null
+    });
+  });
+
+  legacyRows.forEach((item, index) => {
+    const key = normalizeText(item && item.todoKey) || `todo_${index + 1}`;
+    const meaning = resolveMeaning(item, key);
+    const dedupeKey = meaning.meaningKey || key;
+    if (dedupeTaskKeys.has(dedupeKey)) {
+      hiddenDuplicateCount += 1;
+      return;
+    }
+    const title = meaning.title || normalizeText(item && item.title) || key;
+    if (!meaning.title || !meaning.whyNow) meaningFallbackCount += 1;
+    rows.push({
+      source: 'legacy',
+      key,
+      dedupeKey,
+      dueAt: item && (item.dueAt || item.nextReminderAt) ? (item.dueAt || item.nextReminderAt) : null,
+      dueDate: toDateLabel(item && (item.dueAt || item.nextReminderAt)),
+      statusLabel: formatTodoStateLabel(item),
+      blockedReasonJa: Array.isArray(item && item.lockReasons) && item.lockReasons.length
+        ? item.lockReasons.join('、')
+        : null,
+      title,
+      whyNow: meaning.whyNow || null
+    });
+  });
+
+  rows.sort((left, right) => {
+    const dueCompare = toSortMillis(left && left.dueAt) - toSortMillis(right && right.dueAt);
+    if (dueCompare !== 0) return dueCompare;
+    return String(left && left.key || '').localeCompare(String(right && right.key || ''), 'ja');
+  });
+
+  return {
+    rows,
+    hiddenDuplicateCount,
+    meaningFallbackCount
+  };
+}
+
+function formatUnifiedTaskList(tasks, legacyItems, graphResult) {
+  const unified = buildUnifiedRows(tasks, legacyItems);
+  const rows = unified.rows;
+  if (!rows.length) {
+    return {
+      text: formatTodoList([], graphResult),
+      hiddenDuplicateCount: unified.hiddenDuplicateCount,
+      meaningFallbackCount: unified.meaningFallbackCount,
+      presentedCount: 0
+    };
+  }
+  const lines = ['現在のやること一覧です。'];
+  rows.slice(0, 10).forEach((row, index) => {
+    const whyNow = row.whyNow ? ` / 理由:${row.whyNow}` : '';
+    const blocked = row.blockedReasonJa ? ` / ブロック:${row.blockedReasonJa}` : '';
+    lines.push(`${index + 1}. [${row.key}] ${row.title}（期限:${row.dueDate} / 状態:${row.statusLabel}${blocked}${whyNow}）`);
+  });
+  const topActionable = formatTopActionableTasks(graphResult);
+  if (topActionable) lines.push(topActionable);
+  lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
+  lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
+  lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  return {
+    text: lines.join('\n'),
+    hiddenDuplicateCount: unified.hiddenDuplicateCount,
+    meaningFallbackCount: unified.meaningFallbackCount,
+    presentedCount: rows.length
+  };
+}
+
+async function auditTodoListPresentation(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const actor = payload.actor || payload.lineUserId || 'line_user';
+  const traceId = payload.traceId || null;
+  const requestId = payload.requestId || null;
+  const entityId = payload.lineUserId || 'line_user';
+  const presentedCount = Number(payload.presentedCount) || 0;
+  const hiddenDuplicateCount = Number(payload.hiddenDuplicateCount) || 0;
+  const meaningFallbackCount = Number(payload.meaningFallbackCount) || 0;
+
+  await appendAuditLog({
+    actor,
+    action: 'tasks.view.presented',
+    entityType: 'task_view',
+    entityId,
+    traceId,
+    requestId,
+    payloadSummary: {
+      presentedCount,
+      source: payload.source || 'line_todo_list'
+    }
+  }).catch(() => null);
+
+  if (hiddenDuplicateCount > 0) {
+    await appendAuditLog({
+      actor,
+      action: 'tasks.view.hidden_duplicate',
+      entityType: 'task_view',
+      entityId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        hiddenDuplicateCount,
+        source: payload.source || 'line_todo_list'
+      }
+    }).catch(() => null);
+  }
+
+  if (meaningFallbackCount > 0) {
+    await appendAuditLog({
+      actor,
+      action: 'tasks.meaning.fallback_used',
+      entityType: 'task_view',
+      entityId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        fallbackCount: meaningFallbackCount,
+        source: payload.source || 'line_todo_list'
+      }
+    }).catch(() => null);
+  }
 }
 
 function resolveSnoozeUntil(command, nowIso) {
@@ -225,6 +407,24 @@ async function handleJourneyLineCommand(params, deps) {
       actor: 'line_command_todo_list'
     }, resolvedDeps).catch(() => ({ ok: false, tasks: [] }));
     const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
+    if (isJourneyUnifiedViewEnabled()) {
+      const items = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 50 });
+      const unified = formatUnifiedTaskList(tasks, items, graph);
+      await auditTodoListPresentation({
+        lineUserId,
+        actor: 'line_command_todo_list',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        presentedCount: unified.presentedCount,
+        hiddenDuplicateCount: unified.hiddenDuplicateCount,
+        meaningFallbackCount: unified.meaningFallbackCount,
+        source: 'line_todo_list'
+      });
+      return {
+        handled: true,
+        replyText: unified.text
+      };
+    }
     if (tasks.length > 0) {
       return {
         handled: true,

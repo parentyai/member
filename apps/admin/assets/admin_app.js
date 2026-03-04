@@ -9562,6 +9562,100 @@ function buildTaskRulesTemplatePayload() {
   };
 }
 
+function normalizeTaskRulesText(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  const text = String(value).trim();
+  return text || fallback;
+}
+
+function resolveTaskRulesMeaningFromRule(rule) {
+  const payload = rule && rule.meaning && typeof rule.meaning === 'object' ? rule.meaning : {};
+  return {
+    meaningKey: normalizeTaskRulesText(payload.meaningKey, null),
+    title: normalizeTaskRulesText(payload.title, null),
+    summary: normalizeTaskRulesText(payload.summary, null),
+    doneDefinition: normalizeTaskRulesText(payload.doneDefinition, null),
+    whyNow: normalizeTaskRulesText(payload.whyNow, null),
+    helpLinkRegistryIds: Array.isArray(payload.helpLinkRegistryIds)
+      ? payload.helpLinkRegistryIds.map((item) => normalizeTaskRulesText(item, '')).filter(Boolean).slice(0, 3)
+      : []
+  };
+}
+
+function renderTaskRulesTemplatePreviews(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const rules = Array.isArray(payload.compiledRules) ? payload.compiledRules : [];
+  const warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+  const warningSummaryEl = document.getElementById('task-rules-template-warning-summary');
+  const linePreviewEl = document.getElementById('task-rules-template-preview-result');
+  const nudgePreviewEl = document.getElementById('task-rules-template-nudge-preview-result');
+
+  if (!rules.length) {
+    if (warningSummaryEl) warningSummaryEl.textContent = warnings.length ? `warnings=${warnings.length}` : '-';
+    if (linePreviewEl) linePreviewEl.textContent = '-';
+    if (nudgePreviewEl) nudgePreviewEl.textContent = '-';
+    return;
+  }
+
+  const meaningKeySeen = new Set();
+  const duplicateMeaningKeys = new Set();
+  rules.forEach((rule) => {
+    const meaning = resolveTaskRulesMeaningFromRule(rule);
+    if (!meaning.meaningKey) return;
+    if (meaningKeySeen.has(meaning.meaningKey)) duplicateMeaningKeys.add(meaning.meaningKey);
+    meaningKeySeen.add(meaning.meaningKey);
+  });
+
+  if (warningSummaryEl) {
+    const parts = [];
+    parts.push(`warnings=${warnings.length}`);
+    parts.push(`duplicateMeaningKey=${duplicateMeaningKeys.size}`);
+    warningSummaryEl.textContent = parts.join(' / ');
+  }
+
+  if (linePreviewEl) {
+    const lines = ['LINE preview:'];
+    rules.slice(0, 10).forEach((rule, index) => {
+      const meaning = resolveTaskRulesMeaningFromRule(rule);
+      const title = meaning.title || normalizeTaskRulesText(rule && rule.stepKey, normalizeTaskRulesText(rule && rule.ruleId, '-'));
+      const whyNow = meaning.whyNow || meaning.summary || '-';
+      const leadKind = normalizeTaskRulesText(rule && rule.leadTime && rule.leadTime.kind, '-');
+      const leadDays = Number.isFinite(Number(rule && rule.leadTime && rule.leadTime.days))
+        ? Number(rule.leadTime.days)
+        : '-';
+      lines.push(`${index + 1}. ${title} / 理由:${whyNow} / leadTime:${leadKind}:${leadDays}`);
+    });
+    if (duplicateMeaningKeys.size > 0) {
+      lines.push(`warning: duplicate meaningKey -> ${Array.from(duplicateMeaningKeys).join(', ')}`);
+    }
+    linePreviewEl.textContent = lines.join('\n');
+  }
+
+  if (nudgePreviewEl) {
+    const firstRule = rules[0] || null;
+    const meaning = resolveTaskRulesMeaningFromRule(firstRule);
+    const nudgeTemplate = firstRule && firstRule.nudgeTemplate && typeof firstRule.nudgeTemplate === 'object'
+      ? firstRule.nudgeTemplate
+      : {};
+    const title = meaning.title
+      ? `【やること】${meaning.title}`
+      : normalizeTaskRulesText(nudgeTemplate.title, `Taskリマインド: ${normalizeTaskRulesText(firstRule && firstRule.ruleId, 'task')}`);
+    const whyNow = meaning.whyNow || meaning.summary || '期限に向けた準備が必要です。';
+    const doneDefinition = meaning.doneDefinition || '完了条件を確認して、進捗を更新してください。';
+    const linkRegistryId = normalizeTaskRulesText(
+      meaning.helpLinkRegistryIds && meaning.helpLinkRegistryIds[0],
+      normalizeTaskRulesText(nudgeTemplate.linkRegistryId, 'task_todo_list')
+    );
+    const body = [
+      `期限: - / 理由: ${whyNow}`,
+      `具体ステップ: ${doneDefinition}`,
+      '次の一手: LINEで「TODO一覧」と送信',
+      `参考リンク: ${linkRegistryId}`
+    ].join('\n');
+    nudgePreviewEl.textContent = `${title}\n---\n${body}`;
+  }
+}
+
 async function loadTaskRulesStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
@@ -9675,6 +9769,7 @@ async function planTaskRulesTemplateAction() {
     template = buildTaskRulesTemplatePayload();
   } catch (_err) {
     setJsonTextResult('task-rules-template-result', { ok: false, error: 'template phases JSON invalid' });
+    renderTaskRulesTemplatePreviews({ ok: false, compiledRules: [], warnings: [{ type: 'template_phases_json_invalid' }] });
     showToast('template phases JSONが不正です', 'warn');
     return;
   }
@@ -9690,9 +9785,11 @@ async function planTaskRulesTemplateAction() {
     }, traceId);
     setJsonTextResult('task-rules-template-result', data);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderTaskRulesTemplatePreviews(data);
     applyTaskRulesTemplatePlanTokens(data.planHash, data.confirmToken);
     showToast('Task Rules template planを作成しました', 'ok');
   } catch (_err) {
+    renderTaskRulesTemplatePreviews({ ok: false, compiledRules: [], warnings: [{ type: 'template_plan_failed' }] });
     showToast('Task Rules template planの作成に失敗しました', 'danger');
   }
 }
@@ -9708,6 +9805,7 @@ async function setTaskRulesTemplateAction() {
     template = buildTaskRulesTemplatePayload();
   } catch (_err) {
     setJsonTextResult('task-rules-template-result', { ok: false, error: 'template phases JSON invalid' });
+    renderTaskRulesTemplatePreviews({ ok: false, compiledRules: [], warnings: [{ type: 'template_phases_json_invalid' }] });
     showToast('template phases JSONが不正です', 'warn');
     return;
   }
@@ -9729,6 +9827,7 @@ async function setTaskRulesTemplateAction() {
     }, traceId);
     setJsonTextResult('task-rules-template-result', data);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderTaskRulesTemplatePreviews(data);
     applyTaskRulesTemplatePlanTokens(null, null);
     await loadTaskRulesStatus({ notify: false });
     await loadTaskRulesHistory({ notify: false });

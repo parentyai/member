@@ -32,6 +32,18 @@ Task と Notification の連携契約（add-only）。
 4. `sendNotification({ lineUserIds: [userId], auditContext })`
 5. task 側へ `nudgeCount/lastNotifiedAt/nextNudgeAt` を反映
 
+## Copy Priority (add-only)
+- nudge本文/件名は以下の優先順で解決:
+  1. `tasks.meaning`
+  2. `step_rules.meaning`
+  3. `step_rules.nudgeTemplate`
+  4. technical fallback
+- suppress監査:
+  - `tasks.nudge.suppressed`（`status_not_sendable|link_registry_missing|cap_blocked|kill_switch`）
+- link policy:
+  - `TASK_NUDGE_LINK_POLICY=strict`（default）
+  - `TASK_NUDGE_LINK_POLICY=lenient`（`task_todo_list` fallback を試行）
+
 ## Audit Linkage (add-only)
 - `sendNotification` の delivery/timeline に以下を保持:
   - `taskId`

@@ -37,6 +37,7 @@ Task Engine v1（Journey Template + Step Rules + Task apply）の運用手順。
 4. dry-run:
   - `POST /api/admin/os/task-rules/dry-run`
 5. writeはすべて `planHash + confirmToken` 一致を必須化。
+6. template-plan の warning/preview を確認し、`meaningKey` 重複を解消してから template-set する。
 
 ## 監査キー
 - `task_rules.template_plan` / `task_rules.template_set`
@@ -45,6 +46,7 @@ Task Engine v1（Journey Template + Step Rules + Task apply）の運用手順。
 - `task_rules.dry_run`
 - 共通キー: `traceId`, `requestId`, `actor`, `lineUserId`, `memberNumber`, `planHash`
 - task状態変化監査: `task_events`（`taskId/ruleId/decision/checkedAt/explainKeys`）
+- 体験監査: `tasks.view.presented`, `tasks.view.hidden_duplicate`, `tasks.meaning.fallback_used`, `tasks.nudge.suppressed`
 
 ## ロールバック
 1. 即時停止:
@@ -52,6 +54,9 @@ Task Engine v1（Journey Template + Step Rules + Task apply）の運用手順。
   - `ENABLE_TASK_NUDGE_V1=0`
   - `ENABLE_TASK_EVENTS_V1=0`
   - `ENABLE_JOURNEY_TEMPLATE_V1=0`
+  - `ENABLE_JOURNEY_UNIFIED_VIEW_V1=0`
+  - `ENABLE_LEGACY_TODO_DERIVE_FROM_TEMPLATES_V1=0`
+  - `ENABLE_LEGACY_TODO_EMIT_DISABLED_V1=0`
 2. 段階停止:
   - `journey_templates.enabled=false`
   - template namespace の `step_rules.enabled=false`

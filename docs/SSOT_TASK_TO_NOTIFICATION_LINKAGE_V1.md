@@ -38,6 +38,14 @@ Task起点通知連携のSSOT（add-only）。
 2. kill switch/cap で送信不可の場合は fail-closed とし、task側状態を監査に残す。
 3. 通知本体は既存 `createNotification -> sendNotification` を利用し、既存契約を変更しない。
 4. Task更新時の状態変化は `task_events` に append-only 記録する（dry-runは非書込）。
+5. nudge copy 優先順:
+   - `tasks.meaning`
+   - `step_rules.meaning`
+   - `step_rules.nudgeTemplate`
+   - technical fallback
+6. link policy:
+   - `TASK_NUDGE_LINK_POLICY=strict` は `link_registry_missing` で suppress
+   - `TASK_NUDGE_LINK_POLICY=lenient` は `task_todo_list` fallback を試行
 
 ## 監査キー
 - notification meta: `taskId`, `ruleId`, `planHash`

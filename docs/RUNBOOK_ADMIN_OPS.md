@@ -337,6 +337,16 @@
 4) `/admin/trace-search`（= `/admin/ops` 内 Trace Search）
    - traceId で view → decision → execute が追えるか確認
 
+## Task Rules / Journey Template運用（monitor pane）
+1) `template-plan` を実行し、`warning summary` と `LINE/nudge preview` を確認する。
+2) `meaningKey` 重複 warning がある場合は template JSON を修正し、再度 `template-plan` を実行する。
+3) `template-set` は `planHash + confirmToken` が一致している場合のみ実行する。
+4) 単一ユーザー適用は `apply-plan -> apply` の順で実行する（`lineUserId` 優先、`memberNumber` は単一解決必須）。
+5) 問題発生時はフラグで停止する:
+   - `ENABLE_JOURNEY_UNIFIED_VIEW_V1=0`
+   - `ENABLE_LEGACY_TODO_DERIVE_FROM_TEMPLATES_V1=0`
+   - `ENABLE_LEGACY_TODO_EMIT_DISABLED_V1=0`
+
 ## Composer Flow (通知作成 → 承認 → 送信)
 1) `/admin/app?pane=composer`（正規導線）
    - draft 作成（title/body/cta/linkRegistryId/target/scenario/step）
