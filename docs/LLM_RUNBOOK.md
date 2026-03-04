@@ -449,3 +449,21 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 `llm_contextual_bandit_state` で以下を確認する。  
 - `segmentKey/contextSignature/armId` 単位で `pulls` が増加している  
 - `avgReward` が極端値に偏った場合は `llmBanditEnabled=false` で即時停止可能  
+
+## Phase727 Addendum（counterfactual evaluation）
+
+### 監査確認項目（追加）
+`audit_logs(action=llm_gate.decision)` で次を確認する。  
+- `counterfactualEval.version` が `v1`  
+- `counterfactualEval.eligible=true` のレコードで `selectedArmId/bestArmId` が存在する  
+- `counterfactualEval.opportunityDetected=true` が特定segmentに偏っていない  
+
+### reward finalize バッチ確認
+`POST /internal/jobs/llm-action-reward-finalize` の応答で次を確認する。  
+- `counterfactualEvaluated` が 0 のまま固定されていない  
+- `counterfactualOpportunityDetected` が急増した場合は `llmBanditEnabled=false` で影響縮小する  
+
+### 調査優先順
+1) `counterfactualOpportunityDetected` が高い segment を抽出  
+2) 同segmentの `selectionSource` と `scoreBreakdown` を確認  
+3) `wrong_evidence` が同時増加する場合は bandit停止を優先  

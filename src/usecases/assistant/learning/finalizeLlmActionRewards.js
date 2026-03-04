@@ -6,6 +6,7 @@ const llmContextualBanditStateRepo = require('../../../repos/firestore/llmContex
 const deliveriesRepo = require('../../../repos/firestore/deliveriesRepo');
 const journeyTodoItemsRepo = require('../../../repos/firestore/journeyTodoItemsRepo');
 const { appendAuditLog } = require('../../audit/appendAuditLog');
+const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/counterfactualEvaluator');
 
 const DEFAULT_REWARD_WINDOW_HOURS = 48;
 const MAX_REWARD_WINDOW_HOURS = 24 * 14;
@@ -90,6 +91,27 @@ function computeReward(signals, weights) {
   return Number(reward.toFixed(6));
 }
 
+function evaluateCounterfactualOutcome(row, observedReward) {
+  const chosenAction = row && row.chosenAction && typeof row.chosenAction === 'object' ? row.chosenAction : {};
+  const selectedArmId = typeof chosenAction.armId === 'string'
+    ? chosenAction.armId
+    : (typeof row.counterfactualSelectedArmId === 'string' ? row.counterfactualSelectedArmId : null);
+  const selectedRank = Number.isFinite(Number(row && row.counterfactualSelectedRank))
+    ? Number(row.counterfactualSelectedRank)
+    : null;
+  const selectedScore = Number.isFinite(Number(chosenAction.score)) ? Number(chosenAction.score) : Number(row && row.score);
+  const topArms = Array.isArray(row && row.counterfactualTopArms) ? row.counterfactualTopArms : [];
+  const baseEval = evaluateCounterfactualChoice({
+    selectedArmId,
+    selectedRank,
+    selectedScore,
+    topArms
+  });
+  return Object.assign({}, baseEval, {
+    observedReward: Number.isFinite(Number(observedReward)) ? Number(observedReward) : null
+  });
+}
+
 async function finalizeLlmActionRewards(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -112,6 +134,8 @@ async function finalizeLlmActionRewards(params, deps) {
     updated: 0,
     skipped: 0,
     errors: 0,
+    counterfactualEvaluated: 0,
+    counterfactualOpportunityDetected: 0,
     traceId: payload.traceId || null,
     details: []
   };
@@ -141,6 +165,7 @@ async function finalizeLlmActionRewards(params, deps) {
         wrongEvidence: hasWrongEvidence(row)
       };
       const reward = computeReward(signals, payload.rewardWeights || DEFAULT_REWARD_WEIGHTS);
+      const counterfactualEval = evaluateCounterfactualOutcome(row, reward);
 
       if (!dryRun) {
         await repo.patchLlmActionLog(row.id, {
@@ -149,7 +174,8 @@ async function finalizeLlmActionRewards(params, deps) {
           rewardSignals: signals,
           rewardVersion: 'v1',
           rewardWindowHours,
-          rewardFinalizedAt: nowAt.toISOString()
+          rewardFinalizedAt: nowAt.toISOString(),
+          counterfactualEval
         });
 
         const chosenAction = row && row.chosenAction && typeof row.chosenAction === 'object' ? row.chosenAction : {};
@@ -178,11 +204,18 @@ async function finalizeLlmActionRewards(params, deps) {
       }
 
       summary.updated += 1;
+      if (counterfactualEval && counterfactualEval.eligible === true) {
+        summary.counterfactualEvaluated += 1;
+      }
+      if (counterfactualEval && counterfactualEval.opportunityDetected === true) {
+        summary.counterfactualOpportunityDetected += 1;
+      }
       summary.details.push({
         id: row.id,
         lineUserId: row.lineUserId || null,
         reward,
         signals,
+        counterfactualEval,
         fromAt: toIso(createdAt),
         toAt: toIso(endAt)
       });
@@ -206,7 +239,9 @@ async function finalizeLlmActionRewards(params, deps) {
         updated: summary.updated,
         skipped: summary.skipped,
         errors: summary.errors,
-        rewardWindowHours
+        rewardWindowHours,
+        counterfactualEvaluated: summary.counterfactualEvaluated,
+        counterfactualOpportunityDetected: summary.counterfactualOpportunityDetected
       }
     });
   } catch (_err) {

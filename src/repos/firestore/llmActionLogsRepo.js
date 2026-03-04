@@ -122,6 +122,25 @@ function normalizeCounterfactualTopArms(value) {
     .filter((row) => row.armId);
 }
 
+function normalizeCounterfactualEval(value) {
+  const payload = value && typeof value === 'object' ? value : null;
+  if (!payload) return null;
+  return {
+    version: normalizeString(payload.version, 'v1'),
+    eligible: payload.eligible === true,
+    selectedArmId: normalizeString(payload.selectedArmId, null),
+    selectedRank: Number.isFinite(Number(payload.selectedRank))
+      ? Math.max(1, Math.floor(Number(payload.selectedRank)))
+      : null,
+    bestArmId: normalizeString(payload.bestArmId, null),
+    bestScore: normalizeNumber(payload.bestScore, 0),
+    selectedScore: normalizeNumber(payload.selectedScore, 0),
+    scoreGap: Math.max(0, normalizeNumber(payload.scoreGap, 0)),
+    minGap: Math.max(0, normalizeNumber(payload.minGap, 0.12)),
+    opportunityDetected: payload.opportunityDetected === true
+  };
+}
+
 async function appendLlmActionLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
@@ -170,6 +189,7 @@ async function appendLlmActionLog(params) {
       ? Math.max(1, Math.floor(Number(payload.counterfactualSelectedRank)))
       : null,
     counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms),
+    counterfactualEval: normalizeCounterfactualEval(payload.counterfactualEval),
     rewardPending: payload.rewardPending !== false,
     reward: Number.isFinite(Number(payload.reward)) ? Number(payload.reward) : null,
     rewardVersion: normalizeString(payload.rewardVersion, 'v1'),
