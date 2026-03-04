@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T20:46:35-05:00",
-  "gitCommit": "c687fadb3e432ac83149afd4c18ee968f5e68a85",
-  "branch": "main",
-  "sourceDigest": "12558ed651e0a32d60a0efb7e9659516140aeec5e770745cbb6c7c1d738601e4",
+  "generatedAt": "2026-03-03T21:47:44-05:00",
+  "gitCommit": "cd8d10bd32e109133dd7decbbe42302ba9358b12",
+  "branch": "codex/line-cta-max3-v1",
+  "sourceDigest": "5ce23f7042e3581cfb225d61c7c73ecf4e7113696ae1f1ec5ddebbc8abd1b4be",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
