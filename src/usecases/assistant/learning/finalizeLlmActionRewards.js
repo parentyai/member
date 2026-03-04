@@ -2,6 +2,7 @@
 
 const llmActionLogsRepo = require('../../../repos/firestore/llmActionLogsRepo');
 const llmBanditStateRepo = require('../../../repos/firestore/llmBanditStateRepo');
+const llmContextualBanditStateRepo = require('../../../repos/firestore/llmContextualBanditStateRepo');
 const deliveriesRepo = require('../../../repos/firestore/deliveriesRepo');
 const journeyTodoItemsRepo = require('../../../repos/firestore/journeyTodoItemsRepo');
 const { appendAuditLog } = require('../../audit/appendAuditLog');
@@ -94,6 +95,7 @@ async function finalizeLlmActionRewards(params, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const repo = resolvedDeps.llmActionLogsRepo || llmActionLogsRepo;
   const banditRepo = resolvedDeps.llmBanditStateRepo || llmBanditStateRepo;
+  const contextualBanditRepo = resolvedDeps.llmContextualBanditStateRepo || llmContextualBanditStateRepo;
 
   const dryRun = payload.dryRun === true;
   const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(500, Math.floor(Number(payload.limit)))) : 100;
@@ -156,6 +158,17 @@ async function finalizeLlmActionRewards(params, deps) {
         if (row && row.banditEnabled === true && segmentKey && armId) {
           await banditRepo.recordBanditReward({
             segmentKey,
+            armId,
+            reward,
+            epsilon: Number.isFinite(Number(row.epsilon)) ? Number(row.epsilon) : 0.1,
+            updatedAt: nowAt.toISOString()
+          });
+        }
+        const contextSignature = typeof row.contextSignature === 'string' ? row.contextSignature.trim() : '';
+        if (row && row.contextualBanditEnabled === true && segmentKey && contextSignature && armId) {
+          await contextualBanditRepo.recordBanditReward({
+            segmentKey,
+            contextSignature,
             armId,
             reward,
             epsilon: Number.isFinite(Number(row.epsilon)) ? Number(row.epsilon) : 0.1,

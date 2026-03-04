@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T23:04:50-05:00",
-  "gitCommit": "6439313869f06cc498e7b0d36da2aa8df9b3c600",
-  "branch": "codex/llm-next-level-p4-v1",
-  "sourceDigest": "ef95356fd44ae5429611692013ecd615efc7bc0c74b3264aef1b93054119adc3",
+  "generatedAt": "2026-03-03T23:22:55-05:00",
+  "gitCommit": "01c98e0f8770cef3b007db3af670f231eb786b8a",
+  "branch": "codex/llm-next-level-p4-contextual-v1",
+  "sourceDigest": "1ee8e12e03310d3efab004db5316d10c31489eca5c6485520bd06ffa83f016c9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

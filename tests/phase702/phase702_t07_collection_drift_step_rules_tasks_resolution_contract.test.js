@@ -42,8 +42,13 @@ test('phase702: consistency status reflects current collection drift baseline', 
   });
   assert.equal(result.status, 0, result.stderr || result.stdout || 'consistency status report failed');
   const out = result.stdout || '';
-  assert.ok(out.includes('"dataModelOnly": 2'));
-  assert.ok(out.includes('"dataLifecycleOnly": 0'));
+  const start = out.indexOf('{');
+  const payload = start >= 0 ? JSON.parse(out.slice(start)) : null;
+  assert.ok(payload && payload.collectionDrift && payload.collectionDrift.current, 'consistency payload missing');
+  assert.equal(payload.collectionDrift.current.dataModelOnly, 3);
+  assert.equal(payload.collectionDrift.current.dataLifecycleOnly, 0);
+  assert.equal(payload.collectionDrift.baseline.dataModelOnly, 3);
+  assert.equal(payload.collectionDrift.baseline.dataLifecycleOnly, 0);
 });
 
 test('phase702: lifecycle-only drift is fully resolved for queued collections', () => {

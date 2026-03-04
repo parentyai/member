@@ -23,6 +23,7 @@ const {
 } = require('../../../domain/llm/conversation/actionSelector');
 const { buildContextualFeatures } = require('../../../domain/llm/bandit/contextualFeatures');
 const { buildCounterfactualSnapshot } = require('../../../domain/llm/bandit/counterfactualSnapshot');
+const { buildContextSignature } = require('../../../domain/llm/bandit/contextualSignature');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -249,6 +250,8 @@ function buildAuditMeta(input) {
           modified: payload.postRenderLint.modified === true
         }
       : { findings: [], modified: false },
+    contextSignature: normalizeText(payload.contextSignature) || null,
+    contextualBanditEnabled: payload.contextualBanditEnabled === true,
     contextualFeatures: normalizeContextualFeatures(payload.contextualFeatures),
     counterfactualSelectedArmId: normalizeText(payload.counterfactualSelectedArmId) || null,
     counterfactualSelectedRank: Number.isFinite(Number(payload.counterfactualSelectedRank))
@@ -351,14 +354,51 @@ async function composeConciergeReply(params) {
     userTier: policy.userTier,
     riskBucket: confidence.riskBucket
   });
+  const contextualFeaturesForBandit = buildContextualFeatures({
+    mode: policy.mode,
+    topic: policy.topic,
+    userTier: policy.userTier,
+    journeyPhase: payload.journeyPhase || (contextSnapshot && contextSnapshot.phase) || '',
+    riskBucket: confidence.riskBucket,
+    evidenceNeed,
+    contextSnapshot,
+    chosenAction: null,
+    intentConfidence: confidence.intentConfidence,
+    contextConfidence: confidence.contextConfidence
+  });
+  const contextSignature = buildContextSignature(contextualFeaturesForBandit);
 
   let stateByArm = banditInput.stateByArm && typeof banditInput.stateByArm === 'object'
     ? banditInput.stateByArm
     : {};
-  if (banditEnabled && (!stateByArm || Object.keys(stateByArm).length === 0) && typeof banditInput.stateFetcher === 'function') {
+  let contextualStateByArm = banditInput.contextualStateByArm && typeof banditInput.contextualStateByArm === 'object'
+    ? banditInput.contextualStateByArm
+    : {};
+  if (
+    banditEnabled
+    && (
+      !stateByArm
+      || Object.keys(stateByArm).length === 0
+      || !contextualStateByArm
+      || Object.keys(contextualStateByArm).length === 0
+    )
+    && typeof banditInput.stateFetcher === 'function'
+  ) {
     try {
-      const fetched = await banditInput.stateFetcher({ segmentKey: segmentKeyHint });
-      if (fetched && typeof fetched === 'object') stateByArm = fetched;
+      const fetched = await banditInput.stateFetcher({
+        segmentKey: segmentKeyHint,
+        contextSignature
+      });
+      if (fetched && typeof fetched === 'object') {
+        if (fetched.stateByArm && typeof fetched.stateByArm === 'object') {
+          stateByArm = fetched.stateByArm;
+        } else if (Object.keys(stateByArm).length === 0) {
+          stateByArm = fetched;
+        }
+        if (fetched.contextualStateByArm && typeof fetched.contextualStateByArm === 'object') {
+          contextualStateByArm = fetched.contextualStateByArm;
+        }
+      }
     } catch (_err) {
       blockedReasons.push('bandit_state_unavailable');
     }
@@ -380,6 +420,7 @@ async function composeConciergeReply(params) {
       enabled: banditEnabled,
       epsilon: banditInput.epsilon,
       stateByArm,
+      contextualStateByArm,
       randomFn: banditInput.randomFn
     }
   });
@@ -501,6 +542,8 @@ async function composeConciergeReply(params) {
     segmentKey: actionSelection.segmentKey,
     contextVersion: CONTEXT_VERSION,
     featureHash,
+    contextSignature,
+    contextualBanditEnabled: actionSelection.contextualBanditUsed === true,
     postRenderLint: lintResult,
     contextualFeatures,
     counterfactualSelectedArmId: counterfactual.selectedArmId,

@@ -7041,6 +7041,7 @@
         "journey_todo_items",
         "llm_action_logs",
         "llm_bandit_state",
+        "llm_contextual_bandit_state",
         "notification_deliveries"
       ],
       "audit_required": true,
