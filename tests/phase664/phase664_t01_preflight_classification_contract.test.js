@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { runLocalPreflight } = require('../../tools/admin_local_preflight');
+const { runLocalPreflight, probeFirestoreReadOnly } = require('../../tools/admin_local_preflight');
 
 test('phase664: local preflight requires SA key when strict mode is explicitly enabled and skips firestore probe', async () => {
   let probeCalled = 0;
@@ -81,6 +81,10 @@ test('phase664: local preflight auto-applies local SA key path and avoids ADC re
       accessSync(filePath) {
         if (filePath !== expectedPath) throw new Error('EACCES');
       },
+      readFileSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('ENOENT');
+        return JSON.stringify({ type: 'service_account', project_id: 'member-485303' });
+      },
       constants: { R_OK: 4 }
     },
     probeFirestore: async () => {
@@ -98,6 +102,47 @@ test('phase664: local preflight auto-applies local SA key path and avoids ADC re
   assert.equal(result.autoSaKeyPath, expectedPath);
   assert.equal(env.GOOGLE_APPLICATION_CREDENTIALS, expectedPath);
   assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_OK');
+  assert.equal(probeCalled, 1);
+});
+
+test('phase664: local preflight auto SA fallback ignores authorized_user credential file and keeps ADC path', async () => {
+  let probeCalled = 0;
+  const env = {
+    FIRESTORE_PROJECT_ID: 'member-485303',
+    HOME: '/tmp/member-home',
+    ENV_NAME: 'local'
+  };
+  const expectedPath = '/tmp/member-home/.secrets/member-dev-sa.json';
+  const result = await runLocalPreflight({
+    env,
+    fsApi: {
+      statSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('ENOENT');
+        return { isFile: () => true };
+      },
+      accessSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('EACCES');
+      },
+      readFileSync(filePath) {
+        if (filePath !== expectedPath) throw new Error('ENOENT');
+        return JSON.stringify({ type: 'authorized_user', refresh_token: 'dummy' });
+      },
+      constants: { R_OK: 4 }
+    },
+    probeFirestore: async () => {
+      probeCalled += 1;
+      return {
+        key: 'firestoreProbe',
+        status: 'ok',
+        code: 'FIRESTORE_PROBE_OK',
+        message: 'ok'
+      };
+    }
+  });
+
+  assert.equal(result.ready, true);
+  assert.equal(result.autoSaKeyPath, null);
+  assert.equal(result.checks.saKeyPath.code, 'SA_KEY_PATH_UNSET');
   assert.equal(probeCalled, 1);
 });
 
@@ -275,6 +320,28 @@ test('phase664: local preflight classifies missing firestore database as FIRESTO
   assert.equal(result.summary.category, 'config');
   assert.equal(result.summary.recoveryActionCode, 'CHECK_FIRESTORE_DATABASE');
   assert.ok(result.summary.recoveryCommands.includes('gcloud firestore databases list --project <your-project-id>'));
+});
+
+test('phase664: firestore probe timeout path does not emit unhandled rejection on delayed firestore failure', async () => {
+  let unhandled = null;
+  const onUnhandled = (err) => {
+    unhandled = err;
+  };
+  process.once('unhandledRejection', onUnhandled);
+  const result = await probeFirestoreReadOnly({
+    timeoutMs: 5,
+    getDb: () => ({
+      listCollections: async () => new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('late firestore failure')), 25);
+      })
+    })
+  });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  if (process.listeners('unhandledRejection').includes(onUnhandled)) {
+    process.removeListener('unhandledRejection', onUnhandled);
+  }
+  assert.ok(['FIRESTORE_PROBE_TIMEOUT', 'FIRESTORE_PROBE_FAILED'].includes(result.code));
+  assert.equal(unhandled, null);
 });
 
 test('phase664: local preflight resolves project id via resolver fallback when env is missing', async () => {
