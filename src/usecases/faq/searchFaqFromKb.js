@@ -1,6 +1,7 @@
 'use strict';
 
 const faqArticlesRepo = require('../../repos/firestore/faqArticlesRepo');
+const MAX_KB_SEARCH_LIMIT = 8;
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -28,7 +29,7 @@ async function searchFaqFromKb(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const question = normalizeText(payload.question);
   const locale = normalizeText(payload.locale) || 'ja';
-  const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? Math.min(payload.limit, 5) : 3;
+  const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? Math.min(payload.limit, MAX_KB_SEARCH_LIMIT) : 3;
   const requestedIntent = normalizeText(payload.intent || 'FAQ') || 'FAQ';
   const intent = requestedIntent.toLowerCase() === 'faq_search' ? 'FAQ' : requestedIntent;
 

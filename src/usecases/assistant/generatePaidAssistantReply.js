@@ -9,6 +9,9 @@ const MAX_GAPS = 10;
 const MAX_RISKS = 10;
 const MAX_NEXT_ACTIONS = 3;
 const MAX_EVIDENCE_KEYS = 8;
+const MAX_PROMPT_KB_CANDIDATES = 5;
+const KB_CANDIDATE_DIVERSITY_PENALTY = 0.2;
+const KB_CANDIDATE_DUPLICATE_THRESHOLD = 0.9;
 const DEFAULT_OUTPUT_CONSTRAINTS = Object.freeze({
   max_next_actions: 3,
   max_gaps: 5,
@@ -233,6 +236,37 @@ function normalizeEvidenceKey(value) {
   return normalized.replace(/^[\s'"`]+|[\s'"`)\]】」』,，.;:：]+$/g, '').trim();
 }
 
+function normalizeEvidenceLookupKey(value) {
+  return normalizeEvidenceKey(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function buildEvidenceResolver(allowedEvidenceKeys) {
+  const canonicalKeys = sanitizeList(allowedEvidenceKeys, MAX_EVIDENCE_KEYS)
+    .map((item) => normalizeEvidenceKey(item))
+    .filter(Boolean);
+  const exactSet = new Set(canonicalKeys);
+  const lowercaseMap = new Map();
+  const compactMap = new Map();
+  canonicalKeys.forEach((key) => {
+    lowercaseMap.set(key.toLowerCase(), key);
+    const compact = normalizeEvidenceLookupKey(key);
+    if (compact && !compactMap.has(compact)) compactMap.set(compact, key);
+  });
+  return {
+    resolve(value) {
+      const normalized = normalizeEvidenceKey(value);
+      if (!normalized) return '';
+      if (!canonicalKeys.length) return normalized;
+      if (exactSet.has(normalized)) return normalized;
+      const lowerHit = lowercaseMap.get(normalized.toLowerCase());
+      if (lowerHit) return lowerHit;
+      const compactHit = compactMap.get(normalizeEvidenceLookupKey(normalized));
+      if (compactHit) return compactHit;
+      return '';
+    }
+  };
+}
+
 function extractCitationFromText(value) {
   const normalized = normalizeText(value);
   if (!normalized) return '';
@@ -248,43 +282,71 @@ function stripCitationFromActionText(value) {
   return withoutParenCitation.replace(/\s*根拠\s*[:：]\s*[A-Za-z0-9._:-]+\s*$/i, '').trim();
 }
 
-function collectEvidenceKeysFromNextActions(values) {
+function collectEvidenceKeysFromNextActions(values, options) {
   const rows = Array.isArray(values) ? values : [];
+  const context = options && typeof options === 'object' ? options : {};
+  const evidenceResolver = context.evidenceResolver && typeof context.evidenceResolver.resolve === 'function'
+    ? context.evidenceResolver
+    : null;
   const extracted = [];
   rows.forEach((item) => {
     if (typeof item === 'string') {
-      const citationFromText = extractCitationFromText(item);
+      const citationFromText = evidenceResolver
+        ? evidenceResolver.resolve(extractCitationFromText(item))
+        : normalizeEvidenceKey(extractCitationFromText(item));
       if (citationFromText) extracted.push(citationFromText);
       return;
     }
     if (!item || typeof item !== 'object') return;
-    const evidenceKey = normalizeEvidenceKey(item.evidenceKey || item.citation || item.sourceId || item.sourceKey);
+    const evidenceKey = evidenceResolver
+      ? evidenceResolver.resolve(item.evidenceKey || item.citation || item.sourceId || item.sourceKey)
+      : normalizeEvidenceKey(item.evidenceKey || item.citation || item.sourceId || item.sourceKey);
     if (evidenceKey) extracted.push(evidenceKey);
     const actionText = normalizeText(item.action || item.title || item.text || item.key);
-    const citationFromAction = extractCitationFromText(actionText);
+    const citationFromAction = evidenceResolver
+      ? evidenceResolver.resolve(extractCitationFromText(actionText))
+      : normalizeEvidenceKey(extractCitationFromText(actionText));
     if (citationFromAction) extracted.push(citationFromAction);
   });
   return sanitizeList(extracted, MAX_EVIDENCE_KEYS);
 }
 
-function ensureNextActionCitation(text, fallbackCitation) {
+function ensureNextActionCitation(text, fallbackCitation, options) {
+  const context = options && typeof options === 'object' ? options : {};
+  const evidenceResolver = context.evidenceResolver && typeof context.evidenceResolver.resolve === 'function'
+    ? context.evidenceResolver
+    : null;
+  const defaultCitation = normalizeEvidenceKey(context.defaultCitation);
   const citationFromText = extractCitationFromText(text);
   const actionOnly = normalizeActionText(stripCitationFromActionText(text));
   if (!actionOnly && !citationFromText) return '';
-  const citation = normalizeEvidenceKey(citationFromText || fallbackCitation);
+  const citationCandidate = citationFromText || fallbackCitation || defaultCitation;
+  let citation = '';
+  if (evidenceResolver) {
+    citation = evidenceResolver.resolve(citationCandidate) || evidenceResolver.resolve(defaultCitation);
+  } else {
+    citation = normalizeEvidenceKey(citationCandidate || defaultCitation);
+  }
   if (!citation) return actionOnly;
   return `${actionOnly} (根拠:${citation})`;
 }
 
-function normalizeNextActions(value, evidenceKeys, limit) {
+function normalizeNextActions(value, evidenceKeys, limit, options) {
   const list = Array.isArray(value) ? value : [];
+  const context = options && typeof options === 'object' ? options : {};
+  const evidenceResolver = context.evidenceResolver && typeof context.evidenceResolver.resolve === 'function'
+    ? context.evidenceResolver
+    : null;
   const out = [];
   const fallbackCitation = evidenceKeys[0] || '';
   const dedupe = new Set();
   list.forEach((item) => {
     if (out.length >= limit) return;
     if (typeof item === 'string') {
-      const normalized = ensureNextActionCitation(item, fallbackCitation);
+      const normalized = ensureNextActionCitation(item, fallbackCitation, {
+        evidenceResolver,
+        defaultCitation: fallbackCitation
+      });
       const dedupeKey = normalizeActionDedupeKey(normalized);
       if (!normalized || !dedupeKey || dedupe.has(dedupeKey)) return;
       dedupe.add(dedupeKey);
@@ -294,14 +356,112 @@ function normalizeNextActions(value, evidenceKeys, limit) {
     if (!item || typeof item !== 'object') return;
     const action = normalizeText(item.action || item.title || item.text || item.key);
     if (!action) return;
-    const citation = normalizeText(item.evidenceKey || item.citation || item.sourceId || fallbackCitation);
-    const normalized = ensureNextActionCitation(action, citation);
+    const citation = normalizeText(
+      item.evidenceKey
+      || item.citation
+      || item.sourceId
+      || item.sourceKey
+      || extractCitationFromText(action)
+      || fallbackCitation
+    );
+    const normalized = ensureNextActionCitation(action, citation, {
+      evidenceResolver,
+      defaultCitation: fallbackCitation
+    });
     const dedupeKey = normalizeActionDedupeKey(normalized);
     if (!normalized || !dedupeKey || dedupe.has(dedupeKey)) return;
     dedupe.add(dedupeKey);
     out.push(normalized);
   });
   return out.slice(0, limit);
+}
+
+function tokenizeKbCandidateText(value) {
+  return normalizeIntentText(value)
+    .split(/\s+/)
+    .filter((token) => token.length >= 2)
+    .slice(0, 40);
+}
+
+function buildKbCandidateProfile(candidate) {
+  const titleTokens = tokenizeKbCandidateText(candidate && candidate.title);
+  const bodyTokens = tokenizeKbCandidateText(candidate && candidate.body);
+  const tokens = new Set(titleTokens.concat(bodyTokens));
+  return {
+    titleNormalized: normalizeIntentText(candidate && candidate.title),
+    tokens
+  };
+}
+
+function computeKbCandidateSimilarity(leftProfile, rightProfile) {
+  const left = leftProfile && leftProfile.tokens instanceof Set ? leftProfile.tokens : new Set();
+  const right = rightProfile && rightProfile.tokens instanceof Set ? rightProfile.tokens : new Set();
+  if (!left.size || !right.size) return 0;
+  let intersection = 0;
+  left.forEach((token) => {
+    if (right.has(token)) intersection += 1;
+  });
+  const union = left.size + right.size - intersection;
+  let similarity = union > 0 ? intersection / union : 0;
+  const leftTitle = leftProfile && leftProfile.titleNormalized ? leftProfile.titleNormalized : '';
+  const rightTitle = rightProfile && rightProfile.titleNormalized ? rightProfile.titleNormalized : '';
+  if (leftTitle && rightTitle && (leftTitle === rightTitle || leftTitle.includes(rightTitle) || rightTitle.includes(leftTitle))) {
+    similarity = Math.max(similarity, 0.95);
+  }
+  return Number.isFinite(similarity) ? similarity : 0;
+}
+
+function selectPromptKbCandidates(candidates, limit) {
+  const rows = Array.isArray(candidates) ? candidates : [];
+  const max = Number.isInteger(limit) && limit > 0 ? limit : MAX_PROMPT_KB_CANDIDATES;
+  const deduped = [];
+  const seenArticle = new Set();
+  rows.forEach((row) => {
+    const articleId = normalizeText(row && row.articleId);
+    if (!articleId || seenArticle.has(articleId)) return;
+    seenArticle.add(articleId);
+    deduped.push(row);
+  });
+  const scoredRows = deduped
+    .slice()
+    .sort((a, b) => Number(b && b.searchScore ? b.searchScore : 0) - Number(a && a.searchScore ? a.searchScore : 0))
+    .map((row) => ({
+      row,
+      profile: buildKbCandidateProfile(row)
+    }));
+  const selected = [];
+  const remaining = scoredRows.slice();
+  while (selected.length < max && remaining.length) {
+    let bestIndex = 0;
+    let bestScore = Number.NEGATIVE_INFINITY;
+    remaining.forEach((candidate, index) => {
+      const baseScore = Number(candidate.row && candidate.row.searchScore ? candidate.row.searchScore : 0);
+      let maxSimilarity = 0;
+      selected.forEach((picked) => {
+        maxSimilarity = Math.max(maxSimilarity, computeKbCandidateSimilarity(candidate.profile, picked.profile));
+      });
+      const candidateScore = baseScore - (maxSimilarity * KB_CANDIDATE_DIVERSITY_PENALTY);
+      if (candidateScore > bestScore) {
+        bestScore = candidateScore;
+        bestIndex = index;
+      }
+    });
+    const picked = remaining.splice(bestIndex, 1)[0];
+    if (!picked) break;
+    const nearDuplicate = selected.some((item) => (
+      computeKbCandidateSimilarity(item.profile, picked.profile) >= KB_CANDIDATE_DUPLICATE_THRESHOLD
+    ));
+    if (nearDuplicate && (selected.length + remaining.length) >= max) continue;
+    selected.push(picked);
+  }
+  if (selected.length < Math.min(max, scoredRows.length)) {
+    scoredRows.forEach((candidate) => {
+      if (selected.length >= max) return;
+      const already = selected.some((item) => item.row.articleId === candidate.row.articleId);
+      if (!already) selected.push(candidate);
+    });
+  }
+  return selected.slice(0, max).map((item) => item.row);
 }
 
 function formatSection(title, body, fallback, aliasTitle) {
@@ -500,11 +660,18 @@ function normalizeAssistantOutput(raw, intent, constraints, options) {
     ? Number(constraints.max_risks)
     : DEFAULT_OUTPUT_CONSTRAINTS.max_risks;
   const rawActions = payload.nextActions || payload.next_actions;
-  const fallbackEvidenceKeys = sanitizeList(context.fallbackEvidenceKeys, MAX_EVIDENCE_KEYS);
-  const extractedEvidenceKeys = collectEvidenceKeysFromNextActions(rawActions);
-  const explicitEvidenceKeys = sanitizeList(payload.evidenceKeys || payload.citations, MAX_EVIDENCE_KEYS);
+  const evidenceResolver = buildEvidenceResolver(context.allowedEvidenceKeys || context.fallbackEvidenceKeys);
+  const fallbackEvidenceKeys = sanitizeList(context.fallbackEvidenceKeys, MAX_EVIDENCE_KEYS)
+    .map((item) => evidenceResolver.resolve(item))
+    .filter(Boolean);
+  const extractedEvidenceKeys = collectEvidenceKeysFromNextActions(rawActions, { evidenceResolver });
+  const explicitEvidenceKeys = sanitizeList(payload.evidenceKeys || payload.citations, MAX_EVIDENCE_KEYS)
+    .map((item) => evidenceResolver.resolve(item))
+    .filter(Boolean);
   const mergedEvidenceKeys = sanitizeList([].concat(explicitEvidenceKeys, extractedEvidenceKeys), MAX_EVIDENCE_KEYS);
-  const evidenceKeys = mergedEvidenceKeys.length ? mergedEvidenceKeys : fallbackEvidenceKeys.slice(0, 1);
+  const evidenceKeys = mergedEvidenceKeys.length
+    ? mergedEvidenceKeys
+    : fallbackEvidenceKeys.slice(0, Math.min(2, MAX_EVIDENCE_KEYS));
   const normalized = {
     schemaId: PAID_ASSISTANT_REPLY_SCHEMA_ID,
     generatedAt: new Date().toISOString(),
@@ -513,7 +680,7 @@ function normalizeAssistantOutput(raw, intent, constraints, options) {
     situation: normalizeText(payload.situation || payload.summary),
     gaps: sanitizeList(payload.gaps || payload.missingItems, maxGaps),
     risks: sanitizeList(payload.risks || payload.alerts, maxRisks),
-    nextActions: normalizeNextActions(rawActions, evidenceKeys, maxNextActions),
+    nextActions: normalizeNextActions(rawActions, evidenceKeys, maxNextActions, { evidenceResolver }),
     evidenceKeys
   };
   return normalized;
@@ -572,16 +739,17 @@ async function generatePaidAssistantReply(params) {
   const faq = await searchFaqFromKb({
     question,
     locale: payload.locale || 'ja',
-    limit: 5
+    limit: 8
   });
-  const kbCandidates = Array.isArray(faq.candidates)
+  const sortedKbCandidates = Array.isArray(faq.candidates)
     ? faq.candidates
       .slice()
       .sort((a, b) => Number(b && b.searchScore ? b.searchScore : 0) - Number(a && a.searchScore ? a.searchScore : 0))
-      .slice(0, 5)
+      .slice(0, 8)
     : [];
-  const top1Score = kbCandidates.length > 0 ? Number(kbCandidates[0].searchScore || 0) : 0;
-  const top2Score = kbCandidates.length > 1 ? Number(kbCandidates[1].searchScore || 0) : 0;
+  const kbCandidates = selectPromptKbCandidates(sortedKbCandidates, MAX_PROMPT_KB_CANDIDATES);
+  const top1Score = sortedKbCandidates.length > 0 ? Number(sortedKbCandidates[0].searchScore || 0) : 0;
+  const top2Score = sortedKbCandidates.length > 1 ? Number(sortedKbCandidates[1].searchScore || 0) : 0;
   const evidenceSet = new Set(kbCandidates.map((item) => item.articleId).filter(Boolean));
   assistantQualityBase.kbTopScore = top1Score;
   if (!kbCandidates.length) {
@@ -618,7 +786,8 @@ async function generatePaidAssistantReply(params) {
     try {
       const callResult = await invokeAssistant(adapter, requestPayload, payload.llmPolicy || null);
       const output = normalizeAssistantOutput(callResult.answer, intent, outputConstraints, {
-        fallbackEvidenceKeys: Array.from(evidenceSet)
+        fallbackEvidenceKeys: Array.from(evidenceSet),
+        allowedEvidenceKeys: Array.from(evidenceSet)
       });
       const evidenceCoverage = computeEvidenceCoverage(output.evidenceKeys, evidenceSet);
       const guard = await guardLlmOutput({
