@@ -2660,7 +2660,7 @@ function setupHomeControls() {
     runHomeSafeTest();
   });
   document.getElementById('dashboard-reload')?.addEventListener('click', () => {
-    void loadDashboardKpis({ notify: true });
+    void loadDashboardKpis({ notify: true, forceRefresh: true });
   });
   document.getElementById('dashboard-journey-kpi-reload')?.addEventListener('click', () => {
     void loadDashboardJourneyKpi({ notify: true });
@@ -4278,12 +4278,16 @@ async function loadDashboardJourneyKpi(options) {
   }
 }
 
-async function fetchDashboardKpiByMonths(windowMonths, traceId) {
+async function fetchDashboardKpiByMonths(windowMonths, traceId, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const forceRefresh = opts.forceRefresh === true;
   const key = String(normalizeDashboardWindow(windowMonths));
-  if (state.dashboardCacheByMonths[key]) return state.dashboardCacheByMonths[key];
+  if (!forceRefresh && state.dashboardCacheByMonths[key]) return state.dashboardCacheByMonths[key];
+  if (forceRefresh) delete state.dashboardCacheByMonths[key];
   const fallbackMode = resolveDashboardFallbackMode();
+  const snapshotRefresh = forceRefresh ? 'true' : 'false';
   const res = await fetch(
-    `/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(key)}&fallbackMode=${encodeURIComponent(fallbackMode)}&fallbackOnEmpty=true`,
+    `/api/admin/os/dashboard/kpi?windowMonths=${encodeURIComponent(key)}&fallbackMode=${encodeURIComponent(fallbackMode)}&fallbackOnEmpty=true&snapshotRefresh=${encodeURIComponent(snapshotRefresh)}`,
     { headers: buildHeaders({}, traceId) }
   );
   const data = await readJsonResponse(res);
@@ -4374,6 +4378,7 @@ async function loadAlertsSummary(options) {
 
 async function loadDashboardKpis(options) {
   const notify = !options || options.notify !== false;
+  const forceRefresh = Boolean(options && options.forceRefresh === true);
   if (isLocalPreflightBlockingDataLoads()) {
     state.dashboardKpis = null;
     state.dashboardJourneyKpi = null;
@@ -4386,10 +4391,13 @@ async function loadDashboardKpis(options) {
   const traceId = ensureTraceInput('traceId') || newTraceId();
   await loadDashboardJourneyKpi({ notify: false });
   const monthsNeeded = Array.from(new Set(Object.keys(DASHBOARD_CARD_CONFIG).map((metricKey) => getDashboardWindowMonths(metricKey))));
+  if (forceRefresh) {
+    state.dashboardCacheByMonths = {};
+  }
   let failed = false;
   for (const months of monthsNeeded) {
     try {
-      await fetchDashboardKpiByMonths(months, traceId);
+      await fetchDashboardKpiByMonths(months, traceId, { forceRefresh });
     } catch (_err) {
       failed = true;
       delete state.dashboardCacheByMonths[String(months)];
