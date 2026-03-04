@@ -122,42 +122,42 @@
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 170,
+      "line": 188,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 176,
+      "line": 194,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 208,
+      "line": 226,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 249,
+      "line": 267,
       "symbol": "setKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 252,
+      "line": 270,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 253,
+      "line": 271,
       "symbol": "killSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 407,
+      "line": 482,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/repos/firestore/systemFlagsRepo.js",
-      "line": 408,
+      "line": 483,
       "symbol": "setKillSwitch"
     },
     {
@@ -437,6 +437,21 @@
     },
     {
       "file": "src/routes/internal/journeyTodoReminderJob.js",
+      "line": 51,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
+      "line": 3,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
+      "line": 50,
+      "symbol": "getKillSwitch"
+    },
+    {
+      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
       "line": 51,
       "symbol": "killSwitch"
     },

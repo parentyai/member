@@ -60,6 +60,19 @@ function isKnownShortener(host) {
   return SHORTENER_HOSTS.has(host);
 }
 
+function isIpLiteral(host) {
+  if (!host) return false;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return true;
+  if (host.includes(':')) return true;
+  return false;
+}
+
+function isSpoofedAuthorityHost(host) {
+  if (!host) return false;
+  if (hostEndsWith(host, 'gov') || hostEndsWith(host, 'mil') || hostEndsWith(host, 'edu')) return false;
+  return /(?:^|\.)(?:gov|mil|edu)\./.test(host);
+}
+
 function parseUrl(url) {
   const text = normalizeText(url);
   if (!text) return null;
@@ -72,7 +85,9 @@ function parseUrl(url) {
       url: parsed.toString(),
       protocol: parsed.protocol,
       host,
-      path: parsed.pathname || '/'
+      path: parsed.pathname || '/',
+      username: normalizeText(parsed.username),
+      password: normalizeText(parsed.password)
     };
   } catch (_err) {
     return null;
@@ -85,90 +100,78 @@ function rankBySource(candidate, host) {
   const sourceType = normalizeText(payload.sourceType).toLowerCase();
 
   if (['gov', 'k12_district', 'school_public'].includes(domainClass)) return 'R0';
-  if (sourceType === 'official') return 'R0';
-  if (sourceType === 'semi_official') return 'R1';
-
   if (hostEndsWith(host, 'gov') || hostEndsWith(host, 'mil') || hostEndsWith(host, 'edu')) return 'R0';
+
+  if (sourceType === 'semi_official') return 'R1';
+  if (sourceType === 'official') return 'R1';
   if (NON_PROFIT_ORG_HOSTS.has(host)) return 'R1';
   if (MAJOR_MEDIA_HOSTS.has(host)) return 'R2';
 
   return 'R3';
 }
 
+function rejectDecision(base, reason) {
+  return Object.assign({}, base, {
+    ok: false,
+    allowed: false,
+    rank: 'R3',
+    reason
+  });
+}
+
 function evaluateCandidate(candidate, options) {
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
-  const parsed = parseUrl(payload.url);
+  const source = normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown';
   const denylist = Array.isArray(options && options.denylist)
     ? options.denylist.map((item) => normalizeText(item).toLowerCase()).filter(Boolean)
     : [];
 
+  const finalRaw = normalizeText(payload.finalUrl || payload.resolvedUrl);
+  const parseTarget = finalRaw || normalizeText(payload.url);
+  const parsed = parseUrl(parseTarget);
+
   if (!parsed) {
-    return {
-      ok: false,
-      allowed: false,
-      rank: 'R3',
-      reason: 'url_invalid',
+    return rejectDecision({
       domain: null,
       path: null,
-      url: normalizeText(payload.url),
-      source: normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown'
-    };
+      url: parseTarget,
+      source,
+      title: normalizeText(payload.title),
+      snippet: normalizeText(payload.snippet)
+    }, 'url_invalid');
   }
 
   const host = parsed.host;
-  if (isKnownShortener(host)) {
-    return {
-      ok: false,
-      allowed: false,
-      rank: 'R3',
-      reason: 'short_url_blocked',
-      domain: host,
-      path: parsed.path,
-      url: parsed.url,
-      source: normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown'
-    };
-  }
-
-  const suffix = host.includes('.') ? host.split('.').pop() : '';
-  if (SUSPICIOUS_TLDS.has(suffix)) {
-    return {
-      ok: false,
-      allowed: false,
-      rank: 'R3',
-      reason: 'suspicious_tld_blocked',
-      domain: host,
-      path: parsed.path,
-      url: parsed.url,
-      source: normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown'
-    };
-  }
-
-  if (denylist.some((entry) => host === entry || host.endsWith(`.${entry}`))) {
-    return {
-      ok: false,
-      allowed: false,
-      rank: 'R3',
-      reason: 'denylist_blocked',
-      domain: host,
-      path: parsed.path,
-      url: parsed.url,
-      source: normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown'
-    };
-  }
-
-  const rank = rankBySource(payload, host);
-  return {
-    ok: true,
-    allowed: true,
-    rank,
-    reason: 'accepted',
+  const base = {
     domain: host,
     path: parsed.path,
     url: parsed.url,
-    source: normalizeText(payload.source || payload.sourceType || 'unknown') || 'unknown',
+    originalUrl: normalizeText(payload.url),
+    finalUrl: finalRaw || parsed.url,
+    source,
     title: normalizeText(payload.title),
     snippet: normalizeText(payload.snippet)
   };
+
+  if (isKnownShortener(host)) return rejectDecision(base, 'short_url_blocked');
+  if (parsed.username || parsed.password) return rejectDecision(base, 'auth_url_blocked');
+  if (isIpLiteral(host)) return rejectDecision(base, 'ip_literal_blocked');
+  if (isSpoofedAuthorityHost(host)) return rejectDecision(base, 'spoofed_domain_blocked');
+
+  const suffix = host.includes('.') ? host.split('.').pop() : '';
+  if (SUSPICIOUS_TLDS.has(suffix)) return rejectDecision(base, 'suspicious_tld_blocked');
+
+  if (denylist.some((entry) => host === entry || host.endsWith(`.${entry}`))) {
+    return rejectDecision(base, 'denylist_blocked');
+  }
+
+  const rank = rankBySource(payload, host);
+  return Object.assign({}, base, {
+    ok: true,
+    allowed: true,
+    rank,
+    reason: 'accepted'
+  });
 }
 
 function selectUrls(candidates, policy, options) {
@@ -219,5 +222,7 @@ function selectUrls(candidates, policy, options) {
 
 module.exports = {
   evaluateCandidate,
-  selectUrls
+  selectUrls,
+  isIpLiteral,
+  isSpoofedAuthorityHost
 };

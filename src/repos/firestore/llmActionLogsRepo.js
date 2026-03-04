@@ -1,0 +1,190 @@
+'use strict';
+
+const { getDb, serverTimestamp } = require('../../infra/firestore');
+
+const COLLECTION = 'llm_action_logs';
+
+function normalizeString(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim();
+  return normalized || fallback;
+}
+
+function normalizeNumber(value, fallback) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function normalizeBoolean(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  return fallback;
+}
+
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value > 1000000000000 ? value : value * 1000);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    if (Number.isFinite(parsed.getTime())) return parsed;
+  }
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && Number.isFinite(date.getTime())) return date;
+  }
+  return null;
+}
+
+function normalizeStringList(value, limit) {
+  const rows = Array.isArray(value) ? value : [];
+  const max = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 20;
+  const out = [];
+  rows.forEach((item) => {
+    if (out.length >= max) return;
+    const normalized = normalizeString(item, '');
+    if (!normalized) return;
+    if (!out.includes(normalized)) out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeChosenAction(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  return {
+    armId: normalizeString(payload.armId, null),
+    styleId: normalizeString(payload.styleId, null),
+    ctaCount: Math.max(0, Math.floor(normalizeNumber(payload.ctaCount, 0))),
+    questionFlag: normalizeBoolean(payload.questionFlag, false),
+    lengthBucket: normalizeString(payload.lengthBucket, null),
+    timingBucket: normalizeString(payload.timingBucket, null),
+    score: normalizeNumber(payload.score, 0),
+    selectionSource: normalizeString(payload.selectionSource, null),
+    scoreBreakdown: payload.scoreBreakdown && typeof payload.scoreBreakdown === 'object'
+      ? Object.assign({}, payload.scoreBreakdown)
+      : {}
+  };
+}
+
+function normalizeRewardSignals(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  return {
+    click: payload.click === true,
+    taskComplete: payload.taskComplete === true,
+    blockedResolved: payload.blockedResolved === true,
+    citationMissing: payload.citationMissing === true,
+    wrongEvidence: payload.wrongEvidence === true
+  };
+}
+
+async function appendLlmActionLog(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc();
+  const data = {
+    traceId: normalizeString(payload.traceId, null),
+    requestId: normalizeString(payload.requestId, null),
+    lineUserId: normalizeString(payload.lineUserId, ''),
+    plan: normalizeString(payload.plan, 'free'),
+    userTier: normalizeString(payload.userTier, 'free'),
+    mode: normalizeString(payload.mode, 'A'),
+    topic: normalizeString(payload.topic, 'general'),
+    intentConfidence: normalizeNumber(payload.intentConfidence, 0),
+    contextConfidence: normalizeNumber(payload.contextConfidence, 0),
+    conversationState: normalizeString(payload.conversationState, null),
+    conversationMove: normalizeString(payload.conversationMove, null),
+    styleId: normalizeString(payload.styleId, null),
+    contextVersion: normalizeString(payload.contextVersion, 'concierge_ctx_v1'),
+    featureHash: normalizeString(payload.featureHash, null),
+    segmentKey: normalizeString(payload.segmentKey, null),
+    banditEnabled: payload.banditEnabled === true,
+    epsilon: normalizeNumber(payload.epsilon, 0.1),
+    chosenAction: normalizeChosenAction(payload.chosenAction),
+    selectionSource: normalizeString(payload.selectionSource, 'score'),
+    score: normalizeNumber(payload.score, 0),
+    scoreBreakdown: payload.scoreBreakdown && typeof payload.scoreBreakdown === 'object'
+      ? Object.assign({}, payload.scoreBreakdown)
+      : {},
+    evidenceNeed: normalizeString(payload.evidenceNeed, 'none'),
+    evidenceOutcome: normalizeString(payload.evidenceOutcome, 'SUPPORTED'),
+    urlCount: Math.max(0, Math.floor(normalizeNumber(payload.urlCount, 0))),
+    citationRanks: normalizeStringList(payload.citationRanks, 8),
+    blockedReasons: normalizeStringList(payload.blockedReasons, 16),
+    injectionFindings: payload.injectionFindings === true,
+    postRenderLint: payload.postRenderLint && typeof payload.postRenderLint === 'object'
+      ? {
+          findings: normalizeStringList(payload.postRenderLint.findings, 16),
+          modified: payload.postRenderLint.modified === true
+        }
+      : { findings: [], modified: false },
+    rewardPending: payload.rewardPending !== false,
+    reward: Number.isFinite(Number(payload.reward)) ? Number(payload.reward) : null,
+    rewardVersion: normalizeString(payload.rewardVersion, 'v1'),
+    rewardWindowHours: Math.max(1, Math.min(24 * 14, Math.floor(normalizeNumber(payload.rewardWindowHours, 48)))),
+    rewardSignals: normalizeRewardSignals(payload.rewardSignals),
+    createdAt: payload.createdAt || serverTimestamp(),
+    updatedAt: payload.updatedAt || serverTimestamp()
+  };
+  await docRef.set(data, { merge: false });
+  return { id: docRef.id, data };
+}
+
+async function listPendingLlmActionLogs(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(500, Math.floor(Number(payload.limit)))) : 100;
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('rewardPending', '==', true).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .sort((a, b) => {
+      const left = toDate(a && a.createdAt);
+      const right = toDate(b && b.createdAt);
+      return (left ? left.getTime() : 0) - (right ? right.getTime() : 0);
+    });
+}
+
+async function listLlmActionLogsByLineUserId(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const lineUserId = normalizeString(payload.lineUserId, '');
+  if (!lineUserId) return [];
+  const limit = Number.isFinite(Number(payload.limit)) ? Math.max(1, Math.min(300, Math.floor(Number(payload.limit)))) : 100;
+  const fromAt = toDate(payload.fromAt);
+  const toAt = toDate(payload.toAt);
+  const db = getDb();
+  const snap = await db.collection(COLLECTION).where('lineUserId', '==', lineUserId).limit(limit).get();
+  return snap.docs
+    .map((doc) => Object.assign({ id: doc.id }, doc.data()))
+    .filter((row) => {
+      const at = toDate(row && row.createdAt);
+      if (!at) return false;
+      if (fromAt && at.getTime() < fromAt.getTime()) return false;
+      if (toAt && at.getTime() > toAt.getTime()) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const left = toDate(a && a.createdAt);
+      const right = toDate(b && b.createdAt);
+      return (left ? left.getTime() : 0) - (right ? right.getTime() : 0);
+    });
+}
+
+async function patchLlmActionLog(id, patch) {
+  const docId = normalizeString(id, '');
+  if (!docId) throw new Error('id required');
+  const payload = patch && typeof patch === 'object' ? patch : {};
+  const data = Object.assign({}, payload, { updatedAt: payload.updatedAt || serverTimestamp() });
+  const db = getDb();
+  await db.collection(COLLECTION).doc(docId).set(data, { merge: true });
+  return { id: docId, data };
+}
+
+module.exports = {
+  COLLECTION,
+  appendLlmActionLog,
+  listPendingLlmActionLogs,
+  listLlmActionLogsByLineUserId,
+  patchLlmActionLog,
+  toDate
+};

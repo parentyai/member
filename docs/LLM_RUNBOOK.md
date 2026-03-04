@@ -382,3 +382,40 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ### 適用ポイント
 - 拒否時フォールバックは `free_retrieval` を維持する。  
 - 監査 `llm_gate.decision` へ `policyVersionId` と `refusalMode` を追記する。  
+
+## Phase724 Addendum（Next Level P2+P3）
+
+### Layer kill switch（system_flags/phase0）
+- `llmWebSearchEnabled`（default true）
+- `llmStyleEngineEnabled`（default true）
+- `llmBanditEnabled`（default false）
+- 既存 `llmEnabled` / `llmConciergeEnabled` は従来契約を維持する。
+
+### 推奨段階解放（stg -> prod）
+1) stgで `llmEnabled=true` + `llmConciergeEnabled=true` + `llmBanditEnabled=false`。  
+2) 監査 `llm_gate.decision` で以下を確認:  
+   - `evidenceOutcome`  
+   - `postRenderLint`  
+   - `blockedReasons`  
+   - `chosenAction.selectionSource`  
+3) 問題なしで `llmBanditEnabled=true`。  
+4) `releaseReadiness.ready=true` 維持を確認して prod 段階反映。  
+
+### Internal Reward Job
+- endpoint: `POST /internal/jobs/llm-action-reward-finalize`
+- token: `LLM_ACTION_JOB_TOKEN`
+- default: `rewardWindowHours=48`
+- dry run 例:
+```json
+{
+  "dryRun": true,
+  "limit": 100,
+  "rewardWindowHours": 48
+}
+```
+
+### 停止手順（部分停止優先）
+1) `llmBanditEnabled=false`（最小影響）  
+2) 必要に応じて `llmStyleEngineEnabled=false`  
+3) 必要に応じて `llmWebSearchEnabled=false`  
+4) 緊急時は `llmConciergeEnabled=false`  

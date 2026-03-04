@@ -548,6 +548,38 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "llm_action_logs",
+      "repos": [
+        "llmActionLogsRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/llmActionLogsRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/llmActionLogsRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "llm_bandit_state",
+      "repos": [
+        "llmBanditStateRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/llmBanditStateRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/llmBanditStateRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "llm_quality_logs",
       "repos": [
         "llmQualityLogsRepo"

@@ -51,6 +51,24 @@ function normalizeLlmConciergeEnabled(value) {
   return null;
 }
 
+function normalizeLlmWebSearchEnabled(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
+function normalizeLlmStyleEngineEnabled(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
+function normalizeLlmBanditEnabled(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
 function normalizeLawfulBasis(value) {
   if (value === null || value === undefined) return DEFAULT_LLM_POLICY.lawfulBasis;
   if (typeof value !== 'string') return null;
@@ -375,6 +393,63 @@ async function setLlmConciergeEnabled(llmConciergeEnabled) {
   return { id: DOC_ID, llmConciergeEnabled: normalized };
 }
 
+async function getLlmWebSearchEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return true;
+  const data = snap.data() || {};
+  const normalized = normalizeLlmWebSearchEnabled(data.llmWebSearchEnabled);
+  return normalized === null ? true : normalized;
+}
+
+async function setLlmWebSearchEnabled(llmWebSearchEnabled) {
+  const normalized = normalizeLlmWebSearchEnabled(llmWebSearchEnabled);
+  if (normalized === null) throw new Error('invalid llmWebSearchEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmWebSearchEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, llmWebSearchEnabled: normalized };
+}
+
+async function getLlmStyleEngineEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return true;
+  const data = snap.data() || {};
+  const normalized = normalizeLlmStyleEngineEnabled(data.llmStyleEngineEnabled);
+  return normalized === null ? true : normalized;
+}
+
+async function setLlmStyleEngineEnabled(llmStyleEngineEnabled) {
+  const normalized = normalizeLlmStyleEngineEnabled(llmStyleEngineEnabled);
+  if (normalized === null) throw new Error('invalid llmStyleEngineEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmStyleEngineEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, llmStyleEngineEnabled: normalized };
+}
+
+async function getLlmBanditEnabled() {
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  const snap = await docRef.get();
+  if (!snap.exists) return false;
+  const data = snap.data() || {};
+  const normalized = normalizeLlmBanditEnabled(data.llmBanditEnabled);
+  return normalized === null ? false : normalized;
+}
+
+async function setLlmBanditEnabled(llmBanditEnabled) {
+  const normalized = normalizeLlmBanditEnabled(llmBanditEnabled);
+  if (normalized === null) throw new Error('invalid llmBanditEnabled');
+  const db = getDb();
+  const docRef = db.collection(COLLECTION).doc(DOC_ID);
+  await docRef.set({ llmBanditEnabled: normalized }, { merge: true });
+  return { id: DOC_ID, llmBanditEnabled: normalized };
+}
+
 async function getLlmPolicy() {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(DOC_ID);
@@ -418,7 +493,16 @@ module.exports = {
   setLlmEnabled,
   getLlmConciergeEnabled,
   setLlmConciergeEnabled,
+  getLlmWebSearchEnabled,
+  setLlmWebSearchEnabled,
+  getLlmStyleEngineEnabled,
+  setLlmStyleEngineEnabled,
+  getLlmBanditEnabled,
+  setLlmBanditEnabled,
   getLlmPolicy,
   setLlmPolicy,
-  normalizeLlmConciergeEnabled
+  normalizeLlmConciergeEnabled,
+  normalizeLlmWebSearchEnabled,
+  normalizeLlmStyleEngineEnabled,
+  normalizeLlmBanditEnabled
 };

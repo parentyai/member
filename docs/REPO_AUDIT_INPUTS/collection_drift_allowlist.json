@@ -6,7 +6,10 @@
     "data_lifecycle": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json"
   },
   "allowlist": {
-    "data_model_only": [],
+    "data_model_only": [
+      "llm_action_logs",
+      "llm_bandit_state"
+    ],
     "data_lifecycle_only": []
   },
   "ssot_refs": [

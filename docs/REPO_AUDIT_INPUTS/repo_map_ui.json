@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "627880418dbb7b5c7a531b6420703ab4e2ff0457",
+      "hash": "ce8afce614db98a26797dc29be305bf5e4474e99",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1067
+    "testCount": 1076
   },
   "systemOverview": {
     "what": [
@@ -16,7 +16,7 @@
       "操作履歴は追跡IDでたどれ、監査ログで確認できます。"
     ],
     "statusSummary": {
-      "implemented": 119,
+      "implemented": 120,
       "legacy": 5
     }
   },
@@ -2290,6 +2290,35 @@
           ]
         },
         {
+          "id": "llmActionRewardFinalizeJob",
+          "nameJa": "共通基盤機能（llmActionRewardFinalizeJob）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmBanditStateRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js:1"
+          ]
+        },
+        {
           "id": "llmPolicyConfig",
           "nameJa": "共通基盤機能（llmPolicyConfig）",
           "status": "実装済み",
@@ -3990,7 +4019,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 229,
+              "testsCount": 231,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4052,7 +4081,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 111,
+              "testsCount": 113,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4105,7 +4134,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 75,
+              "testsCount": 76,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4145,7 +4174,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 74,
+              "testsCount": 75,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4182,7 +4211,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 87,
+              "testsCount": 89,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4305,7 +4334,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 113,
+              "testsCount": 115,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4356,7 +4385,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 83,
+              "testsCount": 85,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4463,7 +4492,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 181,
+              "testsCount": 183,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4527,7 +4556,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 103,
+              "testsCount": 104,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4575,7 +4604,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 138,
+              "testsCount": 140,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4666,7 +4695,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 49,
+              "testsCount": 50,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4708,7 +4737,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 200,
+              "testsCount": 202,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4766,7 +4795,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 87,
+              "testsCount": 88,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4814,7 +4843,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 35,
+              "testsCount": 36,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4898,7 +4927,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 38,
+              "testsCount": 39,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5029,7 +5058,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 71,
+              "testsCount": 72,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5121,7 +5150,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 159,
+              "testsCount": 161,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5223,7 +5252,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 45,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5265,7 +5294,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 34,
+              "testsCount": 36,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5302,7 +5331,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 27,
+              "testsCount": 29,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5338,7 +5367,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 27,
+              "testsCount": 29,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5374,7 +5403,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 41,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5631,7 +5660,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 122,
+              "testsCount": 124,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5680,7 +5709,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 126,
+              "testsCount": 127,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5767,7 +5796,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 46,
+              "testsCount": 47,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5893,7 +5922,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 198,
+              "testsCount": 201,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5951,7 +5980,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 188,
+              "testsCount": 191,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6009,7 +6038,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 54,
+              "testsCount": 56,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6240,7 +6269,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 61,
+              "testsCount": 63,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6285,7 +6314,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 103,
+              "testsCount": 106,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6714,7 +6743,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 105,
+              "testsCount": 106,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -6761,7 +6790,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 93,
+              "testsCount": 94,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6806,7 +6835,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 21,
+              "testsCount": 23,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6856,7 +6885,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 96,
+              "testsCount": 98,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6914,7 +6943,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 84,
+              "testsCount": 86,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7083,7 +7112,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 96,
+              "testsCount": 97,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7181,7 +7210,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 13,
+              "testsCount": 14,
               "killSwitchDependent": true,
               "auditDependent": false,
               "canDo": [
@@ -7258,6 +7287,49 @@
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
+              ]
+            },
+            {
+              "id": "llmActionRewardFinalizeJob",
+              "nameJa": "共通基盤機能（llmActionRewardFinalizeJob）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 54,
+              "killSwitchDependent": true,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "deliveriesRepo",
+                "journeyTodoItemsRepo",
+                "llmActionLogsRepo",
+                "llmBanditStateRepo"
+              ],
+              "relatedCollections": [
+                "journey_todo_items",
+                "llm_action_logs",
+                "llm_bandit_state",
+                "notification_deliveries"
+              ],
+              "entrypoints": [
+                "src/routes/internal/llmActionRewardFinalizeJob.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js:1"
               ]
             },
             {
@@ -7377,7 +7449,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 47,
+              "testsCount": 48,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7580,7 +7652,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 97,
+              "testsCount": 98,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7948,7 +8020,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 104,
+              "testsCount": 107,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7994,7 +8066,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 64,
+              "testsCount": 65,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8046,7 +8118,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 132,
+              "testsCount": 134,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8836,7 +8908,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 37,
+              "testsCount": 38,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8883,7 +8955,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 22,
+              "testsCount": 24,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8924,7 +8996,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 130,
+              "testsCount": 133,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8982,7 +9054,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 23,
+              "testsCount": 25,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -9019,7 +9091,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 116,
+              "testsCount": 118,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9069,7 +9141,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 116,
+              "testsCount": 118,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9119,7 +9191,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 71,
+              "testsCount": 72,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9167,7 +9239,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 71,
+              "testsCount": 72,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9215,7 +9287,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 80,
+              "testsCount": 81,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9273,7 +9345,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9557,7 +9629,7 @@
           "作成（通知作成）: `/admin/composer`"
         ],
         "roadmap": [
-          "実装済み機能は 119 件です。",
+          "実装済み機能は 120 件です。",
           "非推奨機能は 5 件で、正本導線への集約対象です。",
           "構造監査入力JSONを基準に運用改善を継続します。"
         ],
