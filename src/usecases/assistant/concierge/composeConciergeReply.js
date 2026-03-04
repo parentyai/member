@@ -3,14 +3,14 @@
 const { resolvePolicyForRequest, shouldAttachUrls } = require('../../../domain/llm/conciergePolicy');
 const { selectUrls } = require('../../../domain/llm/urlRanker');
 const { sanitizeCandidates } = require('../../../domain/llm/injectionGuard');
-const { selectConversationStyle } = require('../../../domain/llm/conversation/styleRouter');
+const { selectResponseStyle } = require('../../../domain/llm/styleRouter');
 const { resolveConversationState } = require('../../../domain/llm/conversation/conversationState');
 const { resolveConversationMove } = require('../../../domain/llm/conversation/conversationMoves');
 const {
   extractAnalysisFromBaseReply,
   composeConversationDraft
 } = require('../../../domain/llm/conversation/conversationComposer');
-const { humanizeConversationDraft } = require('../../../domain/llm/conversation/styleHumanizer');
+const { humanizeConciergeResponse } = require('../../../domain/llm/styleHumanizer');
 const { searchWebCandidates } = require('../../../infra/webSearch/provider');
 
 function normalizeText(value) {
@@ -152,7 +152,7 @@ async function composeConciergeReply(params) {
     baseReplyText
   });
   const styleEngineEnabled = resolveFlagEnabled('STYLE_ENGINE_ENABLED', true);
-  const styleDecision = selectConversationStyle({
+  const styleDecision = selectResponseStyle({
     topic: policy.topic,
     userTier: policy.userTier,
     question: payload.question,
@@ -162,7 +162,7 @@ async function composeConciergeReply(params) {
     urgency: payload.urgency || ''
   });
   const humanized = styleEngineEnabled
-    ? humanizeConversationDraft({
+    ? humanizeConciergeResponse({
       draftPacket,
       styleDecision,
       state: state.to,

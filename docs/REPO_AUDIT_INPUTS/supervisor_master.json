@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T09:40:29-05:00",
-  "gitCommit": "ba4c5beb5646575282e0069be9d9732a107f1f3c",
-  "branch": "codex/local-preflight-classification-v1",
-  "sourceDigest": "ee224f486c9707b935ec5a78b19e32df7e88824131493a718a508a4e770c2c55",
+  "generatedAt": "2026-03-03T19:48:41-05:00",
+  "gitCommit": "e4f41630b18288f79735e2aaca314f6f317be7ae",
+  "branch": "codex/conversation-architecture-engine-v1",
+  "sourceDigest": "0dc7a3f143c2ffcb93217c39b8d40a12da68b0d12af652a8305956060e6a8fd0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

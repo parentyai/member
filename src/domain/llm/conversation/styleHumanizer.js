@@ -1,6 +1,6 @@
 'use strict';
 
-const { renderConversationStyle } = require('./responseStyles');
+const { renderResponseByStyle } = require('../responseStyles');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -14,7 +14,7 @@ function humanizeConversationDraft(params) {
     : { styleId: 'Coach', conversationPattern: 'coach_default', askClarifying: false, maxActions: 3 };
   const draftPacket = payload.draftPacket && typeof payload.draftPacket === 'object' ? payload.draftPacket : {};
 
-  const text = renderConversationStyle(styleDecision.styleId, {
+  const text = renderResponseByStyle(styleDecision.styleId, {
     summary: normalizeText(draftPacket.summary),
     nextActions: Array.isArray(draftPacket.nextActions) ? draftPacket.nextActions : [],
     pitfall: normalizeText(draftPacket.pitfall),
