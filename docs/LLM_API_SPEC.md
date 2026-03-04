@@ -475,3 +475,39 @@
   - `contextVersion`
   - `featureHash`
   - `postRenderLint`
+
+## Phase725 Add-only Delta（Next Level P4 readiness）
+
+### Webhook assistant audit (action=`llm_gate.decision`)
+- payloadSummary add-only fields:
+  - `contextualFeatures`
+    - `featureVersion`
+    - `journeyPhase`
+    - `tier`
+    - `mode`
+    - `topic`
+    - `riskBucket`
+    - `evidenceNeed`
+    - `styleId`
+    - `ctaCount`
+    - `lengthBucket`
+    - `timingBucket`
+    - `questionFlag`
+    - `intentConfidence/contextConfidence`
+    - `intentConfidenceBucket/contextConfidenceBucket`
+    - `taskLoadBucket/topTaskCount`
+    - `blockedTaskPresent/dueSoonTaskPresent`
+  - `counterfactualSelectedArmId`
+  - `counterfactualSelectedRank`
+  - `counterfactualTopArms[]`
+    - `rank`
+    - `armId`
+    - `styleId`
+    - `ctaCount`
+    - `score`
+
+### `llm_action_logs` add-only fields
+- `contextualFeatures`
+- `counterfactualSelectedArmId`
+- `counterfactualSelectedRank`
+- `counterfactualTopArms[]`

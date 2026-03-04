@@ -419,3 +419,21 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 2) 必要に応じて `llmStyleEngineEnabled=false`  
 3) 必要に応じて `llmWebSearchEnabled=false`  
 4) 緊急時は `llmConciergeEnabled=false`  
+
+## Phase725 Addendum（P4 readiness: contextual/counterfactual observability）
+
+### 監査確認項目（追加）
+`audit_logs(action=llm_gate.decision)` で次を確認する。  
+- `contextualFeatures.featureVersion` が `bandit_ctx_v1`  
+- `contextualFeatures.mode/topic/tier` が `mode/topic/userTier` と矛盾しない  
+- `counterfactualTopArms` が空でない（bandit/score選択時）  
+- `counterfactualSelectedRank` が 1以上または null（欠損時）  
+
+### 期待挙動
+- 追加キーは監査専用。返信本文の安全契約は変えない。  
+- URL/注入/Mode制約は従来どおり guard が優先する。  
+
+### 異常時
+- `contextualFeatures` 欠損のみ: 継続運用可（best effort）。  
+- `counterfactualTopArms` が常に空: `composeConciergeReply` と `actionSelector` の連携を確認。  
+- 影響縮小は `llmBanditEnabled=false` を先に適用。  

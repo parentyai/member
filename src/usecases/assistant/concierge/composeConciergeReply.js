@@ -21,6 +21,8 @@ const {
   selectActionForConversation,
   buildSegmentKey
 } = require('../../../domain/llm/conversation/actionSelector');
+const { buildContextualFeatures } = require('../../../domain/llm/bandit/contextualFeatures');
+const { buildCounterfactualSnapshot } = require('../../../domain/llm/bandit/counterfactualSnapshot');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -153,6 +155,45 @@ function describeBlockedReason(reason) {
   return '安全条件に一致しない根拠を検出しました。';
 }
 
+function normalizeContextualFeatures(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  return {
+    featureVersion: normalizeText(payload.featureVersion) || 'bandit_ctx_v1',
+    journeyPhase: normalizeText(payload.journeyPhase) || 'pre',
+    tier: normalizeText(payload.tier) || 'free',
+    mode: normalizeText(payload.mode) || 'A',
+    topic: normalizeText(payload.topic) || 'general',
+    riskBucket: normalizeText(payload.riskBucket) || 'low',
+    evidenceNeed: normalizeText(payload.evidenceNeed) || 'none',
+    styleId: normalizeText(payload.styleId) || null,
+    ctaCount: Number.isFinite(Number(payload.ctaCount)) ? Math.max(0, Math.floor(Number(payload.ctaCount))) : 0,
+    lengthBucket: normalizeText(payload.lengthBucket) || 'short',
+    timingBucket: normalizeText(payload.timingBucket) || 'daytime',
+    questionFlag: payload.questionFlag === true,
+    intentConfidence: Number.isFinite(Number(payload.intentConfidence)) ? Number(payload.intentConfidence) : 0,
+    contextConfidence: Number.isFinite(Number(payload.contextConfidence)) ? Number(payload.contextConfidence) : 0,
+    intentConfidenceBucket: normalizeText(payload.intentConfidenceBucket) || 'low',
+    contextConfidenceBucket: normalizeText(payload.contextConfidenceBucket) || 'low',
+    taskLoadBucket: normalizeText(payload.taskLoadBucket) || 'none',
+    topTaskCount: Number.isFinite(Number(payload.topTaskCount)) ? Math.max(0, Math.floor(Number(payload.topTaskCount))) : 0,
+    blockedTaskPresent: payload.blockedTaskPresent === true,
+    dueSoonTaskPresent: payload.dueSoonTaskPresent === true
+  };
+}
+
+function normalizeCounterfactualTopArms(value) {
+  return (Array.isArray(value) ? value : [])
+    .slice(0, 5)
+    .map((row, index) => ({
+      rank: Number.isFinite(Number(row && row.rank)) ? Math.max(1, Math.floor(Number(row.rank))) : index + 1,
+      armId: normalizeText(row && row.armId) || null,
+      styleId: normalizeText(row && row.styleId) || null,
+      ctaCount: Number.isFinite(Number(row && row.ctaCount)) ? Math.max(0, Math.floor(Number(row.ctaCount))) : 0,
+      score: Number.isFinite(Number(row && row.score)) ? Number(row.score) : 0
+    }))
+    .filter((row) => row.armId);
+}
+
 function buildAuditMeta(input) {
   const payload = input && typeof input === 'object' ? input : {};
   const selected = Array.isArray(payload.selected) ? payload.selected : [];
@@ -207,7 +248,13 @@ function buildAuditMeta(input) {
           findings: Array.isArray(payload.postRenderLint.findings) ? payload.postRenderLint.findings : [],
           modified: payload.postRenderLint.modified === true
         }
-      : { findings: [], modified: false }
+      : { findings: [], modified: false },
+    contextualFeatures: normalizeContextualFeatures(payload.contextualFeatures),
+    counterfactualSelectedArmId: normalizeText(payload.counterfactualSelectedArmId) || null,
+    counterfactualSelectedRank: Number.isFinite(Number(payload.counterfactualSelectedRank))
+      ? Math.max(1, Math.floor(Number(payload.counterfactualSelectedRank)))
+      : null,
+    counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms)
   };
 }
 
@@ -340,6 +387,23 @@ async function composeConciergeReply(params) {
   const chosenAction = actionSelection && actionSelection.selected && typeof actionSelection.selected === 'object'
     ? actionSelection.selected
     : null;
+  const contextualFeatures = buildContextualFeatures({
+    mode: policy.mode,
+    topic: policy.topic,
+    userTier: policy.userTier,
+    journeyPhase: payload.journeyPhase || (contextSnapshot && contextSnapshot.phase) || '',
+    riskBucket: confidence.riskBucket,
+    evidenceNeed,
+    contextSnapshot,
+    chosenAction,
+    intentConfidence: confidence.intentConfidence,
+    contextConfidence: confidence.contextConfidence
+  });
+  const counterfactual = buildCounterfactualSnapshot({
+    candidates: actionSelection.candidates,
+    selectedArmId: chosenAction && chosenAction.armId ? chosenAction.armId : null,
+    maxArms: 3
+  });
 
   const styleDecisionForRender = Object.assign({}, styleDecision, {
     styleId: chosenAction && chosenAction.styleId ? chosenAction.styleId : styleDecision.styleId,
@@ -438,6 +502,10 @@ async function composeConciergeReply(params) {
     contextVersion: CONTEXT_VERSION,
     featureHash,
     postRenderLint: lintResult,
+    contextualFeatures,
+    counterfactualSelectedArmId: counterfactual.selectedArmId,
+    counterfactualSelectedRank: counterfactual.selectedRank,
+    counterfactualTopArms: counterfactual.topArms,
     banditEnabled
   });
 
