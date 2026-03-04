@@ -38,6 +38,7 @@
 | `emergency_diffs` | evidence | 365d | false | false |
 | `emergency_events_normalized` | evidence | 365d | false | false |
 | `emergency_providers` | config | INDEFINITE | false | false |
+| `emergency_rules` | config | INDEFINITE | false | false |
 | `emergency_snapshots` | evidence | 365d | false | false |
 | `emergency_unmapped_events` | evidence | 365d | false | false |
 | `events` | event | 180d | CONDITIONAL | true |
@@ -101,4 +102,3 @@
 | `user_journey_schedules` | config | INDEFINITE | false | false |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |
-| `emergency_rules` | config | INDEFINITE | false | false |
