@@ -181,3 +181,29 @@ STOP の方針:
 - Case A-F 結果:
 - 異常時ログ:
 - ロールバック実施有無:
+
+### stg証跡（2026-03-04 実施ログ）
+- 実施日: 2026-03-04
+- 実施者: codex (AI)
+- traceId/requestId prefix: `t730-stg-*`
+- 対象 lineUserId: `U730STG000000000000000000000001`
+- 対象 todoKey/taskKey:
+  - `t730_case_a`
+  - `t730_case_b`
+  - `t730_case_c`
+  - `t730_case_d`
+  - `t730_case_e`
+- Case A-F 結果:
+  - A PASS: `TODO詳細:t730_case_a` + manual postback で Flex + `【手順マニュアル 1/1】`
+  - B PASS: `TODO詳細:t730_case_b` + manual postback で `1/8..3/8` + continuation command
+  - C PASS: `TODO詳細:t730_case_c` で video/action fail-close（非表示）
+  - D PASS: `TODO詳細:t730_case_d` で checklist空時「やること」非表示
+  - E PASS: `TODO詳細:t730_case_e` + manual postback + `TODO詳細続き:t730_case_e:manual:4` で安全弁確認
+  - F PASS: postback `section=broken` で fail-close（`handled:false`）、webhookは200
+- webhookログ抜粋:
+  - `t730-stg-a-msg`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+  - `t730-stg-e-manual`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+  - `t730-stg-f-broken`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+- 異常時ログ:
+  - synthetic webhookのため replyToken はダミー。messageケースで `LINE API error: 400` を観測（Journey処理/fail-close検証は継続）
+- ロールバック実施有無: なし
