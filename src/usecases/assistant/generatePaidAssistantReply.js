@@ -33,6 +33,10 @@ const INTENT_V2_KEYWORDS = Object.freeze({
     '整理',
     '把握',
     '分析',
+    '現状',
+    '棚卸し',
+    '俯瞰',
+    'どうなってる',
     '全体像',
     '要約',
     'overview',
@@ -44,7 +48,11 @@ const INTENT_V2_KEYWORDS = Object.freeze({
     '漏れ',
     '不足',
     '足りない',
+    '足りてる',
     '見落とし',
+    '不備',
+    '網羅',
+    '漏れてない',
     'チェック',
     'checklist',
     'missing'
@@ -55,8 +63,15 @@ const INTENT_V2_KEYWORDS = Object.freeze({
     '締切',
     '締め切り',
     'いつまで',
+    'いつまでに',
+    'いつから',
     'スケジュール',
     '日程',
+    '順番',
+    '段取り',
+    'ロードマップ',
+    '先に',
+    '後に',
     'timeline',
     'schedule',
     'due'
@@ -65,9 +80,13 @@ const INTENT_V2_KEYWORDS = Object.freeze({
     '次',
     'まず',
     '何を',
+    '何から',
+    '最初に',
     'やること',
     '対応',
     '行動',
+    '進め方',
+    '手順',
     'next action',
     'todo',
     'step'
@@ -79,6 +98,13 @@ const INTENT_V2_KEYWORDS = Object.freeze({
     '懸念',
     '不安',
     '問題',
+    '失敗',
+    'ミス',
+    '詰まり',
+    '詰まる',
+    'ボトルネック',
+    '遅延',
+    '気をつけ',
     'トラブル',
     'risk',
     'warning'
@@ -124,10 +150,10 @@ function scoreIntentV2(text, keywords) {
 function detectExplicitPaidIntent(text) {
   const normalized = normalizeText(text).toLowerCase();
   if (!normalized) return null;
-  if (/timeline|時系列|いつまで|期限|スケジュール/.test(normalized)) return 'timeline_build';
-  if (/不足|漏れ|抜け|チェック|確認/.test(normalized)) return 'gap_check';
-  if (/次|何を|next action|next|行動|やること/.test(normalized)) return 'next_action_generation';
-  if (/リスク|危険|注意|懸念/.test(normalized)) return 'risk_alert';
+  if (/timeline|時系列|いつまで|いつまでに|いつから|期限|スケジュール|順番|段取り|ロードマップ/.test(normalized)) return 'timeline_build';
+  if (/不足|漏れ|漏れてない|抜け|不備|足りて|チェック|確認/.test(normalized)) return 'gap_check';
+  if (/次|何を|何から|最初に|手順|進め方|next action|next|行動|やること/.test(normalized)) return 'next_action_generation';
+  if (/リスク|危険|注意|懸念|失敗|ミス|詰まり|詰まる|ボトルネック|遅延/.test(normalized)) return 'risk_alert';
   if (/状況整理|状況|分析|整理/.test(normalized)) return 'situation_analysis';
   return null;
 }
@@ -178,31 +204,76 @@ function sanitizeList(values, limit) {
 }
 
 function normalizeActionDedupeKey(value) {
-  return normalizeText(value)
+  return normalizeActionText(stripCitationFromActionText(value))
     .toLowerCase()
     .replace(/[()\[\]{}「」『』【】]/g, '')
     .replace(/\s+/g, '');
+}
+
+function normalizeActionText(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  const collapsed = normalized
+    .replace(/^[\-\*・\d０-９0-9.\)\(]+\s*/, '')
+    .replace(/[。．]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!collapsed) return '';
+  const normalizedVerb = collapsed
+    .replace(/(してください|して下さい)$/u, 'する')
+    .replace(/(しましょう|ましょう)$/u, 'する')
+    .trim();
+  if (/^(確認|確認する|対応|対応する|検討|検討する)$/.test(normalizedVerb)) return '対象手続きを確認する';
+  return normalizedVerb;
+}
+
+function normalizeEvidenceKey(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  return normalized.replace(/^[\s'"`]+|[\s'"`)\]】」』,，.;:：]+$/g, '').trim();
+}
+
+function extractCitationFromText(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  const match = normalized.match(/根拠\s*[:：]\s*([A-Za-z0-9._:-]+)/i);
+  if (!match) return '';
+  return normalizeEvidenceKey(match[1]);
+}
+
+function stripCitationFromActionText(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  const withoutParenCitation = normalized.replace(/\s*[\(（]\s*根拠\s*[:：][^)）]+[\)）]\s*$/i, '');
+  return withoutParenCitation.replace(/\s*根拠\s*[:：]\s*[A-Za-z0-9._:-]+\s*$/i, '').trim();
 }
 
 function collectEvidenceKeysFromNextActions(values) {
   const rows = Array.isArray(values) ? values : [];
   const extracted = [];
   rows.forEach((item) => {
+    if (typeof item === 'string') {
+      const citationFromText = extractCitationFromText(item);
+      if (citationFromText) extracted.push(citationFromText);
+      return;
+    }
     if (!item || typeof item !== 'object') return;
-    const evidenceKey = normalizeText(item.evidenceKey || item.citation || item.sourceId || item.sourceKey);
-    if (!evidenceKey) return;
-    extracted.push(evidenceKey);
+    const evidenceKey = normalizeEvidenceKey(item.evidenceKey || item.citation || item.sourceId || item.sourceKey);
+    if (evidenceKey) extracted.push(evidenceKey);
+    const actionText = normalizeText(item.action || item.title || item.text || item.key);
+    const citationFromAction = extractCitationFromText(actionText);
+    if (citationFromAction) extracted.push(citationFromAction);
   });
   return sanitizeList(extracted, MAX_EVIDENCE_KEYS);
 }
 
 function ensureNextActionCitation(text, fallbackCitation) {
-  const normalized = normalizeText(text);
-  if (!normalized) return '';
-  if (/根拠\s*[:：]/.test(normalized)) return normalized;
-  const citation = normalizeText(fallbackCitation);
-  if (!citation) return normalized;
-  return `${normalized} (根拠:${citation})`;
+  const citationFromText = extractCitationFromText(text);
+  const actionOnly = normalizeActionText(stripCitationFromActionText(text));
+  if (!actionOnly && !citationFromText) return '';
+  const citation = normalizeEvidenceKey(citationFromText || fallbackCitation);
+  if (!citation) return actionOnly;
+  return `${actionOnly} (根拠:${citation})`;
 }
 
 function normalizeNextActions(value, evidenceKeys, limit) {
