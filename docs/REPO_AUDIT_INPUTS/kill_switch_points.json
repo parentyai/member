@@ -2,7 +2,7 @@
   "kill_switch_points": [
     {
       "file": "src/domain/validators.js",
-      "line": 55,
+      "line": 171,
       "symbol": "killSwitch"
     },
     {
@@ -587,27 +587,27 @@
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 210,
+      "line": 219,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 211,
+      "line": 220,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 212,
+      "line": 221,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 214,
+      "line": 223,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/adminOs/executeNotificationSend.js",
-      "line": 302,
+      "line": 311,
       "symbol": "killSwitch"
     },
     {
@@ -767,27 +767,27 @@
     },
     {
       "file": "src/usecases/notifications/runNotificationTest.js",
-      "line": 80,
+      "line": 93,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/notifications/runNotificationTest.js",
-      "line": 81,
+      "line": 94,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/notifications/runNotificationTest.js",
-      "line": 120,
+      "line": 132,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/notifications/runNotificationTest.js",
-      "line": 128,
+      "line": 153,
       "symbol": "killSwitch"
     },
     {
       "file": "src/usecases/notifications/sendNotification.js",
-      "line": 100,
+      "line": 122,
       "symbol": "killSwitch"
     },
     {

@@ -121,6 +121,10 @@ const COMPOSER_CATEGORY_WIZARD_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1 : null,
   false
 );
+const COMPOSER_AB_OPTION_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_COMPOSER_AB_OPTION_V1 : null,
+  false
+);
 
 function isOpsRealtimeSnapshotEnabled() {
   return OPS_REALTIME_DASHBOARD_V1 && OPS_SYSTEM_SNAPSHOT_V1;
@@ -195,6 +199,7 @@ const state = {
   composerSelectedNotificationId: null,
   composerListLoadedAt: null,
   composerLinkPreview: null,
+  composerLinkPreviews: {},
   composerCurrentNotificationId: null,
   composerCurrentPlanHash: null,
   composerCurrentConfirmToken: null,
@@ -296,6 +301,10 @@ const COMPOSER_ALLOWED_SCENARIOS = new Set(['A', 'B', 'C', 'D']);
 const COMPOSER_STEP_ORDER = Object.freeze(['3mo', '2mo', '1mo', 'week', 'after1w', 'after1mo']);
 const COMPOSER_ALLOWED_STEPS = new Set(COMPOSER_STEP_ORDER);
 const COMPOSER_DEFAULT_TRIGGER = 'manual';
+const COMPOSER_SECONDARY_CTA_FIELDS = Object.freeze([
+  Object.freeze({ textId: 'secondaryCtaText1', linkId: 'secondaryLinkRegistryId1', slot: 'secondary1' }),
+  Object.freeze({ textId: 'secondaryCtaText2', linkId: 'secondaryLinkRegistryId2', slot: 'secondary2' })
+]);
 const REPO_MAP_MATRIX_TYPE_ORDER = Object.freeze(['STEP', 'GENERAL', 'ANNOUNCEMENT', 'VENDOR', 'AB']);
 const REPO_MAP_MATRIX_TYPE_RANK = Object.freeze(REPO_MAP_MATRIX_TYPE_ORDER.reduce((acc, type, index) => {
   acc[type] = index;
@@ -11921,6 +11930,52 @@ function selectedComposerCategory() {
   return normalizeComposerCategory(categoryEl ? categoryEl.value : '');
 }
 
+function applyComposerTypeOptionVisibility() {
+  const typeEl = document.getElementById('notificationType');
+  if (!typeEl) return;
+  const abOption = typeEl.querySelector('option[value="AB"]');
+  if (COMPOSER_AB_OPTION_V1) return;
+  if (abOption) abOption.remove();
+  if (normalizeComposerType(typeEl.value) === 'AB') typeEl.value = 'STEP';
+}
+
+function collectComposerSecondaryCtaState() {
+  const items = [];
+  let incompleteCount = 0;
+  COMPOSER_SECONDARY_CTA_FIELDS.forEach((field) => {
+    const ctaText = document.getElementById(field.textId)?.value?.trim() || '';
+    const linkRegistryId = document.getElementById(field.linkId)?.value?.trim() || '';
+    if (!ctaText && !linkRegistryId) return;
+    if (!ctaText || !linkRegistryId) {
+      incompleteCount += 1;
+      return;
+    }
+    items.push({
+      slot: field.slot,
+      ctaText,
+      linkRegistryId
+    });
+  });
+  return { items, incompleteCount };
+}
+
+function buildComposerSecondaryCtas() {
+  return collectComposerSecondaryCtaState().items.map((item) => ({
+    ctaText: item.ctaText,
+    linkRegistryId: item.linkRegistryId
+  }));
+}
+
+function collectComposerSelectedLinkIds() {
+  const selected = {
+    linkRegistryId: document.getElementById('linkRegistryId')?.value?.trim() || ''
+  };
+  COMPOSER_SECONDARY_CTA_FIELDS.forEach((field) => {
+    selected[field.linkId] = document.getElementById(field.linkId)?.value?.trim() || '';
+  });
+  return selected;
+}
+
 function resolveComposerCategoryFlow(category) {
   const key = normalizeComposerCategory(category);
   return COMPOSER_CATEGORY_FLOW_DEFS[key] || COMPOSER_CATEGORY_FLOW_DEFS.SEQUENCE_GUIDANCE;
@@ -12142,14 +12197,27 @@ function renderComposerLivePreview() {
     previewCta2.classList.toggle('is-hidden', !cta2);
   }
   if (previewLink) {
-    const link = state.composerLinkPreview;
-    if (link && link.id) {
-      const label = link.label || link.title || link.id;
-      previewLink.textContent = `${label}${link.url ? ` (${link.url})` : ''}`;
-    } else {
-      const linkId = document.getElementById('linkRegistryId')?.value?.trim() || '';
-      previewLink.textContent = linkId ? linkId : '-';
+    const selected = collectComposerSelectedLinkIds();
+    const previews = state.composerLinkPreviews && typeof state.composerLinkPreviews === 'object'
+      ? state.composerLinkPreviews
+      : {};
+    const parts = [];
+    const primaryId = selected.linkRegistryId;
+    if (primaryId) {
+      const link = previews[primaryId];
+      const label = link && link.id ? (link.label || link.title || link.id) : primaryId;
+      const url = link && link.url ? ` (${link.url})` : '';
+      parts.push(`主:${label}${url}`);
     }
+    COMPOSER_SECONDARY_CTA_FIELDS.forEach((field, index) => {
+      const id = selected[field.linkId];
+      if (!id) return;
+      const link = previews[id];
+      const label = link && link.id ? (link.label || link.title || link.id) : id;
+      const url = link && link.url ? ` (${link.url})` : '';
+      parts.push(`副${index + 1}:${label}${url}`);
+    });
+    previewLink.textContent = parts.length ? parts.join(' / ') : '-';
   }
 }
 
@@ -12172,6 +12240,11 @@ function renderComposerTriggerOrderNotice(payload) {
 
 function buildComposerLocalSafetyIssues(payload) {
   const issues = [];
+  const secondaryState = collectComposerSecondaryCtaState();
+  const selectedLinks = collectComposerSelectedLinkIds();
+  const linkPreviews = state.composerLinkPreviews && typeof state.composerLinkPreviews === 'object'
+    ? state.composerLinkPreviews
+    : {};
   if (state.composerKillSwitch) {
     issues.push(t('ui.desc.composer.safety.killSwitch', 'KillSwitchがONです。送信を停止してから再実行してください。'));
   }
@@ -12181,6 +12254,34 @@ function buildComposerLocalSafetyIssues(payload) {
   if (looksLikeDirectUrl(payload.linkRegistryId || '')) {
     issues.push(t('ui.desc.composer.safety.directUrl', 'リンクIDにはURLを直接入力できません。リンク管理IDを指定してください。'));
   }
+  if (payload.ctaText && /[\r\n]/.test(payload.ctaText)) {
+    issues.push(t('ui.desc.composer.safety.ctaSingleLine', 'CTAラベルは1行で入力してください。'));
+  }
+  if (payload.ctaText && String(payload.ctaText).trim().length > 20) {
+    issues.push(t('ui.desc.composer.safety.ctaLabelLength', 'CTAラベルは20文字以内で入力してください。'));
+  }
+  if (secondaryState.incompleteCount > 0) {
+    issues.push(t('ui.desc.composer.safety.secondaryIncomplete', '副CTAは文言とリンクIDをセットで入力してください。'));
+  }
+  const ctaLabels = [];
+  if (payload.ctaText) ctaLabels.push(String(payload.ctaText).trim().toLowerCase());
+  secondaryState.items.forEach((item) => {
+    if (/[\r\n]/.test(item.ctaText)) {
+      issues.push(t('ui.desc.composer.safety.ctaSingleLine', 'CTAラベルは1行で入力してください。'));
+    }
+    if (item.ctaText.length > 20) {
+      issues.push(t('ui.desc.composer.safety.ctaLabelLength', 'CTAラベルは20文字以内で入力してください。'));
+    }
+    if (looksLikeDirectUrl(item.linkRegistryId)) {
+      issues.push(t('ui.desc.composer.safety.directUrl', 'リンクIDにはURLを直接入力できません。リンク管理IDを指定してください。'));
+    }
+    const key = item.ctaText.toLowerCase();
+    if (ctaLabels.includes(key)) {
+      issues.push(t('ui.desc.composer.safety.ctaLabelDuplicate', 'CTAラベルは重複できません。'));
+    } else {
+      ctaLabels.push(key);
+    }
+  });
   if (payload.notificationType === 'STEP') {
     if (!COMPOSER_ALLOWED_SCENARIOS.has(String(payload.scenarioKey || ''))) {
       issues.push(t('ui.desc.composer.safety.scenario', 'シナリオが不正です。A/B/C/Dから選択してください。'));
@@ -12198,7 +12299,13 @@ function buildComposerLocalSafetyIssues(payload) {
   if (!payload.target || !Number.isFinite(Number(payload.target.limit)) || Number(payload.target.limit) <= 0) {
     issues.push(t('ui.desc.composer.safety.target', '対象件数が0です。1以上の上限件数を指定してください。'));
   }
-  if (state.composerLinkPreview && state.composerLinkPreview.state === 'WARN') {
+  const hasWarnLink = Object.keys(selectedLinks).some((key) => {
+    const id = selectedLinks[key];
+    if (!id) return false;
+    const preview = linkPreviews[id];
+    return preview && preview.state === 'WARN';
+  });
+  if (hasWarnLink) {
     issues.push(t('ui.desc.composer.safety.linkWarn', 'リンク状態がWARNです。リンク管理の状態を解消してください。'));
   }
   return issues;
@@ -12281,11 +12388,13 @@ function buildDraftPayload() {
     : 'week';
   const order = resolveComposerOrderFromStep(stepKey) || 1;
   const notificationMeta = buildComposerNotificationMeta(notificationType);
+  const secondaryCtas = buildComposerSecondaryCtas();
   return {
     title: document.getElementById('title')?.value?.trim() || '',
     body: document.getElementById('body')?.value || '',
     ctaText: document.getElementById('ctaText')?.value?.trim() || '',
     linkRegistryId: document.getElementById('linkRegistryId')?.value?.trim() || '',
+    secondaryCtas,
     scenarioKey,
     stepKey,
     notificationCategory: normalizeComposerCategory(document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE'),
@@ -12320,6 +12429,10 @@ function captureComposerDraftSnapshot(type) {
     body: document.getElementById('body')?.value || '',
     ctaText: document.getElementById('ctaText')?.value || '',
     ctaText2: document.getElementById('ctaText2')?.value || '',
+    secondaryCtaText1: document.getElementById('secondaryCtaText1')?.value || '',
+    secondaryLinkRegistryId1: document.getElementById('secondaryLinkRegistryId1')?.value || '',
+    secondaryCtaText2: document.getElementById('secondaryCtaText2')?.value || '',
+    secondaryLinkRegistryId2: document.getElementById('secondaryLinkRegistryId2')?.value || '',
     linkRegistryId: document.getElementById('linkRegistryId')?.value || '',
     notificationCategory: normalizeComposerCategory(document.getElementById('notificationCategory')?.value || 'SEQUENCE_GUIDANCE'),
     scenarioKey: document.getElementById('scenarioKey')?.value || 'A',
@@ -12344,6 +12457,10 @@ function restoreComposerDraftSnapshot(type) {
   if (document.getElementById('body')) document.getElementById('body').value = snapshot.body || '';
   if (document.getElementById('ctaText')) document.getElementById('ctaText').value = snapshot.ctaText || '';
   if (document.getElementById('ctaText2')) document.getElementById('ctaText2').value = snapshot.ctaText2 || '';
+  if (document.getElementById('secondaryCtaText1')) document.getElementById('secondaryCtaText1').value = snapshot.secondaryCtaText1 || '';
+  if (document.getElementById('secondaryLinkRegistryId1')) document.getElementById('secondaryLinkRegistryId1').value = snapshot.secondaryLinkRegistryId1 || '';
+  if (document.getElementById('secondaryCtaText2')) document.getElementById('secondaryCtaText2').value = snapshot.secondaryCtaText2 || '';
+  if (document.getElementById('secondaryLinkRegistryId2')) document.getElementById('secondaryLinkRegistryId2').value = snapshot.secondaryLinkRegistryId2 || '';
   if (document.getElementById('linkRegistryId')) document.getElementById('linkRegistryId').value = snapshot.linkRegistryId || '';
   if (document.getElementById('notificationCategory')) {
     document.getElementById('notificationCategory').value = normalizeComposerCategory(snapshot.notificationCategory || 'SEQUENCE_GUIDANCE');
@@ -12411,7 +12528,9 @@ function applyComposerSavedFilters() {
       if (stepKey && String(item.stepKey || '').toLowerCase() !== stepKey) return false;
       return true;
     });
-  const visibleFiltered = filtered.filter((item) => normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP') !== 'AB');
+  const visibleFiltered = COMPOSER_AB_OPTION_V1
+    ? filtered
+    : filtered.filter((item) => normalizeComposerType(item && item.notificationType ? item.notificationType : 'STEP') !== 'AB');
   state.composerSavedFilteredItems = sortComposerSavedItems(visibleFiltered);
 }
 
@@ -12475,33 +12594,48 @@ function filterComposerLinkOptions(items, selectedId) {
   });
 }
 
-function setComposerLinkRegistryOptions(items, selectedId) {
-  const select = document.getElementById('linkRegistryId');
-  if (!select) return;
-  const previous = typeof selectedId === 'string' ? selectedId : (select.value || '');
-  const filtered = filterComposerLinkOptions(items, previous);
-  select.innerHTML = '';
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Link Registryから選択';
-  select.appendChild(placeholder);
-  filtered.forEach((item) => {
-    const id = item && typeof item.id === 'string' ? item.id : '';
-    if (!id) return;
-    const option = document.createElement('option');
-    option.value = id;
-    option.textContent = formatComposerLinkOption(item);
-    select.appendChild(option);
+function composerLinkSelectIds() {
+  return ['linkRegistryId', 'secondaryLinkRegistryId1', 'secondaryLinkRegistryId2'];
+}
+
+function setComposerLinkRegistryOptions(items, selectedValues) {
+  const selectedMap = selectedValues && typeof selectedValues === 'object' && !Array.isArray(selectedValues)
+    ? selectedValues
+    : (typeof selectedValues === 'string'
+      ? { linkRegistryId: selectedValues }
+      : collectComposerSelectedLinkIds());
+  composerLinkSelectIds().forEach((selectId) => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const previous = typeof selectedMap[selectId] === 'string' ? selectedMap[selectId] : (select.value || '');
+    const filtered = filterComposerLinkOptions(items, previous);
+    select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Link Registryから選択';
+    select.appendChild(placeholder);
+    filtered.forEach((item) => {
+      const id = item && typeof item.id === 'string' ? item.id : '';
+      if (!id) return;
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = formatComposerLinkOption(item);
+      select.appendChild(option);
+    });
+    if (previous) select.value = previous;
+    if (select.value !== previous) select.value = '';
   });
-  if (previous) select.value = previous;
-  if (select.value !== previous) select.value = '';
 }
 
 async function ensureComposerLinkRegistryOption(linkRegistryId) {
   const id = typeof linkRegistryId === 'string' ? linkRegistryId.trim() : '';
   if (!id) return;
-  const select = document.getElementById('linkRegistryId');
-  if (select && select.querySelector(`option[value="${id.replace(/"/g, '\\"')}"]`)) return;
+  const hasOption = composerLinkSelectIds().every((selectId) => {
+    const select = document.getElementById(selectId);
+    if (!select) return true;
+    return Boolean(select.querySelector(`option[value="${id.replace(/"/g, '\\"')}"]`));
+  });
+  if (hasOption) return;
   const traceId = ensureTraceInput('traceId');
   try {
     const res = await fetch(`/api/admin/os/link-registry/${encodeURIComponent(id)}`, { headers: buildHeaders({}, traceId) });
@@ -12510,9 +12644,7 @@ async function ensureComposerLinkRegistryOption(linkRegistryId) {
     const current = Array.isArray(state.composerLinkOptions) ? state.composerLinkOptions.slice() : [];
     if (!current.some((item) => item && item.id === data.item.id)) current.push(data.item);
     state.composerLinkOptions = current;
-    setComposerLinkRegistryOptions(current, id);
-    const select = document.getElementById('linkRegistryId');
-    if (select) select.value = id;
+    setComposerLinkRegistryOptions(current, collectComposerSelectedLinkIds());
     updateComposerSummary();
     void loadComposerLinkPreview();
   } catch (_err) {
@@ -12522,7 +12654,9 @@ async function ensureComposerLinkRegistryOption(linkRegistryId) {
 
 async function loadComposerLinkRegistryOptions(options) {
   const notify = Boolean(options && options.notify);
-  const selectedId = options && typeof options.selectedId === 'string' ? options.selectedId : '';
+  const selectedIds = options && options.selectedIds && typeof options.selectedIds === 'object'
+    ? options.selectedIds
+    : collectComposerSelectedLinkIds();
   const traceId = ensureTraceInput('traceId');
   try {
     const query = new URLSearchParams({ limit: '200' });
@@ -12531,27 +12665,37 @@ async function loadComposerLinkRegistryOptions(options) {
     if (!data || !data.ok) throw new Error((data && data.error) || 'failed');
     const items = Array.isArray(data.items) ? data.items : [];
     state.composerLinkOptions = items.filter((item) => item && typeof item.id === 'string' && item.id.trim());
-    setComposerLinkRegistryOptions(state.composerLinkOptions, selectedId);
+    setComposerLinkRegistryOptions(state.composerLinkOptions, selectedIds);
     if (notify) showToast('Link Registry一覧を更新しました', 'ok');
   } catch (_err) {
-    setComposerLinkRegistryOptions([], selectedId);
+    setComposerLinkRegistryOptions([], selectedIds);
     if (notify) showToast('Link Registry一覧の取得に失敗しました', 'warn');
   }
 }
 
 function loadComposerFormFromRow(row, duplicateMode) {
   if (!row) return;
+  const secondaryCtas = Array.isArray(row.secondaryCtas) ? row.secondaryCtas : [];
+  const secondary1 = secondaryCtas[0] && typeof secondaryCtas[0] === 'object' ? secondaryCtas[0] : {};
+  const secondary2 = secondaryCtas[1] && typeof secondaryCtas[1] === 'object' ? secondaryCtas[1] : {};
   document.getElementById('title').value = row.title || '';
   document.getElementById('body').value = row.body || '';
   document.getElementById('ctaText').value = row.ctaText || '';
   document.getElementById('ctaText2').value = '';
+  if (document.getElementById('secondaryCtaText1')) document.getElementById('secondaryCtaText1').value = secondary1.ctaText || '';
+  if (document.getElementById('secondaryLinkRegistryId1')) document.getElementById('secondaryLinkRegistryId1').value = secondary1.linkRegistryId || '';
+  if (document.getElementById('secondaryCtaText2')) document.getElementById('secondaryCtaText2').value = secondary2.ctaText || '';
+  if (document.getElementById('secondaryLinkRegistryId2')) document.getElementById('secondaryLinkRegistryId2').value = secondary2.linkRegistryId || '';
   const selectedLinkRegistryId = row.linkRegistryId || '';
   document.getElementById('linkRegistryId').value = selectedLinkRegistryId;
   if (selectedLinkRegistryId) {
     void ensureComposerLinkRegistryOption(selectedLinkRegistryId);
   }
+  if (secondary1.linkRegistryId) void ensureComposerLinkRegistryOption(secondary1.linkRegistryId);
+  if (secondary2.linkRegistryId) void ensureComposerLinkRegistryOption(secondary2.linkRegistryId);
   document.getElementById('notificationCategory').value = row.notificationCategory || 'SEQUENCE_GUIDANCE';
-  document.getElementById('notificationType').value = normalizeComposerType(row.notificationType || 'STEP');
+  const rowType = normalizeComposerType(row.notificationType || 'STEP');
+  document.getElementById('notificationType').value = (rowType === 'AB' && !COMPOSER_AB_OPTION_V1) ? 'STEP' : rowType;
   document.getElementById('scenarioKey').value = row.scenarioKey || 'A';
   document.getElementById('stepKey').value = row.stepKey || 'week';
   document.getElementById('targetRegion').value = row.target && typeof row.target.region === 'string' ? row.target.region : '';
@@ -12859,22 +13003,30 @@ async function loadComposerSavedNotifications(options) {
 }
 
 async function loadComposerLinkPreview() {
-  const linkId = document.getElementById('linkRegistryId')?.value?.trim() || '';
+  const selected = collectComposerSelectedLinkIds();
+  const linkIds = Array.from(new Set(Object.values(selected).filter((value) => typeof value === 'string' && value.trim())));
   state.composerLinkPreview = null;
-  if (!linkId) {
+  state.composerLinkPreviews = {};
+  if (!linkIds.length) {
     renderComposerLivePreview();
     return;
   }
   const traceId = ensureTraceInput('traceId');
-  try {
-    const res = await fetch(`/api/admin/os/link-registry/${encodeURIComponent(linkId)}`, { headers: buildHeaders({}, traceId) });
-    const data = await res.json();
-    if (data && data.ok && data.item) {
-      state.composerLinkPreview = data.item;
+  for (const linkId of linkIds) {
+    try {
+      const res = await fetch(`/api/admin/os/link-registry/${encodeURIComponent(linkId)}`, { headers: buildHeaders({}, traceId) });
+      const data = await res.json();
+      if (data && data.ok && data.item) {
+        state.composerLinkPreviews[linkId] = data.item;
+      }
+    } catch (_err) {
+      // best effort only
     }
-  } catch (_err) {
-    state.composerLinkPreview = null;
   }
+  const primaryId = selected.linkRegistryId;
+  state.composerLinkPreview = primaryId && state.composerLinkPreviews[primaryId]
+    ? state.composerLinkPreviews[primaryId]
+    : null;
   renderComposerLivePreview();
 }
 
@@ -12894,6 +13046,28 @@ async function loadComposerSafetyContext() {
 function validateComposerPayload(payload) {
   if (!payload.title || !payload.body || !payload.ctaText || !payload.linkRegistryId) {
     return t('ui.toast.composer.needRequired', '必須項目を入力してください');
+  }
+  const secondaryState = collectComposerSecondaryCtaState();
+  if (secondaryState.incompleteCount > 0) {
+    return t('ui.toast.composer.needSecondaryPair', '副CTAは文言とリンクIDをセットで入力してください');
+  }
+  if (looksLikeDirectUrl(payload.linkRegistryId || '')) {
+    return t('ui.toast.composer.needLinkId', 'リンクIDにはURLを直接入力できません');
+  }
+  if (payload.ctaText && /[\r\n]/.test(payload.ctaText)) {
+    return t('ui.toast.composer.needSingleLineCta', 'CTAラベルは1行で入力してください');
+  }
+  if (payload.ctaText && String(payload.ctaText).trim().length > 20) {
+    return t('ui.toast.composer.needShortCta', 'CTAラベルは20文字以内で入力してください');
+  }
+  const labels = [String(payload.ctaText || '').trim().toLowerCase()].filter(Boolean);
+  for (const item of secondaryState.items) {
+    if (/[\r\n]/.test(item.ctaText)) return t('ui.toast.composer.needSingleLineCta', 'CTAラベルは1行で入力してください');
+    if (item.ctaText.length > 20) return t('ui.toast.composer.needShortCta', 'CTAラベルは20文字以内で入力してください');
+    if (looksLikeDirectUrl(item.linkRegistryId)) return t('ui.toast.composer.needLinkId', 'リンクIDにはURLを直接入力できません');
+    const key = item.ctaText.toLowerCase();
+    if (labels.includes(key)) return t('ui.toast.composer.needUniqueCta', 'CTAラベルは重複できません');
+    labels.push(key);
   }
   if (payload.notificationType === 'VENDOR') {
     const vendorId = payload.notificationMeta && payload.notificationMeta.vendorId ? String(payload.notificationMeta.vendorId).trim() : '';
@@ -13015,6 +13189,8 @@ function setupComposerActions() {
   state.composerActionGateState = null;
   state.composerSavedSelectedIds = [];
   state.composerLinkSearch = '';
+  state.composerLinkPreviews = {};
+  applyComposerTypeOptionVisibility();
 
   document.getElementById('create-draft')?.addEventListener('click', async () => {
     const resultEl = document.getElementById('draft-result');
@@ -13212,7 +13388,7 @@ function setupComposerActions() {
   }
   applyComposerSeedArchiveToggleVisibility();
 
-  ['title', 'body', 'ctaText', 'ctaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
+  ['title', 'body', 'ctaText', 'ctaText2', 'secondaryCtaText1', 'secondaryCtaText2', 'scenarioKey', 'stepKey', 'notificationCategory', 'targetRegion', 'targetLimit', 'metaAnnouncementExpiry', 'metaAnnouncementPriority', 'metaVendorId', 'metaVendorTargeting', 'metaAbVariants', 'metaAbRatio', 'metaAbMetric'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') {
@@ -13221,19 +13397,20 @@ function setupComposerActions() {
     }
     el.addEventListener('input', updateComposerSummary);
   });
-  const linkRegistryInput = document.getElementById('linkRegistryId');
-  if (linkRegistryInput) {
+  composerLinkSelectIds().forEach((selectId) => {
+    const linkRegistryInput = document.getElementById(selectId);
+    if (!linkRegistryInput) return;
     linkRegistryInput.addEventListener('change', () => {
       updateComposerSummary();
       void loadComposerLinkPreview();
     });
-  }
+  });
   const linkSearchInput = document.getElementById('composer-link-search');
   if (linkSearchInput) {
     linkSearchInput.value = state.composerLinkSearch || '';
     linkSearchInput.addEventListener('input', () => {
       state.composerLinkSearch = (linkSearchInput.value || '').trim();
-      setComposerLinkRegistryOptions(state.composerLinkOptions, document.getElementById('linkRegistryId')?.value || '');
+      setComposerLinkRegistryOptions(state.composerLinkOptions, collectComposerSelectedLinkIds());
     });
   }
   const typeSelect = document.getElementById('notificationType');

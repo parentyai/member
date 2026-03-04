@@ -6,12 +6,17 @@ const usersRepo = require('../../repos/firestore/usersRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
-const { validateNotificationPayload } = require('../../domain/validators');
+const {
+  validateKillSwitch,
+  validateWarnLinkBlock,
+  resolveNotificationCtas
+} = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
 const { createTrackToken } = require('../../domain/trackToken');
 const { computeNotificationDeliveryId, computeLineRetryKey } = require('../../domain/deliveryId');
 const { evaluateCityPackSourcePolicy } = require('../../domain/cityPackPolicy');
 const { validateCityPackSources } = require('../cityPack/validateCityPackSources');
+const { buildLineNotificationMessage } = require('./buildLineNotificationMessage');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -32,17 +37,36 @@ function buildTrackUrl(baseUrl, token) {
   return `${baseUrl}/t/${encodeURIComponent(token)}`;
 }
 
-function buildTextMessage(notification, originalUrl, trackUrl) {
-  const text = notification.body || notification.title || '';
-  if (!trackUrl) return { type: 'text', text };
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
+}
 
-  let withLink = text;
-  if (originalUrl && withLink.includes(originalUrl)) {
-    withLink = withLink.split(originalUrl).join(trackUrl);
-  } else {
-    withLink = `${text}\n\n${trackUrl}`;
+function resolveNotificationCtaSlots(notification, multiCtaEnabled) {
+  return resolveNotificationCtas(notification, {
+    allowSecondary: multiCtaEnabled,
+    ignoreSecondary: multiCtaEnabled !== true,
+    minTotal: 1,
+    maxSecondary: multiCtaEnabled ? 2 : 0,
+    maxTotal: multiCtaEnabled ? 3 : 1
+  });
+}
+
+async function resolveLinkEntriesForCtas(ctaSlots) {
+  const map = new Map();
+  for (const slot of ctaSlots) {
+    if (!slot || !slot.linkRegistryId) continue;
+    if (map.has(slot.linkRegistryId)) continue;
+    const linkEntry = await linkRegistryRepo.getLink(slot.linkRegistryId);
+    if (!linkEntry) throw new Error('link registry entry not found');
+    validateWarnLinkBlock(linkEntry);
+    map.set(slot.linkRegistryId, linkEntry);
   }
-  return { type: 'text', text: withLink };
+  return map;
 }
 
 function normalizeLineUserIds(ids) {
@@ -90,14 +114,16 @@ async function sendNotification(params) {
   const effectiveNotification = useFallback
     ? Object.assign({}, notification, {
       ctaText: fallbackConfig.ctaText,
-      linkRegistryId: fallbackConfig.linkRegistryId
+      linkRegistryId: fallbackConfig.linkRegistryId,
+      secondaryCtas: []
     })
     : notification;
 
-  const effectiveLinkEntry = await linkRegistryRepo.getLink(effectiveNotification.linkRegistryId);
-  if (!effectiveLinkEntry) throw new Error('link registry entry not found');
-
-  validateNotificationPayload(effectiveNotification, effectiveLinkEntry, payload.killSwitch);
+  validateKillSwitch(payload.killSwitch);
+  const multiCtaEnabled = resolveBooleanEnvFlag('ENABLE_NOTIFICATION_CTA_MULTI_V1', false);
+  const lineCtaButtonsEnabled = resolveBooleanEnvFlag('ENABLE_LINE_CTA_BUTTONS_V1', false);
+  const ctaSlots = resolveNotificationCtaSlots(effectiveNotification, multiCtaEnabled);
+  const ctaLinkMap = await resolveLinkEntriesForCtas(ctaSlots);
 
   if (!effectiveNotification[FIELD_SCK] || !effectiveNotification.stepKey) {
     throw new Error('cohort/step required');
@@ -162,6 +188,7 @@ async function sendNotification(params) {
 
   let deliveredCount = 0;
   let skippedCount = 0;
+  let lineMessageType = 'text';
 
   for (const user of effectiveUsers) {
     const deliveryId = computeNotificationDeliveryId({ notificationId, lineUserId: user.id });
@@ -191,21 +218,39 @@ async function sendNotification(params) {
       continue;
     }
 
-    let trackUrl = null;
-    if (trackEnabled) {
-      try {
-        const token = createTrackToken({ deliveryId, linkRegistryId: notification.linkRegistryId });
-        const url = buildTrackUrl(trackBaseUrl, token);
-        if (url) {
-          trackUrl = url;
+    const resolvedCtas = ctaSlots.map((slot) => {
+      const linkEntry = ctaLinkMap.get(slot.linkRegistryId);
+      const originalUrl = linkEntry && typeof linkEntry.url === 'string' ? linkEntry.url : '';
+      let trackedUrl = originalUrl;
+      if (trackEnabled && originalUrl) {
+        try {
+          const token = createTrackToken({
+            deliveryId,
+            linkRegistryId: slot.linkRegistryId,
+            ctaSlot: slot.slot
+          });
+          const url = buildTrackUrl(trackBaseUrl, token);
+          if (url) trackedUrl = url;
+        } catch (_err) {
+          trackedUrl = originalUrl;
         }
-      } catch (_err) {
-        trackUrl = null;
       }
-    }
-    const message = buildTextMessage(effectiveNotification, effectiveLinkEntry.url, trackUrl);
+      return {
+        slot: slot.slot,
+        ctaText: slot.ctaText,
+        linkRegistryId: slot.linkRegistryId,
+        originalUrl,
+        url: trackedUrl
+      };
+    });
+    const builtMessage = buildLineNotificationMessage({
+      notification: effectiveNotification,
+      ctas: resolvedCtas,
+      preferTemplateButtons: lineCtaButtonsEnabled
+    });
+    lineMessageType = builtMessage.lineMessageType || 'text';
     try {
-      await pushFn(user.id, message, { retryKey: computeLineRetryKey({ deliveryId }) });
+      await pushFn(user.id, builtMessage.message, { retryKey: computeLineRetryKey({ deliveryId }) });
       deliveredCount += 1;
       await deliveriesRepo.createDeliveryWithId(deliveryId, {
         notificationId,
@@ -271,8 +316,9 @@ async function sendNotification(params) {
     try {
       await recordSent({
         notificationId,
-        ctaText: effectiveNotification.ctaText || null,
-        linkRegistryId: effectiveNotification.linkRegistryId || null
+        ctaText: ctaSlots[0] ? ctaSlots[0].ctaText : null,
+        linkRegistryId: ctaSlots[0] ? ctaSlots[0].linkRegistryId : null,
+        ctaSlots: ctaSlots.map((slot) => slot.slot)
       });
     } catch (err) {
       // CTA stats failure must not block delivery — best-effort only.
@@ -291,7 +337,10 @@ async function sendNotification(params) {
     deliveredCount,
     skippedCount,
     fallbackUsed: useFallback,
-    optionalSourceFailureCount: optionalSourceFailures.length
+    optionalSourceFailureCount: optionalSourceFailures.length,
+    ctaCount: ctaSlots.length,
+    ctaLinkRegistryIds: ctaSlots.map((slot) => slot.linkRegistryId),
+    lineMessageType
   };
 }
 

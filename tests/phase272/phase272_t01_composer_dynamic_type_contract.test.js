@@ -14,7 +14,11 @@ test('phase272: composer pane contains type-driven form, live preview, and saved
   assert.ok(html.includes('data-type-fields="VENDOR"'));
   assert.ok(html.includes('data-type-fields="AB"'));
   assert.ok(html.includes('data-type-fields="STEP"'));
-  assert.ok(!html.includes('<option value="AB" data-dict-key="ui.value.composer.type.ab">ABテスト</option>'));
+  assert.ok(html.includes('<option value="AB" data-dict-key="ui.value.composer.type.ab">ABテスト</option>'));
+  assert.ok(html.includes('id="secondaryCtaText1"'));
+  assert.ok(html.includes('id="secondaryLinkRegistryId1"'));
+  assert.ok(html.includes('id="secondaryCtaText2"'));
+  assert.ok(html.includes('id="secondaryLinkRegistryId2"'));
 
   assert.ok(html.includes('class="composer-preview-top panel composer-preview-panel"'));
   assert.ok(html.includes('class="composer-main-layout"'));

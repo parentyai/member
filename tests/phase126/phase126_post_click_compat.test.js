@@ -83,6 +83,10 @@ test('phase126: existing POST /track/click still redirects and records clickAt',
     body: 'b',
     ctaText: 'openA',
     linkRegistryId: 'l1',
+    secondaryCtas: [
+      { ctaText: 'openC', linkRegistryId: 'l1' },
+      { ctaText: 'openD', linkRegistryId: 'l1' }
+    ],
     createdAt: 1
   });
 
@@ -98,7 +102,7 @@ test('phase126: existing POST /track/click still redirects and records clickAt',
     method: 'POST',
     path: '/track/click',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ deliveryId: delivery.id, linkRegistryId: 'l1' })
+    body: JSON.stringify({ deliveryId: delivery.id, linkRegistryId: 'l1', ctaSlot: 'secondary2' })
   });
 
   assert.strictEqual(res.status, 302);
@@ -111,6 +115,8 @@ test('phase126: existing POST /track/click still redirects and records clickAt',
   const statsDoc = db._state.collections.phase18_cta_stats.docs.n1;
   assert.ok(statsDoc);
   assert.ok(Object.prototype.hasOwnProperty.call(statsDoc.data, 'clickCount'));
+  assert.ok(Object.prototype.hasOwnProperty.call(statsDoc.data, 'clickSecondary2Count'));
+  assert.strictEqual(statsDoc.data.ctaText, 'openD');
 });
 
 test('phase126: POST /track/click keeps redirect contract when audit append fails', async (t) => {

@@ -1,13 +1,13 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 88
+- 抽出件数: 92
 
 | file | line | reference |
 | --- | --- | --- |
-| `src/domain/validators.js` | 52 | `function validateKillSwitch(killSwitchState) {` |
-| `src/domain/validators.js` | 63 | `validateKillSwitch(killSwitchState);` |
-| `src/domain/validators.js` | 74 | `validateKillSwitch,` |
+| `src/domain/validators.js` | 168 | `function validateKillSwitch(killSwitchState) {` |
+| `src/domain/validators.js` | 179 | `validateKillSwitch(killSwitchState);` |
+| `src/domain/validators.js` | 192 | `validateKillSwitch,` |
 | `src/infra/lineClient.js` | 19 | `const value = await systemFlagsRepo.getKillSwitch();` |
 | `src/routes/admin/cityPackBulletins.js` | 6 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackBulletins.js` | 220 | `const killSwitch = await getKillSwitch();` |
@@ -53,7 +53,7 @@
 | `src/routes/webhookLine.js` | 1078 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 1079 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
-| `src/usecases/adminOs/executeNotificationSend.js` | 210 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/adminOs/executeNotificationSend.js` | 219 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 117 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 118 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 119 | `: systemFlagsRepo.getKillSwitch;` |
@@ -81,8 +81,12 @@
 | `src/usecases/killSwitch/setKillSwitch.js` | 9 | `async function getKillSwitch() {` |
 | `src/usecases/killSwitch/setKillSwitch.js` | 10 | `return systemFlagsRepo.getKillSwitch();` |
 | `src/usecases/killSwitch/setKillSwitch.js` | 15 | `getKillSwitch` |
-| `src/usecases/notifications/runNotificationTest.js` | 80 | `const getKillSwitch = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/notifications/runNotificationTest.js` | 81 | `const killSwitch = await getKillSwitch();` |
+| `src/usecases/notifications/runNotificationTest.js` | 12 | `validateKillSwitch,` |
+| `src/usecases/notifications/runNotificationTest.js` | 93 | `const getKillSwitch = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/notifications/runNotificationTest.js` | 94 | `const killSwitch = await getKillSwitch();` |
+| `src/usecases/notifications/runNotificationTest.js` | 132 | `validateKillSwitch(killSwitch);` |
+| `src/usecases/notifications/sendNotification.js` | 10 | `validateKillSwitch,` |
+| `src/usecases/notifications/sendNotification.js` | 122 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/notifications/testSendNotification.js` | 8 | `const { validateKillSwitch } = require('../../domain/validators');` |
 | `src/usecases/notifications/testSendNotification.js` | 78 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/phase121/sendOpsNotice.js` | 47 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |

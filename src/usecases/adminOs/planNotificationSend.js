@@ -8,6 +8,7 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const { createConfirmToken } = require('../../domain/confirmToken');
 const { computePlanHash, resolveDateBucket } = require('../phase67/segmentSendHash');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
+const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -103,6 +104,10 @@ async function planNotificationSend(params, deps) {
   if (!notification) throw new Error('notification not found');
   const status = typeof notification.status === 'string' ? notification.status : 'draft';
   if (status !== 'active' && status !== 'planned') throw new Error('notification not active/planned');
+  const ctaSummary = resolveNotificationCtaAuditSummary(notification, {
+    allowSecondary: true,
+    ignoreSecondary: false
+  });
 
   const target = notification.target && typeof notification.target === 'object' ? notification.target : {};
   const limit = requireNumber(target.limit, 'target.limit');
@@ -150,6 +155,10 @@ async function planNotificationSend(params, deps) {
       bucket,
       limit,
       notificationCategory: notification.notificationCategory || null,
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+      ctaLabelHashes: ctaSummary.ctaLabelHashes,
+      ctaLabelLengths: ctaSummary.ctaLabelLengths,
       capBlockedCount: capSummary.capBlockedCount,
       capCountMode: capSummary.capCountMode,
       capCountSource: capSummary.capCountSource,
@@ -163,6 +172,8 @@ async function planNotificationSend(params, deps) {
       [FIELD_SCK]: notification[FIELD_SCK] || null,
       stepKey: notification.stepKey || null,
       notificationCategory: notification.notificationCategory || null,
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
       target: notification.target || null,
       count: lineUserIds.length,
       lineUserIdsSample: lineUserIds.slice(0, 10),
@@ -193,6 +204,10 @@ async function planNotificationSend(params, deps) {
     confirmToken,
     capBlockedCount: capSummary.capBlockedCount,
     capBlockedSummary: capSummary.capBlockedSummary,
+    ctaCount: ctaSummary.ctaCount,
+    ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+    ctaLabelHashes: ctaSummary.ctaLabelHashes,
+    ctaLabelLengths: ctaSummary.ctaLabelLengths,
     capCountMode: capSummary.capCountMode,
     capCountSource: capSummary.capCountSource,
     capCountStrategy: capSummary.capCountStrategy

@@ -164,3 +164,159 @@ test('listNotifications: filters by scenarioKey', async () => {
   assert.strictEqual(results.length, 1);
   assert.strictEqual(results[0].scenarioKey, 'A');
 });
+
+test('createNotification: stores secondaryCtas add-only when multi CTA flag is enabled', async () => {
+  const prevMulti = process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+  process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = '1';
+  try {
+    const primary = await linkRegistryRepo.createLink({ title: 'p', url: 'https://example.com/p' });
+    const secondary1 = await linkRegistryRepo.createLink({ title: 's1', url: 'https://example.com/s1' });
+    const secondary2 = await linkRegistryRepo.createLink({ title: 's2', url: 'https://example.com/s2' });
+    const result = await createNotification({
+      title: 'Title',
+      body: 'Body',
+      ctaText: 'Primary',
+      linkRegistryId: primary.id,
+      secondaryCtas: [
+        { ctaText: 'Secondary1', linkRegistryId: secondary1.id },
+        { ctaText: 'Secondary2', linkRegistryId: secondary2.id }
+      ],
+      scenarioKey: 'A',
+      stepKey: '3mo',
+      target: { all: true }
+    });
+    const stored = await notificationsRepo.getNotification(result.id);
+    assert.ok(Array.isArray(stored.secondaryCtas));
+    assert.strictEqual(stored.secondaryCtas.length, 2);
+    assert.strictEqual(stored.secondaryCtas[0].ctaText, 'Secondary1');
+    assert.strictEqual(stored.secondaryCtas[1].linkRegistryId, secondary2.id);
+  } finally {
+    if (prevMulti === undefined) delete process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+    else process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = prevMulti;
+  }
+});
+
+test('createNotification: rejects secondaryCtas when multi CTA flag is disabled', async () => {
+  const prevMulti = process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+  delete process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+  try {
+    const primary = await linkRegistryRepo.createLink({ title: 'p', url: 'https://example.com/p' });
+    const secondary1 = await linkRegistryRepo.createLink({ title: 's1', url: 'https://example.com/s1' });
+    await assert.rejects(
+      () => createNotification({
+        title: 'Title',
+        body: 'Body',
+        ctaText: 'Primary',
+        linkRegistryId: primary.id,
+        secondaryCtas: [{ ctaText: 'Secondary1', linkRegistryId: secondary1.id }],
+        scenarioKey: 'A',
+        stepKey: '3mo',
+        target: { all: true }
+      }),
+      /CTA must be exactly 1/
+    );
+  } finally {
+    if (prevMulti === undefined) delete process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+    else process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = prevMulti;
+  }
+});
+
+test('sendNotification: uses template buttons for 3 CTAs when flags are enabled', async () => {
+  const prevMulti = process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+  const prevButtons = process.env.ENABLE_LINE_CTA_BUTTONS_V1;
+  process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = '1';
+  process.env.ENABLE_LINE_CTA_BUTTONS_V1 = '1';
+
+  try {
+    const primary = await linkRegistryRepo.createLink({ title: 'p', url: 'https://example.com/p' });
+    const secondary1 = await linkRegistryRepo.createLink({ title: 's1', url: 'https://example.com/s1' });
+    const secondary2 = await linkRegistryRepo.createLink({ title: 's2', url: 'https://example.com/s2' });
+
+    const created = await createNotification({
+      title: 'Title',
+      body: 'Short body',
+      ctaText: 'Primary',
+      linkRegistryId: primary.id,
+      secondaryCtas: [
+        { ctaText: 'Secondary1', linkRegistryId: secondary1.id },
+        { ctaText: 'Secondary2', linkRegistryId: secondary2.id }
+      ],
+      scenarioKey: 'A',
+      stepKey: '3mo',
+      target: { all: true }
+    });
+
+    await usersRepo.createUser('U1', { scenarioKey: 'A', stepKey: '3mo' });
+
+    const sent = [];
+    const result = await sendNotification({
+      notificationId: created.id,
+      sentAt: 'NOW',
+      killSwitch: false,
+      pushFn: async (_lineUserId, message) => {
+        sent.push(message);
+        return { status: 200 };
+      }
+    });
+
+    assert.strictEqual(result.deliveredCount, 1);
+    assert.strictEqual(result.ctaCount, 3);
+    assert.strictEqual(result.lineMessageType, 'template_buttons');
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(sent[0].type, 'template');
+    assert.strictEqual(sent[0].template.type, 'buttons');
+    assert.strictEqual(sent[0].template.actions.length, 3);
+  } finally {
+    if (prevMulti === undefined) delete process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+    else process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = prevMulti;
+    if (prevButtons === undefined) delete process.env.ENABLE_LINE_CTA_BUTTONS_V1;
+    else process.env.ENABLE_LINE_CTA_BUTTONS_V1 = prevButtons;
+  }
+});
+
+test('sendNotification: falls back to text when template buttons constraints are not met', async () => {
+  const prevMulti = process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+  const prevButtons = process.env.ENABLE_LINE_CTA_BUTTONS_V1;
+  process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = '1';
+  process.env.ENABLE_LINE_CTA_BUTTONS_V1 = '1';
+
+  try {
+    const primary = await linkRegistryRepo.createLink({ title: 'p', url: 'https://example.com/p' });
+    const secondary1 = await linkRegistryRepo.createLink({ title: 's1', url: 'https://example.com/s1' });
+    const created = await createNotification({
+      title: 'Title',
+      body: 'x'.repeat(161),
+      ctaText: 'Primary',
+      linkRegistryId: primary.id,
+      secondaryCtas: [
+        { ctaText: 'Secondary1', linkRegistryId: secondary1.id }
+      ],
+      scenarioKey: 'A',
+      stepKey: '3mo',
+      target: { all: true }
+    });
+
+    await usersRepo.createUser('U1', { scenarioKey: 'A', stepKey: '3mo' });
+
+    const sent = [];
+    const result = await sendNotification({
+      notificationId: created.id,
+      sentAt: 'NOW',
+      killSwitch: false,
+      pushFn: async (_lineUserId, message) => {
+        sent.push(message);
+        return { status: 200 };
+      }
+    });
+
+    assert.strictEqual(result.deliveredCount, 1);
+    assert.strictEqual(result.lineMessageType, 'text');
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(sent[0].type, 'text');
+  } finally {
+    if (prevMulti === undefined) delete process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1;
+    else process.env.ENABLE_NOTIFICATION_CTA_MULTI_V1 = prevMulti;
+    if (prevButtons === undefined) delete process.env.ENABLE_LINE_CTA_BUTTONS_V1;
+    else process.env.ENABLE_LINE_CTA_BUTTONS_V1 = prevButtons;
+  }
+});

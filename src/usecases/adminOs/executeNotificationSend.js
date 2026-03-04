@@ -14,6 +14,7 @@ const { buildTemplateKey } = require('./planNotificationSend');
 const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy');
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
+const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -67,7 +68,11 @@ async function executeNotificationSend(params, deps) {
   async function appendExecuteAudit(summary) {
     const payloadSummary = Object.assign({
       ok: false,
-      checkedAt: new Date().toISOString()
+      checkedAt: new Date().toISOString(),
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+      ctaLabelHashes: ctaSummary.ctaLabelHashes,
+      ctaLabelLengths: ctaSummary.ctaLabelLengths
     }, summary || {});
     await audit({
       actor,
@@ -104,6 +109,10 @@ async function executeNotificationSend(params, deps) {
   if (!notification) throw new Error('notification not found');
   const status = typeof notification.status === 'string' ? notification.status : 'draft';
   if (status !== 'active' && status !== 'planned') throw new Error('notification not active/planned');
+  const ctaSummary = resolveNotificationCtaAuditSummary(notification, {
+    allowSecondary: true,
+    ignoreSecondary: false
+  });
 
   const templateKey = buildTemplateKey(notificationId);
   const latestPlan = await auditLogsRepo.getLatestAuditLog({ action: 'notifications.send.plan', templateKey });
@@ -348,7 +357,12 @@ async function executeNotificationSend(params, deps) {
         capCountMode,
         capCountSource,
         capCountStrategy,
-        notificationCategory: notification.notificationCategory || null
+        notificationCategory: notification.notificationCategory || null,
+        ctaCount: ctaSummary.ctaCount,
+        ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+        ctaLabelHashes: ctaSummary.ctaLabelHashes,
+        ctaLabelLengths: ctaSummary.ctaLabelLengths,
+        lineMessageType: result.lineMessageType || 'text'
       }
     });
     if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
@@ -370,7 +384,12 @@ async function executeNotificationSend(params, deps) {
             capCountMode,
             capCountSource,
             capCountStrategy,
-            notificationCategory: notification.notificationCategory || null
+            notificationCategory: notification.notificationCategory || null,
+            ctaCount: ctaSummary.ctaCount,
+            ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+            ctaLabelHashes: ctaSummary.ctaLabelHashes,
+            ctaLabelLengths: ctaSummary.ctaLabelLengths,
+            lineMessageType: result.lineMessageType || 'text'
           }
         });
       } catch (_err) {
@@ -386,7 +405,12 @@ async function executeNotificationSend(params, deps) {
     capBlockedSummary,
     capCountMode,
     capCountSource,
-    capCountStrategy
+    capCountStrategy,
+    ctaCount: ctaSummary.ctaCount,
+    ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+    ctaLabelHashes: ctaSummary.ctaLabelHashes,
+    ctaLabelLengths: ctaSummary.ctaLabelLengths,
+    lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text'
   }, result);
 }
 

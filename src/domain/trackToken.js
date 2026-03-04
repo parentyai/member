@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const VERSION = 1;
 const PREFIX = `t${VERSION}`;
+const CTA_SLOT_SET = new Set(['primary', 'secondary1', 'secondary2']);
 
 function base64urlEncode(value) {
   return Buffer.from(value, 'utf8').toString('base64url');
@@ -41,10 +42,21 @@ function requireNonEmptyString(value, label) {
   return value.trim();
 }
 
+function normalizeCtaSlot(value) {
+  if (typeof value !== 'string') return null;
+  const slot = value.trim().toLowerCase();
+  if (!slot) return null;
+  if (!CTA_SLOT_SET.has(slot)) throw new Error('invalid token');
+  return slot;
+}
+
 function ensurePayloadShape(payload) {
   if (!payload || typeof payload !== 'object') throw new Error('invalid token');
   requireNonEmptyString(payload.deliveryId, 'deliveryId');
   requireNonEmptyString(payload.linkRegistryId, 'linkRegistryId');
+  if (payload.ctaSlot !== undefined && payload.ctaSlot !== null) {
+    normalizeCtaSlot(payload.ctaSlot);
+  }
   if (!Number.isFinite(payload.iat)) throw new Error('invalid token');
   if (!Number.isFinite(payload.exp)) throw new Error('invalid token');
   return payload;
@@ -63,6 +75,7 @@ function createTrackToken(params, options) {
   const record = ensurePayloadShape({
     deliveryId: payload.deliveryId,
     linkRegistryId: payload.linkRegistryId,
+    ctaSlot: normalizeCtaSlot(payload.ctaSlot) || undefined,
     iat: nowSec,
     exp: nowSec + ttlSec
   });

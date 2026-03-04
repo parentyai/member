@@ -10,15 +10,22 @@ const { executeNotificationSend } = require('../../usecases/adminOs/executeNotif
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
 const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function handleError(res, err, context) {
   const message = err && err.message ? err.message : 'error';
   const explicitStatusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : null;
+  const hasFailureCode = err && typeof err.failureCode === 'string' && err.failureCode.trim().length > 0;
   const traceId = context && context.traceId ? context.traceId : null;
   const requestId = context && context.requestId ? context.requestId : null;
   if (explicitStatusCode && explicitStatusCode >= 400 && explicitStatusCode < 500) {
     res.writeHead(explicitStatusCode, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
+    return;
+  }
+  if (hasFailureCode) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: message, traceId, requestId }));
     return;
   }
@@ -36,6 +43,15 @@ function handleError(res, err, context) {
 function addCheckedAt(summary) {
   const base = summary && typeof summary === 'object' ? summary : {};
   return Object.assign({}, base, { checkedAt: new Date().toISOString() });
+}
+
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
 }
 
 function requireTargetLimit(payload) {
@@ -69,6 +85,11 @@ function summarizeComposerPayload(payload) {
   const title = typeof body.title === 'string' ? body.title : '';
   const text = typeof body.body === 'string' ? body.body : '';
   const ctaText = typeof body.ctaText === 'string' ? body.ctaText : '';
+  const multiCtaEnabled = resolveBooleanEnvFlag('ENABLE_NOTIFICATION_CTA_MULTI_V1', false);
+  const ctaSummary = resolveNotificationCtaAuditSummary(body, {
+    allowSecondary: multiCtaEnabled,
+    ignoreSecondary: false
+  });
   const notificationType = typeof body.notificationType === 'string' ? body.notificationType : null;
   const notificationCategory = typeof body.notificationCategory === 'string' ? body.notificationCategory : null;
   const scenarioValue = typeof body[SCENARIO_KEY_FIELD] === 'string' ? body[SCENARIO_KEY_FIELD] : null;
@@ -90,7 +111,11 @@ function summarizeComposerPayload(payload) {
     targetMembersOnly: target.membersOnly === true,
     titleLength: title.length,
     bodyLength: text.length,
-    ctaLength: ctaText.length
+    ctaLength: ctaText.length,
+    ctaCount: ctaSummary.ctaCount,
+    ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+    ctaLabelHashes: ctaSummary.ctaLabelHashes,
+    ctaLabelLengths: ctaSummary.ctaLabelLengths
   };
 }
 
@@ -138,7 +163,8 @@ async function handlePreview(req, res, body) {
       traceId,
       requestId,
       payloadSummary: addCheckedAt(Object.assign(summarizeComposerPayload(payload), {
-        trackEnabled: Boolean(result.trackEnabled)
+        trackEnabled: Boolean(result.trackEnabled),
+        lineMessageType: result.lineMessageType || null
       }))
     });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -317,6 +343,7 @@ async function handleList(req, res) {
       body: row.body || '',
       ctaText: row.ctaText || '',
       linkRegistryId: row.linkRegistryId || '',
+      secondaryCtas: Array.isArray(row.secondaryCtas) ? row.secondaryCtas : [],
       status: row.status || null,
       notificationCategory: row.notificationCategory || null,
       notificationType: row.notificationType || 'STEP',

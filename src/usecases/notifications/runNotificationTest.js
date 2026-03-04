@@ -8,7 +8,11 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const notificationTestRunsRepo = require('../../repos/firestore/notificationTestRunsRepo');
-const { validateNotificationPayload } = require('../../domain/validators');
+const {
+  validateKillSwitch,
+  validateWarnLinkBlock,
+  resolveNotificationCtas
+} = require('../../domain/validators');
 const { mapFailureCode } = require('../../domain/notificationFailureTaxonomy');
 const { sendNotification } = require('./sendNotification');
 
@@ -59,6 +63,15 @@ function buildFailureTop3(results) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([failureCode, count]) => ({ failureCode, count }));
+}
+
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
 }
 
 async function runNotificationTest(params, deps) {
@@ -116,8 +129,20 @@ async function runNotificationTest(params, deps) {
       const notification = await notificationsRepo.getNotification(notificationId);
       if (!notification) throw new Error('notification not found');
       if (mode === 'dry_run') {
-        const linkEntry = await linkRegistryRepo.getLink(notification.linkRegistryId);
-        validateNotificationPayload(notification, linkEntry, killSwitch);
+        validateKillSwitch(killSwitch);
+        const multiEnabled = resolveBooleanEnvFlag('ENABLE_NOTIFICATION_CTA_MULTI_V1', false);
+        const ctaSlots = resolveNotificationCtas(notification, {
+          allowSecondary: multiEnabled,
+          ignoreSecondary: multiEnabled !== true,
+          minTotal: 1,
+          maxSecondary: multiEnabled ? 2 : 0,
+          maxTotal: multiEnabled ? 3 : 1
+        });
+        for (const slot of ctaSlots) {
+          const linkEntry = await linkRegistryRepo.getLink(slot.linkRegistryId);
+          if (!linkEntry) throw new Error('link registry entry not found');
+          validateWarnLinkBlock(linkEntry);
+        }
         item.ok = true;
       } else {
         const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
