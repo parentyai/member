@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-03T20:30:29-05:00",
-  "gitCommit": "b6b01258731fd4a2cab39f87aa79d832512d8762",
-  "branch": "codex/paid-assistant-quality-week2-v1",
-  "sourceDigest": "d20ffe5819fef80ed5d16d4ba71687590c24b4f4ee2e3544140509b03e03bd52",
+  "generatedAt": "2026-03-03T20:38:25-05:00",
+  "gitCommit": "c754f1f4a94a5bf9f8ddf7fdf3df17412a9785d0",
+  "branch": "codex/paid-assistant-quality-week3-v1",
+  "sourceDigest": "568c302a61d11dd934209f359e87d7c72e96d2cdf39fc34911ff8517cd3a90d4",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
