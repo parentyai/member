@@ -951,5 +951,15 @@
       "src/repos/firestore/analyticsReadRepo.js:27",
       "src/repos/firestore/usersPhase1Repo.js:10"
     ]
+  },
+  {
+    "collection": "emergency_rules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyRulesRepo.js:7"
+    ]
   }
 ]

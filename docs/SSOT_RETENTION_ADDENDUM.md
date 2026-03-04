@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 11 |
-| config | 48 |
+| config | 49 |
 | event | 6 |
 | evidence | 14 |
 | transient | 3 |
@@ -101,3 +101,4 @@
 | `user_journey_schedules` | config | INDEFINITE | false | false |
 | `user_subscriptions` | config | INDEFINITE | false | false |
 | `users` | config | INDEFINITE | false | false |
+| `emergency_rules` | config | INDEFINITE | false | false |

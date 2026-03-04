@@ -96,9 +96,7 @@
   "merge_candidates": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": [
-      "src/usecases/emergency/resolveEmergencyRecipients.js"
-    ]
+    "scenarioKey": []
   },
   "critical_guards": [
     "validateSingleCta",
