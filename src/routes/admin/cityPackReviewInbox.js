@@ -68,6 +68,19 @@ function normalizeRegionKeyFilter(value) {
   return regionKey || null;
 }
 
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
+}
+
+function isCityPackReviewInboxBatchReadEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_CITY_PACK_REVIEW_INBOX_BATCH_READ_V1', true);
+}
+
 function toMillis(value) {
   if (!value) return 0;
   if (value instanceof Date) return value.getTime();
@@ -176,12 +189,19 @@ function resolvePriorityLevel(score) {
   return 'LOW';
 }
 
-async function resolveUsedByDetails(sourceRef) {
+async function resolveUsedByDetails(sourceRef, cityPackMap) {
   const ids = Array.isArray(sourceRef && sourceRef.usedByCityPackIds) ? sourceRef.usedByCityPackIds : [];
   if (!ids.length) return [];
   const details = [];
   for (const cityPackId of ids) {
-    const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+    const useMap = cityPackMap instanceof Map;
+    let cityPack = null;
+    if (useMap && cityPackMap.has(cityPackId)) {
+      cityPack = cityPackMap.get(cityPackId);
+    } else {
+      cityPack = await cityPacksRepo.getCityPack(cityPackId);
+      if (useMap) cityPackMap.set(cityPackId, cityPack);
+    }
     if (!cityPack) continue;
     details.push({
       cityPackId,
@@ -191,6 +211,39 @@ async function resolveUsedByDetails(sourceRef) {
     });
   }
   return details;
+}
+
+async function buildReviewInboxBatchMaps(refs, enabled) {
+  if (!enabled) return { cityPackMap: null, evidenceMap: null, prefetchReadCount: 0 };
+  const cityPackMap = new Map();
+  const evidenceMap = new Map();
+
+  const sourceRefs = Array.isArray(refs) ? refs : [];
+  const cityPackIds = new Set();
+  const evidenceIds = new Set();
+  sourceRefs.forEach((sourceRef) => {
+    const usedByIds = Array.isArray(sourceRef && sourceRef.usedByCityPackIds) ? sourceRef.usedByCityPackIds : [];
+    usedByIds.forEach((id) => {
+      if (typeof id === 'string' && id.trim()) cityPackIds.add(id.trim());
+    });
+    const evidenceLatestId = sourceRef && typeof sourceRef.evidenceLatestId === 'string' ? sourceRef.evidenceLatestId.trim() : '';
+    if (evidenceLatestId) evidenceIds.add(evidenceLatestId);
+  });
+
+  await Promise.all(Array.from(cityPackIds.values()).map(async (cityPackId) => {
+    const cityPack = await cityPacksRepo.getCityPack(cityPackId);
+    cityPackMap.set(cityPackId, cityPack);
+  }));
+  await Promise.all(Array.from(evidenceIds.values()).map(async (evidenceId) => {
+    const evidence = await sourceEvidenceRepo.getEvidence(evidenceId);
+    evidenceMap.set(evidenceId, evidence);
+  }));
+
+  return {
+    cityPackMap,
+    evidenceMap,
+    prefetchReadCount: cityPackIds.size + evidenceIds.size
+  };
 }
 
 async function handleReviewInbox(req, res, context) {
@@ -204,6 +257,7 @@ async function handleReviewInbox(req, res, context) {
   const regionKey = normalizeRegionKeyFilter(url.searchParams.get('regionKey'));
   const limit = normalizeLimit(url.searchParams.get('limit'));
   const nowMs = Date.now();
+  const batchReadEnabled = isCityPackReviewInboxBatchReadEnabled();
 
   const expandedLimit = (packClass || language) ? Math.min(limit * 5, 1000) : limit;
   const refs = await sourceRefsRepo.listSourceRefs({
@@ -213,11 +267,15 @@ async function handleReviewInbox(req, res, context) {
     eduScope,
     regionKey
   });
+  const prefetched = await buildReviewInboxBatchMaps(refs, batchReadEnabled);
   const items = [];
   for (const sourceRef of refs) {
-    const usedByDetails = await resolveUsedByDetails(sourceRef);
-    const latestEvidence = sourceRef && sourceRef.evidenceLatestId
-      ? await sourceEvidenceRepo.getEvidence(sourceRef.evidenceLatestId)
+    const usedByDetails = await resolveUsedByDetails(sourceRef, prefetched.cityPackMap);
+    const evidenceLatestId = sourceRef && typeof sourceRef.evidenceLatestId === 'string' ? sourceRef.evidenceLatestId.trim() : '';
+    const latestEvidence = evidenceLatestId
+      ? (prefetched.evidenceMap instanceof Map && prefetched.evidenceMap.has(evidenceLatestId)
+        ? prefetched.evidenceMap.get(evidenceLatestId)
+        : await sourceEvidenceRepo.getEvidence(evidenceLatestId))
       : null;
     const diffSummary = latestEvidence && typeof latestEvidence.diffSummary === 'string' && latestEvidence.diffSummary.trim()
       ? latestEvidence.diffSummary.trim()
@@ -271,7 +329,8 @@ async function handleReviewInbox(req, res, context) {
     fallbackUsed: false,
     traceId: context.traceId,
     requestId: context.requestId,
-    limit
+    limit,
+    readLimitUsed: expandedLimit + prefetched.prefetchReadCount
   });
 
   await appendAuditLog({

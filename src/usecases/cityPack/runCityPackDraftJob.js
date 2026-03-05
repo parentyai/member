@@ -106,123 +106,165 @@ async function runCityPackDraftJob(params) {
     });
     return { ok: false, reason: 'request_not_found', requestId, traceId };
   }
-
-  const existingDrafts = Array.isArray(request.draftCityPackIds) ? request.draftCityPackIds : [];
-  if (existingDrafts.length && ['drafted', 'approved', 'active'].includes(String(request.status || ''))) {
-    return { ok: true, requestId, traceId, idempotent: true, draftCityPackIds: existingDrafts };
-  }
-
-  await cityPackRequestsRepo.updateRequest(requestId, {
-    status: 'collecting',
-    lastJobRunId: runId,
-    experienceStage: 'collecting',
-    error: null
-  });
-
-  const candidates = payload.sourceUrls || request.draftSourceCandidates || [];
-  const normalized = normalizeSourceUrls(candidates);
-  if (!normalized.valid.length) {
-    await cityPackRequestsRepo.updateRequest(requestId, {
-      status: 'needs_review',
-      experienceStage: 'needs_review',
-      error: 'source_candidates_missing'
-    });
-    await appendAuditLog({
-      actor,
-      action: 'city_pack.request.draft.blocked',
-      entityType: 'city_pack_request',
-      entityId: requestId,
-      traceId,
-      requestId,
-      payloadSummary: { reason: 'source_candidates_missing' }
-    });
-    return { ok: false, reason: 'source_candidates_missing', requestId, traceId };
-  }
-  if (normalized.invalid.length) {
-    await cityPackRequestsRepo.updateRequest(requestId, {
-      status: 'needs_review',
-      experienceStage: 'needs_review',
-      error: 'source_candidates_invalid'
-    });
-    await appendAuditLog({
-      actor,
-      action: 'city_pack.request.draft.blocked',
-      entityType: 'city_pack_request',
-      entityId: requestId,
-      traceId,
-      requestId,
-      payloadSummary: { reason: 'source_candidates_invalid', invalidCount: normalized.invalid.length }
-    });
-    return { ok: false, reason: 'source_candidates_invalid', requestId, traceId, invalidUrls: normalized.invalid };
-  }
-
-  const sourceRefIds = [];
-  for (const url of normalized.valid) {
-    const created = await sourceRefsRepo.createSourceRef({
-      url,
-      status: 'needs_review',
-      riskLevel: 'medium',
-      sourceType: 'official',
-      requiredLevel: 'required'
-    });
-    sourceRefIds.push(created.id);
-  }
-
-  const cityPackName = buildDraftName(request);
-  const requestClass = normalizeRequestClass(request && request.requestClass);
-  const requestedLanguage = normalizeRequestedLanguage(request && request.requestedLanguage);
-  const cityPack = await cityPacksRepo.createCityPack({
-    name: cityPackName,
-    status: 'draft',
-    sourceRefs: sourceRefIds,
-    allowedIntents: ['CITY_PACK'],
-    rules: [],
-    targetingRules: buildDefaultTargetingRules(request),
-    slots: buildDefaultSlots(),
-    slotContents: buildDefaultSlotContents(),
-    slotSchemaVersion: 'v1_fixed_8_slots',
-    description: request && request.regionKey ? `Draft for ${request.regionKey}` : 'Draft',
-    requestId,
-    templateRefs: [],
-    packClass: requestClass,
-    language: requestedLanguage,
-    nationwidePolicy: requestClass === 'nationwide' ? cityPacksRepo.NATIONWIDE_POLICY_FEDERAL_ONLY : null
-  });
-
-  await cityPackRequestsRepo.updateRequest(requestId, {
-    status: 'drafted',
-    experienceStage: 'drafted',
-    draftCityPackIds: [cityPack.id],
-    draftTemplateIds: [],
-    draftSourceRefIds: sourceRefIds,
-    draftLinkRegistryIds: [],
-    error: null
-  });
-
-  await appendAuditLog({
-    actor,
-    action: 'city_pack.request.drafted',
-    entityType: 'city_pack_request',
-    entityId: requestId,
-    traceId,
-    requestId,
-    payloadSummary: {
-      runId,
-      sourceRefCount: sourceRefIds.length,
-      cityPackId: cityPack.id,
-      requestClass,
-      requestedLanguage
+  try {
+    const existingDrafts = Array.isArray(request.draftCityPackIds) ? request.draftCityPackIds : [];
+    if (existingDrafts.length && ['drafted', 'approved', 'active'].includes(String(request.status || ''))) {
+      return { ok: true, requestId, traceId, idempotent: true, draftCityPackIds: existingDrafts };
     }
-  });
 
-  return {
-    ok: true,
-    requestId,
-    traceId,
-    status: 'drafted',
-    draftCityPackIds: [cityPack.id],
-    draftSourceRefIds: sourceRefIds
-  };
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'collecting',
+      lastJobRunId: runId,
+      experienceStage: 'collecting',
+      error: null
+    });
+
+    const candidates = payload.sourceUrls || request.draftSourceCandidates || [];
+    const normalized = normalizeSourceUrls(candidates);
+    if (!normalized.valid.length) {
+      await cityPackRequestsRepo.updateRequest(requestId, {
+        status: 'needs_review',
+        experienceStage: 'needs_review',
+        error: 'source_candidates_missing'
+      });
+      await appendAuditLog({
+        actor,
+        action: 'city_pack.request.draft.blocked',
+        entityType: 'city_pack_request',
+        entityId: requestId,
+        traceId,
+        requestId,
+        payloadSummary: { reason: 'source_candidates_missing' }
+      });
+      return { ok: false, reason: 'source_candidates_missing', requestId, traceId };
+    }
+    if (normalized.invalid.length) {
+      await cityPackRequestsRepo.updateRequest(requestId, {
+        status: 'needs_review',
+        experienceStage: 'needs_review',
+        error: 'source_candidates_invalid'
+      });
+      await appendAuditLog({
+        actor,
+        action: 'city_pack.request.draft.blocked',
+        entityType: 'city_pack_request',
+        entityId: requestId,
+        traceId,
+        requestId,
+        payloadSummary: { reason: 'source_candidates_invalid', invalidCount: normalized.invalid.length }
+      });
+      return { ok: false, reason: 'source_candidates_invalid', requestId, traceId, invalidUrls: normalized.invalid };
+    }
+
+    const sourceRefIds = [];
+    for (const url of normalized.valid) {
+      const created = await sourceRefsRepo.createSourceRef({
+        url,
+        status: 'needs_review',
+        riskLevel: 'medium',
+        sourceType: 'official',
+        requiredLevel: 'required'
+      });
+      sourceRefIds.push(created.id);
+    }
+
+    const cityPackName = buildDraftName(request);
+    const requestClass = normalizeRequestClass(request && request.requestClass);
+    const requestedLanguage = normalizeRequestedLanguage(request && request.requestedLanguage);
+    const cityPack = await cityPacksRepo.createCityPack({
+      name: cityPackName,
+      status: 'draft',
+      sourceRefs: sourceRefIds,
+      allowedIntents: ['CITY_PACK'],
+      rules: [],
+      targetingRules: buildDefaultTargetingRules(request),
+      slots: buildDefaultSlots(),
+      slotContents: buildDefaultSlotContents(),
+      slotSchemaVersion: 'v1_fixed_8_slots',
+      description: request && request.regionKey ? `Draft for ${request.regionKey}` : 'Draft',
+      requestId,
+      templateRefs: [],
+      packClass: requestClass,
+      language: requestedLanguage,
+      nationwidePolicy: requestClass === 'nationwide' ? cityPacksRepo.NATIONWIDE_POLICY_FEDERAL_ONLY : null
+    });
+
+    await cityPackRequestsRepo.updateRequest(requestId, {
+      status: 'drafted',
+      experienceStage: 'drafted',
+      draftCityPackIds: [cityPack.id],
+      draftTemplateIds: [],
+      draftSourceRefIds: sourceRefIds,
+      draftLinkRegistryIds: [],
+      error: null
+    });
+
+    await appendAuditLog({
+      actor,
+      action: 'city_pack.request.drafted',
+      entityType: 'city_pack_request',
+      entityId: requestId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        runId,
+        sourceRefCount: sourceRefIds.length,
+        cityPackId: cityPack.id,
+        requestClass,
+        requestedLanguage
+      }
+    });
+
+    return {
+      ok: true,
+      requestId,
+      traceId,
+      status: 'drafted',
+      draftCityPackIds: [cityPack.id],
+      draftSourceRefIds: sourceRefIds
+    };
+  } catch (err) {
+    const errorCode = typeof err.code === 'string' && err.code.trim() ? err.code.trim() : 'draft_job_error';
+    const errorMessage = err && err.message ? String(err.message) : 'draft job failed';
+    const failedAt = new Date().toISOString();
+    try {
+      await cityPackRequestsRepo.updateRequest(requestId, {
+        status: 'failed',
+        experienceStage: 'failed',
+        error: errorMessage,
+        errorCode,
+        errorMessage,
+        failedAt,
+        traceId,
+        lastJobRunId: runId
+      });
+    } catch (_updateErr) {
+      // best effort only
+    }
+    await appendAuditLog({
+      actor,
+      action: 'city_pack.request.draft.failed',
+      entityType: 'city_pack_request',
+      entityId: requestId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        reason: 'draft_job_failed',
+        runId,
+        errorCode,
+        errorMessage
+      }
+    });
+    return {
+      ok: false,
+      reason: 'draft_job_failed',
+      requestId,
+      traceId,
+      errorCode,
+      errorMessage,
+      failedAt
+    };
+  }
 }
 
 module.exports = {

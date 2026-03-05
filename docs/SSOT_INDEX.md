@@ -79,6 +79,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
 - `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json`（Firestore composite index 必須定義）
 - `scripts/check_firestore_indexes.js`（Firestore index 差分検知 / 作成plan出力）
+- `docs/REPO_AUDIT_INPUTS/state_transitions.json`（状態遷移SSOT / audit-core生成整合）
+- `tests/phase250/phase250_t07_city_pack_request_state_transitions_contract.test.js`（City Pack request lifecycleの契約検証）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）

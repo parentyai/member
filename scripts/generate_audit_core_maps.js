@@ -626,6 +626,62 @@ function buildStateTransitions() {
           killSwitch_check: false
         },
         {
+          from: '*',
+          to: 'collecting',
+          writer: 'src/usecases/cityPack/runCityPackDraftJob.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: false
+        },
+        {
+          from: 'collecting',
+          to: 'drafted',
+          writer: 'src/usecases/cityPack/runCityPackDraftJob.js',
+          collection_write: 'city_pack_requests,city_packs,source_refs',
+          audit_log: true,
+          killSwitch_check: false
+        },
+        {
+          from: 'collecting',
+          to: 'needs_review',
+          writer: 'src/usecases/cityPack/runCityPackDraftJob.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: false
+        },
+        {
+          from: 'collecting',
+          to: 'failed',
+          writer: 'src/usecases/cityPack/runCityPackDraftJob.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: false
+        },
+        {
+          from: '*',
+          to: 'approved',
+          writer: 'src/routes/admin/cityPackRequests.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: true
+        },
+        {
+          from: '*',
+          to: 'rejected',
+          writer: 'src/routes/admin/cityPackRequests.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: true
+        },
+        {
+          from: '*',
+          to: 'needs_review',
+          writer: 'src/routes/admin/cityPackRequests.js',
+          collection_write: 'city_pack_requests',
+          audit_log: true,
+          killSwitch_check: true
+        },
+        {
           from: 'approved',
           to: 'active',
           writer: 'src/routes/admin/cityPackRequests.js + src/usecases/cityPack/activateCityPack.js',

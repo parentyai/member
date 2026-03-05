@@ -216,6 +216,9 @@ Typical fields:
 - `experienceStage`
 - `lastReviewAt`
 - `error`
+- `errorCode`（fatal fail時）
+- `errorMessage`（fatal fail時）
+- `failedAt`（fatal fail時）
 
 ### `city_pack_feedback/{id}`
 Purpose: City Packの誤り報告（LINE→admin review）。
