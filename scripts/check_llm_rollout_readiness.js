@@ -14,6 +14,7 @@ function parseArgs(argv) {
     windowDays: 7,
     requireReady: false,
     requireJobEntry: false,
+    maxCompatShare: null,
     configJsonPath: '',
     summaryJsonPath: ''
   };
@@ -54,6 +55,15 @@ function parseArgs(argv) {
     }
     if (key === '--require-job-entry') {
       args.requireJobEntry = true;
+      continue;
+    }
+    if (key === '--max-compat-share' && next) {
+      const value = Number(next);
+      if (!Number.isFinite(value) || value < 0 || value > 1) {
+        throw new Error('invalid --max-compat-share');
+      }
+      args.maxCompatShare = value;
+      i += 1;
       continue;
     }
     if (key === '--config-json' && next) {
@@ -123,6 +133,9 @@ function buildReadinessReport(input, options) {
     : ['kill_switch', 'url_guard', 'injection'];
   const requireReady = opts.requireReady === true;
   const requireJobEntry = opts.requireJobEntry === true;
+  const maxCompatShare = Number.isFinite(Number(opts.maxCompatShare))
+    ? Math.max(0, Math.min(1, Number(opts.maxCompatShare)))
+    : null;
 
   const checks = [];
   const configGateCheck = hasBooleanKeys(configStatus, [
@@ -186,6 +199,19 @@ function buildReadinessReport(input, options) {
     ok: callsTotal > 0,
     detail: `callsTotal=${callsTotal}`
   });
+  const compatCount = Number(entryTypeMap.compat || 0);
+  const totalEntryCount = Object.keys(entryTypeMap).reduce((sum, key) => {
+    const value = Number(entryTypeMap[key] || 0);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  const compatShare = totalEntryCount > 0 ? compatCount / totalEntryCount : 0;
+  if (maxCompatShare !== null) {
+    checks.push({
+      id: 'compat_share_within_limit',
+      ok: totalEntryCount > 0 && compatShare <= maxCompatShare,
+      detail: `compat_share=${compatShare.toFixed(4)} limit=${maxCompatShare.toFixed(4)} total_entry_count=${totalEntryCount}`
+    });
+  }
 
   const failedChecks = checks.filter((row) => row.ok !== true);
   return {
@@ -196,6 +222,7 @@ function buildReadinessReport(input, options) {
       releaseReady: releaseReadiness.ready === true,
       blockedBy: Array.isArray(releaseReadiness.blockedBy) ? releaseReadiness.blockedBy : [],
       callsTotal,
+      compatShare: Number(compatShare.toFixed(4)),
       entryTypes: entryTypeMap,
       gatesCoverage: gateCoverageMap
     }
@@ -271,12 +298,14 @@ async function runCli() {
   const snapshots = await loadSnapshots(args);
   const report = buildReadinessReport(snapshots, {
     requireReady: args.requireReady,
-    requireJobEntry: args.requireJobEntry
+    requireJobEntry: args.requireJobEntry,
+    maxCompatShare: args.maxCompatShare
   });
   const output = {
     ok: report.ok,
     requireReady: args.requireReady,
     requireJobEntry: args.requireJobEntry,
+    maxCompatShare: args.maxCompatShare,
     source: args.configJsonPath && args.summaryJsonPath ? 'fixture' : 'api',
     checks: report.checks,
     summary: report.summary
