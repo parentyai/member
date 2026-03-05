@@ -13,9 +13,14 @@ const MAX_REWARD_WINDOW_HOURS = 24 * 14;
 
 const DEFAULT_REWARD_WEIGHTS = Object.freeze({
   click: 1,
+  clickPrimary: 1,
+  clickSecondary: 0.5,
   taskComplete: 3,
+  taskDone: 3,
   blockedResolved: 2,
   citationMissing: -3,
+  unsubscribe: -4,
+  spam: -6,
   wrongEvidence: -5
 });
 
@@ -82,11 +87,17 @@ async function detectBlockedResolvedSignal(logRow, fromAt, toAt, deps) {
 
 function computeReward(signals, weights) {
   const applied = weights && typeof weights === 'object' ? weights : DEFAULT_REWARD_WEIGHTS;
+  const clickPrimary = signals && (signals.clickPrimary === true || signals.click === true);
+  const clickSecondary = signals && signals.clickSecondary === true;
+  const taskDone = signals && (signals.taskDone === true || signals.taskComplete === true);
   let reward = 0;
-  if (signals.click) reward += applied.click;
-  if (signals.taskComplete) reward += applied.taskComplete;
+  if (clickPrimary) reward += Number.isFinite(Number(applied.clickPrimary)) ? Number(applied.clickPrimary) : Number(applied.click || 0);
+  if (clickSecondary) reward += Number.isFinite(Number(applied.clickSecondary)) ? Number(applied.clickSecondary) : 0;
+  if (taskDone) reward += Number.isFinite(Number(applied.taskDone)) ? Number(applied.taskDone) : Number(applied.taskComplete || 0);
   if (signals.blockedResolved) reward += applied.blockedResolved;
   if (signals.citationMissing) reward += applied.citationMissing;
+  if (signals.unsubscribe) reward += Number(applied.unsubscribe || 0);
+  if (signals.spam) reward += Number(applied.spam || 0);
   if (signals.wrongEvidence) reward += applied.wrongEvidence;
   return Number(reward.toFixed(6));
 }
@@ -158,12 +169,19 @@ async function finalizeLlmActionRewards(params, deps) {
 
     try {
       const signals = {
-        click: await detectClickSignal(row.lineUserId, createdAt, endAt, resolvedDeps),
-        taskComplete: await detectTaskCompleteSignal(row.lineUserId, createdAt, endAt, resolvedDeps),
+        clickPrimary: await detectClickSignal(row.lineUserId, createdAt, endAt, resolvedDeps),
+        clickSecondary: false,
+        click: false,
+        taskDone: await detectTaskCompleteSignal(row.lineUserId, createdAt, endAt, resolvedDeps),
+        taskComplete: false,
         blockedResolved: await detectBlockedResolvedSignal(row, createdAt, endAt, resolvedDeps),
+        unsubscribe: false,
+        spam: false,
         citationMissing: hasCitationMissing(row),
         wrongEvidence: hasWrongEvidence(row)
       };
+      signals.click = signals.clickPrimary || signals.clickSecondary;
+      signals.taskComplete = signals.taskDone;
       const reward = computeReward(signals, payload.rewardWeights || DEFAULT_REWARD_WEIGHTS);
       const counterfactualEval = evaluateCounterfactualOutcome(row, reward);
 
@@ -172,7 +190,7 @@ async function finalizeLlmActionRewards(params, deps) {
           rewardPending: false,
           reward,
           rewardSignals: signals,
-          rewardVersion: 'v1',
+          rewardVersion: 'v2',
           rewardWindowHours,
           rewardFinalizedAt: nowAt.toISOString(),
           counterfactualEval

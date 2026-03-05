@@ -100,6 +100,21 @@ Typical fields:
 - `nudgeCount`, `lastNotifiedAt`
 - `createdAt`, `updatedAt`
 
+### `task_contents/{taskKey}`
+Purpose: LINE内完結の Task詳細表示（Flex + Manual/Failure本文）を保持する add-only 編集モデル。
+
+Typical fields:
+- `taskKey`（doc id と同一）
+- `title`
+- `timeMin`, `timeMax`
+- `checklistItems[]`
+  - `id`, `text`, `order`, `enabled`
+- `manualText`（postbackでLINE内表示）
+- `failureText`（postbackでLINE内表示）
+- `videoLinkId`（`link_registry`参照）
+- `actionLinkId`（`link_registry`参照）
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+
 ### `journey_templates/{templateId}`
 Purpose: Journey 3フェーズテンプレート（template起点 step_rules 生成元）。
 
@@ -201,6 +216,9 @@ Typical fields:
 - `experienceStage`
 - `lastReviewAt`
 - `error`
+- `errorCode`（fatal fail時）
+- `errorMessage`（fatal fail時）
+- `failedAt`（fatal fail時）
 
 ### `city_pack_feedback/{id}`
 Purpose: City Packの誤り報告（LINE→admin review）。
@@ -717,3 +735,65 @@ Typical fields:
 - `activeVersionId`
 - `previousAppliedVersionId`
 - `canary{ enabled, versionId, lineUserIds[] }`
+
+## Phase740 Add-only Data Map
+
+### `link_registry` add-only fields
+- `intentTag` (`task|city_pack|vendor|support|payment|null`)
+- `audienceTag` (`family|solo|corporate|null`)
+- `regionScope` (`nationwide|state|city|school_district|null`)
+- `riskLevel` (`safe|warn|blocked|null`)
+
+### `task_contents` add-only fields
+- `summaryShort[]`（最大5）
+- `topMistakes[]`（最大3）
+- `contextTips[]`（最大5）
+
+### `city_packs` add-only fields
+- `modules[]` (`schools|healthcare|driving|housing|utilities`)
+
+### New collection: `user_city_pack_preferences`
+- doc id: `lineUserId`
+- fields:
+  - `modulesSubscribed[]`（空配列=全購読扱い）
+  - `updatedAt`, `updatedBy`, `source`
+
+### Notification attention budget read path
+- 基準 collection: `notification_deliveries`（SSOT）
+- 日次上限計算:
+  - `countDeliveredByUserSince(lineUserId, dayStartAt)` を利用
+  - `user_journey_profiles.timezone` 優先、未設定は `UTC`
+
+## Phase741 Add-only Data Map
+
+### `step_rules` add-only fields
+- `category`
+- `estimatedTimeMin`
+- `estimatedTimeMax`
+- `recommendedVendorLinkIds[]`
+
+### `task_contents` add-only fields
+- `category`
+- `dependencies[]`
+- `checklist[]`
+- `recommendedVendorLinkIds[]`
+- `archived`
+
+### `city_packs` add-only fields
+- `recommendedTasks[]`
+  - item: `{ ruleId, module|null, priorityBoost|null }`
+
+### Rich Menu Task OS seed collections
+- `rich_menu_templates`
+- `rich_menu_assignment_rules`
+- `rich_menu_phase_profiles`
+- `rich_menu_bindings`
+- `opsConfig/richMenuPolicy`
+
+### Link impact read model API
+- route: `GET /api/admin/os/link-registry-impact`
+- source collections:
+  - `link_registry`
+  - `task_contents`
+  - `notifications`
+  - `city_packs`

@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { isLinkRegistryIntentV2Enabled } = require('../../domain/tasks/featureFlags');
 
 const COLLECTION = 'link_registry';
 const ALLOWED_DOMAIN_CLASS = new Set(['gov', 'k12_district', 'school_public', 'unknown']);
@@ -31,20 +32,33 @@ function normalizeNullableEnum(value, allowed) {
   return allowed.has(normalized) ? normalized : null;
 }
 
-function normalizeNullableStrictEnum(value, allowed, fieldName) {
-  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (!normalized) return null;
-  if (allowed.has(normalized)) return normalized;
-  const err = new Error(`invalid ${fieldName}`);
-  err.statusCode = 422;
-  err.code = `invalid_${fieldName}`;
-  throw err;
-}
-
 function normalizeRegionKey(value) {
   if (typeof value !== 'string') return null;
   const normalized = value.trim().toLowerCase();
   return normalized || null;
+}
+
+function normalizeIntentValue(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+function invalidIntentFieldError(field, allowed) {
+  const err = new Error(`${field} invalid`);
+  err.statusCode = 422;
+  err.code = `${field}_invalid`;
+  err.details = { field, allowed: Array.from(allowed) };
+  return err;
+}
+
+function normalizeIntentField(field, value, allowed, options) {
+  const normalized = normalizeIntentValue(value);
+  if (!normalized) return null;
+  if (allowed.has(normalized)) return normalized;
+  const opts = options && typeof options === 'object' ? options : {};
+  if (opts.strictIntentValidation === true) throw invalidIntentFieldError(field, allowed);
+  return null;
 }
 
 function normalizeTags(values) {
@@ -76,26 +90,17 @@ function normalizeEducationFields(payload, options) {
   if (!partial || hasOwn(data, 'tags')) {
     out.tags = normalizeTags(data.tags);
   }
-  return out;
-}
-
-function normalizeRoutingFields(payload, options) {
-  const data = payload && typeof payload === 'object' ? payload : {};
-  const opts = options && typeof options === 'object' ? options : {};
-  const partial = opts.partial === true;
-  const out = {};
-
   if (!partial || hasOwn(data, 'intentTag')) {
-    out.intentTag = normalizeNullableStrictEnum(data.intentTag, ALLOWED_INTENT_TAG, 'intentTag');
+    out.intentTag = normalizeIntentField('intentTag', data.intentTag, ALLOWED_INTENT_TAG, opts);
   }
   if (!partial || hasOwn(data, 'audienceTag')) {
-    out.audienceTag = normalizeNullableStrictEnum(data.audienceTag, ALLOWED_AUDIENCE_TAG, 'audienceTag');
+    out.audienceTag = normalizeIntentField('audienceTag', data.audienceTag, ALLOWED_AUDIENCE_TAG, opts);
   }
   if (!partial || hasOwn(data, 'regionScope')) {
-    out.regionScope = normalizeNullableStrictEnum(data.regionScope, ALLOWED_REGION_SCOPE, 'regionScope');
+    out.regionScope = normalizeIntentField('regionScope', data.regionScope, ALLOWED_REGION_SCOPE, opts);
   }
   if (!partial || hasOwn(data, 'riskLevel')) {
-    out.riskLevel = normalizeNullableStrictEnum(data.riskLevel, ALLOWED_RISK_LEVEL, 'riskLevel');
+    out.riskLevel = normalizeIntentField('riskLevel', data.riskLevel, ALLOWED_RISK_LEVEL, opts);
   }
   return out;
 }
@@ -130,21 +135,33 @@ function matchesEducationFilters(row, filters) {
     const current = normalizeTags(item.tags);
     if (!opts.tags.every((tag) => current.includes(tag))) return false;
   }
-  if (opts.intentTag && String(item.intentTag || '') !== opts.intentTag) return false;
-  if (opts.audienceTag && String(item.audienceTag || '') !== opts.audienceTag) return false;
-  if (opts.regionScope && String(item.regionScope || '') !== opts.regionScope) return false;
-  if (opts.riskLevel && String(item.riskLevel || '') !== opts.riskLevel) return false;
+  if (opts.intentTag) {
+    const intentTag = normalizeIntentValue(item.intentTag);
+    if (intentTag !== opts.intentTag) return false;
+  }
+  if (opts.audienceTag) {
+    const audienceTag = normalizeIntentValue(item.audienceTag);
+    if (audienceTag !== opts.audienceTag) return false;
+  }
+  if (opts.regionScope) {
+    const regionScope = normalizeIntentValue(item.regionScope);
+    if (regionScope !== opts.regionScope) return false;
+  }
+  if (opts.riskLevel) {
+    const riskLevel = normalizeIntentValue(item.riskLevel);
+    if (riskLevel !== opts.riskLevel) return false;
+  }
   return true;
 }
 
 async function createLink(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
+  const strictIntentValidation = isLinkRegistryIntentV2Enabled();
   const payload = Object.assign(
     {},
     data || {},
-    normalizeEducationFields(data),
-    normalizeRoutingFields(data),
+    normalizeEducationFields(data, { strictIntentValidation }),
     { createdAt: resolveTimestamp(data && data.createdAt) }
   );
   await docRef.set(payload, { merge: false });
@@ -155,11 +172,11 @@ async function updateLink(id, patch) {
   if (!id) throw new Error('link id required');
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(id);
+  const strictIntentValidation = isLinkRegistryIntentV2Enabled();
   const payload = Object.assign(
     {},
     patch || {},
-    normalizeEducationFields(patch, { partial: true }),
-    normalizeRoutingFields(patch, { partial: true })
+    normalizeEducationFields(patch, { partial: true, strictIntentValidation })
   );
   await docRef.set(payload, { merge: true });
   return { id };
@@ -192,14 +209,14 @@ async function listLinks(params) {
   const limit = typeof opts.limit === 'number' ? opts.limit : 50;
   const hasEducationFilters = Boolean(
     domainClass
-      || schoolType
-      || eduScope
-      || regionKey
-      || tags.length
-      || intentTag
-      || audienceTag
-      || regionScope
-      || riskLevel
+    || schoolType
+    || eduScope
+    || regionKey
+    || tags.length
+    || intentTag
+    || audienceTag
+    || regionScope
+    || riskLevel
   );
   const queryLimit = hasEducationFilters ? Math.min(limit * 5, 1000) : limit;
   if (queryLimit) query = query.limit(queryLimit);
@@ -246,7 +263,6 @@ module.exports = {
   ALLOWED_REGION_SCOPE,
   ALLOWED_RISK_LEVEL,
   normalizeEducationFields,
-  normalizeRoutingFields,
   createLink,
   getLink,
   updateLink,

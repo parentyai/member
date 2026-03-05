@@ -4,12 +4,20 @@ const crypto = require('crypto');
 const tasksRepo = require('../../repos/firestore/tasksRepo');
 const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
+const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const { createNotification } = require('../notifications/createNotification');
 const { sendNotification } = require('../notifications/sendNotification');
+const { computeAttentionBudget } = require('../notifications/computeAttentionBudget');
+const { computeDailyTopTasks } = require('./computeDailyTopTasks');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { TASK_STATUS } = require('../../domain/tasks/constants');
-const { isTaskNudgeEnabled, getTaskNudgeLinkPolicy } = require('../../domain/tasks/featureFlags');
+const {
+  isTaskNudgeEnabled,
+  getTaskNudgeLinkPolicy,
+  isJourneyAttentionBudgetEnabled,
+  getJourneyDailyAttentionBudgetMax
+} = require('../../domain/tasks/featureFlags');
 const { appendTaskEventIfStateChanged } = require('./recordTaskEvent');
 const { USER_SCENARIO_FIELD } = require('../../domain/constants');
 const DEFAULT_LENIENT_LINK_REGISTRY_ID = 'task_todo_list';
@@ -94,6 +102,32 @@ function resolveMeaning(task, rule) {
   };
 }
 
+function groupTasksByUser(tasks) {
+  const map = new Map();
+  (Array.isArray(tasks) ? tasks : []).forEach((task) => {
+    const row = task && typeof task === 'object' ? task : {};
+    const userId = normalizeText(row.userId || row.lineUserId, '');
+    if (!userId) return;
+    if (!map.has(userId)) map.set(userId, []);
+    map.get(userId).push(row);
+  });
+  return map;
+}
+
+async function buildRulePriorityMap(tasks, rulesRepository) {
+  const map = new Map();
+  const ruleIds = Array.from(new Set((Array.isArray(tasks) ? tasks : [])
+    .map((item) => normalizeText(item && item.ruleId, ''))
+    .filter(Boolean)));
+  for (const ruleId of ruleIds) {
+    // eslint-disable-next-line no-await-in-loop
+    const rule = await rulesRepository.getStepRule(ruleId).catch(() => null);
+    const priority = Number(rule && rule.priority);
+    map.set(ruleId, Number.isFinite(priority) ? Math.max(0, Math.floor(priority)) : 100);
+  }
+  return map;
+}
+
 function buildNudgeBody(task, rule, meaning, linkRegistryId) {
   const template = rule && rule.nudgeTemplate && typeof rule.nudgeTemplate === 'object'
     ? rule.nudgeTemplate
@@ -161,10 +195,12 @@ async function runTaskNudgeJob(params, deps) {
 
   const tasksRepository = resolvedDeps.tasksRepo || tasksRepo;
   const rulesRepository = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const profilesRepository = resolvedDeps.userJourneyProfilesRepo || userJourneyProfilesRepo;
   const createNotificationFn = resolvedDeps.createNotification || createNotification;
   const sendNotificationFn = resolvedDeps.sendNotification || sendNotification;
   const getKillSwitch = resolvedDeps.getKillSwitch || systemFlagsRepo.getKillSwitch;
   const getNotificationCaps = resolvedDeps.getNotificationCaps || systemFlagsRepo.getNotificationCaps;
+  const computeAttentionBudgetFn = resolvedDeps.computeAttentionBudget || computeAttentionBudget;
 
   const killSwitch = await getKillSwitch().catch(() => false);
   if (killSwitch) {
@@ -183,6 +219,51 @@ async function runTaskNudgeJob(params, deps) {
     getNotificationCaps().catch(() => null)
   ]);
 
+  const attentionBudgetEnabled = isJourneyAttentionBudgetEnabled();
+  const budgetRemainingByUser = new Map();
+  let taskQueue = Array.isArray(tasks) ? tasks.slice() : [];
+  if (attentionBudgetEnabled && taskQueue.length) {
+    const maxPerDay = getJourneyDailyAttentionBudgetMax();
+    const grouped = groupTasksByUser(taskQueue);
+    const userIds = Array.from(grouped.keys());
+    const profiles = await profilesRepository
+      .listUserJourneyProfilesByLineUserIds({ lineUserIds: userIds })
+      .catch(() => []);
+    const timezoneByUser = new Map();
+    profiles.forEach((row) => {
+      if (!row || !row.lineUserId) return;
+      timezoneByUser.set(row.lineUserId, row.timezone || 'UTC');
+    });
+    for (const userId of userIds) {
+      // eslint-disable-next-line no-await-in-loop
+      const budget = await computeAttentionBudgetFn({
+        lineUserId: userId,
+        timezone: timezoneByUser.get(userId) || 'UTC',
+        now: nowIso,
+        maxPerDay
+      }, resolvedDeps).catch(() => ({
+        remainingCount: maxPerDay,
+        usedCount: 0
+      }));
+      budgetRemainingByUser.set(userId, Math.max(0, Number(budget.remainingCount || 0)));
+    }
+    const priorityMap = await buildRulePriorityMap(taskQueue, rulesRepository);
+    const ordered = [];
+    grouped.forEach((rows, userId) => {
+      const scored = rows.map((row) => Object.assign({}, row, {
+        priorityScore: priorityMap.get(normalizeText(row && row.ruleId, '')) || 100
+      }));
+      const top = computeDailyTopTasks({
+        tasks: scored,
+        limit: scored.length,
+        now: nowIso
+      });
+      top.forEach((item) => ordered.push(item));
+      if (!budgetRemainingByUser.has(userId)) budgetRemainingByUser.set(userId, maxPerDay);
+    });
+    taskQueue = ordered;
+  }
+
   const globalTemplate = resolveGlobalNudgeTemplate();
   let scannedCount = 0;
   let sentCount = 0;
@@ -190,9 +271,30 @@ async function runTaskNudgeJob(params, deps) {
   let failedCount = 0;
   const results = [];
 
-  for (const task of tasks) {
+  for (const task of taskQueue) {
     scannedCount += 1;
     const row = task && typeof task === 'object' ? task : {};
+    if (attentionBudgetEnabled) {
+      const userKey = normalizeText(row.userId || row.lineUserId, '');
+      const remaining = budgetRemainingByUser.has(userKey)
+        ? Number(budgetRemainingByUser.get(userKey))
+        : getJourneyDailyAttentionBudgetMax();
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        skippedCount += 1;
+        results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'attention_budget_exhausted' });
+        await appendSuppressedAuditLog({
+          dryRun,
+          actor: payload.actor || 'task_nudge_job',
+          traceId: payload.traceId || null,
+          requestId: payload.requestId || null,
+          taskId: row.taskId || null,
+          ruleId: row.ruleId || null,
+          reason: 'attention_budget_exhausted',
+          checkedAt: nowIso
+        });
+        continue;
+      }
+    }
     if (row.status === TASK_STATUS.DONE || row.status === TASK_STATUS.BLOCKED || row.status === TASK_STATUS.SNOOZED) {
       skippedCount += 1;
       results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'status_not_sendable' });
@@ -309,6 +411,7 @@ async function runTaskNudgeJob(params, deps) {
       const sendResult = await sendNotificationFn({
         notificationId,
         lineUserIds: [row.userId],
+        applyAttentionBudget: attentionBudgetEnabled,
         traceId: payload.traceId || null,
         requestId: payload.requestId || null,
         actor: payload.actor || 'task_nudge_job',
@@ -321,6 +424,15 @@ async function runTaskNudgeJob(params, deps) {
         }
       });
       sentCount += Number(sendResult && sendResult.deliveredCount) || 0;
+      if (attentionBudgetEnabled) {
+        const userKey = normalizeText(row.userId || row.lineUserId, '');
+        const current = budgetRemainingByUser.has(userKey)
+          ? Number(budgetRemainingByUser.get(userKey))
+          : getJourneyDailyAttentionBudgetMax();
+        if (Number.isFinite(current) && current > 0) {
+          budgetRemainingByUser.set(userKey, Math.max(0, current - 1));
+        }
+      }
       const patchedTask = await tasksRepository.patchTask(row.taskId, {
         status: row.status,
         blockedReason: null,

@@ -4,31 +4,38 @@ const { parseJourneyLineCommand } = require('../../domain/journey/lineCommandPar
 const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
-const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
+const tasksRepo = require('../../repos/firestore/tasksRepo');
 const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const userCityPackPreferencesRepo = require('../../repos/firestore/userCityPackPreferencesRepo');
+const { ALLOWED_MODULES } = require('../../repos/firestore/cityPacksRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { computeNextTasks } = require('../tasks/computeNextTasks');
+const { computeTaskGraph } = require('../tasks/computeTaskGraph');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
+const { resolveTaskContentLinks, isHealthyLink } = require('../tasks/validateTaskContent');
 const { renderTaskFlexMessage } = require('../tasks/renderTaskFlexMessage');
-const { validateTaskContent } = require('../tasks/validateTaskContent');
-const { buildTaskDetailSectionReply } = require('./taskDetailSectionReply');
+const {
+  resolveTaskDetailTaskKey,
+  buildTaskDetailSectionReply
+} = require('./taskDetailSectionReply');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
 const {
   isJourneyUnifiedViewEnabled,
-  isNextTaskEngineEnabled,
-  getJourneyNextTaskMax,
-  isTaskDetailLineEnabled
+  isTaskDetailLineEnabled,
+  isCityPackModuleSubscriptionEnabled,
+  isRichMenuTaskOsEntryEnabled
 } = require('../../domain/tasks/featureFlags');
-const { TASK_CATEGORY_VALUES } = require('../../domain/tasks/usExpatTaxonomy');
+const { normalizeTaskCategory, TASK_CATEGORIES } = require('../../domain/tasks/taskCategories');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -37,9 +44,11 @@ const HOUSEHOLD_LABEL = Object.freeze({
   accompany2: '帯同2'
 });
 
-function normalizeText(value) {
-  if (typeof value !== 'string') return '';
-  return value.trim();
+function normalizeText(value, fallback) {
+  if (value === null || value === undefined) return fallback || '';
+  if (typeof value !== 'string') return fallback || '';
+  const normalized = value.trim();
+  return normalized || fallback || '';
 }
 
 function formatTodoStateLabel(item) {
@@ -92,6 +101,7 @@ function formatTodoList(items, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return lines.join('\n');
 }
 
@@ -111,7 +121,217 @@ function formatTaskList(tasks, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return lines.join('\n');
+}
+
+function formatNextTasksList(nextTasksResult) {
+  const payload = nextTasksResult && typeof nextTasksResult === 'object' ? nextTasksResult : {};
+  const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+  if (!tasks.length) {
+    return '今日優先のタスクはありません。まずは「TODO一覧」で全体を確認してください。';
+  }
+  const lines = ['今日の3つ:'];
+  tasks.slice(0, 3).forEach((task, index) => {
+    const row = task && typeof task === 'object' ? task : {};
+    const key = normalizeText(row.ruleId, normalizeText(row.todoKey, normalizeText(row.taskId, `task_${index + 1}`)));
+    const title = normalizeText(row.title, key || '-');
+    const dueDate = row.dueAt ? toDateLabel(row.dueAt) : '-';
+    const category = normalizeTaskCategory(row.category, 'LIFE_SETUP') || 'LIFE_SETUP';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate} / カテゴリ:${category}）`);
+  });
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  lines.push('カテゴリで絞る場合は「カテゴリ:IMMIGRATION」の形式で送信してください。');
+  return lines.join('\n');
+}
+
+function toSortDueMillis(value) {
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function toSortText(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function toDeliveryTimeLabel(value) {
+  const parsed = Date.parse(value || '');
+  if (!Number.isFinite(parsed)) return '-';
+  return new Date(parsed).toISOString().slice(0, 16).replace('T', ' ');
+}
+
+function formatDeliveryHistory(deliveries) {
+  const rows = Array.isArray(deliveries) ? deliveries : [];
+  if (!rows.length) {
+    return '通知履歴はまだありません。';
+  }
+  const lines = ['直近の通知履歴:'];
+  rows.slice(0, 10).forEach((item, index) => {
+    const row = item && typeof item === 'object' ? item : {};
+    const sentAt = toDeliveryTimeLabel(row.sentAt || row.deliveredAt || row.createdAt);
+    const status = row.delivered === true ? 'delivered' : (normalizeText(row.state, 'queued') || 'queued');
+    const category = normalizeText(row.notificationCategory, '-');
+    const notificationId = normalizeText(row.notificationId, row.id || '-');
+    lines.push(`${index + 1}. ${sentAt} / ${status} / ${category} / ${notificationId}`);
+  });
+  lines.push('詳細を確認する場合は管理画面の Notification Monitor を利用してください。');
+  return lines.join('\n');
+}
+
+function resolveTaskCategoryForView(task, ruleById) {
+  const row = task && typeof task === 'object' ? task : {};
+  const ruleId = normalizeText(row.ruleId);
+  const rule = ruleId ? ruleById.get(ruleId) : null;
+  return normalizeTaskCategory(row.category, normalizeTaskCategory(rule && rule.category, 'LIFE_SETUP')) || 'LIFE_SETUP';
+}
+
+async function buildStepRuleMapForView(deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const rules = await repository.listStepRules({ limit: 1000 }).catch(() => []);
+  return new Map((Array.isArray(rules) ? rules : [])
+    .filter((item) => item && item.ruleId)
+    .map((item) => [item.ruleId, item]));
+}
+
+async function buildCategoryViewReply(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const categoryFilter = normalizeTaskCategory(payload.category, null);
+  const taskResult = await listUserTasks({
+    userId: lineUserId,
+    lineUserId,
+    forceRefresh: false,
+    actor: 'line_command_category_view'
+  }, resolvedDeps).catch(() => ({ tasks: [] }));
+  const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
+  const ruleById = await buildStepRuleMapForView(resolvedDeps);
+  const openTasks = tasks.filter((item) => {
+    const status = normalizeText(item && item.status).toLowerCase();
+    return status === 'todo' || status === 'doing';
+  });
+
+  if (!categoryFilter) {
+    const counts = new Map();
+    openTasks.forEach((task) => {
+      const category = resolveTaskCategoryForView(task, ruleById);
+      counts.set(category, (counts.get(category) || 0) + 1);
+    });
+    const lines = ['カテゴリ別TODO件数:'];
+    TASK_CATEGORIES.forEach((category) => {
+      lines.push(`- ${category}: ${counts.get(category) || 0}件`);
+    });
+    lines.push('絞り込み例: カテゴリ:IMMIGRATION');
+    return lines.join('\n');
+  }
+
+  const filtered = openTasks
+    .filter((task) => resolveTaskCategoryForView(task, ruleById) === categoryFilter)
+    .sort((left, right) => {
+      const dueCompare = toSortDueMillis(left && left.dueAt) - toSortDueMillis(right && right.dueAt);
+      if (dueCompare !== 0) return dueCompare;
+      return toSortText(left && left.ruleId).localeCompare(toSortText(right && right.ruleId), 'ja');
+    });
+  if (!filtered.length) {
+    return `${categoryFilter} カテゴリの未完了タスクはありません。`;
+  }
+  const lines = [`カテゴリ:${categoryFilter} の未完了タスク:`];
+  filtered.slice(0, 10).forEach((task, index) => {
+    const key = normalizeText(task && task.ruleId, normalizeText(task && task.taskId, `task_${index + 1}`));
+    const title = normalizeText(task && task.meaning && task.meaning.title, key);
+    const dueDate = task && task.dueAt ? toDateLabel(task.dueAt) : '-';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
+  });
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  return lines.join('\n');
+}
+
+async function buildTodoVendorReply(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const todoKey = normalizeText(payload.todoKey);
+  if (!todoKey) {
+    return {
+      handled: true,
+      replyText: 'TODOキーが必要です。例: TODO業者:bank_open'
+    };
+  }
+  const task = await resolveTaskForDetail(lineUserId, todoKey, resolvedDeps);
+  if (!task) {
+    return {
+      handled: true,
+      replyText: `TODOキー「${todoKey}」が見つかりません。`
+    };
+  }
+  const taskKeyResolution = resolveTaskDetailTaskKey(task, todoKey);
+  const taskKey = normalizeText(taskKeyResolution && taskKeyResolution.taskKey, todoKey) || todoKey;
+  const taskContentRepository = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const stepRuleRepository = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const registryRepository = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
+  const [taskContent, stepRule] = await Promise.all([
+    taskContentRepository.getTaskContent(taskKey).catch(() => null),
+    task && task.ruleId ? stepRuleRepository.getStepRule(task.ruleId).catch(() => null) : Promise.resolve(null)
+  ]);
+  const linkIds = [];
+  const fromTaskContent = Array.isArray(taskContent && taskContent.recommendedVendorLinkIds)
+    ? taskContent.recommendedVendorLinkIds
+    : [];
+  const fromStepRule = Array.isArray(stepRule && stepRule.recommendedVendorLinkIds)
+    ? stepRule.recommendedVendorLinkIds
+    : [];
+  fromTaskContent.concat(fromStepRule).forEach((item) => {
+    const value = normalizeText(item);
+    if (!value) return;
+    if (linkIds.includes(value)) return;
+    linkIds.push(value);
+  });
+  if (!linkIds.length) {
+    return {
+      handled: true,
+      replyText: `TODO「${todoKey}」の推奨業者は未設定です。`
+    };
+  }
+
+  const items = [];
+  const warnings = [];
+  for (const linkId of linkIds.slice(0, 3)) {
+    // eslint-disable-next-line no-await-in-loop
+    const link = await registryRepository.getLink(linkId).catch(() => null);
+    if (!link) {
+      warnings.push(`${linkId}:not_found`);
+      continue;
+    }
+    if (!isHealthyLink(link)) {
+      warnings.push(`${linkId}:disabled_or_warn`);
+      continue;
+    }
+    items.push({
+      linkId,
+      label: normalizeText(link.title, normalizeText(link.label, linkId)),
+      url: normalizeText(link.url, '')
+    });
+  }
+
+  if (!items.length) {
+    return {
+      handled: true,
+      replyText: `TODO「${todoKey}」の推奨業者リンクは現在利用できません。`
+    };
+  }
+  const lines = [`TODO「${todoKey}」の推奨業者:`];
+  items.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.label}`);
+    lines.push(item.url);
+  });
+  if (warnings.length) {
+    lines.push(`利用不可リンク: ${warnings.join(', ')}`);
+  }
+  return {
+    handled: true,
+    replyText: lines.join('\n')
+  };
 }
 
 function toDateLabel(value) {
@@ -231,6 +451,7 @@ function formatUnifiedTaskList(tasks, legacyItems, graphResult) {
   lines.push('完了する場合は「TODO完了:todoKey」を送信してください。');
   lines.push('進行中にする場合は「TODO進行中:todoKey」、未着手へ戻す場合は「TODO未着手:todoKey」を送信してください。');
   lines.push('後で対応する場合は「TODOスヌーズ:todoKey:3」（3日）を送信してください。');
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return {
     text: lines.join('\n'),
     hiddenDuplicateCount: unified.hiddenDuplicateCount,
@@ -305,6 +526,111 @@ function resolveSnoozeUntil(command, nowIso) {
   return new Date(ms).toISOString();
 }
 
+const CITY_PACK_MODULE_LABELS = Object.freeze({
+  schools: '学校',
+  healthcare: '医療',
+  driving: '運転',
+  housing: '住居',
+  utilities: '生活インフラ'
+});
+
+function normalizeCityPackModules(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const out = [];
+  rows.forEach((value) => {
+    const normalized = normalizeText(value).toLowerCase();
+    if (!normalized) return;
+    if (!ALLOWED_MODULES.includes(normalized)) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeCityPackModule(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (!normalized) return null;
+  if (!ALLOWED_MODULES.includes(normalized)) return null;
+  return normalized;
+}
+
+function buildCityPackModulePostback(action, module) {
+  const params = new URLSearchParams();
+  params.set('action', action);
+  if (module) params.set('module', module);
+  return params.toString();
+}
+
+function formatCityPackModuleStatusLine(modules) {
+  const subscribed = normalizeCityPackModules(modules);
+  if (!subscribed.length) return '全モジュール購読（既定）';
+  return subscribed.map((module) => CITY_PACK_MODULE_LABELS[module] || module).join(' / ');
+}
+
+function buildCityPackModuleGuideFlex(modulesSubscribed) {
+  const subscribed = normalizeCityPackModules(modulesSubscribed);
+  const contents = [
+    {
+      type: 'text',
+      text: 'CityPackモジュール購読',
+      weight: 'bold',
+      size: 'md',
+      wrap: true
+    },
+    {
+      type: 'text',
+      text: `現在: ${formatCityPackModuleStatusLine(subscribed)}`,
+      size: 'sm',
+      color: '#666666',
+      wrap: true,
+      margin: 'sm'
+    },
+    {
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      margin: 'md',
+      action: {
+        type: 'postback',
+        label: '購読状況を更新',
+        data: buildCityPackModulePostback('city_pack_module_status'),
+        displayText: 'CityPack状況'
+      }
+    }
+  ];
+  ALLOWED_MODULES.forEach((module) => {
+    const label = CITY_PACK_MODULE_LABELS[module] || module;
+    const isSubscribed = subscribed.length === 0 || subscribed.includes(module);
+    const action = isSubscribed ? 'city_pack_module_unsubscribe' : 'city_pack_module_subscribe';
+    const buttonLabel = isSubscribed ? `解除: ${label}` : `購読: ${label}`;
+    contents.push({
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      margin: 'sm',
+      action: {
+        type: 'postback',
+        label: buttonLabel,
+        data: buildCityPackModulePostback(action, module),
+        displayText: isSubscribed ? `CityPack解除:${module}` : `CityPack購読:${module}`
+      }
+    });
+  });
+  return {
+    type: 'flex',
+    altText: 'CityPackモジュール購読',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents
+      }
+    }
+  };
+}
+
 function resolveScheduleStage(schedule) {
   const payload = schedule && typeof schedule === 'object' ? schedule : {};
   if (payload.stage && typeof payload.stage === 'string' && payload.stage.trim()) return payload.stage.trim();
@@ -317,227 +643,96 @@ function resolveScheduleStage(schedule) {
   return 'unspecified';
 }
 
-function safeTaskTitle(task, fallback) {
-  const row = task && typeof task === 'object' ? task : {};
-  const meaning = row.meaning && typeof row.meaning === 'object' ? row.meaning : {};
-  return normalizeText(meaning.title) || normalizeText(row.title) || fallback;
-}
-
-async function loadRuleMap(ruleIds, deps) {
+async function resolveTaskForDetail(lineUserId, todoKey, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
-  const map = new Map();
-  const ids = Array.from(new Set((Array.isArray(ruleIds) ? ruleIds : []).map((item) => normalizeText(item)).filter(Boolean)));
-  for (const ruleId of ids) {
-    // eslint-disable-next-line no-await-in-loop
-    const rule = await ruleRepo.getStepRule(ruleId).catch(() => null);
-    if (rule) map.set(ruleId, rule);
-  }
-  return map;
-}
-
-function normalizeCategoryFilter(value) {
-  const normalized = normalizeText(value).toUpperCase();
-  if (!normalized) return null;
-  if (!TASK_CATEGORY_VALUES.includes(normalized)) return null;
-  return normalized;
-}
-
-async function buildNextTasksReply(lineUserId, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const max = getJourneyNextTaskMax();
-  const result = await computeNextTasks({
-    lineUserId,
-    limit: max,
-    actor: 'line_command_next_tasks',
-    forceRefresh: true
-  }, resolvedDeps).catch(() => ({ tasks: [] }));
-  const pick = Array.isArray(result.tasks) ? result.tasks : [];
-  if (!pick.length) {
-    return '今日の優先タスクはありません。まずは「TODO一覧」を確認してください。';
-  }
-  const lines = ['今日の3つです。'];
-  pick.forEach((task, index) => {
-    const due = task && task.dueAt ? String(task.dueAt).slice(0, 10) : '-';
-    lines.push(`${index + 1}. [${task.ruleId}] ${safeTaskTitle(task, task.ruleId)}（期限:${due}）`);
-  });
-  lines.push('詳細は「TODO詳細:todoKey」で確認できます。');
-  return lines.join('\n');
-}
-
-async function buildCategoryViewReply(lineUserId, category, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const requested = normalizeCategoryFilter(category);
-  const taskResult = await listUserTasks({
+  const taskRepository = resolvedDeps.tasksRepo || tasksRepo;
+  const directTaskId = `${lineUserId}__${todoKey}`;
+  const direct = await taskRepository.getTask(directTaskId).catch(() => null);
+  if (direct) return direct;
+  const listed = await listUserTasks({
     userId: lineUserId,
     lineUserId,
     forceRefresh: false,
-    actor: 'line_command_category_view'
+    actor: 'line_command_todo_detail'
   }, resolvedDeps).catch(() => ({ tasks: [] }));
-  const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
-  const rules = await loadRuleMap(tasks.map((item) => item.ruleId), resolvedDeps);
-  const decorated = tasks.map((task) => {
-    const rule = rules.get(task.ruleId) || {};
+  const tasks = Array.isArray(listed.tasks) ? listed.tasks : [];
+  return tasks.find((row) => normalizeText(row && row.ruleId, '') === todoKey)
+    || tasks.find((row) => normalizeText(row && row.taskId, '') === directTaskId)
+    || null;
+}
+
+async function handleTodoDetailCommand(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const todoKey = normalizeText(payload.todoKey);
+  if (!todoKey) {
     return {
-      task,
-      category: normalizeCategoryFilter(rule.category) || 'LIFE_SETUP'
+      handled: true,
+      replyText: 'TODOキーが必要です。例: TODO詳細:visa_documents'
     };
-  });
-
-  if (!requested) {
-    const counts = new Map();
-    decorated.forEach((row) => {
-      counts.set(row.category, (counts.get(row.category) || 0) + 1);
-    });
-    const lines = ['カテゴリ別件数です。'];
-    TASK_CATEGORY_VALUES.forEach((key) => {
-      lines.push(`- ${key}: ${counts.get(key) || 0}件`);
-    });
-    lines.push('絞り込みは「カテゴリ:IMMIGRATION」の形式で送信してください。');
-    return lines.join('\n');
   }
-
-  const filtered = decorated.filter((row) => row.category === requested).slice(0, 10);
-  if (!filtered.length) {
-    return `${requested} のタスクは現在ありません。`;
-  }
-  const lines = [`カテゴリ ${requested} のタスクです。`];
-  filtered.forEach((row, index) => {
-    const due = row.task && row.task.dueAt ? String(row.task.dueAt).slice(0, 10) : '-';
-    lines.push(`${index + 1}. [${row.task.ruleId}] ${safeTaskTitle(row.task, row.task.ruleId)}（期限:${due}）`);
-  });
-  return lines.join('\n');
-}
-
-async function buildDeliveryHistoryReply(lineUserId, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const repository = resolvedDeps.deliveriesRepo || deliveriesRepo;
-  const rows = await repository.listDeliveriesByUser(lineUserId, 5).catch(() => []);
-  if (!Array.isArray(rows) || !rows.length) {
-    return '通知履歴はまだありません。';
-  }
-  const lines = ['直近の通知履歴です。'];
-  rows.slice(0, 5).forEach((row, index) => {
-    const sentAt = row && row.sentAt ? String(row.sentAt).slice(0, 19).replace('T', ' ') : '-';
-    const category = normalizeText(row && row.notificationCategory, '-');
-    const state = row && row.delivered === true ? 'delivered' : (normalizeText(row && row.state, 'queued') || 'queued');
-    lines.push(`${index + 1}. ${sentAt} / ${category} / ${state}`);
-  });
-  return lines.join('\n');
-}
-
-function isLinkInactive(link) {
-  if (!link || typeof link !== 'object') return true;
-  if (link.enabled === false) return true;
-  const state = normalizeText(link.lastHealth && link.lastHealth.state).toUpperCase();
-  return state === 'WARN' || state === 'BLOCKED';
-}
-
-async function loadActiveLink(linkId, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const repository = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
-  if (!normalizeText(linkId)) return null;
-  const link = await repository.getLink(linkId).catch(() => null);
-  if (!link || isLinkInactive(link)) return null;
-  return link;
-}
-
-function mergeTaskContentFallback(todoKey, todoItem, stepRule, content) {
-  const existing = content && typeof content === 'object' ? content : {};
-  const meaning = stepRule && stepRule.meaning && typeof stepRule.meaning === 'object' ? stepRule.meaning : {};
-  return Object.assign({}, existing, {
-    taskKey: normalizeText(existing.taskKey, normalizeText(stepRule && stepRule.ruleId, todoKey)),
-    title: normalizeText(existing.title, normalizeText(meaning.title, normalizeText(todoItem && todoItem.title, todoKey))),
-    category: normalizeText(existing.category, normalizeText(stepRule && stepRule.category, null)),
-    dependencies: Array.isArray(existing.dependencies) && existing.dependencies.length
-      ? existing.dependencies
-      : (Array.isArray(stepRule && stepRule.dependsOn) ? stepRule.dependsOn : []),
-    recommendedVendorLinkIds: Array.isArray(existing.recommendedVendorLinkIds) && existing.recommendedVendorLinkIds.length
-      ? existing.recommendedVendorLinkIds
-      : (Array.isArray(stepRule && stepRule.recommendedVendorLinkIds) ? stepRule.recommendedVendorLinkIds : []),
-    manualText: normalizeText(existing.manualText, '手順マニュアルは未登録です。'),
-    failureText: normalizeText(existing.failureText, 'よくある失敗は未登録です。')
-  });
-}
-
-async function buildTodoDetailReply(lineUserId, todoKey, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
-  const contentRepo = resolvedDeps.taskContentsRepo || taskContentsRepo;
-  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
-  const todo = await todoRepo.getJourneyTodoItem(lineUserId, todoKey).catch(() => null);
-  if (!todo) {
+  const task = await resolveTaskForDetail(lineUserId, todoKey, resolvedDeps);
+  if (!task) {
     return {
       handled: true,
       replyText: `TODOキー「${todoKey}」が見つかりません。`
     };
   }
 
-  const rule = await ruleRepo.getStepRule(todoKey).catch(() => null);
-  const content = await contentRepo.getTaskContent(todoKey).catch(() => null);
-  const merged = mergeTaskContentFallback(todoKey, todo, rule, content);
-  const validation = await validateTaskContent(merged, {
-    getLink: async (id) => {
-      const repo = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
-      return repo.getLink(id);
-    }
-  }).catch(() => ({ ok: true, resolved: {} }));
-
-  const videoLink = await loadActiveLink(validation.resolved && validation.resolved.videoLinkId, resolvedDeps);
-  const actionLink = await loadActiveLink(validation.resolved && validation.resolved.actionLinkId, resolvedDeps);
-
-  const flex = renderTaskFlexMessage({
-    todoKey,
-    taskContent: merged,
-    resolvedLinks: {
-      video: videoLink ? { url: videoLink.url, label: videoLink.title || videoLink.label || '動画' } : null,
-      action: actionLink ? { url: actionLink.url, label: actionLink.title || actionLink.label || '詳細' } : null
-    }
+  const taskKeyResolution = resolveTaskDetailTaskKey(task, todoKey);
+  const taskKey = normalizeText(taskKeyResolution && taskKeyResolution.taskKey, todoKey) || todoKey;
+  const taskContentRepository = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const taskContent = await taskContentRepository.getTaskContent(taskKey).catch(() => null);
+  const fallbackTitle = normalizeText(
+    task && task.meaning && task.meaning.title,
+    normalizeText(task && task.ruleId, normalizeText(task && task.taskId, todoKey))
+  );
+  const fallbackContent = {
+    taskKey,
+    title: fallbackTitle,
+    timeMin: null,
+    timeMax: null,
+    checklistItems: [],
+    manualText: null,
+    failureText: null,
+    videoLinkId: null,
+    actionLinkId: null
+  };
+  const links = await resolveTaskContentLinks(taskContent || fallbackContent, resolvedDeps).catch(() => ({
+    video: { ok: false, id: null, link: null, reason: 'resolver_error' },
+    action: { ok: false, id: null, link: null, reason: 'resolver_error' },
+    warnings: ['link resolver failed']
+  }));
+  const flexMessage = renderTaskFlexMessage({
+    task,
+    taskContent: taskContent || fallbackContent,
+    linkRefs: links,
+    todoKey
   });
-
   return {
     handled: true,
-    replyText: flex.fallbackText,
-    replyMessage: {
-      type: 'flex',
-      altText: flex.altText,
-      contents: flex.contents
-    }
+    replyMessage: flexMessage
   };
 }
 
-async function buildTodoVendorReply(lineUserId, todoKey, deps) {
-  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const contentRepo = resolvedDeps.taskContentsRepo || taskContentsRepo;
-  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
-  const content = await contentRepo.getTaskContent(todoKey).catch(() => null);
-  const rule = await ruleRepo.getStepRule(todoKey).catch(() => null);
-  const ids = Array.from(new Set([
-    ...((content && Array.isArray(content.recommendedVendorLinkIds)) ? content.recommendedVendorLinkIds : []),
-    ...((rule && Array.isArray(rule.recommendedVendorLinkIds)) ? rule.recommendedVendorLinkIds : [])
-  ])).slice(0, 3);
-  if (!ids.length) {
-    return '推奨業者は未登録です。';
+async function handleTodoDetailSectionContinueCommand(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const todoKey = normalizeText(payload.todoKey);
+  const section = normalizeText(payload.section).toLowerCase();
+  const startChunk = Number(payload.startChunk);
+  if (!todoKey || !section) {
+    return {
+      handled: true,
+      replyText: '続き表示の形式が不正です。例: TODO詳細続き:todoKey:manual:2'
+    };
   }
-  const lines = ['推奨業者リンクです。'];
-  for (const linkId of ids) {
-    // eslint-disable-next-line no-await-in-loop
-    const link = await loadActiveLink(linkId, resolvedDeps);
-    if (!link) continue;
-    lines.push(`- ${(link.vendorLabel || link.title || link.label || linkId)}: ${link.url}`);
-  }
-  if (lines.length === 1) return '推奨業者リンクは現在利用できません。';
-  return lines.join('\n');
-}
-
-function buildCityPackGuideReply() {
-  return [
-    'CityPack案内です。',
-    '1) 地域申告: 地域:San Jose, CA',
-    '2) TODO一覧: TODO一覧',
-    '3) 今日の3つ: 今日の3つ',
-    '地域申告後に CityPack 推奨導線が有効になります。'
-  ].join('\n');
+  return buildTaskDetailSectionReply({
+    lineUserId: normalizeText(payload.lineUserId),
+    todoKey,
+    section,
+    startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
+  }, deps);
 }
 
 async function handleJourneyLineCommand(params, deps) {
@@ -631,104 +826,8 @@ async function handleJourneyLineCommand(params, deps) {
     };
   }
 
-  if (command.action === 'next_tasks') {
-    if (!isNextTaskEngineEnabled()) {
-      return {
-        handled: true,
-        replyText: '「今日の3つ」は現在停止中です。TODO一覧をご利用ください。'
-      };
-    }
-    return {
-      handled: true,
-      replyText: await buildNextTasksReply(lineUserId, resolvedDeps)
-    };
-  }
-
-  if (command.action === 'category_view') {
-    return {
-      handled: true,
-      replyText: await buildCategoryViewReply(lineUserId, command.category, resolvedDeps)
-    };
-  }
-
-  if (command.action === 'delivery_history') {
-    return {
-      handled: true,
-      replyText: await buildDeliveryHistoryReply(lineUserId, resolvedDeps)
-    };
-  }
-
-  if (command.action === 'city_pack_guide') {
-    return {
-      handled: true,
-      replyText: buildCityPackGuideReply()
-    };
-  }
-
-  if (command.action === 'todo_vendor') {
-    const todoKey = normalizeText(command.todoKey);
-    if (!todoKey) {
-      return {
-        handled: true,
-        replyText: 'TODOキーが必要です。例: TODO業者:visa_documents'
-      };
-    }
-    return {
-      handled: true,
-      replyText: await buildTodoVendorReply(lineUserId, todoKey, resolvedDeps)
-    };
-  }
-
-  if (command.action === 'todo_detail') {
-    if (!isTaskDetailLineEnabled()) {
-      return {
-        handled: true,
-        replyText: 'TODO詳細は現在停止中です。TODO一覧をご利用ください。'
-      };
-    }
-    const todoKey = normalizeText(command.todoKey);
-    if (!todoKey) {
-      return {
-        handled: true,
-        replyText: 'TODOキーが必要です。例: TODO詳細:visa_documents'
-      };
-    }
-    return buildTodoDetailReply(lineUserId, todoKey, resolvedDeps);
-  }
-
-  if (command.action === 'todo_detail_continue') {
-    const todoKey = normalizeText(command.todoKey);
-    const section = normalizeText(command.section).toLowerCase();
-    if (!todoKey || !section) {
-      return {
-        handled: true,
-        replyText: '形式が不正です。例: TODO詳細続き:visa_documents:manual:1'
-      };
-    }
-    const sectionReply = await buildTaskDetailSectionReply({
-      lineUserId,
-      todoKey,
-      section,
-      startChunk: command.startChunk
-    }, resolvedDeps);
-    if (!sectionReply.ok) {
-      return {
-        handled: true,
-        replyText: '詳細本文を取得できませんでした。'
-      };
-    }
-    return {
-      handled: true,
-      replyText: sectionReply.replyMessages[0] && sectionReply.replyMessages[0].text
-        ? sectionReply.replyMessages[0].text
-        : '未登録です。',
-      replyMessages: sectionReply.replyMessages,
-      continuation: sectionReply.continuation
-    };
-  }
-
   if (command.action === 'todo_list') {
-    const graph = await recomputeJourneyTaskGraph({
+    const graphResult = await recomputeJourneyTaskGraph({
       lineUserId,
       actor: 'line_command_todo_list',
       failOnCycle: false
@@ -742,7 +841,8 @@ async function handleJourneyLineCommand(params, deps) {
     const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
     if (isJourneyUnifiedViewEnabled()) {
       const items = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 50 });
-      const unified = formatUnifiedTaskList(tasks, items, graph);
+      const computedGraph = computeTaskGraph({ todoItems: items, nowMs: Date.now() });
+      const unified = formatUnifiedTaskList(tasks, items, graphResult && graphResult.ok ? graphResult : computedGraph);
       await auditTodoListPresentation({
         lineUserId,
         actor: 'line_command_todo_list',
@@ -761,13 +861,210 @@ async function handleJourneyLineCommand(params, deps) {
     if (tasks.length > 0) {
       return {
         handled: true,
-        replyText: formatTaskList(tasks, graph)
+        replyText: formatTaskList(tasks, graphResult)
       };
     }
     const items = await todoRepo.listJourneyTodoItemsByLineUserId({ lineUserId, limit: 50 });
+    const computedGraph = computeTaskGraph({ todoItems: items, nowMs: Date.now() });
     return {
       handled: true,
-      replyText: formatTodoList(items, graph)
+      replyText: formatTodoList(items, graphResult && graphResult.ok ? graphResult : computedGraph)
+    };
+  }
+
+  if (command.action === 'next_tasks') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    const result = await computeNextTasks({
+      lineUserId,
+      userId: lineUserId,
+      actor: 'line_command_next_tasks'
+    }, resolvedDeps).catch(() => ({ tasks: [] }));
+    return {
+      handled: true,
+      replyText: formatNextTasksList(result)
+    };
+  }
+
+  if (command.action === 'category_view_missing') {
+    return {
+      handled: true,
+      replyText: `カテゴリ指定が不正です。利用可能: ${TASK_CATEGORIES.join(', ')}`
+    };
+  }
+
+  if (command.action === 'category_view') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    const textReply = await buildCategoryViewReply({
+      lineUserId,
+      category: command.category || null
+    }, resolvedDeps).catch(() => 'カテゴリ表示の取得に失敗しました。');
+    return {
+      handled: true,
+      replyText: textReply
+    };
+  }
+
+  if (command.action === 'delivery_history') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    const deliveriesRepository = resolvedDeps.deliveriesRepo || deliveriesRepo;
+    const rows = await deliveriesRepository.listDeliveriesByUser(lineUserId, 20).catch(() => []);
+    return {
+      handled: true,
+      replyText: formatDeliveryHistory(rows)
+    };
+  }
+
+  if (command.action === 'support_guide') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    return {
+      handled: true,
+      replyText: '相談内容を受け付けます。\n困っている内容を1メッセージで送ってください。\n例: 口座開設の必要書類が分からない'
+    };
+  }
+
+  if (command.action === 'todo_vendor_missing') {
+    return {
+      handled: true,
+      replyText: 'TODOキーが必要です。例: TODO業者:bank_open'
+    };
+  }
+
+  if (command.action === 'todo_vendor') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    return buildTodoVendorReply({
+      lineUserId,
+      todoKey: command.todoKey
+    }, resolvedDeps);
+  }
+
+  if (command.action === 'todo_detail') {
+    if (!isTaskDetailLineEnabled()) {
+      return {
+        handled: true,
+        replyText: 'タスク詳細表示は現在停止中です。'
+      };
+    }
+    return handleTodoDetailCommand({
+      lineUserId,
+      todoKey: command.todoKey
+    }, resolvedDeps);
+  }
+
+  if (command.action === 'todo_detail_section_continue') {
+    if (!isTaskDetailLineEnabled()) {
+      return {
+        handled: true,
+        replyText: 'タスク詳細表示は現在停止中です。'
+      };
+    }
+    return handleTodoDetailSectionContinueCommand({
+      lineUserId,
+      todoKey: command.todoKey,
+      section: command.section,
+      startChunk: command.startChunk
+    }, resolvedDeps);
+  }
+
+  if (command.action === 'city_pack_module_guide') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const current = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    return {
+      handled: true,
+      replyMessage: buildCityPackModuleGuideFlex(current && current.modulesSubscribed)
+    };
+  }
+
+  if (command.action === 'city_pack_module_status') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const current = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    const modulesSubscribed = normalizeCityPackModules(current && current.modulesSubscribed);
+    return {
+      handled: true,
+      replyText: `CityPack購読状況: ${formatCityPackModuleStatusLine(modulesSubscribed)}\n変更する場合は「CityPack案内」を送信してください。`
+    };
+  }
+
+  if (command.action === 'city_pack_module_subscribe_missing' || command.action === 'city_pack_module_unsubscribe_missing') {
+    return {
+      handled: true,
+      replyText: 'モジュール指定が不正です。例: CityPack購読:schools'
+    };
+  }
+
+  if (command.action === 'city_pack_module_subscribe' || command.action === 'city_pack_module_unsubscribe') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const module = normalizeCityPackModule(command.module);
+    if (!module) {
+      return {
+        handled: true,
+        replyText: 'モジュール指定が不正です。schools/healthcare/driving/housing/utilities から選択してください。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const existing = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    const current = normalizeCityPackModules(existing && existing.modulesSubscribed);
+    let next = current.slice();
+    if (command.action === 'city_pack_module_subscribe') {
+      if (current.length === 0) {
+        next = [];
+      } else if (!next.includes(module)) {
+        next.push(module);
+      }
+    } else if (current.length === 0) {
+      next = ALLOWED_MODULES.filter((item) => item !== module);
+    } else {
+      next = next.filter((item) => item !== module);
+    }
+    if (next.length === ALLOWED_MODULES.length) next = [];
+    const saved = await preferenceRepo.upsertUserCityPackPreference(lineUserId, {
+      modulesSubscribed: next,
+      source: 'line_city_pack_module_postback'
+    }, lineUserId);
+    return {
+      handled: true,
+      replyText: `CityPack購読を更新しました: ${formatCityPackModuleStatusLine(saved && saved.modulesSubscribed)}`
     };
   }
 

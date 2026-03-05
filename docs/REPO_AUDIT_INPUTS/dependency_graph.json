@@ -25,6 +25,7 @@
     "appendLlmAdoptAudit": [
       "auditLogsRepo"
     ],
+    "appendLlmGateDecision": [],
     "applyJourneyParamVersion": [
       "journeyGraphCatalogRepo",
       "journeyParamChangeLogsRepo",
@@ -53,6 +54,7 @@
     "approveNotification": [
       "notificationsRepo"
     ],
+    "buildConciergeContextSnapshot": [],
     "buildOpsSnapshots": [
       "opsSnapshotsRepo"
     ],
@@ -79,6 +81,7 @@
     "composeConciergeReply": [],
     "computeCityPackMetrics": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
       "notificationsRepo",
       "sourceRefsRepo"
     ],
@@ -133,6 +136,7 @@
       "linkRegistryRepo"
     ],
     "detectExplicitPaidIntent": [],
+    "detectOpportunity": [],
     "dryRunAutomationDecision": [
       "automationConfigRepo"
     ],
@@ -196,6 +200,7 @@
     "generateFreeRetrievalReply": [],
     "generateOpsDailyReport": [],
     "generatePaidAssistantReply": [],
+    "generatePaidCasualReply": [],
     "generatePaidFaqReply": [
       "llmQualityLogsRepo"
     ],
@@ -316,11 +321,14 @@
       "sendRetryQueueRepo"
     ],
     "handleJourneyLineCommand": [
+      "cityPacksRepo",
       "deliveriesRepo",
       "journeyTodoItemsRepo",
       "linkRegistryRepo",
       "stepRulesRepo",
       "taskContentsRepo",
+      "tasksRepo",
+      "userCityPackPreferencesRepo",
       "userJourneyProfilesRepo",
       "userJourneySchedulesRepo"
     ],
@@ -366,6 +374,9 @@
     "listUserTasks": [
       "tasksRepo"
     ],
+    "loadRecentInterventionSignals": [
+      "llmActionLogsRepo"
+    ],
     "logEventBestEffort": [
       "decisionTimelineRepo",
       "eventsRepo"
@@ -397,6 +408,8 @@
     ],
     "normalizeLimit": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
+      "cityPacksRepo",
       "deliveriesRepo",
       "emergencyBulletinsRepo",
       "emergencyDiffsRepo",
@@ -411,6 +424,8 @@
       "linkRegistryRepo",
       "notificationsRepo",
       "sourceRefsRepo",
+      "stepRulesRepo",
+      "userCityPackPreferencesRepo",
       "userJourneySchedulesRepo",
       "usersRepo"
     ],
@@ -425,6 +440,7 @@
     ],
     "normalizeWindowDays": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
       "notificationsRepo",
       "sourceRefsRepo"
     ],
@@ -510,6 +526,14 @@
       "richMenuPolicyRepo",
       "richMenuTemplatesRepo"
     ],
+    "resolveTaskContentLinks": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
+    ],
+    "resolveTaskKeyWarnings": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
+    ],
     "retryQueuedSend": [
       "decisionLogsRepo",
       "decisionTimelineRepo",
@@ -581,7 +605,8 @@
     "runTaskNudgeJob": [
       "stepRulesRepo",
       "systemFlagsRepo",
-      "tasksRepo"
+      "tasksRepo",
+      "userJourneyProfilesRepo"
     ],
     "sendNotice": [
       "auditLogsRepo",
@@ -593,6 +618,8 @@
       "deliveriesRepo",
       "linkRegistryRepo",
       "notificationsRepo",
+      "userCityPackPreferencesRepo",
+      "userJourneyProfilesRepo",
       "usersRepo"
     ],
     "sendNotificationPhase1": [
@@ -626,9 +653,10 @@
     ],
     "syncCityPackRecommendedTasks": [
       "cityPacksRepo",
-      "journeyTodoItemsRepo",
       "stepRulesRepo",
-      "tasksRepo"
+      "tasksRepo",
+      "userCityPackPreferencesRepo",
+      "usersRepo"
     ],
     "testSendNotification": [
       "decisionTimelineRepo",
@@ -648,6 +676,10 @@
     ],
     "validateJourneyParamVersion": [
       "journeyParamVersionsRepo"
+    ],
+    "validateTaskContent": [
+      "linkRegistryRepo",
+      "taskContentsRepo"
     ]
   },
   "repo_to_collection": {
@@ -673,6 +705,9 @@
     ],
     "cityPackFeedbackRepo": [
       "city_pack_feedback"
+    ],
+    "cityPackMetricsDailyRepo": [
+      "city_pack_metrics_daily"
     ],
     "cityPackRequestsRepo": [
       "city_pack_requests"
@@ -872,6 +907,9 @@
     "templatesVRepo": [
       "templates_v"
     ],
+    "userCityPackPreferencesRepo": [
+      "user_city_pack_preferences"
+    ],
     "userConsentsRepo": [
       "user_consents"
     ],
@@ -987,9 +1025,11 @@
       "appendAuditLog"
     ],
     "src/routes/admin/llmFaq.js": [
-      "answerFaqFromKb"
+      "answerFaqFromKb",
+      "appendLlmGateDecision"
     ],
     "src/routes/admin/llmOps.js": [
+      "appendLlmGateDecision",
       "getNextActionCandidates",
       "getOpsExplanation"
     ],
@@ -1040,6 +1080,9 @@
       "appendAuditLog"
     ],
     "src/routes/admin/osConfig.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osContext.js": [
       "appendAuditLog"
     ],
     "src/routes/admin/osDashboardKpi.js": [
@@ -1156,7 +1199,10 @@
       "applyTaskRulesTemplateSet",
       "computeUserTasks",
       "planTaskRulesApply",
-      "planTaskRulesTemplateSet"
+      "planTaskRulesTemplateSet",
+      "resolveTaskContentLinks",
+      "resolveTaskKeyWarnings",
+      "validateTaskContent"
     ],
     "src/routes/admin/traceSearch.js": [
       "appendAuditLog",
@@ -1192,6 +1238,7 @@
       "runJourneyTodoReminderJob"
     ],
     "src/routes/internal/llmActionRewardFinalizeJob.js": [
+      "appendLlmGateDecision",
       "finalizeLlmActionRewards"
     ],
     "src/routes/internal/municipalitySchoolsImportJob.js": [
@@ -1335,13 +1382,16 @@
     ],
     "src/routes/phase90RunStatus.js": [],
     "src/routes/phaseLLM2OpsExplain.js": [
+      "appendLlmGateDecision",
       "getOpsExplanation"
     ],
     "src/routes/phaseLLM3OpsNextActions.js": [
+      "appendLlmGateDecision",
       "getNextActionCandidates"
     ],
     "src/routes/phaseLLM4FaqAnswer.js": [
-      "answerFaqFromKb"
+      "answerFaqFromKb",
+      "appendLlmGateDecision"
     ],
     "src/routes/tasks.js": [
       "listUserTasks",
@@ -1357,22 +1407,27 @@
     ],
     "src/routes/webhookLine.js": [
       "appendAuditLog",
+      "appendLlmGateDecision",
+      "buildConciergeContextSnapshot",
       "classifyPaidIntent",
       "composeConciergeReply",
       "declareCityPackFeedbackFromLine",
       "declareCityRegionFromLine",
       "declareRedacMembershipIdFromLine",
       "detectExplicitPaidIntent",
+      "detectOpportunity",
       "ensureUserFromWebhook",
       "evaluateLlmAvailability",
       "evaluateLLMBudget",
       "generateFreeRetrievalReply",
       "generatePaidAssistantReply",
+      "generatePaidCasualReply",
       "generatePaidFaqReply",
       "getRedacMembershipStatusForLine",
       "getUserContextSnapshot",
       "handleJourneyLineCommand",
       "handleJourneyPostback",
+      "loadRecentInterventionSignals",
       "logLineWebhookEventsBestEffort",
       "recordLlmUsage",
       "recordUserLlmConsent",

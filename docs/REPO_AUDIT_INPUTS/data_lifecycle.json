@@ -227,8 +227,7 @@
     "retention": "INDEFINITE",
     "deletable": false,
     "evidence": [
-      "src/repos/firestore/emergencyRulesRepo.js:7",
-      "src/domain/retention/retentionPolicy.js:25"
+      "src/repos/firestore/emergencyRulesRepo.js:7"
     ]
   },
   {
@@ -402,6 +401,42 @@
       "src/repos/firestore/linkRegistryRepo.js:14",
       "src/repos/firestore/linkRegistryRepo.js:23",
       "src/repos/firestore/linkRegistryRepo.js:31"
+    ]
+  },
+  {
+    "collection": "llm_action_logs",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/repos/firestore/llmActionLogsRepo.js:5",
+      "src/repos/firestore/llmActionLogsRepo.js:144",
+      "src/domain/retention/retentionPolicy.js:41"
+    ]
+  },
+  {
+    "collection": "llm_bandit_state",
+    "kind": "aggregate",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/llmBanditStateRepo.js:5",
+      "src/repos/firestore/llmBanditStateRepo.js:65",
+      "src/domain/retention/retentionPolicy.js:42"
+    ]
+  },
+  {
+    "collection": "llm_contextual_bandit_state",
+    "kind": "aggregate",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/llmContextualBanditStateRepo.js:5",
+      "src/repos/firestore/llmContextualBanditStateRepo.js:63",
+      "src/domain/retention/retentionPolicy.js:43"
     ]
   },
   {
@@ -856,17 +891,6 @@
       "src/repos/firestore/systemFlagsRepo.js:82",
       "src/repos/firestore/systemFlagsRepo.js:91",
       "src/repos/firestore/systemFlagsRepo.js:98"
-    ]
-  },
-  {
-    "collection": "task_contents",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/taskContentsRepo.js:7",
-      "src/domain/retention/retentionPolicy.js:80"
     ]
   },
   {

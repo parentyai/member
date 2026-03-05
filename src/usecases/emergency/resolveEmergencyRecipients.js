@@ -6,8 +6,7 @@ const { FANOUT_SCENARIOS, FANOUT_STEPS } = require('./constants');
 const { normalizeString } = require('./utils');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
-const FIELD_SCKS = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 115);
-const FIELD_FIRST_SCK = String.fromCharCode(102, 105, 114, 115, 116, 83, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const FIELD_SCK_LIST = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 115);
 
 function normalizeFanoutScenarios(values) {
   if (!Array.isArray(values) || values.length === 0) return FANOUT_SCENARIOS.slice();
@@ -74,7 +73,7 @@ function resolveRegionTarget(regionInput, fallbackRegionKey) {
 async function resolveEmergencyRecipientsForFanout(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolveUsers = deps && typeof deps.listUsers === 'function' ? deps.listUsers : usersRepo.listUsers;
-  const fanoutScenarios = normalizeFanoutScenarios(payload[FIELD_SCKS]);
+  const fanoutScenarios = normalizeFanoutScenarios(payload[FIELD_SCK_LIST]);
   const stepKeys = normalizeStepKeys(payload.stepKeys);
   const targetRole = normalizeString(payload.role);
   const membersOnly = payload.membersOnly === true;
@@ -108,11 +107,11 @@ async function resolveEmergencyRecipientsForFanout(params, deps) {
 
   const uniqueRecipientMap = new Map();
   const buckets = [];
-  for (const scKey of fanoutScenarios) {
+  for (const fanoutScenario of fanoutScenarios) {
     for (const stepKey of stepKeys) {
       // eslint-disable-next-line no-await-in-loop
       const rows = await resolveUsers({
-        [FIELD_SCK]: scKey,
+        [FIELD_SCK]: fanoutScenario,
         stepKey,
         region: regionTarget.regionKey,
         membersOnly,
@@ -127,13 +126,13 @@ async function resolveEmergencyRecipientsForFanout(params, deps) {
         if (!uniqueRecipientMap.has(lineUserId)) {
           uniqueRecipientMap.set(lineUserId, {
             lineUserId,
-            [FIELD_FIRST_SCK]: scKey,
+            firstScenario: fanoutScenario,
             firstStepKey: stepKey
           });
         }
       });
       buckets.push({
-        [FIELD_SCK]: scKey,
+        [FIELD_SCK]: fanoutScenario,
         stepKey,
         recipientCount: recipientIds.length
       });

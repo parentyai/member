@@ -58,6 +58,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_RUNBOOK.md`（LLM運用手順）
 - `docs/LLM_RUNBOOK.md`（Phase720 addendum: Paid Assistant品質運用 / assistantQuality監査）
 - `docs/SSOT_LLM_CONCIERGE_POLICY_V1.md`（LLMコンシェルジュのモード/無料有料境界/表示契約）
+- `docs/SSOT_LLM_CONCIERGE_OPPORTUNITY_ENGINE_V1.md`（Paid casual/concierge切替と介入予算契約）
 - `docs/SSOT_URL_RANKING_AND_ALLOWLIST_V1.md`（URLランク/allowlist/denylistの採用契約）
 - `docs/SSOT_PROMPT_INJECTION_DEFENSE_V1.md`（外部命令無効化/注入検知/遮断契約）
 - `docs/SSOT_LLM_ACTION_SELECTION_AND_BANDIT_V1.md`（ActionSelectorスコアリング/ε-greedy/報酬確定契約）
@@ -79,6 +80,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/INDEX_REQUIREMENTS.md`（Firestore index 要件と missing-index fallback 方針）
 - `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json`（Firestore composite index 必須定義）
 - `scripts/check_firestore_indexes.js`（Firestore index 差分検知 / 作成plan出力）
+- `docs/REPO_AUDIT_INPUTS/state_transitions.json`（状態遷移SSOT / audit-core生成整合）
+- `tests/phase250/phase250_t07_city_pack_request_state_transitions_contract.test.js`（City Pack request lifecycleの契約検証）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）

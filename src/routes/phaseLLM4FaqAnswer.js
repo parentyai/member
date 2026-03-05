@@ -1,8 +1,11 @@
 'use strict';
 
 const { answerFaqFromKb } = require('../usecases/faq/answerFaqFromKb');
+const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
+const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
 const LEGACY_SUCCESSOR = '/api/admin/llm/faq/answer';
+const COMPAT_ROUTE_ID = 'compat_phaseLLM4_faq_answer';
 
 function isLegacyRouteFreezeEnabled() {
   const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
@@ -22,6 +25,13 @@ async function handleFaqAnswer(req, res, body) {
     const traceId = req.headers['x-trace-id'] || null;
     const actor = req.headers['x-actor'] || 'phaseLLM4_faq_compat';
     const requestId = req.headers['x-request-id'] || null;
+    const allowed = await enforceLlmGenerationKillSwitch(req, res, {
+      routeKey: COMPAT_ROUTE_ID,
+      actor,
+      traceId,
+      requestId
+    });
+    if (!allowed) return;
     const result = await answerFaqFromKb({
       question: payload.question,
       locale: payload.locale,
@@ -32,6 +42,23 @@ async function handleFaqAnswer(req, res, body) {
       actor,
       requestId
     });
+    const blockedReason = result && result.blocked === true
+      ? (result.blockedReason || result.llmStatus || 'blocked')
+      : null;
+    await appendLlmGateDecision({
+      actor,
+      traceId,
+      requestId,
+      lineUserId: typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : null,
+      plan: 'admin',
+      status: result && result.llmStatus ? result.llmStatus : (blockedReason ? 'blocked' : 'ok'),
+      intent: payload.intent || 'faq_search',
+      decision: blockedReason ? 'blocked' : 'allow',
+      blockedReason,
+      model: result && result.llmModel ? result.llmModel : null,
+      entryType: 'compat',
+      gatesApplied: ['kill_switch', 'url_guard']
+    }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(Object.assign({}, result, {

@@ -2,15 +2,17 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { LEAD_TIME_KIND, LEAD_TIME_KIND_VALUES } = require('../../domain/tasks/constants');
-const { normalizeTaskCategory } = require('../../domain/tasks/usExpatTaxonomy');
+const { normalizeTaskCategory } = require('../../domain/tasks/taskCategories');
+const {
+  isTaskCategorySystemEnabled,
+  getTaskDependencyMax
+} = require('../../domain/tasks/featureFlags');
 
 const COLLECTION = 'step_rules';
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 const ALLOWED_RISK_LEVEL = Object.freeze(['low', 'medium', 'high']);
 const MEANING_KEY_PATTERN = /^[a-z0-9_-]{2,64}$/;
-const MAX_DEPENDENCY_COUNT = 10;
-const MAX_VENDOR_LINK_COUNT = 3;
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
 function normalizeText(value, fallback) {
@@ -70,8 +72,10 @@ function normalizeStringList(value) {
   return out;
 }
 
-function normalizeVendorLinkIds(value) {
-  return normalizeStringList(value).slice(0, MAX_VENDOR_LINK_COUNT);
+function normalizeStringListWithLimit(value, maxItems) {
+  const rows = normalizeStringList(value);
+  if (!Number.isInteger(maxItems) || maxItems < 1) return rows;
+  return rows.slice(0, maxItems);
 }
 
 function normalizeMeaningKey(value, fallback) {
@@ -158,6 +162,14 @@ function normalizeStepRule(ruleId, data) {
   const payload = data && typeof data === 'object' ? data : {};
   const id = normalizeText(ruleId || payload.ruleId, '');
   if (!id) return null;
+  const dependencyMax = getTaskDependencyMax();
+  const dependsOn = normalizeStringListWithLimit(payload.dependsOn, dependencyMax);
+  const category = isTaskCategorySystemEnabled()
+    ? normalizeTaskCategory(payload.category, 'LIFE_SETUP')
+    : normalizeTaskCategory(payload.category, null);
+  const estimatedTimeMin = normalizeNumber(payload.estimatedTimeMin, null, 0, 24 * 60);
+  const estimatedTimeMax = normalizeNumber(payload.estimatedTimeMax, null, 0, 24 * 60);
+  const recommendedVendorLinkIds = normalizeStringListWithLimit(payload.recommendedVendorLinkIds, 3);
   const trigger = normalizeTrigger(payload.trigger);
   const leadTime = normalizeLeadTime(payload.leadTime);
   if (!leadTime) return null;
@@ -169,11 +181,11 @@ function normalizeStepRule(ruleId, data) {
     meaning: normalizeMeaning(payload.meaning, payload.stepKey),
     trigger,
     leadTime,
-    dependsOn: normalizeStringList(payload.dependsOn).slice(0, MAX_DEPENDENCY_COUNT),
-    category: normalizeTaskCategory(payload.category, null),
-    estimatedTimeMin: normalizeNumber(payload.estimatedTimeMin, null, 0, 1440),
-    estimatedTimeMax: normalizeNumber(payload.estimatedTimeMax, null, 0, 1440),
-    recommendedVendorLinkIds: normalizeVendorLinkIds(payload.recommendedVendorLinkIds),
+    dependsOn,
+    category,
+    estimatedTimeMin: Number.isInteger(estimatedTimeMin) ? estimatedTimeMin : null,
+    estimatedTimeMax: Number.isInteger(estimatedTimeMax) ? estimatedTimeMax : null,
+    recommendedVendorLinkIds,
     constraints: normalizeConstraints(payload.constraints),
     priority: normalizeNumber(payload.priority, 100, 0, 100000),
     enabled: normalizeBoolean(payload.enabled, false) === true,
@@ -251,10 +263,6 @@ async function listStepRules(filters) {
   }
   if (payload[FIELD_SCK]) query = query.where(FIELD_SCK, '==', normalizeText(payload[FIELD_SCK], null));
   if (payload.stepKey) query = query.where('stepKey', '==', normalizeText(payload.stepKey, null));
-  if (payload.category) {
-    const category = normalizeTaskCategory(payload.category, null);
-    if (category) query = query.where('category', '==', category);
-  }
   const limit = resolveLimit(payload.limit);
   const snap = await query.orderBy('priority', 'desc').limit(limit).get();
   return snap.docs

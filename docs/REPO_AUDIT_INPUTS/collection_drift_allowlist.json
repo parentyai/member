@@ -7,9 +7,8 @@
   },
   "allowlist": {
     "data_model_only": [
-      "llm_action_logs",
-      "llm_bandit_state",
-      "llm_contextual_bandit_state"
+      "task_contents",
+      "user_city_pack_preferences"
     ],
     "data_lifecycle_only": []
   },

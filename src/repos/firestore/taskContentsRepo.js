@@ -1,20 +1,29 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
-const { normalizeTaskCategory } = require('../../domain/tasks/usExpatTaxonomy');
-const { getTaskDependencyMax } = require('../../domain/tasks/featureFlags');
+const { normalizeTaskCategory } = require('../../domain/tasks/taskCategories');
+const {
+  isTaskCategorySystemEnabled,
+  getTaskDependencyMax
+} = require('../../domain/tasks/featureFlags');
 
 const COLLECTION = 'task_contents';
 const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 1000;
-const MAX_CHECKLIST_ITEMS = 30;
-const MAX_VENDOR_LINKS = 3;
+const MAX_LIMIT = 500;
 
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized || fallback;
+}
+
+function normalizeBoolean(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return fallback;
 }
 
 function normalizeNumber(value, fallback, min, max) {
@@ -27,84 +36,118 @@ function normalizeNumber(value, fallback, min, max) {
   return num;
 }
 
-function normalizeBoolean(value, fallback) {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value === 'boolean') return value;
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return fallback;
+function resolveLimit(value) {
+  const parsed = normalizeNumber(value, DEFAULT_LIMIT, 1, MAX_LIMIT);
+  return Number.isInteger(parsed) ? parsed : DEFAULT_LIMIT;
 }
 
-function normalizeStringList(value, limit) {
-  if (!Array.isArray(value)) return [];
-  const seen = new Set();
+function normalizeChecklistItems(value) {
+  const rows = Array.isArray(value) ? value : [];
   const out = [];
-  for (const row of value) {
-    const normalized = normalizeText(row, '');
-    if (!normalized) continue;
-    if (seen.has(normalized)) continue;
-    seen.add(normalized);
-    out.push(normalized);
-    if (Number.isFinite(limit) && out.length >= limit) break;
-  }
+  rows.forEach((row, index) => {
+    const item = row && typeof row === 'object' ? row : {};
+    const id = normalizeText(item.id, `item_${index + 1}`);
+    const text = normalizeText(item.text, null);
+    if (!text) return;
+    const order = normalizeNumber(item.order, index + 1, 1, 1000000) || (index + 1);
+    const enabled = normalizeBoolean(item.enabled, true) !== false;
+    out.push({ id, text, order, enabled });
+  });
+  out.sort((left, right) => {
+    const orderCompare = Number(left.order || 0) - Number(right.order || 0);
+    if (orderCompare !== 0) return orderCompare;
+    return String(left.id || '').localeCompare(String(right.id || ''), 'ja');
+  });
   return out;
 }
 
-function normalizeChecklistItems(rawChecklistItems, rawChecklist) {
-  const maxItems = MAX_CHECKLIST_ITEMS;
-  const source = Array.isArray(rawChecklistItems) && rawChecklistItems.length
-    ? rawChecklistItems
-    : normalizeStringList(rawChecklist, maxItems).map((text, index) => ({
-      id: `item_${index + 1}`,
-      text,
-      order: index + 1,
-      enabled: true
-    }));
-
-  const rows = [];
-  source.forEach((item, index) => {
-    const row = item && typeof item === 'object' ? item : {};
-    const text = normalizeText(row.text, '');
+function normalizeStringList(value, maxItems) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const text = normalizeText(item, null);
     if (!text) return;
-    const id = normalizeText(row.id, `item_${index + 1}`);
-    const order = normalizeNumber(row.order, index + 1, 1, 9999);
-    const enabled = normalizeBoolean(row.enabled, true);
-    rows.push({ id, text, order, enabled });
+    if (out.includes(text)) return;
+    out.push(text);
   });
-  rows.sort((a, b) => a.order - b.order);
-  return rows.slice(0, maxItems);
+  if (!Number.isInteger(maxItems) || maxItems < 1) return out;
+  return out.slice(0, maxItems);
+}
+
+function normalizeTextList(value, maxItems) {
+  const rows = Array.isArray(value) ? value : [];
+  const out = [];
+  rows.forEach((item) => {
+    const text = normalizeText(item, null);
+    if (!text) return;
+    if (out.includes(text)) return;
+    out.push(text.slice(0, 300));
+  });
+  if (!Number.isInteger(maxItems) || maxItems < 1) return out;
+  return out.slice(0, maxItems);
+}
+
+function normalizeChecklistTextList(value) {
+  return normalizeStringList(value, 50).map((item) => item.slice(0, 300));
+}
+
+function deriveChecklistItemsFromChecklist(checklist) {
+  const rows = Array.isArray(checklist) ? checklist : [];
+  return rows.map((text, index) => ({
+    id: `item_${index + 1}`,
+    text,
+    order: index + 1,
+    enabled: true
+  }));
+}
+
+function deriveChecklistFromItems(items) {
+  const rows = Array.isArray(items) ? items : [];
+  return rows
+    .filter((item) => item && item.enabled !== false && normalizeText(item.text, null))
+    .map((item) => normalizeText(item.text, null))
+    .filter(Boolean);
 }
 
 function normalizeTaskContent(taskKey, data) {
+  const id = normalizeText(taskKey || (data && data.taskKey), '');
+  if (!id) return null;
   const payload = data && typeof data === 'object' ? data : {};
-  const key = normalizeText(taskKey || payload.taskKey, '');
-  if (!key) return null;
-
-  const checklistItems = normalizeChecklistItems(payload.checklistItems, payload.checklist);
-  const checklist = checklistItems
-    .filter((item) => item.enabled !== false)
-    .map((item) => item.text)
-    .slice(0, MAX_CHECKLIST_ITEMS);
-
+  const timeMin = normalizeNumber(payload.timeMin, null, 0, 24 * 60);
+  const timeMax = normalizeNumber(payload.timeMax, null, 0, 24 * 60);
+  const dependencyMax = getTaskDependencyMax();
+  const dependencies = normalizeStringList(payload.dependencies, dependencyMax);
+  const recommendedVendorLinkIds = normalizeStringList(payload.recommendedVendorLinkIds, 3);
+  const category = isTaskCategorySystemEnabled()
+    ? normalizeTaskCategory(payload.category, 'LIFE_SETUP')
+    : normalizeTaskCategory(payload.category, null);
+  const checklistItemsFromPayload = normalizeChecklistItems(payload.checklistItems);
+  const checklistFromPayload = normalizeChecklistTextList(payload.checklist);
+  const checklistItems = checklistItemsFromPayload.length
+    ? checklistItemsFromPayload
+    : deriveChecklistItemsFromChecklist(checklistFromPayload);
+  const checklist = checklistFromPayload.length
+    ? checklistFromPayload
+    : deriveChecklistFromItems(checklistItems);
   return {
-    id: key,
-    taskKey: key,
-    title: normalizeText(payload.title, key),
-    category: normalizeTaskCategory(payload.category, null),
-    dependencies: normalizeStringList(payload.dependencies, getTaskDependencyMax()),
-    timeMin: normalizeNumber(payload.timeMin || payload.estimatedTimeMin, null, 0, 1440),
-    timeMax: normalizeNumber(payload.timeMax || payload.estimatedTimeMax, null, 0, 1440),
+    id,
+    taskKey: id,
+    title: normalizeText(payload.title, null),
+    category,
+    dependencies,
+    timeMin: Number.isInteger(timeMin) ? timeMin : null,
+    timeMax: Number.isInteger(timeMax) ? timeMax : null,
     checklistItems,
     checklist,
-    summaryShort: normalizeStringList(payload.summaryShort, 5),
-    topMistakes: normalizeStringList(payload.topMistakes, 3),
-    contextTips: normalizeStringList(payload.contextTips, 5),
     manualText: normalizeText(payload.manualText, null),
     failureText: normalizeText(payload.failureText, null),
+    summaryShort: normalizeTextList(payload.summaryShort, 5),
+    topMistakes: normalizeTextList(payload.topMistakes, 3),
+    contextTips: normalizeTextList(payload.contextTips, 5),
+    recommendedVendorLinkIds,
+    archived: normalizeBoolean(payload.archived, false) === true,
     videoLinkId: normalizeText(payload.videoLinkId, null),
     actionLinkId: normalizeText(payload.actionLinkId, null),
-    recommendedVendorLinkIds: normalizeStringList(payload.recommendedVendorLinkIds, MAX_VENDOR_LINKS),
-    archived: normalizeBoolean(payload.archived, false) === true,
     createdAt: payload.createdAt || null,
     updatedAt: payload.updatedAt || null,
     createdBy: normalizeText(payload.createdBy, null),
@@ -112,45 +155,41 @@ function normalizeTaskContent(taskKey, data) {
   };
 }
 
-function resolveLimit(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_LIMIT;
-  return Math.min(Math.floor(parsed), MAX_LIMIT);
-}
-
 async function getTaskContent(taskKey) {
-  const key = normalizeText(taskKey, '');
-  if (!key) return null;
+  const id = normalizeText(taskKey, '');
+  if (!id) return null;
   const db = getDb();
-  const snap = await db.collection(COLLECTION).doc(key).get();
+  const snap = await db.collection(COLLECTION).doc(id).get();
   if (!snap.exists) return null;
-  return normalizeTaskContent(key, snap.data());
+  return normalizeTaskContent(id, snap.data());
 }
 
 async function upsertTaskContent(taskKey, patch, actor) {
-  const key = normalizeText(taskKey, '');
-  if (!key) throw new Error('taskKey required');
-  const existing = await getTaskContent(key);
-  const normalized = normalizeTaskContent(key, Object.assign({}, existing || {}, patch || {}, { taskKey: key }));
+  const id = normalizeText(taskKey, '');
+  if (!id) throw new Error('taskKey required');
+  const existing = await getTaskContent(id);
+  const normalized = normalizeTaskContent(id, Object.assign({}, existing || {}, patch || {}, { taskKey: id }));
   if (!normalized) throw new Error('invalid task content');
+  const normalizedActor = normalizeText(actor, null);
   const db = getDb();
-  await db.collection(COLLECTION).doc(key).set(Object.assign({}, normalized, {
+  await db.collection(COLLECTION).doc(id).set(Object.assign({}, normalized, {
     createdAt: normalized.createdAt || serverTimestamp(),
     updatedAt: serverTimestamp(),
-    createdBy: normalized.createdBy || normalizeText(actor, null),
-    updatedBy: normalizeText(actor, normalized.updatedBy)
+    createdBy: normalized.createdBy || normalizedActor,
+    updatedBy: normalizedActor || normalized.updatedBy
   }), { merge: true });
-  return getTaskContent(key);
+  return getTaskContent(id);
 }
 
 async function listTaskContents(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const limit = resolveLimit(payload.limit);
   const db = getDb();
-  const snap = await db.collection(COLLECTION).orderBy('updatedAt', 'desc').limit(limit).get();
-  return snap.docs
-    .map((doc) => normalizeTaskContent(doc.id, doc.data()))
-    .filter(Boolean);
+  const snap = await db.collection(COLLECTION)
+    .orderBy('updatedAt', 'desc')
+    .limit(limit)
+    .get();
+  return snap.docs.map((doc) => normalizeTaskContent(doc.id, doc.data())).filter(Boolean);
 }
 
 module.exports = {

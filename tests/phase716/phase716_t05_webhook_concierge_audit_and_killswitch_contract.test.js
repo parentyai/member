@@ -111,7 +111,9 @@ function loadWebhookWithStubs(options) {
       replyText: 'FREE RETRIEVAL BASE',
       citations: ['kb_1'],
       faqCandidates: [],
-      cityPackCandidates: []
+      cityPackCandidates: [],
+      blockedReasons: Array.isArray(payload.retrievalBlockedReasons) ? payload.retrievalBlockedReasons : [],
+      injectionFindings: payload.retrievalInjectionFindings === true
     })
   });
   setOverride('../../src/usecases/assistant/concierge/composeConciergeReply', {
@@ -247,13 +249,26 @@ test('phase716: concierge enabled appends citation footer and audit meta keys', 
   assert.equal(typeof summary.assistantQuality.kbTopScore, 'number');
   assert.equal(typeof summary.assistantQuality.evidenceCoverage, 'number');
   assert.equal(summary.assistantQuality.blockedStage, 'plan_gate');
+  assert.equal(summary.entryType, 'webhook');
+  assert.ok(Array.isArray(summary.gatesApplied));
+  assert.ok(summary.gatesApplied.includes('kill_switch'));
+  assert.ok(summary.gatesApplied.includes('injection'));
+  assert.ok(summary.gatesApplied.includes('url_guard'));
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'conversationMode'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityType'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityReasonKeys'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'interventionBudget'), true);
 });
 
 test('phase716: concierge kill-switch OFF keeps retrieval fallback without compose', async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: SECRET
   });
-  const loaded = loadWebhookWithStubs({ llmConciergeEnabled: false });
+  const loaded = loadWebhookWithStubs({
+    llmConciergeEnabled: false,
+    retrievalBlockedReasons: ['external_instruction_detected'],
+    retrievalInjectionFindings: true
+  });
 
   t.after(() => {
     loaded.restore();
@@ -284,6 +299,18 @@ test('phase716: concierge kill-switch OFF keeps retrieval fallback without compo
   assert.equal(summary.mode, null);
   assert.equal(summary.urlCount, 0);
   assert.deepEqual(summary.citationRanks, []);
+  assert.equal(summary.injectionFindings, true);
+  assert.ok(Array.isArray(summary.blockedReasons));
+  assert.ok(summary.blockedReasons.includes('external_instruction_detected'));
   assert.ok(summary.assistantQuality);
   assert.equal(summary.assistantQuality.blockedStage, 'plan_gate');
+  assert.equal(summary.entryType, 'webhook');
+  assert.ok(Array.isArray(summary.gatesApplied));
+  assert.ok(summary.gatesApplied.includes('kill_switch'));
+  assert.ok(summary.gatesApplied.includes('injection'));
+  assert.ok(summary.gatesApplied.includes('url_guard'));
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'conversationMode'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityType'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityReasonKeys'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'interventionBudget'), true);
 });

@@ -3,7 +3,6 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
-const { normalizeCityPackModule } = require('../../domain/tasks/usExpatTaxonomy');
 
 const COLLECTION = 'city_packs';
 const VALIDITY_DAYS = 120;
@@ -13,6 +12,8 @@ const ALLOWED_SLOT_STATUS = new Set(['active', 'inactive']);
 const ALLOWED_TARGET_EFFECT = new Set(['include', 'exclude']);
 const DEFAULT_LANGUAGE = 'ja';
 const NATIONWIDE_POLICY_FEDERAL_ONLY = 'federal_only';
+const ALLOWED_MODULES = Object.freeze(['schools', 'healthcare', 'driving', 'housing', 'utilities']);
+const ALLOWED_MODULE_SET = new Set(ALLOWED_MODULES);
 const FIXED_SLOT_KEYS = Object.freeze([
   'emergency',
   'admin',
@@ -81,16 +82,31 @@ function normalizeStringArray(values) {
 
 function normalizeModules(values) {
   if (!Array.isArray(values)) return [];
-  const seen = new Set();
   const out = [];
   values.forEach((value) => {
-    const normalized = normalizeCityPackModule(value, null);
+    if (typeof value !== 'string') return;
+    const normalized = value.trim().toLowerCase();
     if (!normalized) return;
-    if (seen.has(normalized)) return;
-    seen.add(normalized);
+    if (!ALLOWED_MODULE_SET.has(normalized)) return;
+    if (out.includes(normalized)) return;
     out.push(normalized);
   });
   return out;
+}
+
+function normalizeRecommendedTaskItem(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const ruleId = typeof value.ruleId === 'string' ? value.ruleId.trim() : '';
+  if (!ruleId) return null;
+  const module = typeof value.module === 'string' ? value.module.trim().toLowerCase() : '';
+  const normalizedModule = module && ALLOWED_MODULE_SET.has(module) ? module : null;
+  const boost = Number(value.priorityBoost);
+  const priorityBoost = Number.isFinite(boost) ? Math.max(-1000, Math.min(1000, Math.floor(boost))) : null;
+  return {
+    ruleId,
+    module: normalizedModule,
+    priorityBoost
+  };
 }
 
 function normalizeRecommendedTasks(values) {
@@ -98,19 +114,14 @@ function normalizeRecommendedTasks(values) {
   const out = [];
   const seen = new Set();
   values.forEach((value) => {
-    const row = value && typeof value === 'object' ? value : {};
-    const ruleId = typeof row.ruleId === 'string' ? row.ruleId.trim() : '';
-    if (!ruleId) return;
-    const module = normalizeCityPackModule(row.module, null);
-    const priorityBoost = Number.isFinite(Number(row.priorityBoost))
-      ? Math.max(-100, Math.min(100, Math.floor(Number(row.priorityBoost))))
-      : null;
-    const signature = `${ruleId}::${module || ''}`;
+    const normalized = normalizeRecommendedTaskItem(value);
+    if (!normalized) return;
+    const signature = `${normalized.ruleId}::${normalized.module || '-'}`;
     if (seen.has(signature)) return;
     seen.add(signature);
-    out.push({ ruleId, module, priorityBoost });
+    out.push(normalized);
   });
-  return out;
+  return out.slice(0, 50);
 }
 
 function normalizeString(value) {
@@ -448,9 +459,12 @@ module.exports = {
   ALLOWED_PACK_CLASS,
   DEFAULT_LANGUAGE,
   NATIONWIDE_POLICY_FEDERAL_ONLY,
+  ALLOWED_MODULES,
   normalizePackClass,
   normalizeLanguage,
   normalizeNationwidePolicy,
+  normalizeModules,
+  normalizeRecommendedTasks,
   createCityPack,
   getCityPack,
   listCityPacks,

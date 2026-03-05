@@ -4,6 +4,8 @@ const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const usersRepo = require('../../repos/firestore/usersRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const userCityPackPreferencesRepo = require('../../repos/firestore/userCityPackPreferencesRepo');
+const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const decisionTimelineRepo = require('../../repos/firestore/decisionTimelineRepo');
 const { pushMessage } = require('../../infra/lineClient');
 const {
@@ -16,7 +18,15 @@ const { createTrackToken } = require('../../domain/trackToken');
 const { computeNotificationDeliveryId, computeLineRetryKey } = require('../../domain/deliveryId');
 const { evaluateCityPackSourcePolicy } = require('../../domain/cityPackPolicy');
 const { validateCityPackSources } = require('../cityPack/validateCityPackSources');
+const {
+  isCityPackModuleSubscriptionEnabled,
+  isJourneyAttentionBudgetEnabled,
+  getJourneyDailyAttentionBudgetMax
+} = require('../../domain/tasks/featureFlags');
+const { isCityPackModuleSubscribed, normalizeModules } = require('../cityPack/filterCityPackModules');
+const { computeAttentionBudget } = require('./computeAttentionBudget');
 const { buildLineNotificationMessage } = require('./buildLineNotificationMessage');
+const { resolveLinkIntent } = require('../linkRegistry/resolveLinkIntent');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -61,8 +71,13 @@ async function resolveLinkEntriesForCtas(ctaSlots) {
   for (const slot of ctaSlots) {
     if (!slot || !slot.linkRegistryId) continue;
     if (map.has(slot.linkRegistryId)) continue;
-    const linkEntry = await linkRegistryRepo.getLink(slot.linkRegistryId);
-    if (!linkEntry) throw new Error('link registry entry not found');
+    const resolved = await resolveLinkIntent({
+      linkId: slot.linkRegistryId
+    }, {
+      linkRegistryRepo
+    });
+    if (!resolved || !resolved.ok || !resolved.link) throw new Error('link registry entry not found');
+    const linkEntry = resolved.link;
     validateWarnLinkBlock(linkEntry);
     map.set(slot.linkRegistryId, linkEntry);
   }
@@ -143,12 +158,62 @@ async function sendNotification(params) {
   });
 
   const overrideLineUserIds = normalizeLineUserIds(payload.lineUserIds);
-  const effectiveUsers = overrideLineUserIds.length
+  let effectiveUsers = overrideLineUserIds.length
     ? overrideLineUserIds.map((id) => ({ id }))
     : users;
+  const cityPackModulesUpdated = normalizeModules(
+    payload.cityPackModulesUpdated || effectiveNotification.cityPackModulesUpdated || []
+  );
+  let cityPackSubscriptionFilterApplied = false;
+  let cityPackSubscriptionFilterSkipped = 0;
+  if (isCityPackModuleSubscriptionEnabled() && cityPackModulesUpdated.length && overrideLineUserIds.length === 0) {
+    const candidateIds = effectiveUsers.map((user) => user && user.id).filter(Boolean);
+    const preferences = await userCityPackPreferencesRepo
+      .listUserCityPackPreferencesByLineUserIds(candidateIds)
+      .catch(() => []);
+    const preferenceMap = new Map();
+    preferences.forEach((row) => {
+      if (!row || !row.lineUserId) return;
+      preferenceMap.set(row.lineUserId, Array.isArray(row.modulesSubscribed) ? row.modulesSubscribed : []);
+    });
+    const filtered = effectiveUsers.filter((user) => {
+      const subscribed = preferenceMap.get(user.id) || [];
+      return isCityPackModuleSubscribed({
+        modulesUpdated: cityPackModulesUpdated,
+        modulesSubscribed: subscribed
+      });
+    });
+    cityPackSubscriptionFilterApplied = true;
+    cityPackSubscriptionFilterSkipped = Math.max(0, effectiveUsers.length - filtered.length);
+    effectiveUsers = filtered;
+  }
 
   if (!effectiveUsers.length) {
     throw new Error('no recipients');
+  }
+  const applyAttentionBudget = payload.applyAttentionBudget === true && isJourneyAttentionBudgetEnabled();
+  const budgetRemainingByUser = new Map();
+  if (applyAttentionBudget) {
+    const profileRows = await userJourneyProfilesRepo
+      .listUserJourneyProfilesByLineUserIds({ lineUserIds: effectiveUsers.map((user) => user.id) })
+      .catch(() => []);
+    const profileMap = new Map();
+    profileRows.forEach((row) => {
+      if (!row || !row.lineUserId) return;
+      profileMap.set(row.lineUserId, row);
+    });
+    const maxPerDay = getJourneyDailyAttentionBudgetMax();
+    for (const user of effectiveUsers) {
+      const profile = profileMap.get(user.id) || null;
+      // eslint-disable-next-line no-await-in-loop
+      const budget = await computeAttentionBudget({
+        lineUserId: user.id,
+        timezone: profile && profile.timezone ? profile.timezone : 'UTC',
+        now: payload.sentAt || new Date().toISOString(),
+        maxPerDay
+      }).catch(() => ({ remainingCount: maxPerDay }));
+      budgetRemainingByUser.set(user.id, Math.max(0, Number(budget.remainingCount || 0)));
+    }
   }
 
   const pushFn = payload.pushFn || pushMessage;
@@ -191,6 +256,15 @@ async function sendNotification(params) {
   let lineMessageType = 'text';
 
   for (const user of effectiveUsers) {
+    if (applyAttentionBudget) {
+      const remaining = budgetRemainingByUser.has(user.id)
+        ? Number(budgetRemainingByUser.get(user.id))
+        : getJourneyDailyAttentionBudgetMax();
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        skippedCount += 1;
+        continue;
+      }
+    }
     const deliveryId = computeNotificationDeliveryId({ notificationId, lineUserId: user.id });
     const reserved = await deliveriesRepo.reserveDeliveryWithId(deliveryId, {
       notificationId,
@@ -252,6 +326,14 @@ async function sendNotification(params) {
     try {
       await pushFn(user.id, builtMessage.message, { retryKey: computeLineRetryKey({ deliveryId }) });
       deliveredCount += 1;
+      if (applyAttentionBudget) {
+        const remaining = budgetRemainingByUser.has(user.id)
+          ? Number(budgetRemainingByUser.get(user.id))
+          : getJourneyDailyAttentionBudgetMax();
+        if (Number.isFinite(remaining) && remaining > 0) {
+          budgetRemainingByUser.set(user.id, remaining - 1);
+        }
+      }
       await deliveriesRepo.createDeliveryWithId(deliveryId, {
         notificationId,
         lineUserId: user.id,
@@ -340,7 +422,11 @@ async function sendNotification(params) {
     optionalSourceFailureCount: optionalSourceFailures.length,
     ctaCount: ctaSlots.length,
     ctaLinkRegistryIds: ctaSlots.map((slot) => slot.linkRegistryId),
-    lineMessageType
+    lineMessageType,
+    cityPackModulesUpdated,
+    cityPackSubscriptionFilterApplied,
+    cityPackSubscriptionFilterSkipped,
+    attentionBudgetApplied: applyAttentionBudget
   };
 }
 

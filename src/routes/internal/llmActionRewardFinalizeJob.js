@@ -1,7 +1,12 @@
 'use strict';
 
-const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
+const { enforceLlmGenerationKillSwitch } = require('../admin/osContext');
 const { finalizeLlmActionRewards } = require('../../usecases/assistant/learning/finalizeLlmActionRewards');
+const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
+
+const ROUTE_KEY = 'internal_llm_action_reward_finalize_job';
+const ENTRY_TYPE = 'job';
+const GATES_APPLIED = ['kill_switch', 'snapshot'];
 
 function writeJson(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -47,9 +52,39 @@ async function handleLlmActionRewardFinalizeJob(req, res, bodyText) {
   }
   if (!requireLlmActionJobToken(req, res)) return;
 
-  const killSwitch = await getKillSwitch();
-  if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+  const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string'
+    ? req.headers['x-trace-id'].trim()
+    : null;
+  const requestIdHeader = req.headers && typeof req.headers['x-request-id'] === 'string'
+    ? req.headers['x-request-id'].trim()
+    : null;
+  const actor = 'llm_action_reward_job';
+
+  let killSwitchDecision = null;
+  const allowed = await enforceLlmGenerationKillSwitch(req, res, {
+    routeKey: ROUTE_KEY,
+    actor,
+    traceId: traceIdHeader || null,
+    requestId: requestIdHeader || null,
+    onDecision: (decision) => {
+      killSwitchDecision = decision;
+    }
+  });
+  if (!allowed) {
+    await appendLlmGateDecision({
+      actor,
+      traceId: traceIdHeader || null,
+      requestId: requestIdHeader || null,
+      plan: 'system',
+      status: 'blocked',
+      intent: 'reward_finalize',
+      decision: 'blocked',
+      blockedReason: killSwitchDecision && typeof killSwitchDecision.reason === 'string'
+        ? killSwitchDecision.reason
+        : 'kill_switch_blocked',
+      entryType: ENTRY_TYPE,
+      gatesApplied: GATES_APPLIED
+    }).catch(() => null);
     return;
   }
 
@@ -58,20 +93,31 @@ async function handleLlmActionRewardFinalizeJob(req, res, bodyText) {
     writeJson(res, 400, { ok: false, error: 'invalid json' });
     return;
   }
-
-  const traceIdHeader = req.headers && typeof req.headers['x-trace-id'] === 'string'
-    ? req.headers['x-trace-id'].trim()
-    : null;
+  const traceId = traceIdHeader || payload.traceId || null;
+  const requestId = requestIdHeader || payload.requestId || null;
 
   const result = await finalizeLlmActionRewards({
     dryRun: payload.dryRun,
     limit: payload.limit,
     rewardWindowHours: payload.rewardWindowHours,
-    traceId: traceIdHeader || payload.traceId || null,
-    requestId: payload.requestId || null,
+    traceId,
+    requestId,
     now: payload.now,
-    actor: 'llm_action_reward_job'
+    actor
   });
+
+  await appendLlmGateDecision({
+    actor,
+    traceId,
+    requestId,
+    plan: 'system',
+    status: result && result.ok === true ? 'ok' : 'error',
+    intent: 'reward_finalize',
+    decision: result && result.ok === true ? 'allow' : 'blocked',
+    blockedReason: result && result.ok === true ? null : 'reward_finalize_error',
+    entryType: ENTRY_TYPE,
+    gatesApplied: GATES_APPLIED
+  }).catch(() => null);
 
   writeJson(res, 200, result);
 }

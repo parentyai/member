@@ -6,11 +6,17 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
 const stepRuleChangeLogsRepo = require('../../repos/firestore/stepRuleChangeLogsRepo');
 const journeyTemplatesRepo = require('../../repos/firestore/journeyTemplatesRepo');
+const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const { computeUserTasks } = require('../../usecases/tasks/computeUserTasks');
 const { planTaskRulesTemplateSet } = require('../../usecases/tasks/planTaskRulesTemplateSet');
 const { applyTaskRulesTemplateSet } = require('../../usecases/tasks/applyTaskRulesTemplateSet');
 const { planTaskRulesApply } = require('../../usecases/tasks/planTaskRulesApply');
 const { applyTaskRulesForUser } = require('../../usecases/tasks/applyTaskRulesForUser');
+const {
+  validateTaskContent,
+  resolveTaskContentLinks,
+  resolveTaskKeyWarnings
+} = require('../../usecases/tasks/validateTaskContent');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 const {
   isTaskEngineEnabled,
@@ -20,6 +26,7 @@ const {
   isJourneyUnifiedViewEnabled,
   isLegacyTodoDeriveFromTemplatesEnabled,
   isLegacyTodoEmitDisabled,
+  isTaskContentAdminEditorEnabled,
   getTaskNudgeLinkPolicy
 } = require('../../domain/tasks/featureFlags');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
@@ -54,10 +61,17 @@ function resolveLimit(req) {
 
 function summarizeRule(rule) {
   const row = rule && typeof rule === 'object' ? rule : {};
+  const dependsOn = Array.isArray(row.dependsOn) ? row.dependsOn : [];
+  const vendorLinks = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
   return {
     ruleId: row.ruleId || null,
     [SCENARIO_KEY_FIELD]: row[SCENARIO_KEY_FIELD] || null,
     stepKey: row.stepKey || null,
+    category: row.category || null,
+    dependsOnCount: dependsOn.length,
+    estimatedTimeMin: Number.isFinite(Number(row.estimatedTimeMin)) ? Number(row.estimatedTimeMin) : null,
+    estimatedTimeMax: Number.isFinite(Number(row.estimatedTimeMax)) ? Number(row.estimatedTimeMax) : null,
+    recommendedVendorCount: vendorLinks.length,
     priority: Number.isFinite(Number(row.priority)) ? Number(row.priority) : null,
     enabled: row.enabled === true,
     riskLevel: row.riskLevel || null
@@ -83,12 +97,46 @@ function summarizeTemplate(template) {
   };
 }
 
+function summarizeTaskContent(taskContent) {
+  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
+  const checklist = Array.isArray(row.checklistItems) ? row.checklistItems : [];
+  const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+  const vendors = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
+  return {
+    taskKey: row.taskKey || null,
+    title: row.title || null,
+    category: row.category || null,
+    dependenciesCount: dependencies.length,
+    checklistCount: checklist.filter((item) => item && item.enabled !== false).length,
+    checklistTextCount: Array.isArray(row.checklist) ? row.checklist.length : 0,
+    summaryShortCount: Array.isArray(row.summaryShort) ? row.summaryShort.length : 0,
+    topMistakesCount: Array.isArray(row.topMistakes) ? row.topMistakes.length : 0,
+    contextTipsCount: Array.isArray(row.contextTips) ? row.contextTips.length : 0,
+    recommendedVendorCount: vendors.length,
+    archived: row.archived === true,
+    hasManualText: Boolean(row.manualText),
+    hasFailureText: Boolean(row.failureText),
+    videoLinkId: row.videoLinkId || null,
+    actionLinkId: row.actionLinkId || null,
+    updatedAt: row.updatedAt || null
+  };
+}
+
 function computePlanHash(action, normalizedRule, enabled) {
   const payload = {
     action,
     ruleId: normalizedRule && normalizedRule.ruleId ? normalizedRule.ruleId : null,
     rule: normalizedRule || null,
     enabled: enabled === true
+  };
+  return `taskrules_${crypto.createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex').slice(0, 24)}`;
+}
+
+function computeTaskContentPlanHash(action, normalizedTaskContent) {
+  const payload = {
+    action,
+    taskKey: normalizedTaskContent && normalizedTaskContent.taskKey ? normalizedTaskContent.taskKey : null,
+    taskContent: normalizedTaskContent || null
   };
   return `taskrules_${crypto.createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex').slice(0, 24)}`;
 }
@@ -100,6 +148,26 @@ function confirmTokenData(planHash, templateKey) {
     templateVersion: '',
     segmentKey: 'opsConfig'
   };
+}
+
+function mergeWarnings() {
+  const out = [];
+  for (const arg of arguments) {
+    if (!Array.isArray(arg)) continue;
+    arg.forEach((item) => {
+      if (typeof item !== 'string') return;
+      const text = item.trim();
+      if (text) out.push(text);
+    });
+  }
+  return Array.from(new Set(out));
+}
+
+function resolveTaskContentStatusLimit(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const parsed = Number(url.searchParams.get('taskContentLimit') || 100);
+  if (!Number.isFinite(parsed) || parsed < 1) return 100;
+  return Math.min(Math.floor(parsed), 300);
 }
 
 function writeKnownError(res, err, fallbackTraceId, fallbackRequestId) {
@@ -120,9 +188,15 @@ async function handleStatus(req, res) {
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   try {
-    const [rules, templates] = await Promise.all([
+    const statusUrl = new URL(req.url, 'http://localhost');
+    const includeTaskContents = isTaskContentAdminEditorEnabled()
+      && statusUrl.searchParams.get('includeTaskContents') !== '0';
+    const [rules, templates, taskContents] = await Promise.all([
       stepRulesRepo.listStepRules({ limit: resolveLimit(req) }),
-      journeyTemplatesRepo.listJourneyTemplates({ limit: 50 }).catch(() => [])
+      journeyTemplatesRepo.listJourneyTemplates({ limit: 50 }).catch(() => []),
+      includeTaskContents
+        ? taskContentsRepo.listTaskContents({ limit: resolveTaskContentStatusLimit(req) }).catch(() => [])
+        : Promise.resolve([])
     ]);
 
     await appendAuditLog({
@@ -135,6 +209,7 @@ async function handleStatus(req, res) {
       payloadSummary: {
         count: rules.length,
         templates: templates.length,
+        taskContents: taskContents.length,
         taskEngineEnabled: isTaskEngineEnabled(),
         taskNudgeEnabled: isTaskNudgeEnabled(),
         taskEventsEnabled: isTaskEventsEnabled(),
@@ -142,6 +217,7 @@ async function handleStatus(req, res) {
         journeyUnifiedViewEnabled: isJourneyUnifiedViewEnabled(),
         legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
         legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
+        taskContentAdminEditorEnabled: isTaskContentAdminEditorEnabled(),
         taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       }
     });
@@ -158,10 +234,12 @@ async function handleStatus(req, res) {
         journeyUnifiedViewEnabled: isJourneyUnifiedViewEnabled(),
         legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
         legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
+        taskContentAdminEditorEnabled: isTaskContentAdminEditorEnabled(),
         taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       },
       rules,
-      templates
+      templates,
+      taskContents
     });
   } catch (err) {
     logRouteError('admin.task_rules.status', err, { traceId, requestId, actor });
@@ -182,8 +260,64 @@ async function handlePlan(req, res, bodyText) {
   const ruleId = normalizeText(payload.ruleId || ruleInput.ruleId, '');
   const enabled = payload.enabled === true;
 
-  if (!['upsert_rule', 'set_enabled'].includes(action)) {
+  if (!['upsert_rule', 'set_enabled', 'upsert_task_content'].includes(action)) {
     writeJson(res, 400, { ok: false, error: 'action invalid', traceId, requestId });
+    return;
+  }
+  if (action === 'upsert_task_content') {
+    if (!isTaskContentAdminEditorEnabled()) {
+      writeJson(res, 409, { ok: false, error: 'task_content_admin_editor_disabled', traceId, requestId });
+      return;
+    }
+    const taskContentInput = payload.taskContent && typeof payload.taskContent === 'object' ? payload.taskContent : {};
+    const taskKey = normalizeText(payload.taskKey || taskContentInput.taskKey || payload.ruleId, '');
+    if (!taskKey) {
+      writeJson(res, 400, { ok: false, error: 'taskKey required', traceId, requestId });
+      return;
+    }
+    const baseContent = await taskContentsRepo.getTaskContent(taskKey).catch(() => null);
+    const validation = validateTaskContent(Object.assign({}, baseContent || {}, taskContentInput, { taskKey }));
+    if (!validation.ok || !validation.normalized) {
+      writeJson(res, 400, {
+        ok: false,
+        error: 'invalid task content',
+        errors: validation.errors || [],
+        warnings: validation.warnings || [],
+        traceId,
+        requestId
+      });
+      return;
+    }
+    const taskKeyWarnings = await resolveTaskKeyWarnings(validation.normalized, { stepRulesRepo }).catch(() => ['taskKey validation failed']);
+    const linkState = await resolveTaskContentLinks(validation.normalized).catch(() => ({ warnings: ['link resolver failed'] }));
+    const warnings = mergeWarnings(validation.warnings, taskKeyWarnings, linkState.warnings);
+    const planHash = computeTaskContentPlanHash(action, validation.normalized);
+    const confirmToken = createConfirmToken(confirmTokenData(planHash, 'task_rules_task_content'), { now: new Date() });
+    await appendAuditLog({
+      actor,
+      action: 'task_rules.plan',
+      entityType: 'opsConfig',
+      entityId: validation.normalized.taskKey,
+      traceId,
+      requestId,
+      payloadSummary: {
+        action,
+        planHash,
+        warningCount: warnings.length,
+        taskContent: summarizeTaskContent(validation.normalized)
+      }
+    });
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      action,
+      taskKey,
+      taskContent: validation.normalized,
+      warnings,
+      planHash,
+      confirmToken
+    });
     return;
   }
   if (!ruleId) {
@@ -253,8 +387,100 @@ async function handleSet(req, res, bodyText) {
     writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId, requestId });
     return;
   }
-  if (!['upsert_rule', 'set_enabled'].includes(action)) {
+  if (!['upsert_rule', 'set_enabled', 'upsert_task_content'].includes(action)) {
     writeJson(res, 400, { ok: false, error: 'action invalid', traceId, requestId });
+    return;
+  }
+  if (action === 'upsert_task_content') {
+    if (!isTaskContentAdminEditorEnabled()) {
+      writeJson(res, 409, { ok: false, error: 'task_content_admin_editor_disabled', traceId, requestId });
+      return;
+    }
+    const taskContentInput = payload.taskContent && typeof payload.taskContent === 'object' ? payload.taskContent : {};
+    const taskKey = normalizeText(payload.taskKey || taskContentInput.taskKey || payload.ruleId, '');
+    if (!taskKey) {
+      writeJson(res, 400, { ok: false, error: 'taskKey required', traceId, requestId });
+      return;
+    }
+    const baseContent = await taskContentsRepo.getTaskContent(taskKey).catch(() => null);
+    const validation = validateTaskContent(Object.assign({}, baseContent || {}, taskContentInput, { taskKey }));
+    if (!validation.ok || !validation.normalized) {
+      writeJson(res, 400, {
+        ok: false,
+        error: 'invalid task content',
+        errors: validation.errors || [],
+        warnings: validation.warnings || [],
+        traceId,
+        requestId
+      });
+      return;
+    }
+    const expectedPlanHash = computeTaskContentPlanHash(action, validation.normalized);
+    if (planHash !== expectedPlanHash) {
+      await appendAuditLog({
+        actor,
+        action: 'task_rules.set',
+        entityType: 'opsConfig',
+        entityId: taskKey,
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'plan_hash_mismatch',
+          path: TASK_RULES_SET_PATH,
+          planHash,
+          expectedPlanHash
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId });
+      return;
+    }
+    const tokenOk = verifyConfirmToken(confirmToken, confirmTokenData(planHash, 'task_rules_task_content'), { now: new Date() });
+    if (!tokenOk) {
+      await appendAuditLog({
+        actor,
+        action: 'task_rules.set',
+        entityType: 'opsConfig',
+        entityId: taskKey,
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'confirm_token_mismatch',
+          path: TASK_RULES_SET_PATH
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId });
+      return;
+    }
+    const saved = await taskContentsRepo.upsertTaskContent(taskKey, validation.normalized, actor);
+    const taskKeyWarnings = await resolveTaskKeyWarnings(saved, { stepRulesRepo }).catch(() => ['taskKey validation failed']);
+    const linkState = await resolveTaskContentLinks(saved).catch(() => ({ warnings: ['link resolver failed'] }));
+    const warnings = mergeWarnings(validation.warnings, taskKeyWarnings, linkState.warnings);
+    await appendAuditLog({
+      actor,
+      action: 'task_rules.set',
+      entityType: 'opsConfig',
+      entityId: taskKey,
+      traceId,
+      requestId,
+      payloadSummary: {
+        ok: true,
+        action,
+        path: TASK_RULES_SET_PATH,
+        warningCount: warnings.length,
+        taskContent: summarizeTaskContent(saved)
+      }
+    });
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      action,
+      taskKey,
+      taskContent: saved,
+      warnings
+    });
     return;
   }
   if (!ruleId) {

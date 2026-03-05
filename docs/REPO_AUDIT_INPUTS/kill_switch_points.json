@@ -167,12 +167,12 @@
     },
     {
       "file": "src/routes/admin/cityPackBulletins.js",
-      "line": 220,
+      "line": 225,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/cityPackBulletins.js",
-      "line": 224,
+      "line": 229,
       "symbol": "killSwitch"
     },
     {
@@ -212,12 +212,12 @@
     },
     {
       "file": "src/routes/admin/cityPackReviewInbox.js",
-      "line": 133,
+      "line": 146,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/admin/cityPackReviewInbox.js",
-      "line": 134,
+      "line": 147,
       "symbol": "killSwitch"
     },
     {
@@ -352,7 +352,7 @@
     },
     {
       "file": "src/routes/admin/taskRulesConfig.js",
-      "line": 831,
+      "line": 1057,
       "symbol": "killSwitch"
     },
     {
@@ -437,21 +437,6 @@
     },
     {
       "file": "src/routes/internal/journeyTodoReminderJob.js",
-      "line": 51,
-      "symbol": "killSwitch"
-    },
-    {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
-      "line": 3,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
-      "line": 50,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
       "line": 51,
       "symbol": "killSwitch"
     },
@@ -802,7 +787,7 @@
     },
     {
       "file": "src/usecases/notifications/sendNotification.js",
-      "line": 122,
+      "line": 137,
       "symbol": "killSwitch"
     },
     {
@@ -972,17 +957,17 @@
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 166,
+      "line": 201,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 169,
+      "line": 205,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 170,
+      "line": 206,
       "symbol": "killSwitch"
     }
   ]

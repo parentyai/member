@@ -8,8 +8,8 @@ const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareR
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
 const { replyMessage, pushMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
-const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { syncCityPackRecommendedTasks } = require('../usecases/cityPack/syncCityPackRecommendedTasks');
+const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
 const llmClient = require('../infra/llmClient');
 const { resolvePlan } = require('../usecases/billing/planGate');
@@ -18,9 +18,13 @@ const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
 const { evaluateLlmAvailability } = require('../usecases/assistant/llmAvailabilityGate');
 const { getUserContextSnapshot } = require('../usecases/context/getUserContextSnapshot');
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
-const { composeConciergeReply } = require('../usecases/assistant/concierge/composeConciergeReply');
+const { composeConciergeReply, buildConciergeContextSnapshot } = require('../usecases/assistant/concierge/composeConciergeReply');
+const { generatePaidCasualReply } = require('../usecases/assistant/generatePaidCasualReply');
+const { detectOpportunity } = require('../usecases/assistant/opportunity/detectOpportunity');
+const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const {
   getPublicWriteSafetySnapshot,
   getLlmConciergeEnabled,
@@ -42,6 +46,9 @@ const {
   generatePaidAssistantReply
 } = require('../usecases/assistant/generatePaidAssistantReply');
 const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqReply');
+const { selectConversationStyle } = require('../domain/llm/conversation/styleRouter');
+const { composeConversationDraftFromSignals } = require('../domain/llm/conversation/conversationComposer');
+const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
@@ -109,44 +116,6 @@ function extractMessageText(event) {
   return typeof text === 'string' ? text : null;
 }
 
-async function sendJourneyResponse(params) {
-  const payload = params && typeof params === 'object' ? params : {};
-  const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
-  const replyFn = typeof payload.replyFn === 'function' ? payload.replyFn : replyMessage;
-  const pushFn = typeof payload.pushFn === 'function' ? payload.pushFn : pushMessage;
-  const replyToken = payload.replyToken;
-  const lineUserId = payload.lineUserId;
-  if (!journey || !replyToken || !lineUserId) return false;
-
-  const replyMessages = Array.isArray(journey.replyMessages)
-    ? journey.replyMessages.filter((item) => item && typeof item === 'object')
-    : [];
-
-  if (replyMessages.length > 0) {
-    await replyFn(replyToken, replyMessages[0]);
-    for (const followup of replyMessages.slice(1)) {
-      // eslint-disable-next-line no-await-in-loop
-      await pushFn(lineUserId, followup);
-    }
-  } else if (journey.replyMessage && typeof journey.replyMessage === 'object') {
-    await replyFn(replyToken, journey.replyMessage);
-  } else {
-    await replyFn(replyToken, {
-      type: 'text',
-      text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
-    });
-  }
-
-  const followupMessages = Array.isArray(journey.followupMessages)
-    ? journey.followupMessages.filter((item) => item && typeof item === 'object')
-    : [];
-  for (const followup of followupMessages) {
-    // eslint-disable-next-line no-await-in-loop
-    await pushFn(lineUserId, followup);
-  }
-  return true;
-}
-
 function isRedacStatusCommand(text) {
   const raw = typeof text === 'string' ? text : '';
   if (!raw) return false;
@@ -166,6 +135,59 @@ function isLlmConsentRevokeCommand(text) {
 function normalizeReplyText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeJourneyMessage(value) {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  if (!row || typeof row.type !== 'string' || !row.type.trim()) return null;
+  return row;
+}
+
+function createJourneyFallbackText(text) {
+  return {
+    type: 'text',
+    text: normalizeReplyText(text) || '設定を更新しました。'
+  };
+}
+
+async function sendJourneyResponse(options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
+  if (!journey || journey.handled !== true) return false;
+  const replyToken = payload.replyToken;
+  const lineUserId = payload.lineUserId;
+  const replyFn = payload.replyFn;
+  const pushFn = payload.pushFn;
+  if (!replyToken || typeof replyFn !== 'function') return false;
+
+  const replyMessages = [];
+  if (Array.isArray(journey.replyMessages)) {
+    journey.replyMessages.forEach((item) => {
+      const normalized = normalizeJourneyMessage(item);
+      if (normalized) replyMessages.push(normalized);
+    });
+  } else {
+    const single = normalizeJourneyMessage(journey.replyMessage);
+    if (single) replyMessages.push(single);
+  }
+  if (!replyMessages.length) {
+    replyMessages.push(createJourneyFallbackText(journey.replyText));
+  }
+
+  await replyFn(replyToken, replyMessages[0]);
+
+  const pushQueue = []
+    .concat(replyMessages.slice(1))
+    .concat(Array.isArray(journey.followupMessages)
+      ? journey.followupMessages.map((item) => normalizeJourneyMessage(item)).filter(Boolean)
+      : []);
+  if (pushQueue.length && lineUserId && typeof pushFn === 'function') {
+    for (const message of pushQueue) {
+      // eslint-disable-next-line no-await-in-loop
+      await pushFn(lineUserId, message);
+    }
+  }
+  return true;
 }
 
 function parseJourneyPhaseCommand(text) {
@@ -197,6 +219,35 @@ function trimForPaidLineMessage(value) {
   return text.length > 420 ? `${text.slice(0, 420)}…` : text;
 }
 
+function buildLowRelevanceConversationReply(questionText) {
+  const question = normalizeReplyText(questionText);
+  const draftPacket = composeConversationDraftFromSignals({
+    summary: 'いまの質問だけでは対象手続きを特定できません。',
+    nextActions: [
+      '対象手続きを1つ指定する（例: ビザ更新 / 住居契約 / 税務）',
+      '期限を1つ添える（例: 1週間後）'
+    ],
+    pitfall: '対象手続きと期限が曖昧なまま進めると、案内の精度が下がります。',
+    question: '対象手続き名と期限を1つずつ教えてください。',
+    state: 'CLARIFY',
+    move: 'Narrow'
+  });
+  const styleDecision = Object.assign({}, selectConversationStyle({
+    topic: 'general',
+    question,
+    userTier: 'paid',
+    journeyPhase: 'pre',
+    messageLength: question.length,
+    timeOfDay: new Date().getHours(),
+    urgency: 'high'
+  }), {
+    askClarifying: true,
+    maxActions: 2
+  });
+  const humanized = humanizeConversationMessage({ draftPacket, styleDecision });
+  return trimForLineMessage(humanized.text || draftPacket.draft);
+}
+
 function resolveBooleanEnvFlag(name, defaultValue) {
   const raw = process.env[name];
   if (typeof raw !== 'string') return defaultValue === true;
@@ -220,6 +271,16 @@ function resolveTaskGraphEnabled() {
 
 function resolveProPredictiveActionsEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PRO_PREDICTIVE_ACTIONS_V1', false);
+}
+
+function resolvePaidOpportunityEngineEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_PAID_OPPORTUNITY_ENGINE_V1', false);
+}
+
+function resolvePaidInterventionCooldownTurns() {
+  const raw = Number(process.env.PAID_INTERVENTION_COOLDOWN_TURNS || 5);
+  if (!Number.isFinite(raw)) return 5;
+  return Math.max(1, Math.min(20, Math.floor(raw)));
 }
 
 async function resolveLlmConciergeEnabledBestEffort() {
@@ -329,6 +390,57 @@ function toMillis(value) {
     if (date instanceof Date && Number.isFinite(date.getTime())) return date.getTime();
   }
   return null;
+}
+
+function buildDefaultOpportunityDecision() {
+  return {
+    conversationMode: 'casual',
+    opportunityType: 'none',
+    opportunityReasonKeys: [],
+    interventionBudget: 0,
+    suggestedAtoms: {
+      nextActions: [],
+      pitfall: null,
+      question: null
+    }
+  };
+}
+
+function resolveOpportunityRiskFlags(snapshot) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const riskFlags = Array.isArray(source.riskFlags)
+    ? source.riskFlags
+    : (Array.isArray(source.riskFlagsTop3) ? source.riskFlagsTop3 : []);
+  return uniqueStringList(riskFlags).slice(0, 5);
+}
+
+function buildOpportunityInput(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object'
+    ? payload.contextSnapshot
+    : null;
+  const conciergeContext = buildConciergeContextSnapshot(contextSnapshot);
+  return {
+    lineUserId: payload.lineUserId || '',
+    userTier: payload.userTier || 'free',
+    messageText: payload.messageText || '',
+    journeyPhase: conciergeContext && conciergeContext.phase
+      ? conciergeContext.phase
+      : (contextSnapshot && contextSnapshot.phase ? contextSnapshot.phase : ''),
+    topTasks: conciergeContext && Array.isArray(conciergeContext.topTasks)
+      ? conciergeContext.topTasks
+      : [],
+    blockedTask: conciergeContext && conciergeContext.blockedTask ? conciergeContext.blockedTask : null,
+    dueSoonTask: conciergeContext && conciergeContext.dueSoonTask ? conciergeContext.dueSoonTask : null,
+    riskFlags: resolveOpportunityRiskFlags(contextSnapshot),
+    recentEngagement: payload.recentEngagement && typeof payload.recentEngagement === 'object'
+      ? payload.recentEngagement
+      : { recentTurns: 5, recentInterventions: 0, recentClicks: false, recentTaskDone: false },
+    safetySnapshot: {
+      killSwitchOn: false
+    },
+    llmConciergeEnabled: payload.llmConciergeEnabled === true
+  };
 }
 
 async function loadTaskGraphSummary(lineUserId) {
@@ -526,11 +638,8 @@ async function appendLlmGateDecisionBestEffort(data) {
     fallbackReason: payload.blockedReason || null
   });
   try {
-    await appendAuditLog({
+    await appendLlmGateDecision({
       actor: 'line_webhook',
-      action: 'llm_gate.decision',
-      entityType: 'llm_gate',
-      entityId: lineUserId,
       traceId: payload.traceId || null,
       requestId: payload.requestId || null,
       payloadSummary: {
@@ -608,7 +717,24 @@ async function appendLlmGateDecisionBestEffort(data) {
         counterfactualEval: conciergeMeta && conciergeMeta.counterfactualEval && typeof conciergeMeta.counterfactualEval === 'object'
           ? conciergeMeta.counterfactualEval
           : null,
-        assistantQuality
+        assistantQuality,
+        conversationMode: typeof payload.conversationMode === 'string' && payload.conversationMode.trim()
+          ? payload.conversationMode.trim().toLowerCase()
+          : null,
+        opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
+          ? payload.opportunityType.trim().toLowerCase()
+          : 'none',
+        opportunityReasonKeys: Array.isArray(payload.opportunityReasonKeys)
+          ? payload.opportunityReasonKeys
+            .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+            .filter(Boolean)
+            .slice(0, 8)
+          : [],
+        interventionBudget: Number.isFinite(Number(payload.interventionBudget))
+          ? (Number(payload.interventionBudget) >= 1 ? 1 : 0)
+          : 0,
+        entryType: 'webhook',
+        gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
     });
   } catch (_err) {
@@ -676,6 +802,21 @@ async function appendLlmActionLogBestEffort(data) {
       conversationState: conciergeMeta.conversationState || null,
       conversationMove: conciergeMeta.conversationMove || null,
       styleId: conciergeMeta.styleId || null,
+      conversationMode: typeof payload.conversationMode === 'string'
+        ? payload.conversationMode
+        : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
+      opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
+        ? payload.opportunityType.trim().toLowerCase()
+        : 'none',
+      opportunityReasonKeys: Array.isArray(payload.opportunityReasonKeys)
+        ? payload.opportunityReasonKeys
+          .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+          .filter(Boolean)
+          .slice(0, 8)
+        : [],
+      interventionBudget: Number.isFinite(Number(payload.interventionBudget))
+        ? (Number(payload.interventionBudget) >= 1 ? 1 : 0)
+        : 0,
       contextVersion: conciergeMeta.contextVersion || 'concierge_ctx_v1',
       featureHash: conciergeMeta.featureHash || null,
       segmentKey: conciergeMeta.segmentKey || null,
@@ -779,7 +920,32 @@ async function replyWithFreeRetrieval(params) {
   const extra = normalizeReplyText(mergedExtra);
   const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
   let replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
-  let conciergeMeta = null;
+  const retrievalBlockedReasons = Array.isArray(retrieval.blockedReasons) ? retrieval.blockedReasons : [];
+  const retrievalInjectionFindings = retrieval.injectionFindings === true;
+  let conciergeMeta = {
+    topic: null,
+    mode: null,
+    userTier: payload.plan === 'pro' ? 'paid' : 'free',
+    citationRanks: [],
+    urlCount: 0,
+    urls: [],
+    guardDecisions: [],
+    blockedReasons: retrievalBlockedReasons,
+    injectionFindings: retrievalInjectionFindings,
+    evidenceNeed: 'none',
+    evidenceOutcome: retrievalInjectionFindings || retrievalBlockedReasons.length ? 'BLOCKED' : 'SUPPORTED',
+    chosenAction: null,
+    contextVersion: 'concierge_ctx_v1',
+    featureHash: null,
+    postRenderLint: { findings: [], modified: false },
+    contextSignature: null,
+    contextualBanditEnabled: false,
+    contextualFeatures: null,
+    counterfactualSelectedArmId: null,
+    counterfactualSelectedRank: null,
+    counterfactualTopArms: [],
+    counterfactualEval: null
+  };
 
   if (payload.llmConciergeEnabled === true) {
     try {
@@ -814,7 +980,7 @@ async function replyWithFreeRetrieval(params) {
         env: process.env
       });
       replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
-      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : null;
+      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : conciergeMeta;
     } catch (_err) {
       // fail closed: keep retrieval-only reply text
       conciergeMeta = {
@@ -825,8 +991,8 @@ async function replyWithFreeRetrieval(params) {
         urlCount: 0,
         urls: [],
         guardDecisions: [],
-        blockedReasons: ['concierge_compose_failed'],
-        injectionFindings: false,
+        blockedReasons: Array.from(new Set(retrievalBlockedReasons.concat(['concierge_compose_failed']))),
+        injectionFindings: retrievalInjectionFindings,
         evidenceNeed: 'none',
         evidenceOutcome: 'BLOCKED',
         chosenAction: null,
@@ -864,6 +1030,7 @@ async function handleAssistantMessage(params) {
   const llmWebSearchEnabled = payload.llmWebSearchEnabled !== false;
   const llmStyleEngineEnabled = payload.llmStyleEngineEnabled !== false;
   const llmBanditEnabled = payload.llmBanditEnabled === true;
+  const opportunityEngineEnabled = resolvePaidOpportunityEngineEnabled();
   const explicitPaidIntent = detectExplicitPaidIntent(text);
   const paidIntent = classifyPaidIntent(text);
   const traceId = typeof payload.requestId === 'string' && payload.requestId.trim()
@@ -1160,6 +1327,87 @@ async function handleAssistantMessage(params) {
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
+  let opportunityDecision = buildDefaultOpportunityDecision();
+  if (opportunityEngineEnabled) {
+    const recentTurns = resolvePaidInterventionCooldownTurns();
+    const recentEngagement = await loadRecentInterventionSignals({
+      lineUserId,
+      recentTurns
+    });
+    opportunityDecision = detectOpportunity(buildOpportunityInput({
+      lineUserId,
+      userTier: 'paid',
+      messageText: text,
+      contextSnapshot,
+      recentEngagement,
+      llmConciergeEnabled
+    }));
+  }
+
+  if (opportunityEngineEnabled && opportunityDecision.conversationMode === 'casual') {
+    const casual = generatePaidCasualReply({
+      messageText: text,
+      suggestedAtoms: opportunityDecision.suggestedAtoms
+    });
+    const replyText = trimForPaidLineMessage(casual && casual.replyText ? casual.replyText : 'こんにちは。');
+    await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: null,
+      fallbackReason: null
+    });
+    const usage = await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: budget.policy && budget.policy.model,
+      assistantQuality
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
+      traceId,
+      requestId,
+      assistantQuality,
+      conversationMode: opportunityDecision.conversationMode,
+      opportunityType: opportunityDecision.opportunityType,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      interventionBudget: opportunityDecision.interventionBudget
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      llmBanditEnabled,
+      conversationMode: opportunityDecision.conversationMode,
+      opportunityType: opportunityDecision.opportunityType,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      interventionBudget: opportunityDecision.interventionBudget
+    });
+    return {
+      handled: true,
+      mode: 'paid_casual',
+      blockedReason: null
+    };
+  }
+
   const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
   const paid = qualityEnabled
     ? await generatePaidFaqReply({
@@ -1231,7 +1479,11 @@ async function handleAssistantMessage(params) {
         traceId,
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-        assistantQuality
+        assistantQuality,
+        conversationMode: opportunityDecision.conversationMode,
+        opportunityType: opportunityDecision.opportunityType,
+        opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+        interventionBudget: opportunityDecision.interventionBudget
       });
       await appendLlmActionLogBestEffort({
         lineUserId,
@@ -1239,7 +1491,11 @@ async function handleAssistantMessage(params) {
         traceId,
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-        llmBanditEnabled
+        llmBanditEnabled,
+        conversationMode: opportunityDecision.conversationMode,
+        opportunityType: opportunityDecision.opportunityType,
+        opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+        interventionBudget: opportunityDecision.interventionBudget
       });
       return {
         handled: true,
@@ -1253,12 +1509,7 @@ async function handleAssistantMessage(params) {
   const isLowRelevanceWarning = paid.qualityWarning === 'low_relevance_query';
   let replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
   if (isLowRelevanceWarning) {
-    replyText = [
-      '結論: いまの質問だけでは対象手続きを特定できません。',
-      '次にやること:',
-      '1. 手続きを1つ指定してください（例: ビザ更新 / 住居契約 / 税務）。',
-      '2. 期限を1つ添えてください（例: 1週間後）。'
-    ].join('\n');
+    replyText = buildLowRelevanceConversationReply(text);
   }
   if (paid.qualityWarning === 'low_confidence_soft') {
     replyText = trimForLineMessage(`${replyText}\n\n補足: 根拠の一致度が低めのため、重要事項は運用担当へ最終確認してください。`);
@@ -1268,7 +1519,11 @@ async function handleAssistantMessage(params) {
     if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
   }
   let conciergeMeta = null;
-  if (llmConciergeEnabled && !isLowRelevanceWarning) {
+  if (
+    llmConciergeEnabled
+    && !isLowRelevanceWarning
+    && (!opportunityEngineEnabled || opportunityDecision.conversationMode === 'concierge')
+  ) {
     try {
       const storedCandidates = await resolveStoredCandidatesForPaid(paid);
       const concierge = await composeConciergeReply({
@@ -1333,6 +1588,12 @@ async function handleAssistantMessage(params) {
     fallbackReason: null
   });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
+  const conversationMode = opportunityEngineEnabled
+    ? opportunityDecision.conversationMode
+    : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null);
+  const opportunityType = opportunityEngineEnabled ? opportunityDecision.opportunityType : 'none';
+  const opportunityReasonKeys = opportunityEngineEnabled ? opportunityDecision.opportunityReasonKeys : [];
+  const interventionBudget = opportunityEngineEnabled ? opportunityDecision.interventionBudget : 0;
   const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,
@@ -1360,7 +1621,11 @@ async function handleAssistantMessage(params) {
     traceId,
     requestId,
     conciergeMeta,
-    assistantQuality
+    assistantQuality,
+    conversationMode,
+    opportunityType,
+    opportunityReasonKeys,
+    interventionBudget
   });
   await appendLlmActionLogBestEffort({
     lineUserId,
@@ -1368,7 +1633,11 @@ async function handleAssistantMessage(params) {
     traceId,
     requestId,
     conciergeMeta,
-    llmBanditEnabled
+    llmBanditEnabled,
+    conversationMode,
+    opportunityType,
+    opportunityReasonKeys,
+    interventionBudget
   });
 
   await appendJourneyEventBestEffort({
@@ -1493,7 +1762,7 @@ async function handleLineWebhook(options) {
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   const replyFn = (options && options.replyFn) || replyMessage;
-  const pushFn = (options && options.pushFn) || pushMessage;
+  const pushFn = (options && options.pushFn) || pushMessage || (async () => ({ status: 200 }));
 
   // Ensure users and run interactive commands (best-effort).
   const events = Array.isArray(payload && payload.events) ? payload.events : [];
@@ -1505,7 +1774,7 @@ async function handleLineWebhook(options) {
       await ensureUserFromWebhook(userId);
       ensured.add(userId);
       if (!isWebhookEdge || allowWelcome) {
-        await welcomeFn({ lineUserId: userId, pushFn: options && options.pushFn });
+        await welcomeFn({ lineUserId: userId, pushFn });
       }
     }
 
@@ -1520,14 +1789,7 @@ async function handleLineWebhook(options) {
             lineUserId: userId,
             data: postbackData
           });
-          if (journey && journey.handled) {
-            await sendJourneyResponse({
-              journey,
-              replyToken,
-              lineUserId: userId,
-              replyFn,
-              pushFn
-            });
+          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
             continue;
           }
         } catch (err) {
@@ -1544,14 +1806,7 @@ async function handleLineWebhook(options) {
       if (text && replyToken) {
         try {
           const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
-          if (journey && journey.handled) {
-            await sendJourneyResponse({
-              journey,
-              replyToken,
-              lineUserId: userId,
-              replyFn,
-              pushFn
-            });
+          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
             continue;
           }
 
@@ -1623,16 +1878,14 @@ async function handleLineWebhook(options) {
 
           const region = await declareCityRegionFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
           if (region.status === 'declared') {
-            const seeded = await syncCityPackRecommendedTasks({
+            await syncCityPackRecommendedTasks({
               lineUserId: userId,
-              regionKey: region.regionKey || null,
+              regionKey: region.regionKey,
+              actor: 'webhook_line_region_declared',
               traceId: requestId,
-              actor: 'line_region_declared'
+              requestId
             }).catch(() => null);
-            const seededText = seeded && Number(seeded.seededCount) > 0
-              ? `\nCityPackおすすめタスクを${seeded.seededCount}件追加しました。`
-              : '';
-            await replyFn(replyToken, { type: 'text', text: `${regionDeclared(region.regionCity, region.regionState)}${seededText}` });
+            await replyFn(replyToken, { type: 'text', text: regionDeclared(region.regionCity, region.regionState) });
             continue;
           }
           if (region.status === 'prompt_required') {

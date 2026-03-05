@@ -1,10 +1,11 @@
 'use strict';
 
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const notificationsRepo = require('../../repos/firestore/notificationsRepo');
 const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
-const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { isLinkRegistryImpactMapEnabled } = require('../../domain/tasks/featureFlags');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 function normalizeText(value) {
@@ -12,23 +13,177 @@ function normalizeText(value) {
   return value.trim();
 }
 
-function addRef(map, linkId, ref) {
-  const id = normalizeText(linkId);
-  if (!id) return;
-  const current = map.get(id) || [];
-  current.push(ref);
-  map.set(id, current);
+function resolveLimit(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const parsed = Number(url.searchParams.get('limit') || 500);
+  if (!Number.isFinite(parsed) || parsed < 1) return 500;
+  return Math.min(Math.floor(parsed), 1000);
 }
 
-function normalizeState(link) {
-  if (!link || typeof link !== 'object') return 'unknown';
-  if (link.enabled === false) return 'disabled';
-  const state = normalizeText(link.lastHealth && link.lastHealth.state).toUpperCase();
-  if (!state) return 'unknown';
-  if (state === 'WARN') return 'WARN';
-  if (state === 'OK') return 'OK';
-  if (state === 'BLOCKED') return 'blocked';
-  return state;
+function normalizeLinkState(link) {
+  const row = link && typeof link === 'object' ? link : {};
+  const state = normalizeText(row.lastHealth && row.lastHealth.state).toUpperCase();
+  if (state) return state;
+  return row.enabled === false ? 'DISABLED' : 'UNKNOWN';
+}
+
+function isWarnOrDisabled(link) {
+  const row = link && typeof link === 'object' ? link : {};
+  if (row.enabled === false) return true;
+  return normalizeLinkState(row) === 'WARN';
+}
+
+function ensureImpactRow(map, link) {
+  const id = normalizeText(link && link.id);
+  if (!id) return null;
+  if (!map.has(id)) {
+    map.set(id, {
+      id,
+      state: normalizeLinkState(link),
+      enabled: link && link.enabled !== false,
+      domains: {
+        task: 0,
+        notification: 0,
+        citypack: 0,
+        vendor: 0
+      },
+      refCount: 0,
+      refs: []
+    });
+  }
+  return map.get(id);
+}
+
+function registerRef(row, domain, refType, refId) {
+  if (!row) return;
+  const key = normalizeText(domain);
+  if (!key || !Object.prototype.hasOwnProperty.call(row.domains, key)) return;
+  row.domains[key] += 1;
+  row.refCount += 1;
+  row.refs.push({
+    domain: key,
+    refType: normalizeText(refType),
+    refId: normalizeText(refId)
+  });
+}
+
+async function buildImpact(limit) {
+  const [links, taskContents, notifications, cityPacks] = await Promise.all([
+    linkRegistryRepo.listLinks({ limit }),
+    taskContentsRepo.listTaskContents({ limit }),
+    notificationsRepo.listNotifications({ limit, includeArchived: true, includeArchivedSeed: true }),
+    cityPacksRepo.listCityPacks({ limit })
+  ]);
+
+  const impactMap = new Map();
+  (Array.isArray(links) ? links : []).forEach((link) => {
+    ensureImpactRow(impactMap, link);
+  });
+
+  (Array.isArray(taskContents) ? taskContents : []).forEach((content) => {
+    const taskKey = normalizeText(content && content.taskKey) || '-';
+    const linkIds = [];
+    [content && content.videoLinkId, content && content.actionLinkId]
+      .forEach((item) => {
+        const value = normalizeText(item);
+        if (!value || linkIds.includes(value)) return;
+        linkIds.push(value);
+      });
+    (Array.isArray(content && content.recommendedVendorLinkIds) ? content.recommendedVendorLinkIds : []).forEach((item) => {
+      const value = normalizeText(item);
+      if (!value || linkIds.includes(value)) return;
+      linkIds.push(value);
+    });
+    linkIds.forEach((linkId) => {
+      const row = ensureImpactRow(impactMap, { id: linkId });
+      registerRef(row, 'task', 'task_content', taskKey);
+    });
+  });
+
+  (Array.isArray(notifications) ? notifications : []).forEach((notification) => {
+    const notificationId = normalizeText(notification && notification.id) || '-';
+    const linkIds = [];
+    const primary = normalizeText(notification && notification.linkRegistryId);
+    if (primary) linkIds.push(primary);
+    const secondary = Array.isArray(notification && notification.secondaryCtas) ? notification.secondaryCtas : [];
+    secondary.forEach((item) => {
+      const value = normalizeText(item && item.linkRegistryId);
+      if (!value || linkIds.includes(value)) return;
+      linkIds.push(value);
+    });
+    const fallback = normalizeText(
+      notification
+      && notification.cityPackFallback
+      && notification.cityPackFallback.fallbackLinkRegistryId
+    );
+    if (fallback && !linkIds.includes(fallback)) linkIds.push(fallback);
+    linkIds.forEach((linkId) => {
+      const row = ensureImpactRow(impactMap, { id: linkId });
+      registerRef(row, 'notification', 'notification', notificationId);
+    });
+  });
+
+  (Array.isArray(cityPacks) ? cityPacks : []).forEach((cityPack) => {
+    const cityPackId = normalizeText(cityPack && cityPack.id) || '-';
+    const slotContents = cityPack && cityPack.slotContents && typeof cityPack.slotContents === 'object'
+      ? cityPack.slotContents
+      : {};
+    Object.keys(slotContents).forEach((slotKey) => {
+      const linkId = normalizeText(slotContents[slotKey] && slotContents[slotKey].linkRegistryId);
+      if (!linkId) return;
+      const row = ensureImpactRow(impactMap, { id: linkId });
+      registerRef(row, 'citypack', `slot:${slotKey}`, cityPackId);
+    });
+  });
+
+  (Array.isArray(links) ? links : []).forEach((link) => {
+    const isVendor = Boolean(normalizeText(link && link.vendorKey) || normalizeText(link && link.vendorLabel) || normalizeText(link && link.intentTag) === 'vendor');
+    if (!isVendor) return;
+    const row = ensureImpactRow(impactMap, link);
+    registerRef(row, 'vendor', 'vendor_facade', normalizeText(link && link.id) || '-');
+  });
+
+  const items = Array.from(impactMap.values()).map((item) => {
+    const domainCount = Object.values(item.domains).filter((count) => Number(count) > 0).length;
+    const shared = domainCount >= 2;
+    return {
+      id: item.id,
+      state: item.state,
+      enabled: item.enabled,
+      domainCount,
+      refCount: item.refCount,
+      shared,
+      domains: item.domains,
+      refs: item.refs
+    };
+  }).sort((left, right) => {
+    const sharedCompare = Number(right.shared === true) - Number(left.shared === true);
+    if (sharedCompare !== 0) return sharedCompare;
+    const domainCompare = Number(right.domainCount || 0) - Number(left.domainCount || 0);
+    if (domainCompare !== 0) return domainCompare;
+    const refCompare = Number(right.refCount || 0) - Number(left.refCount || 0);
+    if (refCompare !== 0) return refCompare;
+    return String(left.id || '').localeCompare(String(right.id || ''), 'ja');
+  });
+
+  const linksById = new Map((Array.isArray(links) ? links : [])
+    .filter((item) => item && item.id)
+    .map((item) => [item.id, item]));
+  const referenced = items.filter((item) => Number(item.refCount || 0) > 0);
+  const shared = items.filter((item) => item.shared === true);
+  const referencedWarnOrDisabledCount = referenced.filter((item) => isWarnOrDisabled(linksById.get(item.id))).length;
+  const sharedWarnOrDisabledCount = shared.filter((item) => isWarnOrDisabled(linksById.get(item.id))).length;
+
+  return {
+    items,
+    summary: {
+      total: items.length,
+      referencedIdCount: referenced.length,
+      sharedIdCount: shared.length,
+      referencedWarnOrDisabledCount,
+      sharedWarnOrDisabledCount
+    }
+  };
 }
 
 async function handleImpact(req, res) {
@@ -36,74 +191,14 @@ async function handleImpact(req, res) {
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
+  if (!isLinkRegistryImpactMapEnabled()) {
+    res.writeHead(409, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'link_registry_impact_map_disabled', traceId, requestId }));
+    return;
+  }
   try {
-    const [links, notifications, cityPacks, taskContents] = await Promise.all([
-      linkRegistryRepo.listLinks({ limit: 1000 }),
-      notificationsRepo.listNotifications({ includeArchived: true, includeArchivedSeed: true, limit: 1000 }).catch(() => []),
-      cityPacksRepo.listCityPacks({ limit: 500 }).catch(() => []),
-      taskContentsRepo.listTaskContents({ limit: 1000 }).catch(() => [])
-    ]);
-
-    const refMap = new Map();
-
-    (Array.isArray(taskContents) ? taskContents : []).forEach((row) => {
-      addRef(refMap, row.videoLinkId, { domain: 'task', refType: 'videoLinkId', refId: row.taskKey });
-      addRef(refMap, row.actionLinkId, { domain: 'task', refType: 'actionLinkId', refId: row.taskKey });
-      const vendors = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
-      vendors.forEach((id) => addRef(refMap, id, { domain: 'task', refType: 'recommendedVendorLinkIds', refId: row.taskKey }));
-    });
-
-    (Array.isArray(notifications) ? notifications : []).forEach((row) => {
-      addRef(refMap, row.linkRegistryId, { domain: 'notification', refType: 'linkRegistryId', refId: row.id });
-      const secondary = Array.isArray(row.secondaryCtas) ? row.secondaryCtas : [];
-      secondary.forEach((cta, index) => {
-        addRef(refMap, cta && cta.linkRegistryId, { domain: 'notification', refType: `secondaryCtas[${index}]`, refId: row.id });
-      });
-      if (row.cityPackFallback && typeof row.cityPackFallback === 'object') {
-        addRef(refMap, row.cityPackFallback.fallbackLinkRegistryId, {
-          domain: 'notification',
-          refType: 'cityPackFallback',
-          refId: row.id
-        });
-      }
-    });
-
-    (Array.isArray(cityPacks) ? cityPacks : []).forEach((row) => {
-      const slotContents = row && row.slotContents && typeof row.slotContents === 'object' ? row.slotContents : {};
-      Object.keys(slotContents).forEach((slotKey) => {
-        const slot = slotContents[slotKey];
-        addRef(refMap, slot && slot.linkRegistryId, { domain: 'city_pack', refType: `slotContents.${slotKey}`, refId: row.id });
-      });
-      const slots = Array.isArray(row && row.slots) ? row.slots : [];
-      slots.forEach((slot, index) => {
-        addRef(refMap, slot && slot.fallbackLinkRegistryId, { domain: 'city_pack', refType: `slots[${index}].fallbackLinkRegistryId`, refId: row.id });
-      });
-    });
-
-    (Array.isArray(links) ? links : []).forEach((row) => {
-      if (normalizeText(row.vendorKey) || normalizeText(row.vendorLabel)) {
-        addRef(refMap, row.id, { domain: 'vendor', refType: 'vendor_facade', refId: row.id });
-      }
-    });
-
-    const items = (Array.isArray(links) ? links : []).map((link) => {
-      const refs = refMap.get(link.id) || [];
-      const domains = Array.from(new Set(refs.map((ref) => ref.domain)));
-      return {
-        id: link.id,
-        state: normalizeState(link),
-        refCount: refs.length,
-        domainCount: domains.length,
-        shared: domains.length > 1,
-        domains,
-        refs
-      };
-    });
-
-    const sharedIdCount = items.filter((item) => item.shared).length;
-    const referencedWarnOrDisabledCount = items.filter((item) => item.refCount > 0 && ['WARN', 'disabled', 'blocked'].includes(item.state)).length;
-    const sharedWarnOrDisabledCount = items.filter((item) => item.shared && ['WARN', 'disabled', 'blocked'].includes(item.state)).length;
-
+    const limit = resolveLimit(req);
+    const impact = await buildImpact(limit);
     await appendAuditLog({
       actor,
       action: 'link_registry.impact.view',
@@ -112,28 +207,20 @@ async function handleImpact(req, res) {
       traceId,
       requestId,
       payloadSummary: {
-        linkCount: items.length,
-        sharedIdCount,
-        referencedWarnOrDisabledCount,
-        sharedWarnOrDisabledCount
+        limit,
+        total: impact.summary.total,
+        sharedIdCount: impact.summary.sharedIdCount,
+        referencedWarnOrDisabledCount: impact.summary.referencedWarnOrDisabledCount
       }
-    }).catch(() => null);
-
+    });
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    res.end(JSON.stringify(Object.assign({
       ok: true,
       traceId,
-      requestId,
-      summary: {
-        linkCount: items.length,
-        sharedIdCount,
-        referencedWarnOrDisabledCount,
-        sharedWarnOrDisabledCount
-      },
-      items
-    }));
+      requestId
+    }, impact)));
   } catch (err) {
-    logRouteError('admin.os_link_registry_impact', err, { traceId, requestId, actor });
+    logRouteError('admin.os_link_registry.impact', err, { traceId, requestId, actor });
     res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'error', traceId, requestId }));
   }
@@ -142,3 +229,4 @@ async function handleImpact(req, res) {
 module.exports = {
   handleImpact
 };
+

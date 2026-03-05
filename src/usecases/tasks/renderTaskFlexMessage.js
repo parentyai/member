@@ -1,164 +1,140 @@
 'use strict';
 
+const { isTaskMicroLearningEnabled } = require('../../domain/tasks/featureFlags');
+const { generateTaskSummary } = require('./generateTaskSummary');
+
 function normalizeText(value, fallback) {
+  if (value === null || value === undefined) return fallback;
   if (typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized || fallback;
 }
 
-function renderTimeLabel(taskContent) {
-  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
-  const min = Number(row.timeMin);
-  const max = Number(row.timeMax);
-  if (Number.isFinite(min) && Number.isFinite(max)) return `${min}〜${max}分`;
-  if (Number.isFinite(min)) return `${min}分`;
-  if (Number.isFinite(max)) return `〜${max}分`;
-  return null;
+function buildTimeLabel(timeMin, timeMax) {
+  const min = (timeMin === null || timeMin === undefined || timeMin === '')
+    ? null
+    : (Number.isFinite(Number(timeMin)) ? Math.floor(Number(timeMin)) : null);
+  const max = (timeMax === null || timeMax === undefined || timeMax === '')
+    ? null
+    : (Number.isFinite(Number(timeMax)) ? Math.floor(Number(timeMax)) : null);
+  if (Number.isInteger(min) && Number.isInteger(max)) return `${min}〜${max}分`;
+  if (Number.isInteger(min)) return `${min}分`;
+  if (Number.isInteger(max)) return `${max}分`;
+  return '未登録';
 }
 
-function buildChecklistLines(taskContent) {
-  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
-  const items = Array.isArray(row.checklistItems) && row.checklistItems.length
-    ? row.checklistItems
-      .filter((item) => item && item.enabled !== false && typeof item.text === 'string' && item.text.trim())
-      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
-      .map((item) => item.text.trim())
-    : (Array.isArray(row.checklist) ? row.checklist.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim()) : []);
-  return items.slice(0, 8);
+function resolveTitle(task, taskContent) {
+  const taskRow = task && typeof task === 'object' ? task : {};
+  const meaning = taskRow.meaning && typeof taskRow.meaning === 'object' ? taskRow.meaning : {};
+  return normalizeText(
+    taskContent && taskContent.title,
+    normalizeText(meaning.title, normalizeText(taskRow.ruleId, normalizeText(taskRow.taskId, 'タスク詳細')))
+  );
 }
 
-function buildPostbackData(todoKey, section) {
-  const safeTodoKey = encodeURIComponent(String(todoKey || '').trim());
-  const safeSection = encodeURIComponent(String(section || '').trim());
-  return `action=todo_detail_section&todoKey=${safeTodoKey}&section=${safeSection}`;
+function buildPostbackData(action, todoKey, section) {
+  const params = new URLSearchParams();
+  params.set('action', action);
+  params.set('todoKey', todoKey || '');
+  if (section) params.set('section', section);
+  return params.toString();
 }
 
-function buildActionButtons(todoKey, resolvedLinks) {
-  const links = resolvedLinks && typeof resolvedLinks === 'object' ? resolvedLinks : {};
-  const buttons = [
+function buildChecklistTexts(taskContent) {
+  const source = Array.isArray(taskContent && taskContent.checklistItems) ? taskContent.checklistItems : [];
+  const enabled = source.filter((item) => item && item.enabled !== false);
+  const visible = enabled.slice(0, 5);
+  const lines = visible.map((item) => `□ ${item.text}`);
+  if (enabled.length > visible.length) lines.push(`…ほか${enabled.length - visible.length}件`);
+  return lines;
+}
+
+function buildUnderstandingButtons(todoKey, linkRefs) {
+  const refs = linkRefs && typeof linkRefs === 'object' ? linkRefs : {};
+  const rows = [
     {
       type: 'button',
       style: 'secondary',
-      color: '#4C6FFF',
+      height: 'sm',
       action: {
         type: 'postback',
         label: '📖 手順マニュアル',
-        data: buildPostbackData(todoKey, 'manual')
-      },
-      margin: 'md'
+        data: buildPostbackData('todo_detail_section', todoKey, 'manual'),
+        displayText: `TODO詳細:${todoKey}`
+      }
     }
   ];
-
-  if (links.video && links.video.url) {
-    buttons.push({
+  if (refs.video && refs.video.ok && refs.video.link && refs.video.link.url) {
+    rows.push({
       type: 'button',
       style: 'secondary',
+      height: 'sm',
       action: {
         type: 'uri',
-        label: '🎥 動画',
-        uri: links.video.url
-      },
-      margin: 'sm'
+        label: '🎥 3分動画',
+        uri: refs.video.link.url
+      }
     });
   }
-
-  buttons.push({
+  rows.push({
     type: 'button',
     style: 'secondary',
+    height: 'sm',
     action: {
       type: 'postback',
       label: '⚠ よくある失敗',
-      data: buildPostbackData(todoKey, 'failure')
-    },
-    margin: 'sm'
+      data: buildPostbackData('todo_detail_section', todoKey, 'failure'),
+      displayText: `TODO詳細:${todoKey}`
+    }
   });
-
-  if (links.action && links.action.url) {
-    const label = normalizeText(links.action.label || links.action.title, '詳しく見る');
-    buttons.push({
-      type: 'button',
-      style: 'primary',
-      color: '#1DB446',
-      action: {
-        type: 'uri',
-        label: `→ ${label}`.slice(0, 20),
-        uri: links.action.url
-      },
-      margin: 'md'
-    });
-  }
-
-  return buttons.slice(0, 4);
-}
-
-function renderTaskDetailText(todoKey, taskContent, resolvedLinks) {
-  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
-  const title = normalizeText(row.title, todoKey || 'タスク詳細');
-  const lines = [`【${title}】`];
-  const timeLabel = renderTimeLabel(row);
-  if (timeLabel) lines.push(`必要時間: ${timeLabel}`);
-  const checklist = buildChecklistLines(row);
-  if (checklist.length) {
-    lines.push('やること:');
-    checklist.forEach((item) => lines.push(`□ ${item}`));
-  }
-  lines.push('理解する:');
-  lines.push(`- 手順マニュアル: TODO詳細続き:${todoKey}:manual:1`);
-  if (resolvedLinks && resolvedLinks.video && resolvedLinks.video.url) {
-    lines.push(`- 動画: ${resolvedLinks.video.url}`);
-  }
-  lines.push(`- よくある失敗: TODO詳細続き:${todoKey}:failure:1`);
-  if (resolvedLinks && resolvedLinks.action && resolvedLinks.action.url) {
-    lines.push(`- CTA: ${resolvedLinks.action.url}`);
-  }
-  return lines.join('\n');
+  return rows;
 }
 
 function renderTaskFlexMessage(params) {
   const payload = params && typeof params === 'object' ? params : {};
-  const todoKey = normalizeText(payload.todoKey, '');
-  const taskContent = payload.taskContent && typeof payload.taskContent === 'object'
-    ? payload.taskContent
-    : {};
-  const resolvedLinks = payload.resolvedLinks && typeof payload.resolvedLinks === 'object'
-    ? payload.resolvedLinks
-    : {};
-
-  const title = normalizeText(taskContent.title, todoKey || 'タスク詳細');
-  const timeLabel = renderTimeLabel(taskContent);
-  const checklist = buildChecklistLines(taskContent);
+  const task = payload.task && typeof payload.task === 'object' ? payload.task : {};
+  const taskContent = payload.taskContent && typeof payload.taskContent === 'object' ? payload.taskContent : {};
+  const linkRefs = payload.linkRefs && typeof payload.linkRefs === 'object' ? payload.linkRefs : {};
+  const todoKey = normalizeText(payload.todoKey, normalizeText(task.ruleId, normalizeText(task.taskId, 'task')));
+  const title = resolveTitle(task, taskContent);
+  const timeLabel = buildTimeLabel(taskContent.timeMin, taskContent.timeMax);
+  const checklistLines = buildChecklistTexts(taskContent);
+  const microLearning = isTaskMicroLearningEnabled()
+    ? generateTaskSummary({ taskContent, task })
+    : { summaryShort: [], topMistakes: [], contextTips: [] };
 
   const bodyContents = [
     {
       type: 'text',
-      text: title,
+      text: '必要時間',
+      size: 'sm',
+      color: '#777777'
+    },
+    {
+      type: 'text',
+      text: timeLabel,
+      size: 'md',
       weight: 'bold',
-      size: 'lg',
       wrap: true
     }
   ];
 
-  if (timeLabel) {
+  if (checklistLines.length > 0) {
     bodyContents.push({
-      type: 'text',
-      text: `必要時間: ${timeLabel}`,
-      size: 'sm',
-      color: '#666666',
+      type: 'separator',
       margin: 'md'
     });
-  }
-
-  if (checklist.length) {
     bodyContents.push({
       type: 'text',
       text: 'やること',
-      weight: 'bold',
+      size: 'sm',
+      color: '#777777',
       margin: 'md'
     });
-    checklist.forEach((item) => {
+    checklistLines.forEach((line) => {
       bodyContents.push({
         type: 'text',
-        text: `□ ${item}`,
+        text: line,
         size: 'sm',
         wrap: true,
         margin: 'sm'
@@ -166,35 +142,147 @@ function renderTaskFlexMessage(params) {
     });
   }
 
+  if (isTaskMicroLearningEnabled()) {
+    if (Array.isArray(microLearning.summaryShort) && microLearning.summaryShort.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: '概要',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.summaryShort.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
+
+    if (Array.isArray(microLearning.topMistakes) && microLearning.topMistakes.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: 'よくある失敗',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.topMistakes.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
+
+    if (Array.isArray(microLearning.contextTips) && microLearning.contextTips.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: 'あなたの状況の注意',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.contextTips.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
+  }
+
+  bodyContents.push({
+    type: 'separator',
+    margin: 'md'
+  });
   bodyContents.push({
     type: 'text',
     text: '理解する',
-    weight: 'bold',
+    size: 'sm',
+    color: '#777777',
     margin: 'md'
   });
+  bodyContents.push({
+    type: 'box',
+    layout: 'vertical',
+    spacing: 'sm',
+    margin: 'sm',
+    contents: buildUnderstandingButtons(todoKey, linkRefs)
+  });
 
-  return {
+  const footerContents = [];
+  if (linkRefs.action && linkRefs.action.ok && linkRefs.action.link && linkRefs.action.link.url) {
+    footerContents.push({
+      type: 'button',
+      style: 'primary',
+      action: {
+        type: 'uri',
+        label: `→ ${normalizeText(linkRefs.action.link.title || linkRefs.action.link.label, '外部リンクを開く')}`,
+        uri: linkRefs.action.link.url
+      }
+    });
+  }
+
+  const flex = {
     type: 'flex',
-    altText: `タスク詳細: ${title}`,
+    altText: `${title} のタスク詳細`,
     contents: {
       type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: `【${title}】`,
+            weight: 'bold',
+            size: 'lg',
+            wrap: true
+          }
+        ]
+      },
       body: {
         type: 'box',
         layout: 'vertical',
-        contents: bodyContents
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
         spacing: 'sm',
-        contents: buildActionButtons(todoKey, resolvedLinks)
+        contents: bodyContents
       }
-    },
-    fallbackText: renderTaskDetailText(todoKey, taskContent, resolvedLinks)
+    }
   };
+
+  if (footerContents.length > 0) {
+    flex.contents.footer = {
+      type: 'box',
+      layout: 'vertical',
+      contents: footerContents
+    };
+  }
+  return flex;
 }
 
 module.exports = {
   renderTaskFlexMessage,
-  renderTaskDetailText
+  buildTimeLabel
 };

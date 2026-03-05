@@ -1,5 +1,7 @@
 'use strict';
 
+const { TASK_CATEGORY_SET } = require('../tasks/taskCategories');
+
 const HOUSEHOLD_LABEL_MAP = Object.freeze({
   '単身': 'single',
   '1': 'single',
@@ -21,6 +23,7 @@ const HOUSEHOLD_TO_SCENARIO = Object.freeze({
   accompany1: 'C',
   accompany2: 'D'
 });
+const CITY_PACK_MODULE_PATTERN = /^[a-z_]{3,32}$/;
 const SCENARIO_MIRROR_FIELD = String.fromCharCode(
   115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 77, 105, 114, 114, 111, 114
 );
@@ -53,6 +56,12 @@ function normalizeHouseholdLabel(value) {
   return HOUSEHOLD_LABEL_MAP[text] || HOUSEHOLD_LABEL_MAP[lowered] || null;
 }
 
+function normalizeCategory(value) {
+  const normalized = normalizeText(value).toUpperCase();
+  if (!normalized) return null;
+  return TASK_CATEGORY_SET.has(normalized) ? normalized : null;
+}
+
 function buildHouseholdAssignmentPayload(householdType) {
   const payload = {
     action: 'set_household',
@@ -66,29 +75,38 @@ function parseJourneyLineCommand(text) {
   const raw = normalizeText(text);
   if (!raw) return null;
 
-  if (/^今日の3つ$/i.test(raw)) {
-    return { action: 'next_tasks' };
-  }
-
-  if (/^TODO一覧$/i.test(raw)) {
+  if (/^(?:TODO一覧|やること一覧)$/i.test(raw)) {
     return { action: 'todo_list' };
   }
 
-  const todoDetail = raw.match(/^TODO詳細\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
-  if (todoDetail) {
-    return {
-      action: 'todo_detail',
-      todoKey: normalizeText(todoDetail[1])
-    };
+  if (/^(?:今日の3つ|NEXT_TASKS)$/i.test(raw)) {
+    return { action: 'next_tasks' };
   }
 
-  const todoDetailContinue = raw.match(/^TODO詳細続き\s*[:：]?\s*([A-Za-z0-9_\-]+)\s*[:：]\s*(manual|failure)\s*[:：]\s*(\d+)$/i);
-  if (todoDetailContinue) {
+  if (/^(?:カテゴリ|CATEGORY_VIEW)$/i.test(raw)) {
+    return { action: 'category_view' };
+  }
+
+  const categoryPick = raw.match(/^(?:カテゴリ|CATEGORY_VIEW)\s*[:：]\s*([A-Za-z_]+)$/i);
+  if (categoryPick) {
+    const category = normalizeCategory(categoryPick[1]);
+    if (!category) return { action: 'category_view_missing' };
+    return { action: 'category_view', category };
+  }
+
+  if (/^(?:通知履歴|DELIVERY_HISTORY)$/i.test(raw)) {
+    return { action: 'delivery_history' };
+  }
+
+  if (/^(?:相談|相談希望|SUPPORT)$/i.test(raw)) {
+    return { action: 'support_guide' };
+  }
+
+  const todoVendor = raw.match(/^TODO(?:業者|VENDOR)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (todoVendor) {
     return {
-      action: 'todo_detail_continue',
-      todoKey: normalizeText(todoDetailContinue[1]),
-      section: normalizeText(todoDetailContinue[2]).toLowerCase(),
-      startChunk: Number(todoDetailContinue[3])
+      action: 'todo_vendor',
+      todoKey: normalizeText(todoVendor[1])
     };
   }
 
@@ -130,29 +148,45 @@ function parseJourneyLineCommand(text) {
     };
   }
 
-  const todoVendor = raw.match(/^TODO業者\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
-  if (todoVendor) {
+  const detail = raw.match(/^TODO(?:詳細|DETAIL)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (detail) {
     return {
-      action: 'todo_vendor',
-      todoKey: normalizeText(todoVendor[1])
+      action: 'todo_detail',
+      todoKey: normalizeText(detail[1])
     };
   }
 
-  const category = raw.match(/^カテゴリ(?:\s*[:：]?\s*([A-Za-z_]+))?$/i);
-  if (category) {
-    const categoryKey = normalizeText(category[1] || '').toUpperCase() || null;
+  const detailContinue = raw.match(/^TODO(?:詳細)?続き\s*[:：]?\s*([A-Za-z0-9_\-]+)\s*[:：]\s*(manual|failure)(?:\s*[:：]\s*(\d+))?$/i);
+  if (detailContinue) {
+    const startChunk = Number(detailContinue[3] || '1');
     return {
-      action: 'category_view',
-      category: categoryKey
+      action: 'todo_detail_section_continue',
+      todoKey: normalizeText(detailContinue[1]),
+      section: normalizeText(detailContinue[2]).toLowerCase(),
+      startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
     };
   }
 
-  if (/^通知履歴$/i.test(raw)) {
-    return { action: 'delivery_history' };
+  if (/^(?:CityPack(?:案内|モジュール|購読)|CITYPACK(?:GUIDE|MODULE))$/i.test(raw)) {
+    return { action: 'city_pack_module_guide' };
   }
 
-  if (/^CityPack案内$/i.test(raw)) {
-    return { action: 'city_pack_guide' };
+  const cityPackSubscribe = raw.match(/^CityPack(?:購読|SUBSCRIBE)\s*[:：]\s*([a-z_]{3,32})$/i);
+  if (cityPackSubscribe) {
+    const module = normalizeText(cityPackSubscribe[1]).toLowerCase();
+    if (!CITY_PACK_MODULE_PATTERN.test(module)) return { action: 'city_pack_module_subscribe_missing' };
+    return { action: 'city_pack_module_subscribe', module };
+  }
+
+  const cityPackUnsubscribe = raw.match(/^CityPack(?:解除|UNSUBSCRIBE)\s*[:：]\s*([a-z_]{3,32})$/i);
+  if (cityPackUnsubscribe) {
+    const module = normalizeText(cityPackUnsubscribe[1]).toLowerCase();
+    if (!CITY_PACK_MODULE_PATTERN.test(module)) return { action: 'city_pack_module_unsubscribe_missing' };
+    return { action: 'city_pack_module_unsubscribe', module };
+  }
+
+  if (/^(?:CityPack(?:状況|STATUS)|CITYPACK_STATUS)$/i.test(raw)) {
+    return { action: 'city_pack_module_status' };
   }
 
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
@@ -244,10 +278,6 @@ function parseJourneyPostbackData(data) {
     };
   }
 
-  if (action === 'todo_list') {
-    return { action };
-  }
-
   if (action === 'todo_detail') {
     const todoKey = normalizeText(params.get('todoKey'));
     if (!todoKey) return { action: 'todo_detail_missing' };
@@ -257,29 +287,50 @@ function parseJourneyPostbackData(data) {
   if (action === 'todo_detail_section') {
     const todoKey = normalizeText(params.get('todoKey'));
     const section = normalizeText(params.get('section')).toLowerCase();
-    const startChunk = Number(params.get('startChunk') || 1);
+    const chunk = Number(normalizeText(params.get('chunk')));
     if (!todoKey || !section) return { action: 'todo_detail_section_missing' };
+    if (!['manual', 'failure'].includes(section)) return { action: 'todo_detail_section_missing' };
     return {
       action,
       todoKey,
       section,
-      startChunk: Number.isFinite(startChunk) ? Math.max(1, Math.floor(startChunk)) : 1
+      startChunk: Number.isInteger(chunk) && chunk >= 1 ? chunk : 1
     };
   }
 
-  if (action === 'next_tasks') return { action };
-  if (action === 'delivery_history') return { action };
-  if (action === 'city_pack_guide') return { action };
+  if (action === 'next_tasks' || action === 'delivery_history' || action === 'support_guide') {
+    return { action };
+  }
 
-  if (action === 'category_view' || action === 'category_pick') {
-    const category = normalizeText(params.get('category')).toUpperCase();
-    return { action: 'category_view', category: category || null };
+  if (action === 'category_view') {
+    const category = normalizeCategory(params.get('category'));
+    return category ? { action, category } : { action };
+  }
+
+  if (action === 'category_pick') {
+    const category = normalizeCategory(params.get('category'));
+    if (!category) return { action: 'category_view_missing' };
+    return { action: 'category_view', category };
   }
 
   if (action === 'todo_vendor') {
     const todoKey = normalizeText(params.get('todoKey'));
     if (!todoKey) return { action: 'todo_vendor_missing' };
     return { action, todoKey };
+  }
+
+  if (action === 'todo_list') {
+    return { action };
+  }
+
+  if (action === 'city_pack_module_status') {
+    return { action };
+  }
+
+  if (action === 'city_pack_module_subscribe' || action === 'city_pack_module_unsubscribe') {
+    const module = normalizeText(params.get('module')).toLowerCase();
+    if (!module || !CITY_PACK_MODULE_PATTERN.test(module)) return { action: `${action}_missing` };
+    return { action, module };
   }
 
   return null;

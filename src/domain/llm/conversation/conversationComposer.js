@@ -143,7 +143,32 @@ function composeConversationDraft(params) {
   };
 }
 
+function composeConversationDraftFromSignals(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const summary = toSentence(payload.summary, '状況の特定に必要な情報が不足しています。');
+  const nextActions = Array.isArray(payload.nextActions)
+    ? payload.nextActions.map((item) => normalizeText(item)).filter(Boolean).slice(0, 3)
+    : [];
+  const pitfall = normalizeText(payload.pitfall);
+  const question = normalizeText(payload.question);
+
+  const analysis = {
+    summary,
+    missing: Array.isArray(payload.missing) ? payload.missing.map((item) => normalizeText(item)).filter(Boolean).slice(0, 3) : [],
+    risks: pitfall ? [pitfall] : [],
+    nextActions,
+    refs: []
+  };
+  return composeConversationDraft({
+    analysis,
+    state: payload.state,
+    move: payload.move,
+    baseReplyText: payload.baseReplyText || ''
+  });
+}
+
 module.exports = {
   extractAnalysisFromBaseReply,
-  composeConversationDraft
+  composeConversationDraft,
+  composeConversationDraftFromSignals
 };

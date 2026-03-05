@@ -98,6 +98,10 @@ function resolveCityPackContentManageFlag() {
   return resolveBooleanEnvFlag('ENABLE_CITY_PACK_CONTENT_MANAGE_V1', true);
 }
 
+function resolveCityPackUiV2Flag() {
+  return resolveBooleanEnvFlag('ENABLE_CITY_PACK_UI_V2', true);
+}
+
 function resolveAdminOpsOnlyNavFlag() {
   return resolveBooleanEnvFlag('ENABLE_ADMIN_OPS_ONLY_NAV_V1', true);
 }
@@ -173,6 +177,7 @@ function buildAdminAppBootScript() {
   const homeCleanSurfaceEnabled = resolveAdminHomeCleanSurfaceFlag();
   const usersStripeLayoutEnabled = resolveAdminUsersStripeLayoutFlag();
   const cityPackContentManageEnabled = resolveCityPackContentManageFlag();
+  const cityPackUiV2Enabled = resolveCityPackUiV2Flag();
   const adminOpsOnlyNavEnabled = resolveAdminOpsOnlyNavFlag();
   const adminDeveloperSurfaceEnabled = resolveAdminDeveloperSurfaceFlag();
   const adminLegacyStatusEnabled = resolveAdminLegacyStatusFlag();
@@ -182,7 +187,7 @@ function buildAdminAppBootScript() {
   const composerAbOptionEnabled = resolveComposerAbOptionFlag();
   const buildMeta = buildMetaEnabled ? resolveAdminBuildMeta() : null;
   const safeBuildMeta = JSON.stringify(buildMeta);
-  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=${localPreflightBlockingEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1=${homeCleanSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LEGACY_STATUS_V1=${adminLegacyStatusEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1=${composerCategoryWizardEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_AB_OPTION_V1=${composerAbOptionEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
+  return `<script>window.ADMIN_TREND_UI_ENABLED=${trendEnabled ? 'true' : 'false'};window.ADMIN_UI_FOUNDATION_V1=${foundationEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_BUILD_META=${buildMetaEnabled ? 'true' : 'false'};window.ADMIN_NAV_ROLLOUT_V1=${navRolloutEnabled ? 'true' : 'false'};window.ADMIN_NAV_ALL_ACCESSIBLE_V1=${navAllAccessibleEnabled ? 'true' : 'false'};window.ADMIN_ROLE_PERSIST_V1=${rolePersistEnabled ? 'true' : 'false'};window.ADMIN_HISTORY_SYNC_V1=${historySyncEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=${localPreflightEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1=${localPreflightBlockingEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_NO_COLLAPSE_V1=${noCollapseEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_TOP_SUMMARY_V1=${topSummaryEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1=${homeCleanSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1=${usersStripeLayoutEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1=${cityPackContentManageEnabled ? 'true' : 'false'};window.ENABLE_CITY_PACK_UI_V2=${cityPackUiV2Enabled ? 'true' : 'false'};window.ENABLE_ADMIN_OPS_ONLY_NAV_V1=${adminOpsOnlyNavEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_DEVELOPER_SURFACE_V1=${adminDeveloperSurfaceEnabled ? 'true' : 'false'};window.ENABLE_ADMIN_LEGACY_STATUS_V1=${adminLegacyStatusEnabled ? 'true' : 'false'};window.ENABLE_OPS_REALTIME_DASHBOARD_V1=${opsRealtimeDashboardEnabled ? 'true' : 'false'};window.ENABLE_OPS_SYSTEM_SNAPSHOT_V1=${opsSystemSnapshotEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_CATEGORY_WIZARD_V1=${composerCategoryWizardEnabled ? 'true' : 'false'};window.ENABLE_COMPOSER_AB_OPTION_V1=${composerAbOptionEnabled ? 'true' : 'false'};window.ADMIN_APP_BUILD_META=${safeBuildMeta};if(!window.ADMIN_TREND_UI_ENABLED){document.documentElement.classList.add("trend-ui-disabled");}</script>`;
 }
 
 function parseCookies(headerValue) {
@@ -2321,6 +2326,10 @@ function createServer() {
         await handleOsLinkRegistryLookup(req, res);
         return;
       }
+      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {
+        await handleOsLinkRegistryImpact(req, res);
+        return;
+      }
 
       res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: false, error: 'not found' }));
@@ -2422,6 +2431,7 @@ function createServer() {
       handleConsentVerify,
       handleConsentRevoke
     } = require('./routes/admin/llmConsent');
+    const { enforceLlmGenerationKillSwitch } = require('./routes/admin/osContext');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -2474,15 +2484,21 @@ function createServer() {
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_faq_answer' });
+        if (!allowed) return;
         const body = await collectBody();
         await handleAdminLlmFaqAnswer(req, res, body, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/ops-explain') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_ops_explain' });
+        if (!allowed) return;
         await handleAdminLlmOpsExplain(req, res, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/next-actions') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_next_actions' });
+        if (!allowed) return;
         await handleAdminLlmNextActions(req, res, { llmAdapter: llmClient });
         return;
       }

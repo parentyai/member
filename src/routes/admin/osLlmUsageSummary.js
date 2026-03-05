@@ -29,6 +29,8 @@ const DEFAULT_RELEASE_READINESS_THRESHOLDS = Object.freeze({
   maxFallbackRate: 0.35,
   minEvidenceCoverage: 0.8
 });
+const DASHBOARD_ENTRY_TYPES = Object.freeze(['webhook', 'admin', 'compat', 'job']);
+const DASHBOARD_GATES = Object.freeze(['kill_switch', 'url_guard', 'injection', 'snapshot']);
 
 function toMillis(value) {
   if (!value) return null;
@@ -189,6 +191,22 @@ function sortCountEntries(map, keyName, limit) {
     .slice(0, cap);
 }
 
+function sortCountEntriesWithDefaults(map, keyName, defaults, limit) {
+  const outMap = new Map(map);
+  (Array.isArray(defaults) ? defaults : []).forEach((value) => {
+    const key = normalizeReason(value);
+    if (!outMap.has(key)) outMap.set(key, 0);
+  });
+  const rows = Array.from(outMap.entries())
+    .map(([key, count]) => ({ [keyName]: key, count }))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return String(a[keyName]).localeCompare(String(b[keyName]), 'ja');
+    });
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : 20;
+  return rows.slice(0, cap);
+}
+
 function buildAssistantQualitySummary(rows) {
   const source = Array.isArray(rows) ? rows : [];
   const sampleRows = source
@@ -257,8 +275,17 @@ function buildGateAuditBaseline(rows) {
   const callsTotal = filtered.length;
   const blockedReasons = new Map();
   const blockedStages = new Map();
+  const entryTypes = new Map();
+  const gatesCoverage = new Map();
   let allowCount = 0;
   filtered.forEach((summary) => {
+    const entryType = normalizeReason(summary.entryType);
+    entryTypes.set(entryType, (entryTypes.get(entryType) || 0) + 1);
+    const gatesApplied = Array.isArray(summary.gatesApplied) ? summary.gatesApplied : [];
+    gatesApplied.forEach((gate) => {
+      const key = normalizeReason(gate);
+      gatesCoverage.set(key, (gatesCoverage.get(key) || 0) + 1);
+    });
     const decision = String(summary.decision || '').toLowerCase();
     if (decision === 'allow') {
       allowCount += 1;
@@ -280,7 +307,9 @@ function buildGateAuditBaseline(rows) {
     blockedCount,
     acceptedRate: callsTotal > 0 ? Math.round((allowCount / callsTotal) * 10000) / 10000 : 0,
     blockedReasons: sortCountEntries(blockedReasons, 'reason', 20),
-    blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20)
+    blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20),
+    entryTypes: sortCountEntriesWithDefaults(entryTypes, 'entryType', DASHBOARD_ENTRY_TYPES, 20),
+    gatesCoverage: sortCountEntriesWithDefaults(gatesCoverage, 'gate', DASHBOARD_GATES, 20)
   };
 }
 

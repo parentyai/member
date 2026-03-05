@@ -1315,6 +1315,22 @@
       "fullscan_risk": "HIGH"
     },
     {
+      "collection": "user_city_pack_preferences",
+      "repos": [
+        "userCityPackPreferencesRepo"
+      ],
+      "write_paths": [
+        "src/repos/firestore/userCityPackPreferencesRepo.js"
+      ],
+      "read_paths": [
+        "src/repos/firestore/userCityPackPreferencesRepo.js"
+      ],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "user_consents",
       "repos": [
         "userConsentsRepo"

@@ -97,6 +97,10 @@ const ADMIN_CITY_PACK_CONTENT_MANAGE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1 : null,
   true
 );
+const ADMIN_CITY_PACK_UI_V2 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_CITY_PACK_UI_V2 : null,
+  true
+);
 const ADMIN_OPS_ONLY_NAV_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_OPS_ONLY_NAV_V1 : null,
   true
@@ -147,6 +151,11 @@ const state = {
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
+  taskRulesRules: [],
+  taskRulesTaskContents: [],
+  taskRulesTaskContentLinks: [],
+  taskRulesLinkRegistryItems: [],
+  taskRulesLinkImpact: null,
   vendorItems: [],
   selectedVendorLinkId: null,
   selectedVendorRowIndex: null,
@@ -174,6 +183,7 @@ const state = {
   selectedCityPackManageId: null,
   cityPackUnifiedItems: [],
   cityPackUnifiedFilteredItems: [],
+  selectedCityPackUnifiedItemKey: null,
   cityPackUnifiedSortKey: 'updatedAt',
   cityPackUnifiedSortDir: 'desc',
   cityPackKpi: null,
@@ -2639,6 +2649,18 @@ function applyUsersStripeLayoutVisibility() {
   if (editColumnsBtn) editColumnsBtn.classList.add('is-hidden-by-flag');
   if (columnsPanel) columnsPanel.classList.add('is-hidden-by-flag');
   if (billingIntegrityWrap) billingIntegrityWrap.classList.add('is-hidden-by-flag');
+}
+
+function applyCityPackUiV2Visibility() {
+  if (appShell) appShell.classList.toggle('city-pack-ui-v2', ADMIN_CITY_PACK_UI_V2);
+  document.querySelectorAll('.city-pack-v2-only').forEach((el) => {
+    el.classList.toggle('is-hidden-by-flag', !ADMIN_CITY_PACK_UI_V2);
+    if (!ADMIN_CITY_PACK_UI_V2) {
+      el.setAttribute('aria-hidden', 'true');
+    } else {
+      el.removeAttribute('aria-hidden');
+    }
+  });
 }
 
 function scrollToPaneAnchor(targetId) {
@@ -5177,9 +5199,13 @@ function sortCityPackUnifiedItems(items) {
 function buildCityPackUnifiedItems() {
   const rows = [];
   const addRow = (item) => {
+    const recordType = item.recordType || '';
+    const itemId = item.itemId || '';
+    const createdAt = item.createdAt || '';
     rows.push({
-      recordType: item.recordType || '',
-      itemId: item.itemId || '',
+      recordType,
+      itemId,
+      rowKey: `${recordType}::${itemId}::${createdAt}`,
       lineUserId: item.lineUserId || '',
       cityLabel: item.cityLabel || '',
       status: item.status || '',
@@ -5340,6 +5366,48 @@ function buildCityPackUnifiedItems() {
   return rows;
 }
 
+function findCityPackUnifiedItemByKey(rowKey) {
+  if (!rowKey) return null;
+  return state.cityPackUnifiedFilteredItems.find((item) => item && item.rowKey === rowKey) || null;
+}
+
+function resolveCityPackUnifiedStatusClass(statusValue) {
+  const status = String(statusValue || '').trim().toLowerCase();
+  if (!status) return 'is-default';
+  if (status === 'needs_review' || status === 'queued' || status === 'triaged' || status === 'proposed' || status === 'draft') return 'is-attention';
+  if (status === 'blocked' || status === 'failed' || status === 'rejected' || status === 'dead') return 'is-blocked';
+  if (status === 'approved' || status === 'active' || status === 'resolved' || status === 'sent') return 'is-ready';
+  return 'is-default';
+}
+
+function updateCityPackV2Stats(items) {
+  const list = Array.isArray(items) ? items : [];
+  const total = list.length;
+  const actionable = list.filter((item) => {
+    const status = String(item && item.status ? item.status : '').toLowerCase();
+    return status === 'needs_review'
+      || status === 'queued'
+      || status === 'triaged'
+      || status === 'proposed'
+      || status === 'draft';
+  }).length;
+  const blocked = list.filter((item) => {
+    const status = String(item && item.status ? item.status : '').toLowerCase();
+    return status === 'blocked' || status === 'failed' || status === 'dead';
+  }).length;
+  const totalEl = document.getElementById('city-pack-v2-stat-total');
+  const actionableEl = document.getElementById('city-pack-v2-stat-actionable');
+  const blockedEl = document.getElementById('city-pack-v2-stat-blocked');
+  if (totalEl) totalEl.textContent = String(total);
+  if (actionableEl) actionableEl.textContent = String(actionable);
+  if (blockedEl) blockedEl.textContent = String(blocked);
+}
+
+function setCityPackUnifiedQuickStatus(statusValue) {
+  setSelectValue('city-pack-unified-filter-status', statusValue || '');
+  renderCityPackUnifiedRows();
+}
+
 function applyCityPackUnifiedFilters() {
   const idKeyword = (document.getElementById('city-pack-unified-filter-id')?.value || '').trim().toLowerCase();
   const userKeyword = (document.getElementById('city-pack-unified-filter-user-id')?.value || '').trim().toLowerCase();
@@ -5428,9 +5496,11 @@ function clearCityPackUnifiedFilters() {
 function createUnifiedActionButton(label, handler, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const actionKey = typeof opts.actionKey === 'string' ? opts.actionKey.trim() : '';
+  const className = typeof opts.className === 'string' ? opts.className.trim() : '';
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
+  if (className) button.className = className;
   if (actionKey) button.dataset.managedActionKey = actionKey;
   button.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -5443,50 +5513,129 @@ function createUnifiedActionButton(label, handler, options) {
   return button;
 }
 
+function buildCityPackUnifiedActionDescriptors(item) {
+  const type = item && item.recordType ? String(item.recordType) : '';
+  const row = item && item.raw ? item.raw : null;
+  const descriptors = [];
+  if (type === 'request' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackRequestAction('approve', row); }, actionKey: 'city_pack.request.approve' });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackRequestAction('reject', row); }, actionKey: 'city_pack.request.reject' });
+    descriptors.push({ label: 'Changes', handler: () => { void runCityPackRequestAction('request-changes', row); }, actionKey: 'city_pack.request.request_changes' });
+    descriptors.push({ label: 'Retry', handler: () => { void runCityPackRequestAction('retry-job', row); }, actionKey: 'city_pack.request.retry_job' });
+    descriptors.push({ label: 'Activate', handler: () => { void runCityPackRequestAction('activate', row); }, actionKey: 'city_pack.request.activate' });
+  } else if (type === 'feedback' && row) {
+    descriptors.push({ label: 'Triage', handler: () => { void runCityPackFeedbackAction('triage', row); } });
+    descriptors.push({ label: 'Resolve', handler: () => { void runCityPackFeedbackAction('resolve', row); } });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackFeedbackAction('reject', row); } });
+    descriptors.push({ label: 'Propose', handler: () => { void runCityPackFeedbackAction('propose', row); } });
+  } else if (type === 'bulletin' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackBulletinAction('approve', row); }, actionKey: 'city_pack.bulletin.approve' });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackBulletinAction('reject', row); }, actionKey: 'city_pack.bulletin.reject' });
+    descriptors.push({ label: 'Send', handler: () => { void runCityPackBulletinAction('send', row); }, actionKey: 'city_pack.bulletin.send' });
+  } else if (type === 'proposal' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackProposalAction('approve', row); } });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackProposalAction('reject', row); } });
+    descriptors.push({ label: 'Apply', handler: () => { void runCityPackProposalAction('apply', row); } });
+  } else if (type === 'review' && row) {
+    descriptors.push({ label: 'Confirm', handler: () => { void runCityPackSourceAction('confirm', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackSourceAction('retire', row); } });
+    descriptors.push({ label: 'Replace', handler: () => { void runCityPackSourceAction('replace', row); } });
+    descriptors.push({ label: 'Manual', handler: () => { void runCityPackSourceAction('manual-only', row); } });
+  } else if (type === 'education_link' && row) {
+    descriptors.push({ label: 'Replace', handler: () => { void runCityPackEducationAction('replace', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackEducationAction('retire', row); } });
+  } else if (type === 'calendar_review' && row) {
+    descriptors.push({ label: 'Confirm', handler: () => { void runCityPackSourceAction('confirm', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackSourceAction('retire', row); } });
+    descriptors.push({ label: 'Approve通知', handler: () => { void runCityPackCalendarApproveNotification(row); } });
+  } else if (type === 'template' && row) {
+    descriptors.push({ label: 'Activate', handler: () => { void runCityPackTemplateLibraryAction('activate', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackTemplateLibraryAction('retire', row); } });
+  }
+  return descriptors;
+}
+
 function renderCityPackUnifiedActionCell(item) {
   const td = document.createElement('td');
   td.className = 'unified-action-cell';
   const group = document.createElement('div');
   group.className = 'unified-action-group';
-  const type = item && item.recordType ? String(item.recordType) : '';
-  const row = item && item.raw ? item.raw : null;
-  if (type === 'request' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackRequestAction('approve', row); }, { actionKey: 'city_pack.request.approve' }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackRequestAction('reject', row); }, { actionKey: 'city_pack.request.reject' }));
-    group.appendChild(createUnifiedActionButton('Changes', () => { void runCityPackRequestAction('request-changes', row); }, { actionKey: 'city_pack.request.request_changes' }));
-    group.appendChild(createUnifiedActionButton('Retry', () => { void runCityPackRequestAction('retry-job', row); }, { actionKey: 'city_pack.request.retry_job' }));
-    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackRequestAction('activate', row); }, { actionKey: 'city_pack.request.activate' }));
-  } else if (type === 'feedback' && row) {
-    group.appendChild(createUnifiedActionButton('Triage', () => { void runCityPackFeedbackAction('triage', row); }));
-    group.appendChild(createUnifiedActionButton('Resolve', () => { void runCityPackFeedbackAction('resolve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackFeedbackAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Propose', () => { void runCityPackFeedbackAction('propose', row); }));
-  } else if (type === 'bulletin' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackBulletinAction('approve', row); }, { actionKey: 'city_pack.bulletin.approve' }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackBulletinAction('reject', row); }, { actionKey: 'city_pack.bulletin.reject' }));
-    group.appendChild(createUnifiedActionButton('Send', () => { void runCityPackBulletinAction('send', row); }, { actionKey: 'city_pack.bulletin.send' }));
-  } else if (type === 'proposal' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackProposalAction('approve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackProposalAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Apply', () => { void runCityPackProposalAction('apply', row); }));
-  } else if (type === 'review' && row) {
-    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
-    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackSourceAction('replace', row); }));
-    group.appendChild(createUnifiedActionButton('Manual', () => { void runCityPackSourceAction('manual-only', row); }));
-  } else if (type === 'education_link' && row) {
-    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackEducationAction('replace', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackEducationAction('retire', row); }));
-  } else if (type === 'calendar_review' && row) {
-    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
-    group.appendChild(createUnifiedActionButton('Approve通知', () => { void runCityPackCalendarApproveNotification(row); }));
-  } else if (type === 'template' && row) {
-    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackTemplateLibraryAction('activate', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackTemplateLibraryAction('retire', row); }));
+  const descriptors = buildCityPackUnifiedActionDescriptors(item);
+  if (!descriptors.length) {
+    td.appendChild(group);
+    return td;
   }
+  if (!ADMIN_CITY_PACK_UI_V2 || descriptors.length <= 2) {
+    descriptors.forEach((descriptor, idx) => {
+      group.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+        actionKey: descriptor.actionKey,
+        className: idx < 2 && ADMIN_CITY_PACK_UI_V2 ? 'unified-action-primary' : ''
+      }));
+    });
+    td.appendChild(group);
+    return td;
+  }
+  descriptors.slice(0, 2).forEach((descriptor) => {
+    group.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey,
+      className: 'unified-action-primary'
+    }));
+  });
+  const more = document.createElement('details');
+  more.className = 'city-pack-action-more';
+  const summary = document.createElement('summary');
+  summary.textContent = `More (${descriptors.length - 2})`;
+  more.appendChild(summary);
+  const menu = document.createElement('div');
+  menu.className = 'city-pack-action-more-menu';
+  descriptors.slice(2).forEach((descriptor) => {
+    menu.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey
+    }));
+  });
+  more.appendChild(menu);
+  group.appendChild(more);
   td.appendChild(group);
   return td;
+}
+
+function renderCityPackV2DetailPanel() {
+  const panel = document.getElementById('city-pack-v2-detail-panel');
+  if (!panel) return;
+  if (!ADMIN_CITY_PACK_UI_V2) {
+    panel.classList.add('is-hidden-by-flag');
+    return;
+  }
+  panel.classList.remove('is-hidden-by-flag');
+  const statusEl = document.getElementById('city-pack-v2-detail-status');
+  const titleEl = document.getElementById('city-pack-v2-detail-title');
+  const metaEl = document.getElementById('city-pack-v2-detail-meta');
+  const actionsEl = document.getElementById('city-pack-v2-detail-actions');
+  const jsonEl = document.getElementById('city-pack-v2-detail-json');
+  if (!statusEl || !titleEl || !metaEl || !actionsEl || !jsonEl) return;
+  const item = findCityPackUnifiedItemByKey(state.selectedCityPackUnifiedItemKey);
+  if (!item) {
+    statusEl.className = 'city-pack-v2-status-badge is-default';
+    statusEl.textContent = '-';
+    titleEl.textContent = '行を選択してください';
+    metaEl.textContent = '種別 / 更新日時 / 担当 を表示します。';
+    actionsEl.innerHTML = '';
+    jsonEl.textContent = '-';
+    return;
+  }
+  statusEl.className = `city-pack-v2-status-badge ${resolveCityPackUnifiedStatusClass(item.status)}`;
+  statusEl.textContent = toUnifiedDisplay(item.status, '-');
+  titleEl.textContent = `${cityPackRecordTypeLabel(item.recordType)} / ${toUnifiedDisplay(item.itemId, '-')}`;
+  metaEl.textContent = `都市: ${toUnifiedDisplay(item.cityLabel, '-')} | 担当: ${toUnifiedDisplay(item.assignee, '-')} | 更新: ${toUnifiedDisplay(formatTimestampForList(item.updatedAt), '-')}`;
+  actionsEl.innerHTML = '';
+  const descriptors = buildCityPackUnifiedActionDescriptors(item);
+  descriptors.forEach((descriptor, idx) => {
+    actionsEl.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey,
+      className: idx < 2 ? 'unified-action-primary' : ''
+    }));
+  });
+  jsonEl.textContent = JSON.stringify(item.raw || {}, null, 2);
 }
 
 function renderCityPackUnifiedRows() {
@@ -5501,6 +5650,9 @@ function renderCityPackUnifiedRows() {
     sortDir: state.cityPackUnifiedSortDir
   });
   const items = state.cityPackUnifiedFilteredItems;
+  if (state.selectedCityPackUnifiedItemKey && !items.some((item) => item && item.rowKey === state.selectedCityPackUnifiedItemKey)) {
+    state.selectedCityPackUnifiedItemKey = null;
+  }
   const chips = buildCityPackUnifiedFilterChips();
   renderFilterChips('city-pack-unified-filter-chips', chips);
   updateFilterMeta({
@@ -5510,6 +5662,7 @@ function renderCityPackUnifiedRows() {
     totalCount: state.cityPackUnifiedItems.length,
     activeCount: chips.length
   });
+  updateCityPackV2Stats(items);
   persistListStateToStorage('cityPackUnified', readCityPackUnifiedListState());
   if (!items.length) {
     const tr = document.createElement('tr');
@@ -5518,10 +5671,15 @@ function renderCityPackUnifiedRows() {
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderCityPackV2DetailPanel();
     return;
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
+    const isSelected = item.rowKey && item.rowKey === state.selectedCityPackUnifiedItemKey;
+    tr.dataset.rowClickable = '1';
+    tr.tabIndex = 0;
+    if (isSelected) tr.classList.add('is-selected');
     const cols = [
       formatTimestampForList(item.createdAt),
       item.itemId || '-',
@@ -5540,8 +5698,22 @@ function renderCityPackUnifiedRows() {
       tr.appendChild(td);
     });
     tr.appendChild(renderCityPackUnifiedActionCell(item));
+    tr.addEventListener('click', (event) => {
+      if (event.target && event.target.closest('button, a, input, select, textarea, summary, details')) return;
+      if (!item.rowKey || state.selectedCityPackUnifiedItemKey === item.rowKey) return;
+      state.selectedCityPackUnifiedItemKey = item.rowKey;
+      renderCityPackUnifiedRows();
+    });
+    tr.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      if (!item.rowKey || state.selectedCityPackUnifiedItemKey === item.rowKey) return;
+      state.selectedCityPackUnifiedItemKey = item.rowKey;
+      renderCityPackUnifiedRows();
+    });
     tbody.appendChild(tr);
   });
+  renderCityPackV2DetailPanel();
 }
 
 function refreshCityPackUnifiedRows() {
@@ -6864,6 +7036,7 @@ function clearCityPackManageForm(summaryText) {
   setInputValue('city-pack-manage-description', '');
   setInputValue('city-pack-manage-source-refs', '');
   setInputValue('city-pack-manage-metadata', '{}');
+  setInputValue('city-pack-manage-modules', '');
   CITY_PACK_MANAGE_SLOT_KEYS.forEach((slotKey) => {
     setCityPackManageSlotFormValue(slotKey, 'description', '');
     setCityPackManageSlotFormValue(slotKey, 'cta', '');
@@ -6894,6 +7067,7 @@ function loadCityPackManageFormFromPack(pack) {
   setInputValue('city-pack-manage-slot-schema-version', pack.slotSchemaVersion || '');
   const metadata = pack.metadata && typeof pack.metadata === 'object' ? pack.metadata : {};
   setInputValue('city-pack-manage-metadata', JSON.stringify(metadata, null, 2));
+  setInputValue('city-pack-manage-modules', Array.isArray(pack.modules) ? pack.modules.join('\n') : '');
   const slotContents = pack.slotContents && typeof pack.slotContents === 'object' ? pack.slotContents : {};
   CITY_PACK_MANAGE_SLOT_KEYS.forEach((slotKey) => {
     const row = slotContents[slotKey] && typeof slotContents[slotKey] === 'object' ? slotContents[slotKey] : null;
@@ -7062,6 +7236,16 @@ function parseCityPackManageMetadata() {
   }
 }
 
+function parseCityPackManageModules() {
+  const raw = String(document.getElementById('city-pack-manage-modules')?.value || '');
+  return Array.from(new Set(
+    raw
+      .split(/\r?\n|,/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  ));
+}
+
 function readCityPackManageSlotContents() {
   const slotContents = {};
   for (const slotKey of CITY_PACK_MANAGE_SLOT_KEYS) {
@@ -7113,7 +7297,8 @@ function readCityPackManageFormPayload(options) {
     regionKey,
     slotContents,
     slotSchemaVersion,
-    metadata
+    metadata,
+    modules: parseCityPackManageModules()
   };
 }
 
@@ -7127,6 +7312,7 @@ function buildCityPackManageCreatePayload(formPayload) {
     metadata: formPayload.metadata || {},
     slotContents: formPayload.slotContents || {},
     slotSchemaVersion: formPayload.slotSchemaVersion || null,
+    modules: Array.isArray(formPayload.modules) ? formPayload.modules.slice() : [],
     packClass: formPayload.packClass || 'regional',
     language: formPayload.language || 'ja',
     status: 'draft'
@@ -7162,6 +7348,7 @@ function buildCityPackManageClonePayload(basePack, regionKeyOverride) {
     overrides: basePack && basePack.overrides && typeof basePack.overrides === 'object' ? basePack.overrides : null,
     slotContents: basePack && basePack.slotContents && typeof basePack.slotContents === 'object' ? basePack.slotContents : {},
     slotSchemaVersion: basePack && typeof basePack.slotSchemaVersion === 'string' ? basePack.slotSchemaVersion : null,
+    modules: Array.isArray(basePack && basePack.modules) ? basePack.modules.slice() : [],
     packClass,
     language: basePack && basePack.language ? String(basePack.language) : 'ja',
     status: 'draft'
@@ -7295,6 +7482,7 @@ async function runCityPackManageSave() {
     const clonePayload = buildCityPackManageClonePayload(selectedPack, formPayload.regionKey);
     clonePayload.packClass = formPayload.packClass;
     clonePayload.language = formPayload.language;
+    clonePayload.modules = Array.isArray(formPayload.modules) ? formPayload.modules.slice() : [];
     clonePayload.targetingRules = replaceCityPackManageRegionTargetingRules(
       clonePayload.targetingRules,
       formPayload.regionKey,
@@ -7329,7 +7517,8 @@ async function runCityPackManageSave() {
     language: formPayload.language,
     slotContents: formPayload.slotContents,
     slotSchemaVersion: formPayload.slotSchemaVersion,
-    metadata: formPayload.metadata
+    metadata: formPayload.metadata,
+    modules: formPayload.modules
   };
   const saveData = await postJson(`/api/admin/city-packs/${encodeURIComponent(targetPackId)}/content`, contentPayload, traceId);
   if (saveData && saveData.ok) {
@@ -9517,10 +9706,17 @@ function applyJourneyGraphPlanTokens(planHash, confirmToken) {
 }
 
 function buildTaskRuleEditorPayload() {
+  const estimatedTimeMinRaw = document.getElementById('task-rules-estimated-time-min')?.value;
+  const estimatedTimeMaxRaw = document.getElementById('task-rules-estimated-time-max')?.value;
   return {
     ruleId: document.getElementById('task-rules-rule-id')?.value?.trim() || '',
     scenarioKey: document.getElementById('task-rules-scenario-key')?.value?.trim() || '',
     stepKey: document.getElementById('task-rules-step-key')?.value?.trim() || '',
+    category: document.getElementById('task-rules-category')?.value?.trim() || 'LIFE_SETUP',
+    dependsOn: parseCsvList(document.getElementById('task-rules-depends-on')?.value || '').slice(0, 10),
+    estimatedTimeMin: estimatedTimeMinRaw === '' || estimatedTimeMinRaw === undefined ? null : Number(estimatedTimeMinRaw),
+    estimatedTimeMax: estimatedTimeMaxRaw === '' || estimatedTimeMaxRaw === undefined ? null : Number(estimatedTimeMaxRaw),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-vendor-link-ids')?.value || '').slice(0, 3),
     trigger: {
       eventKey: document.getElementById('task-rules-trigger-event-key')?.value?.trim() || '',
       source: document.getElementById('task-rules-trigger-source')?.value?.trim() || ''
@@ -9558,6 +9754,734 @@ function applyTaskRulesApplyPlanTokens(planHash, confirmToken) {
   taskRulesApplyConfirmToken = confirmToken || null;
   setTextContent('task-rules-apply-plan-hash', taskRulesApplyPlanHash || '-');
   setTextContent('task-rules-apply-confirm-token', taskRulesApplyConfirmToken ? 'set' : '-');
+}
+
+function applyTaskRulesTaskContentPlanTokens(planHash, confirmToken) {
+  taskRulesTaskContentPlanHash = planHash || null;
+  taskRulesTaskContentConfirmToken = confirmToken || null;
+  setTextContent('task-rules-task-content-plan-hash', taskRulesTaskContentPlanHash || '-');
+  setTextContent('task-rules-task-content-confirm-token', taskRulesTaskContentConfirmToken ? 'set' : '-');
+}
+
+function applyTaskRulesTaskContentLinkMigrationPlanTokens(planHash, confirmToken) {
+  taskRulesTaskContentLinkMigrationPlanHash = planHash || null;
+  taskRulesTaskContentLinkMigrationConfirmToken = confirmToken || null;
+  setTextContent('task-rules-task-content-link-plan-hash', taskRulesTaskContentLinkMigrationPlanHash || '-');
+  setTextContent('task-rules-task-content-link-confirm-token', taskRulesTaskContentLinkMigrationConfirmToken ? 'set' : '-');
+}
+
+function normalizeTaskRulesChecklistItem(item, index) {
+  if (typeof item === 'string') {
+    const text = item.trim();
+    if (!text) return null;
+    return { id: `item_${index + 1}`, text, order: index + 1, enabled: true };
+  }
+  const row = item && typeof item === 'object' ? item : {};
+  const text = normalizeTaskRulesText(row.text, '');
+  if (!text) return null;
+  const id = normalizeTaskRulesText(row.id, `item_${index + 1}`);
+  const order = Number.isFinite(Number(row.order)) ? Math.max(1, Math.floor(Number(row.order))) : (index + 1);
+  const enabled = row.enabled !== false;
+  return { id, text, order, enabled };
+}
+
+function readTaskRulesChecklistItems() {
+  const raw = document.getElementById('task-rules-task-content-checklist-json')?.value?.trim() || '';
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('checklist_array_required');
+  return parsed
+    .map((item, index) => normalizeTaskRulesChecklistItem(item, index))
+    .filter(Boolean);
+}
+
+function parseTaskRulesTextLines(raw, maxItems) {
+  const lines = String(raw || '')
+    .split(/\r?\n/)
+    .map((line) => normalizeTaskRulesText(line, ''))
+    .filter(Boolean);
+  const out = [];
+  lines.forEach((line) => {
+    if (out.includes(line)) return;
+    out.push(line);
+  });
+  if (!Number.isFinite(Number(maxItems)) || Number(maxItems) < 1) return out;
+  return out.slice(0, Math.floor(Number(maxItems)));
+}
+
+function setTaskRulesTextLines(elementId, values) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  const rows = Array.isArray(values) ? values : [];
+  element.value = rows
+    .map((line) => normalizeTaskRulesText(line, ''))
+    .filter(Boolean)
+    .join('\n');
+}
+
+function normalizeTaskRulesTaskContentLinkManualMapping(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const sourceTaskKey = normalizeTaskRulesText(row.sourceTaskKey || row.taskKey, '');
+  const ruleId = normalizeTaskRulesText(row.ruleId, '');
+  if (!sourceTaskKey || !ruleId) return null;
+  return {
+    sourceTaskKey,
+    ruleId,
+    note: normalizeTaskRulesText(row.note, null)
+  };
+}
+
+function readTaskRulesTaskContentLinkManualMappings() {
+  const raw = document.getElementById('task-rules-task-content-link-manual-map-json')?.value?.trim() || '';
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('manual_mappings_array_required');
+  return parsed
+    .map((item) => normalizeTaskRulesTaskContentLinkManualMapping(item))
+    .filter(Boolean);
+}
+
+function buildTaskRulesTaskContentPayload() {
+  const keyInput = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+  const fallbackRuleId = document.getElementById('task-rules-rule-id')?.value?.trim() || '';
+  const taskKey = keyInput || fallbackRuleId;
+  const minRaw = document.getElementById('task-rules-task-content-time-min')?.value;
+  const maxRaw = document.getElementById('task-rules-task-content-time-max')?.value;
+  const timeMin = minRaw === '' ? null : Number(minRaw);
+  const timeMax = maxRaw === '' ? null : Number(maxRaw);
+  return {
+    taskKey,
+    title: document.getElementById('task-rules-task-content-title')?.value?.trim() || '',
+    category: document.getElementById('task-rules-task-content-category')?.value?.trim() || 'LIFE_SETUP',
+    dependencies: parseCsvList(document.getElementById('task-rules-task-content-dependencies')?.value || '').slice(0, 10),
+    timeMin: Number.isFinite(timeMin) ? Math.max(0, Math.floor(timeMin)) : null,
+    timeMax: Number.isFinite(timeMax) ? Math.max(0, Math.floor(timeMax)) : null,
+    checklist: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-checklist')?.value || '', 50),
+    checklistItems: readTaskRulesChecklistItems(),
+    summaryShort: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-summary-short')?.value || '', 5),
+    topMistakes: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-top-mistakes')?.value || '', 3),
+    contextTips: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-context-tips')?.value || '', 5),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-task-content-recommended-vendor-link-ids')?.value || '').slice(0, 3),
+    archived: Boolean(document.getElementById('task-rules-task-content-archived')?.checked),
+    manualText: document.getElementById('task-rules-task-content-manual-text')?.value || '',
+    failureText: document.getElementById('task-rules-task-content-failure-text')?.value || '',
+    videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
+    actionLinkId: document.getElementById('task-rules-task-content-action-link-id')?.value?.trim() || ''
+  };
+}
+
+function formatTaskRulesLinkOption(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const id = normalizeTaskRulesText(row.id, '-');
+  const title = normalizeTaskRulesText(row.title || row.label, '-');
+  const kind = normalizeTaskRulesText(row.kind, 'web');
+  const enabled = row.enabled === false ? 'disabled' : 'enabled';
+  return `${title} / ${kind} / ${enabled} / ${id}`;
+}
+
+function filterTaskRulesLinkOptions(items, selectedId, keyword) {
+  const source = Array.isArray(items) ? items : [];
+  const needle = normalizeTaskRulesText(keyword, '').toLowerCase();
+  if (!needle) return source.slice();
+  return source.filter((item) => {
+    const id = normalizeTaskRulesText(item && item.id, '');
+    if (selectedId && id === selectedId) return true;
+    const title = normalizeTaskRulesText(item && (item.title || item.label), '');
+    const url = normalizeTaskRulesText(item && item.url, '');
+    const haystack = `${id}\n${title}\n${url}`.toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+function setTaskRulesLinkRegistrySelectOptions(items) {
+  const keyword = document.getElementById('task-rules-link-registry-search')?.value?.trim() || '';
+  const specs = [
+    { id: 'task-rules-task-content-video-link-id' },
+    { id: 'task-rules-task-content-action-link-id' },
+    { id: 'task-rules-link-registry-select' }
+  ];
+  specs.forEach((spec) => {
+    const select = document.getElementById(spec.id);
+    if (!select) return;
+    const pending = select.dataset && typeof select.dataset.pendingValue === 'string'
+      ? select.dataset.pendingValue
+      : '';
+    const previous = select.value || pending || '';
+    const filtered = filterTaskRulesLinkOptions(items, previous, keyword);
+    select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Link Registryから選択';
+    select.appendChild(placeholder);
+    filtered.forEach((item) => {
+      const id = normalizeTaskRulesText(item && item.id, '');
+      if (!id) return;
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = formatTaskRulesLinkOption(item);
+      select.appendChild(option);
+    });
+    if (previous) select.value = previous;
+    if (select.value !== previous) select.value = '';
+    if (select.dataset) select.dataset.pendingValue = '';
+  });
+}
+
+function applyTaskRulesTaskContentEditor(taskContent) {
+  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
+  const checklist = Array.isArray(row.checklistItems) ? row.checklistItems : [];
+  const sorted = checklist.slice().sort((a, b) => {
+    const ao = Number(a && a.order ? a.order : 0);
+    const bo = Number(b && b.order ? b.order : 0);
+    return ao - bo;
+  });
+  if (document.getElementById('task-rules-task-content-key')) {
+    document.getElementById('task-rules-task-content-key').value = normalizeTaskRulesText(row.taskKey, '');
+  }
+  if (document.getElementById('task-rules-task-content-title')) {
+    document.getElementById('task-rules-task-content-title').value = normalizeTaskRulesText(row.title, '');
+  }
+  if (document.getElementById('task-rules-task-content-category')) {
+    document.getElementById('task-rules-task-content-category').value = normalizeTaskRulesText(row.category, 'LIFE_SETUP') || 'LIFE_SETUP';
+  }
+  if (document.getElementById('task-rules-task-content-dependencies')) {
+    const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+    document.getElementById('task-rules-task-content-dependencies').value = dependencies.map((item) => normalizeTaskRulesText(item, '')).filter(Boolean).join(',');
+  }
+  if (document.getElementById('task-rules-task-content-time-min')) {
+    document.getElementById('task-rules-task-content-time-min').value = Number.isFinite(Number(row.timeMin)) ? String(Math.floor(Number(row.timeMin))) : '';
+  }
+  if (document.getElementById('task-rules-task-content-time-max')) {
+    document.getElementById('task-rules-task-content-time-max').value = Number.isFinite(Number(row.timeMax)) ? String(Math.floor(Number(row.timeMax))) : '';
+  }
+  if (document.getElementById('task-rules-task-content-checklist')) {
+    setTaskRulesTextLines('task-rules-task-content-checklist', row.checklist);
+  }
+  if (document.getElementById('task-rules-task-content-checklist-json')) {
+    document.getElementById('task-rules-task-content-checklist-json').value = JSON.stringify(sorted, null, 2);
+  }
+  if (document.getElementById('task-rules-task-content-manual-text')) {
+    document.getElementById('task-rules-task-content-manual-text').value = row.manualText || '';
+  }
+  if (document.getElementById('task-rules-task-content-failure-text')) {
+    document.getElementById('task-rules-task-content-failure-text').value = row.failureText || '';
+  }
+  setTaskRulesTextLines('task-rules-task-content-summary-short', row.summaryShort);
+  setTaskRulesTextLines('task-rules-task-content-top-mistakes', row.topMistakes);
+  setTaskRulesTextLines('task-rules-task-content-context-tips', row.contextTips);
+  if (document.getElementById('task-rules-task-content-video-link-id')) {
+    if (document.getElementById('task-rules-task-content-video-link-id').dataset) {
+      document.getElementById('task-rules-task-content-video-link-id').dataset.pendingValue = normalizeTaskRulesText(row.videoLinkId, '');
+    }
+    document.getElementById('task-rules-task-content-video-link-id').value = normalizeTaskRulesText(row.videoLinkId, '');
+  }
+  if (document.getElementById('task-rules-task-content-action-link-id')) {
+    if (document.getElementById('task-rules-task-content-action-link-id').dataset) {
+      document.getElementById('task-rules-task-content-action-link-id').dataset.pendingValue = normalizeTaskRulesText(row.actionLinkId, '');
+    }
+    document.getElementById('task-rules-task-content-action-link-id').value = normalizeTaskRulesText(row.actionLinkId, '');
+  }
+  if (document.getElementById('task-rules-task-content-recommended-vendor-link-ids')) {
+    const vendors = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
+    document.getElementById('task-rules-task-content-recommended-vendor-link-ids').value = vendors.map((item) => normalizeTaskRulesText(item, '')).filter(Boolean).join(',');
+  }
+  if (document.getElementById('task-rules-task-content-archived')) {
+    document.getElementById('task-rules-task-content-archived').checked = row.archived === true;
+  }
+  refreshTaskRulesTaskContentWarnings();
+}
+
+function resolveTaskRulesTaskContentByKey(taskKey) {
+  const key = normalizeTaskRulesText(taskKey, '');
+  if (!key) return null;
+  const list = Array.isArray(state.taskRulesTaskContents) ? state.taskRulesTaskContents : [];
+  return list.find((item) => normalizeTaskRulesText(item && item.taskKey, '') === key) || null;
+}
+
+function resolveTaskRulesLinkById(linkId) {
+  const id = normalizeTaskRulesText(linkId, '');
+  if (!id) return null;
+  const list = Array.isArray(state.taskRulesLinkRegistryItems) ? state.taskRulesLinkRegistryItems : [];
+  return list.find((item) => normalizeTaskRulesText(item && item.id, '') === id) || null;
+}
+
+function readTaskRulesTaskContentForWarning() {
+  return {
+    taskKey: document.getElementById('task-rules-task-content-key')?.value?.trim() || '',
+    dependencies: parseCsvList(document.getElementById('task-rules-task-content-dependencies')?.value || '').slice(0, 10),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-task-content-recommended-vendor-link-ids')?.value || '').slice(0, 3),
+    videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
+    actionLinkId: document.getElementById('task-rules-task-content-action-link-id')?.value?.trim() || ''
+  };
+}
+
+function collectTaskRulesTaskContentWarnings(taskContent, extraWarnings) {
+  const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
+  const warnings = [];
+  const taskKey = normalizeTaskRulesText(row.taskKey, '');
+  if (!taskKey) {
+    warnings.push('taskKey が未入力です。');
+  } else {
+    if (!/^[a-z0-9][a-z0-9_-]{1,63}$/.test(taskKey)) {
+      warnings.push('taskKey は [a-z0-9][a-z0-9_-]{1,63} を推奨します。');
+    }
+    if (taskKey.includes('__')) {
+      warnings.push('taskKey に "__" が含まれています。runtime複合キーの可能性があります。');
+    }
+    const rules = Array.isArray(state.taskRulesRules) ? state.taskRulesRules : [];
+    const matches = rules.filter((rule) => normalizeTaskRulesText(rule && rule.ruleId, '') === taskKey);
+    if (matches.length === 0) {
+      warnings.push('step_rules.ruleId に未紐付けです（todoKey fallback運用のみ）。');
+    } else if (matches.length > 1) {
+      warnings.push('step_rules.ruleId が重複しており taskKey が曖昧です。');
+    }
+    const links = Array.isArray(state.taskRulesTaskContentLinks) ? state.taskRulesTaskContentLinks : [];
+    const mapped = links.filter((item) => normalizeTaskRulesText(item && item.sourceTaskKey, '') === taskKey);
+    if (mapped.length > 1) {
+      warnings.push('task_content_links で同一 sourceTaskKey が複数ruleIdへ連結されており曖昧です。');
+    }
+    if (mapped.some((item) => normalizeTaskRulesText(item && item.status, 'warn').toLowerCase() !== 'active')) {
+      warnings.push('task_content_links に warn 連結があります。migration-planで確認してください。');
+    }
+  }
+
+  const videoLinkId = normalizeTaskRulesText(row.videoLinkId, '');
+  if (videoLinkId) {
+    const link = resolveTaskRulesLinkById(videoLinkId);
+    if (!link) {
+      warnings.push('videoLinkId が Link Registry に存在しません。');
+    } else {
+      const kind = normalizeTaskRulesText(link.kind, 'web').toLowerCase();
+      if (kind !== 'youtube') warnings.push('videoLinkId は kind=youtube を指定してください。');
+      if (link.enabled === false) warnings.push('videoLinkId が disabled です。');
+      const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+      if (health === 'WARN') warnings.push('videoLinkId の health が WARN です。');
+    }
+  }
+
+  const actionLinkId = normalizeTaskRulesText(row.actionLinkId, '');
+  if (actionLinkId) {
+    const link = resolveTaskRulesLinkById(actionLinkId);
+    if (!link) {
+      warnings.push('actionLinkId が Link Registry に存在しません。');
+    } else {
+      if (link.enabled === false) warnings.push('actionLinkId が disabled です。');
+      const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+      if (health === 'WARN') warnings.push('actionLinkId の health が WARN です。');
+    }
+  }
+
+  const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+  if (dependencies.length > 10) {
+    warnings.push('dependencies は最大10件までです。');
+  }
+  const recommendedVendorLinkIds = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
+  if (recommendedVendorLinkIds.length > 3) {
+    warnings.push('recommendedVendorLinkIds は最大3件までです。');
+  }
+  recommendedVendorLinkIds.forEach((linkId) => {
+    const normalized = normalizeTaskRulesText(linkId, '');
+    if (!normalized) return;
+    const link = resolveTaskRulesLinkById(normalized);
+    if (!link) {
+      warnings.push(`recommendedVendorLinkId(${normalized}) が Link Registry に存在しません。`);
+      return;
+    }
+    if (link.enabled === false) warnings.push(`recommendedVendorLinkId(${normalized}) が disabled です。`);
+    const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+    if (health === 'WARN') warnings.push(`recommendedVendorLinkId(${normalized}) の health が WARN です。`);
+  });
+
+  if (Array.isArray(extraWarnings)) {
+    extraWarnings.forEach((item) => {
+      const text = normalizeTaskRulesText(item, '');
+      if (text) warnings.push(text);
+    });
+  }
+  return Array.from(new Set(warnings));
+}
+
+function refreshTaskRulesTaskContentWarnings(options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const row = payload.taskContent && typeof payload.taskContent === 'object'
+    ? payload.taskContent
+    : readTaskRulesTaskContentForWarning();
+  const warnings = collectTaskRulesTaskContentWarnings(row, payload.extraWarnings);
+  setTextContent('task-rules-task-content-warning', warnings.length ? warnings.join(' / ') : '-');
+  return warnings;
+}
+
+function summarizeTaskRulesTaskContentLinkMigration(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const plan = payload.migrationPlan && typeof payload.migrationPlan === 'object'
+    ? payload.migrationPlan
+    : (payload.migration && typeof payload.migration === 'object' ? payload.migration : {});
+  const summary = plan.summary && typeof plan.summary === 'object' ? plan.summary : {};
+  const linked = Number.isFinite(Number(summary.linkedCount)) ? Number(summary.linkedCount) : 0;
+  const unlinked = Number.isFinite(Number(summary.unlinkedCount)) ? Number(summary.unlinkedCount) : 0;
+  const candidateCount = Number.isFinite(Number(summary.candidateCount))
+    ? Number(summary.candidateCount)
+    : (Number.isFinite(Number(summary.savedCount)) ? Number(summary.savedCount) : 0);
+  const savedCount = Number.isFinite(Number(summary.savedCount)) ? Number(summary.savedCount) : null;
+  const warningCount = Array.isArray(payload.warnings)
+    ? payload.warnings.length
+    : (Array.isArray(plan.warnings) ? plan.warnings.length : 0);
+  const parts = [
+    `linked=${linked}`,
+    `unlinked=${unlinked}`,
+    `candidates=${candidateCount}`,
+    `warnings=${warningCount}`
+  ];
+  if (savedCount !== null) parts.push(`saved=${savedCount}`);
+  return parts.join(' / ');
+}
+
+function renderTaskRulesLinkImpactRows(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const summary = data.summary && typeof data.summary === 'object' ? data.summary : {};
+  const rows = Array.isArray(data.items) ? data.items : [];
+  state.taskRulesLinkImpact = data;
+  setTextContent(
+    'task-rules-link-impact-summary',
+    `total=${Number(summary.total || 0)} / shared=${Number(summary.sharedIdCount || 0)} / sharedWarnOrDisabled=${Number(summary.sharedWarnOrDisabledCount || 0)} / referencedWarnOrDisabled=${Number(summary.referencedWarnOrDisabledCount || 0)}`
+  );
+
+  const tbody = document.getElementById('task-rules-link-impact-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = '-';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.slice(0, 200).forEach((item) => {
+    const row = item && typeof item === 'object' ? item : {};
+    const tr = document.createElement('tr');
+    const values = [
+      normalizeTaskRulesText(row.id, '-'),
+      normalizeTaskRulesText(row.state, '-'),
+      Number.isFinite(Number(row.domainCount)) ? String(Number(row.domainCount)) : '0',
+      Number.isFinite(Number(row.refCount)) ? String(Number(row.refCount)) : '0',
+      row.shared === true ? 'yes' : 'no'
+    ];
+    values.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function applyTaskRulesLinkEditorFields(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  if (document.getElementById('task-rules-link-registry-id')) {
+    document.getElementById('task-rules-link-registry-id').value = normalizeTaskRulesText(row.id, '');
+  }
+  if (document.getElementById('task-rules-link-registry-title')) {
+    document.getElementById('task-rules-link-registry-title').value = normalizeTaskRulesText(row.title || row.label, '');
+  }
+  if (document.getElementById('task-rules-link-registry-url')) {
+    document.getElementById('task-rules-link-registry-url').value = normalizeTaskRulesText(row.url, '');
+  }
+  if (document.getElementById('task-rules-link-registry-kind')) {
+    document.getElementById('task-rules-link-registry-kind').value = normalizeTaskRulesText(row.kind, 'web') || 'web';
+  }
+  if (document.getElementById('task-rules-link-registry-enabled')) {
+    document.getElementById('task-rules-link-registry-enabled').checked = row.enabled !== false;
+  }
+  if (document.getElementById('task-rules-link-registry-intent-tag')) {
+    document.getElementById('task-rules-link-registry-intent-tag').value = normalizeTaskRulesText(row.intentTag, '');
+  }
+  if (document.getElementById('task-rules-link-registry-audience-tag')) {
+    document.getElementById('task-rules-link-registry-audience-tag').value = normalizeTaskRulesText(row.audienceTag, '');
+  }
+  if (document.getElementById('task-rules-link-registry-region-scope')) {
+    document.getElementById('task-rules-link-registry-region-scope').value = normalizeTaskRulesText(row.regionScope, '');
+  }
+  if (document.getElementById('task-rules-link-registry-risk-level')) {
+    document.getElementById('task-rules-link-registry-risk-level').value = normalizeTaskRulesText(row.riskLevel, '');
+  }
+}
+
+function buildTaskRulesLinkRegistryPayload() {
+  return {
+    title: document.getElementById('task-rules-link-registry-title')?.value?.trim() || '',
+    label: document.getElementById('task-rules-link-registry-title')?.value?.trim() || '',
+    url: document.getElementById('task-rules-link-registry-url')?.value?.trim() || '',
+    kind: document.getElementById('task-rules-link-registry-kind')?.value?.trim() || 'web',
+    enabled: Boolean(document.getElementById('task-rules-link-registry-enabled')?.checked),
+    intentTag: document.getElementById('task-rules-link-registry-intent-tag')?.value?.trim() || '',
+    audienceTag: document.getElementById('task-rules-link-registry-audience-tag')?.value?.trim() || '',
+    regionScope: document.getElementById('task-rules-link-registry-region-scope')?.value?.trim() || '',
+    riskLevel: document.getElementById('task-rules-link-registry-risk-level')?.value?.trim() || ''
+  };
+}
+
+async function loadTaskRulesLinkRegistryOptions(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const query = new URLSearchParams({ limit: '200' });
+    const res = await fetch(`/admin/link-registry?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-link-registry-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.taskRulesLinkRegistryItems = Array.isArray(data.items) ? data.items : [];
+    setTaskRulesLinkRegistrySelectOptions(state.taskRulesLinkRegistryItems);
+    refreshTaskRulesTaskContentWarnings();
+    if (notify) showToast('Task Detail用Link Registryを更新しました', 'ok');
+  } catch (_err) {
+    state.taskRulesLinkRegistryItems = [];
+    setTaskRulesLinkRegistrySelectOptions([]);
+    refreshTaskRulesTaskContentWarnings();
+    if (notify) showToast('Task Detail用Link Registryの取得に失敗しました', 'danger');
+  }
+}
+
+async function loadTaskRulesTaskContentAction() {
+  const taskKey = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+  if (!taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  const item = resolveTaskRulesTaskContentByKey(taskKey);
+  if (!item) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'task content not found in status cache', taskKey });
+    refreshTaskRulesTaskContentWarnings({ taskContent: { taskKey } });
+    showToast('statusキャッシュにtask contentが見つかりません', 'warn');
+    return;
+  }
+  applyTaskRulesTaskContentEditor(item);
+  refreshTaskRulesTaskContentWarnings({ taskContent: item });
+  setJsonTextResult('task-rules-task-content-result', { ok: true, taskContent: item });
+  showToast(`task content ${taskKey} を読み込みました`, 'ok');
+}
+
+async function planTaskRulesTaskContentAction() {
+  let taskContent;
+  try {
+    taskContent = buildTaskRulesTaskContentPayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'checklist JSON invalid' });
+    showToast('checklistItems JSONが不正です', 'warn');
+    return;
+  }
+  if (!taskContent.taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  refreshTaskRulesTaskContentWarnings({ taskContent });
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/plan', {
+      action: 'upsert_task_content',
+      taskKey: taskContent.taskKey,
+      taskContent
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (data.taskContent) applyTaskRulesTaskContentEditor(data.taskContent);
+    refreshTaskRulesTaskContentWarnings({
+      taskContent: data.taskContent || taskContent,
+      extraWarnings: Array.isArray(data.warnings) ? data.warnings : []
+    });
+    applyTaskRulesTaskContentPlanTokens(data.planHash, data.confirmToken);
+    showToast('Task Content planを作成しました', 'ok');
+  } catch (_err) {
+    showToast('Task Content planの作成に失敗しました', 'danger');
+  }
+}
+
+async function setTaskRulesTaskContentAction() {
+  if (!taskRulesTaskContentPlanHash || !taskRulesTaskContentConfirmToken) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'task content plan required' });
+    showToast('task-content setには先にplanが必要です', 'warn');
+    return;
+  }
+  let taskContent;
+  try {
+    taskContent = buildTaskRulesTaskContentPayload();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-result', { ok: false, error: 'checklist JSON invalid' });
+    showToast('checklistItems JSONが不正です', 'warn');
+    return;
+  }
+  if (!taskContent.taskKey) {
+    showToast('taskKey が必要です', 'warn');
+    return;
+  }
+  refreshTaskRulesTaskContentWarnings({ taskContent });
+  if (!window.confirm(`task content ${taskContent.taskKey} を更新しますか？`)) {
+    showToast('task content更新を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/set', {
+      action: 'upsert_task_content',
+      taskKey: taskContent.taskKey,
+      taskContent,
+      planHash: taskRulesTaskContentPlanHash,
+      confirmToken: taskRulesTaskContentConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    if (data.taskContent) applyTaskRulesTaskContentEditor(data.taskContent);
+    refreshTaskRulesTaskContentWarnings({
+      taskContent: data.taskContent || taskContent,
+      extraWarnings: Array.isArray(data.warnings) ? data.warnings : []
+    });
+    applyTaskRulesTaskContentPlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesLinkImpactAction({ notify: false });
+    showToast('Task Contentを更新しました', 'ok');
+  } catch (_err) {
+    showToast('Task Content更新に失敗しました', 'danger');
+  }
+}
+
+function resolveTaskRulesLinkImpactLimit() {
+  const raw = Number(document.getElementById('task-rules-link-impact-limit')?.value || 500);
+  if (!Number.isFinite(raw) || raw < 1) return 500;
+  return Math.max(1, Math.min(1000, Math.floor(raw)));
+}
+
+async function planTaskRulesTaskContentLinkMigrationAction() {
+  let manualMappings;
+  try {
+    manualMappings = readTaskRulesTaskContentLinkManualMappings();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'manual mappings JSON invalid' });
+    showToast('manualMappings JSONが不正です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/plan', {
+      action: 'migrate_task_content_links',
+      manualMappings
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-link-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTaskContentLinkMigrationPlanTokens(data.planHash, data.confirmToken);
+    showToast(`task-content migration plan: ${summarizeTaskRulesTaskContentLinkMigration(data)}`, 'ok');
+  } catch (_err) {
+    showToast('task-content migration planの作成に失敗しました', 'danger');
+  }
+}
+
+async function applyTaskRulesTaskContentLinkMigrationAction() {
+  if (!taskRulesTaskContentLinkMigrationPlanHash || !taskRulesTaskContentLinkMigrationConfirmToken) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'migration plan required' });
+    showToast('migration applyには先にmigration-planが必要です', 'warn');
+    return;
+  }
+  let manualMappings;
+  try {
+    manualMappings = readTaskRulesTaskContentLinkManualMappings();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'manual mappings JSON invalid' });
+    showToast('manualMappings JSONが不正です', 'warn');
+    return;
+  }
+  if (!window.confirm('task-content migrationを適用しますか？（add-only: task_content_links upsert）')) {
+    showToast('task-content migration適用を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/set', {
+      action: 'migrate_task_content_links_apply',
+      manualMappings,
+      planHash: taskRulesTaskContentLinkMigrationPlanHash,
+      confirmToken: taskRulesTaskContentLinkMigrationConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-link-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTaskContentLinkMigrationPlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesLinkImpactAction({ notify: false });
+    showToast(`task-content migration apply: ${summarizeTaskRulesTaskContentLinkMigration(data)}`, 'ok');
+  } catch (_err) {
+    showToast('task-content migration applyに失敗しました', 'danger');
+  }
+}
+
+async function loadTaskRulesLinkImpactAction(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  const query = new URLSearchParams({
+    limit: String(resolveTaskRulesLinkImpactLimit())
+  });
+  try {
+    const res = await fetch(`/api/admin/os/link-registry-impact?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-link-impact-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderTaskRulesLinkImpactRows(data);
+    if (notify) showToast('Link Registry impact mapを更新しました', 'ok');
+  } catch (_err) {
+    renderTaskRulesLinkImpactRows({});
+    if (notify) showToast('Link Registry impact mapの取得に失敗しました', 'danger');
+  }
+}
+
+async function createTaskRulesLinkRegistryAction() {
+  const payload = buildTaskRulesLinkRegistryPayload();
+  if (!payload.title || !payload.url) {
+    showToast('link title/url が必要です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  const data = await adminFetchJson({
+    url: '/admin/link-registry',
+    method: 'POST',
+    traceId,
+    payload
+  });
+  setJsonTextResult('task-rules-link-registry-result', data);
+  if (!data || data.ok !== true) {
+    showToast('Link Registry作成に失敗しました', 'danger');
+    return;
+  }
+  if (document.getElementById('task-rules-link-registry-id') && data.id) {
+    document.getElementById('task-rules-link-registry-id').value = data.id;
+  }
+  await loadTaskRulesLinkRegistryOptions({ notify: false });
+  await loadTaskRulesLinkImpactAction({ notify: false });
+  showToast('Link Registryを追加しました', 'ok');
+}
+
+async function setTaskRulesLinkRegistryAction() {
+  const selectedId = document.getElementById('task-rules-link-registry-id')?.value?.trim()
+    || document.getElementById('task-rules-link-registry-select')?.value?.trim()
+    || '';
+  if (!selectedId) {
+    showToast('linkId が必要です', 'warn');
+    return;
+  }
+  const payload = buildTaskRulesLinkRegistryPayload();
+  const traceId = ensureTraceInput('monitor-trace');
+  const data = await adminFetchJson({
+    url: `/admin/link-registry/${encodeURIComponent(selectedId)}`,
+    method: 'PATCH',
+    traceId,
+    payload
+  });
+  setJsonTextResult('task-rules-link-registry-result', data);
+  if (!data || data.ok !== true) {
+    showToast('Link Registry更新に失敗しました', 'danger');
+    return;
+  }
+  await loadTaskRulesLinkRegistryOptions({ notify: false });
+  await loadTaskRulesLinkImpactAction({ notify: false });
+  showToast('Link Registryを更新しました', 'ok');
 }
 
 function readTaskRulesTemplatePhases() {
@@ -9676,12 +10600,27 @@ async function loadTaskRulesStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
   try {
-    const res = await fetch('/api/admin/os/task-rules/status?limit=200', { headers: buildHeaders({}, traceId) });
+    const res = await fetch('/api/admin/os/task-rules/status?limit=200'
+      + '&includeTaskContents=1&taskContentLimit=200&includeTaskContentLinks=1&taskContentLinkLimit=500', {
+      headers: buildHeaders({}, traceId)
+    });
     const data = await readJsonResponse(res);
     setJsonTextResult('task-rules-status-result', data);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    state.taskRulesRules = Array.isArray(data.rules) ? data.rules : [];
+    state.taskRulesTaskContents = Array.isArray(data.taskContents) ? data.taskContents : [];
+    state.taskRulesTaskContentLinks = Array.isArray(data.taskContentLinks) ? data.taskContentLinks : [];
+    const currentTaskKey = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
+    const selectedTaskContent = resolveTaskRulesTaskContentByKey(currentTaskKey)
+      || (state.taskRulesTaskContents.length > 0 ? state.taskRulesTaskContents[0] : null);
+    if (selectedTaskContent) applyTaskRulesTaskContentEditor(selectedTaskContent);
+    else refreshTaskRulesTaskContentWarnings();
     if (notify) showToast('Task Rules statusを取得しました', 'ok');
   } catch (_err) {
+    state.taskRulesRules = [];
+    state.taskRulesTaskContents = [];
+    state.taskRulesTaskContentLinks = [];
+    refreshTaskRulesTaskContentWarnings();
     if (notify) showToast('Task Rules statusの取得に失敗しました', 'danger');
   }
 }
@@ -13671,6 +14610,76 @@ function setupMonitorControls() {
   document.getElementById('task-rules-apply')?.addEventListener('click', () => {
     void applyTaskRulesForSingleUserAction();
   });
+  document.getElementById('task-rules-task-content-load')?.addEventListener('click', () => {
+    void loadTaskRulesTaskContentAction();
+  });
+  document.getElementById('task-rules-task-content-plan')?.addEventListener('click', () => {
+    void planTaskRulesTaskContentAction();
+  });
+  document.getElementById('task-rules-task-content-set')?.addEventListener('click', () => {
+    void setTaskRulesTaskContentAction();
+  });
+  document.getElementById('task-rules-task-content-link-plan')?.addEventListener('click', () => {
+    void planTaskRulesTaskContentLinkMigrationAction();
+  });
+  document.getElementById('task-rules-task-content-link-apply')?.addEventListener('click', () => {
+    void applyTaskRulesTaskContentLinkMigrationAction();
+  });
+  ['task-rules-task-content-key', 'task-rules-task-content-video-link-id', 'task-rules-task-content-action-link-id']
+    .forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+      el.addEventListener(eventName, () => {
+        refreshTaskRulesTaskContentWarnings();
+      });
+    });
+  document.getElementById('task-rules-link-registry-reload')?.addEventListener('click', () => {
+    void loadTaskRulesLinkRegistryOptions({ notify: true });
+  });
+  document.getElementById('task-rules-link-registry-create')?.addEventListener('click', () => {
+    void createTaskRulesLinkRegistryAction();
+  });
+  document.getElementById('task-rules-link-registry-set')?.addEventListener('click', () => {
+    void setTaskRulesLinkRegistryAction();
+  });
+  document.getElementById('task-rules-link-registry-search')?.addEventListener('change', () => {
+    setTaskRulesLinkRegistrySelectOptions(state.taskRulesLinkRegistryItems);
+  });
+  document.getElementById('task-rules-link-registry-select')?.addEventListener('change', () => {
+    const selectedId = document.getElementById('task-rules-link-registry-select')?.value?.trim() || '';
+    const item = (Array.isArray(state.taskRulesLinkRegistryItems) ? state.taskRulesLinkRegistryItems : [])
+      .find((row) => normalizeTaskRulesText(row && row.id, '') === selectedId);
+    if (item) applyTaskRulesLinkEditorFields(item);
+    refreshTaskRulesTaskContentWarnings();
+  });
+  document.getElementById('task-rules-link-impact-reload')?.addEventListener('click', () => {
+    void loadTaskRulesLinkImpactAction({ notify: true });
+  });
+  const richMenuActionSelect = document.getElementById('rich-menu-action-select');
+  if (richMenuActionSelect) {
+    const currentAction = resolveRichMenuAction() || 'set_policy';
+    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(currentAction));
+    richMenuActionSelect.addEventListener('change', () => {
+      const action = resolveRichMenuAction();
+      writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(action));
+    });
+  }
+  document.getElementById('rich-menu-status-reload')?.addEventListener('click', () => {
+    void loadRichMenuStatus({ notify: true });
+  });
+  document.getElementById('rich-menu-history')?.addEventListener('click', () => {
+    void loadRichMenuHistory({ notify: true });
+  });
+  document.getElementById('rich-menu-resolve-preview')?.addEventListener('click', () => {
+    void runRichMenuResolvePreview();
+  });
+  document.getElementById('rich-menu-plan')?.addEventListener('click', () => {
+    void planRichMenuAction();
+  });
+  document.getElementById('rich-menu-set')?.addEventListener('click', () => {
+    void setRichMenuAction();
+  });
   ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -13681,8 +14690,13 @@ function setupMonitorControls() {
     });
   });
   if (document.getElementById('monitor-trace')) document.getElementById('monitor-trace').value = newTraceId();
+  refreshTaskRulesTaskContentWarnings();
   void loadTaskRulesStatus({ notify: false });
   void loadTaskRulesHistory({ notify: false });
+  void loadTaskRulesLinkRegistryOptions({ notify: false });
+  void loadTaskRulesLinkImpactAction({ notify: false });
+  void loadRichMenuStatus({ notify: false });
+  void loadRichMenuHistory({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -14422,6 +15436,19 @@ function setupCityPackControls() {
   if (managePanel && !ADMIN_CITY_PACK_CONTENT_MANAGE_V1) {
     managePanel.classList.add('is-hidden');
   }
+  applyCityPackUiV2Visibility();
+  document.getElementById('city-pack-v2-view-needs-review')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('needs_review');
+  });
+  document.getElementById('city-pack-v2-view-blocked')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('blocked');
+  });
+  document.getElementById('city-pack-v2-view-draft')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('draft');
+  });
+  document.getElementById('city-pack-v2-view-all')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('');
+  });
   document.getElementById('city-pack-unified-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: false });
     void loadCityPackFeedback({ notify: false });
@@ -14448,6 +15475,7 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-unified-clear')?.addEventListener('click', () => {
     clearCityPackUnifiedFilters();
+    state.selectedCityPackUnifiedItemKey = null;
     renderCityPackUnifiedRows();
   });
   document.querySelectorAll('[data-city-pack-sort-key]').forEach((btn) => {
@@ -14891,6 +15919,48 @@ function renderLlmResult(targetId, payload) {
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function normalizeLlmEntryRows(rows, keyName, requiredOrder) {
+  const list = Array.isArray(rows) ? rows : [];
+  const out = [];
+  const seen = new Set();
+  list.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const key = typeof item[keyName] === 'string' ? item[keyName].trim() : '';
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push({ [keyName]: key, count: Number.isFinite(Number(item.count)) ? Number(item.count) : 0 });
+  });
+  (Array.isArray(requiredOrder) ? requiredOrder : []).forEach((key) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ [keyName]: key, count: 0 });
+  });
+  return out.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return String(a[keyName]).localeCompare(String(b[keyName]), 'ja');
+  });
+}
+
+function renderLlmEntryControlDashboard(summary) {
+  const baseline = summary && summary.gateAuditBaseline && typeof summary.gateAuditBaseline === 'object'
+    ? summary.gateAuditBaseline
+    : null;
+  if (!baseline) {
+    renderLlmResult('llm-entry-control-dashboard', { ok: false, error: 'no_data' });
+    return;
+  }
+  renderLlmResult('llm-entry-control-dashboard', {
+    ok: true,
+    callsTotal: Number.isFinite(Number(baseline.callsTotal)) ? Number(baseline.callsTotal) : 0,
+    blockedCount: Number.isFinite(Number(baseline.blockedCount)) ? Number(baseline.blockedCount) : 0,
+    acceptedRate: Number.isFinite(Number(baseline.acceptedRate)) ? Number(baseline.acceptedRate) : 0,
+    entryTypes: normalizeLlmEntryRows(baseline.entryTypes, 'entryType', ['webhook', 'admin', 'compat', 'job']),
+    gatesCoverage: normalizeLlmEntryRows(baseline.gatesCoverage, 'gate', ['kill_switch', 'url_guard', 'injection', 'snapshot']),
+    blockedReasons: Array.isArray(baseline.blockedReasons) ? baseline.blockedReasons : [],
+    blockedStages: Array.isArray(baseline.blockedStages) ? baseline.blockedStages : []
+  });
+}
+
 function llmBlockedReasonCategoryLabel(category) {
   const key = String(category || 'UNKNOWN');
   if (key === 'NO_KB_MATCH') return t('ui.label.llm.block.reason.NO_KB_MATCH', 'KB一致なし');
@@ -15032,6 +16102,10 @@ let taskRulesTemplatePlanHash = null;
 let taskRulesTemplateConfirmToken = null;
 let taskRulesApplyPlanHash = null;
 let taskRulesApplyConfirmToken = null;
+let taskRulesTaskContentPlanHash = null;
+let taskRulesTaskContentConfirmToken = null;
+let taskRulesTaskContentLinkMigrationPlanHash = null;
+let taskRulesTaskContentLinkMigrationConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();
@@ -15399,9 +16473,11 @@ async function loadLlmUsageSummary(options) {
     });
     const data = await readJsonResponse(res);
     renderLlmResult('llm-usage-summary-result', data);
+    renderLlmEntryControlDashboard(data && data.summary ? data.summary : null);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     if (notify) showToast('LLM usage集計を取得しました', 'ok');
   } catch (_err) {
+    renderLlmEntryControlDashboard(null);
     if (notify) showToast('LLM usage集計の取得に失敗しました', 'danger');
   }
 }
@@ -15543,6 +16619,7 @@ function setupLlmControls() {
   applyBuildMetaBadge();
   applyTopSummaryVisibility();
   applyUsersStripeLayoutVisibility();
+  applyCityPackUiV2Visibility();
   hydrateListState();
   setupRoleSwitch();
   setupNav();

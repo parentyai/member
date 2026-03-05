@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-03-04T17:09:47-05:00",
-  "gitCommit": "59f8f6f1aba6ea6067df2a76d3076f72a188ac28",
-  "branch": "codex/emergency-full-staging",
-  "sourceDigest": "739a7d5738bb486889738cf6cccd644a294e3f7e0cc308649e05b4d1ff34bc6c",
+  "generatedAt": "2026-03-05T13:35:24-05:00",
+  "gitCommit": "f65b390a821c82537d8d7f603221255c151ff5a5",
+  "branch": "codex/paid-concierge-opportunity-a1",
+  "sourceDigest": "8ec7376b764c41322abafd39d619afe946550c4e411977eca6e325c850cb0aa9",
   "counts": {
-    "endpoints": 282,
-    "routes": 126,
-    "usecases": 145,
-    "repos": 78,
-    "collections": 87
+    "endpoints": 285,
+    "routes": 127,
+    "usecases": 153,
+    "repos": 80,
+    "collections": 88
   },
   "live_counts": {
-    "routes": 126,
-    "usecases": 145,
-    "repos": 78,
-    "collections": 87
+    "routes": 127,
+    "usecases": 153,
+    "repos": 80,
+    "collections": 88
   },
   "count_drift": {
     "routes": 0,
@@ -41,18 +41,18 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/collection_drift_allowlist.json",
-      "sha256": "9dc879c1a812fb647e5cb35419c118116085fe277a403d79dec4d7931deecc8d",
-      "bytes": 754
+      "sha256": "59009e30e934249544a943bbb80ee6d6ffa4410ac2d7802cfb62082e392ecad0",
+      "bytes": 725
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_lifecycle.json",
-      "sha256": "79196ed07430f6111588c3d3f854bc011ed8b8e455e2e51adad86dd493088613",
-      "bytes": 26745
+      "sha256": "a47802aa482190e2a7fda4aea59634fd3ff8956f9137d429cde6f2520bc87adf",
+      "bytes": 27453
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/data_model_map.json",
-      "sha256": "2d899200329bfe210c3f6ec8535f2ae81ffcd15a147f2144c94324253f7f3c97",
-      "bytes": 41551
+      "sha256": "dd04fbef0ef6ef5cf617ca8f9fe23487b47914aaeb3aaec5f3dd332c36a9f7a8",
+      "bytes": 42055
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/decision_timeline_map.json",
@@ -61,18 +61,18 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/dependency_graph.json",
-      "sha256": "32a005cc63d51a6b42d90acf62b6400967922f26d0634de743f4c35ff417a4bf",
-      "bytes": 33542
+      "sha256": "f405de11691970b6c186d0342744b1155f292b0faa79affaa90fa1baad0de1fc",
+      "bytes": 35083
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-      "sha256": "d21088d7ccf03c3a707f7303fcce7a439a2a2685c6c374b113613fce471ed0e3",
-      "bytes": 2915
+      "sha256": "e3fa7b9a9625af2ea9989f2e539fcab6f64a5cde0fff3aa9774998146f72d5fe",
+      "bytes": 2950
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "2005e73661941cb9cb6d3854e91ad478cfda78ec6eb41247299bbd0bc60b5228",
-      "bytes": 73877
+      "sha256": "29599cc67b2ecdc860bdd3f324d6b5e2f2408b63476747637314dbfbebf7210d",
+      "bytes": 75808
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
@@ -91,8 +91,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/kill_switch_points.json",
-      "sha256": "62be3de9bf50003f263b9e30907e5a894fecc300b26a7ae1dd8e437cc4f24cd9",
-      "bytes": 23744
+      "sha256": "4e04a452824fea2833d7aae11cc99ec59c94f6be76f0727be8cecc64ded18574",
+      "bytes": 23359
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json",
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "94a4c94cc62a7c953cf2ff1ea56acddad6d52169ed70f55ab19dc3988d24b5c9",
+      "sha256": "c99e19a91dae70942232dc47cc8a3f9c0567359e16b6b2bab6a06a49c5aba3a5",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "f96022afe591f9c22435212c0dc7c75bbeb0bb7667159dfb96bffe366aededb4",
+      "sha256": "26af32c96c6be691b8beef7682a11f3015d347fc7df6616a63a859dc232153fc",
       "bytes": 487
     },
     {
@@ -131,8 +131,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "96874e8cc1c340460b01dbbe82ba56d0ff342ddbd5e2ed620359dc32b6ea58eb",
-      "bytes": 218450
+      "sha256": "25637fba2518989853b491eb14e82e658660bdd8aee52ac7858ab16250d4ad7e",
+      "bytes": 223135
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/recommended_architecture.json",
@@ -141,33 +141,33 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "f5055a1ab55854a5e2e6c32d1cf0d8cab86513a37c20ab7ed7c0a16908797f34",
-      "bytes": 433079
+      "sha256": "60e8d299e72c1853b704ef6e3c8337af345be7f7737fcc5076577bba9dc3fa08",
+      "bytes": 439942
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "358ba457f8bd339417d126a6cc6d47ce998df37a40353699e815115170fb157b",
+      "sha256": "dd7b3dae6d378df2dd5893b123f17bb3bdb44c6fbe1aa2afb07f58a522798976",
       "bytes": 740
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/scenario_key_drift_allowlist.json",
-      "sha256": "e3f5451eb3b005933f1afbd43a64af3defbc80de6532cccba62d81dd6cee4fae",
-      "bytes": 5113
+      "sha256": "e3c392dd19c732161ed42e49f23b8044485fa55bab595a9c06293c1057bf9f06",
+      "bytes": 5051
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/state_transitions.json",
-      "sha256": "da24e5590b688a0364b6d1e6272c8573ab51e0888a6e42c8e395bd4d3067c39c",
-      "bytes": 3273
+      "sha256": "0e9ad3d5e2d5af5deb9014a2d8a396f52c106425c40de1dea6dfe85e46066e8d",
+      "bytes": 4990
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "1734cdb67a203ce1d77b2b182d143c8177e90751e08da4bf39037cb972239239",
-      "bytes": 3462
+      "sha256": "dc79bdab5970620119c0bfecba6fb48cbd3f372de04cfb18acd16b2ba9c0a690",
+      "bytes": 3497
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "c4c96039c68021500a6a41ac198828d9eb139ebe9f4ce5d39eb686d6b5a82c63",
-      "bytes": 2414
+      "sha256": "63ff2d526a86e2232dd4b951ceee6c0fb1230a744a07e74e959b7265ae0c77a9",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

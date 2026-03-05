@@ -1,160 +1,144 @@
 'use strict';
 
-const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
-const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const tasksRepo = require('../../repos/firestore/tasksRepo');
+const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const { splitLineLongText } = require('../line/splitLineLongText');
 const {
   isTaskDetailSectionSafetyValveEnabled,
   getTaskDetailSectionChunkLimit
 } = require('../../domain/tasks/featureFlags');
 
-const SECTION_LABEL = Object.freeze({
-  manual: '手順マニュアル',
-  failure: 'よくある失敗'
-});
+const MAX_LINE_MESSAGE_CHARS = 4200;
+const DEFAULT_MANUAL_TEXT = '手順マニュアルは未登録です。管理画面の Task Detail Editor で登録してください。';
+const DEFAULT_FAILURE_TEXT = 'よくある失敗は未登録です。管理画面の Task Detail Editor で登録してください。';
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
 }
 
-function normalizeSection(value) {
-  const normalized = normalizeText(value).toLowerCase();
-  if (normalized === 'manual' || normalized === 'failure') return normalized;
-  return '';
+function resolveTaskDetailTaskKey(task, todoKey) {
+  const row = task && typeof task === 'object' ? task : {};
+  const parsed = tasksRepo.parseTaskId(row.taskId || '');
+  const ruleId = normalizeText(row.ruleId);
+  if (ruleId) {
+    return { taskKey: ruleId, source: 'task.ruleId' };
+  }
+  const parsedRuleId = normalizeText(parsed && parsed.ruleId);
+  if (parsedRuleId) {
+    return { taskKey: parsedRuleId, source: 'taskId.ruleId_fallback' };
+  }
+  const fallback = normalizeText(todoKey);
+  return { taskKey: fallback, source: 'todoKey_fallback' };
 }
 
-function normalizeStartChunk(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 1;
-  return Math.max(1, Math.floor(parsed));
-}
-
-function parseRuleIdFromTaskId(taskId) {
-  const parsed = tasksRepo.parseTaskId(taskId || '');
-  return normalizeText(parsed && parsed.ruleId);
-}
-
-async function resolveTaskContentByTodo(lineUserId, todoKey, deps) {
+async function resolveTaskKey(lineUserId, todoKey, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
-  const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
-  const contentRepo = resolvedDeps.taskContentsRepo || taskContentsRepo;
-  const todo = await todoRepo.getJourneyTodoItem(lineUserId, todoKey).catch(() => null);
-  const candidateKeys = [];
-  if (todo && todo.todoKey) candidateKeys.push(todo.todoKey);
-  if (todo && todo.stateEvidenceRef) {
-    const parsedRuleId = parseRuleIdFromTaskId(todo.stateEvidenceRef);
-    if (parsedRuleId) candidateKeys.push(parsedRuleId);
-  }
-  if (!candidateKeys.includes(todoKey)) candidateKeys.push(todoKey);
-
-  for (const taskKey of candidateKeys) {
-    // eslint-disable-next-line no-await-in-loop
-    const content = await contentRepo.getTaskContent(taskKey).catch(() => null);
-    if (content) {
-      return { taskKey, taskContent: content };
-    }
-  }
-  return { taskKey: todoKey, taskContent: null };
+  const taskRepository = resolvedDeps.tasksRepo || tasksRepo;
+  const directTaskId = `${lineUserId}__${todoKey}`;
+  const direct = await taskRepository.getTask(directTaskId).catch(() => null);
+  if (direct) return resolveTaskDetailTaskKey(direct, todoKey);
+  return { taskKey: todoKey, source: 'todoKey_fallback' };
 }
 
-function buildContinuationCommand(todoKey, section, startChunk) {
-  return `TODO詳細続き:${todoKey}:${section}:${startChunk}`;
-}
-
-function buildSectionBaseText(section, taskContent) {
+function resolveSectionText(section, taskContent) {
   const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
-  if (section === 'manual') {
-    return normalizeText(row.manualText) || '手順マニュアルは未登録です。';
-  }
-  if (section === 'failure') {
-    return normalizeText(row.failureText) || 'よくある失敗は未登録です。';
-  }
+  if (section === 'manual') return normalizeText(row.manualText) || DEFAULT_MANUAL_TEXT;
+  if (section === 'failure') return normalizeText(row.failureText) || DEFAULT_FAILURE_TEXT;
   return '';
 }
 
-function toSectionMessages(todoKey, section, text, startChunk) {
-  const chunks = splitLineLongText(text, { chunkSize: 4200 });
-  const totalChunks = chunks.length;
-  if (!totalChunks) {
-    return {
-      messages: ['未登録です。'],
-      totalChunks: 0,
-      deliveredChunks: 0,
-      nextStartChunk: null
-    };
-  }
-  const start = Math.max(0, startChunk - 1);
-  if (start >= totalChunks) {
-    return {
-      messages: ['続きはありません。'],
-      totalChunks,
-      deliveredChunks: 0,
-      nextStartChunk: null
-    };
-  }
+function toSectionLabel(section) {
+  if (section === 'manual') return '手順マニュアル';
+  if (section === 'failure') return 'よくある失敗';
+  return '詳細';
+}
 
-  const withSafety = isTaskDetailSectionSafetyValveEnabled();
-  const limit = withSafety ? getTaskDetailSectionChunkLimit() : totalChunks;
-  const target = chunks.slice(start, start + limit);
-  const messages = target.map((chunk, index) => {
-    const current = start + index + 1;
-    return `[${SECTION_LABEL[section] || section} ${current}/${totalChunks}]\n${chunk}`;
-  });
-  const nextStartChunk = start + target.length < totalChunks
-    ? (start + target.length + 1)
-    : null;
+function buildSectionChunkText(section, index, total, chunk) {
+  const label = toSectionLabel(section);
+  const prefix = `【${label} ${index}/${total}】\n`;
+  const available = Math.max(0, MAX_LINE_MESSAGE_CHARS - prefix.length);
+  const body = String(chunk || '').slice(0, available);
+  return `${prefix}${body}`;
+}
 
-  if (nextStartChunk) {
-    messages.push(
-      `続きがあります。${buildContinuationCommand(todoKey, section, nextStartChunk)} を送信してください。`
-    );
-  }
-
-  return {
-    messages,
-    totalChunks,
-    deliveredChunks: target.length,
-    nextStartChunk
-  };
+function buildContinuationCommand(todoKey, section, nextChunk) {
+  return `TODO詳細続き:${todoKey}:${section}:${nextChunk}`;
 }
 
 async function buildTaskDetailSectionReply(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const lineUserId = normalizeText(payload.lineUserId);
   const todoKey = normalizeText(payload.todoKey);
-  const section = normalizeSection(payload.section);
-  const startChunk = normalizeStartChunk(payload.startChunk);
-  if (!lineUserId || !todoKey || !section) {
-    return { ok: false, reason: 'invalid_params' };
+  const section = normalizeText(payload.section).toLowerCase();
+  const startChunk = Number.isFinite(Number(payload.startChunk))
+    ? Math.max(1, Math.floor(Number(payload.startChunk)))
+    : 1;
+  if (!lineUserId || !todoKey || !section) return { handled: false };
+  if (section !== 'manual' && section !== 'failure') return { handled: false };
+
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const taskContentRepository = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const keyResolution = await resolveTaskKey(lineUserId, todoKey, resolvedDeps);
+  const taskKey = normalizeText(keyResolution && keyResolution.taskKey);
+  if (!taskKey) {
+    return {
+      handled: true,
+      replyText: 'タスク詳細キーの解決に失敗しました。時間をおいて再試行してください。'
+    };
   }
 
-  const resolved = await resolveTaskContentByTodo(lineUserId, todoKey, deps);
-  const sectionText = buildSectionBaseText(section, resolved.taskContent);
-  const built = toSectionMessages(todoKey, section, sectionText, startChunk);
+  const taskContent = await taskContentRepository.getTaskContent(taskKey).catch(() => null);
+  const contentText = resolveSectionText(section, taskContent);
+  const chunks = splitLineLongText(contentText, MAX_LINE_MESSAGE_CHARS);
+  const fallbackText = section === 'manual' ? DEFAULT_MANUAL_TEXT : DEFAULT_FAILURE_TEXT;
+  const effectiveChunks = chunks.length ? chunks : [fallbackText];
+  const totalChunks = effectiveChunks.length;
+  const startIndex = Math.min(totalChunks - 1, startChunk - 1);
+
+  if (startIndex < 0 || startIndex >= totalChunks) {
+    return {
+      handled: true,
+      replyText: '続きはありません。'
+    };
+  }
+
+  const safetyValve = isTaskDetailSectionSafetyValveEnabled();
+  const chunkLimit = safetyValve ? getTaskDetailSectionChunkLimit() : totalChunks;
+  const endExclusive = Math.min(totalChunks, startIndex + chunkLimit);
+  const visible = effectiveChunks.slice(startIndex, endExclusive);
+  const messages = visible.map((chunk, offset) => ({
+    type: 'text',
+    text: buildSectionChunkText(section, startIndex + offset + 1, totalChunks, chunk)
+  }));
+
+  if (safetyValve && endExclusive < totalChunks) {
+    const nextChunk = endExclusive + 1;
+    const continueCommand = buildContinuationCommand(todoKey, section, nextChunk);
+    messages.push({
+      type: 'text',
+      text: `長文のため ${endExclusive}/${totalChunks} 件まで表示しました。続きは「${continueCommand}」を送信してください。`
+    });
+  }
 
   return {
-    ok: true,
-    todoKey,
-    taskKey: resolved.taskKey,
-    section,
-    startChunk,
-    totalChunks: built.totalChunks,
-    deliveredChunks: built.deliveredChunks,
-    nextStartChunk: built.nextStartChunk,
-    replyMessages: built.messages.map((text) => ({ type: 'text', text })),
-    continuation: {
+    handled: true,
+    replyMessages: messages,
+    sectionMeta: {
+      taskKey,
+      taskKeySource: keyResolution.source || null,
       section,
-      opened: startChunk === 1,
-      resumed: startChunk > 1,
-      completionRate: built.totalChunks > 0
-        ? Math.min(100, Math.round(((startChunk - 1 + built.deliveredChunks) / built.totalChunks) * 100))
-        : 100
+      startChunk: startIndex + 1,
+      totalChunks,
+      safetyValveApplied: safetyValve && totalChunks > chunkLimit
     }
   };
 }
 
 module.exports = {
-  buildTaskDetailSectionReply
+  DEFAULT_MANUAL_TEXT,
+  DEFAULT_FAILURE_TEXT,
+  resolveTaskDetailTaskKey,
+  buildTaskDetailSectionReply,
+  buildContinuationCommand
 };

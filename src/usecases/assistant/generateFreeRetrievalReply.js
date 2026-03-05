@@ -2,6 +2,10 @@
 
 const { searchFaqFromKb } = require('../faq/searchFaqFromKb');
 const { searchCityPackCandidates } = require('./retrieval/searchCityPackCandidates');
+const { sanitizeRetrievalCandidates } = require('./retrieval/sanitizeRetrievalCandidates');
+const { selectConversationStyle } = require('../../domain/llm/conversation/styleRouter');
+const { composeConversationDraftFromSignals } = require('../../domain/llm/conversation/conversationComposer');
+const { humanizeConversationMessage } = require('../../domain/llm/conversation/styleHumanizer');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -14,24 +18,41 @@ function trimForLineMessage(value) {
   return text.length > 4500 ? `${text.slice(0, 4500)}...` : text;
 }
 
-function buildEmptyReply(question) {
-  const title = normalizeText(question) || 'ご質問';
-  return [
-    `${title} に一致する情報が見つかりませんでした。`,
-    '',
-    '次にできること:',
-    '1. キーワードを短くして再検索',
-    '2. 都市名/期限/手続き名を追加して再送',
-    '3. 不明点は運用窓口へお問い合わせください'
-  ].join('\n');
+function resolveFreeStyleDecision(question, topic) {
+  const style = selectConversationStyle({
+    topic: normalizeText(topic) || 'general',
+    question: normalizeText(question),
+    userTier: 'free',
+    journeyPhase: 'pre',
+    messageLength: normalizeText(question).length,
+    timeOfDay: new Date().getHours(),
+    urgency: ''
+  });
+  return Object.assign({}, style, {
+    maxActions: 2
+  });
 }
 
-function buildRankedReply(question, faqCandidates, cityPackCandidates) {
-  const lines = [];
-  const title = normalizeText(question) || '検索結果';
-  lines.push(`${title} の関連情報です。`);
-  lines.push('');
+function buildEmptyReply(question) {
+  const title = normalizeText(question) || 'ご質問';
+  const draftPacket = composeConversationDraftFromSignals({
+    summary: `${title} に一致する情報が見つかりませんでした。`,
+    nextActions: [
+      'キーワードを短くして再検索する',
+      '都市名/期限/手続き名を追加して再送する'
+    ],
+    pitfall: '対象手続きと期限が曖昧なまま再検索すると候補が広がります。',
+    question: '都市名・期限・手続き名を1つずつ教えてください。',
+    state: 'CLARIFY',
+    move: 'Narrow'
+  });
+  const styleDecision = resolveFreeStyleDecision(question, 'other');
+  const humanized = humanizeConversationMessage({ draftPacket, styleDecision });
+  return [humanized.text, '不明点は運用窓口へお問い合わせください。'].join('\n\n').trim();
+}
 
+function buildCitationSection(faqCandidates, cityPackCandidates) {
+  const lines = [];
   if (faqCandidates.length) {
     lines.push('FAQ候補');
     faqCandidates.slice(0, 3).forEach((item, index) => {
@@ -39,20 +60,45 @@ function buildRankedReply(question, faqCandidates, cityPackCandidates) {
       lines.push(`${index + 1}. ${item.title || '-'} (score=${score})`);
       lines.push(`根拠キー: ${item.articleId}`);
     });
-    lines.push('');
   }
-
   if (cityPackCandidates.length) {
+    if (lines.length) lines.push('');
     lines.push('CityPack候補');
     cityPackCandidates.slice(0, 2).forEach((item, index) => {
       lines.push(`${index + 1}. ${item.title || '-'} (${item.reason || 'city_pack_match'})`);
       lines.push(`根拠キー: ${item.sourceId}`);
     });
-    lines.push('');
   }
-
-  lines.push('必要なら「抜け漏れチェック」「次アクション」を送ってPro支援を試せます。');
   return lines.join('\n').trim();
+}
+
+function buildRankedReply(question, faqCandidates, cityPackCandidates) {
+  const title = normalizeText(question) || '検索結果';
+  const nextActions = [];
+  faqCandidates.slice(0, 2).forEach((item) => {
+    nextActions.push(`FAQ候補を確認する（${item.articleId}）`);
+  });
+  cityPackCandidates.slice(0, 1).forEach((item) => {
+    nextActions.push(`CityPack候補を確認する（${item.sourceId}）`);
+  });
+  if (!nextActions.length) {
+    nextActions.push('キーワードを変えて再検索する');
+  }
+  const draftPacket = composeConversationDraftFromSignals({
+    summary: `${title} の関連情報です。`,
+    nextActions,
+    pitfall: '候補を同時に進めると手続きが分散しやすくなります。',
+    question: '',
+    state: 'PLAN',
+    move: 'Offer'
+  });
+  const styleDecision = resolveFreeStyleDecision(question, faqCandidates.length ? 'visa' : 'other');
+  const humanized = humanizeConversationMessage({ draftPacket, styleDecision });
+  const citationSection = buildCitationSection(faqCandidates, cityPackCandidates);
+  return [humanized.text, citationSection, '必要なら「抜け漏れチェック」「次アクション」を送ってPro支援を試せます。']
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
 }
 
 async function generateFreeRetrievalReply(params, deps) {
@@ -72,28 +118,39 @@ async function generateFreeRetrievalReply(params, deps) {
 
   const faqCandidates = Array.isArray(faq && faq.candidates) ? faq.candidates : [];
   const cityPackCandidates = Array.isArray(cityPack && cityPack.candidates) ? cityPack.candidates : [];
+  const sanitized = sanitizeRetrievalCandidates([faqCandidates, cityPackCandidates]);
+  const safeFaqCandidates = Array.isArray(sanitized.candidatesByGroup && sanitized.candidatesByGroup[0])
+    ? sanitized.candidatesByGroup[0]
+    : [];
+  const safeCityPackCandidates = Array.isArray(sanitized.candidatesByGroup && sanitized.candidatesByGroup[1])
+    ? sanitized.candidatesByGroup[1]
+    : [];
+  const injectionFindings = sanitized.injectionFindings === true;
+  const blockedReasons = Array.isArray(sanitized.blockedReasons) ? sanitized.blockedReasons : [];
   const citations = [];
 
-  faqCandidates.forEach((row) => {
+  safeFaqCandidates.forEach((row) => {
     const key = normalizeText(row && row.articleId);
     if (key && !citations.includes(key)) citations.push(key);
   });
-  cityPackCandidates.forEach((row) => {
+  safeCityPackCandidates.forEach((row) => {
     const key = normalizeText(row && row.sourceId);
     if (key && !citations.includes(key)) citations.push(key);
   });
 
-  const mode = faqCandidates.length || cityPackCandidates.length ? 'ranked' : 'empty';
+  const mode = safeFaqCandidates.length || safeCityPackCandidates.length ? 'ranked' : 'empty';
   const replyText = mode === 'ranked'
-    ? buildRankedReply(question, faqCandidates, cityPackCandidates)
+    ? buildRankedReply(question, safeFaqCandidates, safeCityPackCandidates)
     : buildEmptyReply(question);
 
   return {
     ok: true,
     mode,
     citations,
-    faqCandidates,
-    cityPackCandidates,
+    faqCandidates: safeFaqCandidates,
+    cityPackCandidates: safeCityPackCandidates,
+    injectionFindings,
+    blockedReasons,
     replyText: trimForLineMessage(replyText)
   };
 }

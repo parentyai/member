@@ -277,6 +277,12 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 4. 監査ログ `action=llm_gate.decision` で `assistantQuality.blockedStage/fallbackReason` が急増していないことを確認する。  
 5. 条件を満たした場合のみ prod へ同設定を反映する。  
 
+### 自動チェック（Phase717）
+- `npm run llm:rollout:check -- --base-url "$BASE_URL" --admin-token "$ADMIN_OS_TOKEN" --require-ready` を実行する。  
+- 判定は `summary.releaseReadiness` と `summary.gateAuditBaseline.entryTypes/gatesCoverage` を同時に確認する。  
+- fixture で検証する場合は `--config-json` と `--summary-json` を併用する。  
+- internal job 経路を段階導入で必須化する場合は `--require-job-entry` を付与し、`entryType=job` の件数が 0 のときに fail させる。  
+
 ### しきい値の一時上書き（検証用）
 - `GET /api/admin/os/llm-usage/summary` に以下クエリを付与して判定比較できる。  
   - `rolloutMinSampleCount`
@@ -467,3 +473,34 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1) `counterfactualOpportunityDetected` が高い segment を抽出  
 2) 同segmentの `selectionSource` と `scoreBreakdown` を確認  
 3) `wrong_evidence` が同時増加する場合は bandit停止を優先  
+
+## Phase731 Addendum（Paid Casual × Opportunity Intervention）
+
+### Feature Flags
+- `ENABLE_PAID_OPPORTUNITY_ENGINE_V1`（default: false）
+  - `false` の場合は既存 paid フローへ戻す。
+- `PAID_INTERVENTION_COOLDOWN_TURNS`（default: 5）
+  - 直近Nターンに介入履歴がある場合は `interventionBudget=0`。
+
+### Mode Switch
+- `conversationMode=casual`
+  - greeting / smalltalk を優先し、短文返答（質問0〜1）にする。
+  - URL脚注は付与しない。
+- `conversationMode=concierge`
+  - Opportunity検出時のみ介入する。
+  - 介入は1ターン最大1回。
+
+### Opportunity Type
+- `none` / `action` / `blocked` / `life`
+- `opportunityReasonKeys[]` は監査用の理由キーとして保持する。
+
+### 監査確認（llm_gate.decision 追加キー）
+- `conversationMode`
+- `opportunityType`
+- `opportunityReasonKeys`
+- `interventionBudget`
+
+### ロールバック
+1) `ENABLE_PAID_OPPORTUNITY_ENGINE_V1=false` で即時停止。  
+2) 必要時 `llmConciergeEnabled=false` を併用。  
+3) 重大時は `llmEnabled=false` で全停止。  

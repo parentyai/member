@@ -2,9 +2,11 @@
 
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { ALLOWED_MODULES } = require('./cityPacksRepo');
 
 const COLLECTION = 'city_pack_bulletins';
 const ALLOWED_STATUS = new Set(['draft', 'approved', 'sent', 'rejected']);
+const ALLOWED_MODULE_SET = new Set(ALLOWED_MODULES);
 
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -13,6 +15,20 @@ function normalizeStatus(value) {
 
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function normalizeModules(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const out = [];
+  rows.forEach((value) => {
+    if (typeof value !== 'string') return;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return;
+    if (!ALLOWED_MODULE_SET.has(normalized)) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  });
+  return out;
 }
 
 function resolveId(payload) {
@@ -32,6 +48,7 @@ function normalizePayload(data) {
     traceId: normalizeString(payload.traceId),
     requestId: normalizeString(payload.requestId),
     sourceRefId: normalizeString(payload.sourceRefId),
+    modulesUpdated: normalizeModules(payload.modulesUpdated),
     origin
   };
 }
@@ -51,6 +68,7 @@ async function createBulletin(data) {
     traceId: payload.traceId,
     requestId: payload.requestId,
     sourceRefId: payload.sourceRefId,
+    modulesUpdated: payload.modulesUpdated,
     origin: payload.origin,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

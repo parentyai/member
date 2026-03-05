@@ -9,15 +9,15 @@ function parseFlag(name, fallback) {
   return fallback;
 }
 
-function parseIntEnv(name, fallback, min, max) {
+function parseNumber(name, fallback, min, max) {
   const raw = process.env[name];
   if (typeof raw !== 'string') return fallback;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return fallback;
-  const value = Math.floor(parsed);
-  if (Number.isFinite(min) && value < min) return fallback;
-  if (Number.isFinite(max) && value > max) return fallback;
-  return value;
+  const normalized = Math.floor(parsed);
+  if (Number.isFinite(min) && normalized < min) return fallback;
+  if (Number.isFinite(max) && normalized > max) return fallback;
+  return normalized;
 }
 
 function isTaskEngineEnabled() {
@@ -48,16 +48,40 @@ function isLegacyTodoEmitDisabled() {
   return parseFlag('ENABLE_LEGACY_TODO_EMIT_DISABLED_V1', false);
 }
 
-function getTaskNudgeLinkPolicy() {
-  const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
-    ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
-    : '';
-  if (raw === 'lenient') return 'lenient';
-  return 'strict';
-}
-
 function isTaskDetailLineEnabled() {
   return parseFlag('ENABLE_TASK_DETAIL_LINE_V1', true);
+}
+
+function isTaskContentAdminEditorEnabled() {
+  return parseFlag('ENABLE_TASK_CONTENT_ADMIN_EDITOR_V1', true);
+}
+
+function isTaskDetailSectionSafetyValveEnabled() {
+  return parseFlag('ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1', true);
+}
+
+function getTaskDetailSectionChunkLimit() {
+  return parseNumber('TASK_DETAIL_SECTION_CHUNK_LIMIT', 3, 1, 8);
+}
+
+function isLinkRegistryIntentV2Enabled() {
+  return parseFlag('ENABLE_LINK_REGISTRY_INTENT_V2', true);
+}
+
+function isTaskMicroLearningEnabled() {
+  return parseFlag('ENABLE_TASK_MICRO_LEARNING_V1', true);
+}
+
+function isCityPackModuleSubscriptionEnabled() {
+  return parseFlag('ENABLE_CITY_PACK_MODULE_SUBSCRIPTION_V1', true);
+}
+
+function isJourneyAttentionBudgetEnabled() {
+  return parseFlag('ENABLE_JOURNEY_ATTENTION_BUDGET_V1', true);
+}
+
+function getJourneyDailyAttentionBudgetMax() {
+  return parseNumber('JOURNEY_DAILY_ATTENTION_BUDGET_MAX', 3, 1, 10);
 }
 
 function isTaskCategorySystemEnabled() {
@@ -76,24 +100,24 @@ function isRichMenuTaskOsEntryEnabled() {
   return parseFlag('ENABLE_RICH_MENU_TASK_OS_ENTRY_V1', true);
 }
 
-function isTaskDetailSectionSafetyValveEnabled() {
-  return parseFlag('ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1', true);
-}
-
-function isLinkRegistryIntentV2Enabled() {
-  return parseFlag('ENABLE_LINK_REGISTRY_INTENT_V2', true);
-}
-
 function getTaskDependencyMax() {
-  return parseIntEnv('TASK_DEPENDENCY_MAX', 10, 1, 20);
+  return parseNumber('TASK_DEPENDENCY_MAX', 10, 1, 20);
 }
 
 function getJourneyNextTaskMax() {
-  return parseIntEnv('JOURNEY_NEXT_TASK_MAX', 3, 1, 10);
+  return parseNumber('JOURNEY_NEXT_TASK_MAX', 3, 1, 10);
 }
 
-function getTaskDetailSectionChunkLimit() {
-  return parseIntEnv('TASK_DETAIL_SECTION_CHUNK_LIMIT', 3, 1, 10);
+function isLinkRegistryImpactMapEnabled() {
+  return parseFlag('ENABLE_LINK_REGISTRY_IMPACT_MAP_V1', true);
+}
+
+function getTaskNudgeLinkPolicy() {
+  const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
+    ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
+    : '';
+  if (raw === 'lenient') return 'lenient';
+  return 'strict';
 }
 
 module.exports = {
@@ -104,15 +128,21 @@ module.exports = {
   isJourneyUnifiedViewEnabled,
   isLegacyTodoDeriveFromTemplatesEnabled,
   isLegacyTodoEmitDisabled,
-  getTaskNudgeLinkPolicy,
   isTaskDetailLineEnabled,
+  isTaskContentAdminEditorEnabled,
+  isTaskDetailSectionSafetyValveEnabled,
+  getTaskDetailSectionChunkLimit,
+  isLinkRegistryIntentV2Enabled,
+  isTaskMicroLearningEnabled,
+  isCityPackModuleSubscriptionEnabled,
+  isJourneyAttentionBudgetEnabled,
+  getJourneyDailyAttentionBudgetMax,
   isTaskCategorySystemEnabled,
   isNextTaskEngineEnabled,
   isCityPackRecommendedTasksEnabled,
   isRichMenuTaskOsEntryEnabled,
-  isTaskDetailSectionSafetyValveEnabled,
-  isLinkRegistryIntentV2Enabled,
   getTaskDependencyMax,
   getJourneyNextTaskMax,
-  getTaskDetailSectionChunkLimit
+  isLinkRegistryImpactMapEnabled,
+  getTaskNudgeLinkPolicy
 };

@@ -1235,6 +1235,32 @@
                       </select>
                     </label>
                   </div>
+                  <div class="row">
+                    <label>category
+                      <select id="task-rules-category" class="select-inline">
+                        <option value="IMMIGRATION">IMMIGRATION</option>
+                        <option value="HOUSING">HOUSING</option>
+                        <option value="BANKING">BANKING</option>
+                        <option value="HEALTHCARE">HEALTHCARE</option>
+                        <option value="TRANSPORT">TRANSPORT</option>
+                        <option value="SCHOOL">SCHOOL</option>
+                        <option value="LIFE_SETUP" selected>LIFE_SETUP</option>
+                        <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+                      </select>
+                    </label>
+                    <label>estimatedTimeMin
+                      <input type="number" id="task-rules-estimated-time-min" class="input-sm" min="0" max="1440" value="20" />
+                    </label>
+                    <label>estimatedTimeMax
+                      <input type="number" id="task-rules-estimated-time-max" class="input-sm" min="0" max="1440" value="40" />
+                    </label>
+                    <label class="flex-1">recommendedVendorLinkIds(csv,max3)
+                      <input type="text" id="task-rules-vendor-link-ids" value="" />
+                    </label>
+                    <label class="flex-1">dependsOn(csv,max10)
+                      <input type="text" id="task-rules-depends-on" value="" />
+                    </label>
+                  </div>
                   <div class="row row-top">
                     <label>templateId
                       <input type="text" id="task-rules-template-id" value="journey_us_v1" />
@@ -1323,9 +1349,9 @@
 	                  <div class="note">
 	                    template warning summary: <span id="task-rules-template-warning-summary">-</span>
 	                  </div>
-	                  <div class="row">
-	                    <label class="flex-1">dry-run LINEユーザーID
-	                      <input type="text" id="task-rules-dry-run-user-id" />
+                  <div class="row">
+                    <label class="flex-1">dry-run LINEユーザーID
+                      <input type="text" id="task-rules-dry-run-user-id" />
                     </label>
                     <label class="flex-1">apply LINEユーザーID
                       <input type="text" id="task-rules-apply-line-user-id" />
@@ -1334,6 +1360,243 @@
                       <input type="text" id="task-rules-apply-member-number" />
                     </label>
                   </div>
+                  <details class="section" open>
+                    <summary>Task Detail Editor（LINE内完結）</summary>
+                    <div class="note">
+                      役割固定: task-rules = 判定/配信ロジック、task-content = LINE表示/教材本文。task-content更新は表示に即時反映されますが、通知判定ロジックには影響しません。
+                    </div>
+                    <div class="row row-top">
+                      <button id="task-rules-task-content-load" type="button">task-content-load</button>
+                      <button id="task-rules-task-content-plan" type="button">task-content-plan</button>
+                      <button id="task-rules-task-content-set" type="button">task-content-set</button>
+                    </div>
+                    <div class="note">
+                      taskContentPlanHash: <span id="task-rules-task-content-plan-hash">-</span>
+                      / taskContentConfirmToken: <span id="task-rules-task-content-confirm-token">-</span>
+                    </div>
+                    <div class="note">
+                      task-content warning: <span id="task-rules-task-content-warning">-</span>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">taskKey（ruleId推奨）
+                        <input type="text" id="task-rules-task-content-key" value="rule_sample_001" />
+                      </label>
+                      <label class="flex-1">title
+                        <input type="text" id="task-rules-task-content-title" value="" />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>category
+                        <select id="task-rules-task-content-category" class="select-inline">
+                          <option value="IMMIGRATION">IMMIGRATION</option>
+                          <option value="HOUSING">HOUSING</option>
+                          <option value="BANKING">BANKING</option>
+                          <option value="HEALTHCARE">HEALTHCARE</option>
+                          <option value="TRANSPORT">TRANSPORT</option>
+                          <option value="SCHOOL">SCHOOL</option>
+                          <option value="LIFE_SETUP" selected>LIFE_SETUP</option>
+                          <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+                        </select>
+                      </label>
+                      <label class="flex-1">dependencies(csv,max10)
+                        <input type="text" id="task-rules-task-content-dependencies" value="" />
+                      </label>
+                      <label class="flex-1">recommendedVendorLinkIds(csv,max3)
+                        <input type="text" id="task-rules-task-content-recommended-vendor-link-ids" value="" />
+                      </label>
+                      <label class="checkbox"><input type="checkbox" id="task-rules-task-content-archived" /> archived</label>
+                    </div>
+                    <div class="row">
+                      <label>timeMin
+                        <input type="number" id="task-rules-task-content-time-min" class="input-sm" min="0" max="1440" value="20" />
+                      </label>
+                      <label>timeMax
+                        <input type="number" id="task-rules-task-content-time-max" class="input-sm" min="0" max="1440" value="40" />
+                      </label>
+                      <label class="flex-1">videoLinkId
+                        <select id="task-rules-task-content-video-link-id" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                      <label class="flex-1">actionLinkId
+                        <select id="task-rules-task-content-action-link-id" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">checklist（改行; checklistItems未入力時のfallback）
+                        <textarea id="task-rules-task-content-checklist" rows="4"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">checklistItems JSON（[{id,text,order,enabled}]）
+                        <textarea id="task-rules-task-content-checklist-json" rows="6" class="input-mono">[
+  { "id": "passport", "text": "パスポート準備", "order": 1, "enabled": true },
+  { "id": "ssn_itin", "text": "SSNまたはITIN確認", "order": 2, "enabled": true },
+  { "id": "bank_reservation", "text": "銀行予約", "order": 3, "enabled": true }
+]</textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">summaryShort（改行で最大5）
+                        <textarea id="task-rules-task-content-summary-short" rows="4"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">topMistakes（改行で最大3）
+                        <textarea id="task-rules-task-content-top-mistakes" rows="3"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">contextTips（改行で最大5）
+                        <textarea id="task-rules-task-content-context-tips" rows="4"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">manualText（LINE内表示）
+                        <textarea id="task-rules-task-content-manual-text" rows="5"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">failureText（LINE内表示）
+                        <textarea id="task-rules-task-content-failure-text" rows="5"></textarea>
+                      </label>
+                    </div>
+                    <details class="section">
+                      <summary>task-content result</summary>
+                      <pre id="task-rules-task-content-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
+                    <summary>Task Detail Link Registry（最小管理）</summary>
+                    <div class="row row-top">
+                      <button id="task-rules-link-registry-reload" type="button">link-registry-reload</button>
+                      <button id="task-rules-link-registry-create" type="button">link-registry-create</button>
+                      <button id="task-rules-link-registry-set" type="button">link-registry-set</button>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">search
+                        <input type="text" id="task-rules-link-registry-search" value="" />
+                      </label>
+                      <label class="flex-1">link select
+                        <select id="task-rules-link-registry-select" class="select-inline">
+                          <option value="">Link Registryから選択</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>linkId（set時必須）
+                        <input type="text" id="task-rules-link-registry-id" value="" />
+                      </label>
+                      <label class="flex-1">title
+                        <input type="text" id="task-rules-link-registry-title" value="" />
+                      </label>
+                      <label class="flex-1">url
+                        <input type="text" id="task-rules-link-registry-url" value="" />
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>kind
+                        <select id="task-rules-link-registry-kind" class="select-inline">
+                          <option value="web">web</option>
+                          <option value="youtube">youtube</option>
+                          <option value="liff">liff</option>
+                        </select>
+                      </label>
+                      <label class="checkbox"><input type="checkbox" id="task-rules-link-registry-enabled" checked /> enabled</label>
+                    </div>
+                    <div class="row">
+                      <label>intentTag
+                        <select id="task-rules-link-registry-intent-tag" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="task">task</option>
+                          <option value="city_pack">city_pack</option>
+                          <option value="vendor">vendor</option>
+                          <option value="support">support</option>
+                          <option value="payment">payment</option>
+                        </select>
+                      </label>
+                      <label>audienceTag
+                        <select id="task-rules-link-registry-audience-tag" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="family">family</option>
+                          <option value="solo">solo</option>
+                          <option value="corporate">corporate</option>
+                        </select>
+                      </label>
+                      <label>regionScope
+                        <select id="task-rules-link-registry-region-scope" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="nationwide">nationwide</option>
+                          <option value="state">state</option>
+                          <option value="city">city</option>
+                          <option value="school_district">school_district</option>
+                        </select>
+                      </label>
+                      <label>riskLevel
+                        <select id="task-rules-link-registry-risk-level" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="safe">safe</option>
+                          <option value="warn">warn</option>
+                          <option value="blocked">blocked</option>
+                        </select>
+                      </label>
+                    </div>
+                    <details class="section">
+                      <summary>link-registry result</summary>
+                      <pre id="task-rules-link-registry-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
+                    <summary>task-content migration（dry-run/apply）</summary>
+                    <div class="note">
+                      `step_rules.ruleId` を正として `task_contents.taskKey` 連結を管理します。apply は add-only で `task_content_links` を更新します。
+                    </div>
+                    <div class="row row-top">
+                      <button id="task-rules-task-content-link-plan" type="button">migration-plan</button>
+                      <button id="task-rules-task-content-link-apply" type="button">migration-apply</button>
+                    </div>
+                    <div class="note">
+                      migrationPlanHash: <span id="task-rules-task-content-link-plan-hash">-</span>
+                      / migrationConfirmToken: <span id="task-rules-task-content-link-confirm-token">-</span>
+                    </div>
+                    <label>manualMappings JSON（[{sourceTaskKey,ruleId,note}]）</label>
+                    <textarea id="task-rules-task-content-link-manual-map-json" rows="6" class="input-mono">[]</textarea>
+                    <details class="section">
+                      <summary>task-content migration result</summary>
+                      <pre id="task-rules-task-content-link-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
+                    <summary>Link Registry impact map</summary>
+                    <div class="note">shared ID（複数領域参照）と WARN/disabled 参照を monitor で確認します。</div>
+                    <div class="row row-top">
+                      <label>limit
+                        <input type="number" id="task-rules-link-impact-limit" class="input-sm" min="1" max="1000" value="500" />
+                      </label>
+                      <button id="task-rules-link-impact-reload" type="button">link-impact-reload</button>
+                    </div>
+                    <div id="task-rules-link-impact-summary" class="note">-</div>
+                    <div class="table-scroll">
+                      <table class="table-compact">
+                        <thead>
+                          <tr>
+                            <th>linkId</th>
+                            <th>state</th>
+                            <th>domains</th>
+                            <th>refs</th>
+                            <th>shared</th>
+                          </tr>
+                        </thead>
+                        <tbody id="task-rules-link-impact-rows"></tbody>
+                      </table>
+                    </div>
+                    <details class="section">
+                      <summary>link impact raw</summary>
+                      <pre id="task-rules-link-impact-result">-</pre>
+                    </details>
+                  </details>
                   <details class="section">
                     <summary>status</summary>
                     <pre id="task-rules-status-result">-</pre>
@@ -2207,6 +2470,10 @@
                           <label for="city-pack-manage-metadata" data-dict-key="ui.label.cityPack.contentManager.metadata">metadata(JSON)</label>
                           <textarea id="city-pack-manage-metadata" rows="4">{}</textarea>
                         </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-modules">modules（改行 or カンマ: schools/healthcare/driving/housing/utilities）</label>
+                          <textarea id="city-pack-manage-modules" rows="4"></textarea>
+                        </div>
                       </div>
                     </div>
                     <div class="table-scroll">
@@ -2301,6 +2568,19 @@
                 <div class="row row-top">
                   <button id="city-pack-unified-reload" type="button">更新</button>
                 </div>
+                <div id="city-pack-v2-toolbar" class="city-pack-v2-toolbar city-pack-v2-only is-hidden-by-flag">
+                  <div class="city-pack-v2-views" role="group" aria-label="City Pack quick views">
+                    <button id="city-pack-v2-view-needs-review" type="button" class="button-subtle">要確認</button>
+                    <button id="city-pack-v2-view-blocked" type="button" class="button-subtle">Blocked</button>
+                    <button id="city-pack-v2-view-draft" type="button" class="button-subtle">Draft</button>
+                    <button id="city-pack-v2-view-all" type="button" class="button-subtle">すべて</button>
+                  </div>
+                  <div class="city-pack-v2-stats" aria-live="polite">
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-total">-</strong> total</span>
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-actionable">-</strong> actionable</span>
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-blocked">-</strong> blocked</span>
+                  </div>
+                </div>
                 <div class="filter-bar trend-ui-only">
                   <div class="filter-chips" id="city-pack-unified-filter-chips"></div>
                   <div class="filter-meta">
@@ -2327,6 +2607,21 @@
                     <tbody id="city-pack-unified-rows"></tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag">
+              <div class="panel-title">Selection Detail</div>
+              <div class="panel-body city-pack-v2-detail-body">
+                <div class="city-pack-v2-detail-header">
+                  <span id="city-pack-v2-detail-status" class="city-pack-v2-status-badge">-</span>
+                  <strong id="city-pack-v2-detail-title">行を選択してください</strong>
+                </div>
+                <div id="city-pack-v2-detail-meta" class="note">種別 / 更新日時 / 担当 を表示します。</div>
+                <div id="city-pack-v2-detail-actions" class="city-pack-v2-detail-actions"></div>
+                <details class="section" open>
+                  <summary>RAW</summary>
+                  <pre id="city-pack-v2-detail-json">-</pre>
+                </details>
               </div>
             </div>
             <div class="pane-grid city-pack-legacy-block">
@@ -4028,6 +4323,10 @@
                     <button id="llm-usage-export" type="button">LLM usage Export CSV</button>
                   </div>
                   <pre id="llm-usage-summary-result">-</pre>
+                  <details class="section">
+                    <summary>入口統制ダッシュボード</summary>
+                    <pre id="llm-entry-control-dashboard">-</pre>
+                  </details>
                 </div>
               </div>
             </div>

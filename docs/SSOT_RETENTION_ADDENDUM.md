@@ -9,9 +9,9 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 11 |
-| config | 50 |
-| event | 6 |
+| aggregate | 13 |
+| config | 49 |
+| event | 7 |
 | evidence | 14 |
 | transient | 3 |
 
@@ -54,6 +54,9 @@
 | `journey_todo_items` | config | INDEFINITE | false | false |
 | `journey_todo_stats` | aggregate | 90d | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
+| `llm_action_logs` | event | 180d | CONDITIONAL | true |
+| `llm_bandit_state` | aggregate | INDEFINITE | false | false |
+| `llm_contextual_bandit_state` | aggregate | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
@@ -93,7 +96,6 @@
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
-| `task_contents` | config | INDEFINITE | false | false |
 | `tasks` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |

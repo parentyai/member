@@ -1,9 +1,12 @@
 'use strict';
 
-const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
-const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
+const usersRepo = require('../../repos/firestore/usersRepo');
 const tasksRepo = require('../../repos/firestore/tasksRepo');
-const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
+const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
+const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
+const userCityPackPreferencesRepo = require('../../repos/firestore/userCityPackPreferencesRepo');
+const { composeCityAndNationwidePacks } = require('../nationwidePack/composeCityAndNationwidePacks');
+const { appendAuditLog } = require('../audit/appendAuditLog');
 const { isCityPackRecommendedTasksEnabled } = require('../../domain/tasks/featureFlags');
 
 function normalizeText(value) {
@@ -11,126 +14,175 @@ function normalizeText(value) {
   return value.trim();
 }
 
-function normalizeRegionKey(value) {
-  return normalizeText(value).toLowerCase();
-}
-
-function normalizeRecommendedTasks(value) {
-  if (!Array.isArray(value)) return [];
+function normalizeModules(values) {
+  const rows = Array.isArray(values) ? values : [];
   const out = [];
-  for (const row of value) {
-    if (!row || typeof row !== 'object') continue;
-    const ruleId = normalizeText(row.ruleId);
-    if (!ruleId) continue;
-    const module = normalizeText(row.module).toLowerCase() || null;
-    const priorityBoost = Number.isFinite(Number(row.priorityBoost)) ? Number(row.priorityBoost) : null;
-    out.push({ ruleId, module, priorityBoost });
-  }
+  rows.forEach((value) => {
+    const normalized = normalizeText(value).toLowerCase();
+    if (!normalized) return;
+    if (!cityPacksRepo.ALLOWED_MODULES.includes(normalized)) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  });
   return out;
 }
 
-function cityPackMatchesRegion(pack, regionKey) {
-  const row = pack && typeof pack === 'object' ? pack : {};
-  const target = normalizeRegionKey(regionKey);
-  if (!target) return false;
-  const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
-  const primary = normalizeRegionKey(row.regionKey || metadata.regionKey);
-  if (primary && primary === target) return true;
-  const keys = Array.isArray(metadata.regionKeys) ? metadata.regionKeys : [];
-  return keys.some((item) => normalizeRegionKey(item) === target);
-}
-
-function resolveDueAt(days) {
-  const now = Date.now();
-  const safeDays = Number.isFinite(Number(days)) ? Math.max(0, Math.min(180, Math.floor(Number(days)))) : 14;
-  return new Date(now + safeDays * 24 * 60 * 60 * 1000).toISOString();
+function resolveDueAtFromRule(rule, nowIso) {
+  const nowMs = Date.parse(nowIso || new Date().toISOString());
+  if (!Number.isFinite(nowMs)) return new Date().toISOString();
+  const leadTime = rule && rule.leadTime && typeof rule.leadTime === 'object' ? rule.leadTime : {};
+  const days = Number(leadTime.days);
+  const safeDays = Number.isFinite(days) ? Math.max(0, Math.floor(days)) : 3;
+  return new Date(nowMs + (safeDays * 24 * 60 * 60 * 1000)).toISOString();
 }
 
 async function syncCityPackRecommendedTasks(params, deps) {
-  if (!isCityPackRecommendedTasksEnabled()) {
-    return { ok: true, status: 'disabled', seededCount: 0, skippedCount: 0 };
-  }
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const lineUserId = normalizeText(payload.lineUserId);
-  const regionKey = normalizeRegionKey(payload.regionKey);
-  if (!lineUserId || !regionKey) {
-    return { ok: false, status: 'invalid_params', seededCount: 0, skippedCount: 0 };
+  if (!lineUserId) throw new Error('lineUserId required');
+  if (!isCityPackRecommendedTasksEnabled()) {
+    return {
+      ok: true,
+      status: 'disabled',
+      createdCount: 0,
+      skippedCount: 0,
+      warnings: []
+    };
   }
 
-  const cpRepo = resolvedDeps.cityPacksRepo || cityPacksRepo;
-  const srRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
-  const tsRepo = resolvedDeps.tasksRepo || tasksRepo;
-  const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
+  const usersRepository = resolvedDeps.usersRepo || usersRepo;
+  const tasksRepository = resolvedDeps.tasksRepo || tasksRepo;
+  const stepRulesRepository = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const cityPackRepository = resolvedDeps.cityPacksRepo || cityPacksRepo;
+  const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+  const composeFn = resolvedDeps.composeCityAndNationwidePacks || composeCityAndNationwidePacks;
+  const nowIso = normalizeText(payload.now) || new Date().toISOString();
 
-  const packs = await cpRepo.listCityPacks({ activeOnly: true, limit: 200 }).catch(() => []);
-  const candidates = (Array.isArray(packs) ? packs : []).filter((pack) => cityPackMatchesRegion(pack, regionKey));
-  const seededRuleIds = new Set();
-  let seededCount = 0;
+  const [user, pref] = await Promise.all([
+    usersRepository.getUser(lineUserId).catch(() => null),
+    preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null)
+  ]);
+  const regionKey = normalizeText(payload.regionKey || (user && user.regionKey)).toLowerCase();
+  if (!regionKey) {
+    return {
+      ok: true,
+      status: 'region_missing',
+      createdCount: 0,
+      skippedCount: 0,
+      warnings: ['regionKey missing']
+    };
+  }
+
+  const subscribedModules = normalizeModules(pref && pref.modulesSubscribed);
+  const allowAllModules = subscribedModules.length === 0;
+  const composition = await composeFn({
+    regionKey,
+    language: 'ja',
+    limit: 30
+  }, resolvedDeps).catch(() => ({ items: [] }));
+  const items = Array.isArray(composition && composition.items) ? composition.items : [];
+  const recommendations = [];
+  const warnings = [];
+
+  for (const item of items) {
+    const cityPackId = normalizeText(item && item.cityPackId);
+    if (!cityPackId) continue;
+    // eslint-disable-next-line no-await-in-loop
+    const cityPack = await cityPackRepository.getCityPack(cityPackId).catch(() => null);
+    const recommendedTasks = Array.isArray(cityPack && cityPack.recommendedTasks) ? cityPack.recommendedTasks : [];
+    recommendedTasks.forEach((entry) => {
+      const ruleId = normalizeText(entry && entry.ruleId);
+      if (!ruleId) return;
+      const module = normalizeText(entry && entry.module).toLowerCase();
+      if (module && !allowAllModules && !subscribedModules.includes(module)) return;
+      if (recommendations.some((row) => row.ruleId === ruleId)) return;
+      recommendations.push({
+        ruleId,
+        cityPackId,
+        module: module || null
+      });
+    });
+  }
+
+  let createdCount = 0;
   let skippedCount = 0;
-
-  for (const pack of candidates) {
-    const recommendedTasks = normalizeRecommendedTasks(pack.recommendedTasks);
-    for (const item of recommendedTasks) {
-      if (seededRuleIds.has(item.ruleId)) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const rule = await srRepo.getStepRule(item.ruleId).catch(() => null);
-      if (!rule || rule.enabled !== true) {
-        skippedCount += 1;
-        continue;
-      }
-      const taskId = tasksRepo.buildTaskId(lineUserId, item.ruleId);
-      // eslint-disable-next-line no-await-in-loop
-      const existing = await tsRepo.getTask(taskId).catch(() => null);
-      if (!existing) {
-        // eslint-disable-next-line no-await-in-loop
-        await tsRepo.upsertTask(taskId, {
-          userId: lineUserId,
-          lineUserId,
-          ruleId: item.ruleId,
-          status: 'todo',
-          dueAt: resolveDueAt(item.priorityBoost && item.priorityBoost > 0 ? 7 : 14),
-          nextNudgeAt: new Date().toISOString(),
-          blockedReason: null,
-          stepKey: rule.stepKey || null,
-          meaning: rule.meaning || null,
-          sourceEvent: {
-            eventId: null,
-            eventKey: 'CITY_PACK_RECOMMENDED',
-            source: 'city_pack',
-            occurredAt: new Date().toISOString()
-          },
-          explain: [{
-            decisionKey: 'seed_city_pack_recommended',
-            cityPackId: pack.id,
-            regionKey
-          }]
-        });
-        seededCount += 1;
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await todoRepo.upsertJourneyTodoItem(lineUserId, item.ruleId, {
-        title: (rule.meaning && rule.meaning.title) || rule.stepKey || item.ruleId,
-        dueAt: resolveDueAt(item.priorityBoost && item.priorityBoost > 0 ? 7 : 14),
-        status: 'open',
-        progressState: 'not_started',
-        graphStatus: 'actionable',
-        journeyState: 'planned',
-        source: 'city_pack_recommended'
-      }).catch(() => null);
-      seededRuleIds.add(item.ruleId);
+  for (const rec of recommendations) {
+    const taskId = tasksRepository.buildTaskId(lineUserId, rec.ruleId);
+    if (!taskId) {
+      skippedCount += 1;
+      warnings.push(`invalid taskId:${rec.ruleId}`);
+      continue;
     }
+    // eslint-disable-next-line no-await-in-loop
+    const existing = await tasksRepository.getTask(taskId).catch(() => null);
+    if (existing) {
+      skippedCount += 1;
+      continue;
+    }
+    // eslint-disable-next-line no-await-in-loop
+    const rule = await stepRulesRepository.getStepRule(rec.ruleId).catch(() => null);
+    if (!rule || rule.enabled !== true) {
+      skippedCount += 1;
+      warnings.push(`step_rule_missing_or_disabled:${rec.ruleId}`);
+      continue;
+    }
+    const dueAt = resolveDueAtFromRule(rule, nowIso);
+    // eslint-disable-next-line no-await-in-loop
+    await tasksRepository.upsertTask(taskId, {
+      taskId,
+      userId: lineUserId,
+      lineUserId,
+      ruleId: rec.ruleId,
+      stepKey: rule.stepKey || null,
+      meaning: rule.meaning || null,
+      status: 'todo',
+      dueAt,
+      nextNudgeAt: dueAt,
+      blockedReason: null,
+      sourceEvent: {
+        eventId: null,
+        eventKey: 'city_pack_recommended_task_seed',
+        source: rec.cityPackId || 'city_pack',
+        occurredAt: nowIso
+      },
+      priority: Number.isFinite(Number(rule.priority)) ? Number(rule.priority) : 100,
+      riskLevel: rule.riskLevel || 'medium',
+      checkedAt: nowIso,
+      engineVersion: 'task_engine_v1'
+    });
+    createdCount += 1;
   }
+
+  await appendAuditLog({
+    actor: payload.actor || 'city_pack_recommended_task_sync',
+    action: 'city_pack.recommended_tasks.sync',
+    entityType: 'city_pack',
+    entityId: lineUserId,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    payloadSummary: {
+      lineUserId,
+      regionKey,
+      createdCount,
+      skippedCount,
+      recommendationCount: recommendations.length,
+      warningCount: warnings.length
+    }
+  }).catch(() => null);
 
   return {
     ok: true,
-    status: 'ok',
-    seededCount,
+    status: 'synced',
+    lineUserId,
+    regionKey,
+    createdCount,
     skippedCount,
-    matchedCityPackCount: candidates.length
+    warnings: Array.from(new Set(warnings))
   };
 }
 
 module.exports = {
   syncCityPackRecommendedTasks
 };
+

@@ -3,6 +3,8 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'llm_action_logs';
+const CONVERSATION_MODES = new Set(['casual', 'concierge']);
+const OPPORTUNITY_TYPES = new Set(['none', 'action', 'blocked', 'life']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -70,13 +72,39 @@ function normalizeChosenAction(value) {
 
 function normalizeRewardSignals(value) {
   const payload = value && typeof value === 'object' ? value : {};
+  const clickPrimary = payload.clickPrimary === true || payload.click === true;
+  const clickSecondary = payload.clickSecondary === true;
+  const taskDone = payload.taskDone === true || payload.taskComplete === true;
   return {
-    click: payload.click === true,
-    taskComplete: payload.taskComplete === true,
+    click: clickPrimary || clickSecondary,
+    clickPrimary,
+    clickSecondary,
+    taskDone,
+    taskComplete: taskDone,
     blockedResolved: payload.blockedResolved === true,
+    unsubscribe: payload.unsubscribe === true,
+    spam: payload.spam === true,
     citationMissing: payload.citationMissing === true,
     wrongEvidence: payload.wrongEvidence === true
   };
+}
+
+function normalizeConversationMode(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return CONVERSATION_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeOpportunityType(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'none';
+  return OPPORTUNITY_TYPES.has(normalized) ? normalized : 'none';
+}
+
+function normalizeInterventionBudget(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return num >= 1 ? 1 : 0;
 }
 
 function normalizeContextualFeatures(value) {
@@ -158,6 +186,10 @@ async function appendLlmActionLog(params) {
     conversationState: normalizeString(payload.conversationState, null),
     conversationMove: normalizeString(payload.conversationMove, null),
     styleId: normalizeString(payload.styleId, null),
+    conversationMode: normalizeConversationMode(payload.conversationMode),
+    opportunityType: normalizeOpportunityType(payload.opportunityType),
+    opportunityReasonKeys: normalizeStringList(payload.opportunityReasonKeys, 8),
+    interventionBudget: normalizeInterventionBudget(payload.interventionBudget),
     contextVersion: normalizeString(payload.contextVersion, 'concierge_ctx_v1'),
     featureHash: normalizeString(payload.featureHash, null),
     contextSignature: normalizeString(payload.contextSignature, null),
@@ -257,5 +289,6 @@ module.exports = {
   listPendingLlmActionLogs,
   listLlmActionLogsByLineUserId,
   patchLlmActionLog,
-  toDate
+  toDate,
+  normalizeRewardSignals
 };

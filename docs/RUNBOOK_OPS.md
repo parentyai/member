@@ -108,3 +108,159 @@ STOP の方針:
 ## Rollback
 - 直近の変更を戻す場合は revert（実装PR / docs PR）
 - 緊急停止は Kill Switch（運用手順に従う）
+
+## Phase730 Task Detail運用（add-only）
+### 目的
+- LINE `TODO詳細` で表示される Task詳細（manual/failure/video/cta）を運用側で更新する。
+
+### 手順（monitor > Task Engine / Step Rules）
+1. `status` を実行して `task_contents` を取得する。
+2. `Task Detail Editor` で `taskKey` を入力し、`task-content-load` で既存値を読込む。
+3. `title/time/checklist/manual/failure/videoLinkId/actionLinkId` を更新する。
+4. `task-content-plan` を実行し、`warnings` を確認する。
+5. 問題がなければ `task-content-set` を実行する（planHash + confirmToken 必須）。
+6. LINEで `TODO詳細:{todoKey}` を送信し、Manual/Fault postback を含めて表示確認する。
+
+### Link Registry最小運用
+1. `Task Detail Link Registry` で `link-registry-reload` を実行する。
+2. 新規リンクは `title/url/kind/enabled` を入力して `link-registry-create`。
+3. 既存リンクの有効/無効やURL更新は `linkId` 指定で `link-registry-set`。
+
+### 緊急停止
+- `ENABLE_TASK_DETAIL_LINE_V1=0` で LINE詳細導線を即時停止。
+- `ENABLE_TASK_CONTENT_ADMIN_EDITOR_V1=0` で管理画面編集導線を即時停止。
+- `ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1=0` で長文安全弁を停止（旧挙動）。
+
+### 編集責務（混同防止）
+| 編集対象 | 触る画面 | 変更内容 | ユーザー影響 |
+| --- | --- | --- | --- |
+| `task-rules` | Task Engine / Step Rules | 判定条件、配信条件、依存関係 | 通知判定とToDo生成に影響 |
+| `task-content` | Task Detail Editor | 表示タイトル、manual/failure、video/cta | `TODO詳細` 表示に即時反映（判定ロジックは不変） |
+
+### 事故例と回避策
+- 混同: `task-rules` を編集すべき場面で `task-content` を編集しても判定は変わらない。  
+  - 回避: 編集前に上表で対象を確認し、`task-content warning` が `-` 以外なら先に解消する。
+- 未紐付け: `taskKey` が `step_rules.ruleId` と一致しない。  
+  - 回避: `task-content warning` の「未紐付け」表示を解消してから set する。
+- 無効リンク: `videoLinkId/actionLinkId` が disabled/WARN。  
+  - 回避: Link Registry で `enabled=true` / health正常化後に plan を再実行する。
+
+### stg実機検証手順（再現用）
+1. 前提確認:
+   - stg 環境変数に `ENABLE_TASK_DETAIL_LINE_V1=1` / `ENABLE_TASK_CONTENT_ADMIN_EDITOR_V1=1` を設定。
+   - 安全弁確認は `ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1=1`（default）。
+2. 監査起点を作成:
+   - Admin monitor の `trace` を再生成し、操作ログを同一 traceId で実施。
+3. Task Content 更新:
+   - `task-content-load -> task-content-plan -> task-content-set` を実行。
+4. LINE操作:
+   - `TODO詳細:{todoKey}` を送信。
+   - `📖 手順マニュアル` / `⚠ よくある失敗` の postback を押下。
+5. 確認:
+   - Flex header/body/footer が欠落なく表示される。
+   - Manual/Failure は `【... i/n】` 付きで送信される。
+   - 分割上限超過時は continuation command が案内される（例: `TODO詳細続き:bank_open:manual:4`）。
+6. 失敗時切り分け:
+   - webhook route: `admin errors` で `webhook_line` / journey postback エラーを確認。
+   - Link解決: `task-content warning` と plan warnings を確認。
+   - reply/push順: LINE受信ログで `i/n` 番号の欠落有無を確認。
+
+### stgチェックリスト（必須ケース）
+- Case A: manual短文（1チャンク）で postback 返信成功。
+- Case B: manual長文（2万文字級、絵文字混在）で continuation command が出る。
+- Case C: `videoLinkId/actionLinkId` が disabled/WARN/未設定で fail-close 表示。
+- Case D: `checklistItems` 空で「やること」セクション非表示。
+- Case E: 分割数 > `TASK_DETAIL_SECTION_CHUNK_LIMIT` で安全弁動作。
+- Case F: postback payload破損で fail-close（既存導線維持、サーバー異常なし）。
+
+### stg証跡テンプレート（実施時に追記）
+- 実施日:
+- 実施者:
+- traceId:
+- 対象 todoKey/taskKey:
+- Case A-F 結果:
+- 異常時ログ:
+- ロールバック実施有無:
+
+### stg証跡（2026-03-04 実施ログ）
+- 実施日: 2026-03-04
+- 実施者: codex (AI)
+- traceId/requestId prefix: `t730-stg-*`
+- 対象 lineUserId: `U730STG000000000000000000000001`
+- 対象 todoKey/taskKey:
+  - `t730_case_a`
+  - `t730_case_b`
+  - `t730_case_c`
+  - `t730_case_d`
+  - `t730_case_e`
+- Case A-F 結果:
+  - A PASS: `TODO詳細:t730_case_a` + manual postback で Flex + `【手順マニュアル 1/1】`
+  - B PASS: `TODO詳細:t730_case_b` + manual postback で `1/8..3/8` + continuation command
+  - C PASS: `TODO詳細:t730_case_c` で video/action fail-close（非表示）
+  - D PASS: `TODO詳細:t730_case_d` で checklist空時「やること」非表示
+  - E PASS: `TODO詳細:t730_case_e` + manual postback + `TODO詳細続き:t730_case_e:manual:4` で安全弁確認
+  - F PASS: postback `section=broken` で fail-close（`handled:false`）、webhookは200
+- webhookログ抜粋:
+  - `t730-stg-a-msg`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+  - `t730-stg-e-manual`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+  - `t730-stg-f-broken`: `[webhook] ... accept` / `[OBS] action=webhook result=ok ...`
+- 異常時ログ:
+  - synthetic webhookのため replyToken はダミー。messageケースで `LINE API error: 400` を観測（Journey処理/fail-close検証は継続）
+- ロールバック実施有無: なし
+
+## Phase740 運用手順（Next-gen UX add-only）
+
+### LinkRegistry 2.0 運用
+1. monitor > Task Detail Link Registry で対象 link を選択する。
+2. `intentTag/audienceTag/regionScope/riskLevel` を設定して `link-registry-set`。
+3. 422 が返る場合は enum値を見直す（未指定は空欄のまま）。
+
+### Task Micro-Learning 運用
+1. monitor > Task Detail Editor で `taskKey` を読み込む。
+2. `summaryShort/topMistakes/contextTips` を改行で編集する。
+3. `task-content-plan` で警告を確認後、`task-content-set` を実行する。
+4. LINE `TODO詳細:{todoKey}` で「概要/失敗/状況注意」が表示されることを確認する。
+
+### CityPack モジュール購読運用
+1. city-pack pane > Content Manager で `modules` を設定して保存する。
+2. LINEで `CityPack案内` を送信し、購読ボタン（postback）を操作する。
+3. CityPack bulletin を作成する場合は `modulesUpdated[]` を指定し、購読者のみ配信対象になることを確認する。
+
+### Notification Attention Budget（日次3件既定）
+1. `ENABLE_JOURNEY_ATTENTION_BUDGET_V1=1` を確認する。
+2. `JOURNEY_DAILY_ATTENTION_BUDGET_MAX`（既定3）を必要時のみ調整する。
+3. `notification_deliveries` を基準に日次送達数を確認する（`deliveries` は参考値）。
+4. budget超過時は TaskNudge/CityPack送信が skip されるため、運用判断時は `notification_deliveries` 件数を優先する。
+
+## Phase741 運用手順（US Assignment Task OS add-only）
+
+### Rich Menu Task OS 入口を構成する
+1. dry-run:
+  - `node tools/migrations/rich_menu_task_os_seed.js`
+2. apply:
+  - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy`
+3. 指定ユーザーへ binding も投入する場合:
+  - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy --line-users=Uxxx,Uyyy`
+4. monitor > rich-menu status で `policy.enabled=true` と template/rule を確認する。
+
+### LINE導線確認（Task OS）
+1. `今日の3つ`:
+  - `next_tasks` が最大3件返ることを確認。
+2. `TODO一覧`:
+  - 従来一覧表示が非退行であることを確認。
+3. `カテゴリ`:
+  - カテゴリ件数表示が返ることを確認。
+4. `カテゴリ:IMMIGRATION`:
+  - 該当カテゴリのみ表示されることを確認。
+5. `通知履歴`:
+  - `notification_deliveries` ベースの履歴が返ることを確認。
+6. `TODO業者:<todoKey>`:
+  - `recommendedVendorLinkIds` から利用可能リンクのみ返ることを確認。
+7. `相談`:
+  - support guide 文面が返ることを確認。
+
+### CityPack 推奨タスク seed
+1. `city_packs.recommendedTasks[]` を投入する。
+2. LINEで地域申告を実施する（`declareCityRegionFromLine`）。
+3. `syncCityPackRecommendedTasks` が best-effort で起動し、未存在 task のみ作成されることを確認する。
+4. audit log `city_pack.recommended_tasks.sync` を確認する。
