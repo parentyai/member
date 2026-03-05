@@ -39,8 +39,12 @@ test('phase656: dashboard KPI and llm usage summary include additive retention a
   assert.ok(usageSummaryRoute.includes('maskedTopUsers'));
   assert.ok(usageSummaryRoute.includes('byPlan'));
   assert.ok(usageSummaryRoute.includes('byDecision'));
+  assert.ok(usageSummaryRoute.includes('entryTypes'));
+  assert.ok(usageSummaryRoute.includes('gatesCoverage'));
 
   assert.ok(adminHtml.includes('id="llm-usage-export"'));
+  assert.ok(adminHtml.includes('id="llm-entry-control-dashboard"'));
   assert.ok(adminJs.includes('exportLlmUsageCsv('));
   assert.ok(adminJs.includes('/api/admin/os/llm-usage/export'));
+  assert.ok(adminJs.includes('renderLlmEntryControlDashboard('));
 });

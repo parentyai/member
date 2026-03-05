@@ -20,6 +20,7 @@ const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFr
 const { composeConciergeReply } = require('../usecases/assistant/concierge/composeConciergeReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
+const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const {
   getPublicWriteSafetySnapshot,
   getLlmConciergeEnabled,
@@ -540,11 +541,8 @@ async function appendLlmGateDecisionBestEffort(data) {
     fallbackReason: payload.blockedReason || null
   });
   try {
-    await appendAuditLog({
+    await appendLlmGateDecision({
       actor: 'line_webhook',
-      action: 'llm_gate.decision',
-      entityType: 'llm_gate',
-      entityId: lineUserId,
       traceId: payload.traceId || null,
       requestId: payload.requestId || null,
       payloadSummary: {
@@ -622,7 +620,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         counterfactualEval: conciergeMeta && conciergeMeta.counterfactualEval && typeof conciergeMeta.counterfactualEval === 'object'
           ? conciergeMeta.counterfactualEval
           : null,
-        assistantQuality
+        assistantQuality,
+        entryType: 'webhook',
+        gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
     });
   } catch (_err) {
@@ -793,7 +793,32 @@ async function replyWithFreeRetrieval(params) {
   const extra = normalizeReplyText(mergedExtra);
   const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
   let replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
-  let conciergeMeta = null;
+  const retrievalBlockedReasons = Array.isArray(retrieval.blockedReasons) ? retrieval.blockedReasons : [];
+  const retrievalInjectionFindings = retrieval.injectionFindings === true;
+  let conciergeMeta = {
+    topic: null,
+    mode: null,
+    userTier: payload.plan === 'pro' ? 'paid' : 'free',
+    citationRanks: [],
+    urlCount: 0,
+    urls: [],
+    guardDecisions: [],
+    blockedReasons: retrievalBlockedReasons,
+    injectionFindings: retrievalInjectionFindings,
+    evidenceNeed: 'none',
+    evidenceOutcome: retrievalInjectionFindings || retrievalBlockedReasons.length ? 'BLOCKED' : 'SUPPORTED',
+    chosenAction: null,
+    contextVersion: 'concierge_ctx_v1',
+    featureHash: null,
+    postRenderLint: { findings: [], modified: false },
+    contextSignature: null,
+    contextualBanditEnabled: false,
+    contextualFeatures: null,
+    counterfactualSelectedArmId: null,
+    counterfactualSelectedRank: null,
+    counterfactualTopArms: [],
+    counterfactualEval: null
+  };
 
   if (payload.llmConciergeEnabled === true) {
     try {
@@ -828,7 +853,7 @@ async function replyWithFreeRetrieval(params) {
         env: process.env
       });
       replyText = concierge && concierge.replyText ? concierge.replyText : replyText;
-      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : null;
+      conciergeMeta = concierge && concierge.auditMeta ? concierge.auditMeta : conciergeMeta;
     } catch (_err) {
       // fail closed: keep retrieval-only reply text
       conciergeMeta = {
@@ -839,8 +864,8 @@ async function replyWithFreeRetrieval(params) {
         urlCount: 0,
         urls: [],
         guardDecisions: [],
-        blockedReasons: ['concierge_compose_failed'],
-        injectionFindings: false,
+        blockedReasons: Array.from(new Set(retrievalBlockedReasons.concat(['concierge_compose_failed']))),
+        injectionFindings: retrievalInjectionFindings,
         evidenceNeed: 'none',
         evidenceOutcome: 'BLOCKED',
         chosenAction: null,

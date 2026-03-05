@@ -277,6 +277,11 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 4. 監査ログ `action=llm_gate.decision` で `assistantQuality.blockedStage/fallbackReason` が急増していないことを確認する。  
 5. 条件を満たした場合のみ prod へ同設定を反映する。  
 
+### 自動チェック（Phase717）
+- `npm run llm:rollout:check -- --base-url "$BASE_URL" --admin-token "$ADMIN_OS_TOKEN" --require-ready` を実行する。  
+- 判定は `summary.releaseReadiness` と `summary.gateAuditBaseline.entryTypes/gatesCoverage` を同時に確認する。  
+- fixture で検証する場合は `--config-json` と `--summary-json` を併用する。  
+
 ### しきい値の一時上書き（検証用）
 - `GET /api/admin/os/llm-usage/summary` に以下クエリを付与して判定比較できる。  
   - `rolloutMinSampleCount`

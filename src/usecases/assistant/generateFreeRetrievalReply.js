@@ -2,6 +2,7 @@
 
 const { searchFaqFromKb } = require('../faq/searchFaqFromKb');
 const { searchCityPackCandidates } = require('./retrieval/searchCityPackCandidates');
+const { sanitizeCandidates } = require('../../domain/llm/injectionGuard');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -72,28 +73,38 @@ async function generateFreeRetrievalReply(params, deps) {
 
   const faqCandidates = Array.isArray(faq && faq.candidates) ? faq.candidates : [];
   const cityPackCandidates = Array.isArray(cityPack && cityPack.candidates) ? cityPack.candidates : [];
+  const sanitizedFaq = sanitizeCandidates(faqCandidates);
+  const sanitizedCityPack = sanitizeCandidates(cityPackCandidates);
+  const safeFaqCandidates = Array.isArray(sanitizedFaq.candidates) ? sanitizedFaq.candidates : [];
+  const safeCityPackCandidates = Array.isArray(sanitizedCityPack.candidates) ? sanitizedCityPack.candidates : [];
+  const injectionFindings = sanitizedFaq.injectionFindings === true || sanitizedCityPack.injectionFindings === true;
+  const blockedReasons = Array.from(new Set([]
+    .concat(Array.isArray(sanitizedFaq.blockedReasons) ? sanitizedFaq.blockedReasons : [])
+    .concat(Array.isArray(sanitizedCityPack.blockedReasons) ? sanitizedCityPack.blockedReasons : [])));
   const citations = [];
 
-  faqCandidates.forEach((row) => {
+  safeFaqCandidates.forEach((row) => {
     const key = normalizeText(row && row.articleId);
     if (key && !citations.includes(key)) citations.push(key);
   });
-  cityPackCandidates.forEach((row) => {
+  safeCityPackCandidates.forEach((row) => {
     const key = normalizeText(row && row.sourceId);
     if (key && !citations.includes(key)) citations.push(key);
   });
 
-  const mode = faqCandidates.length || cityPackCandidates.length ? 'ranked' : 'empty';
+  const mode = safeFaqCandidates.length || safeCityPackCandidates.length ? 'ranked' : 'empty';
   const replyText = mode === 'ranked'
-    ? buildRankedReply(question, faqCandidates, cityPackCandidates)
+    ? buildRankedReply(question, safeFaqCandidates, safeCityPackCandidates)
     : buildEmptyReply(question);
 
   return {
     ok: true,
     mode,
     citations,
-    faqCandidates,
-    cityPackCandidates,
+    faqCandidates: safeFaqCandidates,
+    cityPackCandidates: safeCityPackCandidates,
+    injectionFindings,
+    blockedReasons,
     replyText: trimForLineMessage(replyText)
   };
 }

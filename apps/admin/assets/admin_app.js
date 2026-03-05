@@ -15389,6 +15389,26 @@ function renderLlmResult(targetId, payload) {
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function renderLlmEntryControlDashboard(summary) {
+  const baseline = summary && summary.gateAuditBaseline && typeof summary.gateAuditBaseline === 'object'
+    ? summary.gateAuditBaseline
+    : null;
+  if (!baseline) {
+    renderLlmResult('llm-entry-control-dashboard', { ok: false, error: 'no_data' });
+    return;
+  }
+  renderLlmResult('llm-entry-control-dashboard', {
+    ok: true,
+    callsTotal: Number.isFinite(Number(baseline.callsTotal)) ? Number(baseline.callsTotal) : 0,
+    blockedCount: Number.isFinite(Number(baseline.blockedCount)) ? Number(baseline.blockedCount) : 0,
+    acceptedRate: Number.isFinite(Number(baseline.acceptedRate)) ? Number(baseline.acceptedRate) : 0,
+    entryTypes: Array.isArray(baseline.entryTypes) ? baseline.entryTypes : [],
+    gatesCoverage: Array.isArray(baseline.gatesCoverage) ? baseline.gatesCoverage : [],
+    blockedReasons: Array.isArray(baseline.blockedReasons) ? baseline.blockedReasons : [],
+    blockedStages: Array.isArray(baseline.blockedStages) ? baseline.blockedStages : []
+  });
+}
+
 function llmBlockedReasonCategoryLabel(category) {
   const key = String(category || 'UNKNOWN');
   if (key === 'NO_KB_MATCH') return t('ui.label.llm.block.reason.NO_KB_MATCH', 'KB一致なし');
@@ -15899,9 +15919,11 @@ async function loadLlmUsageSummary(options) {
     });
     const data = await readJsonResponse(res);
     renderLlmResult('llm-usage-summary-result', data);
+    renderLlmEntryControlDashboard(data && data.summary ? data.summary : null);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     if (notify) showToast('LLM usage集計を取得しました', 'ok');
   } catch (_err) {
+    renderLlmEntryControlDashboard(null);
     if (notify) showToast('LLM usage集計の取得に失敗しました', 'danger');
   }
 }

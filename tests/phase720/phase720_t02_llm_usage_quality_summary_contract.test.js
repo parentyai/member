@@ -58,21 +58,27 @@ test('phase720: gate audit baseline reads blocked reasons and stages from payloa
       payloadSummary: {
         decision: 'allow',
         blockedReason: null,
-        assistantQuality: { blockedStage: null }
+        assistantQuality: { blockedStage: null },
+        entryType: 'webhook',
+        gatesApplied: ['kill_switch', 'url_guard']
       }
     },
     {
       payloadSummary: {
         decision: 'blocked',
         blockedReason: 'citation_missing',
-        assistantQuality: { blockedStage: 'generation_guard' }
+        assistantQuality: { blockedStage: 'generation_guard' },
+        entryType: 'admin',
+        gatesApplied: ['kill_switch']
       }
     },
     {
       payloadSummary: {
         decision: 'blocked',
         blockedReason: 'snapshot_stale',
-        assistantQuality: { blockedStage: 'snapshot_gate' }
+        assistantQuality: { blockedStage: 'snapshot_gate' },
+        entryType: 'compat',
+        gatesApplied: ['kill_switch', 'injection']
       }
     }
   ];
@@ -83,4 +89,6 @@ test('phase720: gate audit baseline reads blocked reasons and stages from payloa
   assert.equal(baseline.acceptedRate, 0.3333);
   assert.equal(baseline.blockedReasons.length, 2);
   assert.equal(baseline.blockedStages.length, 2);
+  assert.equal(baseline.entryTypes.length, 3);
+  assert.equal(baseline.gatesCoverage.length, 3);
 });

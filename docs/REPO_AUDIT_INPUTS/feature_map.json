@@ -747,7 +747,8 @@
       "feature": "llmFaq",
       "entrypoints": [],
       "usecases": [
-        "answerFaqFromKb"
+        "answerFaqFromKb",
+        "appendLlmGateDecision"
       ],
       "repos": [
         "faqAnswerLogsRepo",
@@ -763,7 +764,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 48,
+      "tests_count": 49,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -771,6 +772,7 @@
       "feature": "llmOps",
       "entrypoints": [],
       "usecases": [
+        "appendLlmGateDecision",
         "getNextActionCandidates",
         "getOpsExplanation"
       ],
@@ -784,7 +786,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 39,
+      "tests_count": 40,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1166,6 +1168,26 @@
       "completion": "completed"
     },
     {
+      "feature": "osContext",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": true,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 40,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
       "feature": "osDashboardKpi",
       "entrypoints": [],
       "usecases": [
@@ -1442,7 +1464,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 43,
+      "tests_count": 44,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2420,6 +2442,7 @@
       "feature": "phaseLLM2OpsExplain",
       "entrypoints": [],
       "usecases": [
+        "appendLlmGateDecision",
         "getOpsExplanation"
       ],
       "repos": [
@@ -2429,10 +2452,10 @@
         "system_flags"
       ],
       "auth": "public",
-      "killSwitch_dependent": false,
+      "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 32,
+      "tests_count": 33,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2440,6 +2463,7 @@
       "feature": "phaseLLM3OpsNextActions",
       "entrypoints": [],
       "usecases": [
+        "appendLlmGateDecision",
         "getNextActionCandidates"
       ],
       "repos": [
@@ -2449,10 +2473,10 @@
         "system_flags"
       ],
       "auth": "public",
-      "killSwitch_dependent": false,
+      "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 32,
+      "tests_count": 33,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2460,7 +2484,8 @@
       "feature": "phaseLLM4FaqAnswer",
       "entrypoints": [],
       "usecases": [
-        "answerFaqFromKb"
+        "answerFaqFromKb",
+        "appendLlmGateDecision"
       ],
       "repos": [
         "faqAnswerLogsRepo",
@@ -2473,10 +2498,10 @@
         "system_flags"
       ],
       "auth": "public",
-      "killSwitch_dependent": false,
+      "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 46,
+      "tests_count": 47,
       "ssot_refs": [],
       "completion": "legacy"
     },
@@ -3043,6 +3068,7 @@
       "entrypoints": [],
       "usecases": [
         "appendAuditLog",
+        "appendLlmGateDecision",
         "classifyPaidIntent",
         "composeConciergeReply",
         "declareCityPackFeedbackFromLine",
@@ -3111,7 +3137,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 90,
+      "tests_count": 85,
       "ssot_refs": [],
       "completion": "completed"
     },

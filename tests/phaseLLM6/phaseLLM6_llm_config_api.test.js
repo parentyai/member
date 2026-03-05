@@ -109,3 +109,41 @@ test('phaseLLM6: llm config status/plan/set works with confirm token', async (t)
   const current = await systemFlagsRepo.getLlmEnabled();
   assert.strictEqual(current, true);
 });
+
+test('phaseLLM6: llm config status remains available when kill switch is on', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+
+  const db = createDbStub();
+  setDbForTest(db);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+  await db.collection('system_flags').doc('phase0').set({ killSwitch: true }, { merge: true });
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+  });
+
+  const statusRes = await request({
+    port,
+    method: 'GET',
+    path: '/api/admin/llm/config/status',
+    headers: {
+      'x-admin-token': 'test_admin_token',
+      'x-actor': 'admin_master',
+      'x-trace-id': 'TRACE_LLM_CFG_KILLSWITCH'
+    }
+  });
+
+  assert.strictEqual(statusRes.status, 200);
+  const payload = JSON.parse(statusRes.body);
+  assert.strictEqual(typeof payload.llmEnabled, 'boolean');
+});
