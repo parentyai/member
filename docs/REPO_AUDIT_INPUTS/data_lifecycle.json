@@ -894,17 +894,6 @@
     ]
   },
   {
-    "collection": "task_contents",
-    "kind": "config",
-    "recomputable": false,
-    "retention": "INDEFINITE",
-    "deletable": false,
-    "evidence": [
-      "src/repos/firestore/taskContentsRepo.js:10",
-      "src/domain/retention/retentionPolicy.js:83"
-    ]
-  },
-  {
     "collection": "tasks",
     "kind": "config",
     "recomputable": false,
