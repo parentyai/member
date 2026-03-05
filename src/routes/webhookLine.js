@@ -18,7 +18,10 @@ const { recordLlmUsage } = require('../usecases/assistant/recordLlmUsage');
 const { evaluateLlmAvailability } = require('../usecases/assistant/llmAvailabilityGate');
 const { getUserContextSnapshot } = require('../usecases/context/getUserContextSnapshot');
 const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFreeRetrievalReply');
-const { composeConciergeReply } = require('../usecases/assistant/concierge/composeConciergeReply');
+const { composeConciergeReply, buildConciergeContextSnapshot } = require('../usecases/assistant/concierge/composeConciergeReply');
+const { generatePaidCasualReply } = require('../usecases/assistant/generatePaidCasualReply');
+const { detectOpportunity } = require('../usecases/assistant/opportunity/detectOpportunity');
+const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
@@ -270,6 +273,16 @@ function resolveProPredictiveActionsEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PRO_PREDICTIVE_ACTIONS_V1', false);
 }
 
+function resolvePaidOpportunityEngineEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_PAID_OPPORTUNITY_ENGINE_V1', false);
+}
+
+function resolvePaidInterventionCooldownTurns() {
+  const raw = Number(process.env.PAID_INTERVENTION_COOLDOWN_TURNS || 5);
+  if (!Number.isFinite(raw)) return 5;
+  return Math.max(1, Math.min(20, Math.floor(raw)));
+}
+
 async function resolveLlmConciergeEnabledBestEffort() {
   try {
     return await getLlmConciergeEnabled();
@@ -377,6 +390,57 @@ function toMillis(value) {
     if (date instanceof Date && Number.isFinite(date.getTime())) return date.getTime();
   }
   return null;
+}
+
+function buildDefaultOpportunityDecision() {
+  return {
+    conversationMode: 'casual',
+    opportunityType: 'none',
+    opportunityReasonKeys: [],
+    interventionBudget: 0,
+    suggestedAtoms: {
+      nextActions: [],
+      pitfall: null,
+      question: null
+    }
+  };
+}
+
+function resolveOpportunityRiskFlags(snapshot) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const riskFlags = Array.isArray(source.riskFlags)
+    ? source.riskFlags
+    : (Array.isArray(source.riskFlagsTop3) ? source.riskFlagsTop3 : []);
+  return uniqueStringList(riskFlags).slice(0, 5);
+}
+
+function buildOpportunityInput(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object'
+    ? payload.contextSnapshot
+    : null;
+  const conciergeContext = buildConciergeContextSnapshot(contextSnapshot);
+  return {
+    lineUserId: payload.lineUserId || '',
+    userTier: payload.userTier || 'free',
+    messageText: payload.messageText || '',
+    journeyPhase: conciergeContext && conciergeContext.phase
+      ? conciergeContext.phase
+      : (contextSnapshot && contextSnapshot.phase ? contextSnapshot.phase : ''),
+    topTasks: conciergeContext && Array.isArray(conciergeContext.topTasks)
+      ? conciergeContext.topTasks
+      : [],
+    blockedTask: conciergeContext && conciergeContext.blockedTask ? conciergeContext.blockedTask : null,
+    dueSoonTask: conciergeContext && conciergeContext.dueSoonTask ? conciergeContext.dueSoonTask : null,
+    riskFlags: resolveOpportunityRiskFlags(contextSnapshot),
+    recentEngagement: payload.recentEngagement && typeof payload.recentEngagement === 'object'
+      ? payload.recentEngagement
+      : { recentTurns: 5, recentInterventions: 0, recentClicks: false, recentTaskDone: false },
+    safetySnapshot: {
+      killSwitchOn: false
+    },
+    llmConciergeEnabled: payload.llmConciergeEnabled === true
+  };
 }
 
 async function loadTaskGraphSummary(lineUserId) {
@@ -654,6 +718,21 @@ async function appendLlmGateDecisionBestEffort(data) {
           ? conciergeMeta.counterfactualEval
           : null,
         assistantQuality,
+        conversationMode: typeof payload.conversationMode === 'string' && payload.conversationMode.trim()
+          ? payload.conversationMode.trim().toLowerCase()
+          : null,
+        opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
+          ? payload.opportunityType.trim().toLowerCase()
+          : 'none',
+        opportunityReasonKeys: Array.isArray(payload.opportunityReasonKeys)
+          ? payload.opportunityReasonKeys
+            .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+            .filter(Boolean)
+            .slice(0, 8)
+          : [],
+        interventionBudget: Number.isFinite(Number(payload.interventionBudget))
+          ? (Number(payload.interventionBudget) >= 1 ? 1 : 0)
+          : 0,
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -723,6 +802,21 @@ async function appendLlmActionLogBestEffort(data) {
       conversationState: conciergeMeta.conversationState || null,
       conversationMove: conciergeMeta.conversationMove || null,
       styleId: conciergeMeta.styleId || null,
+      conversationMode: typeof payload.conversationMode === 'string'
+        ? payload.conversationMode
+        : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
+      opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
+        ? payload.opportunityType.trim().toLowerCase()
+        : 'none',
+      opportunityReasonKeys: Array.isArray(payload.opportunityReasonKeys)
+        ? payload.opportunityReasonKeys
+          .map((item) => (typeof item === 'string' ? item.trim().toLowerCase().replace(/\s+/g, '_') : ''))
+          .filter(Boolean)
+          .slice(0, 8)
+        : [],
+      interventionBudget: Number.isFinite(Number(payload.interventionBudget))
+        ? (Number(payload.interventionBudget) >= 1 ? 1 : 0)
+        : 0,
       contextVersion: conciergeMeta.contextVersion || 'concierge_ctx_v1',
       featureHash: conciergeMeta.featureHash || null,
       segmentKey: conciergeMeta.segmentKey || null,
@@ -936,6 +1030,7 @@ async function handleAssistantMessage(params) {
   const llmWebSearchEnabled = payload.llmWebSearchEnabled !== false;
   const llmStyleEngineEnabled = payload.llmStyleEngineEnabled !== false;
   const llmBanditEnabled = payload.llmBanditEnabled === true;
+  const opportunityEngineEnabled = resolvePaidOpportunityEngineEnabled();
   const explicitPaidIntent = detectExplicitPaidIntent(text);
   const paidIntent = classifyPaidIntent(text);
   const traceId = typeof payload.requestId === 'string' && payload.requestId.trim()
@@ -1232,6 +1327,87 @@ async function handleAssistantMessage(params) {
   const contextSnapshot = snapshotResult && snapshotResult.ok === true && snapshotResult.stale !== true
     ? snapshotResult.snapshot
     : null;
+  let opportunityDecision = buildDefaultOpportunityDecision();
+  if (opportunityEngineEnabled) {
+    const recentTurns = resolvePaidInterventionCooldownTurns();
+    const recentEngagement = await loadRecentInterventionSignals({
+      lineUserId,
+      recentTurns
+    });
+    opportunityDecision = detectOpportunity(buildOpportunityInput({
+      lineUserId,
+      userTier: 'paid',
+      messageText: text,
+      contextSnapshot,
+      recentEngagement,
+      llmConciergeEnabled
+    }));
+  }
+
+  if (opportunityEngineEnabled && opportunityDecision.conversationMode === 'casual') {
+    const casual = generatePaidCasualReply({
+      messageText: text,
+      suggestedAtoms: opportunityDecision.suggestedAtoms
+    });
+    const replyText = trimForPaidLineMessage(casual && casual.replyText ? casual.replyText : 'こんにちは。');
+    await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: null,
+      fallbackReason: null
+    });
+    const usage = await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: budget.policy && budget.policy.model,
+      assistantQuality
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: budget.policy && budget.policy.model,
+      policy: budget.policy || null,
+      traceId,
+      requestId,
+      assistantQuality,
+      conversationMode: opportunityDecision.conversationMode,
+      opportunityType: opportunityDecision.opportunityType,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      interventionBudget: opportunityDecision.interventionBudget
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      llmBanditEnabled,
+      conversationMode: opportunityDecision.conversationMode,
+      opportunityType: opportunityDecision.opportunityType,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      interventionBudget: opportunityDecision.interventionBudget
+    });
+    return {
+      handled: true,
+      mode: 'paid_casual',
+      blockedReason: null
+    };
+  }
+
   const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
   const paid = qualityEnabled
     ? await generatePaidFaqReply({
@@ -1303,7 +1479,11 @@ async function handleAssistantMessage(params) {
         traceId,
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-        assistantQuality
+        assistantQuality,
+        conversationMode: opportunityDecision.conversationMode,
+        opportunityType: opportunityDecision.opportunityType,
+        opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+        interventionBudget: opportunityDecision.interventionBudget
       });
       await appendLlmActionLogBestEffort({
         lineUserId,
@@ -1311,7 +1491,11 @@ async function handleAssistantMessage(params) {
         traceId,
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-        llmBanditEnabled
+        llmBanditEnabled,
+        conversationMode: opportunityDecision.conversationMode,
+        opportunityType: opportunityDecision.opportunityType,
+        opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+        interventionBudget: opportunityDecision.interventionBudget
       });
       return {
         handled: true,
@@ -1335,7 +1519,11 @@ async function handleAssistantMessage(params) {
     if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
   }
   let conciergeMeta = null;
-  if (llmConciergeEnabled && !isLowRelevanceWarning) {
+  if (
+    llmConciergeEnabled
+    && !isLowRelevanceWarning
+    && (!opportunityEngineEnabled || opportunityDecision.conversationMode === 'concierge')
+  ) {
     try {
       const storedCandidates = await resolveStoredCandidatesForPaid(paid);
       const concierge = await composeConciergeReply({
@@ -1400,6 +1588,12 @@ async function handleAssistantMessage(params) {
     fallbackReason: null
   });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
+  const conversationMode = opportunityEngineEnabled
+    ? opportunityDecision.conversationMode
+    : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null);
+  const opportunityType = opportunityEngineEnabled ? opportunityDecision.opportunityType : 'none';
+  const opportunityReasonKeys = opportunityEngineEnabled ? opportunityDecision.opportunityReasonKeys : [];
+  const interventionBudget = opportunityEngineEnabled ? opportunityDecision.interventionBudget : 0;
   const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,
@@ -1427,7 +1621,11 @@ async function handleAssistantMessage(params) {
     traceId,
     requestId,
     conciergeMeta,
-    assistantQuality
+    assistantQuality,
+    conversationMode,
+    opportunityType,
+    opportunityReasonKeys,
+    interventionBudget
   });
   await appendLlmActionLogBestEffort({
     lineUserId,
@@ -1435,7 +1633,11 @@ async function handleAssistantMessage(params) {
     traceId,
     requestId,
     conciergeMeta,
-    llmBanditEnabled
+    llmBanditEnabled,
+    conversationMode,
+    opportunityType,
+    opportunityReasonKeys,
+    interventionBudget
   });
 
   await appendJourneyEventBestEffort({

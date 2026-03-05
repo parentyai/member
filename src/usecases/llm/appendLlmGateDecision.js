@@ -45,7 +45,11 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'counterfactualEval',
   'assistantQuality',
   'entryType',
-  'gatesApplied'
+  'gatesApplied',
+  'conversationMode',
+  'opportunityType',
+  'opportunityReasonKeys',
+  'interventionBudget'
 ]);
 
 function resolveAppendAuditLog() {

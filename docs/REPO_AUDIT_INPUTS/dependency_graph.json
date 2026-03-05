@@ -54,6 +54,7 @@
     "approveNotification": [
       "notificationsRepo"
     ],
+    "buildConciergeContextSnapshot": [],
     "buildOpsSnapshots": [
       "opsSnapshotsRepo"
     ],
@@ -135,6 +136,7 @@
       "linkRegistryRepo"
     ],
     "detectExplicitPaidIntent": [],
+    "detectOpportunity": [],
     "dryRunAutomationDecision": [
       "automationConfigRepo"
     ],
@@ -198,6 +200,7 @@
     "generateFreeRetrievalReply": [],
     "generateOpsDailyReport": [],
     "generatePaidAssistantReply": [],
+    "generatePaidCasualReply": [],
     "generatePaidFaqReply": [
       "llmQualityLogsRepo"
     ],
@@ -370,6 +373,9 @@
     ],
     "listUserTasks": [
       "tasksRepo"
+    ],
+    "loadRecentInterventionSignals": [
+      "llmActionLogsRepo"
     ],
     "logEventBestEffort": [
       "decisionTimelineRepo",
@@ -1402,22 +1408,26 @@
     "src/routes/webhookLine.js": [
       "appendAuditLog",
       "appendLlmGateDecision",
+      "buildConciergeContextSnapshot",
       "classifyPaidIntent",
       "composeConciergeReply",
       "declareCityPackFeedbackFromLine",
       "declareCityRegionFromLine",
       "declareRedacMembershipIdFromLine",
       "detectExplicitPaidIntent",
+      "detectOpportunity",
       "ensureUserFromWebhook",
       "evaluateLlmAvailability",
       "evaluateLLMBudget",
       "generateFreeRetrievalReply",
       "generatePaidAssistantReply",
+      "generatePaidCasualReply",
       "generatePaidFaqReply",
       "getRedacMembershipStatusForLine",
       "getUserContextSnapshot",
       "handleJourneyLineCommand",
       "handleJourneyPostback",
+      "loadRecentInterventionSignals",
       "logLineWebhookEventsBestEffort",
       "recordLlmUsage",
       "recordUserLlmConsent",

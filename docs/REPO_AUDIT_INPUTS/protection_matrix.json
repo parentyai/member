@@ -8044,6 +8044,7 @@
         "events",
         "journey_todo_items",
         "link_registry",
+        "llm_action_logs",
         "llm_quality_logs",
         "llm_usage_logs",
         "llm_usage_stats",
