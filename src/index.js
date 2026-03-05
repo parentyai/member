@@ -2318,6 +2318,10 @@ function createServer() {
         await handleNotificationSeedArchive(req, res, body);
         return;
       }
+      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {
+        await handleOsLinkRegistryImpact(req, res);
+        return;
+      }
       if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {
         await handleOsLinkRegistryLookup(req, res);
         return;
