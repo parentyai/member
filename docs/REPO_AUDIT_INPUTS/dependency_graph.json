@@ -80,6 +80,7 @@
     "composeConciergeReply": [],
     "computeCityPackMetrics": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
       "notificationsRepo",
       "sourceRefsRepo"
     ],
@@ -396,6 +397,7 @@
     ],
     "normalizeLimit": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
       "deliveriesRepo",
       "emergencyBulletinsRepo",
       "emergencyDiffsRepo",
@@ -424,6 +426,7 @@
     ],
     "normalizeWindowDays": [
       "analyticsReadRepo",
+      "cityPackMetricsDailyRepo",
       "notificationsRepo",
       "sourceRefsRepo"
     ],
@@ -678,6 +681,9 @@
     ],
     "cityPackFeedbackRepo": [
       "city_pack_feedback"
+    ],
+    "cityPackMetricsDailyRepo": [
+      "city_pack_metrics_daily"
     ],
     "cityPackRequestsRepo": [
       "city_pack_requests"

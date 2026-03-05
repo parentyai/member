@@ -16,6 +16,37 @@ const ALLOWED_DOMAIN_CLASS = new Set(['gov', 'k12_district', 'school_public', 'u
 const ALLOWED_SCHOOL_TYPE = new Set(['public', 'private', 'unknown']);
 const ALLOWED_EDU_SCOPE = new Set(['calendar', 'district_info', 'enrollment', 'closure_alert']);
 
+function resolveBooleanEnvFlag(name, defaultValue) {
+  const raw = process.env[name];
+  if (typeof raw !== 'string') return defaultValue === true;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') return true;
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') return false;
+  return defaultValue === true;
+}
+
+function resolvePositiveIntEnv(name, fallback, min, max) {
+  const raw = process.env[name];
+  const num = Number(raw);
+  if (!Number.isFinite(num) || num <= 0) return fallback;
+  const value = Math.floor(num);
+  if (Number.isFinite(min) && value < min) return min;
+  if (Number.isFinite(max) && value > max) return max;
+  return value;
+}
+
+function isSourceRefsBufferedLimitEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_CITY_PACK_SOURCE_REFS_BUFFERED_LIMIT_V1', true);
+}
+
+function resolveSourceRefsBufferMultiplier() {
+  return resolvePositiveIntEnv('CITY_PACK_SOURCE_REFS_BUFFER_MULTIPLIER', 5, 1, 20);
+}
+
+function resolveSourceRefsScanMax() {
+  return resolvePositiveIntEnv('CITY_PACK_SOURCE_REFS_SCAN_MAX', 1000, 1, 1000);
+}
+
 function normalizeStatus(value) {
   const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return ALLOWED_STATUS.has(status) ? status : 'needs_review';
@@ -252,8 +283,15 @@ async function listSourceRefs(params) {
   const schoolTypeFilter = resolveSchoolTypeFilter(opts.schoolType);
   const eduScopeFilter = resolveEduScopeFilter(opts.eduScope);
   const regionKeyFilter = resolveRegionKeyFilter(opts.regionKey);
+  const bufferedEnabled = isSourceRefsBufferedLimitEnabled();
+  const hasPostFilter = Boolean(schoolTypeFilter || eduScopeFilter || regionKeyFilter || expiringBeforeMs);
+  const bufferMultiplier = resolveSourceRefsBufferMultiplier();
+  const scanMax = resolveSourceRefsScanMax();
+  const readLimit = hasPostFilter && bufferedEnabled
+    ? Math.min(Math.max(limit * bufferMultiplier, limit), scanMax)
+    : limit;
 
-  const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(limit).get();
+  const snap = await baseQuery.orderBy('updatedAt', 'desc').limit(readLimit).get();
   const rows = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
   const filteredRows = rows.filter((row) => {
     if (schoolTypeFilter) {
@@ -270,12 +308,15 @@ async function listSourceRefs(params) {
     }
     return true;
   });
-
-  if (!expiringBeforeMs) return filteredRows;
-  return filteredRows.filter((row) => {
+  const expiringFilteredRows = !expiringBeforeMs
+    ? filteredRows
+    : filteredRows.filter((row) => {
     const validUntilMs = toMillis(row && row.validUntil);
     return validUntilMs > 0 && validUntilMs <= expiringBeforeMs;
   });
+
+  if (!hasPostFilter || !bufferedEnabled) return expiringFilteredRows;
+  return expiringFilteredRows.slice(0, limit);
 }
 
 async function listSourceRefsForAudit(params) {

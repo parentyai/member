@@ -95,6 +95,24 @@
 - データ取得API: `GET /api/admin/legacy-status`。
 - 注意: 旧導線は凍結（互換維持のみ）とし、後継導線は `/admin/app` へ統一する。
 
+### City Pack Hardening（Phase250+）ロールバック手順
+即時停止（read pathのみ旧挙動へ切替）:
+1. `ENABLE_CITY_PACK_REVIEW_INBOX_BATCH_READ_V1=0`
+2. `ENABLE_CITY_PACK_SOURCE_REFS_BUFFERED_LIMIT_V1=0`
+3. `ENABLE_CITY_PACK_AUDIT_RUNS_ORDERBY_V1=0`
+4. `ENABLE_CITY_PACK_METRICS_BOUNDED_V1=0`
+5. `ENABLE_CITY_PACK_METRICS_DAILY_PREFERRED_V1=0`
+
+段階切戻し:
+1. 上記flagを適用後、`/api/admin/review-inbox` と `/api/admin/city-pack-metrics` の応答を確認。
+2. `traceId` を指定して `GET /api/admin/trace?traceId=<traceId>` を実行し、`city_pack.*` の監査ログ整合を確認。
+3. 想定外が継続する場合のみ実装PRをrevertする。
+
+完全切戻し:
+1. `git revert <city-pack-hardening-commit-sha>`
+2. docs-only追記を分離している場合は `git revert <docs-commit-sha>` を追加実行。
+3. `npm run test:docs && npm test` を再実行して復旧を確認。
+
 ### High-risk Read Path 観測ログ（P0）
 - 対象クラスタ:
   - `city_pack_review_inbox`
