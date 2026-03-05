@@ -4,6 +4,8 @@ const { getOpsExplanation } = require('../usecases/phaseLLM2/getOpsExplanation')
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
+const COMPAT_ROUTE_ID = 'compat_phaseLLM2_ops_explain';
+
 async function handleOpsExplain(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -16,7 +18,7 @@ async function handleOpsExplain(req, res) {
     const traceId = req.headers['x-trace-id'] || null;
     const actor = req.headers['x-actor'] || 'phaseLLM2_ops_explain';
     const allowed = await enforceLlmGenerationKillSwitch(req, res, {
-      routeKey: 'compat_phaseLLM2_ops_explain',
+      routeKey: COMPAT_ROUTE_ID,
       actor,
       traceId
     });

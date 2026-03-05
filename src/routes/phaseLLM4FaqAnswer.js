@@ -5,6 +5,7 @@ const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision
 const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
 const LEGACY_SUCCESSOR = '/api/admin/llm/faq/answer';
+const COMPAT_ROUTE_ID = 'compat_phaseLLM4_faq_answer';
 
 function isLegacyRouteFreezeEnabled() {
   const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
@@ -25,7 +26,7 @@ async function handleFaqAnswer(req, res, body) {
     const actor = req.headers['x-actor'] || 'phaseLLM4_faq_compat';
     const requestId = req.headers['x-request-id'] || null;
     const allowed = await enforceLlmGenerationKillSwitch(req, res, {
-      routeKey: 'compat_phaseLLM4_faq_answer',
+      routeKey: COMPAT_ROUTE_ID,
       actor,
       traceId,
       requestId
