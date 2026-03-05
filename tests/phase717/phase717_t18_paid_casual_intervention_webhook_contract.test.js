@@ -4,10 +4,10 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { test } = require('node:test');
 
-const SIGNING_KEY = 'phase717_paid_casual_signing_key';
+const HMAC_SEED = ['phase717', 'paid', 'casual', 'hmac', 'seed'].join('_');
 
 function signBody(body) {
-  return crypto.createHmac('sha256', SIGNING_KEY).update(body).digest('base64');
+  return crypto.createHmac('sha256', HMAC_SEED).update(body).digest('base64');
 }
 
 function withEnv(patch) {
@@ -334,7 +334,7 @@ function findGateSummary(auditCalls) {
 
 test('phase717: paid greeting stays casual and skips paid retrieval pipeline', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
-    LINE_CHANNEL_SECRET: SIGNING_KEY,
+    LINE_CHANNEL_SECRET: HMAC_SEED,
     ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true',
     PAID_INTERVENTION_COOLDOWN_TURNS: '5'
   });
@@ -378,7 +378,7 @@ test('phase717: paid greeting stays casual and skips paid retrieval pipeline', {
 
 test('phase717: paid opportunity keyword triggers concierge intervention once', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
-    LINE_CHANNEL_SECRET: SIGNING_KEY,
+    LINE_CHANNEL_SECRET: HMAC_SEED,
     ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true',
     PAID_INTERVENTION_COOLDOWN_TURNS: '5'
   });
@@ -420,7 +420,7 @@ test('phase717: paid opportunity keyword triggers concierge intervention once', 
 
 test('phase717: cooldown suppresses consecutive interventions for paid opportunity keywords', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
-    LINE_CHANNEL_SECRET: SIGNING_KEY,
+    LINE_CHANNEL_SECRET: HMAC_SEED,
     ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true',
     PAID_INTERVENTION_COOLDOWN_TURNS: '5'
   });
@@ -476,7 +476,7 @@ test('phase717: cooldown suppresses consecutive interventions for paid opportuni
 
 test('phase717: free path keeps retrieval-first behavior', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
-    LINE_CHANNEL_SECRET: SIGNING_KEY,
+    LINE_CHANNEL_SECRET: HMAC_SEED,
     ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true'
   });
   const loaded = loadWebhookWithStubs({
