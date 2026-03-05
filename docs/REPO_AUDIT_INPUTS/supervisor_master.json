@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T20:59:04-05:00",
-  "gitCommit": "08af05e5646ce3d168a52b15d9f43be910d88442",
+  "generatedAt": "2026-03-04T21:07:50-05:00",
+  "gitCommit": "faea0c85aa2ef4e4ea773c4f5f2df39f09b86fb1",
   "branch": "codex/llm-integrity-fix3-ext3",
-  "sourceDigest": "e4ad9a25c50447bfb1cf764f2c847901d00a2e98cf6e28c2e6455cca3f8a8948",
+  "sourceDigest": "1fcb148a56612b78189358d84eb918a4a99ecdfd24139325bf6bfdc152aa574f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
