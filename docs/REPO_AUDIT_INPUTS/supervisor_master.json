@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T21:31:11-05:00",
-  "gitCommit": "2db60f8d8b048b9c5bbcebacea8e9bfc8690f8a8",
-  "branch": "codex/city-pack-hardening-v1",
-  "sourceDigest": "3ced8e76cba17a432b60e398a430036a904089735a8bc4f4b7ef214f236b04ac",
+  "generatedAt": "2026-03-04T23:42:26-05:00",
+  "gitCommit": "a21ced26c6865b787847e196140cc8cf03883105",
+  "branch": "codex/task-ux-audit-a2f",
+  "sourceDigest": "74648a2b65668b5946c8718f9f4a6fcb7b80582f315a20ca3905fb05a0328f8b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
