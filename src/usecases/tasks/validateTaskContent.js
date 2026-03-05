@@ -2,6 +2,7 @@
 
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const { isTaskMicroLearningEnabled } = require('../../domain/tasks/featureFlags');
 
 const TASK_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]{1,63}$/;
 
@@ -47,6 +48,17 @@ function validateTaskContent(payload) {
   }
   if (Array.isArray(normalized.checklistItems) && normalized.checklistItems.length > 20) {
     warnings.push('checklistItems truncated to 20 recommended');
+  }
+  if (isTaskMicroLearningEnabled()) {
+    const summaryShort = Array.isArray(normalized.summaryShort) ? normalized.summaryShort : [];
+    const topMistakes = Array.isArray(normalized.topMistakes) ? normalized.topMistakes : [];
+    const contextTips = Array.isArray(normalized.contextTips) ? normalized.contextTips : [];
+    if (summaryShort.length > 5) errors.push('summaryShort max 5');
+    if (topMistakes.length > 3) errors.push('topMistakes max 3');
+    if (contextTips.length > 5) errors.push('contextTips max 5');
+    if (summaryShort.some((item) => !normalizeText(item, ''))) errors.push('summaryShort requires non-empty text');
+    if (topMistakes.some((item) => !normalizeText(item, ''))) errors.push('topMistakes requires non-empty text');
+    if (contextTips.some((item) => !normalizeText(item, ''))) errors.push('contextTips requires non-empty text');
   }
   if (!normalizeText(normalized.manualText, '')) warnings.push('manualText missing');
   if (!normalizeText(normalized.failureText, '')) warnings.push('failureText missing');

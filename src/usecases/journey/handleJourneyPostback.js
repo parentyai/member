@@ -48,6 +48,21 @@ function toCommandText(action) {
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }
+  if (action.action === 'city_pack_module_status') {
+    return 'CityPack状況';
+  }
+  if (action.action === 'city_pack_module_subscribe') {
+    return `CityPack購読:${action.module || ''}`;
+  }
+  if (action.action === 'city_pack_module_unsubscribe') {
+    return `CityPack解除:${action.module || ''}`;
+  }
+  if (action.action === 'city_pack_module_subscribe_missing') {
+    return 'CityPack購読:invalid';
+  }
+  if (action.action === 'city_pack_module_unsubscribe_missing') {
+    return 'CityPack解除:invalid';
+  }
   if (action.action === 'invalid_household') {
     return '属性:invalid';
   }

@@ -12,6 +12,8 @@ const ALLOWED_SLOT_STATUS = new Set(['active', 'inactive']);
 const ALLOWED_TARGET_EFFECT = new Set(['include', 'exclude']);
 const DEFAULT_LANGUAGE = 'ja';
 const NATIONWIDE_POLICY_FEDERAL_ONLY = 'federal_only';
+const ALLOWED_MODULES = Object.freeze(['schools', 'healthcare', 'driving', 'housing', 'utilities']);
+const ALLOWED_MODULE_SET = new Set(ALLOWED_MODULES);
 const FIXED_SLOT_KEYS = Object.freeze([
   'emergency',
   'admin',
@@ -76,6 +78,20 @@ function resolveLanguageFilter(value) {
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return [];
   return Array.from(new Set(values.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())));
+}
+
+function normalizeModules(values) {
+  if (!Array.isArray(values)) return [];
+  const out = [];
+  values.forEach((value) => {
+    if (typeof value !== 'string') return;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return;
+    if (!ALLOWED_MODULE_SET.has(normalized)) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  });
+  return out;
 }
 
 function normalizeString(value) {
@@ -260,7 +276,8 @@ function normalizePayload(data) {
     slotSchemaVersion: normalizeSlotSchemaVersion(payload.slotSchemaVersion),
     packClass,
     language,
-    nationwidePolicy
+    nationwidePolicy,
+    modules: normalizeModules(payload.modules)
   };
 }
 
@@ -320,6 +337,9 @@ function normalizeCityPackContentPatch(data) {
   if (Object.prototype.hasOwnProperty.call(payload, 'metadata')) {
     patch.metadata = normalizeMetadata(payload.metadata);
   }
+  if (Object.prototype.hasOwnProperty.call(payload, 'modules')) {
+    patch.modules = normalizeModules(payload.modules);
+  }
 
   return patch;
 }
@@ -358,6 +378,7 @@ async function createCityPack(data) {
     packClass: payload.packClass,
     language: payload.language,
     nationwidePolicy: payload.nationwidePolicy,
+    modules: payload.modules,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -403,9 +424,11 @@ module.exports = {
   ALLOWED_PACK_CLASS,
   DEFAULT_LANGUAGE,
   NATIONWIDE_POLICY_FEDERAL_ONLY,
+  ALLOWED_MODULES,
   normalizePackClass,
   normalizeLanguage,
   normalizeNationwidePolicy,
+  normalizeModules,
   createCityPack,
   getCityPack,
   listCityPacks,

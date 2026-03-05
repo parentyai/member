@@ -70,6 +70,9 @@ async function handleCreateBulletin(req, res, bodyText, context) {
   const notificationId = typeof payload.notificationId === 'string' ? payload.notificationId.trim() : '';
   const cityPackId = typeof payload.cityPackId === 'string' ? payload.cityPackId.trim() : '';
   const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
+  const modulesUpdated = Array.isArray(payload.modulesUpdated)
+    ? payload.modulesUpdated.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim().toLowerCase())
+    : [];
   if (!cityPackId || !notificationId || !summary) {
     writeJson(res, 400, { ok: false, error: 'cityPackId/notificationId/summary required' });
     return;
@@ -83,6 +86,7 @@ async function handleCreateBulletin(req, res, bodyText, context) {
     cityPackId,
     notificationId,
     summary,
+    modulesUpdated,
     traceId: context.traceId,
     requestId: payload.requestId || null,
     status: 'draft'
@@ -96,7 +100,8 @@ async function handleCreateBulletin(req, res, bodyText, context) {
     requestId: context.requestId,
     payloadSummary: {
       cityPackId,
-      notificationId
+      notificationId,
+      modulesUpdatedCount: modulesUpdated.length
     }
   });
   writeJson(res, 201, { ok: true, traceId: context.traceId, bulletinId: created.id });
@@ -222,6 +227,9 @@ async function handleSendBulletin(req, res, context, bulletinId) {
     const result = await sendNotification({
       notificationId: bulletin.notificationId,
       killSwitch,
+      applyAttentionBudget: true,
+      cityPackId: bulletin.cityPackId || null,
+      cityPackModulesUpdated: Array.isArray(bulletin.modulesUpdated) ? bulletin.modulesUpdated : [],
       traceId: context.traceId,
       requestId: context.requestId,
       actor: context.actor
@@ -241,7 +249,8 @@ async function handleSendBulletin(req, res, context, bulletinId) {
       payloadSummary: {
         cityPackId: bulletin.cityPackId || null,
         notificationId: bulletin.notificationId || null,
-        deliveredCount: Number(result.deliveredCount) || 0
+        deliveredCount: Number(result.deliveredCount) || 0,
+        modulesUpdatedCount: Array.isArray(bulletin.modulesUpdated) ? bulletin.modulesUpdated.length : 0
       }
     });
     writeJson(res, 200, {

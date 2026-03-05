@@ -1387,6 +1387,21 @@
                       </label>
                     </div>
                     <div class="row">
+                      <label class="flex-1">summaryShort（改行で最大5）
+                        <textarea id="task-rules-task-content-summary-short" rows="4"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">topMistakes（改行で最大3）
+                        <textarea id="task-rules-task-content-top-mistakes" rows="3"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">contextTips（改行で最大5）
+                        <textarea id="task-rules-task-content-context-tips" rows="4"></textarea>
+                      </label>
+                    </div>
+                    <div class="row">
                       <label class="flex-1">manualText（LINE内表示）
                         <textarea id="task-rules-task-content-manual-text" rows="5"></textarea>
                       </label>
@@ -1438,6 +1453,43 @@
                         </select>
                       </label>
                       <label class="checkbox"><input type="checkbox" id="task-rules-link-registry-enabled" checked /> enabled</label>
+                    </div>
+                    <div class="row">
+                      <label>intentTag
+                        <select id="task-rules-link-registry-intent-tag" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="task">task</option>
+                          <option value="city_pack">city_pack</option>
+                          <option value="vendor">vendor</option>
+                          <option value="support">support</option>
+                          <option value="payment">payment</option>
+                        </select>
+                      </label>
+                      <label>audienceTag
+                        <select id="task-rules-link-registry-audience-tag" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="family">family</option>
+                          <option value="solo">solo</option>
+                          <option value="corporate">corporate</option>
+                        </select>
+                      </label>
+                      <label>regionScope
+                        <select id="task-rules-link-registry-region-scope" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="nationwide">nationwide</option>
+                          <option value="state">state</option>
+                          <option value="city">city</option>
+                          <option value="school_district">school_district</option>
+                        </select>
+                      </label>
+                      <label>riskLevel
+                        <select id="task-rules-link-registry-risk-level" class="select-inline">
+                          <option value="">(none)</option>
+                          <option value="safe">safe</option>
+                          <option value="warn">warn</option>
+                          <option value="blocked">blocked</option>
+                        </select>
+                      </label>
                     </div>
                     <details class="section">
                       <summary>link-registry result</summary>
@@ -2365,6 +2417,10 @@
                         <div class="flex-1">
                           <label for="city-pack-manage-metadata" data-dict-key="ui.label.cityPack.contentManager.metadata">metadata(JSON)</label>
                           <textarea id="city-pack-manage-metadata" rows="4">{}</textarea>
+                        </div>
+                        <div class="flex-1">
+                          <label for="city-pack-manage-modules">modules（改行 or カンマ: schools/healthcare/driving/housing/utilities）</label>
+                          <textarea id="city-pack-manage-modules" rows="4"></textarea>
                         </div>
                       </div>
                     </div>

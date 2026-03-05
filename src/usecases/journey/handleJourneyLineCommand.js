@@ -6,6 +6,8 @@ const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySched
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const tasksRepo = require('../../repos/firestore/tasksRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const userCityPackPreferencesRepo = require('../../repos/firestore/userCityPackPreferencesRepo');
+const { ALLOWED_MODULES } = require('../../repos/firestore/cityPacksRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
@@ -22,7 +24,11 @@ const {
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
-const { isJourneyUnifiedViewEnabled, isTaskDetailLineEnabled } = require('../../domain/tasks/featureFlags');
+const {
+  isJourneyUnifiedViewEnabled,
+  isTaskDetailLineEnabled,
+  isCityPackModuleSubscriptionEnabled
+} = require('../../domain/tasks/featureFlags');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -302,6 +308,111 @@ function resolveSnoozeUntil(command, nowIso) {
   return new Date(ms).toISOString();
 }
 
+const CITY_PACK_MODULE_LABELS = Object.freeze({
+  schools: '学校',
+  healthcare: '医療',
+  driving: '運転',
+  housing: '住居',
+  utilities: '生活インフラ'
+});
+
+function normalizeCityPackModules(values) {
+  const rows = Array.isArray(values) ? values : [];
+  const out = [];
+  rows.forEach((value) => {
+    const normalized = normalizeText(value).toLowerCase();
+    if (!normalized) return;
+    if (!ALLOWED_MODULES.includes(normalized)) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeCityPackModule(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (!normalized) return null;
+  if (!ALLOWED_MODULES.includes(normalized)) return null;
+  return normalized;
+}
+
+function buildCityPackModulePostback(action, module) {
+  const params = new URLSearchParams();
+  params.set('action', action);
+  if (module) params.set('module', module);
+  return params.toString();
+}
+
+function formatCityPackModuleStatusLine(modules) {
+  const subscribed = normalizeCityPackModules(modules);
+  if (!subscribed.length) return '全モジュール購読（既定）';
+  return subscribed.map((module) => CITY_PACK_MODULE_LABELS[module] || module).join(' / ');
+}
+
+function buildCityPackModuleGuideFlex(modulesSubscribed) {
+  const subscribed = normalizeCityPackModules(modulesSubscribed);
+  const contents = [
+    {
+      type: 'text',
+      text: 'CityPackモジュール購読',
+      weight: 'bold',
+      size: 'md',
+      wrap: true
+    },
+    {
+      type: 'text',
+      text: `現在: ${formatCityPackModuleStatusLine(subscribed)}`,
+      size: 'sm',
+      color: '#666666',
+      wrap: true,
+      margin: 'sm'
+    },
+    {
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      margin: 'md',
+      action: {
+        type: 'postback',
+        label: '購読状況を更新',
+        data: buildCityPackModulePostback('city_pack_module_status'),
+        displayText: 'CityPack状況'
+      }
+    }
+  ];
+  ALLOWED_MODULES.forEach((module) => {
+    const label = CITY_PACK_MODULE_LABELS[module] || module;
+    const isSubscribed = subscribed.length === 0 || subscribed.includes(module);
+    const action = isSubscribed ? 'city_pack_module_unsubscribe' : 'city_pack_module_subscribe';
+    const buttonLabel = isSubscribed ? `解除: ${label}` : `購読: ${label}`;
+    contents.push({
+      type: 'button',
+      style: 'secondary',
+      height: 'sm',
+      margin: 'sm',
+      action: {
+        type: 'postback',
+        label: buttonLabel,
+        data: buildCityPackModulePostback(action, module),
+        displayText: isSubscribed ? `CityPack解除:${module}` : `CityPack購読:${module}`
+      }
+    });
+  });
+  return {
+    type: 'flex',
+    altText: 'CityPackモジュール購読',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents
+      }
+    }
+  };
+}
+
 function resolveScheduleStage(schedule) {
   const payload = schedule && typeof schedule === 'object' ? schedule : {};
   if (payload.stage && typeof payload.stage === 'string' && payload.stage.trim()) return payload.stage.trim();
@@ -567,6 +678,84 @@ async function handleJourneyLineCommand(params, deps) {
       section: command.section,
       startChunk: command.startChunk
     }, resolvedDeps);
+  }
+
+  if (command.action === 'city_pack_module_guide') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const current = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    return {
+      handled: true,
+      replyMessage: buildCityPackModuleGuideFlex(current && current.modulesSubscribed)
+    };
+  }
+
+  if (command.action === 'city_pack_module_status') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const current = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    const modulesSubscribed = normalizeCityPackModules(current && current.modulesSubscribed);
+    return {
+      handled: true,
+      replyText: `CityPack購読状況: ${formatCityPackModuleStatusLine(modulesSubscribed)}\n変更する場合は「CityPack案内」を送信してください。`
+    };
+  }
+
+  if (command.action === 'city_pack_module_subscribe_missing' || command.action === 'city_pack_module_unsubscribe_missing') {
+    return {
+      handled: true,
+      replyText: 'モジュール指定が不正です。例: CityPack購読:schools'
+    };
+  }
+
+  if (command.action === 'city_pack_module_subscribe' || command.action === 'city_pack_module_unsubscribe') {
+    if (!isCityPackModuleSubscriptionEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPackモジュール購読は現在停止中です。'
+      };
+    }
+    const module = normalizeCityPackModule(command.module);
+    if (!module) {
+      return {
+        handled: true,
+        replyText: 'モジュール指定が不正です。schools/healthcare/driving/housing/utilities から選択してください。'
+      };
+    }
+    const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+    const existing = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+    const current = normalizeCityPackModules(existing && existing.modulesSubscribed);
+    let next = current.slice();
+    if (command.action === 'city_pack_module_subscribe') {
+      if (current.length === 0) {
+        next = [];
+      } else if (!next.includes(module)) {
+        next.push(module);
+      }
+    } else if (current.length === 0) {
+      next = ALLOWED_MODULES.filter((item) => item !== module);
+    } else {
+      next = next.filter((item) => item !== module);
+    }
+    if (next.length === ALLOWED_MODULES.length) next = [];
+    const saved = await preferenceRepo.upsertUserCityPackPreference(lineUserId, {
+      modulesSubscribed: next,
+      source: 'line_city_pack_module_postback'
+    }, lineUserId);
+    return {
+      handled: true,
+      replyText: `CityPack購読を更新しました: ${formatCityPackModuleStatusLine(saved && saved.modulesSubscribed)}`
+    };
   }
 
   if (command.action === 'todo_complete') {

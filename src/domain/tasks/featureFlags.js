@@ -64,6 +64,26 @@ function getTaskDetailSectionChunkLimit() {
   return parseNumber('TASK_DETAIL_SECTION_CHUNK_LIMIT', 3, 1, 8);
 }
 
+function isLinkRegistryIntentV2Enabled() {
+  return parseFlag('ENABLE_LINK_REGISTRY_INTENT_V2', true);
+}
+
+function isTaskMicroLearningEnabled() {
+  return parseFlag('ENABLE_TASK_MICRO_LEARNING_V1', true);
+}
+
+function isCityPackModuleSubscriptionEnabled() {
+  return parseFlag('ENABLE_CITY_PACK_MODULE_SUBSCRIPTION_V1', true);
+}
+
+function isJourneyAttentionBudgetEnabled() {
+  return parseFlag('ENABLE_JOURNEY_ATTENTION_BUDGET_V1', true);
+}
+
+function getJourneyDailyAttentionBudgetMax() {
+  return parseNumber('JOURNEY_DAILY_ATTENTION_BUDGET_MAX', 3, 1, 10);
+}
+
 function getTaskNudgeLinkPolicy() {
   const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
     ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
@@ -84,5 +104,10 @@ module.exports = {
   isTaskContentAdminEditorEnabled,
   isTaskDetailSectionSafetyValveEnabled,
   getTaskDetailSectionChunkLimit,
+  isLinkRegistryIntentV2Enabled,
+  isTaskMicroLearningEnabled,
+  isCityPackModuleSubscriptionEnabled,
+  isJourneyAttentionBudgetEnabled,
+  getJourneyDailyAttentionBudgetMax,
   getTaskNudgeLinkPolicy
 };

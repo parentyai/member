@@ -165,3 +165,31 @@ Task Engine v1 の add-only SSOT。
   - `POST /api/admin/os/task-rules/plan` action `upsert_task_content`
   - `POST /api/admin/os/task-rules/set` action `upsert_task_content`
   - managed flow action key は既存 `task_rules.set` を再利用（planHash + confirmToken 必須）
+
+## Phase740 Add-only（LinkRegistry 2.0 / Task Micro-Learning / Attention Budget）
+- LinkRegistry 2.0（add-only fields on `link_registry`）:
+  - `intentTag` (`task|city_pack|vendor|support|payment|null`)
+  - `audienceTag` (`family|solo|corporate|null`)
+  - `regionScope` (`nationwide|state|city|school_district|null`)
+  - `riskLevel` (`safe|warn|blocked|null`)
+  - 互換: 未設定は `null` 許容、既存リンクの意味は不変更
+- Task Micro-Learning（add-only fields on `task_contents`）:
+  - `summaryShort[]`（最大5）
+  - `topMistakes[]`（最大3）
+  - `contextTips[]`（最大5）
+  - 表示順: 概要 → よくある失敗 → あなたの状況の注意 → 既存の理解する/manual/failure
+  - 未設定時は read-time fallback（checklist/manual/failure/task context から決定論生成）
+- CityPack Modular Subscription（add-only）:
+  - `city_packs.modules[]`（`schools|healthcare|driving|housing|utilities`）
+  - 新規 collection: `user_city_pack_preferences/{lineUserId}`
+    - `modulesSubscribed[]`（空配列は全購読扱い）
+  - Journey command/postback:
+    - `CityPack案内`
+    - `city_pack_module_subscribe`
+    - `city_pack_module_unsubscribe`
+    - `city_pack_module_status`
+- Notification Attention Budget（add-only behavior）:
+  - `ENABLE_JOURNEY_ATTENTION_BUDGET_V1` 有効時、1ユーザー1日あたり上限を `JOURNEY_DAILY_ATTENTION_BUDGET_MAX` で制御
+  - `user_journey_profiles.timezone` 優先、未設定は `UTC`
+  - 選抜は `priorityScore + deadline + dependency` の決定論スコアで `computeDailyTopTasks` を使用
+  - 送達 SSOT は `notification_deliveries`

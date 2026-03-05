@@ -207,3 +207,27 @@ STOP の方針:
 - 異常時ログ:
   - synthetic webhookのため replyToken はダミー。messageケースで `LINE API error: 400` を観測（Journey処理/fail-close検証は継続）
 - ロールバック実施有無: なし
+
+## Phase740 運用手順（Next-gen UX add-only）
+
+### LinkRegistry 2.0 運用
+1. monitor > Task Detail Link Registry で対象 link を選択する。
+2. `intentTag/audienceTag/regionScope/riskLevel` を設定して `link-registry-set`。
+3. 422 が返る場合は enum値を見直す（未指定は空欄のまま）。
+
+### Task Micro-Learning 運用
+1. monitor > Task Detail Editor で `taskKey` を読み込む。
+2. `summaryShort/topMistakes/contextTips` を改行で編集する。
+3. `task-content-plan` で警告を確認後、`task-content-set` を実行する。
+4. LINE `TODO詳細:{todoKey}` で「概要/失敗/状況注意」が表示されることを確認する。
+
+### CityPack モジュール購読運用
+1. city-pack pane > Content Manager で `modules` を設定して保存する。
+2. LINEで `CityPack案内` を送信し、購読ボタン（postback）を操作する。
+3. CityPack bulletin を作成する場合は `modulesUpdated[]` を指定し、購読者のみ配信対象になることを確認する。
+
+### Notification Attention Budget（日次3件既定）
+1. `ENABLE_JOURNEY_ATTENTION_BUDGET_V1=1` を確認する。
+2. `JOURNEY_DAILY_ATTENTION_BUDGET_MAX`（既定3）を必要時のみ調整する。
+3. `notification_deliveries` を基準に日次送達数を確認する（`deliveries` は参考値）。
+4. budget超過時は TaskNudge/CityPack送信が skip されるため、運用判断時は `notification_deliveries` 件数を優先する。

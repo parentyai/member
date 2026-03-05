@@ -24,24 +24,36 @@ function parseJson(body, res) {
   }
 }
 
+function writeError(res, err) {
+  const status = err && Number.isInteger(err.statusCode) ? err.statusCode : 500;
+  const payload = { ok: false, error: err && err.code ? String(err.code) : 'error' };
+  if (err && err.details && typeof err.details === 'object') payload.details = err.details;
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(payload));
+}
+
 async function handleCreate(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
-  const result = await createLink(payload);
-  const actor = resolveActor(req);
-  const traceId = resolveTraceId(req);
-  const requestId = resolveRequestId(req);
-  await appendAuditLog({
-    actor,
-    action: 'link_registry.create',
-    entityType: 'link_registry',
-    entityId: result.id,
-    traceId,
-    requestId,
-    payloadSummary: { title: payload.title || null }
-  });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, id: result.id }));
+  try {
+    const result = await createLink(payload);
+    const actor = resolveActor(req);
+    const traceId = resolveTraceId(req);
+    const requestId = resolveRequestId(req);
+    await appendAuditLog({
+      actor,
+      action: 'link_registry.create',
+      entityType: 'link_registry',
+      entityId: result.id,
+      traceId,
+      requestId,
+      payloadSummary: { title: payload.title || null }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, id: result.id }));
+  } catch (err) {
+    writeError(res, err);
+  }
 }
 
 async function handleList(req, res) {
@@ -52,41 +64,57 @@ async function handleList(req, res) {
   const schoolType = url.searchParams.get('schoolType');
   const eduScope = url.searchParams.get('eduScope');
   const regionKey = url.searchParams.get('regionKey');
+  const intentTag = url.searchParams.get('intentTag');
+  const audienceTag = url.searchParams.get('audienceTag');
+  const regionScope = url.searchParams.get('regionScope');
+  const riskLevel = url.searchParams.get('riskLevel');
   const tagsRaw = url.searchParams.get('tags');
   const tags = typeof tagsRaw === 'string' && tagsRaw.trim()
     ? tagsRaw.split(',').map((item) => item.trim()).filter(Boolean)
     : [];
-  const result = await listLinks({
-    limit: limit ? Number(limit) : undefined,
-    state: state || undefined,
-    domainClass: domainClass || undefined,
-    schoolType: schoolType || undefined,
-    eduScope: eduScope || undefined,
-    regionKey: regionKey || undefined,
-    tags
-  });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, items: result }));
+  try {
+    const result = await listLinks({
+      limit: limit ? Number(limit) : undefined,
+      state: state || undefined,
+      domainClass: domainClass || undefined,
+      schoolType: schoolType || undefined,
+      eduScope: eduScope || undefined,
+      regionKey: regionKey || undefined,
+      intentTag: intentTag || undefined,
+      audienceTag: audienceTag || undefined,
+      regionScope: regionScope || undefined,
+      riskLevel: riskLevel || undefined,
+      tags
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, items: result }));
+  } catch (err) {
+    writeError(res, err);
+  }
 }
 
 async function handleUpdate(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
-  const result = await updateLink(id, payload);
-  const actor = resolveActor(req);
-  const traceId = resolveTraceId(req);
-  const requestId = resolveRequestId(req);
-  await appendAuditLog({
-    actor,
-    action: 'link_registry.update',
-    entityType: 'link_registry',
-    entityId: result.id,
-    traceId,
-    requestId,
-    payloadSummary: { fields: Object.keys(payload || {}) }
-  });
-  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, id: result.id }));
+  try {
+    const result = await updateLink(id, payload);
+    const actor = resolveActor(req);
+    const traceId = resolveTraceId(req);
+    const requestId = resolveRequestId(req);
+    await appendAuditLog({
+      actor,
+      action: 'link_registry.update',
+      entityType: 'link_registry',
+      entityId: result.id,
+      traceId,
+      requestId,
+      payloadSummary: { fields: Object.keys(payload || {}) }
+    });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, id: result.id }));
+  } catch (err) {
+    writeError(res, err);
+  }
 }
 
 async function handleDelete(req, res, id) {

@@ -1,5 +1,8 @@
 'use strict';
 
+const { isTaskMicroLearningEnabled } = require('../../domain/tasks/featureFlags');
+const { generateTaskSummary } = require('./generateTaskSummary');
+
 function normalizeText(value, fallback) {
   if (value === null || value === undefined) return fallback;
   if (typeof value !== 'string') return fallback;
@@ -96,6 +99,9 @@ function renderTaskFlexMessage(params) {
   const title = resolveTitle(task, taskContent);
   const timeLabel = buildTimeLabel(taskContent.timeMin, taskContent.timeMax);
   const checklistLines = buildChecklistTexts(taskContent);
+  const microLearning = isTaskMicroLearningEnabled()
+    ? generateTaskSummary({ taskContent, task })
+    : { summaryShort: [], topMistakes: [], contextTips: [] };
 
   const bodyContents = [
     {
@@ -134,6 +140,77 @@ function renderTaskFlexMessage(params) {
         margin: 'sm'
       });
     });
+  }
+
+  if (isTaskMicroLearningEnabled()) {
+    if (Array.isArray(microLearning.summaryShort) && microLearning.summaryShort.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: '概要',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.summaryShort.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
+
+    if (Array.isArray(microLearning.topMistakes) && microLearning.topMistakes.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: 'よくある失敗',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.topMistakes.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
+
+    if (Array.isArray(microLearning.contextTips) && microLearning.contextTips.length) {
+      bodyContents.push({
+        type: 'separator',
+        margin: 'md'
+      });
+      bodyContents.push({
+        type: 'text',
+        text: 'あなたの状況の注意',
+        size: 'sm',
+        color: '#777777',
+        margin: 'md'
+      });
+      microLearning.contextTips.forEach((line) => {
+        bodyContents.push({
+          type: 'text',
+          text: `・${line}`,
+          size: 'sm',
+          wrap: true,
+          margin: 'sm'
+        });
+      });
+    }
   }
 
   bodyContents.push({
