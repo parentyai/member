@@ -192,4 +192,49 @@ Task Engine v1 の add-only SSOT。
   - `ENABLE_JOURNEY_ATTENTION_BUDGET_V1` 有効時、1ユーザー1日あたり上限を `JOURNEY_DAILY_ATTENTION_BUDGET_MAX` で制御
   - `user_journey_profiles.timezone` 優先、未設定は `UTC`
   - 選抜は `priorityScore + deadline + dependency` の決定論スコアで `computeDailyTopTasks` を使用
-  - 送達 SSOT は `notification_deliveries`
+- 送達 SSOT は `notification_deliveries`
+
+## Phase741 Add-only（US Assignment Task OS）
+- 既存連鎖は維持:
+  - `LINE -> Journey -> TODO -> Task Detail -> Notification -> CityPack -> Vendor -> LinkRegistry`
+- Task Template SSOT:
+  - 新規 `task_templates` collection は追加しない
+  - `step_rules` を template SSOT として利用する
+- task category system（add-only）:
+  - `step_rules.category`（enum）
+  - `IMMIGRATION|HOUSING|BANKING|HEALTHCARE|TRANSPORT|SCHOOL|LIFE_SETUP|COMPANY_ADMIN`
+  - 未設定読み取り時 fallback は `LIFE_SETUP`
+- DAG / dependency constraints（add-only）:
+  - `step_rules.dependsOn[]` は最大 `TASK_DEPENDENCY_MAX`（default 10）
+  - cycle 禁止は既存 `evaluateGraph` 契約を利用
+  - `computeTaskGraph()` は `evaluateGraph` の統一レスポンスラッパー
+- task card model extensions（add-only）:
+  - `task_contents.category`
+  - `task_contents.dependencies[]`（max 10）
+  - `task_contents.checklist[]`（`checklistItems[]` と互換）
+  - `task_contents.recommendedVendorLinkIds[]`（max 3）
+  - `task_contents.archived`（soft disable 用）
+- step rule extensions（add-only）:
+  - `step_rules.estimatedTimeMin`, `step_rules.estimatedTimeMax`
+  - `step_rules.recommendedVendorLinkIds[]`（max 3）
+- Next Task Engine（add-only）:
+  - command: `今日の3つ`（`next_tasks`）
+  - `computeNextTasks()` が `computeDailyTopTasks()` で決定論 top3 を返す
+  - city pack 推奨タスクの `priorityBoost` を加味
+  - max 件数は `JOURNEY_NEXT_TASK_MAX`（default 3）
+- category / delivery / vendor command（add-only）:
+  - `カテゴリ` / `カテゴリ:<CATEGORY>`
+  - `通知履歴`
+  - `TODO業者:<todoKey>`
+  - `相談`
+- city pack task seed（add-only）:
+  - `city_packs.recommendedTasks[]`:
+    - `{ ruleId, module|null, priorityBoost|null }`
+  - region 申告成功時に `syncCityPackRecommendedTasks()` を best-effort 実行
+  - 既存 task がある場合は上書きしない（add-only seed）
+- rich menu entry（add-only）:
+  - 入口文言（message action）:
+    - `今日の3つ`, `TODO一覧`, `カテゴリ`, `CityPack案内`, `通知履歴`, `相談`
+  - seed script:
+    - `node tools/migrations/rich_menu_task_os_seed.js`（dry-run）
+    - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy`（apply）

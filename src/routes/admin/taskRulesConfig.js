@@ -61,10 +61,17 @@ function resolveLimit(req) {
 
 function summarizeRule(rule) {
   const row = rule && typeof rule === 'object' ? rule : {};
+  const dependsOn = Array.isArray(row.dependsOn) ? row.dependsOn : [];
+  const vendorLinks = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
   return {
     ruleId: row.ruleId || null,
     [SCENARIO_KEY_FIELD]: row[SCENARIO_KEY_FIELD] || null,
     stepKey: row.stepKey || null,
+    category: row.category || null,
+    dependsOnCount: dependsOn.length,
+    estimatedTimeMin: Number.isFinite(Number(row.estimatedTimeMin)) ? Number(row.estimatedTimeMin) : null,
+    estimatedTimeMax: Number.isFinite(Number(row.estimatedTimeMax)) ? Number(row.estimatedTimeMax) : null,
+    recommendedVendorCount: vendorLinks.length,
     priority: Number.isFinite(Number(row.priority)) ? Number(row.priority) : null,
     enabled: row.enabled === true,
     riskLevel: row.riskLevel || null
@@ -93,13 +100,20 @@ function summarizeTemplate(template) {
 function summarizeTaskContent(taskContent) {
   const row = taskContent && typeof taskContent === 'object' ? taskContent : {};
   const checklist = Array.isArray(row.checklistItems) ? row.checklistItems : [];
+  const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+  const vendors = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
   return {
     taskKey: row.taskKey || null,
     title: row.title || null,
+    category: row.category || null,
+    dependenciesCount: dependencies.length,
     checklistCount: checklist.filter((item) => item && item.enabled !== false).length,
+    checklistTextCount: Array.isArray(row.checklist) ? row.checklist.length : 0,
     summaryShortCount: Array.isArray(row.summaryShort) ? row.summaryShort.length : 0,
     topMistakesCount: Array.isArray(row.topMistakes) ? row.topMistakes.length : 0,
     contextTipsCount: Array.isArray(row.contextTips) ? row.contextTips.length : 0,
+    recommendedVendorCount: vendors.length,
+    archived: row.archived === true,
     hasManualText: Boolean(row.manualText),
     hasFailureText: Boolean(row.failureText),
     videoLinkId: row.videoLinkId || null,

@@ -2,6 +2,11 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { LEAD_TIME_KIND, LEAD_TIME_KIND_VALUES } = require('../../domain/tasks/constants');
+const { normalizeTaskCategory } = require('../../domain/tasks/taskCategories');
+const {
+  isTaskCategorySystemEnabled,
+  getTaskDependencyMax
+} = require('../../domain/tasks/featureFlags');
 
 const COLLECTION = 'step_rules';
 const DEFAULT_LIMIT = 200;
@@ -65,6 +70,12 @@ function normalizeStringList(value) {
     if (!out.includes(normalized)) out.push(normalized);
   });
   return out;
+}
+
+function normalizeStringListWithLimit(value, maxItems) {
+  const rows = normalizeStringList(value);
+  if (!Number.isInteger(maxItems) || maxItems < 1) return rows;
+  return rows.slice(0, maxItems);
 }
 
 function normalizeMeaningKey(value, fallback) {
@@ -151,6 +162,14 @@ function normalizeStepRule(ruleId, data) {
   const payload = data && typeof data === 'object' ? data : {};
   const id = normalizeText(ruleId || payload.ruleId, '');
   if (!id) return null;
+  const dependencyMax = getTaskDependencyMax();
+  const dependsOn = normalizeStringListWithLimit(payload.dependsOn, dependencyMax);
+  const category = isTaskCategorySystemEnabled()
+    ? normalizeTaskCategory(payload.category, 'LIFE_SETUP')
+    : normalizeTaskCategory(payload.category, null);
+  const estimatedTimeMin = normalizeNumber(payload.estimatedTimeMin, null, 0, 24 * 60);
+  const estimatedTimeMax = normalizeNumber(payload.estimatedTimeMax, null, 0, 24 * 60);
+  const recommendedVendorLinkIds = normalizeStringListWithLimit(payload.recommendedVendorLinkIds, 3);
   const trigger = normalizeTrigger(payload.trigger);
   const leadTime = normalizeLeadTime(payload.leadTime);
   if (!leadTime) return null;
@@ -162,7 +181,11 @@ function normalizeStepRule(ruleId, data) {
     meaning: normalizeMeaning(payload.meaning, payload.stepKey),
     trigger,
     leadTime,
-    dependsOn: normalizeStringList(payload.dependsOn),
+    dependsOn,
+    category,
+    estimatedTimeMin: Number.isInteger(estimatedTimeMin) ? estimatedTimeMin : null,
+    estimatedTimeMax: Number.isInteger(estimatedTimeMax) ? estimatedTimeMax : null,
+    recommendedVendorLinkIds,
     constraints: normalizeConstraints(payload.constraints),
     priority: normalizeNumber(payload.priority, 100, 0, 100000),
     enabled: normalizeBoolean(payload.enabled, false) === true,

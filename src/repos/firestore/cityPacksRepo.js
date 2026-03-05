@@ -94,6 +94,36 @@ function normalizeModules(values) {
   return out;
 }
 
+function normalizeRecommendedTaskItem(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const ruleId = typeof value.ruleId === 'string' ? value.ruleId.trim() : '';
+  if (!ruleId) return null;
+  const module = typeof value.module === 'string' ? value.module.trim().toLowerCase() : '';
+  const normalizedModule = module && ALLOWED_MODULE_SET.has(module) ? module : null;
+  const boost = Number(value.priorityBoost);
+  const priorityBoost = Number.isFinite(boost) ? Math.max(-1000, Math.min(1000, Math.floor(boost))) : null;
+  return {
+    ruleId,
+    module: normalizedModule,
+    priorityBoost
+  };
+}
+
+function normalizeRecommendedTasks(values) {
+  if (!Array.isArray(values)) return [];
+  const out = [];
+  const seen = new Set();
+  values.forEach((value) => {
+    const normalized = normalizeRecommendedTaskItem(value);
+    if (!normalized) return;
+    const signature = `${normalized.ruleId}::${normalized.module || '-'}`;
+    if (seen.has(signature)) return;
+    seen.add(signature);
+    out.push(normalized);
+  });
+  return out.slice(0, 50);
+}
+
 function normalizeString(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -277,7 +307,8 @@ function normalizePayload(data) {
     packClass,
     language,
     nationwidePolicy,
-    modules: normalizeModules(payload.modules)
+    modules: normalizeModules(payload.modules),
+    recommendedTasks: normalizeRecommendedTasks(payload.recommendedTasks)
   };
 }
 
@@ -340,6 +371,9 @@ function normalizeCityPackContentPatch(data) {
   if (Object.prototype.hasOwnProperty.call(payload, 'modules')) {
     patch.modules = normalizeModules(payload.modules);
   }
+  if (Object.prototype.hasOwnProperty.call(payload, 'recommendedTasks')) {
+    patch.recommendedTasks = normalizeRecommendedTasks(payload.recommendedTasks);
+  }
 
   return patch;
 }
@@ -379,6 +413,7 @@ async function createCityPack(data) {
     language: payload.language,
     nationwidePolicy: payload.nationwidePolicy,
     modules: payload.modules,
+    recommendedTasks: payload.recommendedTasks,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -429,6 +464,7 @@ module.exports = {
   normalizeLanguage,
   normalizeNationwidePolicy,
   normalizeModules,
+  normalizeRecommendedTasks,
   createCityPack,
   getCityPack,
   listCityPacks,

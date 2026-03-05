@@ -763,3 +763,37 @@ Typical fields:
 - 日次上限計算:
   - `countDeliveredByUserSince(lineUserId, dayStartAt)` を利用
   - `user_journey_profiles.timezone` 優先、未設定は `UTC`
+
+## Phase741 Add-only Data Map
+
+### `step_rules` add-only fields
+- `category`
+- `estimatedTimeMin`
+- `estimatedTimeMax`
+- `recommendedVendorLinkIds[]`
+
+### `task_contents` add-only fields
+- `category`
+- `dependencies[]`
+- `checklist[]`
+- `recommendedVendorLinkIds[]`
+- `archived`
+
+### `city_packs` add-only fields
+- `recommendedTasks[]`
+  - item: `{ ruleId, module|null, priorityBoost|null }`
+
+### Rich Menu Task OS seed collections
+- `rich_menu_templates`
+- `rich_menu_assignment_rules`
+- `rich_menu_phase_profiles`
+- `rich_menu_bindings`
+- `opsConfig/richMenuPolicy`
+
+### Link impact read model API
+- route: `GET /api/admin/os/link-registry-impact`
+- source collections:
+  - `link_registry`
+  - `task_contents`
+  - `notifications`
+  - `city_packs`

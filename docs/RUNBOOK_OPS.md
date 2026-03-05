@@ -231,3 +231,36 @@ STOP の方針:
 2. `JOURNEY_DAILY_ATTENTION_BUDGET_MAX`（既定3）を必要時のみ調整する。
 3. `notification_deliveries` を基準に日次送達数を確認する（`deliveries` は参考値）。
 4. budget超過時は TaskNudge/CityPack送信が skip されるため、運用判断時は `notification_deliveries` 件数を優先する。
+
+## Phase741 運用手順（US Assignment Task OS add-only）
+
+### Rich Menu Task OS 入口を構成する
+1. dry-run:
+  - `node tools/migrations/rich_menu_task_os_seed.js`
+2. apply:
+  - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy`
+3. 指定ユーザーへ binding も投入する場合:
+  - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy --line-users=Uxxx,Uyyy`
+4. monitor > rich-menu status で `policy.enabled=true` と template/rule を確認する。
+
+### LINE導線確認（Task OS）
+1. `今日の3つ`:
+  - `next_tasks` が最大3件返ることを確認。
+2. `TODO一覧`:
+  - 従来一覧表示が非退行であることを確認。
+3. `カテゴリ`:
+  - カテゴリ件数表示が返ることを確認。
+4. `カテゴリ:IMMIGRATION`:
+  - 該当カテゴリのみ表示されることを確認。
+5. `通知履歴`:
+  - `notification_deliveries` ベースの履歴が返ることを確認。
+6. `TODO業者:<todoKey>`:
+  - `recommendedVendorLinkIds` から利用可能リンクのみ返ることを確認。
+7. `相談`:
+  - support guide 文面が返ることを確認。
+
+### CityPack 推奨タスク seed
+1. `city_packs.recommendedTasks[]` を投入する。
+2. LINEで地域申告を実施する（`declareCityRegionFromLine`）。
+3. `syncCityPackRecommendedTasks` が best-effort で起動し、未存在 task のみ作成されることを確認する。
+4. audit log `city_pack.recommended_tasks.sync` を確認する。

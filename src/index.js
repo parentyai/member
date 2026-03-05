@@ -1947,6 +1947,7 @@ function createServer() {
     const { handleLlmUsageExport } = require('./routes/admin/osLlmUsageExport');
     const { handleJourneyKpi } = require('./routes/admin/osJourneyKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
+    const { handleImpact: handleOsLinkRegistryImpact } = require('./routes/admin/osLinkRegistryImpact');
     const { handleView } = require('./routes/admin/osView');
     const {
       handleStatus: handleJourneyPolicyStatus,
@@ -2319,6 +2320,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {
         await handleOsLinkRegistryLookup(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {
+        await handleOsLinkRegistryImpact(req, res);
         return;
       }
 

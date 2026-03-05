@@ -84,6 +84,34 @@ function getJourneyDailyAttentionBudgetMax() {
   return parseNumber('JOURNEY_DAILY_ATTENTION_BUDGET_MAX', 3, 1, 10);
 }
 
+function isTaskCategorySystemEnabled() {
+  return parseFlag('ENABLE_TASK_CATEGORY_SYSTEM_V1', true);
+}
+
+function isNextTaskEngineEnabled() {
+  return parseFlag('ENABLE_NEXT_TASK_ENGINE_V1', true);
+}
+
+function isCityPackRecommendedTasksEnabled() {
+  return parseFlag('ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1', true);
+}
+
+function isRichMenuTaskOsEntryEnabled() {
+  return parseFlag('ENABLE_RICH_MENU_TASK_OS_ENTRY_V1', true);
+}
+
+function getTaskDependencyMax() {
+  return parseNumber('TASK_DEPENDENCY_MAX', 10, 1, 20);
+}
+
+function getJourneyNextTaskMax() {
+  return parseNumber('JOURNEY_NEXT_TASK_MAX', 3, 1, 10);
+}
+
+function isLinkRegistryImpactMapEnabled() {
+  return parseFlag('ENABLE_LINK_REGISTRY_IMPACT_MAP_V1', true);
+}
+
 function getTaskNudgeLinkPolicy() {
   const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
     ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
@@ -109,5 +137,12 @@ module.exports = {
   isCityPackModuleSubscriptionEnabled,
   isJourneyAttentionBudgetEnabled,
   getJourneyDailyAttentionBudgetMax,
+  isTaskCategorySystemEnabled,
+  isNextTaskEngineEnabled,
+  isCityPackRecommendedTasksEnabled,
+  isRichMenuTaskOsEntryEnabled,
+  getTaskDependencyMax,
+  getJourneyNextTaskMax,
+  isLinkRegistryImpactMapEnabled,
   getTaskNudgeLinkPolicy
 };

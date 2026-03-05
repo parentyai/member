@@ -9706,10 +9706,17 @@ function applyJourneyGraphPlanTokens(planHash, confirmToken) {
 }
 
 function buildTaskRuleEditorPayload() {
+  const estimatedTimeMinRaw = document.getElementById('task-rules-estimated-time-min')?.value;
+  const estimatedTimeMaxRaw = document.getElementById('task-rules-estimated-time-max')?.value;
   return {
     ruleId: document.getElementById('task-rules-rule-id')?.value?.trim() || '',
     scenarioKey: document.getElementById('task-rules-scenario-key')?.value?.trim() || '',
     stepKey: document.getElementById('task-rules-step-key')?.value?.trim() || '',
+    category: document.getElementById('task-rules-category')?.value?.trim() || 'LIFE_SETUP',
+    dependsOn: parseCsvList(document.getElementById('task-rules-depends-on')?.value || '').slice(0, 10),
+    estimatedTimeMin: estimatedTimeMinRaw === '' || estimatedTimeMinRaw === undefined ? null : Number(estimatedTimeMinRaw),
+    estimatedTimeMax: estimatedTimeMaxRaw === '' || estimatedTimeMaxRaw === undefined ? null : Number(estimatedTimeMaxRaw),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-vendor-link-ids')?.value || '').slice(0, 3),
     trigger: {
       eventKey: document.getElementById('task-rules-trigger-event-key')?.value?.trim() || '',
       source: document.getElementById('task-rules-trigger-source')?.value?.trim() || ''
@@ -9845,12 +9852,17 @@ function buildTaskRulesTaskContentPayload() {
   return {
     taskKey,
     title: document.getElementById('task-rules-task-content-title')?.value?.trim() || '',
+    category: document.getElementById('task-rules-task-content-category')?.value?.trim() || 'LIFE_SETUP',
+    dependencies: parseCsvList(document.getElementById('task-rules-task-content-dependencies')?.value || '').slice(0, 10),
     timeMin: Number.isFinite(timeMin) ? Math.max(0, Math.floor(timeMin)) : null,
     timeMax: Number.isFinite(timeMax) ? Math.max(0, Math.floor(timeMax)) : null,
+    checklist: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-checklist')?.value || '', 50),
     checklistItems: readTaskRulesChecklistItems(),
     summaryShort: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-summary-short')?.value || '', 5),
     topMistakes: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-top-mistakes')?.value || '', 3),
     contextTips: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-context-tips')?.value || '', 5),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-task-content-recommended-vendor-link-ids')?.value || '').slice(0, 3),
+    archived: Boolean(document.getElementById('task-rules-task-content-archived')?.checked),
     manualText: document.getElementById('task-rules-task-content-manual-text')?.value || '',
     failureText: document.getElementById('task-rules-task-content-failure-text')?.value || '',
     videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
@@ -9929,11 +9941,21 @@ function applyTaskRulesTaskContentEditor(taskContent) {
   if (document.getElementById('task-rules-task-content-title')) {
     document.getElementById('task-rules-task-content-title').value = normalizeTaskRulesText(row.title, '');
   }
+  if (document.getElementById('task-rules-task-content-category')) {
+    document.getElementById('task-rules-task-content-category').value = normalizeTaskRulesText(row.category, 'LIFE_SETUP') || 'LIFE_SETUP';
+  }
+  if (document.getElementById('task-rules-task-content-dependencies')) {
+    const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+    document.getElementById('task-rules-task-content-dependencies').value = dependencies.map((item) => normalizeTaskRulesText(item, '')).filter(Boolean).join(',');
+  }
   if (document.getElementById('task-rules-task-content-time-min')) {
     document.getElementById('task-rules-task-content-time-min').value = Number.isFinite(Number(row.timeMin)) ? String(Math.floor(Number(row.timeMin))) : '';
   }
   if (document.getElementById('task-rules-task-content-time-max')) {
     document.getElementById('task-rules-task-content-time-max').value = Number.isFinite(Number(row.timeMax)) ? String(Math.floor(Number(row.timeMax))) : '';
+  }
+  if (document.getElementById('task-rules-task-content-checklist')) {
+    setTaskRulesTextLines('task-rules-task-content-checklist', row.checklist);
   }
   if (document.getElementById('task-rules-task-content-checklist-json')) {
     document.getElementById('task-rules-task-content-checklist-json').value = JSON.stringify(sorted, null, 2);
@@ -9959,6 +9981,13 @@ function applyTaskRulesTaskContentEditor(taskContent) {
     }
     document.getElementById('task-rules-task-content-action-link-id').value = normalizeTaskRulesText(row.actionLinkId, '');
   }
+  if (document.getElementById('task-rules-task-content-recommended-vendor-link-ids')) {
+    const vendors = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
+    document.getElementById('task-rules-task-content-recommended-vendor-link-ids').value = vendors.map((item) => normalizeTaskRulesText(item, '')).filter(Boolean).join(',');
+  }
+  if (document.getElementById('task-rules-task-content-archived')) {
+    document.getElementById('task-rules-task-content-archived').checked = row.archived === true;
+  }
   refreshTaskRulesTaskContentWarnings();
 }
 
@@ -9979,6 +10008,8 @@ function resolveTaskRulesLinkById(linkId) {
 function readTaskRulesTaskContentForWarning() {
   return {
     taskKey: document.getElementById('task-rules-task-content-key')?.value?.trim() || '',
+    dependencies: parseCsvList(document.getElementById('task-rules-task-content-dependencies')?.value || '').slice(0, 10),
+    recommendedVendorLinkIds: parseCsvList(document.getElementById('task-rules-task-content-recommended-vendor-link-ids')?.value || '').slice(0, 3),
     videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
     actionLinkId: document.getElementById('task-rules-task-content-action-link-id')?.value?.trim() || ''
   };
@@ -10039,6 +10070,27 @@ function collectTaskRulesTaskContentWarnings(taskContent, extraWarnings) {
       if (health === 'WARN') warnings.push('actionLinkId の health が WARN です。');
     }
   }
+
+  const dependencies = Array.isArray(row.dependencies) ? row.dependencies : [];
+  if (dependencies.length > 10) {
+    warnings.push('dependencies は最大10件までです。');
+  }
+  const recommendedVendorLinkIds = Array.isArray(row.recommendedVendorLinkIds) ? row.recommendedVendorLinkIds : [];
+  if (recommendedVendorLinkIds.length > 3) {
+    warnings.push('recommendedVendorLinkIds は最大3件までです。');
+  }
+  recommendedVendorLinkIds.forEach((linkId) => {
+    const normalized = normalizeTaskRulesText(linkId, '');
+    if (!normalized) return;
+    const link = resolveTaskRulesLinkById(normalized);
+    if (!link) {
+      warnings.push(`recommendedVendorLinkId(${normalized}) が Link Registry に存在しません。`);
+      return;
+    }
+    if (link.enabled === false) warnings.push(`recommendedVendorLinkId(${normalized}) が disabled です。`);
+    const health = normalizeTaskRulesText(link && link.lastHealth && link.lastHealth.state, '').toUpperCase();
+    if (health === 'WARN') warnings.push(`recommendedVendorLinkId(${normalized}) の health が WARN です。`);
+  });
 
   if (Array.isArray(extraWarnings)) {
     extraWarnings.forEach((item) => {

@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "65dadbdc952d2650c182476a5cbb53a40de277ff",
+      "hash": "44b653e5a3cd10b6219dc57c71738b84a34dc27e",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1128
+    "testCount": 1135
   },
   "systemOverview": {
     "what": [
@@ -50,19 +50,19 @@
             "送信後は Monitor で結果を確認。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/userCityPackPreferencesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1"
           ]
         },
         {
@@ -82,19 +82,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationTestRunsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationTestRunsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -371,19 +371,19 @@
             "送信後は Monitor で結果を確認。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
           ]
         },
         {
@@ -403,19 +403,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -435,6 +435,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
@@ -442,9 +443,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/admin/notificationDeliveries.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -534,19 +535,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackMetricsDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -566,19 +567,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1"
           ]
         },
         {
@@ -598,6 +599,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js",
@@ -605,9 +607,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/internal/cityPackDraftGeneratorJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1"
           ]
         },
         {
@@ -659,19 +661,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceAuditRunsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceEvidenceRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/cityPackSourceAuditJob.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/schoolCalendarAuditJob.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/cityPackSourceAuditJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceAuditRunsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1"
           ]
         },
         {
@@ -755,19 +757,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js:1"
           ]
         },
         {
@@ -819,19 +821,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/userCityPackPreferencesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1"
           ]
         }
       ]
@@ -1140,19 +1142,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsSnapshotsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsStatesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsSnapshotsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -1197,6 +1199,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
@@ -1204,9 +1207,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/admin/userTimeline.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
           ]
         }
       ]
@@ -1232,19 +1235,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -1392,19 +1395,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackMetricsDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackMetricsDailyRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -1424,19 +1427,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmUsageLogsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionLogsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -1852,6 +1855,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js",
@@ -1861,9 +1865,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/internal/journeyKpiBuildJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js:1"
           ]
         },
         {
@@ -1883,19 +1887,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmUsageStatsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsSnapshotsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneySchedulesRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userJourneyProfilesRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -1915,19 +1919,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoStatsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmUsageLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/userSubscriptionsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyKpiDailyRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
           ]
         },
         {
@@ -1980,19 +1984,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
           ]
         },
         {
@@ -2044,19 +2048,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyEventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyProvidersRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyRulesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencySnapshotsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyUnmappedEventsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencySnapshotsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyDiffsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/emergencyBulletinsRepo.js:1"
           ]
         },
         {
@@ -2441,14 +2445,15 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/municipalitySchoolsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/internal/municipalitySchoolsImportJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/municipalitySchoolsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/municipalitySchoolsImportJob.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/municipalitySchoolsRepo.js:1"
           ]
         },
         {
@@ -2591,19 +2596,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -2900,6 +2905,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
@@ -2907,9 +2913,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/phase121OpsNoticeSend.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -2969,19 +2975,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/usersPhase1Repo.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/decisionTimelineRepo.js:1"
           ]
         },
         {
@@ -3099,15 +3105,16 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/scenarioReportsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/scenarioRunsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/phase2Automation.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/scenarioReportsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/scenarioRunsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/scenarioReportsRepo.js:1"
           ]
         },
         {
@@ -3495,19 +3502,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsConfigRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuAssignmentRulesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuBindingsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuPhaseProfilesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuPolicyRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuRateBucketsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/richMenuPolicyRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/opsConfigRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js:1"
           ]
         },
         {
@@ -3527,19 +3534,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceAuditRunsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceEvidenceRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceRefsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/cityPackSourceAuditJob.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/internal/schoolCalendarAuditJob.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/cityPackSourceAuditJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackBulletinsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/sourceAuditRunsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js:1"
           ]
         },
         {
@@ -3588,19 +3595,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTemplatesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRuleChangeLogsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/stepRulesRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -3646,19 +3653,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -3678,19 +3685,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/linkRegistryRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
           ]
         },
         {
@@ -3710,6 +3717,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/userContextSnapshotsRepo.js",
@@ -3718,9 +3726,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/internal/userContextSnapshotRecompressJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userContextSnapshotsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1"
           ]
         },
         {
@@ -3740,6 +3748,7 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/userContextSnapshotsRepo.js",
@@ -3748,9 +3757,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/internal/userContextSnapshotRecompressJob.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/analyticsReadRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/userContextSnapshotsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js:1"
           ]
         },
         {
@@ -3770,19 +3779,19 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackFeedbackRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPacksRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmQualityLogsRepo.js"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyTodoItemsRepo.js"
           ],
           "evidence": [
+            "/Users/parentyai.com/Projects/Member/docs/DATA_MAP.md:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackFeedbackRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackRequestsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/cityPackFeedbackRepo.js:1"
           ]
         },
         {

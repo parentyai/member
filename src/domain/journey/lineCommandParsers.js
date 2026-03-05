@@ -1,5 +1,7 @@
 'use strict';
 
+const { TASK_CATEGORY_SET } = require('../tasks/taskCategories');
+
 const HOUSEHOLD_LABEL_MAP = Object.freeze({
   '単身': 'single',
   '1': 'single',
@@ -54,6 +56,12 @@ function normalizeHouseholdLabel(value) {
   return HOUSEHOLD_LABEL_MAP[text] || HOUSEHOLD_LABEL_MAP[lowered] || null;
 }
 
+function normalizeCategory(value) {
+  const normalized = normalizeText(value).toUpperCase();
+  if (!normalized) return null;
+  return TASK_CATEGORY_SET.has(normalized) ? normalized : null;
+}
+
 function buildHouseholdAssignmentPayload(householdType) {
   const payload = {
     action: 'set_household',
@@ -67,8 +75,39 @@ function parseJourneyLineCommand(text) {
   const raw = normalizeText(text);
   if (!raw) return null;
 
-  if (/^TODO一覧$/i.test(raw)) {
+  if (/^(?:TODO一覧|やること一覧)$/i.test(raw)) {
     return { action: 'todo_list' };
+  }
+
+  if (/^(?:今日の3つ|NEXT_TASKS)$/i.test(raw)) {
+    return { action: 'next_tasks' };
+  }
+
+  if (/^(?:カテゴリ|CATEGORY_VIEW)$/i.test(raw)) {
+    return { action: 'category_view' };
+  }
+
+  const categoryPick = raw.match(/^(?:カテゴリ|CATEGORY_VIEW)\s*[:：]\s*([A-Za-z_]+)$/i);
+  if (categoryPick) {
+    const category = normalizeCategory(categoryPick[1]);
+    if (!category) return { action: 'category_view_missing' };
+    return { action: 'category_view', category };
+  }
+
+  if (/^(?:通知履歴|DELIVERY_HISTORY)$/i.test(raw)) {
+    return { action: 'delivery_history' };
+  }
+
+  if (/^(?:相談|相談希望|SUPPORT)$/i.test(raw)) {
+    return { action: 'support_guide' };
+  }
+
+  const todoVendor = raw.match(/^TODO(?:業者|VENDOR)\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (todoVendor) {
+    return {
+      action: 'todo_vendor',
+      todoKey: normalizeText(todoVendor[1])
+    };
   }
 
   const complete = raw.match(/^TODO完了\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
@@ -257,6 +296,27 @@ function parseJourneyPostbackData(data) {
       section,
       startChunk: Number.isInteger(chunk) && chunk >= 1 ? chunk : 1
     };
+  }
+
+  if (action === 'next_tasks' || action === 'delivery_history' || action === 'support_guide') {
+    return { action };
+  }
+
+  if (action === 'category_view') {
+    const category = normalizeCategory(params.get('category'));
+    return category ? { action, category } : { action };
+  }
+
+  if (action === 'category_pick') {
+    const category = normalizeCategory(params.get('category'));
+    if (!category) return { action: 'category_view_missing' };
+    return { action: 'category_view', category };
+  }
+
+  if (action === 'todo_vendor') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_vendor_missing' };
+    return { action, todoKey };
   }
 
   if (action === 'todo_list') {
