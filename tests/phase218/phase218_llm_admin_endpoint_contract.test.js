@@ -16,6 +16,10 @@ test('phase218: admin_app uses admin LLM endpoints first with legacy fallback', 
   assert.match(text, /\/api\/admin\/llm\/next-actions/);
   assert.match(text, /\/api\/phaseLLM3\/ops-next-actions/);
   assert.match(text, /fetchJsonWithFallback\(/);
+  assert.match(text, /annotateApiSource\(/);
+  assert.match(text, /_apiSource/);
+  assert.match(text, /'admin'/);
+  assert.match(text, /'compat'/);
 });
 
 test('phase218: master uses admin LLM endpoints first with legacy fallback', () => {
