@@ -34,6 +34,6 @@ test('phase212: admin app wires LLM endpoints from pane actions', () => {
   assert.match(text, /\/api\/phaseLLM3\/ops-next-actions/);
   assert.match(text, /\/api\/admin\/llm\/faq\/answer/);
   assert.match(text, /\/api\/admin\/os\/llm-usage\/summary/);
-  assert.match(text, /function renderLlmEntryControlDashboard\(\)/);
+  assert.match(text, /function renderLlmEntryControlDashboard\([^)]*\)/);
   assert.match(text, /function setupLlmControls\(\)/);
 });

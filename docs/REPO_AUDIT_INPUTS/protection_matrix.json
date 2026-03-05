@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T17:31:58-05:00",
+  "generatedAt": "2026-03-04T20:59:04-05:00",
   "source": "static_analysis_live_core",
   "counts": {
-    "endpoints": 281
+    "endpoints": 284
   },
   "rules": {
     "admin_paths_must_admin_token": true,
@@ -1349,7 +1349,7 @@
       "method": "GET",
       "path": "/admin/link-registry",
       "match": "exact",
-      "line": 3731,
+      "line": 3738,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -1366,7 +1366,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3731",
+        "src/index.js:3738",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -1374,7 +1374,7 @@
       "method": "POST",
       "path": "/admin/link-registry",
       "match": "exact",
-      "line": 3736,
+      "line": 3743,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -1391,7 +1391,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3736",
+        "src/index.js:3743",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -1399,7 +1399,7 @@
       "method": "GET",
       "path": "/admin/notifications",
       "match": "exact",
-      "line": 3676,
+      "line": 3683,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -1416,7 +1416,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3676",
+        "src/index.js:3683",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -1424,7 +1424,7 @@
       "method": "POST",
       "path": "/admin/notifications",
       "match": "exact",
-      "line": 3681,
+      "line": 3688,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -1441,7 +1441,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3681",
+        "src/index.js:3688",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -1449,7 +1449,7 @@
       "method": "POST",
       "path": "/admin/phase1/notifications",
       "match": "exact",
-      "line": 3630,
+      "line": 3637,
       "route_files": [
         "src/routes/admin/phase1Notifications.js"
       ],
@@ -1470,7 +1470,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3630",
+        "src/index.js:3637",
         "src/routes/admin/phase1Notifications.js:1"
       ]
     },
@@ -1478,7 +1478,7 @@
       "method": "POST",
       "path": "/admin/phase2/automation/run",
       "match": "exact",
-      "line": 3588,
+      "line": 3595,
       "route_files": [
         "src/routes/admin/phase2Automation.js"
       ],
@@ -1503,7 +1503,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3588",
+        "src/index.js:3595",
         "src/routes/admin/phase2Automation.js:1"
       ]
     },
@@ -1511,7 +1511,7 @@
       "method": "GET",
       "path": "/admin/read-model/notifications",
       "match": "exact",
-      "line": 3549,
+      "line": 3556,
       "route_files": [
         "src/routes/admin/readModel.js"
       ],
@@ -1529,7 +1529,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3549",
+        "src/index.js:3556",
         "src/routes/admin/readModel.js:1"
       ]
     },
@@ -2583,7 +2583,7 @@
       "method": "POST",
       "path": "/api/admin/llm/config/plan",
       "match": "exact",
-      "line": 2445,
+      "line": 2446,
       "route_files": [
         "src/routes/admin/llmConfig.js"
       ],
@@ -2599,7 +2599,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2445",
+        "src/index.js:2446",
         "src/routes/admin/llmConfig.js:1"
       ]
     },
@@ -2607,7 +2607,7 @@
       "method": "POST",
       "path": "/api/admin/llm/config/set",
       "match": "exact",
-      "line": 2450,
+      "line": 2451,
       "route_files": [
         "src/routes/admin/llmConfig.js"
       ],
@@ -2623,7 +2623,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2450",
+        "src/index.js:2451",
         "src/routes/admin/llmConfig.js:1"
       ]
     },
@@ -2631,7 +2631,7 @@
       "method": "GET",
       "path": "/api/admin/llm/config/status",
       "match": "exact",
-      "line": 2440,
+      "line": 2441,
       "route_files": [
         "src/routes/admin/llmConfig.js"
       ],
@@ -2647,7 +2647,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2440",
+        "src/index.js:2441",
         "src/routes/admin/llmConfig.js:1"
       ]
     },
@@ -2655,7 +2655,7 @@
       "method": "POST",
       "path": "/api/admin/llm/consent/revoke",
       "match": "exact",
-      "line": 2493,
+      "line": 2500,
       "route_files": [
         "src/routes/admin/llmConsent.js"
       ],
@@ -2671,7 +2671,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2493",
+        "src/index.js:2500",
         "src/routes/admin/llmConsent.js:1"
       ]
     },
@@ -2679,7 +2679,7 @@
       "method": "GET",
       "path": "/api/admin/llm/consent/status",
       "match": "exact",
-      "line": 2485,
+      "line": 2492,
       "route_files": [
         "src/routes/admin/llmConsent.js"
       ],
@@ -2695,7 +2695,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2485",
+        "src/index.js:2492",
         "src/routes/admin/llmConsent.js:1"
       ]
     },
@@ -2703,7 +2703,7 @@
       "method": "POST",
       "path": "/api/admin/llm/consent/verify",
       "match": "exact",
-      "line": 2489,
+      "line": 2496,
       "route_files": [
         "src/routes/admin/llmConsent.js"
       ],
@@ -2719,7 +2719,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2489",
+        "src/index.js:2496",
         "src/routes/admin/llmConsent.js:1"
       ]
     },
@@ -2728,6 +2728,30 @@
       "path": "/api/admin/llm/faq/answer",
       "match": "exact",
       "line": 2473,
+      "route_files": [
+        "src/routes/admin/osContext.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:2473",
+        "src/routes/admin/osContext.js:1"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/llm/faq/answer",
+      "match": "exact",
+      "line": 2476,
       "route_files": [
         "src/routes/admin/llmFaq.js"
       ],
@@ -2745,7 +2769,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2473",
+        "src/index.js:2476",
         "src/routes/admin/llmFaq.js:1"
       ]
     },
@@ -2753,7 +2777,31 @@
       "method": "GET",
       "path": "/api/admin/llm/next-actions",
       "match": "exact",
-      "line": 2481,
+      "line": 2486,
+      "route_files": [
+        "src/routes/admin/osContext.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:2486",
+        "src/routes/admin/osContext.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/next-actions",
+      "match": "exact",
+      "line": 2488,
       "route_files": [
         "src/routes/admin/llmOps.js"
       ],
@@ -2769,7 +2817,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2481",
+        "src/index.js:2488",
         "src/routes/admin/llmOps.js:1"
       ]
     },
@@ -2777,7 +2825,31 @@
       "method": "GET",
       "path": "/api/admin/llm/ops-explain",
       "match": "exact",
-      "line": 2477,
+      "line": 2480,
+      "route_files": [
+        "src/routes/admin/osContext.js"
+      ],
+      "auth_required": "adminToken",
+      "csrf_required": false,
+      "confirm_token_required": false,
+      "confirm_token_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
+      "writes_collections": [
+        "audit_logs"
+      ],
+      "audit_required": true,
+      "trace_required": true,
+      "evidence": [
+        "src/index.js:2480",
+        "src/routes/admin/osContext.js:1"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/llm/ops-explain",
+      "match": "exact",
+      "line": 2482,
       "route_files": [
         "src/routes/admin/llmOps.js"
       ],
@@ -2793,7 +2865,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2477",
+        "src/index.js:2482",
         "src/routes/admin/llmOps.js:1"
       ]
     },
@@ -2801,7 +2873,7 @@
       "method": "GET",
       "path": "/api/admin/llm/policy/history",
       "match": "exact",
-      "line": 2468,
+      "line": 2469,
       "route_files": [
         "src/routes/admin/llmPolicyConfig.js"
       ],
@@ -2817,7 +2889,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2468",
+        "src/index.js:2469",
         "src/routes/admin/llmPolicyConfig.js:1"
       ]
     },
@@ -2825,7 +2897,7 @@
       "method": "POST",
       "path": "/api/admin/llm/policy/plan",
       "match": "exact",
-      "line": 2459,
+      "line": 2460,
       "route_files": [
         "src/routes/admin/llmPolicyConfig.js"
       ],
@@ -2841,7 +2913,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2459",
+        "src/index.js:2460",
         "src/routes/admin/llmPolicyConfig.js:1"
       ]
     },
@@ -2849,7 +2921,7 @@
       "method": "POST",
       "path": "/api/admin/llm/policy/set",
       "match": "exact",
-      "line": 2464,
+      "line": 2465,
       "route_files": [
         "src/routes/admin/llmPolicyConfig.js"
       ],
@@ -2865,7 +2937,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2464",
+        "src/index.js:2465",
         "src/routes/admin/llmPolicyConfig.js:1"
       ]
     },
@@ -2873,7 +2945,7 @@
       "method": "GET",
       "path": "/api/admin/llm/policy/status",
       "match": "exact",
-      "line": 2454,
+      "line": 2455,
       "route_files": [
         "src/routes/admin/llmPolicyConfig.js"
       ],
@@ -2889,7 +2961,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2454",
+        "src/index.js:2455",
         "src/routes/admin/llmPolicyConfig.js:1"
       ]
     },
@@ -5692,7 +5764,7 @@
       "method": "POST",
       "path": "/api/phase105/ops-assist/adopt",
       "match": "exact",
-      "line": 2912,
+      "line": 2919,
       "route_files": [
         "src/routes/phase105OpsAssistAdopt.js"
       ],
@@ -5708,7 +5780,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2912",
+        "src/index.js:2919",
         "src/routes/phase105OpsAssistAdopt.js:1"
       ]
     },
@@ -5716,7 +5788,7 @@
       "method": "POST",
       "path": "/api/phase121/ops/notice/send",
       "match": "exact",
-      "line": 2949,
+      "line": 2956,
       "route_files": [
         "src/routes/phase121OpsNoticeSend.js"
       ],
@@ -5735,7 +5807,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2949",
+        "src/index.js:2956",
         "src/routes/phase121OpsNoticeSend.js:1"
       ]
     },
@@ -5743,7 +5815,7 @@
       "method": "GET",
       "path": "/api/phase24/ops-state",
       "match": "exact",
-      "line": 2721,
+      "line": 2728,
       "route_files": [
         "src/routes/phase24OpsState.js"
       ],
@@ -5760,7 +5832,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2721",
+        "src/index.js:2728",
         "src/routes/phase24OpsState.js:1"
       ]
     },
@@ -5768,7 +5840,7 @@
       "method": "POST",
       "path": "/api/phase24/ops-state",
       "match": "exact",
-      "line": 2717,
+      "line": 2724,
       "route_files": [
         "src/routes/phase24OpsState.js"
       ],
@@ -5785,7 +5857,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2717",
+        "src/index.js:2724",
         "src/routes/phase24OpsState.js:1"
       ]
     },
@@ -5793,7 +5865,7 @@
       "method": "GET",
       "path": "/api/phase24/ops/decision-logs",
       "match": "exact",
-      "line": 2680,
+      "line": 2687,
       "route_files": [
         "src/routes/phase24DecisionLogs.js"
       ],
@@ -5809,7 +5881,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2680",
+        "src/index.js:2687",
         "src/routes/phase24DecisionLogs.js:1"
       ]
     },
@@ -5817,7 +5889,7 @@
       "method": "POST",
       "path": "/api/phase24/ops/decision-logs",
       "match": "exact",
-      "line": 2672,
+      "line": 2679,
       "route_files": [
         "src/routes/phase24DecisionLogs.js"
       ],
@@ -5833,7 +5905,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2672",
+        "src/index.js:2679",
         "src/routes/phase24DecisionLogs.js:1"
       ]
     },
@@ -5841,7 +5913,7 @@
       "method": "GET",
       "path": "/api/phase24/ops/decision-logs/latest",
       "match": "exact",
-      "line": 2676,
+      "line": 2683,
       "route_files": [
         "src/routes/phase24DecisionLogs.js"
       ],
@@ -5857,7 +5929,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2676",
+        "src/index.js:2683",
         "src/routes/phase24DecisionLogs.js:1"
       ]
     },
@@ -5865,7 +5937,7 @@
       "method": "GET",
       "path": "/api/phase25/ops/console",
       "match": "exact",
-      "line": 2737,
+      "line": 2744,
       "route_files": [
         "src/routes/phase25OpsConsole.js"
       ],
@@ -5882,7 +5954,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2737",
+        "src/index.js:2744",
         "src/routes/phase25OpsConsole.js:1"
       ]
     },
@@ -5890,7 +5962,7 @@
       "method": "POST",
       "path": "/api/phase25/ops/decision",
       "match": "exact",
-      "line": 2774,
+      "line": 2781,
       "route_files": [
         "src/routes/phase25OpsDecision.js"
       ],
@@ -5907,7 +5979,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2774",
+        "src/index.js:2781",
         "src/routes/phase25OpsDecision.js:1"
       ]
     },
@@ -5915,7 +5987,7 @@
       "method": "GET",
       "path": "/api/phase26/ops-console/list",
       "match": "exact",
-      "line": 2790,
+      "line": 2797,
       "route_files": [
         "src/routes/phase26OpsConsoleList.js"
       ],
@@ -5931,7 +6003,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2790",
+        "src/index.js:2797",
         "src/routes/phase26OpsConsoleList.js:1"
       ]
     },
@@ -5939,7 +6011,7 @@
       "method": "GET",
       "path": "/api/phase32/ops-decision/suggest",
       "match": "exact",
-      "line": 3082,
+      "line": 3089,
       "route_files": [
         "src/routes/phase32OpsDecisionSuggest.js"
       ],
@@ -5953,7 +6025,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3082",
+        "src/index.js:3089",
         "src/routes/phase32OpsDecisionSuggest.js:1"
       ]
     },
@@ -5961,7 +6033,7 @@
       "method": "POST",
       "path": "/api/phase33/ops-decision/execute",
       "match": "exact",
-      "line": 3119,
+      "line": 3126,
       "route_files": [
         "src/routes/phase33OpsDecisionExecute.js"
       ],
@@ -5981,7 +6053,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3119",
+        "src/index.js:3126",
         "src/routes/phase33OpsDecisionExecute.js:1"
       ]
     },
@@ -5989,7 +6061,7 @@
       "method": "POST",
       "path": "/api/phase36/notice/send",
       "match": "exact",
-      "line": 2986,
+      "line": 2993,
       "route_files": [
         "src/routes/phase36NoticeSend.js"
       ],
@@ -6007,7 +6079,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2986",
+        "src/index.js:2993",
         "src/routes/phase36NoticeSend.js:1"
       ]
     },
@@ -6015,7 +6087,7 @@
       "method": "POST",
       "path": "/api/phase37/deliveries/mark-click",
       "match": "exact",
-      "line": 3029,
+      "line": 3036,
       "route_files": [
         "src/routes/phase37DeliveryReactions.js"
       ],
@@ -6032,7 +6104,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3029",
+        "src/index.js:3036",
         "src/routes/phase37DeliveryReactions.js:1"
       ]
     },
@@ -6040,7 +6112,7 @@
       "method": "POST",
       "path": "/api/phase37/deliveries/mark-read",
       "match": "exact",
-      "line": 3024,
+      "line": 3031,
       "route_files": [
         "src/routes/phase37DeliveryReactions.js"
       ],
@@ -6057,7 +6129,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3024",
+        "src/index.js:3031",
         "src/routes/phase37DeliveryReactions.js:1"
       ]
     },
@@ -6065,7 +6137,7 @@
       "method": "POST",
       "path": "/api/phase37/deliveries/reaction-v2",
       "match": "exact",
-      "line": 3034,
+      "line": 3041,
       "route_files": [
         "src/routes/phase37DeliveryReactionsV2.js"
       ],
@@ -6084,7 +6156,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3034",
+        "src/index.js:3041",
         "src/routes/phase37DeliveryReactionsV2.js:1"
       ]
     },
@@ -6092,7 +6164,7 @@
       "method": "GET",
       "path": "/api/phase38/ops/dashboard",
       "match": "exact",
-      "line": 3050,
+      "line": 3057,
       "route_files": [
         "src/routes/phase38OpsDashboard.js"
       ],
@@ -6111,7 +6183,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3050",
+        "src/index.js:3057",
         "src/routes/phase38OpsDashboard.js:1"
       ]
     },
@@ -6119,7 +6191,7 @@
       "method": "GET",
       "path": "/api/phase39/ops-assist/suggestion",
       "match": "exact",
-      "line": 3066,
+      "line": 3073,
       "route_files": [
         "src/routes/phase39OpsAssistSuggestion.js"
       ],
@@ -6139,7 +6211,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3066",
+        "src/index.js:3073",
         "src/routes/phase39OpsAssistSuggestion.js:1"
       ]
     },
@@ -6147,7 +6219,7 @@
       "method": "GET",
       "path": "/api/phase4/admin/notifications-summary",
       "match": "exact",
-      "line": 2513,
+      "line": 2520,
       "route_files": [
         "src/routes/admin/opsOverview.js"
       ],
@@ -6175,7 +6247,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2513",
+        "src/index.js:2520",
         "src/routes/admin/opsOverview.js:1"
       ]
     },
@@ -6183,7 +6255,7 @@
       "method": "GET",
       "path": "/api/phase4/admin/users-summary",
       "match": "exact",
-      "line": 2509,
+      "line": 2516,
       "route_files": [
         "src/routes/admin/opsOverview.js"
       ],
@@ -6211,7 +6283,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2509",
+        "src/index.js:2516",
         "src/routes/admin/opsOverview.js:1"
       ]
     },
@@ -6219,7 +6291,7 @@
       "method": "GET",
       "path": "/api/phase42/ops-console/view",
       "match": "exact",
-      "line": 2806,
+      "line": 2813,
       "route_files": [
         "src/routes/phase42OpsConsoleView.js"
       ],
@@ -6235,7 +6307,7 @@
       "audit_required": true,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2806",
+        "src/index.js:2813",
         "src/routes/phase42OpsConsoleView.js:1"
       ]
     },
@@ -6243,7 +6315,7 @@
       "method": "POST",
       "path": "/api/phase47/automation/dry-run",
       "match": "exact",
-      "line": 3156,
+      "line": 3163,
       "route_files": [
         "src/routes/phase47AutomationDryRun.js"
       ],
@@ -6259,7 +6331,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3156",
+        "src/index.js:3163",
         "src/routes/phase47AutomationDryRun.js:1"
       ]
     },
@@ -6267,7 +6339,7 @@
       "method": "GET",
       "path": "/api/phase48/automation/config",
       "match": "exact",
-      "line": 3172,
+      "line": 3179,
       "route_files": [
         "src/routes/phase48AutomationConfig.js"
       ],
@@ -6283,7 +6355,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3172",
+        "src/index.js:3179",
         "src/routes/phase48AutomationConfig.js:1"
       ]
     },
@@ -6291,7 +6363,7 @@
       "method": "POST",
       "path": "/api/phase5/admin/ops/review",
       "match": "exact",
-      "line": 2550,
+      "line": 2557,
       "route_files": [
         "src/routes/phase5Review.js"
       ],
@@ -6308,7 +6380,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2550",
+        "src/index.js:2557",
         "src/routes/phase5Review.js:1"
       ]
     },
@@ -6316,7 +6388,7 @@
       "method": "POST",
       "path": "/api/phase5/admin/users/review",
       "match": "exact",
-      "line": 2587,
+      "line": 2594,
       "route_files": [
         "src/routes/phase5AdminUsers.js"
       ],
@@ -6330,7 +6402,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:2587",
+        "src/index.js:2594",
         "src/routes/phase5AdminUsers.js:1"
       ]
     },
@@ -6338,7 +6410,7 @@
       "method": "GET",
       "path": "/api/phase5/ops/member-number-stale",
       "match": "exact",
-      "line": 2631,
+      "line": 2638,
       "route_files": [
         "src/routes/phase5Ops.js"
       ],
@@ -6355,7 +6427,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2631",
+        "src/index.js:2638",
         "src/routes/phase5Ops.js:1"
       ]
     },
@@ -6363,7 +6435,7 @@
       "method": "GET",
       "path": "/api/phase5/ops/notifications-summary",
       "match": "exact",
-      "line": 2627,
+      "line": 2634,
       "route_files": [
         "src/routes/phase5Ops.js"
       ],
@@ -6380,7 +6452,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2627",
+        "src/index.js:2634",
         "src/routes/phase5Ops.js:1"
       ]
     },
@@ -6388,7 +6460,7 @@
       "method": "GET",
       "path": "/api/phase5/ops/users-summary",
       "match": "exact",
-      "line": 2623,
+      "line": 2630,
       "route_files": [
         "src/routes/phase5Ops.js"
       ],
@@ -6405,7 +6477,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2623",
+        "src/index.js:2630",
         "src/routes/phase5Ops.js:1"
       ]
     },
@@ -6413,7 +6485,7 @@
       "method": "GET",
       "path": "/api/phase5/state/summary",
       "match": "exact",
-      "line": 2603,
+      "line": 2610,
       "route_files": [
         "src/routes/phase5State.js"
       ],
@@ -6437,7 +6509,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2603",
+        "src/index.js:2610",
         "src/routes/phase5State.js:1"
       ]
     },
@@ -6445,7 +6517,7 @@
       "method": "POST",
       "path": "/api/phase52/ops/batch/run",
       "match": "exact",
-      "line": 3209,
+      "line": 3216,
       "route_files": [
         "src/routes/phase52OpsBatch.js"
       ],
@@ -6459,7 +6531,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3209",
+        "src/index.js:3216",
         "src/routes/phase52OpsBatch.js:1"
       ]
     },
@@ -6467,7 +6539,7 @@
       "method": "GET",
       "path": "/api/phase6/member/summary",
       "match": "exact",
-      "line": 3533,
+      "line": 3540,
       "route_files": [
         "src/routes/phase6MemberSummary.js"
       ],
@@ -6484,7 +6556,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3533",
+        "src/index.js:3540",
         "src/routes/phase6MemberSummary.js:1"
       ]
     },
@@ -6492,7 +6564,7 @@
       "method": "POST",
       "path": "/api/phase62/ops/report/daily",
       "match": "exact",
-      "line": 3266,
+      "line": 3273,
       "route_files": [
         "src/routes/phase62OpsDailyReport.js"
       ],
@@ -6506,7 +6578,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3266",
+        "src/index.js:3273",
         "src/routes/phase62OpsDailyReport.js:1"
       ]
     },
@@ -6514,7 +6586,7 @@
       "method": "POST",
       "path": "/api/phase65/ops/jobs/daily-report",
       "match": "exact",
-      "line": 3282,
+      "line": 3289,
       "route_files": [
         "src/routes/phase65OpsDailyJob.js"
       ],
@@ -6528,7 +6600,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3282",
+        "src/index.js:3289",
         "src/routes/phase65OpsDailyJob.js:1"
       ]
     },
@@ -6536,7 +6608,7 @@
       "method": "GET",
       "path": "/api/phase66/segments/send-targets",
       "match": "exact",
-      "line": 3298,
+      "line": 3305,
       "route_files": [
         "src/routes/phase66Segments.js"
       ],
@@ -6550,7 +6622,7 @@
       "audit_required": false,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3298",
+        "src/index.js:3305",
         "src/routes/phase66Segments.js:1"
       ]
     },
@@ -6558,7 +6630,7 @@
       "method": "POST",
       "path": "/api/phase67/send/plan",
       "match": "exact",
-      "line": 3335,
+      "line": 3342,
       "route_files": [
         "src/routes/phase67PlanSend.js"
       ],
@@ -6575,7 +6647,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3335",
+        "src/index.js:3342",
         "src/routes/phase67PlanSend.js:1"
       ]
     },
@@ -6583,7 +6655,7 @@
       "method": "POST",
       "path": "/api/phase68/send/execute",
       "match": "exact",
-      "line": 3372,
+      "line": 3379,
       "route_files": [
         "src/routes/phase68ExecuteSend.js"
       ],
@@ -6608,7 +6680,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3372",
+        "src/index.js:3379",
         "src/routes/phase68ExecuteSend.js:1"
       ]
     },
@@ -6616,7 +6688,7 @@
       "method": "GET",
       "path": "/api/phase73/retry-queue",
       "match": "exact",
-      "line": 3502,
+      "line": 3509,
       "route_files": [
         "src/routes/phase73RetryQueue.js"
       ],
@@ -6636,7 +6708,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3502",
+        "src/index.js:3509",
         "src/routes/phase73RetryQueue.js:1"
       ]
     },
@@ -6644,7 +6716,7 @@
       "method": "POST",
       "path": "/api/phase73/retry-queue/give-up",
       "match": "exact",
-      "line": 3517,
+      "line": 3524,
       "route_files": [
         "src/routes/phase73RetryQueue.js"
       ],
@@ -6664,7 +6736,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3517",
+        "src/index.js:3524",
         "src/routes/phase73RetryQueue.js:1"
       ]
     },
@@ -6672,7 +6744,7 @@
       "method": "POST",
       "path": "/api/phase73/retry-queue/plan",
       "match": "exact",
-      "line": 3507,
+      "line": 3514,
       "route_files": [
         "src/routes/phase73RetryQueue.js"
       ],
@@ -6692,7 +6764,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3507",
+        "src/index.js:3514",
         "src/routes/phase73RetryQueue.js:1"
       ]
     },
@@ -6700,7 +6772,7 @@
       "method": "POST",
       "path": "/api/phase73/retry-queue/retry",
       "match": "exact",
-      "line": 3512,
+      "line": 3519,
       "route_files": [
         "src/routes/phase73RetryQueue.js"
       ],
@@ -6720,7 +6792,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3512",
+        "src/index.js:3519",
         "src/routes/phase73RetryQueue.js:1"
       ]
     },
@@ -6728,7 +6800,7 @@
       "method": "GET",
       "path": "/api/phase77/segments",
       "match": "exact",
-      "line": 3452,
+      "line": 3459,
       "route_files": [
         "src/routes/phase77Segments.js"
       ],
@@ -6744,7 +6816,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3452",
+        "src/index.js:3459",
         "src/routes/phase77Segments.js:1"
       ]
     },
@@ -6752,7 +6824,7 @@
       "method": "POST",
       "path": "/api/phase77/segments",
       "match": "exact",
-      "line": 3457,
+      "line": 3464,
       "route_files": [
         "src/routes/phase77Segments.js"
       ],
@@ -6768,7 +6840,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3457",
+        "src/index.js:3464",
         "src/routes/phase77Segments.js:1"
       ]
     },
@@ -6776,7 +6848,7 @@
       "method": "GET",
       "path": "/api/phase77/segments/*",
       "match": "prefix",
-      "line": 3461,
+      "line": 3468,
       "route_files": [
         "src/routes/phase77Segments.js"
       ],
@@ -6792,7 +6864,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3461",
+        "src/index.js:3468",
         "src/routes/phase77Segments.js:1"
       ]
     },
@@ -6800,7 +6872,7 @@
       "method": "POST",
       "path": "/api/phase81/segment-send/dry-run",
       "match": "exact",
-      "line": 3409,
+      "line": 3416,
       "route_files": [
         "src/routes/phase81DryRun.js"
       ],
@@ -6814,7 +6886,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3409",
+        "src/index.js:3416",
         "src/routes/phase81DryRun.js:1"
       ]
     },
@@ -6822,7 +6894,7 @@
       "method": "GET",
       "path": "/api/phase90/automation-runs/*",
       "match": "prefix",
-      "line": 3424,
+      "line": 3431,
       "route_files": [
         "src/routes/phase90RunStatus.js"
       ],
@@ -6836,7 +6908,7 @@
       "audit_required": false,
       "trace_required": false,
       "evidence": [
-        "src/index.js:3424",
+        "src/index.js:3431",
         "src/routes/phase90RunStatus.js:1"
       ]
     },
@@ -6844,7 +6916,7 @@
       "method": "GET",
       "path": "/api/phaseLLM2/ops-explain",
       "match": "exact",
-      "line": 2822,
+      "line": 2829,
       "route_files": [
         "src/routes/phaseLLM2OpsExplain.js"
       ],
@@ -6852,15 +6924,15 @@
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
       "writes_collections": [
         "system_flags"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2822",
+        "src/index.js:2829",
         "src/routes/phaseLLM2OpsExplain.js:1"
       ]
     },
@@ -6868,7 +6940,7 @@
       "method": "GET",
       "path": "/api/phaseLLM3/ops-next-actions",
       "match": "exact",
-      "line": 2838,
+      "line": 2845,
       "route_files": [
         "src/routes/phaseLLM3OpsNextActions.js"
       ],
@@ -6876,15 +6948,15 @@
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
       "writes_collections": [
         "system_flags"
       ],
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2838",
+        "src/index.js:2845",
         "src/routes/phaseLLM3OpsNextActions.js:1"
       ]
     },
@@ -6892,7 +6964,7 @@
       "method": "POST",
       "path": "/api/phaseLLM4/faq/answer",
       "match": "exact",
-      "line": 2875,
+      "line": 2882,
       "route_files": [
         "src/routes/phaseLLM4FaqAnswer.js"
       ],
@@ -6900,8 +6972,8 @@
       "csrf_required": false,
       "confirm_token_required": false,
       "confirm_token_confidence": "low",
-      "killSwitch_enforced": false,
-      "killSwitch_confidence": "low",
+      "killSwitch_enforced": true,
+      "killSwitch_confidence": "high",
       "writes_collections": [
         "faq_answer_logs",
         "faq_articles",
@@ -6910,7 +6982,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:2875",
+        "src/index.js:2882",
         "src/routes/phaseLLM4FaqAnswer.js:1"
       ]
     },
@@ -7601,7 +7673,7 @@
       "method": "DELETE",
       "path": "src/routes/admin/linkRegistry.js",
       "match": "route_file",
-      "line": 3745,
+      "line": 3752,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -7618,7 +7690,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3745",
+        "src/index.js:3752",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -7626,7 +7698,7 @@
       "method": "PATCH",
       "path": "src/routes/admin/linkRegistry.js",
       "match": "route_file",
-      "line": 3741,
+      "line": 3748,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -7643,7 +7715,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3741",
+        "src/index.js:3748",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -7651,7 +7723,7 @@
       "method": "POST",
       "path": "src/routes/admin/linkRegistry.js",
       "match": "route_file",
-      "line": 3750,
+      "line": 3757,
       "route_files": [
         "src/routes/admin/linkRegistry.js"
       ],
@@ -7668,7 +7740,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3750",
+        "src/index.js:3757",
         "src/routes/admin/linkRegistry.js:1"
       ]
     },
@@ -7676,7 +7748,7 @@
       "method": "POST",
       "path": "src/routes/admin/notifications.js",
       "match": "route_file",
-      "line": 3686,
+      "line": 3693,
       "route_files": [
         "src/routes/admin/notifications.js"
       ],
@@ -7697,7 +7769,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3686",
+        "src/index.js:3693",
         "src/routes/admin/notifications.js:1"
       ]
     },
@@ -7705,7 +7777,7 @@
       "method": "POST",
       "path": "src/routes/admin/phase1Notifications.js",
       "match": "route_file",
-      "line": 3635,
+      "line": 3642,
       "route_files": [
         "src/routes/admin/phase1Notifications.js"
       ],
@@ -7726,7 +7798,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3635",
+        "src/index.js:3642",
         "src/routes/admin/phase1Notifications.js:1"
       ]
     },
@@ -7784,7 +7856,7 @@
       "method": "GET",
       "path": "src/routes/phase61Templates.js",
       "match": "route_file",
-      "line": 3245,
+      "line": 3252,
       "route_files": [
         "src/routes/phase61Templates.js"
       ],
@@ -7800,7 +7872,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3245",
+        "src/index.js:3252",
         "src/routes/phase61Templates.js:1"
       ]
     },
@@ -7808,7 +7880,7 @@
       "method": "PATCH",
       "path": "src/routes/phase61Templates.js",
       "match": "route_file",
-      "line": 3250,
+      "line": 3257,
       "route_files": [
         "src/routes/phase61Templates.js"
       ],
@@ -7824,7 +7896,7 @@
       "audit_required": true,
       "trace_required": true,
       "evidence": [
-        "src/index.js:3250",
+        "src/index.js:3257",
         "src/routes/phase61Templates.js:1"
       ]
     },

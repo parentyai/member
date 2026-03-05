@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T18:48:58-05:00",
-  "gitCommit": "ee05d53049a6b6e7a691f3ec9647effdd97565fc",
-  "branch": "codex/task-ux-line-complete",
-  "sourceDigest": "90a6c13a61a995dc9c68e15b028a8861144a33b8d458cb0e986a8079078ebb8b",
+  "generatedAt": "2026-03-04T20:59:04-05:00",
+  "gitCommit": "08af05e5646ce3d168a52b15d9f43be910d88442",
+  "branch": "codex/llm-integrity-fix3-ext3",
+  "sourceDigest": "e4ad9a25c50447bfb1cf764f2c847901d00a2e98cf6e28c2e6455cca3f8a8948",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

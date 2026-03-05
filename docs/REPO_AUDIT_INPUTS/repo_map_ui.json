@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "8672c42185bf849bce08f118420abc855125af32",
+      "hash": "333ac34f5f15dd09d2ad61b733cbfd0bcf86ac86",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1105
+    "testCount": 1109
   },
   "systemOverview": {
     "what": [
@@ -16,7 +16,7 @@
       "操作履歴は追跡IDでたどれ、監査ログで確認できます。"
     ],
     "statusSummary": {
-      "implemented": 120,
+      "implemented": 121,
       "legacy": 5
     }
   },
@@ -893,6 +893,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js"
           ],
           "evidence": [
@@ -919,14 +922,17 @@
           ],
           "relatedFiles": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/webhookLine.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js:1"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1"
           ]
         },
         {
@@ -947,13 +953,17 @@
           ],
           "relatedFiles": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/webhookLine.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js:1"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1"
           ]
         },
         {
@@ -974,13 +984,17 @@
           ],
           "relatedFiles": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/webhookLine.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js:1"
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js:1"
           ]
         },
         {
@@ -989,7 +1003,8 @@
           "status": "非推奨",
           "canDo": [
             "追跡IDで操作の流れを確認できます。",
-            "監査ログで変更履歴を確認できます。"
+            "監査ログで変更履歴を確認できます。",
+            "Kill Switchに連動して安全停止できます。"
           ],
           "cannotDo": [
             "非推奨経路のため、新規改善の対象ではありません。",
@@ -1007,6 +1022,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqArticlesRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js"
           ],
           "evidence": [
@@ -2581,6 +2599,38 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/notificationsRepo.js:1"
+          ]
+        },
+        {
+          "id": "osContext",
+          "nameJa": "共通基盤機能（osContext）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackTemplateLibrary.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js:1"
           ]
         },
         {
@@ -5253,7 +5303,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 48,
+              "testsCount": 49,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5280,7 +5330,11 @@
               ],
               "entrypoints": [
                 "src/routes/admin/llmFaq.js",
-                "src/routes/phaseLLM4FaqAnswer.js"
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/admin/llmOps.js",
+                "src/routes/phaseLLM2OpsExplain.js",
+                "src/routes/phaseLLM3OpsNextActions.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
@@ -5295,7 +5349,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 39,
+              "testsCount": 40,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5317,9 +5371,12 @@
                 "system_flags"
               ],
               "entrypoints": [
+                "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
-                "src/routes/phaseLLM2OpsExplain.js"
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
@@ -5332,8 +5389,8 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 32,
-              "killSwitchDependent": false,
+              "testsCount": 33,
+              "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
                 "運用で利用できます（管理画面/API）。",
@@ -5354,8 +5411,12 @@
                 "system_flags"
               ],
               "entrypoints": [
+                "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
-                "src/routes/phaseLLM2OpsExplain.js"
+                "src/routes/phaseLLM2OpsExplain.js",
+                "src/routes/phaseLLM3OpsNextActions.js",
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
@@ -5368,8 +5429,8 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 32,
-              "killSwitchDependent": false,
+              "testsCount": 33,
+              "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
                 "運用で利用できます（管理画面/API）。",
@@ -5390,8 +5451,12 @@
                 "system_flags"
               ],
               "entrypoints": [
+                "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
-                "src/routes/phaseLLM3OpsNextActions.js"
+                "src/routes/phaseLLM2OpsExplain.js",
+                "src/routes/phaseLLM3OpsNextActions.js",
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js:1"
@@ -5404,12 +5469,13 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 46,
-              "killSwitchDependent": false,
+              "testsCount": 47,
+              "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
                 "追跡IDで操作の流れを確認できます。",
-                "監査ログで変更履歴を確認できます。"
+                "監査ログで変更履歴を確認できます。",
+                "Kill Switchに連動して安全停止できます。"
               ],
               "cannotDo": [
                 "非推奨経路のため、新規改善の対象ではありません。",
@@ -5434,7 +5500,11 @@
               ],
               "entrypoints": [
                 "src/routes/admin/llmFaq.js",
-                "src/routes/phaseLLM4FaqAnswer.js"
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/admin/llmOps.js",
+                "src/routes/phaseLLM2OpsExplain.js",
+                "src/routes/phaseLLM3OpsNextActions.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
@@ -7699,6 +7769,48 @@
               ]
             },
             {
+              "id": "osContext",
+              "nameJa": "共通基盤機能（osContext）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 40,
+              "killSwitchDependent": true,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "auditLogsRepo"
+              ],
+              "relatedCollections": [
+                "audit_logs"
+              ],
+              "entrypoints": [
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
+              ]
+            },
+            {
               "id": "osErrors",
               "nameJa": "共通基盤機能（osErrors）",
               "categoryJa": "共通基盤",
@@ -7789,7 +7901,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9292,7 +9404,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 90,
+              "testsCount": 85,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9634,7 +9746,7 @@
           "作成（通知作成）: `/admin/composer`"
         ],
         "roadmap": [
-          "実装済み機能は 120 件です。",
+          "実装済み機能は 121 件です。",
           "非推奨機能は 5 件で、正本導線への集約対象です。",
           "構造監査入力JSONを基準に運用改善を継続します。"
         ],

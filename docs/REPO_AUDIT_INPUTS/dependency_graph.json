@@ -25,6 +25,7 @@
     "appendLlmAdoptAudit": [
       "auditLogsRepo"
     ],
+    "appendLlmGateDecision": [],
     "applyJourneyParamVersion": [
       "journeyGraphCatalogRepo",
       "journeyParamChangeLogsRepo",
@@ -991,9 +992,11 @@
       "appendAuditLog"
     ],
     "src/routes/admin/llmFaq.js": [
-      "answerFaqFromKb"
+      "answerFaqFromKb",
+      "appendLlmGateDecision"
     ],
     "src/routes/admin/llmOps.js": [
+      "appendLlmGateDecision",
       "getNextActionCandidates",
       "getOpsExplanation"
     ],
@@ -1044,6 +1047,9 @@
       "appendAuditLog"
     ],
     "src/routes/admin/osConfig.js": [
+      "appendAuditLog"
+    ],
+    "src/routes/admin/osContext.js": [
       "appendAuditLog"
     ],
     "src/routes/admin/osDashboardKpi.js": [
@@ -1339,13 +1345,16 @@
     ],
     "src/routes/phase90RunStatus.js": [],
     "src/routes/phaseLLM2OpsExplain.js": [
+      "appendLlmGateDecision",
       "getOpsExplanation"
     ],
     "src/routes/phaseLLM3OpsNextActions.js": [
+      "appendLlmGateDecision",
       "getNextActionCandidates"
     ],
     "src/routes/phaseLLM4FaqAnswer.js": [
-      "answerFaqFromKb"
+      "answerFaqFromKb",
+      "appendLlmGateDecision"
     ],
     "src/routes/tasks.js": [
       "listUserTasks",
@@ -1361,6 +1370,7 @@
     ],
     "src/routes/webhookLine.js": [
       "appendAuditLog",
+      "appendLlmGateDecision",
       "classifyPaidIntent",
       "composeConciergeReply",
       "declareCityPackFeedbackFromLine",

@@ -45,9 +45,9 @@ test('phase702: consistency status reflects current collection drift baseline', 
   const start = out.indexOf('{');
   const payload = start >= 0 ? JSON.parse(out.slice(start)) : null;
   assert.ok(payload && payload.collectionDrift && payload.collectionDrift.current, 'consistency payload missing');
-  assert.equal(payload.collectionDrift.current.dataModelOnly, 4);
+  assert.equal(payload.collectionDrift.current.dataModelOnly, 1);
   assert.equal(payload.collectionDrift.current.dataLifecycleOnly, 0);
-  assert.equal(payload.collectionDrift.baseline.dataModelOnly, 4);
+  assert.equal(payload.collectionDrift.baseline.dataModelOnly, 1);
   assert.equal(payload.collectionDrift.baseline.dataLifecycleOnly, 0);
 });
 
