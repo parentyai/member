@@ -30,6 +30,21 @@ function humanizeConversationDraft(params) {
   };
 }
 
+function humanizeConversationMessage(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const result = humanizeConversationDraft({
+    draftPacket: payload.draftPacket,
+    styleDecision: payload.styleDecision
+  });
+  return {
+    text: normalizeText(result.text),
+    styleId: result.styleId || null,
+    conversationPattern: result.conversationPattern || null,
+    responseLength: Number.isFinite(Number(result.responseLength)) ? Number(result.responseLength) : normalizeText(result.text).length
+  };
+}
+
 module.exports = {
-  humanizeConversationDraft
+  humanizeConversationDraft,
+  humanizeConversationMessage
 };

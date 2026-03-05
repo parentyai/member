@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const { resolvePolicyForRequest, shouldAttachUrls } = require('../../../domain/llm/conciergePolicy');
 const { selectUrls } = require('../../../domain/llm/urlRanker');
-const { sanitizeCandidates } = require('../../../domain/llm/injectionGuard');
+const { sanitizeRetrievalCandidates } = require('../retrieval/sanitizeRetrievalCandidates');
 const { selectResponseStyle } = require('../../../domain/llm/styleRouter');
 const { resolveConversationState } = require('../../../domain/llm/conversation/conversationState');
 const { resolveConversationMove } = require('../../../domain/llm/conversation/conversationMoves');
@@ -316,7 +316,12 @@ async function composeConciergeReply(params) {
     }
   }
 
-  const sanitized = sanitizeCandidates([].concat(storedCandidates, webCandidates));
+  const sanitizedRetrieval = sanitizeRetrievalCandidates([storedCandidates, webCandidates]);
+  const sanitized = {
+    candidates: Array.isArray(sanitizedRetrieval.candidates) ? sanitizedRetrieval.candidates : [],
+    blockedReasons: Array.isArray(sanitizedRetrieval.blockedReasons) ? sanitizedRetrieval.blockedReasons : [],
+    injectionFindings: sanitizedRetrieval.injectionFindings === true
+  };
   if (sanitized.blockedReasons.length) blockedReasons.push(...sanitized.blockedReasons);
   const ranked = selectUrls(sanitized.candidates, {
     maxUrls: policy.maxUrls,

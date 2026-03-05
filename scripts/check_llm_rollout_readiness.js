@@ -13,6 +13,7 @@ function parseArgs(argv) {
     traceId: process.env.LLM_ROLLOUT_TRACE_ID || `llm_rollout_${Date.now()}`,
     windowDays: 7,
     requireReady: false,
+    requireJobEntry: false,
     configJsonPath: '',
     summaryJsonPath: ''
   };
@@ -49,6 +50,10 @@ function parseArgs(argv) {
     }
     if (key === '--require-ready') {
       args.requireReady = true;
+      continue;
+    }
+    if (key === '--require-job-entry') {
+      args.requireJobEntry = true;
       continue;
     }
     if (key === '--config-json' && next) {
@@ -112,11 +117,12 @@ function buildReadinessReport(input, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const requiredEntryTypes = Array.isArray(opts.requiredEntryTypes)
     ? opts.requiredEntryTypes
-    : ['webhook', 'admin', 'compat'];
+    : (opts.requireJobEntry === true ? ['webhook', 'admin', 'compat', 'job'] : ['webhook', 'admin', 'compat']);
   const requiredGates = Array.isArray(opts.requiredGates)
     ? opts.requiredGates
     : ['kill_switch', 'url_guard', 'injection'];
   const requireReady = opts.requireReady === true;
+  const requireJobEntry = opts.requireJobEntry === true;
 
   const checks = [];
   const configGateCheck = hasBooleanKeys(configStatus, [
@@ -158,6 +164,14 @@ function buildReadinessReport(input, options) {
     ok: missingEntryTypes.length === 0,
     detail: missingEntryTypes.length === 0 ? 'ok' : `missing: ${missingEntryTypes.join(',')}`
   });
+  if (requireJobEntry) {
+    const jobCount = Number(entryTypeMap.job || 0);
+    checks.push({
+      id: 'job_entry_present',
+      ok: jobCount > 0,
+      detail: `job_count=${jobCount}`
+    });
+  }
 
   const missingGates = requiredGates.filter((name) => !(normalizeName(name) in gateCoverageMap));
   checks.push({
@@ -255,10 +269,14 @@ async function loadSnapshots(args) {
 async function runCli() {
   const args = parseArgs(process.argv);
   const snapshots = await loadSnapshots(args);
-  const report = buildReadinessReport(snapshots, { requireReady: args.requireReady });
+  const report = buildReadinessReport(snapshots, {
+    requireReady: args.requireReady,
+    requireJobEntry: args.requireJobEntry
+  });
   const output = {
     ok: report.ok,
     requireReady: args.requireReady,
+    requireJobEntry: args.requireJobEntry,
     source: args.configJsonPath && args.summaryJsonPath ? 'fixture' : 'api',
     checks: report.checks,
     summary: report.summary

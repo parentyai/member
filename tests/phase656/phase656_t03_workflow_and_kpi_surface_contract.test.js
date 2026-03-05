@@ -47,4 +47,6 @@ test('phase656: dashboard KPI and llm usage summary include additive retention a
   assert.ok(adminJs.includes('exportLlmUsageCsv('));
   assert.ok(adminJs.includes('/api/admin/os/llm-usage/export'));
   assert.ok(adminJs.includes('renderLlmEntryControlDashboard('));
+  assert.ok(adminJs.includes("['webhook', 'admin', 'compat', 'job']"));
+  assert.ok(adminJs.includes("['kill_switch', 'url_guard', 'injection', 'snapshot']"));
 });

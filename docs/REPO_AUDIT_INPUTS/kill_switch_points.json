@@ -441,21 +441,6 @@
       "symbol": "killSwitch"
     },
     {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
-      "line": 3,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
-      "line": 50,
-      "symbol": "getKillSwitch"
-    },
-    {
-      "file": "src/routes/internal/llmActionRewardFinalizeJob.js",
-      "line": 51,
-      "symbol": "killSwitch"
-    },
-    {
       "file": "src/routes/internal/municipalitySchoolsImportJob.js",
       "line": 4,
       "symbol": "getKillSwitch"

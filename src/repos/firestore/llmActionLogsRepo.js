@@ -70,10 +70,18 @@ function normalizeChosenAction(value) {
 
 function normalizeRewardSignals(value) {
   const payload = value && typeof value === 'object' ? value : {};
+  const clickPrimary = payload.clickPrimary === true || payload.click === true;
+  const clickSecondary = payload.clickSecondary === true;
+  const taskDone = payload.taskDone === true || payload.taskComplete === true;
   return {
-    click: payload.click === true,
-    taskComplete: payload.taskComplete === true,
+    click: clickPrimary || clickSecondary,
+    clickPrimary,
+    clickSecondary,
+    taskDone,
+    taskComplete: taskDone,
     blockedResolved: payload.blockedResolved === true,
+    unsubscribe: payload.unsubscribe === true,
+    spam: payload.spam === true,
     citationMissing: payload.citationMissing === true,
     wrongEvidence: payload.wrongEvidence === true
   };
@@ -257,5 +265,6 @@ module.exports = {
   listPendingLlmActionLogs,
   listLlmActionLogsByLineUserId,
   patchLlmActionLog,
-  toDate
+  toDate,
+  normalizeRewardSignals
 };

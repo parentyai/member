@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "0d3e6c4be0cb2f26a9eed9128df7c48694511eca",
+      "hash": "10e6a73068a496d258e37a2c7ca2d983a76a97e3",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1118
+    "testCount": 1122
   },
   "systemOverview": {
     "what": [
@@ -894,9 +894,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
@@ -924,6 +924,7 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
@@ -955,6 +956,7 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
@@ -986,6 +988,7 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js",
@@ -1023,9 +1026,9 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/systemFlagsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
             "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js",
             "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM2OpsExplain.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js",
-            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM4FaqAnswer.js"
+            "/Users/parentyai.com/Projects/Member/src/routes/phaseLLM3OpsNextActions.js"
           ],
           "evidence": [
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
@@ -2329,6 +2332,8 @@
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmActionLogsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmBanditStateRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/llmContextualBanditStateRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmFaq.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/llmOps.js",
             "/Users/parentyai.com/Projects/Member/src/routes/internal/llmActionRewardFinalizeJob.js"
           ],
           "evidence": [
@@ -5332,6 +5337,7 @@
                 "src/routes/admin/llmFaq.js",
                 "src/routes/phaseLLM4FaqAnswer.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
                 "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
                 "src/routes/webhookLine.js"
@@ -5373,6 +5379,7 @@
               "entrypoints": [
                 "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
                 "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
                 "src/routes/phaseLLM4FaqAnswer.js",
@@ -5413,6 +5420,7 @@
               "entrypoints": [
                 "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
                 "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
                 "src/routes/phaseLLM4FaqAnswer.js",
@@ -5453,6 +5461,7 @@
               "entrypoints": [
                 "src/routes/admin/llmFaq.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
                 "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
                 "src/routes/phaseLLM4FaqAnswer.js",
@@ -5502,6 +5511,7 @@
                 "src/routes/admin/llmFaq.js",
                 "src/routes/phaseLLM4FaqAnswer.js",
                 "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
                 "src/routes/phaseLLM2OpsExplain.js",
                 "src/routes/phaseLLM3OpsNextActions.js",
                 "src/routes/webhookLine.js"
@@ -7369,7 +7379,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 61,
+              "testsCount": 63,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7399,7 +7409,13 @@
                 "notification_deliveries"
               ],
               "entrypoints": [
-                "src/routes/internal/llmActionRewardFinalizeJob.js"
+                "src/routes/admin/llmFaq.js",
+                "src/routes/admin/llmOps.js",
+                "src/routes/internal/llmActionRewardFinalizeJob.js",
+                "src/routes/phaseLLM2OpsExplain.js",
+                "src/routes/phaseLLM3OpsNextActions.js",
+                "src/routes/phaseLLM4FaqAnswer.js",
+                "src/routes/webhookLine.js"
               ],
               "evidence": [
                 "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
@@ -9404,7 +9420,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 88,
+              "testsCount": 90,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [

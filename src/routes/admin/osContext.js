@@ -119,6 +119,7 @@ async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
   const actor = payload.actor || resolveActor(req) || 'unknown';
   const traceId = payload.traceId || resolveTraceId(req);
   const requestId = payload.requestId || resolveRequestId(req);
+  const onDecision = typeof payload.onDecision === 'function' ? payload.onDecision : null;
   const getSnapshot = deps && typeof deps.getPublicWriteSafetySnapshot === 'function'
     ? deps.getPublicWriteSafetySnapshot
     : getPublicWriteSafetySnapshot;
@@ -141,6 +142,19 @@ async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
       traceId,
       requestId
     });
+    if (onDecision) {
+      onDecision({
+        allowed: false,
+        routeKey,
+        actor,
+        traceId,
+        requestId,
+        reason: 'kill_switch_read_failed_fail_closed',
+        failCloseMode: snapshot.failCloseMode || null,
+        readError: true,
+        killSwitchOn: false
+      });
+    }
     return false;
   }
 
@@ -167,9 +181,35 @@ async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
       failCloseMode: snapshot.failCloseMode || null
     }, deps);
     writeJson(res, 409, { ok: false, error: 'kill switch on', traceId, requestId });
+    if (onDecision) {
+      onDecision({
+        allowed: false,
+        routeKey,
+        actor,
+        traceId,
+        requestId,
+        reason: 'kill_switch_on',
+        failCloseMode: snapshot.failCloseMode || null,
+        readError: snapshot.readError === true,
+        killSwitchOn: true
+      });
+    }
     return false;
   }
 
+  if (onDecision) {
+    onDecision({
+      allowed: true,
+      routeKey,
+      actor,
+      traceId,
+      requestId,
+      reason: 'allowed',
+      failCloseMode: snapshot && snapshot.failCloseMode ? snapshot.failCloseMode : null,
+      readError: snapshot && snapshot.readError === true,
+      killSwitchOn: snapshot && snapshot.killSwitchOn === true
+    });
+  }
   return true;
 }
 
