@@ -58,6 +58,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_RUNBOOK.md`（LLM運用手順）
 - `docs/LLM_RUNBOOK.md`（Phase720 addendum: Paid Assistant品質運用 / assistantQuality監査）
 - `docs/SSOT_LLM_CONCIERGE_POLICY_V1.md`（LLMコンシェルジュのモード/無料有料境界/表示契約）
+- `docs/SSOT_LLM_CONCIERGE_OPPORTUNITY_ENGINE_V1.md`（Paid casual/concierge切替と介入予算契約）
 - `docs/SSOT_URL_RANKING_AND_ALLOWLIST_V1.md`（URLランク/allowlist/denylistの採用契約）
 - `docs/SSOT_PROMPT_INJECTION_DEFENSE_V1.md`（外部命令無効化/注入検知/遮断契約）
 - `docs/SSOT_LLM_ACTION_SELECTION_AND_BANDIT_V1.md`（ActionSelectorスコアリング/ε-greedy/報酬確定契約）

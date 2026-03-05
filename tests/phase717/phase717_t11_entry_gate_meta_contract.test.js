@@ -28,10 +28,18 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     decision: 'allow',
     entryType: 'job',
     gatesApplied: ['kill_switch', 'snapshot'],
+    conversationMode: 'casual',
+    opportunityType: 'none',
+    opportunityReasonKeys: ['greeting_detected'],
+    interventionBudget: 0,
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
   assert.equal(sanitized.decision, 'allow');
+  assert.equal(sanitized.conversationMode, 'casual');
+  assert.equal(sanitized.opportunityType, 'none');
+  assert.deepEqual(sanitized.opportunityReasonKeys, ['greeting_detected']);
+  assert.equal(sanitized.interventionBudget, 0);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 

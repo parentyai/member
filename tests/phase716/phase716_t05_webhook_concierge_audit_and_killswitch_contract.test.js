@@ -254,6 +254,10 @@ test('phase716: concierge enabled appends citation footer and audit meta keys', 
   assert.ok(summary.gatesApplied.includes('kill_switch'));
   assert.ok(summary.gatesApplied.includes('injection'));
   assert.ok(summary.gatesApplied.includes('url_guard'));
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'conversationMode'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityType'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityReasonKeys'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'interventionBudget'), true);
 });
 
 test('phase716: concierge kill-switch OFF keeps retrieval fallback without compose', async (t) => {
@@ -305,4 +309,8 @@ test('phase716: concierge kill-switch OFF keeps retrieval fallback without compo
   assert.ok(summary.gatesApplied.includes('kill_switch'));
   assert.ok(summary.gatesApplied.includes('injection'));
   assert.ok(summary.gatesApplied.includes('url_guard'));
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'conversationMode'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityType'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'opportunityReasonKeys'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(summary, 'interventionBudget'), true);
 });

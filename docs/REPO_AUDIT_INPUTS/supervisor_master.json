@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T13:28:07-05:00",
-  "gitCommit": "740db6db4066e5a813234aff3c796ddd63cd62f8",
-  "branch": "codex/us-assignment-task-os-t901",
-  "sourceDigest": "30feb86eee8fa4db277cf2a81646293792bb6b9b47c37ea26799c2db2a35d6a2",
+  "generatedAt": "2026-03-05T13:35:24-05:00",
+  "gitCommit": "f65b390a821c82537d8d7f603221255c151ff5a5",
+  "branch": "codex/paid-concierge-opportunity-a1",
+  "sourceDigest": "310203bc02c69336637b1a18b3e0e8fcf84297b343ae7a1cbbce7c00c1d19b71",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
