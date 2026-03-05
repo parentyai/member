@@ -1549,36 +1549,6 @@ function createServer() {
     return;
   }
 
-  if (req.method === 'POST' && pathname === '/internal/jobs/task-ux-audit') {
-    let bytes = 0;
-    const chunks = [];
-    let tooLarge = false;
-    const collectBody = () => new Promise((resolve) => {
-      req.on('data', (chunk) => {
-        if (tooLarge) return;
-        bytes += chunk.length;
-        if (bytes > MAX_BODY_BYTES) {
-          tooLarge = true;
-          res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ ok: false, error: 'payload too large' }));
-          req.destroy();
-          return;
-        }
-        chunks.push(chunk);
-      });
-      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    });
-    (async () => {
-      const body = await collectBody();
-      const { handleTaskUxAuditJob } = require('./routes/internal/taskUxAuditJob');
-      await handleTaskUxAuditJob(req, res, body);
-    })().catch(() => {
-      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'error' }));
-    });
-    return;
-  }
-
   if (req.method === 'POST' && pathname === '/internal/jobs/journey-todo-reminder') {
     let bytes = 0;
     const chunks = [];
@@ -1977,7 +1947,6 @@ function createServer() {
     const { handleLlmUsageExport } = require('./routes/admin/osLlmUsageExport');
     const { handleJourneyKpi } = require('./routes/admin/osJourneyKpi');
     const { handleLookup: handleOsLinkRegistryLookup } = require('./routes/admin/osLinkRegistryLookup');
-    const { handleLinkRegistryImpact } = require('./routes/admin/osLinkRegistryImpact');
     const { handleView } = require('./routes/admin/osView');
     const {
       handleStatus: handleJourneyPolicyStatus,
@@ -2350,10 +2319,6 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {
         await handleOsLinkRegistryLookup(req, res);
-        return;
-      }
-      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {
-        await handleLinkRegistryImpact(req, res);
         return;
       }
 

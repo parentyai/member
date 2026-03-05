@@ -15,14 +15,34 @@ const notificationsRepo = require('../../src/repos/firestore/notificationsRepo')
 
 function request({ port, method, path, headers, body }) {
   return new Promise((resolve, reject) => {
-    const req = http.request({ hostname: '127.0.0.1', port, method, path, headers: headers || {} }, (res) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port,
+      method,
+      path,
+      headers: {
+        connection: 'close',
+        ...(headers || {})
+      },
+      agent: false
+    }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
     req.on('error', reject);
+    req.setTimeout(10000, () => req.destroy(new Error('request timeout')));
     if (body !== undefined) req.write(body);
     req.end();
+  });
+}
+
+function closeServer(server) {
+  return new Promise((resolve) => {
+    server.close(resolve);
+    if (typeof server.closeAllConnections === 'function') {
+      server.closeAllConnections();
+    }
   });
 }
 
@@ -69,7 +89,7 @@ test('phase272: POST /api/admin/os/notifications/archive archives rows without p
   const port = server.address().port;
 
   t.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
+    await closeServer(server);
     clearDbForTest();
     clearServerTimestampForTest();
     if (prevServiceMode === undefined) delete process.env.SERVICE_MODE;
