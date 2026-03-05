@@ -1445,6 +1445,55 @@
                     </details>
                   </details>
                   <details class="section">
+                    <summary>task-content migration（dry-run/apply）</summary>
+                    <div class="note">
+                      `step_rules.ruleId` を正として `task_contents.taskKey` 連結を管理します。apply は add-only で `task_content_links` を更新します。
+                    </div>
+                    <div class="row row-top">
+                      <button id="task-rules-task-content-link-plan" type="button">migration-plan</button>
+                      <button id="task-rules-task-content-link-apply" type="button">migration-apply</button>
+                    </div>
+                    <div class="note">
+                      migrationPlanHash: <span id="task-rules-task-content-link-plan-hash">-</span>
+                      / migrationConfirmToken: <span id="task-rules-task-content-link-confirm-token">-</span>
+                    </div>
+                    <label>manualMappings JSON（[{sourceTaskKey,ruleId,note}]）</label>
+                    <textarea id="task-rules-task-content-link-manual-map-json" rows="6" class="input-mono">[]</textarea>
+                    <details class="section">
+                      <summary>task-content migration result</summary>
+                      <pre id="task-rules-task-content-link-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
+                    <summary>Link Registry impact map</summary>
+                    <div class="note">shared ID（複数領域参照）と WARN/disabled 参照を monitor で確認します。</div>
+                    <div class="row row-top">
+                      <label>limit
+                        <input type="number" id="task-rules-link-impact-limit" class="input-sm" min="1" max="1000" value="500" />
+                      </label>
+                      <button id="task-rules-link-impact-reload" type="button">link-impact-reload</button>
+                    </div>
+                    <div id="task-rules-link-impact-summary" class="note">-</div>
+                    <div class="table-scroll">
+                      <table class="table-compact">
+                        <thead>
+                          <tr>
+                            <th>linkId</th>
+                            <th>state</th>
+                            <th>domains</th>
+                            <th>refs</th>
+                            <th>shared</th>
+                          </tr>
+                        </thead>
+                        <tbody id="task-rules-link-impact-rows"></tbody>
+                      </table>
+                    </div>
+                    <details class="section">
+                      <summary>link impact raw</summary>
+                      <pre id="task-rules-link-impact-result">-</pre>
+                    </details>
+                  </details>
+                  <details class="section">
                     <summary>status</summary>
                     <pre id="task-rules-status-result">-</pre>
                   </details>
@@ -2411,6 +2460,19 @@
                 <div class="row row-top">
                   <button id="city-pack-unified-reload" type="button">更新</button>
                 </div>
+                <div id="city-pack-v2-toolbar" class="city-pack-v2-toolbar city-pack-v2-only is-hidden-by-flag">
+                  <div class="city-pack-v2-views" role="group" aria-label="City Pack quick views">
+                    <button id="city-pack-v2-view-needs-review" type="button" class="button-subtle">要確認</button>
+                    <button id="city-pack-v2-view-blocked" type="button" class="button-subtle">Blocked</button>
+                    <button id="city-pack-v2-view-draft" type="button" class="button-subtle">Draft</button>
+                    <button id="city-pack-v2-view-all" type="button" class="button-subtle">すべて</button>
+                  </div>
+                  <div class="city-pack-v2-stats" aria-live="polite">
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-total">-</strong> total</span>
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-actionable">-</strong> actionable</span>
+                    <span class="city-pack-v2-stat"><strong id="city-pack-v2-stat-blocked">-</strong> blocked</span>
+                  </div>
+                </div>
                 <div class="filter-bar trend-ui-only">
                   <div class="filter-chips" id="city-pack-unified-filter-chips"></div>
                   <div class="filter-meta">
@@ -2437,6 +2499,21 @@
                     <tbody id="city-pack-unified-rows"></tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+            <div id="city-pack-v2-detail-panel" class="panel city-pack-v2-detail-panel city-pack-v2-only is-hidden-by-flag">
+              <div class="panel-title">Selection Detail</div>
+              <div class="panel-body city-pack-v2-detail-body">
+                <div class="city-pack-v2-detail-header">
+                  <span id="city-pack-v2-detail-status" class="city-pack-v2-status-badge">-</span>
+                  <strong id="city-pack-v2-detail-title">行を選択してください</strong>
+                </div>
+                <div id="city-pack-v2-detail-meta" class="note">種別 / 更新日時 / 担当 を表示します。</div>
+                <div id="city-pack-v2-detail-actions" class="city-pack-v2-detail-actions"></div>
+                <details class="section" open>
+                  <summary>RAW</summary>
+                  <pre id="city-pack-v2-detail-json">-</pre>
+                </details>
               </div>
             </div>
             <div class="pane-grid city-pack-legacy-block">

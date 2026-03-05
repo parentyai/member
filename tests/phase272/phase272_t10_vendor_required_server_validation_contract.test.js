@@ -20,15 +20,29 @@ function request({ port, method, path, headers, body }) {
       port,
       method,
       path,
-      headers: headers || {}
+      headers: {
+        connection: 'close',
+        ...(headers || {})
+      },
+      agent: false
     }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
     req.on('error', reject);
+    req.setTimeout(10000, () => req.destroy(new Error('request timeout')));
     if (body) req.write(body);
     req.end();
+  });
+}
+
+function closeServer(server) {
+  return new Promise((resolve) => {
+    server.close(resolve);
+    if (typeof server.closeAllConnections === 'function') {
+      server.closeAllConnections();
+    }
   });
 }
 
@@ -53,7 +67,7 @@ test('phase272: VENDOR draft rejects with 422 when notificationMeta.vendorId is 
   const port = server.address().port;
 
   t.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
+    await closeServer(server);
     clearDbForTest();
     clearServerTimestampForTest();
     if (prevServiceMode === undefined) delete process.env.SERVICE_MODE;
@@ -91,4 +105,3 @@ test('phase272: VENDOR draft rejects with 422 when notificationMeta.vendorId is 
   assert.strictEqual(body.ok, false);
   assert.strictEqual(body.error, 'notificationMeta.vendorId required');
 });
-

@@ -102,6 +102,7 @@
 3. `ENABLE_CITY_PACK_AUDIT_RUNS_ORDERBY_V1=0`
 4. `ENABLE_CITY_PACK_METRICS_BOUNDED_V1=0`
 5. `ENABLE_CITY_PACK_METRICS_DAILY_PREFERRED_V1=0`
+6. `ENABLE_CITY_PACK_UI_V2=0`（Operator Surface V2のみ停止）
 
 段階切戻し:
 1. 上記flagを適用後、`/api/admin/review-inbox` と `/api/admin/city-pack-metrics` の応答を確認。

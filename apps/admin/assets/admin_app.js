@@ -97,6 +97,10 @@ const ADMIN_CITY_PACK_CONTENT_MANAGE_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_CITY_PACK_CONTENT_MANAGE_V1 : null,
   true
 );
+const ADMIN_CITY_PACK_UI_V2 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_CITY_PACK_UI_V2 : null,
+  true
+);
 const ADMIN_OPS_ONLY_NAV_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_ADMIN_OPS_ONLY_NAV_V1 : null,
   true
@@ -149,7 +153,9 @@ const state = {
   monitorInsights: null,
   taskRulesRules: [],
   taskRulesTaskContents: [],
+  taskRulesTaskContentLinks: [],
   taskRulesLinkRegistryItems: [],
+  taskRulesLinkImpact: null,
   vendorItems: [],
   selectedVendorLinkId: null,
   selectedVendorRowIndex: null,
@@ -177,6 +183,7 @@ const state = {
   selectedCityPackManageId: null,
   cityPackUnifiedItems: [],
   cityPackUnifiedFilteredItems: [],
+  selectedCityPackUnifiedItemKey: null,
   cityPackUnifiedSortKey: 'updatedAt',
   cityPackUnifiedSortDir: 'desc',
   cityPackKpi: null,
@@ -2642,6 +2649,18 @@ function applyUsersStripeLayoutVisibility() {
   if (editColumnsBtn) editColumnsBtn.classList.add('is-hidden-by-flag');
   if (columnsPanel) columnsPanel.classList.add('is-hidden-by-flag');
   if (billingIntegrityWrap) billingIntegrityWrap.classList.add('is-hidden-by-flag');
+}
+
+function applyCityPackUiV2Visibility() {
+  if (appShell) appShell.classList.toggle('city-pack-ui-v2', ADMIN_CITY_PACK_UI_V2);
+  document.querySelectorAll('.city-pack-v2-only').forEach((el) => {
+    el.classList.toggle('is-hidden-by-flag', !ADMIN_CITY_PACK_UI_V2);
+    if (!ADMIN_CITY_PACK_UI_V2) {
+      el.setAttribute('aria-hidden', 'true');
+    } else {
+      el.removeAttribute('aria-hidden');
+    }
+  });
 }
 
 function scrollToPaneAnchor(targetId) {
@@ -5180,9 +5199,13 @@ function sortCityPackUnifiedItems(items) {
 function buildCityPackUnifiedItems() {
   const rows = [];
   const addRow = (item) => {
+    const recordType = item.recordType || '';
+    const itemId = item.itemId || '';
+    const createdAt = item.createdAt || '';
     rows.push({
-      recordType: item.recordType || '',
-      itemId: item.itemId || '',
+      recordType,
+      itemId,
+      rowKey: `${recordType}::${itemId}::${createdAt}`,
       lineUserId: item.lineUserId || '',
       cityLabel: item.cityLabel || '',
       status: item.status || '',
@@ -5343,6 +5366,48 @@ function buildCityPackUnifiedItems() {
   return rows;
 }
 
+function findCityPackUnifiedItemByKey(rowKey) {
+  if (!rowKey) return null;
+  return state.cityPackUnifiedFilteredItems.find((item) => item && item.rowKey === rowKey) || null;
+}
+
+function resolveCityPackUnifiedStatusClass(statusValue) {
+  const status = String(statusValue || '').trim().toLowerCase();
+  if (!status) return 'is-default';
+  if (status === 'needs_review' || status === 'queued' || status === 'triaged' || status === 'proposed' || status === 'draft') return 'is-attention';
+  if (status === 'blocked' || status === 'failed' || status === 'rejected' || status === 'dead') return 'is-blocked';
+  if (status === 'approved' || status === 'active' || status === 'resolved' || status === 'sent') return 'is-ready';
+  return 'is-default';
+}
+
+function updateCityPackV2Stats(items) {
+  const list = Array.isArray(items) ? items : [];
+  const total = list.length;
+  const actionable = list.filter((item) => {
+    const status = String(item && item.status ? item.status : '').toLowerCase();
+    return status === 'needs_review'
+      || status === 'queued'
+      || status === 'triaged'
+      || status === 'proposed'
+      || status === 'draft';
+  }).length;
+  const blocked = list.filter((item) => {
+    const status = String(item && item.status ? item.status : '').toLowerCase();
+    return status === 'blocked' || status === 'failed' || status === 'dead';
+  }).length;
+  const totalEl = document.getElementById('city-pack-v2-stat-total');
+  const actionableEl = document.getElementById('city-pack-v2-stat-actionable');
+  const blockedEl = document.getElementById('city-pack-v2-stat-blocked');
+  if (totalEl) totalEl.textContent = String(total);
+  if (actionableEl) actionableEl.textContent = String(actionable);
+  if (blockedEl) blockedEl.textContent = String(blocked);
+}
+
+function setCityPackUnifiedQuickStatus(statusValue) {
+  setSelectValue('city-pack-unified-filter-status', statusValue || '');
+  renderCityPackUnifiedRows();
+}
+
 function applyCityPackUnifiedFilters() {
   const idKeyword = (document.getElementById('city-pack-unified-filter-id')?.value || '').trim().toLowerCase();
   const userKeyword = (document.getElementById('city-pack-unified-filter-user-id')?.value || '').trim().toLowerCase();
@@ -5431,9 +5496,11 @@ function clearCityPackUnifiedFilters() {
 function createUnifiedActionButton(label, handler, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const actionKey = typeof opts.actionKey === 'string' ? opts.actionKey.trim() : '';
+  const className = typeof opts.className === 'string' ? opts.className.trim() : '';
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
+  if (className) button.className = className;
   if (actionKey) button.dataset.managedActionKey = actionKey;
   button.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -5446,50 +5513,129 @@ function createUnifiedActionButton(label, handler, options) {
   return button;
 }
 
+function buildCityPackUnifiedActionDescriptors(item) {
+  const type = item && item.recordType ? String(item.recordType) : '';
+  const row = item && item.raw ? item.raw : null;
+  const descriptors = [];
+  if (type === 'request' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackRequestAction('approve', row); }, actionKey: 'city_pack.request.approve' });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackRequestAction('reject', row); }, actionKey: 'city_pack.request.reject' });
+    descriptors.push({ label: 'Changes', handler: () => { void runCityPackRequestAction('request-changes', row); }, actionKey: 'city_pack.request.request_changes' });
+    descriptors.push({ label: 'Retry', handler: () => { void runCityPackRequestAction('retry-job', row); }, actionKey: 'city_pack.request.retry_job' });
+    descriptors.push({ label: 'Activate', handler: () => { void runCityPackRequestAction('activate', row); }, actionKey: 'city_pack.request.activate' });
+  } else if (type === 'feedback' && row) {
+    descriptors.push({ label: 'Triage', handler: () => { void runCityPackFeedbackAction('triage', row); } });
+    descriptors.push({ label: 'Resolve', handler: () => { void runCityPackFeedbackAction('resolve', row); } });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackFeedbackAction('reject', row); } });
+    descriptors.push({ label: 'Propose', handler: () => { void runCityPackFeedbackAction('propose', row); } });
+  } else if (type === 'bulletin' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackBulletinAction('approve', row); }, actionKey: 'city_pack.bulletin.approve' });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackBulletinAction('reject', row); }, actionKey: 'city_pack.bulletin.reject' });
+    descriptors.push({ label: 'Send', handler: () => { void runCityPackBulletinAction('send', row); }, actionKey: 'city_pack.bulletin.send' });
+  } else if (type === 'proposal' && row) {
+    descriptors.push({ label: 'Approve', handler: () => { void runCityPackProposalAction('approve', row); } });
+    descriptors.push({ label: 'Reject', handler: () => { void runCityPackProposalAction('reject', row); } });
+    descriptors.push({ label: 'Apply', handler: () => { void runCityPackProposalAction('apply', row); } });
+  } else if (type === 'review' && row) {
+    descriptors.push({ label: 'Confirm', handler: () => { void runCityPackSourceAction('confirm', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackSourceAction('retire', row); } });
+    descriptors.push({ label: 'Replace', handler: () => { void runCityPackSourceAction('replace', row); } });
+    descriptors.push({ label: 'Manual', handler: () => { void runCityPackSourceAction('manual-only', row); } });
+  } else if (type === 'education_link' && row) {
+    descriptors.push({ label: 'Replace', handler: () => { void runCityPackEducationAction('replace', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackEducationAction('retire', row); } });
+  } else if (type === 'calendar_review' && row) {
+    descriptors.push({ label: 'Confirm', handler: () => { void runCityPackSourceAction('confirm', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackSourceAction('retire', row); } });
+    descriptors.push({ label: 'Approve通知', handler: () => { void runCityPackCalendarApproveNotification(row); } });
+  } else if (type === 'template' && row) {
+    descriptors.push({ label: 'Activate', handler: () => { void runCityPackTemplateLibraryAction('activate', row); } });
+    descriptors.push({ label: 'Retire', handler: () => { void runCityPackTemplateLibraryAction('retire', row); } });
+  }
+  return descriptors;
+}
+
 function renderCityPackUnifiedActionCell(item) {
   const td = document.createElement('td');
   td.className = 'unified-action-cell';
   const group = document.createElement('div');
   group.className = 'unified-action-group';
-  const type = item && item.recordType ? String(item.recordType) : '';
-  const row = item && item.raw ? item.raw : null;
-  if (type === 'request' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackRequestAction('approve', row); }, { actionKey: 'city_pack.request.approve' }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackRequestAction('reject', row); }, { actionKey: 'city_pack.request.reject' }));
-    group.appendChild(createUnifiedActionButton('Changes', () => { void runCityPackRequestAction('request-changes', row); }, { actionKey: 'city_pack.request.request_changes' }));
-    group.appendChild(createUnifiedActionButton('Retry', () => { void runCityPackRequestAction('retry-job', row); }, { actionKey: 'city_pack.request.retry_job' }));
-    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackRequestAction('activate', row); }, { actionKey: 'city_pack.request.activate' }));
-  } else if (type === 'feedback' && row) {
-    group.appendChild(createUnifiedActionButton('Triage', () => { void runCityPackFeedbackAction('triage', row); }));
-    group.appendChild(createUnifiedActionButton('Resolve', () => { void runCityPackFeedbackAction('resolve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackFeedbackAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Propose', () => { void runCityPackFeedbackAction('propose', row); }));
-  } else if (type === 'bulletin' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackBulletinAction('approve', row); }, { actionKey: 'city_pack.bulletin.approve' }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackBulletinAction('reject', row); }, { actionKey: 'city_pack.bulletin.reject' }));
-    group.appendChild(createUnifiedActionButton('Send', () => { void runCityPackBulletinAction('send', row); }, { actionKey: 'city_pack.bulletin.send' }));
-  } else if (type === 'proposal' && row) {
-    group.appendChild(createUnifiedActionButton('Approve', () => { void runCityPackProposalAction('approve', row); }));
-    group.appendChild(createUnifiedActionButton('Reject', () => { void runCityPackProposalAction('reject', row); }));
-    group.appendChild(createUnifiedActionButton('Apply', () => { void runCityPackProposalAction('apply', row); }));
-  } else if (type === 'review' && row) {
-    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
-    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackSourceAction('replace', row); }));
-    group.appendChild(createUnifiedActionButton('Manual', () => { void runCityPackSourceAction('manual-only', row); }));
-  } else if (type === 'education_link' && row) {
-    group.appendChild(createUnifiedActionButton('Replace', () => { void runCityPackEducationAction('replace', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackEducationAction('retire', row); }));
-  } else if (type === 'calendar_review' && row) {
-    group.appendChild(createUnifiedActionButton('Confirm', () => { void runCityPackSourceAction('confirm', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackSourceAction('retire', row); }));
-    group.appendChild(createUnifiedActionButton('Approve通知', () => { void runCityPackCalendarApproveNotification(row); }));
-  } else if (type === 'template' && row) {
-    group.appendChild(createUnifiedActionButton('Activate', () => { void runCityPackTemplateLibraryAction('activate', row); }));
-    group.appendChild(createUnifiedActionButton('Retire', () => { void runCityPackTemplateLibraryAction('retire', row); }));
+  const descriptors = buildCityPackUnifiedActionDescriptors(item);
+  if (!descriptors.length) {
+    td.appendChild(group);
+    return td;
   }
+  if (!ADMIN_CITY_PACK_UI_V2 || descriptors.length <= 2) {
+    descriptors.forEach((descriptor, idx) => {
+      group.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+        actionKey: descriptor.actionKey,
+        className: idx < 2 && ADMIN_CITY_PACK_UI_V2 ? 'unified-action-primary' : ''
+      }));
+    });
+    td.appendChild(group);
+    return td;
+  }
+  descriptors.slice(0, 2).forEach((descriptor) => {
+    group.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey,
+      className: 'unified-action-primary'
+    }));
+  });
+  const more = document.createElement('details');
+  more.className = 'city-pack-action-more';
+  const summary = document.createElement('summary');
+  summary.textContent = `More (${descriptors.length - 2})`;
+  more.appendChild(summary);
+  const menu = document.createElement('div');
+  menu.className = 'city-pack-action-more-menu';
+  descriptors.slice(2).forEach((descriptor) => {
+    menu.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey
+    }));
+  });
+  more.appendChild(menu);
+  group.appendChild(more);
   td.appendChild(group);
   return td;
+}
+
+function renderCityPackV2DetailPanel() {
+  const panel = document.getElementById('city-pack-v2-detail-panel');
+  if (!panel) return;
+  if (!ADMIN_CITY_PACK_UI_V2) {
+    panel.classList.add('is-hidden-by-flag');
+    return;
+  }
+  panel.classList.remove('is-hidden-by-flag');
+  const statusEl = document.getElementById('city-pack-v2-detail-status');
+  const titleEl = document.getElementById('city-pack-v2-detail-title');
+  const metaEl = document.getElementById('city-pack-v2-detail-meta');
+  const actionsEl = document.getElementById('city-pack-v2-detail-actions');
+  const jsonEl = document.getElementById('city-pack-v2-detail-json');
+  if (!statusEl || !titleEl || !metaEl || !actionsEl || !jsonEl) return;
+  const item = findCityPackUnifiedItemByKey(state.selectedCityPackUnifiedItemKey);
+  if (!item) {
+    statusEl.className = 'city-pack-v2-status-badge is-default';
+    statusEl.textContent = '-';
+    titleEl.textContent = '行を選択してください';
+    metaEl.textContent = '種別 / 更新日時 / 担当 を表示します。';
+    actionsEl.innerHTML = '';
+    jsonEl.textContent = '-';
+    return;
+  }
+  statusEl.className = `city-pack-v2-status-badge ${resolveCityPackUnifiedStatusClass(item.status)}`;
+  statusEl.textContent = toUnifiedDisplay(item.status, '-');
+  titleEl.textContent = `${cityPackRecordTypeLabel(item.recordType)} / ${toUnifiedDisplay(item.itemId, '-')}`;
+  metaEl.textContent = `都市: ${toUnifiedDisplay(item.cityLabel, '-')} | 担当: ${toUnifiedDisplay(item.assignee, '-')} | 更新: ${toUnifiedDisplay(formatTimestampForList(item.updatedAt), '-')}`;
+  actionsEl.innerHTML = '';
+  const descriptors = buildCityPackUnifiedActionDescriptors(item);
+  descriptors.forEach((descriptor, idx) => {
+    actionsEl.appendChild(createUnifiedActionButton(descriptor.label, descriptor.handler, {
+      actionKey: descriptor.actionKey,
+      className: idx < 2 ? 'unified-action-primary' : ''
+    }));
+  });
+  jsonEl.textContent = JSON.stringify(item.raw || {}, null, 2);
 }
 
 function renderCityPackUnifiedRows() {
@@ -5504,6 +5650,9 @@ function renderCityPackUnifiedRows() {
     sortDir: state.cityPackUnifiedSortDir
   });
   const items = state.cityPackUnifiedFilteredItems;
+  if (state.selectedCityPackUnifiedItemKey && !items.some((item) => item && item.rowKey === state.selectedCityPackUnifiedItemKey)) {
+    state.selectedCityPackUnifiedItemKey = null;
+  }
   const chips = buildCityPackUnifiedFilterChips();
   renderFilterChips('city-pack-unified-filter-chips', chips);
   updateFilterMeta({
@@ -5513,6 +5662,7 @@ function renderCityPackUnifiedRows() {
     totalCount: state.cityPackUnifiedItems.length,
     activeCount: chips.length
   });
+  updateCityPackV2Stats(items);
   persistListStateToStorage('cityPackUnified', readCityPackUnifiedListState());
   if (!items.length) {
     const tr = document.createElement('tr');
@@ -5521,10 +5671,15 @@ function renderCityPackUnifiedRows() {
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    renderCityPackV2DetailPanel();
     return;
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
+    const isSelected = item.rowKey && item.rowKey === state.selectedCityPackUnifiedItemKey;
+    tr.dataset.rowClickable = '1';
+    tr.tabIndex = 0;
+    if (isSelected) tr.classList.add('is-selected');
     const cols = [
       formatTimestampForList(item.createdAt),
       item.itemId || '-',
@@ -5543,8 +5698,22 @@ function renderCityPackUnifiedRows() {
       tr.appendChild(td);
     });
     tr.appendChild(renderCityPackUnifiedActionCell(item));
+    tr.addEventListener('click', (event) => {
+      if (event.target && event.target.closest('button, a, input, select, textarea, summary, details')) return;
+      if (!item.rowKey || state.selectedCityPackUnifiedItemKey === item.rowKey) return;
+      state.selectedCityPackUnifiedItemKey = item.rowKey;
+      renderCityPackUnifiedRows();
+    });
+    tr.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      if (!item.rowKey || state.selectedCityPackUnifiedItemKey === item.rowKey) return;
+      state.selectedCityPackUnifiedItemKey = item.rowKey;
+      renderCityPackUnifiedRows();
+    });
     tbody.appendChild(tr);
   });
+  renderCityPackV2DetailPanel();
 }
 
 function refreshCityPackUnifiedRows() {
@@ -9570,6 +9739,13 @@ function applyTaskRulesTaskContentPlanTokens(planHash, confirmToken) {
   setTextContent('task-rules-task-content-confirm-token', taskRulesTaskContentConfirmToken ? 'set' : '-');
 }
 
+function applyTaskRulesTaskContentLinkMigrationPlanTokens(planHash, confirmToken) {
+  taskRulesTaskContentLinkMigrationPlanHash = planHash || null;
+  taskRulesTaskContentLinkMigrationConfirmToken = confirmToken || null;
+  setTextContent('task-rules-task-content-link-plan-hash', taskRulesTaskContentLinkMigrationPlanHash || '-');
+  setTextContent('task-rules-task-content-link-confirm-token', taskRulesTaskContentLinkMigrationConfirmToken ? 'set' : '-');
+}
+
 function normalizeTaskRulesChecklistItem(item, index) {
   if (typeof item === 'string') {
     const text = item.trim();
@@ -9592,6 +9768,28 @@ function readTaskRulesChecklistItems() {
   if (!Array.isArray(parsed)) throw new Error('checklist_array_required');
   return parsed
     .map((item, index) => normalizeTaskRulesChecklistItem(item, index))
+    .filter(Boolean);
+}
+
+function normalizeTaskRulesTaskContentLinkManualMapping(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const sourceTaskKey = normalizeTaskRulesText(row.sourceTaskKey || row.taskKey, '');
+  const ruleId = normalizeTaskRulesText(row.ruleId, '');
+  if (!sourceTaskKey || !ruleId) return null;
+  return {
+    sourceTaskKey,
+    ruleId,
+    note: normalizeTaskRulesText(row.note, null)
+  };
+}
+
+function readTaskRulesTaskContentLinkManualMappings() {
+  const raw = document.getElementById('task-rules-task-content-link-manual-map-json')?.value?.trim() || '';
+  if (!raw) return [];
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error('manual_mappings_array_required');
+  return parsed
+    .map((item) => normalizeTaskRulesTaskContentLinkManualMapping(item))
     .filter(Boolean);
 }
 
@@ -9759,6 +9957,14 @@ function collectTaskRulesTaskContentWarnings(taskContent, extraWarnings) {
     } else if (matches.length > 1) {
       warnings.push('step_rules.ruleId が重複しており taskKey が曖昧です。');
     }
+    const links = Array.isArray(state.taskRulesTaskContentLinks) ? state.taskRulesTaskContentLinks : [];
+    const mapped = links.filter((item) => normalizeTaskRulesText(item && item.sourceTaskKey, '') === taskKey);
+    if (mapped.length > 1) {
+      warnings.push('task_content_links で同一 sourceTaskKey が複数ruleIdへ連結されており曖昧です。');
+    }
+    if (mapped.some((item) => normalizeTaskRulesText(item && item.status, 'warn').toLowerCase() !== 'active')) {
+      warnings.push('task_content_links に warn 連結があります。migration-planで確認してください。');
+    }
   }
 
   const videoLinkId = normalizeTaskRulesText(row.videoLinkId, '');
@@ -9804,6 +10010,73 @@ function refreshTaskRulesTaskContentWarnings(options) {
   const warnings = collectTaskRulesTaskContentWarnings(row, payload.extraWarnings);
   setTextContent('task-rules-task-content-warning', warnings.length ? warnings.join(' / ') : '-');
   return warnings;
+}
+
+function summarizeTaskRulesTaskContentLinkMigration(result) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const plan = payload.migrationPlan && typeof payload.migrationPlan === 'object'
+    ? payload.migrationPlan
+    : (payload.migration && typeof payload.migration === 'object' ? payload.migration : {});
+  const summary = plan.summary && typeof plan.summary === 'object' ? plan.summary : {};
+  const linked = Number.isFinite(Number(summary.linkedCount)) ? Number(summary.linkedCount) : 0;
+  const unlinked = Number.isFinite(Number(summary.unlinkedCount)) ? Number(summary.unlinkedCount) : 0;
+  const candidateCount = Number.isFinite(Number(summary.candidateCount))
+    ? Number(summary.candidateCount)
+    : (Number.isFinite(Number(summary.savedCount)) ? Number(summary.savedCount) : 0);
+  const savedCount = Number.isFinite(Number(summary.savedCount)) ? Number(summary.savedCount) : null;
+  const warningCount = Array.isArray(payload.warnings)
+    ? payload.warnings.length
+    : (Array.isArray(plan.warnings) ? plan.warnings.length : 0);
+  const parts = [
+    `linked=${linked}`,
+    `unlinked=${unlinked}`,
+    `candidates=${candidateCount}`,
+    `warnings=${warningCount}`
+  ];
+  if (savedCount !== null) parts.push(`saved=${savedCount}`);
+  return parts.join(' / ');
+}
+
+function renderTaskRulesLinkImpactRows(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const summary = data.summary && typeof data.summary === 'object' ? data.summary : {};
+  const rows = Array.isArray(data.items) ? data.items : [];
+  state.taskRulesLinkImpact = data;
+  setTextContent(
+    'task-rules-link-impact-summary',
+    `total=${Number(summary.total || 0)} / shared=${Number(summary.sharedIdCount || 0)} / sharedWarnOrDisabled=${Number(summary.sharedWarnOrDisabledCount || 0)} / referencedWarnOrDisabled=${Number(summary.referencedWarnOrDisabledCount || 0)}`
+  );
+
+  const tbody = document.getElementById('task-rules-link-impact-rows');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = '-';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.slice(0, 200).forEach((item) => {
+    const row = item && typeof item === 'object' ? item : {};
+    const tr = document.createElement('tr');
+    const values = [
+      normalizeTaskRulesText(row.id, '-'),
+      normalizeTaskRulesText(row.state, '-'),
+      Number.isFinite(Number(row.domainCount)) ? String(Number(row.domainCount)) : '0',
+      Number.isFinite(Number(row.refCount)) ? String(Number(row.refCount)) : '0',
+      row.shared === true ? 'yes' : 'no'
+    ];
+    values.forEach((value) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
 }
 
 function applyTaskRulesLinkEditorFields(item) {
@@ -9951,9 +10224,96 @@ async function setTaskRulesTaskContentAction() {
     });
     applyTaskRulesTaskContentPlanTokens(null, null);
     await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesLinkImpactAction({ notify: false });
     showToast('Task Contentを更新しました', 'ok');
   } catch (_err) {
     showToast('Task Content更新に失敗しました', 'danger');
+  }
+}
+
+function resolveTaskRulesLinkImpactLimit() {
+  const raw = Number(document.getElementById('task-rules-link-impact-limit')?.value || 500);
+  if (!Number.isFinite(raw) || raw < 1) return 500;
+  return Math.max(1, Math.min(1000, Math.floor(raw)));
+}
+
+async function planTaskRulesTaskContentLinkMigrationAction() {
+  let manualMappings;
+  try {
+    manualMappings = readTaskRulesTaskContentLinkManualMappings();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'manual mappings JSON invalid' });
+    showToast('manualMappings JSONが不正です', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/plan', {
+      action: 'migrate_task_content_links',
+      manualMappings
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-link-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTaskContentLinkMigrationPlanTokens(data.planHash, data.confirmToken);
+    showToast(`task-content migration plan: ${summarizeTaskRulesTaskContentLinkMigration(data)}`, 'ok');
+  } catch (_err) {
+    showToast('task-content migration planの作成に失敗しました', 'danger');
+  }
+}
+
+async function applyTaskRulesTaskContentLinkMigrationAction() {
+  if (!taskRulesTaskContentLinkMigrationPlanHash || !taskRulesTaskContentLinkMigrationConfirmToken) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'migration plan required' });
+    showToast('migration applyには先にmigration-planが必要です', 'warn');
+    return;
+  }
+  let manualMappings;
+  try {
+    manualMappings = readTaskRulesTaskContentLinkManualMappings();
+  } catch (_err) {
+    setJsonTextResult('task-rules-task-content-link-result', { ok: false, error: 'manual mappings JSON invalid' });
+    showToast('manualMappings JSONが不正です', 'warn');
+    return;
+  }
+  if (!window.confirm('task-content migrationを適用しますか？（add-only: task_content_links upsert）')) {
+    showToast('task-content migration適用を中止しました', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('monitor-trace');
+  try {
+    const data = await postJson('/api/admin/os/task-rules/set', {
+      action: 'migrate_task_content_links_apply',
+      manualMappings,
+      planHash: taskRulesTaskContentLinkMigrationPlanHash,
+      confirmToken: taskRulesTaskContentLinkMigrationConfirmToken
+    }, traceId);
+    setJsonTextResult('task-rules-task-content-link-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    applyTaskRulesTaskContentLinkMigrationPlanTokens(null, null);
+    await loadTaskRulesStatus({ notify: false });
+    await loadTaskRulesLinkImpactAction({ notify: false });
+    showToast(`task-content migration apply: ${summarizeTaskRulesTaskContentLinkMigration(data)}`, 'ok');
+  } catch (_err) {
+    showToast('task-content migration applyに失敗しました', 'danger');
+  }
+}
+
+async function loadTaskRulesLinkImpactAction(options) {
+  const notify = Boolean(options && options.notify);
+  const traceId = ensureTraceInput('monitor-trace');
+  const query = new URLSearchParams({
+    limit: String(resolveTaskRulesLinkImpactLimit())
+  });
+  try {
+    const res = await fetch(`/api/admin/os/link-registry-impact?${query.toString()}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    setJsonTextResult('task-rules-link-impact-result', data);
+    if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
+    renderTaskRulesLinkImpactRows(data);
+    if (notify) showToast('Link Registry impact mapを更新しました', 'ok');
+  } catch (_err) {
+    renderTaskRulesLinkImpactRows({});
+    if (notify) showToast('Link Registry impact mapの取得に失敗しました', 'danger');
   }
 }
 
@@ -9979,6 +10339,7 @@ async function createTaskRulesLinkRegistryAction() {
     document.getElementById('task-rules-link-registry-id').value = data.id;
   }
   await loadTaskRulesLinkRegistryOptions({ notify: false });
+  await loadTaskRulesLinkImpactAction({ notify: false });
   showToast('Link Registryを追加しました', 'ok');
 }
 
@@ -10004,6 +10365,7 @@ async function setTaskRulesLinkRegistryAction() {
     return;
   }
   await loadTaskRulesLinkRegistryOptions({ notify: false });
+  await loadTaskRulesLinkImpactAction({ notify: false });
   showToast('Link Registryを更新しました', 'ok');
 }
 
@@ -10123,7 +10485,8 @@ async function loadTaskRulesStatus(options) {
   const notify = Boolean(options && options.notify);
   const traceId = ensureTraceInput('monitor-trace');
   try {
-    const res = await fetch('/api/admin/os/task-rules/status?limit=200' + '&includeTaskContents=1&taskContentLimit=200', {
+    const res = await fetch('/api/admin/os/task-rules/status?limit=200'
+      + '&includeTaskContents=1&taskContentLimit=200&includeTaskContentLinks=1&taskContentLinkLimit=500', {
       headers: buildHeaders({}, traceId)
     });
     const data = await readJsonResponse(res);
@@ -10131,6 +10494,7 @@ async function loadTaskRulesStatus(options) {
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     state.taskRulesRules = Array.isArray(data.rules) ? data.rules : [];
     state.taskRulesTaskContents = Array.isArray(data.taskContents) ? data.taskContents : [];
+    state.taskRulesTaskContentLinks = Array.isArray(data.taskContentLinks) ? data.taskContentLinks : [];
     const currentTaskKey = document.getElementById('task-rules-task-content-key')?.value?.trim() || '';
     const selectedTaskContent = resolveTaskRulesTaskContentByKey(currentTaskKey)
       || (state.taskRulesTaskContents.length > 0 ? state.taskRulesTaskContents[0] : null);
@@ -10140,6 +10504,7 @@ async function loadTaskRulesStatus(options) {
   } catch (_err) {
     state.taskRulesRules = [];
     state.taskRulesTaskContents = [];
+    state.taskRulesTaskContentLinks = [];
     refreshTaskRulesTaskContentWarnings();
     if (notify) showToast('Task Rules statusの取得に失敗しました', 'danger');
   }
@@ -14139,6 +14504,12 @@ function setupMonitorControls() {
   document.getElementById('task-rules-task-content-set')?.addEventListener('click', () => {
     void setTaskRulesTaskContentAction();
   });
+  document.getElementById('task-rules-task-content-link-plan')?.addEventListener('click', () => {
+    void planTaskRulesTaskContentLinkMigrationAction();
+  });
+  document.getElementById('task-rules-task-content-link-apply')?.addEventListener('click', () => {
+    void applyTaskRulesTaskContentLinkMigrationAction();
+  });
   ['task-rules-task-content-key', 'task-rules-task-content-video-link-id', 'task-rules-task-content-action-link-id']
     .forEach((id) => {
       const el = document.getElementById(id);
@@ -14167,6 +14538,33 @@ function setupMonitorControls() {
     if (item) applyTaskRulesLinkEditorFields(item);
     refreshTaskRulesTaskContentWarnings();
   });
+  document.getElementById('task-rules-link-impact-reload')?.addEventListener('click', () => {
+    void loadTaskRulesLinkImpactAction({ notify: true });
+  });
+  const richMenuActionSelect = document.getElementById('rich-menu-action-select');
+  if (richMenuActionSelect) {
+    const currentAction = resolveRichMenuAction() || 'set_policy';
+    writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(currentAction));
+    richMenuActionSelect.addEventListener('change', () => {
+      const action = resolveRichMenuAction();
+      writeRichMenuActionPayloadEditor(resolveDefaultRichMenuPayload(action));
+    });
+  }
+  document.getElementById('rich-menu-status-reload')?.addEventListener('click', () => {
+    void loadRichMenuStatus({ notify: true });
+  });
+  document.getElementById('rich-menu-history')?.addEventListener('click', () => {
+    void loadRichMenuHistory({ notify: true });
+  });
+  document.getElementById('rich-menu-resolve-preview')?.addEventListener('click', () => {
+    void runRichMenuResolvePreview();
+  });
+  document.getElementById('rich-menu-plan')?.addEventListener('click', () => {
+    void planRichMenuAction();
+  });
+  document.getElementById('rich-menu-set')?.addEventListener('click', () => {
+    void setRichMenuAction();
+  });
   ['monitor-user-line-user-id', 'monitor-user-member-id'].forEach((id) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -14181,6 +14579,9 @@ function setupMonitorControls() {
   void loadTaskRulesStatus({ notify: false });
   void loadTaskRulesHistory({ notify: false });
   void loadTaskRulesLinkRegistryOptions({ notify: false });
+  void loadTaskRulesLinkImpactAction({ notify: false });
+  void loadRichMenuStatus({ notify: false });
+  void loadRichMenuHistory({ notify: false });
 }
 
 function setupErrorsControls() {
@@ -14920,6 +15321,19 @@ function setupCityPackControls() {
   if (managePanel && !ADMIN_CITY_PACK_CONTENT_MANAGE_V1) {
     managePanel.classList.add('is-hidden');
   }
+  applyCityPackUiV2Visibility();
+  document.getElementById('city-pack-v2-view-needs-review')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('needs_review');
+  });
+  document.getElementById('city-pack-v2-view-blocked')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('blocked');
+  });
+  document.getElementById('city-pack-v2-view-draft')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('draft');
+  });
+  document.getElementById('city-pack-v2-view-all')?.addEventListener('click', () => {
+    setCityPackUnifiedQuickStatus('');
+  });
   document.getElementById('city-pack-unified-reload')?.addEventListener('click', () => {
     void loadCityPackRequests({ notify: false });
     void loadCityPackFeedback({ notify: false });
@@ -14946,6 +15360,7 @@ function setupCityPackControls() {
   });
   document.getElementById('city-pack-unified-clear')?.addEventListener('click', () => {
     clearCityPackUnifiedFilters();
+    state.selectedCityPackUnifiedItemKey = null;
     renderCityPackUnifiedRows();
   });
   document.querySelectorAll('[data-city-pack-sort-key]').forEach((btn) => {
@@ -15552,6 +15967,8 @@ let taskRulesApplyPlanHash = null;
 let taskRulesApplyConfirmToken = null;
 let taskRulesTaskContentPlanHash = null;
 let taskRulesTaskContentConfirmToken = null;
+let taskRulesTaskContentLinkMigrationPlanHash = null;
+let taskRulesTaskContentLinkMigrationConfirmToken = null;
 
 async function runLlmOpsExplain() {
   const lineUserId = getLlmLineUserId();
@@ -16065,6 +16482,7 @@ function setupLlmControls() {
   applyBuildMetaBadge();
   applyTopSummaryVisibility();
   applyUsersStripeLayoutVisibility();
+  applyCityPackUiV2Visibility();
   hydrateListState();
   setupRoleSwitch();
   setupNav();
