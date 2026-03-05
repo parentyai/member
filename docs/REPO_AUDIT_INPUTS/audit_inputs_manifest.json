@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T18:27:54-05:00",
-  "gitCommit": "97ed796e44a429c5756af64be4252b6cb07fa789",
-  "branch": "codex/emergency-full-staging",
-  "sourceDigest": "8ae82d0cacf61d62bb12b502ba6038f9ccd811dd9386c9576d1f43bcfb43f61b",
+  "generatedAt": "2026-03-05T18:52:25-05:00",
+  "gitCommit": "3738771e55a25b31173bb3db6cfc364fa834cffe",
+  "branch": "codex/llm-latest-sync-pack",
+  "sourceDigest": "7eb367ff5c4624da661d32b077e4af031be7771ed907421e52b57295a0b86725",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "1080f180b2dce6d28c6e9f22da48d4cbeda0b90984d6cac6d453d0f58617c2ca",
+      "sha256": "dd49971fac63fd39035f51502eb3d5c4daffdfc75e189724f5d0241446eb1157",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "5f24785adcfa05a0cfd3819f308be892190c6ade40a80b0d0d9b341b31e54860",
+      "sha256": "7218a3ffe59c498ae7a818a189d7522a7518e7afa57f223a5b23a6e5bb87640d",
       "bytes": 487
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "53916615b14cbdc42a0bc4d22e9f7804f1cf85843cb84e191ae938b954a0d870",
-      "bytes": 2414
+      "sha256": "6b575a9ccba065c8425fe831315e2674c65381f6521f43bc169c1fb39b1c3731",
+      "bytes": 2412
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

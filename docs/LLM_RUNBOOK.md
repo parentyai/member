@@ -282,6 +282,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - 判定は `summary.releaseReadiness` と `summary.gateAuditBaseline.entryTypes/gatesCoverage` を同時に確認する。  
 - fixture で検証する場合は `--config-json` と `--summary-json` を併用する。  
 - internal job 経路を段階導入で必須化する場合は `--require-job-entry` を付与し、`entryType=job` の件数が 0 のときに fail させる。  
+- compat 依存を抑制する段階導入では `--max-compat-share <0..1>` を付与し、`entryType=compat` 比率の上限超過で fail させる。  
 
 ### しきい値の一時上書き（検証用）
 - `GET /api/admin/os/llm-usage/summary` に以下クエリを付与して判定比較できる。  

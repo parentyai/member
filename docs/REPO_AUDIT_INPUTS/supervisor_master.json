@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T18:27:54-05:00",
-  "gitCommit": "97ed796e44a429c5756af64be4252b6cb07fa789",
-  "branch": "codex/emergency-full-staging",
-  "sourceDigest": "00fec291ba5ac1b2175a9acc235727c2ff5b01e81a75dd796e602b72265cb34d",
+  "generatedAt": "2026-03-05T18:52:25-05:00",
+  "gitCommit": "3738771e55a25b31173bb3db6cfc364fa834cffe",
+  "branch": "codex/llm-latest-sync-pack",
+  "sourceDigest": "f6776accde82f4fe32c0f32ec15e1dbd0b6981ade6c027efcefff56cc03118a8",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

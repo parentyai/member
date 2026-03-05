@@ -16047,18 +16047,30 @@ async function readJsonResponse(res) {
   }
 }
 
+function annotateApiSource(payload, source) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return {
+      ok: false,
+      error: 'invalid response payload',
+      raw: payload,
+      _apiSource: source
+    };
+  }
+  return Object.assign({}, payload, { _apiSource: source });
+}
+
 async function fetchJsonWithFallback(primaryPath, fallbackPath, traceId) {
   const headers = buildHeaders({}, traceId);
   try {
     const primaryRes = await fetch(primaryPath, { headers });
     if (primaryRes.status !== 404) {
-      return await readJsonResponse(primaryRes);
+      return annotateApiSource(await readJsonResponse(primaryRes), 'admin');
     }
   } catch (_err) {
     // fallback
   }
   const fallbackRes = await fetch(fallbackPath, { headers });
-  return await readJsonResponse(fallbackRes);
+  return annotateApiSource(await readJsonResponse(fallbackRes), 'compat');
 }
 
 function getLlmLineUserId() {

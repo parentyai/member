@@ -80,6 +80,47 @@ test('phase653: paid assistant returns fixed 5-section template with citation-bo
   assert.equal(response.tokensOut, 80);
 });
 
+test('phase653: paid assistant supports conversation-format reply when flag is enabled', async (t) => {
+  const { generatePaidAssistantReply, restore } = loadGeneratePaidAssistantReplyWithStubbedFaq({
+    ok: true,
+    candidates: [
+      { articleId: 'kb_insurance', title: '保険', body: '保険加入の説明' },
+      { articleId: 'kb_school', title: '学校', body: '学校手続きの説明' }
+    ]
+  });
+  t.after(() => restore());
+
+  const response = await generatePaidAssistantReply({
+    question: '赴任時の抜け漏れを確認したい',
+    intent: 'next_action',
+    locale: 'ja',
+    llmPolicy: { model: 'gpt-4o-mini', max_output_tokens: 600 },
+    env: { ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1: 'true' },
+    llmAdapter: {
+      answerFaq: async () => ({
+        answer: {
+          schemaId: 'PaidAssistantReply.v1',
+          generatedAt: new Date().toISOString(),
+          advisoryOnly: true,
+          intent: 'next_action_generation',
+          situation: '家族帯同で保険と学校手続きが優先です。',
+          gaps: ['保険証書の提出漏れ'],
+          risks: ['学校申請の遅延'],
+          nextActions: [{ action: '保険証書を提出', evidenceKey: 'kb_insurance' }],
+          evidenceKeys: ['kb_insurance', 'kb_school']
+        },
+        usage: { prompt_tokens: 50, completion_tokens: 80 }
+      })
+    }
+  });
+
+  assert.equal(response.ok, true);
+  assert.ok(!response.replyText.includes('1) 要約（前提）'));
+  assert.ok(response.replyText.includes('次に進める候補です'));
+  assert.ok(response.replyText.includes('根拠キー: kb_insurance, kb_school'));
+  assert.ok(response.replyText.includes('注記:'));
+});
+
 test('phase653: paid assistant blocks when citations are missing', async (t) => {
   const { generatePaidAssistantReply, restore } = loadGeneratePaidAssistantReplyWithStubbedFaq({
     ok: true,
