@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T21:07:50-05:00",
-  "gitCommit": "faea0c85aa2ef4e4ea773c4f5f2df39f09b86fb1",
-  "branch": "codex/llm-integrity-fix3-ext3",
-  "sourceDigest": "1fcb148a56612b78189358d84eb918a4a99ecdfd24139325bf6bfdc152aa574f",
+  "generatedAt": "2026-03-04T21:31:11-05:00",
+  "gitCommit": "2db60f8d8b048b9c5bbcebacea8e9bfc8690f8a8",
+  "branch": "codex/city-pack-hardening-v1",
+  "sourceDigest": "3ced8e76cba17a432b60e398a430036a904089735a8bc4f4b7ef214f236b04ac",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
