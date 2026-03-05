@@ -15804,6 +15804,28 @@ function renderLlmResult(targetId, payload) {
   el.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function normalizeLlmEntryRows(rows, keyName, requiredOrder) {
+  const list = Array.isArray(rows) ? rows : [];
+  const out = [];
+  const seen = new Set();
+  list.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const key = typeof item[keyName] === 'string' ? item[keyName].trim() : '';
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push({ [keyName]: key, count: Number.isFinite(Number(item.count)) ? Number(item.count) : 0 });
+  });
+  (Array.isArray(requiredOrder) ? requiredOrder : []).forEach((key) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ [keyName]: key, count: 0 });
+  });
+  return out.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return String(a[keyName]).localeCompare(String(b[keyName]), 'ja');
+  });
+}
+
 function renderLlmEntryControlDashboard(summary) {
   const baseline = summary && summary.gateAuditBaseline && typeof summary.gateAuditBaseline === 'object'
     ? summary.gateAuditBaseline
@@ -15817,8 +15839,8 @@ function renderLlmEntryControlDashboard(summary) {
     callsTotal: Number.isFinite(Number(baseline.callsTotal)) ? Number(baseline.callsTotal) : 0,
     blockedCount: Number.isFinite(Number(baseline.blockedCount)) ? Number(baseline.blockedCount) : 0,
     acceptedRate: Number.isFinite(Number(baseline.acceptedRate)) ? Number(baseline.acceptedRate) : 0,
-    entryTypes: Array.isArray(baseline.entryTypes) ? baseline.entryTypes : [],
-    gatesCoverage: Array.isArray(baseline.gatesCoverage) ? baseline.gatesCoverage : [],
+    entryTypes: normalizeLlmEntryRows(baseline.entryTypes, 'entryType', ['webhook', 'admin', 'compat', 'job']),
+    gatesCoverage: normalizeLlmEntryRows(baseline.gatesCoverage, 'gate', ['kill_switch', 'url_guard', 'injection', 'snapshot']),
     blockedReasons: Array.isArray(baseline.blockedReasons) ? baseline.blockedReasons : [],
     blockedStages: Array.isArray(baseline.blockedStages) ? baseline.blockedStages : []
   });

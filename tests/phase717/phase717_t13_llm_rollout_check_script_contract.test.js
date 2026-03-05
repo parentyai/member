@@ -14,11 +14,13 @@ test('phase717: llm rollout check parser accepts fixture mode and require-ready 
     'scripts/check_llm_rollout_readiness.js',
     '--config-json', 'tmp/config.json',
     '--summary-json', 'tmp/summary.json',
-    '--require-ready'
+    '--require-ready',
+    '--require-job-entry'
   ]);
   assert.equal(args.configJsonPath, 'tmp/config.json');
   assert.equal(args.summaryJsonPath, 'tmp/summary.json');
   assert.equal(args.requireReady, true);
+  assert.equal(args.requireJobEntry, true);
 });
 
 test('phase717: llm rollout report fails when required entryType or gate coverage is missing', () => {
@@ -38,11 +40,12 @@ test('phase717: llm rollout report fails when required entryType or gate coverag
         gatesCoverage: [{ gate: 'kill_switch', count: 2 }]
       }
     }
-  }, { requireReady: true });
+  }, { requireReady: true, requireJobEntry: true });
 
   assert.equal(report.ok, false);
   const failedIds = report.failedChecks.map((row) => row.id);
   assert.ok(failedIds.includes('release_ready_required'));
   assert.ok(failedIds.includes('entry_types_covered'));
+  assert.ok(failedIds.includes('job_entry_present'));
   assert.ok(failedIds.includes('gate_coverage_present'));
 });

@@ -1208,6 +1208,7 @@
       "runJourneyTodoReminderJob"
     ],
     "src/routes/internal/llmActionRewardFinalizeJob.js": [
+      "appendLlmGateDecision",
       "finalizeLlmActionRewards"
     ],
     "src/routes/internal/municipalitySchoolsImportJob.js": [

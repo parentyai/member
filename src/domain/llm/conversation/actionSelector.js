@@ -49,6 +49,10 @@ function resolveStyleCandidates(styleId, mode, topic) {
 
 function buildScoreBreakdown(params) {
   const payload = params && typeof params === 'object' ? params : {};
+  const penalties = Number(payload.confidencePenalty || 0) + Number(payload.evidencePenalty || 0) + Number(payload.behaviorPenalty || 0);
+  const wStyle = Number(payload.primaryStyleMatch ? 0.25 : 0) + Number(payload.modeFit || 0);
+  const wTiming = Number(payload.timingFit || 0);
+  const wCta = Number(payload.ctaFit || 0) + Number(payload.clarifyBonus || 0);
   const terms = {
     base: 0.5,
     primaryStyle: payload.primaryStyleMatch ? 0.25 : 0,
@@ -56,9 +60,13 @@ function buildScoreBreakdown(params) {
     ctaFit: payload.ctaFit,
     confidencePenalty: payload.confidencePenalty,
     evidencePenalty: payload.evidencePenalty,
-    clarifyBonus: payload.clarifyBonus
+    clarifyBonus: payload.clarifyBonus,
+    wStyle: Number(wStyle.toFixed(6)),
+    wTiming: Number(wTiming.toFixed(6)),
+    wCta: Number(wCta.toFixed(6)),
+    penalties: Number(penalties.toFixed(6))
   };
-  const score = Object.values(terms).reduce((sum, value) => sum + Number(value || 0), 0);
+  const score = Number(terms.base || 0) + wStyle + wTiming + wCta + penalties;
   return {
     score: Number(score.toFixed(6)),
     scoreBreakdown: terms
@@ -95,6 +103,10 @@ function buildDeterministicCandidates(params) {
       const confidencePenalty = (intentConfidence < 0.6 || contextConfidence < 0.55) && ctaCount > 1 ? -0.18 : 0;
       const evidencePenalty = normalizeText(payload.evidenceNeed) === 'required' && ctaCount > 2 ? -0.08 : 0;
       const clarifyBonus = askClarifying && ctaCount <= 2 ? 0.08 : 0;
+      const timingFit = timingBucket === 'night'
+        ? (ctaCount <= 2 ? 0.01 : -0.03)
+        : (timingBucket === 'morning' ? 0.03 : 0.02);
+      const behaviorPenalty = askClarifying && ctaCount > 2 ? -0.04 : 0;
 
       const scored = buildScoreBreakdown({
         primaryStyleMatch: styleId === styleDecision.styleId,
@@ -102,7 +114,9 @@ function buildDeterministicCandidates(params) {
         ctaFit,
         confidencePenalty,
         evidencePenalty,
-        clarifyBonus
+        clarifyBonus,
+        timingFit,
+        behaviorPenalty
       });
 
       candidates.push({
@@ -143,7 +157,7 @@ function selectActionForConversation(params) {
     lengthBucket: 'short',
     timingBucket: 'daytime',
     score: 0,
-    scoreBreakdown: { base: 0 }
+    scoreBreakdown: { base: 0, wStyle: 0, wTiming: 0, wCta: 0, penalties: 0 }
   };
 
   const bandit = payload.bandit && typeof payload.bandit === 'object' ? payload.bandit : {};

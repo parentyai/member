@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const { test } = require('node:test');
 
@@ -50,4 +51,14 @@ test('phase717: lifecycle/addendum/rules align for llm action and bandit collect
   assert.equal(dataModelOnly.includes('llm_action_logs'), false);
   assert.equal(dataModelOnly.includes('llm_bandit_state'), false);
   assert.equal(dataModelOnly.includes('llm_contextual_bandit_state'), false);
+});
+
+test('phase717: llm retention contract script is wired and passes', () => {
+  const pkg = readJson('package.json');
+  assert.equal(pkg.scripts['llm:retention:check'], 'node scripts/check_llm_retention_contract.js');
+  const output = childProcess.execSync('node scripts/check_llm_retention_contract.js', {
+    cwd: process.cwd(),
+    encoding: 'utf8'
+  });
+  assert.ok(output.includes('[llm_retention_contract] ok'));
 });

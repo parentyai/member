@@ -42,6 +42,9 @@ const {
   generatePaidAssistantReply
 } = require('../usecases/assistant/generatePaidAssistantReply');
 const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqReply');
+const { selectConversationStyle } = require('../domain/llm/conversation/styleRouter');
+const { composeConversationDraftFromSignals } = require('../domain/llm/conversation/conversationComposer');
+const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
@@ -210,6 +213,35 @@ function trimForPaidLineMessage(value) {
   const text = trimForLineMessage(value);
   if (!text) return '';
   return text.length > 420 ? `${text.slice(0, 420)}…` : text;
+}
+
+function buildLowRelevanceConversationReply(questionText) {
+  const question = normalizeReplyText(questionText);
+  const draftPacket = composeConversationDraftFromSignals({
+    summary: 'いまの質問だけでは対象手続きを特定できません。',
+    nextActions: [
+      '対象手続きを1つ指定する（例: ビザ更新 / 住居契約 / 税務）',
+      '期限を1つ添える（例: 1週間後）'
+    ],
+    pitfall: '対象手続きと期限が曖昧なまま進めると、案内の精度が下がります。',
+    question: '対象手続き名と期限を1つずつ教えてください。',
+    state: 'CLARIFY',
+    move: 'Narrow'
+  });
+  const styleDecision = Object.assign({}, selectConversationStyle({
+    topic: 'general',
+    question,
+    userTier: 'paid',
+    journeyPhase: 'pre',
+    messageLength: question.length,
+    timeOfDay: new Date().getHours(),
+    urgency: 'high'
+  }), {
+    askClarifying: true,
+    maxActions: 2
+  });
+  const humanized = humanizeConversationMessage({ draftPacket, styleDecision });
+  return trimForLineMessage(humanized.text || draftPacket.draft);
 }
 
 function resolveBooleanEnvFlag(name, defaultValue) {
@@ -1292,12 +1324,7 @@ async function handleAssistantMessage(params) {
   const isLowRelevanceWarning = paid.qualityWarning === 'low_relevance_query';
   let replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
   if (isLowRelevanceWarning) {
-    replyText = [
-      '結論: いまの質問だけでは対象手続きを特定できません。',
-      '次にやること:',
-      '1. 手続きを1つ指定してください（例: ビザ更新 / 住居契約 / 税務）。',
-      '2. 期限を1つ添えてください（例: 1週間後）。'
-    ].join('\n');
+    replyText = buildLowRelevanceConversationReply(text);
   }
   if (paid.qualityWarning === 'low_confidence_soft') {
     replyText = trimForLineMessage(`${replyText}\n\n補足: 根拠の一致度が低めのため、重要事項は運用担当へ最終確認してください。`);

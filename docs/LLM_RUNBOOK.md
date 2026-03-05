@@ -281,6 +281,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - `npm run llm:rollout:check -- --base-url "$BASE_URL" --admin-token "$ADMIN_OS_TOKEN" --require-ready` を実行する。  
 - 判定は `summary.releaseReadiness` と `summary.gateAuditBaseline.entryTypes/gatesCoverage` を同時に確認する。  
 - fixture で検証する場合は `--config-json` と `--summary-json` を併用する。  
+- internal job 経路を段階導入で必須化する場合は `--require-job-entry` を付与し、`entryType=job` の件数が 0 のときに fail させる。  
 
 ### しきい値の一時上書き（検証用）
 - `GET /api/admin/os/llm-usage/summary` に以下クエリを付与して判定比較できる。  

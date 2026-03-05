@@ -2,6 +2,51 @@
 
 const ENTRY_TYPES = new Set(['webhook', 'admin', 'compat', 'job', 'unknown']);
 const GATES = new Set(['kill_switch', 'injection', 'url_guard', 'policy', 'budget', 'availability', 'snapshot']);
+const ALLOWED_SUMMARY_KEYS = new Set([
+  'lineUserId',
+  'plan',
+  'status',
+  'intent',
+  'decision',
+  'blockedReason',
+  'tokenUsed',
+  'costEstimate',
+  'model',
+  'policyVersionId',
+  'refusalMode',
+  'userTier',
+  'mode',
+  'topic',
+  'citationRanks',
+  'urlCount',
+  'urls',
+  'guardDecisions',
+  'blockedReasons',
+  'injectionFindings',
+  'conversationState',
+  'conversationMove',
+  'styleId',
+  'conversationPattern',
+  'responseLength',
+  'intentConfidence',
+  'contextConfidence',
+  'evidenceNeed',
+  'evidenceOutcome',
+  'chosenAction',
+  'contextVersion',
+  'featureHash',
+  'postRenderLint',
+  'contextSignature',
+  'contextualBanditEnabled',
+  'contextualFeatures',
+  'counterfactualSelectedArmId',
+  'counterfactualSelectedRank',
+  'counterfactualTopArms',
+  'counterfactualEval',
+  'assistantQuality',
+  'entryType',
+  'gatesApplied'
+]);
 
 function resolveAppendAuditLog() {
   const loaded = require('../audit/appendAuditLog');
@@ -46,10 +91,20 @@ function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function sanitizeSummaryInput(value) {
+  const payload = isObject(value) ? value : {};
+  const out = {};
+  Object.keys(payload).forEach((key) => {
+    if (!ALLOWED_SUMMARY_KEYS.has(key)) return;
+    out[key] = payload[key];
+  });
+  return out;
+}
+
 async function appendLlmGateDecision(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const auditFn = deps && typeof deps.appendAuditLog === 'function' ? deps.appendAuditLog : resolveAppendAuditLog();
-  const summaryFromInput = isObject(payload.payloadSummary) ? Object.assign({}, payload.payloadSummary) : {};
+  const summaryFromInput = sanitizeSummaryInput(payload.payloadSummary);
   const gatesApplied = normalizeGatesApplied(
     summaryFromInput.gatesApplied !== undefined ? summaryFromInput.gatesApplied : payload.gatesApplied
   );
@@ -92,6 +147,7 @@ async function appendLlmGateDecision(params, deps) {
 
 module.exports = {
   appendLlmGateDecision,
+  sanitizeSummaryInput,
   normalizeEntryType,
   normalizeGatesApplied
 };

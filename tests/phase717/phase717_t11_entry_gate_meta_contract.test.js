@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const { test } = require('node:test');
 
 const {
+  sanitizeSummaryInput,
   normalizeEntryType,
   normalizeGatesApplied
 } = require('../../src/usecases/llm/appendLlmGateDecision');
@@ -21,6 +22,19 @@ test('phase717: llm gate writer normalizes entryType and gatesApplied', () => {
   assert.deepEqual(normalizeGatesApplied(['kill_switch', 'INJECTION', 'invalid']), ['kill_switch', 'injection']);
 });
 
+test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown keys', () => {
+  const sanitized = sanitizeSummaryInput({
+    lineUserId: 'U1',
+    decision: 'allow',
+    entryType: 'job',
+    gatesApplied: ['kill_switch', 'snapshot'],
+    unknownField: 'drop_me'
+  });
+  assert.equal(sanitized.lineUserId, 'U1');
+  assert.equal(sanitized.decision, 'allow');
+  assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
+});
+
 test('phase717: gate baseline aggregates entryType and gates coverage', () => {
   const baseline = buildGateAuditBaseline([
     { payloadSummary: { decision: 'allow', entryType: 'webhook', gatesApplied: ['kill_switch', 'url_guard'] } },
@@ -34,9 +48,11 @@ test('phase717: gate baseline aggregates entryType and gates coverage', () => {
   assert.equal(entryTypes.webhook, 1);
   assert.equal(entryTypes.admin, 1);
   assert.equal(entryTypes.compat, 1);
+  assert.equal(entryTypes.job, 0);
   assert.equal(gatesCoverage.kill_switch, 3);
   assert.equal(gatesCoverage.url_guard, 1);
   assert.equal(gatesCoverage.injection, 1);
+  assert.equal(gatesCoverage.snapshot, 0);
 });
 
 test('phase717: webhook/admin/compat routes set entryType and gatesApplied for llm_gate.decision', () => {
@@ -46,6 +62,7 @@ test('phase717: webhook/admin/compat routes set entryType and gatesApplied for l
   const compat2 = read('src/routes/phaseLLM2OpsExplain.js');
   const compat3 = read('src/routes/phaseLLM3OpsNextActions.js');
   const compat4 = read('src/routes/phaseLLM4FaqAnswer.js');
+  const internalJob = read('src/routes/internal/llmActionRewardFinalizeJob.js');
 
   assert.ok(webhook.includes("entryType: 'webhook'"));
   assert.ok(webhook.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
@@ -61,4 +78,7 @@ test('phase717: webhook/admin/compat routes set entryType and gatesApplied for l
   assert.ok(compat3.includes("gatesApplied: ['kill_switch']"));
   assert.ok(compat4.includes("entryType: 'compat'"));
   assert.ok(compat4.includes("gatesApplied: ['kill_switch', 'url_guard']"));
+
+  assert.ok(internalJob.includes("entryType: ENTRY_TYPE"));
+  assert.ok(internalJob.includes("gatesApplied: GATES_APPLIED"));
 });
