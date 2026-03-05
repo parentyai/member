@@ -1,0 +1,587 @@
+{
+  "version": "us_expat_task_os_v1",
+  "links": [
+    {
+      "id": "usx_link_video_banking",
+      "title": "U.S. Bank Account Basics (3 min)",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "intentTag": "task",
+      "audienceTag": "solo",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "banking",
+      "vendorLabel": "Banking Guide"
+    },
+    {
+      "id": "usx_link_video_housing",
+      "title": "Rental Contract Checklist (3 min)",
+      "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "intentTag": "task",
+      "audienceTag": "family",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "housing",
+      "vendorLabel": "Housing Guide"
+    },
+    {
+      "id": "usx_link_action_ssn",
+      "title": "SSA SSN Application",
+      "url": "https://www.ssa.gov/number-card",
+      "intentTag": "task",
+      "audienceTag": "solo",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "immigration",
+      "vendorLabel": "SSA"
+    },
+    {
+      "id": "usx_link_action_bank",
+      "title": "Open U.S. Bank Account",
+      "url": "https://www.consumerfinance.gov/consumer-tools/bank-accounts/",
+      "intentTag": "task",
+      "audienceTag": "solo",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "banking",
+      "vendorLabel": "Consumer Finance"
+    },
+    {
+      "id": "usx_link_action_housing",
+      "title": "Housing Support",
+      "url": "https://www.hud.gov/topics/rental_assistance",
+      "intentTag": "task",
+      "audienceTag": "family",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "housing",
+      "vendorLabel": "HUD"
+    },
+    {
+      "id": "usx_link_action_healthcare",
+      "title": "Health Insurance Enrollment",
+      "url": "https://www.healthcare.gov/",
+      "intentTag": "task",
+      "audienceTag": "family",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "healthcare",
+      "vendorLabel": "HealthCare.gov"
+    },
+    {
+      "id": "usx_link_action_transport",
+      "title": "DMV New Resident Guide",
+      "url": "https://www.usa.gov/state-motor-vehicle-services",
+      "intentTag": "task",
+      "audienceTag": "solo",
+      "regionScope": "state",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "transport",
+      "vendorLabel": "DMV"
+    },
+    {
+      "id": "usx_link_action_school",
+      "title": "School Enrollment Basics",
+      "url": "https://www.usa.gov/school-enrollment",
+      "intentTag": "task",
+      "audienceTag": "family",
+      "regionScope": "school_district",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "school",
+      "vendorLabel": "School District"
+    },
+    {
+      "id": "usx_link_action_company_admin",
+      "title": "Payroll Setup Guidance",
+      "url": "https://www.irs.gov/businesses/small-businesses-self-employed/employment-taxes",
+      "intentTag": "task",
+      "audienceTag": "corporate",
+      "regionScope": "nationwide",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "company_admin",
+      "vendorLabel": "IRS Payroll"
+    },
+    {
+      "id": "usx_link_action_life_setup",
+      "title": "Utility & Phone Setup",
+      "url": "https://www.usa.gov/utility-bills",
+      "intentTag": "task",
+      "audienceTag": "solo",
+      "regionScope": "city",
+      "riskLevel": "safe",
+      "enabled": true,
+      "vendorKey": "life_setup",
+      "vendorLabel": "Utilities"
+    }
+  ],
+  "rules": [
+    {
+      "ruleId": "usx_arrival_base",
+      "scenarioKey": "A",
+      "stepKey": "arrival_base",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 0 },
+      "dependsOn": [],
+      "priority": 100,
+      "enabled": true,
+      "riskLevel": "medium",
+      "category": "LIFE_SETUP",
+      "estimatedTimeMin": 20,
+      "estimatedTimeMax": 40,
+      "recommendedVendorLinkIds": ["usx_link_action_life_setup"],
+      "meaning": {
+        "meaningKey": "arrival_base",
+        "title": "到着直後の初期セットアップ",
+        "summary": "最初の48時間で生活基盤を整える",
+        "doneDefinition": "住所・連絡先・生活必需契約の準備が完了",
+        "whyNow": "以降の行政・金融手続きの前提",
+        "helpLinkRegistryIds": ["usx_link_action_life_setup"]
+      },
+      "nudgeTemplate": {
+        "title": "到着直後の準備",
+        "body": "生活基盤を先に固めると後続タスクが安定します。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_life_setup",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_immigration_ssn",
+      "scenarioKey": "A",
+      "stepKey": "immigration_ssn",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 1 },
+      "dependsOn": ["usx_arrival_base"],
+      "priority": 98,
+      "enabled": true,
+      "riskLevel": "high",
+      "category": "IMMIGRATION",
+      "estimatedTimeMin": 30,
+      "estimatedTimeMax": 60,
+      "recommendedVendorLinkIds": ["usx_link_action_ssn"],
+      "meaning": {
+        "meaningKey": "immigration_ssn",
+        "title": "SSN申請",
+        "summary": "米国内の公的手続きの基礎IDを取得",
+        "doneDefinition": "SSAへの申請が完了",
+        "whyNow": "銀行/給与/各種契約の前提",
+        "helpLinkRegistryIds": ["usx_link_action_ssn"]
+      },
+      "nudgeTemplate": {
+        "title": "SSN申請を進めましょう",
+        "body": "SSNは多くの手続きの起点です。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_ssn",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_housing_address",
+      "scenarioKey": "A",
+      "stepKey": "housing_address",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 1 },
+      "dependsOn": ["usx_arrival_base"],
+      "priority": 96,
+      "enabled": true,
+      "riskLevel": "high",
+      "category": "HOUSING",
+      "estimatedTimeMin": 60,
+      "estimatedTimeMax": 180,
+      "recommendedVendorLinkIds": ["usx_link_action_housing"],
+      "meaning": {
+        "meaningKey": "housing_address",
+        "title": "住居・住所確定",
+        "summary": "住所証明を確保し各手続きの基盤を作る",
+        "doneDefinition": "居住先契約と住所証明が揃っている",
+        "whyNow": "SSN・銀行・学校・DMVの前提",
+        "helpLinkRegistryIds": ["usx_link_action_housing"]
+      },
+      "nudgeTemplate": {
+        "title": "住所確定を進めましょう",
+        "body": "住所確定は後続手続きのボトルネックです。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_housing",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_banking_account",
+      "scenarioKey": "A",
+      "stepKey": "banking_account",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 3 },
+      "dependsOn": ["usx_immigration_ssn", "usx_housing_address"],
+      "priority": 92,
+      "enabled": true,
+      "riskLevel": "medium",
+      "category": "BANKING",
+      "estimatedTimeMin": 20,
+      "estimatedTimeMax": 40,
+      "recommendedVendorLinkIds": ["usx_link_action_bank"],
+      "meaning": {
+        "meaningKey": "banking_account",
+        "title": "銀行口座開設",
+        "summary": "給与受取・生活決済の基盤を確立",
+        "doneDefinition": "口座開設と入出金確認が完了",
+        "whyNow": "給与連携と固定費支払いの開始に必須",
+        "helpLinkRegistryIds": ["usx_link_action_bank"]
+      },
+      "nudgeTemplate": {
+        "title": "銀行口座を開設しましょう",
+        "body": "給与振込先を早めに確定すると運用が安定します。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_bank",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_healthcare_insurance",
+      "scenarioKey": "A",
+      "stepKey": "healthcare_insurance",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 4 },
+      "dependsOn": ["usx_arrival_base"],
+      "priority": 90,
+      "enabled": true,
+      "riskLevel": "high",
+      "category": "HEALTHCARE",
+      "estimatedTimeMin": 30,
+      "estimatedTimeMax": 90,
+      "recommendedVendorLinkIds": ["usx_link_action_healthcare"],
+      "meaning": {
+        "meaningKey": "healthcare_insurance",
+        "title": "医療保険加入",
+        "summary": "医療費リスクを早期に制御",
+        "doneDefinition": "保険プラン選定と加入完了",
+        "whyNow": "想定外の高額医療費を回避",
+        "helpLinkRegistryIds": ["usx_link_action_healthcare"]
+      },
+      "nudgeTemplate": {
+        "title": "医療保険を設定しましょう",
+        "body": "保険加入は生活防衛の優先項目です。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_healthcare",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_transport_dmv",
+      "scenarioKey": "A",
+      "stepKey": "transport_dmv",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 7 },
+      "dependsOn": ["usx_housing_address"],
+      "priority": 84,
+      "enabled": true,
+      "riskLevel": "medium",
+      "category": "TRANSPORT",
+      "estimatedTimeMin": 60,
+      "estimatedTimeMax": 120,
+      "recommendedVendorLinkIds": ["usx_link_action_transport"],
+      "meaning": {
+        "meaningKey": "transport_dmv",
+        "title": "DMV手続き",
+        "summary": "運転免許・ID関連の州手続きを進める",
+        "doneDefinition": "必要なDMV申請が完了",
+        "whyNow": "州法・保険・通勤要件に対応",
+        "helpLinkRegistryIds": ["usx_link_action_transport"]
+      },
+      "nudgeTemplate": {
+        "title": "DMV手続きの案内",
+        "body": "州ごとの期限に注意してください。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_transport",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_school_enrollment",
+      "scenarioKey": "A",
+      "stepKey": "school_enrollment",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 5 },
+      "dependsOn": ["usx_housing_address"],
+      "priority": 88,
+      "enabled": true,
+      "riskLevel": "high",
+      "category": "SCHOOL",
+      "estimatedTimeMin": 90,
+      "estimatedTimeMax": 180,
+      "recommendedVendorLinkIds": ["usx_link_action_school"],
+      "meaning": {
+        "meaningKey": "school_enrollment",
+        "title": "学校登録",
+        "summary": "学区要件に沿って入学手続きを完了",
+        "doneDefinition": "必要書類提出と登録完了",
+        "whyNow": "学期開始に遅れると調整コスト増",
+        "helpLinkRegistryIds": ["usx_link_action_school"]
+      },
+      "nudgeTemplate": {
+        "title": "学校登録を進めましょう",
+        "body": "学区ごとに必要書類が異なります。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_school",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_life_phone",
+      "scenarioKey": "A",
+      "stepKey": "life_phone",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 1 },
+      "dependsOn": ["usx_arrival_base"],
+      "priority": 86,
+      "enabled": true,
+      "riskLevel": "medium",
+      "category": "LIFE_SETUP",
+      "estimatedTimeMin": 20,
+      "estimatedTimeMax": 45,
+      "recommendedVendorLinkIds": ["usx_link_action_life_setup"],
+      "meaning": {
+        "meaningKey": "life_phone",
+        "title": "通信・公共料金セットアップ",
+        "summary": "電話と公共サービスを早期に開通",
+        "doneDefinition": "回線契約と主要請求先設定が完了",
+        "whyNow": "連絡・認証・生活基盤を安定化",
+        "helpLinkRegistryIds": ["usx_link_action_life_setup"]
+      },
+      "nudgeTemplate": {
+        "title": "生活インフラを整えましょう",
+        "body": "通信と公共料金を先に確保すると運用が安定します。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_life_setup",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    },
+    {
+      "ruleId": "usx_company_payroll",
+      "scenarioKey": "A",
+      "stepKey": "company_payroll",
+      "trigger": { "eventKey": "CITY_REGION_DECLARED", "source": "city_pack" },
+      "leadTime": { "kind": "after", "days": 6 },
+      "dependsOn": ["usx_banking_account"],
+      "priority": 94,
+      "enabled": true,
+      "riskLevel": "high",
+      "category": "COMPANY_ADMIN",
+      "estimatedTimeMin": 30,
+      "estimatedTimeMax": 60,
+      "recommendedVendorLinkIds": ["usx_link_action_company_admin"],
+      "meaning": {
+        "meaningKey": "company_payroll",
+        "title": "給与・社内手続き",
+        "summary": "給与受取と税務関連の社内手続きを完了",
+        "doneDefinition": "給与口座登録と必要提出物の完了",
+        "whyNow": "初回給与遅延を防止",
+        "helpLinkRegistryIds": ["usx_link_action_company_admin"]
+      },
+      "nudgeTemplate": {
+        "title": "給与手続きの最終確認",
+        "body": "銀行口座連携後すぐに社内手続きを完了してください。",
+        "ctaText": "TODO詳細",
+        "linkRegistryId": "usx_link_action_company_admin",
+        "notificationCategory": "SEQUENCE_GUIDANCE"
+      }
+    }
+  ],
+  "taskContents": [
+    {
+      "taskKey": "usx_arrival_base",
+      "title": "到着直後の初期セットアップ",
+      "category": "LIFE_SETUP",
+      "timeMin": 20,
+      "timeMax": 40,
+      "checklistItems": [
+        { "id": "arrival_1", "text": "住所候補と滞在先の情報を確認", "order": 1, "enabled": true },
+        { "id": "arrival_2", "text": "連絡先（日本/米国）を最新化", "order": 2, "enabled": true },
+        { "id": "arrival_3", "text": "必須契約の優先順位を整理", "order": 3, "enabled": true }
+      ],
+      "summaryShort": ["最初の48時間で基盤を作る", "後続手続きの依存を解消", "連絡先と契約優先度を先に確定"],
+      "topMistakes": ["契約を同時に進めて手戻り", "住所証明を後回し", "連絡先更新漏れ"],
+      "contextTips": ["家族帯同時は学校/医療を先に確認", "単身赴任は通信と金融を優先"],
+      "manualText": "到着後48時間は生活インフラを固める時間です。住所情報、連絡先、優先契約を順に確認してください。",
+      "failureText": "最初に細かい最適化に入ると、後続の公的手続きが遅れます。依存を先に解消してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_life_setup",
+      "recommendedVendorLinkIds": ["usx_link_action_life_setup"]
+    },
+    {
+      "taskKey": "usx_immigration_ssn",
+      "title": "SSN申請",
+      "category": "IMMIGRATION",
+      "timeMin": 30,
+      "timeMax": 60,
+      "checklist": ["必要書類を準備", "SSA窓口情報を確認", "提出内容をダブルチェック"],
+      "summaryShort": ["SSNは多くの手続きの起点", "申請遅延は銀行/給与へ波及"],
+      "topMistakes": ["住所証明が不十分", "書類の記載ミス", "窓口予約を取らない"],
+      "contextTips": ["州により窓口混雑が異なるため早めに予約"],
+      "manualText": "SSAの要件に沿って申請書類を準備し、必要な本人確認情報を揃えて提出します。",
+      "failureText": "住所証明不足や記載ミスで再訪になるケースが多いです。提出前にチェックリストで確認してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_ssn",
+      "recommendedVendorLinkIds": ["usx_link_action_ssn"]
+    },
+    {
+      "taskKey": "usx_housing_address",
+      "title": "住居・住所確定",
+      "category": "HOUSING",
+      "timeMin": 60,
+      "timeMax": 180,
+      "checklist": ["契約候補の比較", "住所証明に使える書類確認", "入居日と光熱契約日を合わせる"],
+      "summaryShort": ["住所確定は全導線の前提", "学校/DMV/銀行に波及"],
+      "topMistakes": ["証明書類の名義不一致", "入居日調整漏れ", "公共料金契約後回し"],
+      "contextTips": ["子どもありは学区条件を先に確認"],
+      "manualText": "住居契約時は住所証明として利用可能な書類を意識し、後続手続きの提出要件に合わせて整理します。",
+      "failureText": "名義・住所表記の不一致は再提出の原因です。統一表記で管理してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_housing",
+      "recommendedVendorLinkIds": ["usx_link_action_housing"]
+    },
+    {
+      "taskKey": "usx_banking_account",
+      "title": "銀行口座開設",
+      "category": "BANKING",
+      "timeMin": 20,
+      "timeMax": 40,
+      "checklist": ["本人確認書類を準備", "口座種別を選択", "初回入金とアプリ設定"],
+      "summaryShort": ["給与受取口座を確定", "固定費決済の基盤を整える"],
+      "topMistakes": ["口座種別の誤選択", "手数料条件の見落とし", "給与口座登録の遅延"],
+      "contextTips": ["会社指定口座があるか事前確認"],
+      "manualText": "口座開設時は月額手数料条件と給与受取要件を確認し、アプリの認証設定まで完了します。",
+      "failureText": "手数料条件を確認せず開設すると運用コストが増えます。初回に条件を固定してください。",
+      "videoLinkId": "usx_link_video_banking",
+      "actionLinkId": "usx_link_action_bank",
+      "recommendedVendorLinkIds": ["usx_link_action_bank"]
+    },
+    {
+      "taskKey": "usx_healthcare_insurance",
+      "title": "医療保険加入",
+      "category": "HEALTHCARE",
+      "timeMin": 30,
+      "timeMax": 90,
+      "checklist": ["利用予定医療機関を確認", "免責条件を比較", "加入期限を確認"],
+      "summaryShort": ["医療費リスクを先に閉じる"],
+      "topMistakes": ["加入期限超過", "免責条件の誤解", "家族分の条件漏れ"],
+      "contextTips": ["家族帯同時は小児科アクセスも確認"],
+      "manualText": "保険プランは保険料だけでなく免責額とネットワークを含めて比較し、期限内に加入します。",
+      "failureText": "保険料だけで選ぶと自己負担が増えることがあります。実利用ケースで比較してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_healthcare",
+      "recommendedVendorLinkIds": ["usx_link_action_healthcare"]
+    },
+    {
+      "taskKey": "usx_transport_dmv",
+      "title": "DMV手続き",
+      "category": "TRANSPORT",
+      "timeMin": 60,
+      "timeMax": 120,
+      "checklist": ["州の期限確認", "必要書類を準備", "予約と当日動線を確定"],
+      "summaryShort": ["州ごとの期限を守る", "通勤/保険要件に対応"],
+      "topMistakes": ["州期限の見落とし", "書類不足", "予約なしで長時間待機"],
+      "contextTips": ["州により必要書類が異なるため公式ガイドを参照"],
+      "manualText": "DMV手続きは州ごとの期限と要件が異なります。公式要件に沿って予約・提出を進めます。",
+      "failureText": "他州情報を流用すると書類不備になりやすいです。必ず居住州の要件を確認してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_transport",
+      "recommendedVendorLinkIds": ["usx_link_action_transport"]
+    },
+    {
+      "taskKey": "usx_school_enrollment",
+      "title": "学校登録",
+      "category": "SCHOOL",
+      "timeMin": 90,
+      "timeMax": 180,
+      "checklist": ["学区情報の確認", "必要書類の収集", "登録期限の確認"],
+      "summaryShort": ["学区条件を先に確認", "必要書類をまとめて提出"],
+      "topMistakes": ["学区外申請", "書類不足", "期限後申請"],
+      "contextTips": ["予防接種証明の取得に時間がかかる場合あり"],
+      "manualText": "学区要件・必要書類・学期スケジュールを確認し、登録期限内に提出を完了します。",
+      "failureText": "住所証明とワクチン証明の不備が頻出です。提出前に要件表で再確認してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_school",
+      "recommendedVendorLinkIds": ["usx_link_action_school"]
+    },
+    {
+      "taskKey": "usx_life_phone",
+      "title": "通信・公共料金セットアップ",
+      "category": "LIFE_SETUP",
+      "timeMin": 20,
+      "timeMax": 45,
+      "checklist": ["携帯回線契約", "電気・ガス・水道手続き", "支払方法の統一"],
+      "summaryShort": ["連絡/生活インフラを先に確保"],
+      "topMistakes": ["本人確認で詰まる", "請求先が分散", "開通日ずれ"],
+      "contextTips": ["入居日と開通日を同日に揃える"],
+      "manualText": "通信と公共料金の契約は、請求先と開通日の整合を取って一括で進めると手戻りを減らせます。",
+      "failureText": "請求先が複数に分かれると管理コストが増えます。初期設計で統一してください。",
+      "videoLinkId": "usx_link_video_housing",
+      "actionLinkId": "usx_link_action_life_setup",
+      "recommendedVendorLinkIds": ["usx_link_action_life_setup"]
+    },
+    {
+      "taskKey": "usx_company_payroll",
+      "title": "給与・社内手続き",
+      "category": "COMPANY_ADMIN",
+      "timeMin": 30,
+      "timeMax": 60,
+      "checklist": ["給与口座登録", "税務フォーム提出", "社内ポータル確認"],
+      "summaryShort": ["初回給与の遅延を防止"],
+      "topMistakes": ["口座情報の転記ミス", "フォーム提出遅延", "承認待ち放置"],
+      "contextTips": ["銀行口座開設後24時間以内に登録"],
+      "manualText": "社内給与手続きは口座登録と税務フォーム提出をセットで完了し、承認状態を確認します。",
+      "failureText": "口座桁数やrouting番号の入力ミスが多いです。提出前に再確認してください。",
+      "videoLinkId": "usx_link_video_banking",
+      "actionLinkId": "usx_link_action_company_admin",
+      "recommendedVendorLinkIds": ["usx_link_action_company_admin"]
+    }
+  ],
+  "cityPackRecommendations": {
+    "default": {
+      "modules": ["housing", "healthcare", "utilities"],
+      "recommendedTasks": [
+        { "ruleId": "usx_housing_address", "module": "housing", "priorityBoost": 15 },
+        { "ruleId": "usx_healthcare_insurance", "module": "healthcare", "priorityBoost": 10 },
+        { "ruleId": "usx_life_phone", "module": "utilities", "priorityBoost": 8 }
+      ]
+    },
+    "byRegionKey": {
+      "san_jose_ca": {
+        "modules": ["schools", "housing", "driving"],
+        "recommendedTasks": [
+          { "ruleId": "usx_school_enrollment", "module": "schools", "priorityBoost": 20 },
+          { "ruleId": "usx_transport_dmv", "module": "driving", "priorityBoost": 12 }
+        ]
+      },
+      "new_york_ny": {
+        "modules": ["schools", "housing", "healthcare"],
+        "recommendedTasks": [
+          { "ruleId": "usx_school_enrollment", "module": "schools", "priorityBoost": 20 },
+          { "ruleId": "usx_banking_account", "module": "housing", "priorityBoost": 10 }
+        ]
+      }
+    }
+  },
+  "richMenuTemplate": {
+    "templateId": "us_expat_task_os_default",
+    "name": "US Expat Task OS",
+    "altText": "赴任タスクメニュー",
+    "size": { "width": 2500, "height": 843 },
+    "areas": [
+      { "x": 0, "y": 0, "width": 833, "height": 281, "action": { "type": "message", "text": "今日の3つ" } },
+      { "x": 833, "y": 0, "width": 834, "height": 281, "action": { "type": "message", "text": "TODO一覧" } },
+      { "x": 1667, "y": 0, "width": 833, "height": 281, "action": { "type": "message", "text": "カテゴリ" } },
+      { "x": 0, "y": 281, "width": 833, "height": 281, "action": { "type": "message", "text": "CityPack案内" } },
+      { "x": 833, "y": 281, "width": 834, "height": 281, "action": { "type": "message", "text": "通知履歴" } },
+      { "x": 1667, "y": 281, "width": 833, "height": 281, "action": { "type": "message", "text": "相談" } }
+    ]
+  }
+}

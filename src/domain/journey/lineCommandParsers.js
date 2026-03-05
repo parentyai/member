@@ -66,8 +66,30 @@ function parseJourneyLineCommand(text) {
   const raw = normalizeText(text);
   if (!raw) return null;
 
+  if (/^今日の3つ$/i.test(raw)) {
+    return { action: 'next_tasks' };
+  }
+
   if (/^TODO一覧$/i.test(raw)) {
     return { action: 'todo_list' };
+  }
+
+  const todoDetail = raw.match(/^TODO詳細\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (todoDetail) {
+    return {
+      action: 'todo_detail',
+      todoKey: normalizeText(todoDetail[1])
+    };
+  }
+
+  const todoDetailContinue = raw.match(/^TODO詳細続き\s*[:：]?\s*([A-Za-z0-9_\-]+)\s*[:：]\s*(manual|failure)\s*[:：]\s*(\d+)$/i);
+  if (todoDetailContinue) {
+    return {
+      action: 'todo_detail_continue',
+      todoKey: normalizeText(todoDetailContinue[1]),
+      section: normalizeText(todoDetailContinue[2]).toLowerCase(),
+      startChunk: Number(todoDetailContinue[3])
+    };
   }
 
   const complete = raw.match(/^TODO完了\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
@@ -106,6 +128,31 @@ function parseJourneyLineCommand(text) {
       snoozeUntil: date || null,
       snoozeDays: Number.isInteger(days) && days >= 1 && days <= 30 ? days : null
     };
+  }
+
+  const todoVendor = raw.match(/^TODO業者\s*[:：]?\s*([A-Za-z0-9_\-]+)$/i);
+  if (todoVendor) {
+    return {
+      action: 'todo_vendor',
+      todoKey: normalizeText(todoVendor[1])
+    };
+  }
+
+  const category = raw.match(/^カテゴリ(?:\s*[:：]?\s*([A-Za-z_]+))?$/i);
+  if (category) {
+    const categoryKey = normalizeText(category[1] || '').toUpperCase() || null;
+    return {
+      action: 'category_view',
+      category: categoryKey
+    };
+  }
+
+  if (/^通知履歴$/i.test(raw)) {
+    return { action: 'delivery_history' };
+  }
+
+  if (/^CityPack案内$/i.test(raw)) {
+    return { action: 'city_pack_guide' };
   }
 
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
@@ -199,6 +246,40 @@ function parseJourneyPostbackData(data) {
 
   if (action === 'todo_list') {
     return { action };
+  }
+
+  if (action === 'todo_detail') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_detail_missing' };
+    return { action, todoKey };
+  }
+
+  if (action === 'todo_detail_section') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    const section = normalizeText(params.get('section')).toLowerCase();
+    const startChunk = Number(params.get('startChunk') || 1);
+    if (!todoKey || !section) return { action: 'todo_detail_section_missing' };
+    return {
+      action,
+      todoKey,
+      section,
+      startChunk: Number.isFinite(startChunk) ? Math.max(1, Math.floor(startChunk)) : 1
+    };
+  }
+
+  if (action === 'next_tasks') return { action };
+  if (action === 'delivery_history') return { action };
+  if (action === 'city_pack_guide') return { action };
+
+  if (action === 'category_view' || action === 'category_pick') {
+    const category = normalizeText(params.get('category')).toUpperCase();
+    return { action: 'category_view', category: category || null };
+  }
+
+  if (action === 'todo_vendor') {
+    const todoKey = normalizeText(params.get('todoKey'));
+    if (!todoKey) return { action: 'todo_vendor_missing' };
+    return { action, todoKey };
   }
 
   return null;

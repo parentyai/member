@@ -80,6 +80,7 @@
     "stripeWebhookDeadLettersRepo",
     "stripeWebhookEventsRepo",
     "systemFlagsRepo",
+    "taskContentsRepo",
     "taskEventsRepo",
     "taskNodesRepo",
     "tasksRepo",
@@ -96,9 +97,7 @@
   "merge_candidates": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": [
-      "src/usecases/emergency/resolveEmergencyRecipients.js"
-    ]
+    "scenarioKey": []
   },
   "critical_guards": [
     "validateSingleCta",

@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-04T21:56:11.217Z",
+  "generatedAt": "2026-03-05T23:19:50.977Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "9dbf223b613a8106ad0b1ee4e61adde06fc5a1b4d0d9a7d08acb156d2d644a8e",
-  "canonical_repos_count": 91,
+  "sourceDigest": "d21088d7ccf03c3a707f7303fcce7a439a2a2685c6c374b113613fce471ed0e3",
+  "canonical_repos_count": 92,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
   "active_legacy_repo_imports_count": 0,
   "naming_drift_scenario_count": 0,
-  "naming_drift_scenarioKey_count": 1,
+  "naming_drift_scenarioKey_count": 0,
   "canonical_repos": [
     "analyticsReadRepo",
     "auditLogsRepo",
@@ -90,6 +90,7 @@
     "stripeWebhookDeadLettersRepo",
     "stripeWebhookEventsRepo",
     "systemFlagsRepo",
+    "taskContentsRepo",
     "taskEventsRepo",
     "taskNodesRepo",
     "tasksRepo",
@@ -107,9 +108,7 @@
   "unresolved_dynamic_dep": [],
   "naming_drift": {
     "scenario": [],
-    "scenarioKey": [
-      "src/usecases/emergency/resolveEmergencyRecipients.js"
-    ]
+    "scenarioKey": []
   },
   "assumptions": [
     "derived from docs/REPO_AUDIT_INPUTS/design_ai_meta.json",

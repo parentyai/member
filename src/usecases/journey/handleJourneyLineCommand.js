@@ -4,17 +4,31 @@ const { parseJourneyLineCommand } = require('../../domain/journey/lineCommandPar
 const userJourneyProfilesRepo = require('../../repos/firestore/userJourneyProfilesRepo');
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
+const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
+const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
+const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { listUserTasks } = require('../tasks/listUserTasks');
+const { computeNextTasks } = require('../tasks/computeNextTasks');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
+const { renderTaskFlexMessage } = require('../tasks/renderTaskFlexMessage');
+const { validateTaskContent } = require('../tasks/validateTaskContent');
+const { buildTaskDetailSectionReply } = require('./taskDetailSectionReply');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
-const { isJourneyUnifiedViewEnabled } = require('../../domain/tasks/featureFlags');
+const {
+  isJourneyUnifiedViewEnabled,
+  isNextTaskEngineEnabled,
+  getJourneyNextTaskMax,
+  isTaskDetailLineEnabled
+} = require('../../domain/tasks/featureFlags');
+const { TASK_CATEGORY_VALUES } = require('../../domain/tasks/usExpatTaxonomy');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -303,6 +317,229 @@ function resolveScheduleStage(schedule) {
   return 'unspecified';
 }
 
+function safeTaskTitle(task, fallback) {
+  const row = task && typeof task === 'object' ? task : {};
+  const meaning = row.meaning && typeof row.meaning === 'object' ? row.meaning : {};
+  return normalizeText(meaning.title) || normalizeText(row.title) || fallback;
+}
+
+async function loadRuleMap(ruleIds, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const map = new Map();
+  const ids = Array.from(new Set((Array.isArray(ruleIds) ? ruleIds : []).map((item) => normalizeText(item)).filter(Boolean)));
+  for (const ruleId of ids) {
+    // eslint-disable-next-line no-await-in-loop
+    const rule = await ruleRepo.getStepRule(ruleId).catch(() => null);
+    if (rule) map.set(ruleId, rule);
+  }
+  return map;
+}
+
+function normalizeCategoryFilter(value) {
+  const normalized = normalizeText(value).toUpperCase();
+  if (!normalized) return null;
+  if (!TASK_CATEGORY_VALUES.includes(normalized)) return null;
+  return normalized;
+}
+
+async function buildNextTasksReply(lineUserId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const max = getJourneyNextTaskMax();
+  const result = await computeNextTasks({
+    lineUserId,
+    limit: max,
+    actor: 'line_command_next_tasks',
+    forceRefresh: true
+  }, resolvedDeps).catch(() => ({ tasks: [] }));
+  const pick = Array.isArray(result.tasks) ? result.tasks : [];
+  if (!pick.length) {
+    return '今日の優先タスクはありません。まずは「TODO一覧」を確認してください。';
+  }
+  const lines = ['今日の3つです。'];
+  pick.forEach((task, index) => {
+    const due = task && task.dueAt ? String(task.dueAt).slice(0, 10) : '-';
+    lines.push(`${index + 1}. [${task.ruleId}] ${safeTaskTitle(task, task.ruleId)}（期限:${due}）`);
+  });
+  lines.push('詳細は「TODO詳細:todoKey」で確認できます。');
+  return lines.join('\n');
+}
+
+async function buildCategoryViewReply(lineUserId, category, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const requested = normalizeCategoryFilter(category);
+  const taskResult = await listUserTasks({
+    userId: lineUserId,
+    lineUserId,
+    forceRefresh: false,
+    actor: 'line_command_category_view'
+  }, resolvedDeps).catch(() => ({ tasks: [] }));
+  const tasks = Array.isArray(taskResult.tasks) ? taskResult.tasks : [];
+  const rules = await loadRuleMap(tasks.map((item) => item.ruleId), resolvedDeps);
+  const decorated = tasks.map((task) => {
+    const rule = rules.get(task.ruleId) || {};
+    return {
+      task,
+      category: normalizeCategoryFilter(rule.category) || 'LIFE_SETUP'
+    };
+  });
+
+  if (!requested) {
+    const counts = new Map();
+    decorated.forEach((row) => {
+      counts.set(row.category, (counts.get(row.category) || 0) + 1);
+    });
+    const lines = ['カテゴリ別件数です。'];
+    TASK_CATEGORY_VALUES.forEach((key) => {
+      lines.push(`- ${key}: ${counts.get(key) || 0}件`);
+    });
+    lines.push('絞り込みは「カテゴリ:IMMIGRATION」の形式で送信してください。');
+    return lines.join('\n');
+  }
+
+  const filtered = decorated.filter((row) => row.category === requested).slice(0, 10);
+  if (!filtered.length) {
+    return `${requested} のタスクは現在ありません。`;
+  }
+  const lines = [`カテゴリ ${requested} のタスクです。`];
+  filtered.forEach((row, index) => {
+    const due = row.task && row.task.dueAt ? String(row.task.dueAt).slice(0, 10) : '-';
+    lines.push(`${index + 1}. [${row.task.ruleId}] ${safeTaskTitle(row.task, row.task.ruleId)}（期限:${due}）`);
+  });
+  return lines.join('\n');
+}
+
+async function buildDeliveryHistoryReply(lineUserId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.deliveriesRepo || deliveriesRepo;
+  const rows = await repository.listDeliveriesByUser(lineUserId, 5).catch(() => []);
+  if (!Array.isArray(rows) || !rows.length) {
+    return '通知履歴はまだありません。';
+  }
+  const lines = ['直近の通知履歴です。'];
+  rows.slice(0, 5).forEach((row, index) => {
+    const sentAt = row && row.sentAt ? String(row.sentAt).slice(0, 19).replace('T', ' ') : '-';
+    const category = normalizeText(row && row.notificationCategory, '-');
+    const state = row && row.delivered === true ? 'delivered' : (normalizeText(row && row.state, 'queued') || 'queued');
+    lines.push(`${index + 1}. ${sentAt} / ${category} / ${state}`);
+  });
+  return lines.join('\n');
+}
+
+function isLinkInactive(link) {
+  if (!link || typeof link !== 'object') return true;
+  if (link.enabled === false) return true;
+  const state = normalizeText(link.lastHealth && link.lastHealth.state).toUpperCase();
+  return state === 'WARN' || state === 'BLOCKED';
+}
+
+async function loadActiveLink(linkId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
+  if (!normalizeText(linkId)) return null;
+  const link = await repository.getLink(linkId).catch(() => null);
+  if (!link || isLinkInactive(link)) return null;
+  return link;
+}
+
+function mergeTaskContentFallback(todoKey, todoItem, stepRule, content) {
+  const existing = content && typeof content === 'object' ? content : {};
+  const meaning = stepRule && stepRule.meaning && typeof stepRule.meaning === 'object' ? stepRule.meaning : {};
+  return Object.assign({}, existing, {
+    taskKey: normalizeText(existing.taskKey, normalizeText(stepRule && stepRule.ruleId, todoKey)),
+    title: normalizeText(existing.title, normalizeText(meaning.title, normalizeText(todoItem && todoItem.title, todoKey))),
+    category: normalizeText(existing.category, normalizeText(stepRule && stepRule.category, null)),
+    dependencies: Array.isArray(existing.dependencies) && existing.dependencies.length
+      ? existing.dependencies
+      : (Array.isArray(stepRule && stepRule.dependsOn) ? stepRule.dependsOn : []),
+    recommendedVendorLinkIds: Array.isArray(existing.recommendedVendorLinkIds) && existing.recommendedVendorLinkIds.length
+      ? existing.recommendedVendorLinkIds
+      : (Array.isArray(stepRule && stepRule.recommendedVendorLinkIds) ? stepRule.recommendedVendorLinkIds : []),
+    manualText: normalizeText(existing.manualText, '手順マニュアルは未登録です。'),
+    failureText: normalizeText(existing.failureText, 'よくある失敗は未登録です。')
+  });
+}
+
+async function buildTodoDetailReply(lineUserId, todoKey, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
+  const contentRepo = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const todo = await todoRepo.getJourneyTodoItem(lineUserId, todoKey).catch(() => null);
+  if (!todo) {
+    return {
+      handled: true,
+      replyText: `TODOキー「${todoKey}」が見つかりません。`
+    };
+  }
+
+  const rule = await ruleRepo.getStepRule(todoKey).catch(() => null);
+  const content = await contentRepo.getTaskContent(todoKey).catch(() => null);
+  const merged = mergeTaskContentFallback(todoKey, todo, rule, content);
+  const validation = await validateTaskContent(merged, {
+    getLink: async (id) => {
+      const repo = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
+      return repo.getLink(id);
+    }
+  }).catch(() => ({ ok: true, resolved: {} }));
+
+  const videoLink = await loadActiveLink(validation.resolved && validation.resolved.videoLinkId, resolvedDeps);
+  const actionLink = await loadActiveLink(validation.resolved && validation.resolved.actionLinkId, resolvedDeps);
+
+  const flex = renderTaskFlexMessage({
+    todoKey,
+    taskContent: merged,
+    resolvedLinks: {
+      video: videoLink ? { url: videoLink.url, label: videoLink.title || videoLink.label || '動画' } : null,
+      action: actionLink ? { url: actionLink.url, label: actionLink.title || actionLink.label || '詳細' } : null
+    }
+  });
+
+  return {
+    handled: true,
+    replyText: flex.fallbackText,
+    replyMessage: {
+      type: 'flex',
+      altText: flex.altText,
+      contents: flex.contents
+    }
+  };
+}
+
+async function buildTodoVendorReply(lineUserId, todoKey, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const contentRepo = resolvedDeps.taskContentsRepo || taskContentsRepo;
+  const ruleRepo = resolvedDeps.stepRulesRepo || stepRulesRepo;
+  const content = await contentRepo.getTaskContent(todoKey).catch(() => null);
+  const rule = await ruleRepo.getStepRule(todoKey).catch(() => null);
+  const ids = Array.from(new Set([
+    ...((content && Array.isArray(content.recommendedVendorLinkIds)) ? content.recommendedVendorLinkIds : []),
+    ...((rule && Array.isArray(rule.recommendedVendorLinkIds)) ? rule.recommendedVendorLinkIds : [])
+  ])).slice(0, 3);
+  if (!ids.length) {
+    return '推奨業者は未登録です。';
+  }
+  const lines = ['推奨業者リンクです。'];
+  for (const linkId of ids) {
+    // eslint-disable-next-line no-await-in-loop
+    const link = await loadActiveLink(linkId, resolvedDeps);
+    if (!link) continue;
+    lines.push(`- ${(link.vendorLabel || link.title || link.label || linkId)}: ${link.url}`);
+  }
+  if (lines.length === 1) return '推奨業者リンクは現在利用できません。';
+  return lines.join('\n');
+}
+
+function buildCityPackGuideReply() {
+  return [
+    'CityPack案内です。',
+    '1) 地域申告: 地域:San Jose, CA',
+    '2) TODO一覧: TODO一覧',
+    '3) 今日の3つ: 今日の3つ',
+    '地域申告後に CityPack 推奨導線が有効になります。'
+  ].join('\n');
+}
+
 async function handleJourneyLineCommand(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -391,6 +628,102 @@ async function handleJourneyLineCommand(params, deps) {
     return {
       handled: true,
       replyText: `${dateLabel}を ${dateValue} に更新しました。\nTODO同期: ${syncResult.syncedCount}件`
+    };
+  }
+
+  if (command.action === 'next_tasks') {
+    if (!isNextTaskEngineEnabled()) {
+      return {
+        handled: true,
+        replyText: '「今日の3つ」は現在停止中です。TODO一覧をご利用ください。'
+      };
+    }
+    return {
+      handled: true,
+      replyText: await buildNextTasksReply(lineUserId, resolvedDeps)
+    };
+  }
+
+  if (command.action === 'category_view') {
+    return {
+      handled: true,
+      replyText: await buildCategoryViewReply(lineUserId, command.category, resolvedDeps)
+    };
+  }
+
+  if (command.action === 'delivery_history') {
+    return {
+      handled: true,
+      replyText: await buildDeliveryHistoryReply(lineUserId, resolvedDeps)
+    };
+  }
+
+  if (command.action === 'city_pack_guide') {
+    return {
+      handled: true,
+      replyText: buildCityPackGuideReply()
+    };
+  }
+
+  if (command.action === 'todo_vendor') {
+    const todoKey = normalizeText(command.todoKey);
+    if (!todoKey) {
+      return {
+        handled: true,
+        replyText: 'TODOキーが必要です。例: TODO業者:visa_documents'
+      };
+    }
+    return {
+      handled: true,
+      replyText: await buildTodoVendorReply(lineUserId, todoKey, resolvedDeps)
+    };
+  }
+
+  if (command.action === 'todo_detail') {
+    if (!isTaskDetailLineEnabled()) {
+      return {
+        handled: true,
+        replyText: 'TODO詳細は現在停止中です。TODO一覧をご利用ください。'
+      };
+    }
+    const todoKey = normalizeText(command.todoKey);
+    if (!todoKey) {
+      return {
+        handled: true,
+        replyText: 'TODOキーが必要です。例: TODO詳細:visa_documents'
+      };
+    }
+    return buildTodoDetailReply(lineUserId, todoKey, resolvedDeps);
+  }
+
+  if (command.action === 'todo_detail_continue') {
+    const todoKey = normalizeText(command.todoKey);
+    const section = normalizeText(command.section).toLowerCase();
+    if (!todoKey || !section) {
+      return {
+        handled: true,
+        replyText: '形式が不正です。例: TODO詳細続き:visa_documents:manual:1'
+      };
+    }
+    const sectionReply = await buildTaskDetailSectionReply({
+      lineUserId,
+      todoKey,
+      section,
+      startChunk: command.startChunk
+    }, resolvedDeps);
+    if (!sectionReply.ok) {
+      return {
+        handled: true,
+        replyText: '詳細本文を取得できませんでした。'
+      };
+    }
+    return {
+      handled: true,
+      replyText: sectionReply.replyMessages[0] && sectionReply.replyMessages[0].text
+        ? sectionReply.replyMessages[0].text
+        : '未登録です。',
+      replyMessages: sectionReply.replyMessages,
+      continuation: sectionReply.continuation
     };
   }
 

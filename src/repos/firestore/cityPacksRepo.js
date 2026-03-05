@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
+const { normalizeCityPackModule } = require('../../domain/tasks/usExpatTaxonomy');
 
 const COLLECTION = 'city_packs';
 const VALIDITY_DAYS = 120;
@@ -76,6 +77,40 @@ function resolveLanguageFilter(value) {
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return [];
   return Array.from(new Set(values.filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())));
+}
+
+function normalizeModules(values) {
+  if (!Array.isArray(values)) return [];
+  const seen = new Set();
+  const out = [];
+  values.forEach((value) => {
+    const normalized = normalizeCityPackModule(value, null);
+    if (!normalized) return;
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    out.push(normalized);
+  });
+  return out;
+}
+
+function normalizeRecommendedTasks(values) {
+  if (!Array.isArray(values)) return [];
+  const out = [];
+  const seen = new Set();
+  values.forEach((value) => {
+    const row = value && typeof value === 'object' ? value : {};
+    const ruleId = typeof row.ruleId === 'string' ? row.ruleId.trim() : '';
+    if (!ruleId) return;
+    const module = normalizeCityPackModule(row.module, null);
+    const priorityBoost = Number.isFinite(Number(row.priorityBoost))
+      ? Math.max(-100, Math.min(100, Math.floor(Number(row.priorityBoost))))
+      : null;
+    const signature = `${ruleId}::${module || ''}`;
+    if (seen.has(signature)) return;
+    seen.add(signature);
+    out.push({ ruleId, module, priorityBoost });
+  });
+  return out;
 }
 
 function normalizeString(value) {
@@ -260,7 +295,9 @@ function normalizePayload(data) {
     slotSchemaVersion: normalizeSlotSchemaVersion(payload.slotSchemaVersion),
     packClass,
     language,
-    nationwidePolicy
+    nationwidePolicy,
+    modules: normalizeModules(payload.modules),
+    recommendedTasks: normalizeRecommendedTasks(payload.recommendedTasks)
   };
 }
 
@@ -320,6 +357,12 @@ function normalizeCityPackContentPatch(data) {
   if (Object.prototype.hasOwnProperty.call(payload, 'metadata')) {
     patch.metadata = normalizeMetadata(payload.metadata);
   }
+  if (Object.prototype.hasOwnProperty.call(payload, 'modules')) {
+    patch.modules = normalizeModules(payload.modules);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'recommendedTasks')) {
+    patch.recommendedTasks = normalizeRecommendedTasks(payload.recommendedTasks);
+  }
 
   return patch;
 }
@@ -358,6 +401,8 @@ async function createCityPack(data) {
     packClass: payload.packClass,
     language: payload.language,
     nationwidePolicy: payload.nationwidePolicy,
+    modules: payload.modules,
+    recommendedTasks: payload.recommendedTasks,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });

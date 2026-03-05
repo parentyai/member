@@ -221,6 +221,17 @@
     ]
   },
   {
+    "collection": "emergency_rules",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/emergencyRulesRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:25"
+    ]
+  },
+  {
     "collection": "emergency_snapshots",
     "kind": "evidence",
     "recomputable": false,
@@ -845,6 +856,17 @@
       "src/repos/firestore/systemFlagsRepo.js:82",
       "src/repos/firestore/systemFlagsRepo.js:91",
       "src/repos/firestore/systemFlagsRepo.js:98"
+    ]
+  },
+  {
+    "collection": "task_contents",
+    "kind": "config",
+    "recomputable": false,
+    "retention": "INDEFINITE",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/taskContentsRepo.js:7",
+      "src/domain/retention/retentionPolicy.js:80"
     ]
   },
   {

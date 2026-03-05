@@ -6,9 +6,10 @@ const { sendWelcomeMessage } = require('../usecases/notifications/sendWelcomeMes
 const { logLineWebhookEventsBestEffort } = require('../usecases/line/logLineWebhookEvents');
 const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareRedacMembershipIdFromLine');
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
-const { replyMessage } = require('../infra/lineClient');
+const { replyMessage, pushMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
+const { syncCityPackRecommendedTasks } = require('../usecases/cityPack/syncCityPackRecommendedTasks');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
 const llmClient = require('../infra/llmClient');
 const { resolvePlan } = require('../usecases/billing/planGate');
@@ -106,6 +107,44 @@ function extractMessageText(event) {
   if (!msg || msg.type !== 'text') return null;
   const text = msg.text;
   return typeof text === 'string' ? text : null;
+}
+
+async function sendJourneyResponse(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
+  const replyFn = typeof payload.replyFn === 'function' ? payload.replyFn : replyMessage;
+  const pushFn = typeof payload.pushFn === 'function' ? payload.pushFn : pushMessage;
+  const replyToken = payload.replyToken;
+  const lineUserId = payload.lineUserId;
+  if (!journey || !replyToken || !lineUserId) return false;
+
+  const replyMessages = Array.isArray(journey.replyMessages)
+    ? journey.replyMessages.filter((item) => item && typeof item === 'object')
+    : [];
+
+  if (replyMessages.length > 0) {
+    await replyFn(replyToken, replyMessages[0]);
+    for (const followup of replyMessages.slice(1)) {
+      // eslint-disable-next-line no-await-in-loop
+      await pushFn(lineUserId, followup);
+    }
+  } else if (journey.replyMessage && typeof journey.replyMessage === 'object') {
+    await replyFn(replyToken, journey.replyMessage);
+  } else {
+    await replyFn(replyToken, {
+      type: 'text',
+      text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
+    });
+  }
+
+  const followupMessages = Array.isArray(journey.followupMessages)
+    ? journey.followupMessages.filter((item) => item && typeof item === 'object')
+    : [];
+  for (const followup of followupMessages) {
+    // eslint-disable-next-line no-await-in-loop
+    await pushFn(lineUserId, followup);
+  }
+  return true;
 }
 
 function isRedacStatusCommand(text) {
@@ -1454,6 +1493,7 @@ async function handleLineWebhook(options) {
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
   const replyFn = (options && options.replyFn) || replyMessage;
+  const pushFn = (options && options.pushFn) || pushMessage;
 
   // Ensure users and run interactive commands (best-effort).
   const events = Array.isArray(payload && payload.events) ? payload.events : [];
@@ -1481,9 +1521,12 @@ async function handleLineWebhook(options) {
             data: postbackData
           });
           if (journey && journey.handled) {
-            await replyFn(replyToken, {
-              type: 'text',
-              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
+            await sendJourneyResponse({
+              journey,
+              replyToken,
+              lineUserId: userId,
+              replyFn,
+              pushFn
             });
             continue;
           }
@@ -1502,9 +1545,12 @@ async function handleLineWebhook(options) {
         try {
           const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
           if (journey && journey.handled) {
-            await replyFn(replyToken, {
-              type: 'text',
-              text: normalizeReplyText(journey.replyText) || '設定を更新しました。'
+            await sendJourneyResponse({
+              journey,
+              replyToken,
+              lineUserId: userId,
+              replyFn,
+              pushFn
             });
             continue;
           }
@@ -1577,7 +1623,16 @@ async function handleLineWebhook(options) {
 
           const region = await declareCityRegionFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
           if (region.status === 'declared') {
-            await replyFn(replyToken, { type: 'text', text: regionDeclared(region.regionCity, region.regionState) });
+            const seeded = await syncCityPackRecommendedTasks({
+              lineUserId: userId,
+              regionKey: region.regionKey || null,
+              traceId: requestId,
+              actor: 'line_region_declared'
+            }).catch(() => null);
+            const seededText = seeded && Number(seeded.seededCount) > 0
+              ? `\nCityPackおすすめタスクを${seeded.seededCount}件追加しました。`
+              : '';
+            await replyFn(replyToken, { type: 'text', text: `${regionDeclared(region.regionCity, region.regionState)}${seededText}` });
             continue;
           }
           if (region.status === 'prompt_required') {

@@ -1387,6 +1387,26 @@
       "completion": "completed"
     },
     {
+      "feature": "osLinkRegistryImpact",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "admin",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 39,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
       "feature": "osLinkRegistryLookup",
       "entrypoints": [],
       "usecases": [
@@ -3056,20 +3076,26 @@
         "recordLlmUsage",
         "recordUserLlmConsent",
         "resolvePlan",
-        "sendWelcomeMessage"
+        "sendWelcomeMessage",
+        "syncCityPackRecommendedTasks"
       ],
       "repos": [
         "auditLogsRepo",
         "cityPackFeedbackRepo",
         "cityPackRequestsRepo",
+        "cityPacksRepo",
         "deliveriesRepo",
         "eventsRepo",
         "journeyTodoItemsRepo",
+        "linkRegistryRepo",
         "llmQualityLogsRepo",
         "llmUsageLogsRepo",
         "llmUsageStatsRepo",
         "opsConfigRepo",
+        "stepRulesRepo",
         "systemFlagsRepo",
+        "taskContentsRepo",
+        "tasksRepo",
         "userConsentsRepo",
         "userContextSnapshotsRepo",
         "userJourneyProfilesRepo",
@@ -3081,14 +3107,19 @@
         "audit_logs",
         "city_pack_feedback",
         "city_pack_requests",
+        "city_packs",
         "events",
         "journey_todo_items",
+        "link_registry",
         "llm_quality_logs",
         "llm_usage_logs",
         "llm_usage_stats",
         "notification_deliveries",
         "opsConfig",
+        "step_rules",
         "system_flags",
+        "task_contents",
+        "tasks",
         "user_consents",
         "user_context_snapshots",
         "user_journey_profiles",
@@ -3100,7 +3131,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 88,
+      "tests_count": 82,
       "ssot_refs": [],
       "completion": "completed"
     },

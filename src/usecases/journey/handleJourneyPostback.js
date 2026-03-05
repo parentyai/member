@@ -43,6 +43,29 @@ function toCommandText(action) {
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }
+  if (action.action === 'todo_detail') {
+    return `TODO詳細:${action.todoKey || ''}`;
+  }
+  if (action.action === 'todo_detail_section') {
+    const section = action.section || 'manual';
+    const startChunk = Number.isFinite(Number(action.startChunk)) ? Math.max(1, Math.floor(Number(action.startChunk))) : 1;
+    return `TODO詳細続き:${action.todoKey || ''}:${section}:${startChunk}`;
+  }
+  if (action.action === 'next_tasks') {
+    return '今日の3つ';
+  }
+  if (action.action === 'category_view') {
+    return action.category ? `カテゴリ:${action.category}` : 'カテゴリ';
+  }
+  if (action.action === 'delivery_history') {
+    return '通知履歴';
+  }
+  if (action.action === 'city_pack_guide') {
+    return 'CityPack案内';
+  }
+  if (action.action === 'todo_vendor') {
+    return `TODO業者:${action.todoKey || ''}`;
+  }
   if (action.action === 'invalid_household') {
     return '属性:invalid';
   }

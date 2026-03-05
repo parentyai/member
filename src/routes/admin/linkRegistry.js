@@ -27,7 +27,15 @@ function parseJson(body, res) {
 async function handleCreate(req, res, body) {
   const payload = parseJson(body, res);
   if (!payload) return;
-  const result = await createLink(payload);
+  let result;
+  try {
+    result = await createLink(payload);
+  } catch (err) {
+    const status = Number.isInteger(err && err.statusCode) ? err.statusCode : 500;
+    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: err && err.code ? err.code : 'error' }));
+    return;
+  }
   const actor = resolveActor(req);
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
@@ -72,7 +80,15 @@ async function handleList(req, res) {
 async function handleUpdate(req, res, body, id) {
   const payload = parseJson(body, res);
   if (!payload) return;
-  const result = await updateLink(id, payload);
+  let result;
+  try {
+    result = await updateLink(id, payload);
+  } catch (err) {
+    const status = Number.isInteger(err && err.statusCode) ? err.statusCode : 500;
+    res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: err && err.code ? err.code : 'error' }));
+    return;
+  }
   const actor = resolveActor(req);
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);

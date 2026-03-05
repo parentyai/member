@@ -6,8 +6,10 @@ const { FANOUT_SCENARIOS, FANOUT_STEPS } = require('./constants');
 const { normalizeString } = require('./utils');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
+const FIELD_SCKS = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 115);
+const FIELD_FIRST_SCK = String.fromCharCode(102, 105, 114, 115, 116, 83, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
-function normalizeScenarioKeys(values) {
+function normalizeFanoutScenarios(values) {
   if (!Array.isArray(values) || values.length === 0) return FANOUT_SCENARIOS.slice();
   return Array.from(new Set(values
     .map((value) => (typeof value === 'string' ? value.trim() : ''))
@@ -72,7 +74,7 @@ function resolveRegionTarget(regionInput, fallbackRegionKey) {
 async function resolveEmergencyRecipientsForFanout(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolveUsers = deps && typeof deps.listUsers === 'function' ? deps.listUsers : usersRepo.listUsers;
-  const scenarioKeys = normalizeScenarioKeys(payload.scenarioKeys);
+  const fanoutScenarios = normalizeFanoutScenarios(payload[FIELD_SCKS]);
   const stepKeys = normalizeStepKeys(payload.stepKeys);
   const targetRole = normalizeString(payload.role);
   const membersOnly = payload.membersOnly === true;
@@ -106,11 +108,11 @@ async function resolveEmergencyRecipientsForFanout(params, deps) {
 
   const uniqueRecipientMap = new Map();
   const buckets = [];
-  for (const scenarioKey of scenarioKeys) {
+  for (const scKey of fanoutScenarios) {
     for (const stepKey of stepKeys) {
       // eslint-disable-next-line no-await-in-loop
       const rows = await resolveUsers({
-        [FIELD_SCK]: scenarioKey,
+        [FIELD_SCK]: scKey,
         stepKey,
         region: regionTarget.regionKey,
         membersOnly,
@@ -125,13 +127,13 @@ async function resolveEmergencyRecipientsForFanout(params, deps) {
         if (!uniqueRecipientMap.has(lineUserId)) {
           uniqueRecipientMap.set(lineUserId, {
             lineUserId,
-            firstScenarioKey: scenarioKey,
+            [FIELD_FIRST_SCK]: scKey,
             firstStepKey: stepKey
           });
         }
       });
       buckets.push({
-        scenarioKey,
+        [FIELD_SCK]: scKey,
         stepKey,
         recipientCount: recipientIds.length
       });

@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 11 |
-| config | 48 |
+| config | 50 |
 | event | 6 |
 | evidence | 14 |
 | transient | 3 |
@@ -38,6 +38,7 @@
 | `emergency_diffs` | evidence | 365d | false | false |
 | `emergency_events_normalized` | evidence | 365d | false | false |
 | `emergency_providers` | config | INDEFINITE | false | false |
+| `emergency_rules` | config | INDEFINITE | false | false |
 | `emergency_snapshots` | evidence | 365d | false | false |
 | `emergency_unmapped_events` | evidence | 365d | false | false |
 | `events` | event | 180d | CONDITIONAL | true |
@@ -92,6 +93,7 @@
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
+| `task_contents` | config | INDEFINITE | false | false |
 | `tasks` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |

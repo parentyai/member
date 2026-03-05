@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-04T13:53:09-05:00",
-  "gitCommit": "5adc64ae97c1ecccba84443b09b2fee371aeaf85",
-  "branch": "main",
-  "sourceDigest": "ea194abfaf288179e21440f7e925a2100258136cc5293b74bba73fa069c32705",
+  "generatedAt": "2026-03-04T17:09:47-05:00",
+  "gitCommit": "59f8f6f1aba6ea6067df2a76d3076f72a188ac28",
+  "branch": "codex/emergency-full-staging",
+  "sourceDigest": "2b4a589682637f23f41250c766cdc9efac752c125278f545547913ef32b9b139",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
