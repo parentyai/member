@@ -43,6 +43,8 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "audit_required": true,
@@ -72,6 +74,8 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "audit_required": true,
@@ -1559,6 +1563,8 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "audit_required": true,
@@ -1588,6 +1594,8 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "audit_required": true,
@@ -7542,7 +7550,8 @@
       "writes_collections": [
         "step_rules",
         "system_flags",
-        "tasks"
+        "tasks",
+        "user_journey_profiles"
       ],
       "audit_required": true,
       "trace_required": true,
@@ -7783,6 +7792,8 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "audit_required": true,
@@ -7964,6 +7975,7 @@
         "audit_logs",
         "city_pack_feedback",
         "city_pack_requests",
+        "city_packs",
         "events",
         "journey_todo_items",
         "llm_quality_logs",
@@ -7974,6 +7986,7 @@
         "system_flags",
         "task_contents",
         "tasks",
+        "user_city_pack_preferences",
         "user_consents",
         "user_context_snapshots",
         "user_journey_profiles",

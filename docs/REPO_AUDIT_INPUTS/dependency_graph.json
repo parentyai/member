@@ -318,9 +318,11 @@
       "sendRetryQueueRepo"
     ],
     "handleJourneyLineCommand": [
+      "cityPacksRepo",
       "journeyTodoItemsRepo",
       "taskContentsRepo",
       "tasksRepo",
+      "userCityPackPreferencesRepo",
       "userJourneyProfilesRepo",
       "userJourneySchedulesRepo"
     ],
@@ -591,7 +593,8 @@
     "runTaskNudgeJob": [
       "stepRulesRepo",
       "systemFlagsRepo",
-      "tasksRepo"
+      "tasksRepo",
+      "userJourneyProfilesRepo"
     ],
     "sendNotice": [
       "auditLogsRepo",
@@ -603,6 +606,8 @@
       "deliveriesRepo",
       "linkRegistryRepo",
       "notificationsRepo",
+      "userCityPackPreferencesRepo",
+      "userJourneyProfilesRepo",
       "usersRepo"
     ],
     "sendNotificationPhase1": [
@@ -882,6 +887,9 @@
     ],
     "templatesVRepo": [
       "templates_v"
+    ],
+    "userCityPackPreferencesRepo": [
+      "user_city_pack_preferences"
     ],
     "userConsentsRepo": [
       "user_consents"

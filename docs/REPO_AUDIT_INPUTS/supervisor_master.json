@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T06:19:58-05:00",
-  "gitCommit": "53b1ae916441ffb246991ed3c68afcf100991930",
-  "branch": "main",
-  "sourceDigest": "080134652849b06a32b30acd5cab035771ae5d6c1f13f428b523ca6e443d0745",
+  "generatedAt": "2026-03-05T09:03:02-05:00",
+  "gitCommit": "83a8e298e7c719c4218c2f58849edc9763bc370c",
+  "branch": "codex/nextgen-ux-linkregistry-microlearning-modules",
+  "sourceDigest": "096a4f0b65d1cda73642d335fb19cbc356e9e9953b81c171a510bfeb7367073b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
