@@ -48,6 +48,15 @@ function toCommandText(action) {
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }
+  if (action.action === 'delivery_history') {
+    return '通知履歴';
+  }
+  if (action.action === 'city_pack_guide') {
+    return 'CityPack案内';
+  }
+  if (action.action === 'vendor_guide') {
+    return 'Vendor案内';
+  }
   if (action.action === 'invalid_household') {
     return '属性:invalid';
   }

@@ -207,3 +207,38 @@ STOP の方針:
 - 異常時ログ:
   - synthetic webhookのため replyToken はダミー。messageケースで `LINE API error: 400` を観測（Journey処理/fail-close検証は継続）
 - ロールバック実施有無: なし
+
+## Phase73x 監査確定改善 Runbook（add-only）
+
+### task-content linkage migration（dry-run -> apply）
+1. monitor > `task-content migration（dry-run/apply）` を開く。
+2. 必要な `manualMappings JSON` を入力する（`[{sourceTaskKey,ruleId,note}]`）。
+3. `migration-plan` を実行して `linked/unlinked/candidates` を確認する。
+4. 警告が許容範囲であることを確認後、`migration-apply` を実行する。
+5. `task_content_links` 反映後に `TODO詳細:{todoKey}` で表示回帰を確認する。
+
+停止条件:
+- `ENABLE_TASK_CONTENT_LINK_MIGRATION_APPLY_V1=0` の場合は apply できない（409）。
+- unlinked が増加した場合は apply を中止し manualMappings を見直す。
+
+### Link Registry impact map 運用
+1. monitor > `Link Registry impact map` で `link-impact-reload` を実行する。
+2. `shared`（複数領域参照）かつ `state=disabled|WARN` を優先確認する。
+3. shared ID を更新する場合は Task/Notification/CityPack/Vendor 影響を事前レビューする。
+
+### 監査KPI再計算（手動/定期）
+- internal job: `POST /internal/jobs/task-ux-audit`
+- guard: internal token 必須、kill switch ON で fail-close
+- 生成対象: `ops_system_snapshot`
+- 主要KPI:
+  - `rich_menu_state`
+  - `overlap_rate_pct`
+  - `task_key_linkage_rate_pct`
+  - `shared_id_count`
+  - `referenced_warn_or_disabled_count`
+  - `notification_deliveries_total`（SSOT）
+  - `continuation_completion_rate_pct`
+
+### Notification監査のSSOT
+- 配信実績の正は `notification_deliveries`。
+- `deliveries` は参考値として表示するが、Go/No-Go 判定には使わない。

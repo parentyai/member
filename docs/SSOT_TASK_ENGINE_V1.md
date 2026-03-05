@@ -165,3 +165,39 @@ Task Engine v1 の add-only SSOT。
   - `POST /api/admin/os/task-rules/plan` action `upsert_task_content`
   - `POST /api/admin/os/task-rules/set` action `upsert_task_content`
   - managed flow action key は既存 `task_rules.set` を再利用（planHash + confirmToken 必須）
+
+## Phase73x Add-only（監査確定改善 A〜F）
+- 新規 collection:
+  - `task_content_links/{ruleId}`（`task_contents.taskKey` と `step_rules.ruleId` の連結マップ）
+- `task_content_links` 解決規約:
+  - `status=active` のみ read path で利用する
+  - `status=warn` / `sourceTaskKey` 欠落時は fallback（`tasks.ruleId -> taskId.ruleId -> todoKey`）を維持
+  - migration は `strict exact + manual map` のみを許可（自動推定は禁止）
+- Admin OS action（既存 path add-only）:
+  - `POST /api/admin/os/task-rules/plan` action `migrate_task_content_links`
+  - `POST /api/admin/os/task-rules/set` action `migrate_task_content_links_apply`
+  - apply は `ENABLE_TASK_CONTENT_LINK_MIGRATION_APPLY_V1=1` 必須（default: false）
+- LINE導線 add-only command:
+  - `通知履歴`
+  - `CityPack案内`
+  - `Vendor案内`
+- Link impact map API:
+  - `GET /api/admin/os/link-registry-impact`
+  - 逆引き領域: `task_contents` / `notifications` / `city_packs` / `vendor_facade`
+- Internal audit job:
+  - `POST /internal/jobs/task-ux-audit`
+  - guard: internal job token + kill switch fail-close
+  - target: `ops_system_snapshot` 再構築
+- continuation 監査（add-only）:
+  - `audit_logs.action=task_detail.section.open`
+  - `audit_logs.action=task_detail.section.resume`
+  - lineUserId はマスクして記録する
+- Feature Flags（add-only）:
+  - `ENABLE_TASK_CONTENT_LINK_MIGRATION_V1`（default: true）
+  - `ENABLE_TASK_CONTENT_LINK_MIGRATION_APPLY_V1`（default: false）
+  - `ENABLE_TASK_UX_AUDIT_KPI_V1`（default: true）
+  - `ENABLE_LINK_REGISTRY_IMPACT_MAP_V1`（default: true）
+  - `ENABLE_TASK_DETAIL_CONTINUATION_METRICS_V1`（default: true）
+  - `ENABLE_TASK_DETAIL_GUIDE_COMMANDS_V1`（default: true）
+  - `TASK_UX_AUDIT_OVERLAP_WARN_THRESHOLD_PCT`（default: 95）
+  - `TASK_UX_AUDIT_TASKKEY_WARN_THRESHOLD_PCT`（default: 80）

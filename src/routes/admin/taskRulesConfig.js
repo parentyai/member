@@ -7,11 +7,14 @@ const stepRulesRepo = require('../../repos/firestore/stepRulesRepo');
 const stepRuleChangeLogsRepo = require('../../repos/firestore/stepRuleChangeLogsRepo');
 const journeyTemplatesRepo = require('../../repos/firestore/journeyTemplatesRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const taskContentLinksRepo = require('../../repos/firestore/taskContentLinksRepo');
 const { computeUserTasks } = require('../../usecases/tasks/computeUserTasks');
 const { planTaskRulesTemplateSet } = require('../../usecases/tasks/planTaskRulesTemplateSet');
 const { applyTaskRulesTemplateSet } = require('../../usecases/tasks/applyTaskRulesTemplateSet');
 const { planTaskRulesApply } = require('../../usecases/tasks/planTaskRulesApply');
 const { applyTaskRulesForUser } = require('../../usecases/tasks/applyTaskRulesForUser');
+const { planTaskContentLinkMigration, normalizeManualMappings } = require('../../usecases/tasks/planTaskContentLinkMigration');
+const { applyTaskContentLinkMigration } = require('../../usecases/tasks/applyTaskContentLinkMigration');
 const {
   validateTaskContent,
   resolveTaskContentLinks,
@@ -27,6 +30,7 @@ const {
   isLegacyTodoDeriveFromTemplatesEnabled,
   isLegacyTodoEmitDisabled,
   isTaskContentAdminEditorEnabled,
+  isTaskContentLinkMigrationEnabled,
   getTaskNudgeLinkPolicy
 } = require('../../domain/tasks/featureFlags');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
@@ -105,6 +109,17 @@ function summarizeTaskContent(taskContent) {
   };
 }
 
+function summarizeTaskContentLink(row) {
+  const item = row && typeof row === 'object' ? row : {};
+  return {
+    ruleId: item.ruleId || null,
+    sourceTaskKey: item.sourceTaskKey || null,
+    status: item.status || null,
+    confidence: item.confidence || null,
+    updatedAt: item.updatedAt || null
+  };
+}
+
 function computePlanHash(action, normalizedRule, enabled) {
   const payload = {
     action,
@@ -120,6 +135,25 @@ function computeTaskContentPlanHash(action, normalizedTaskContent) {
     action,
     taskKey: normalizedTaskContent && normalizedTaskContent.taskKey ? normalizedTaskContent.taskKey : null,
     taskContent: normalizedTaskContent || null
+  };
+  return `taskrules_${crypto.createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex').slice(0, 24)}`;
+}
+
+function computeTaskContentLinkMigrationPlanHash(action, planned, manualMappings) {
+  const summary = planned && planned.summary && typeof planned.summary === 'object' ? planned.summary : {};
+  const candidates = Array.isArray(planned && planned.candidates)
+    ? planned.candidates.map((item) => ({
+      ruleId: item && item.ruleId ? item.ruleId : null,
+      sourceTaskKey: item && item.sourceTaskKey ? item.sourceTaskKey : null,
+      status: item && item.status ? item.status : null,
+      confidence: item && item.confidence ? item.confidence : null
+    }))
+    : [];
+  const payload = {
+    action,
+    summary,
+    manualMappings: Array.isArray(manualMappings) ? manualMappings : [],
+    candidates
   };
   return `taskrules_${crypto.createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex').slice(0, 24)}`;
 }
@@ -153,6 +187,13 @@ function resolveTaskContentStatusLimit(req) {
   return Math.min(Math.floor(parsed), 300);
 }
 
+function resolveTaskContentLinkStatusLimit(req) {
+  const url = new URL(req.url, 'http://localhost');
+  const parsed = Number(url.searchParams.get('taskContentLinkLimit') || 200);
+  if (!Number.isFinite(parsed) || parsed < 1) return 200;
+  return Math.min(Math.floor(parsed), 500);
+}
+
 function writeKnownError(res, err, fallbackTraceId, fallbackRequestId) {
   const statusCode = err && Number.isInteger(err.statusCode) ? err.statusCode : 500;
   const code = err && err.code ? String(err.code) : 'error';
@@ -174,11 +215,16 @@ async function handleStatus(req, res) {
     const statusUrl = new URL(req.url, 'http://localhost');
     const includeTaskContents = isTaskContentAdminEditorEnabled()
       && statusUrl.searchParams.get('includeTaskContents') !== '0';
-    const [rules, templates, taskContents] = await Promise.all([
+    const includeTaskContentLinks = isTaskContentLinkMigrationEnabled()
+      && statusUrl.searchParams.get('includeTaskContentLinks') !== '0';
+    const [rules, templates, taskContents, taskContentLinks] = await Promise.all([
       stepRulesRepo.listStepRules({ limit: resolveLimit(req) }),
       journeyTemplatesRepo.listJourneyTemplates({ limit: 50 }).catch(() => []),
       includeTaskContents
         ? taskContentsRepo.listTaskContents({ limit: resolveTaskContentStatusLimit(req) }).catch(() => [])
+        : Promise.resolve([]),
+      includeTaskContentLinks
+        ? taskContentLinksRepo.listTaskContentLinks({ limit: resolveTaskContentLinkStatusLimit(req) }).catch(() => [])
         : Promise.resolve([])
     ]);
 
@@ -193,6 +239,7 @@ async function handleStatus(req, res) {
         count: rules.length,
         templates: templates.length,
         taskContents: taskContents.length,
+        taskContentLinks: taskContentLinks.length,
         taskEngineEnabled: isTaskEngineEnabled(),
         taskNudgeEnabled: isTaskNudgeEnabled(),
         taskEventsEnabled: isTaskEventsEnabled(),
@@ -201,6 +248,7 @@ async function handleStatus(req, res) {
         legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
         legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
         taskContentAdminEditorEnabled: isTaskContentAdminEditorEnabled(),
+        taskContentLinkMigrationEnabled: isTaskContentLinkMigrationEnabled(),
         taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       }
     });
@@ -218,11 +266,14 @@ async function handleStatus(req, res) {
         legacyTodoDeriveFromTemplatesEnabled: isLegacyTodoDeriveFromTemplatesEnabled(),
         legacyTodoEmitDisabled: isLegacyTodoEmitDisabled(),
         taskContentAdminEditorEnabled: isTaskContentAdminEditorEnabled(),
+        taskContentLinkMigrationEnabled: isTaskContentLinkMigrationEnabled(),
         taskNudgeLinkPolicy: getTaskNudgeLinkPolicy()
       },
       rules,
       templates,
-      taskContents
+      taskContents,
+      taskContentLinks,
+      taskContentLinkSummaries: taskContentLinks.map((row) => summarizeTaskContentLink(row))
     });
   } catch (err) {
     logRouteError('admin.task_rules.status', err, { traceId, requestId, actor });
@@ -243,8 +294,51 @@ async function handlePlan(req, res, bodyText) {
   const ruleId = normalizeText(payload.ruleId || ruleInput.ruleId, '');
   const enabled = payload.enabled === true;
 
-  if (!['upsert_rule', 'set_enabled', 'upsert_task_content'].includes(action)) {
+  if (!['upsert_rule', 'set_enabled', 'upsert_task_content', 'migrate_task_content_links'].includes(action)) {
     writeJson(res, 400, { ok: false, error: 'action invalid', traceId, requestId });
+    return;
+  }
+  if (action === 'migrate_task_content_links') {
+    if (!isTaskContentLinkMigrationEnabled()) {
+      writeJson(res, 409, { ok: false, error: 'task_content_link_migration_disabled', traceId, requestId });
+      return;
+    }
+    const manualMappings = normalizeManualMappings(payload.manualMappings);
+    const planned = await planTaskContentLinkMigration({
+      manualMappings
+    }, {
+      stepRulesRepo,
+      taskContentsRepo,
+      taskContentLinksRepo
+    });
+    const warnings = mergeWarnings(planned.warnings);
+    const planHash = computeTaskContentLinkMigrationPlanHash(action, planned, manualMappings);
+    const confirmToken = createConfirmToken(confirmTokenData(planHash, 'task_rules_task_content_links'), { now: new Date() });
+    await appendAuditLog({
+      actor,
+      action: 'task_rules.plan',
+      entityType: 'opsConfig',
+      entityId: 'task_content_links',
+      traceId,
+      requestId,
+      payloadSummary: {
+        action,
+        planHash,
+        warningCount: warnings.length,
+        migrationSummary: planned.summary
+      }
+    });
+    writeJson(res, 200, {
+      ok: true,
+      traceId,
+      requestId,
+      action,
+      planHash,
+      confirmToken,
+      manualMappings,
+      migrationPlan: planned,
+      warnings
+    });
     return;
   }
   if (action === 'upsert_task_content') {
@@ -370,9 +464,106 @@ async function handleSet(req, res, bodyText) {
     writeJson(res, 400, { ok: false, error: 'planHash/confirmToken required', traceId, requestId });
     return;
   }
-  if (!['upsert_rule', 'set_enabled', 'upsert_task_content'].includes(action)) {
+  if (!['upsert_rule', 'set_enabled', 'upsert_task_content', 'migrate_task_content_links_apply'].includes(action)) {
     writeJson(res, 400, { ok: false, error: 'action invalid', traceId, requestId });
     return;
+  }
+  if (action === 'migrate_task_content_links_apply') {
+    if (!isTaskContentLinkMigrationEnabled()) {
+      writeJson(res, 409, { ok: false, error: 'task_content_link_migration_disabled', traceId, requestId });
+      return;
+    }
+    const manualMappings = normalizeManualMappings(payload.manualMappings);
+    const planned = await planTaskContentLinkMigration({
+      manualMappings
+    }, {
+      stepRulesRepo,
+      taskContentsRepo,
+      taskContentLinksRepo
+    });
+    const expectedPlanHash = computeTaskContentLinkMigrationPlanHash('migrate_task_content_links', planned, manualMappings);
+    if (planHash !== expectedPlanHash) {
+      await appendAuditLog({
+        actor,
+        action: 'task_rules.set',
+        entityType: 'opsConfig',
+        entityId: 'task_content_links',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'plan_hash_mismatch',
+          path: TASK_RULES_SET_PATH,
+          planHash,
+          expectedPlanHash
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'plan_hash_mismatch', expectedPlanHash, traceId, requestId });
+      return;
+    }
+    const tokenOk = verifyConfirmToken(confirmToken, confirmTokenData(planHash, 'task_rules_task_content_links'), { now: new Date() });
+    if (!tokenOk) {
+      await appendAuditLog({
+        actor,
+        action: 'task_rules.set',
+        entityType: 'opsConfig',
+        entityId: 'task_content_links',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: false,
+          reason: 'confirm_token_mismatch',
+          path: TASK_RULES_SET_PATH
+        }
+      });
+      writeJson(res, 409, { ok: false, reason: 'confirm_token_mismatch', traceId, requestId });
+      return;
+    }
+    try {
+      const applied = await applyTaskContentLinkMigration({
+        manualMappings,
+        actor,
+        traceId,
+        requestId,
+        migrationTraceId: traceId || requestId || null
+      }, {
+        stepRulesRepo,
+        taskContentsRepo,
+        taskContentLinksRepo,
+        appendAuditLog
+      });
+      await appendAuditLog({
+        actor,
+        action: 'task_rules.set',
+        entityType: 'opsConfig',
+        entityId: 'task_content_links',
+        traceId,
+        requestId,
+        payloadSummary: {
+          ok: true,
+          action,
+          path: TASK_RULES_SET_PATH,
+          migrationSummary: applied.summary || null,
+          warningCount: Array.isArray(applied.warnings) ? applied.warnings.length : 0
+        }
+      });
+      writeJson(res, 200, {
+        ok: true,
+        traceId,
+        requestId,
+        action,
+        manualMappings,
+        migration: applied,
+        warnings: Array.isArray(applied.warnings) ? applied.warnings : []
+      });
+      return;
+    } catch (err) {
+      if (err && err.code === 'task_content_link_migration_apply_disabled') {
+        writeJson(res, 409, { ok: false, error: 'task_content_link_migration_apply_disabled', traceId, requestId });
+        return;
+      }
+      throw err;
+    }
   }
   if (action === 'upsert_task_content') {
     if (!isTaskContentAdminEditorEnabled()) {

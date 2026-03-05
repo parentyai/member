@@ -44,6 +44,7 @@ const {
 const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqReply');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
+const { isTaskDetailContinuationMetricsEnabled } = require('../domain/tasks/featureFlags');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
 const {
   regionPrompt,
@@ -143,6 +144,53 @@ function createJourneyFallbackText(text) {
   };
 }
 
+function maskLineUserId(value) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return null;
+  if (raw.length <= 6) return `${raw.slice(0, 1)}***${raw.slice(-1)}`;
+  return `${raw.slice(0, 3)}***${raw.slice(-3)}`;
+}
+
+async function appendJourneySectionAuditBestEffort(params) {
+  if (!isTaskDetailContinuationMetricsEnabled()) return;
+  const payload = params && typeof params === 'object' ? params : {};
+  const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
+  const sectionMeta = journey && journey.sectionMeta && typeof journey.sectionMeta === 'object'
+    ? journey.sectionMeta
+    : null;
+  if (!sectionMeta) return;
+  const requestedStartChunk = Number.isFinite(Number(sectionMeta.requestedStartChunk))
+    ? Math.max(1, Math.floor(Number(sectionMeta.requestedStartChunk)))
+    : 1;
+  const action = requestedStartChunk > 1
+    ? 'task_detail.section.resume'
+    : 'task_detail.section.open';
+  await appendAuditLog({
+    actor: 'line_webhook',
+    action,
+    entityType: 'task_detail_section',
+    entityId: sectionMeta.taskKey || sectionMeta.ruleId || 'task_detail',
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    payloadSummary: {
+      lineUserIdMasked: maskLineUserId(payload.lineUserId),
+      section: sectionMeta.section || null,
+      taskKey: sectionMeta.taskKey || null,
+      baseTaskKey: sectionMeta.baseTaskKey || null,
+      ruleId: sectionMeta.ruleId || null,
+      taskKeySource: sectionMeta.taskKeySource || null,
+      startChunk: sectionMeta.startChunk || null,
+      endChunk: sectionMeta.endChunk || null,
+      requestedStartChunk,
+      totalChunks: sectionMeta.totalChunks || null,
+      deliveredChunkCount: sectionMeta.deliveredChunkCount || null,
+      chunkLimit: sectionMeta.chunkLimit || null,
+      continuationOffered: sectionMeta.continuationOffered === true,
+      continuationCommand: sectionMeta.continuationCommand || null
+    }
+  }).catch(() => null);
+}
+
 async function sendJourneyResponse(options) {
   const payload = options && typeof options === 'object' ? options : {};
   const journey = payload.journey && typeof payload.journey === 'object' ? payload.journey : null;
@@ -180,6 +228,12 @@ async function sendJourneyResponse(options) {
       await pushFn(lineUserId, message);
     }
   }
+  await appendJourneySectionAuditBestEffort({
+    journey,
+    lineUserId,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null
+  });
   return true;
 }
 
@@ -1559,7 +1613,15 @@ async function handleLineWebhook(options) {
             lineUserId: userId,
             data: postbackData
           });
-          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
+          if (await sendJourneyResponse({
+            journey,
+            replyToken,
+            lineUserId: userId,
+            replyFn,
+            pushFn,
+            traceId,
+            requestId
+          })) {
             continue;
           }
         } catch (err) {
@@ -1576,7 +1638,15 @@ async function handleLineWebhook(options) {
       if (text && replyToken) {
         try {
           const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
-          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
+          if (await sendJourneyResponse({
+            journey,
+            replyToken,
+            lineUserId: userId,
+            replyFn,
+            pushFn,
+            traceId,
+            requestId
+          })) {
             continue;
           }
 

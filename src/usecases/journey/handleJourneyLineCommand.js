@@ -6,6 +6,8 @@ const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySched
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const tasksRepo = require('../../repos/firestore/tasksRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const cityPackRequestsRepo = require('../../repos/firestore/cityPackRequestsRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
@@ -13,16 +15,22 @@ const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { patchTaskState } = require('../tasks/patchTaskState');
 const { syncUserTasksProjection } = require('../tasks/syncUserTasksProjection');
+const { getNotificationDeliveries } = require('../deliveries/getNotificationDeliveries');
+const { formatLineDeliveryHistory } = require('../deliveries/formatLineDeliveryHistory');
 const { resolveTaskContentLinks } = require('../tasks/validateTaskContent');
 const { renderTaskFlexMessage } = require('../tasks/renderTaskFlexMessage');
 const {
-  resolveTaskDetailTaskKey,
+  resolveTaskDetailContentKey,
   buildTaskDetailSectionReply
 } = require('./taskDetailSectionReply');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
-const { isJourneyUnifiedViewEnabled, isTaskDetailLineEnabled } = require('../../domain/tasks/featureFlags');
+const {
+  isJourneyUnifiedViewEnabled,
+  isTaskDetailLineEnabled,
+  isTaskDetailGuideCommandsEnabled
+} = require('../../domain/tasks/featureFlags');
 
 const HOUSEHOLD_LABEL = Object.freeze({
   single: '単身',
@@ -302,6 +310,49 @@ function resolveSnoozeUntil(command, nowIso) {
   return new Date(ms).toISOString();
 }
 
+function isVendorGuideCandidate(row) {
+  const payload = row && typeof row === 'object' ? row : {};
+  const category = normalizeText(payload.category).toLowerCase();
+  const vendorKey = normalizeText(payload.vendorKey).toLowerCase();
+  const vendorLabel = normalizeText(payload.vendorLabel).toLowerCase();
+  const title = normalizeText(payload.title).toLowerCase();
+  const tags = Array.isArray(payload.tags)
+    ? payload.tags.map((item) => normalizeText(item).toLowerCase()).filter(Boolean)
+    : [];
+  return category.includes('vendor')
+    || vendorKey.length > 0
+    || vendorLabel.length > 0
+    || title.includes('[vendor_link]')
+    || tags.some((item) => item.includes('vendor'));
+}
+
+function buildCityPackGuideText() {
+  return [
+    'CityPack案内',
+    '1. 地域申告メッセージを送る（例: 地域申告:us-ca-san_francisco）',
+    '2. TODO一覧を再取得して地域連動タスクを確認する',
+    '3. 必要に応じて「TODO詳細:todoKey」で教材を確認する'
+  ].join('\n');
+}
+
+async function buildVendorGuideText(deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const registry = resolvedDeps.linkRegistryRepo || linkRegistryRepo;
+  const rows = await registry.listLinks({ limit: 60 }).catch(() => []);
+  const vendors = (Array.isArray(rows) ? rows : []).filter(isVendorGuideCandidate);
+  if (!vendors.length) {
+    return 'Vendor案内\n利用可能なベンダーリンクは未登録です。運用担当へお問い合わせください。';
+  }
+  const lines = ['Vendor案内（候補）'];
+  vendors.slice(0, 5).forEach((item, index) => {
+    const label = normalizeText(item && (item.vendorLabel || item.title || item.id), `vendor_${index + 1}`);
+    const url = normalizeText(item && item.url, '-');
+    lines.push(`${index + 1}. ${label} / ${url}`);
+  });
+  lines.push('詳細比較は管理画面 Vendor Hub を利用してください。');
+  return lines.join('\n');
+}
+
 function resolveScheduleStage(schedule) {
   const payload = schedule && typeof schedule === 'object' ? schedule : {};
   if (payload.stage && typeof payload.stage === 'string' && payload.stage.trim()) return payload.stage.trim();
@@ -351,10 +402,18 @@ async function handleTodoDetailCommand(params, deps) {
     };
   }
 
-  const taskKeyResolution = resolveTaskDetailTaskKey(task, todoKey);
+  const taskKeyResolution = await resolveTaskDetailContentKey({
+    lineUserId,
+    todoKey,
+    task
+  }, resolvedDeps);
   const taskKey = normalizeText(taskKeyResolution && taskKeyResolution.taskKey, todoKey) || todoKey;
+  const baseTaskKey = normalizeText(taskKeyResolution && taskKeyResolution.baseTaskKey, taskKey) || taskKey;
   const taskContentRepository = resolvedDeps.taskContentsRepo || taskContentsRepo;
-  const taskContent = await taskContentRepository.getTaskContent(taskKey).catch(() => null);
+  let taskContent = await taskContentRepository.getTaskContent(taskKey).catch(() => null);
+  if (!taskContent && baseTaskKey && baseTaskKey !== taskKey) {
+    taskContent = await taskContentRepository.getTaskContent(baseTaskKey).catch(() => null);
+  }
   const fallbackTitle = normalizeText(
     task && task.meaning && task.meaning.title,
     normalizeText(task && task.ruleId, normalizeText(task && task.taskId, todoKey))
@@ -431,6 +490,65 @@ async function handleJourneyLineCommand(params, deps) {
     return {
       handled: true,
       replyText: '日付形式が不正です。YYYY-MM-DD 形式で入力してください。例: 渡航日:2026-04-01'
+    };
+  }
+
+  if (command.action === 'delivery_history') {
+    if (!isTaskDetailGuideCommandsEnabled()) {
+      return {
+        handled: true,
+        replyText: '通知履歴コマンドは現在停止中です。'
+      };
+    }
+    const history = await getNotificationDeliveries({
+      lineUserId,
+      limit: 5,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      actor: 'line_command_delivery_history'
+    }, resolvedDeps).catch(() => null);
+    if (!history) {
+      return {
+        handled: true,
+        replyText: '通知履歴の取得に失敗しました。時間をおいて再試行してください。'
+      };
+    }
+    return {
+      handled: true,
+      replyText: formatLineDeliveryHistory(history, { limit: 5 })
+    };
+  }
+
+  if (command.action === 'city_pack_guide') {
+    if (!isTaskDetailGuideCommandsEnabled()) {
+      return {
+        handled: true,
+        replyText: 'CityPack案内コマンドは現在停止中です。'
+      };
+    }
+    const requestsRepo = resolvedDeps.cityPackRequestsRepo || cityPackRequestsRepo;
+    const recentRequests = await requestsRepo.listRequests({ limit: 50 }).catch(() => []);
+    const latest = (Array.isArray(recentRequests) ? recentRequests : [])
+      .find((item) => normalizeText(item && item.lineUserId) === lineUserId);
+    const latestLine = latest
+      ? `直近の地域申告ステータス: ${normalizeText(latest.status, 'unknown')} (${normalizeText(latest.regionKey, '-')})`
+      : '直近の地域申告ステータス: 未申告';
+    return {
+      handled: true,
+      replyText: `${buildCityPackGuideText()}\n${latestLine}`
+    };
+  }
+
+  if (command.action === 'vendor_guide') {
+    if (!isTaskDetailGuideCommandsEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Vendor案内コマンドは現在停止中です。'
+      };
+    }
+    return {
+      handled: true,
+      replyText: await buildVendorGuideText(resolvedDeps)
     };
   }
 

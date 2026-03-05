@@ -36,6 +36,9 @@ const FEATURE_ROWS = Object.freeze([
   { featureId: 'faq_answer_generation', featureLabelJa: 'FAQ回答生成', group: 'Run', pane: 'llm', apiPath: '/api/admin/llm/faq/answer' },
   { featureId: 'line_rich_menu', featureLabelJa: 'LINEリッチメニュー', group: 'Run', pane: 'monitor', apiPath: '/api/admin/os/rich-menu/status' },
   { featureId: 'line_todo_view', featureLabelJa: 'LINE ToDo表示', group: 'Run', pane: 'monitor', apiPath: '/api/admin/os/journey-kpi' },
+  { featureId: 'task_read_model_overlap', featureLabelJa: 'Task ReadModel整合', group: 'Control', pane: 'monitor', apiPath: '/api/admin/os/task-rules/status' },
+  { featureId: 'task_key_integrity', featureLabelJa: 'Task Key連結監査', group: 'Control', pane: 'monitor', apiPath: '/api/admin/os/task-rules/status' },
+  { featureId: 'link_registry_impact', featureLabelJa: 'Link Registry横断影響', group: 'Control', pane: 'monitor', apiPath: '/api/admin/os/link-registry-impact' },
   { featureId: 'journey_engine', featureLabelJa: 'Journeyエンジン', group: 'Run', pane: 'monitor', apiPath: '/api/admin/os/journey-kpi' },
   { featureId: 'subscription_management', featureLabelJa: 'サブスクリプション管理', group: 'Run', pane: 'read-model', apiPath: '/api/admin/os/users-summary/analyze' },
   { featureId: 'delivery_results', featureLabelJa: '配信結果参照', group: 'Run', pane: 'monitor', apiPath: '/api/admin/notification-deliveries' },
@@ -267,6 +270,9 @@ function evaluateRichMenu(metrics) {
   const failedRuns = Number.isFinite(Number(source.failedRuns)) ? Number(source.failedRuns) : 0;
   const rollbackRuns = Number.isFinite(Number(source.rollbackRuns)) ? Number(source.rollbackRuns) : 0;
   const totalRuns = Number.isFinite(Number(source.totalRuns)) ? Number(source.totalRuns) : 0;
+  const state = typeof source.state === 'string' ? source.state : null;
+  const policyEnabled = source.policyEnabled === true;
+  const dataConfigured = source.dataConfigured === true;
   let status = STATUS_OK;
   const reasons = [];
 
@@ -279,15 +285,23 @@ function evaluateRichMenu(metrics) {
     reasons.push(REASON_CODES.THRESHOLD_ALERT);
   }
   if (totalRuns === 0) {
-    status = STATUS_UNKNOWN;
-    reasons.push(REASON_CODES.DATA_MISSING);
+    if (state === 'configured' && policyEnabled && dataConfigured) {
+      status = mergeStatus(status, STATUS_WARN);
+      reasons.push(REASON_CODES.THRESHOLD_WARN);
+    } else if (state === 'unconfigured') {
+      status = STATUS_WARN;
+      reasons.push(REASON_CODES.DATA_MISSING);
+    } else {
+      status = STATUS_UNKNOWN;
+      reasons.push(REASON_CODES.DATA_MISSING);
+    }
   }
 
   return {
     status,
     reasonCodes: dedupeReasonCodes(reasons),
     lastUpdatedAt: toIsoString(source.lastUpdatedAt),
-    metrics: { failedRuns, rollbackRuns, totalRuns }
+    metrics: { failedRuns, rollbackRuns, totalRuns, state, policyEnabled, dataConfigured }
   };
 }
 
@@ -321,6 +335,109 @@ function evaluateJourney(metrics) {
       stalledRatePercent: rateStatus.percent,
       overdueCount,
       activeUsers
+    }
+  };
+}
+
+function evaluateReadModelOverlap(metrics) {
+  const source = metrics && typeof metrics === 'object' ? metrics : {};
+  const overlapRatePct = Number.isFinite(Number(source.overlapRatePct)) ? Number(source.overlapRatePct) : null;
+  const threshold = Number.isFinite(Number(source.overlapWarnThresholdPct)) ? Number(source.overlapWarnThresholdPct) : 95;
+  const taskOnlyCount = Number.isFinite(Number(source.taskOnlyCount)) ? Number(source.taskOnlyCount) : 0;
+  const todoOnlyCount = Number.isFinite(Number(source.todoOnlyCount)) ? Number(source.todoOnlyCount) : 0;
+  let status = STATUS_OK;
+  const reasons = [];
+
+  if (!Number.isFinite(overlapRatePct)) {
+    status = STATUS_UNKNOWN;
+    reasons.push(REASON_CODES.DATA_MISSING);
+  } else if (overlapRatePct < Math.max(0, threshold - 20)) {
+    status = STATUS_ALERT;
+    reasons.push(REASON_CODES.THRESHOLD_ALERT);
+  } else if (overlapRatePct < threshold || taskOnlyCount > 0 || todoOnlyCount > 0) {
+    status = STATUS_WARN;
+    reasons.push(REASON_CODES.THRESHOLD_WARN);
+  }
+
+  return {
+    status,
+    reasonCodes: dedupeReasonCodes(reasons),
+    lastUpdatedAt: toIsoString(source.lastUpdatedAt) || null,
+    metrics: {
+      overlapRatePct,
+      overlapWarnThresholdPct: threshold,
+      taskOnlyCount,
+      todoOnlyCount,
+      overlapCount: Number.isFinite(Number(source.overlapCount)) ? Number(source.overlapCount) : 0
+    }
+  };
+}
+
+function evaluateTaskKeyIntegrity(metrics) {
+  const source = metrics && typeof metrics === 'object' ? metrics : {};
+  const linkageRatePct = Number.isFinite(Number(source.linkageRatePct)) ? Number(source.linkageRatePct) : null;
+  const threshold = Number.isFinite(Number(source.linkageWarnThresholdPct)) ? Number(source.linkageWarnThresholdPct) : 80;
+  const unlinkedCount = Number.isFinite(Number(source.unlinkedCount)) ? Number(source.unlinkedCount) : 0;
+  let status = STATUS_OK;
+  const reasons = [];
+
+  if (!Number.isFinite(linkageRatePct)) {
+    status = STATUS_UNKNOWN;
+    reasons.push(REASON_CODES.DATA_MISSING);
+  } else if (linkageRatePct < Math.max(0, threshold - 30)) {
+    status = STATUS_ALERT;
+    reasons.push(REASON_CODES.THRESHOLD_ALERT);
+  } else if (linkageRatePct < threshold || unlinkedCount > 0) {
+    status = STATUS_WARN;
+    reasons.push(REASON_CODES.THRESHOLD_WARN);
+  }
+
+  return {
+    status,
+    reasonCodes: dedupeReasonCodes(reasons),
+    lastUpdatedAt: toIsoString(source.lastUpdatedAt) || null,
+    metrics: {
+      linkageRatePct,
+      linkageWarnThresholdPct: threshold,
+      unlinkedCount,
+      effectiveLinkedCount: Number.isFinite(Number(source.effectiveLinkedCount)) ? Number(source.effectiveLinkedCount) : 0,
+      taskContentsTotal: Number.isFinite(Number(source.taskContentsTotal)) ? Number(source.taskContentsTotal) : 0
+    }
+  };
+}
+
+function evaluateLinkRegistryImpact(metrics) {
+  const source = metrics && typeof metrics === 'object' ? metrics : {};
+  const sharedIdCount = Number.isFinite(Number(source.sharedIdCount)) ? Number(source.sharedIdCount) : 0;
+  const referencedWarnOrDisabledCount = Number.isFinite(Number(source.referencedWarnOrDisabledCount))
+    ? Number(source.referencedWarnOrDisabledCount)
+    : 0;
+  const sharedWarnOrDisabledCount = Number.isFinite(Number(source.sharedWarnOrDisabledCount))
+    ? Number(source.sharedWarnOrDisabledCount)
+    : 0;
+  let status = STATUS_OK;
+  const reasons = [];
+
+  if (sharedWarnOrDisabledCount > 0) {
+    status = STATUS_ALERT;
+    reasons.push(REASON_CODES.THRESHOLD_ALERT);
+  } else if (referencedWarnOrDisabledCount > 0 || sharedIdCount > 0) {
+    status = STATUS_WARN;
+    reasons.push(REASON_CODES.THRESHOLD_WARN);
+  } else if (Number(source.linkRegistryTotal || 0) === 0) {
+    status = STATUS_UNKNOWN;
+    reasons.push(REASON_CODES.DATA_MISSING);
+  }
+
+  return {
+    status,
+    reasonCodes: dedupeReasonCodes(reasons),
+    lastUpdatedAt: toIsoString(source.lastUpdatedAt) || null,
+    metrics: {
+      linkRegistryTotal: Number.isFinite(Number(source.linkRegistryTotal)) ? Number(source.linkRegistryTotal) : 0,
+      sharedIdCount,
+      sharedWarnOrDisabledCount,
+      referencedWarnOrDisabledCount
     }
   };
 }
@@ -459,6 +576,12 @@ function buildFeatureRows(context) {
       evaluated = evaluateRichMenu(metrics.richMenu);
     } else if (feature.featureId === 'line_todo_view' || feature.featureId === 'journey_engine') {
       evaluated = evaluateJourney(metrics.journeyTodo);
+    } else if (feature.featureId === 'task_read_model_overlap') {
+      evaluated = evaluateReadModelOverlap(metrics.readModelOverlap);
+    } else if (feature.featureId === 'task_key_integrity') {
+      evaluated = evaluateTaskKeyIntegrity(metrics.taskKeyLinkage);
+    } else if (feature.featureId === 'link_registry_impact') {
+      evaluated = evaluateLinkRegistryImpact(metrics.linkRegistryImpact);
     } else if (feature.featureId === 'subscription_management') {
       evaluated = evaluateSubscription(metrics.subscription);
     } else if (feature.featureId === 'analytics_kpi') {

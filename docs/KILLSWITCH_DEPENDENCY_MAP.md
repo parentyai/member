@@ -1,7 +1,7 @@
 # KILLSWITCH_DEPENDENCY_MAP
 
 - killSwitch依存経路を静的抽出した一覧。
-- 抽出件数: 94
+- 抽出件数: 96
 
 | file | line | reference |
 | --- | --- | --- |
@@ -48,13 +48,15 @@
 | `src/routes/internal/schoolCalendarAuditJob.js` | 27 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/taskNudgeJob.js` | 3 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/taskNudgeJob.js` | 48 | `const killSwitch = await getKillSwitch().catch(() => false);` |
+| `src/routes/internal/taskUxAuditJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
+| `src/routes/internal/taskUxAuditJob.js` | 32 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotJob.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/internal/userContextSnapshotRecompressJob.js` | 59 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/webhookLine.js` | 1464 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
-| `src/routes/webhookLine.js` | 1465 | `? options.getKillSwitchFn` |
-| `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
+| `src/routes/webhookLine.js` | 1518 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
+| `src/routes/webhookLine.js` | 1519 | `? options.getKillSwitchFn` |
+| `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 376 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
 | `src/usecases/adminOs/executeNotificationSend.js` | 219 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 168 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/approveEmergencyBulletin.js` | 169 | `? deps.getKillSwitch` |

@@ -127,6 +127,18 @@ function parseJourneyLineCommand(text) {
     };
   }
 
+  if (/^通知履歴$/i.test(raw)) {
+    return { action: 'delivery_history' };
+  }
+
+  if (/^CityPack案内$/i.test(raw)) {
+    return { action: 'city_pack_guide' };
+  }
+
+  if (/^Vendor案内$/i.test(raw)) {
+    return { action: 'vendor_guide' };
+  }
+
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
   if (household) {
     const householdType = normalizeHouseholdLabel(household[1]);
@@ -237,6 +249,10 @@ function parseJourneyPostbackData(data) {
   }
 
   if (action === 'todo_list') {
+    return { action };
+  }
+
+  if (action === 'delivery_history' || action === 'city_pack_guide' || action === 'vendor_guide') {
     return { action };
   }
 

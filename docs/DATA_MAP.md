@@ -62,6 +62,9 @@ Typical fields for `notifications/{id}` (add-only excerpts):
 
 ### `notification_deliveries/{id}`
 Purpose: delivery idempotency / reaction tracking / cap evaluation source-of-truth.
+Note:
+- Ops/監査の配信実績集計は `notification_deliveries` をSSOTとして扱う。
+- `deliveries` コレクションは互換参照の補助値であり、判定の正には使わない。
 
 Typical fields:
 - `notificationId`, `lineUserId`
@@ -113,6 +116,18 @@ Typical fields:
 - `failureText`（postbackでLINE内表示）
 - `videoLinkId`（`link_registry`参照）
 - `actionLinkId`（`link_registry`参照）
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+
+### `task_content_links/{ruleId}`
+Purpose: `step_rules.ruleId` を正とした Task Content 連結マップ（migration add-only）。
+
+Typical fields:
+- `ruleId`（doc id）
+- `sourceTaskKey`（`task_contents.taskKey`）
+- `status`（`active|warn`）
+- `confidence`（`strict|manual`）
+- `note`
+- `migrationTraceId`
 - `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
 
 ### `journey_templates/{templateId}`

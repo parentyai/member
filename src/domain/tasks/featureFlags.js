@@ -64,6 +64,38 @@ function getTaskDetailSectionChunkLimit() {
   return parseNumber('TASK_DETAIL_SECTION_CHUNK_LIMIT', 3, 1, 8);
 }
 
+function isTaskContentLinkMigrationEnabled() {
+  return parseFlag('ENABLE_TASK_CONTENT_LINK_MIGRATION_V1', true);
+}
+
+function isTaskContentLinkMigrationApplyEnabled() {
+  return parseFlag('ENABLE_TASK_CONTENT_LINK_MIGRATION_APPLY_V1', false);
+}
+
+function isTaskUxAuditKpiEnabled() {
+  return parseFlag('ENABLE_TASK_UX_AUDIT_KPI_V1', true);
+}
+
+function isLinkRegistryImpactMapEnabled() {
+  return parseFlag('ENABLE_LINK_REGISTRY_IMPACT_MAP_V1', true);
+}
+
+function isTaskDetailContinuationMetricsEnabled() {
+  return parseFlag('ENABLE_TASK_DETAIL_CONTINUATION_METRICS_V1', true);
+}
+
+function isTaskDetailGuideCommandsEnabled() {
+  return parseFlag('ENABLE_TASK_DETAIL_GUIDE_COMMANDS_V1', true);
+}
+
+function getTaskUxAuditOverlapWarnThresholdPct() {
+  return parseNumber('TASK_UX_AUDIT_OVERLAP_WARN_THRESHOLD_PCT', 95, 0, 100);
+}
+
+function getTaskUxAuditTaskKeyWarnThresholdPct() {
+  return parseNumber('TASK_UX_AUDIT_TASKKEY_WARN_THRESHOLD_PCT', 80, 0, 100);
+}
+
 function getTaskNudgeLinkPolicy() {
   const raw = typeof process.env.TASK_NUDGE_LINK_POLICY === 'string'
     ? process.env.TASK_NUDGE_LINK_POLICY.trim().toLowerCase()
@@ -84,5 +116,13 @@ module.exports = {
   isTaskContentAdminEditorEnabled,
   isTaskDetailSectionSafetyValveEnabled,
   getTaskDetailSectionChunkLimit,
+  isTaskContentLinkMigrationEnabled,
+  isTaskContentLinkMigrationApplyEnabled,
+  isTaskUxAuditKpiEnabled,
+  isLinkRegistryImpactMapEnabled,
+  isTaskDetailContinuationMetricsEnabled,
+  isTaskDetailGuideCommandsEnabled,
+  getTaskUxAuditOverlapWarnThresholdPct,
+  getTaskUxAuditTaskKeyWarnThresholdPct,
   getTaskNudgeLinkPolicy
 };

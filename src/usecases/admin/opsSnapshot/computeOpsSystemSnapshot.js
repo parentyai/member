@@ -24,6 +24,8 @@ const faqArticlesRepo = require('../../../repos/firestore/faqArticlesRepo');
 const systemFlagsRepo = require('../../../repos/firestore/systemFlagsRepo');
 const opsConfigRepo = require('../../../repos/firestore/opsConfigRepo');
 const auditLogsRepo = require('../../../repos/firestore/auditLogsRepo');
+const { isTaskUxAuditKpiEnabled } = require('../../../domain/tasks/featureFlags');
+const { computeTaskUxAuditKpis } = require('./computeTaskUxAuditKpis');
 const { computeOpsFeatureCatalogStatus } = require('./computeOpsFeatureCatalogStatus');
 const {
   STATUS_OK,
@@ -903,6 +905,18 @@ async function computeOpsSystemSnapshot(params) {
     systemHealth: systemHealthSection
   };
 
+  let taskUxAudit = null;
+  if (isTaskUxAuditKpiEnabled()) {
+    const taskUxAuditResult = await safeQuery('taskUxAudit', () => computeTaskUxAuditKpis({ scanLimit }));
+    if (taskUxAuditResult.ok) {
+      taskUxAudit = taskUxAuditResult.value;
+      queryDiagnostics.push({ label: 'taskUxAudit', ok: true, count: 1 });
+    } else {
+      sourceFailures.push(`taskUxAudit:${taskUxAuditResult.error}`);
+      queryDiagnostics.push({ label: 'taskUxAudit', ok: false, error: taskUxAuditResult.error, count: 0 });
+    }
+  }
+
   const featureCatalog = await computeOpsFeatureCatalogStatus({
     nowIso,
     computedWindow,
@@ -976,7 +990,10 @@ async function computeOpsSystemSnapshot(params) {
           const mode = typeof run.mode === 'string' ? run.mode.toLowerCase() : '';
           return action.includes('rollback') || mode.includes('rollback');
         }).length,
-        lastUpdatedAt: latestFromRows(richMenuRuns, ['createdAt', 'updatedAt'])
+        lastUpdatedAt: latestFromRows(richMenuRuns, ['createdAt', 'updatedAt']),
+        state: taskUxAudit && taskUxAudit.richMenu ? taskUxAudit.richMenu.state : null,
+        policyEnabled: taskUxAudit && taskUxAudit.richMenu ? taskUxAudit.richMenu.policyEnabled : null,
+        dataConfigured: taskUxAudit && taskUxAudit.richMenu ? taskUxAudit.richMenu.hasData : null
       },
       journeyTodo: {
         activeUsers,
@@ -1010,9 +1027,45 @@ async function computeOpsSystemSnapshot(params) {
         retentionAgeSeconds,
         retentionFailed,
         lastUpdatedAt: safetyLastUpdatedAt
-      }
+      },
+      taskUxAudit: taskUxAudit || null,
+      readModelOverlap: taskUxAudit && taskUxAudit.readModelOverlap ? taskUxAudit.readModelOverlap : null,
+      taskKeyLinkage: taskUxAudit && taskUxAudit.taskKeyLinkage ? taskUxAudit.taskKeyLinkage : null,
+      linkRegistryImpact: taskUxAudit && taskUxAudit.linkRegistryImpact ? taskUxAudit.linkRegistryImpact : null,
+      notificationTotals: taskUxAudit && taskUxAudit.notification ? taskUxAudit.notification : null,
+      continuation: taskUxAudit && taskUxAudit.continuation ? taskUxAudit.continuation : null
     }
   });
+
+  if (taskUxAudit) {
+    notificationsSection.metrics.notificationsTotal = Number.isFinite(Number(taskUxAudit.notification && taskUxAudit.notification.notificationsTotal))
+      ? Number(taskUxAudit.notification.notificationsTotal)
+      : null;
+    notificationsSection.metrics.notificationDeliveriesTotal = Number.isFinite(Number(taskUxAudit.notification && taskUxAudit.notification.notificationDeliveriesTotal))
+      ? Number(taskUxAudit.notification.notificationDeliveriesTotal)
+      : null;
+    notificationsSection.metrics.deliveriesTotalLegacy = Number.isFinite(Number(taskUxAudit.notification && taskUxAudit.notification.deliveriesTotal))
+      ? Number(taskUxAudit.notification.deliveriesTotal)
+      : null;
+    notificationsSection.metrics.cityPackBulletinsTotal = Number.isFinite(Number(taskUxAudit.notification && taskUxAudit.notification.cityPackBulletinsTotal))
+      ? Number(taskUxAudit.notification.cityPackBulletinsTotal)
+      : null;
+    journeySection.metrics.readModelOverlapRatePct = Number.isFinite(Number(taskUxAudit.readModelOverlap && taskUxAudit.readModelOverlap.overlapRatePct))
+      ? Number(taskUxAudit.readModelOverlap.overlapRatePct)
+      : null;
+    journeySection.metrics.taskKeyLinkageRatePct = Number.isFinite(Number(taskUxAudit.taskKeyLinkage && taskUxAudit.taskKeyLinkage.linkageRatePct))
+      ? Number(taskUxAudit.taskKeyLinkage.linkageRatePct)
+      : null;
+    journeySection.metrics.continuationOpenCount = Number.isFinite(Number(taskUxAudit.continuation && taskUxAudit.continuation.openCount))
+      ? Number(taskUxAudit.continuation.openCount)
+      : null;
+    journeySection.metrics.continuationResumeCount = Number.isFinite(Number(taskUxAudit.continuation && taskUxAudit.continuation.resumeCount))
+      ? Number(taskUxAudit.continuation.resumeCount)
+      : null;
+    journeySection.metrics.continuationCompletionRatePct = Number.isFinite(Number(taskUxAudit.continuation && taskUxAudit.continuation.continuationCompletionRatePct))
+      ? Number(taskUxAudit.continuation.continuationCompletionRatePct)
+      : null;
+  }
 
   const sectionStatuses = SECTION_KEYS.map((key) => sections[key]).filter(Boolean);
   const globalStatus = resolveGlobalStatus(sectionStatuses);
@@ -1046,7 +1099,8 @@ async function computeOpsSystemSnapshot(params) {
         sourceFailures,
         maxDocsReadApprox,
         productReadiness: systemHealthEval.productReadiness,
-        policyVersionId: llmPolicy && llmPolicy.policy_version_id ? llmPolicy.policy_version_id : null
+        policyVersionId: llmPolicy && llmPolicy.policy_version_id ? llmPolicy.policy_version_id : null,
+        taskUxAuditKpis: taskUxAudit || null
       }
     }
   );
