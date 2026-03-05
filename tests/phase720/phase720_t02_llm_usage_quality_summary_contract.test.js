@@ -89,6 +89,16 @@ test('phase720: gate audit baseline reads blocked reasons and stages from payloa
   assert.equal(baseline.acceptedRate, 0.3333);
   assert.equal(baseline.blockedReasons.length, 2);
   assert.equal(baseline.blockedStages.length, 2);
-  assert.equal(baseline.entryTypes.length, 3);
-  assert.equal(baseline.gatesCoverage.length, 3);
+  assert.equal(baseline.entryTypes.length, 4);
+  assert.equal(baseline.gatesCoverage.length, 4);
+  const entryCounts = Object.fromEntries(baseline.entryTypes.map((row) => [row.entryType, row.count]));
+  const gateCounts = Object.fromEntries(baseline.gatesCoverage.map((row) => [row.gate, row.count]));
+  assert.equal(entryCounts.webhook, 1);
+  assert.equal(entryCounts.admin, 1);
+  assert.equal(entryCounts.compat, 1);
+  assert.equal(entryCounts.job, 0);
+  assert.equal(gateCounts.kill_switch, 3);
+  assert.equal(gateCounts.url_guard, 1);
+  assert.equal(gateCounts.injection, 1);
+  assert.equal(gateCounts.snapshot, 0);
 });
