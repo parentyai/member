@@ -87,6 +87,7 @@ function normalizeImportTemplate(input) {
     basePackId: cityPacksRepo.normalizeBasePackId(template.basePackId),
     overrides: cityPacksRepo.normalizeOverrides(template.overrides),
     modules: cityPacksRepo.normalizeModules(template.modules),
+    recommendedTasks: cityPacksRepo.normalizeRecommendedTasks(template.recommendedTasks),
     packClass,
     language,
     nationwidePolicy,
@@ -141,6 +142,7 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     slotContents: payload.slotContents,
     slotSchemaVersion: payload.slotSchemaVersion,
     modules: payload.modules,
+    recommendedTasks: payload.recommendedTasks,
     basePackId: payload.basePackId,
     overrides: payload.overrides,
     packClass: payload.packClass,
@@ -165,7 +167,8 @@ async function handleCreateCityPack(req, res, bodyText, context) {
       nationwidePolicy: normalizedNationwidePolicy,
       slotContentCount: countSlotContentKeys(payload.slotContents)
       ,
-      modulesCount: Array.isArray(payload.modules) ? payload.modules.length : 0
+      modulesCount: Array.isArray(payload.modules) ? payload.modules.length : 0,
+      recommendedTaskCount: Array.isArray(payload.recommendedTasks) ? payload.recommendedTasks.length : 0
     }
   });
   writeJson(res, 201, {
@@ -246,6 +249,7 @@ async function handleExportCityPack(req, res, context, cityPackId) {
     metadata: cityPack.metadata && typeof cityPack.metadata === 'object' ? cityPack.metadata : {},
     templateRefs: Array.isArray(cityPack.templateRefs) ? cityPack.templateRefs : [],
     modules: Array.isArray(cityPack.modules) ? cityPack.modules : [],
+    recommendedTasks: Array.isArray(cityPack.recommendedTasks) ? cityPack.recommendedTasks : [],
     basePackId: cityPack.basePackId || null,
     overrides: cityPack.overrides || null,
     packClass: cityPack.packClass || 'regional',
@@ -457,7 +461,8 @@ async function handleUpdateCityPackContent(req, res, bodyText, context, cityPack
       slotSchemaVersion: contentPatch.slotSchemaVersion || undefined,
       packClass: contentPatch.packClass || undefined,
       language: contentPatch.language || undefined,
-      modulesCount: Array.isArray(contentPatch.modules) ? contentPatch.modules.length : undefined
+      modulesCount: Array.isArray(contentPatch.modules) ? contentPatch.modules.length : undefined,
+      recommendedTaskCount: Array.isArray(contentPatch.recommendedTasks) ? contentPatch.recommendedTasks.length : undefined
     }
   });
   writeJson(res, 200, {

@@ -1235,6 +1235,32 @@
                       </select>
                     </label>
                   </div>
+                  <div class="row">
+                    <label>category
+                      <select id="task-rules-category" class="select-inline">
+                        <option value="IMMIGRATION">IMMIGRATION</option>
+                        <option value="HOUSING">HOUSING</option>
+                        <option value="BANKING">BANKING</option>
+                        <option value="HEALTHCARE">HEALTHCARE</option>
+                        <option value="TRANSPORT">TRANSPORT</option>
+                        <option value="SCHOOL">SCHOOL</option>
+                        <option value="LIFE_SETUP" selected>LIFE_SETUP</option>
+                        <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+                      </select>
+                    </label>
+                    <label>estimatedTimeMin
+                      <input type="number" id="task-rules-estimated-time-min" class="input-sm" min="0" max="1440" value="20" />
+                    </label>
+                    <label>estimatedTimeMax
+                      <input type="number" id="task-rules-estimated-time-max" class="input-sm" min="0" max="1440" value="40" />
+                    </label>
+                    <label class="flex-1">recommendedVendorLinkIds(csv,max3)
+                      <input type="text" id="task-rules-vendor-link-ids" value="" />
+                    </label>
+                    <label class="flex-1">dependsOn(csv,max10)
+                      <input type="text" id="task-rules-depends-on" value="" />
+                    </label>
+                  </div>
                   <div class="row row-top">
                     <label>templateId
                       <input type="text" id="task-rules-template-id" value="journey_us_v1" />
@@ -1360,6 +1386,27 @@
                       </label>
                     </div>
                     <div class="row">
+                      <label>category
+                        <select id="task-rules-task-content-category" class="select-inline">
+                          <option value="IMMIGRATION">IMMIGRATION</option>
+                          <option value="HOUSING">HOUSING</option>
+                          <option value="BANKING">BANKING</option>
+                          <option value="HEALTHCARE">HEALTHCARE</option>
+                          <option value="TRANSPORT">TRANSPORT</option>
+                          <option value="SCHOOL">SCHOOL</option>
+                          <option value="LIFE_SETUP" selected>LIFE_SETUP</option>
+                          <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+                        </select>
+                      </label>
+                      <label class="flex-1">dependencies(csv,max10)
+                        <input type="text" id="task-rules-task-content-dependencies" value="" />
+                      </label>
+                      <label class="flex-1">recommendedVendorLinkIds(csv,max3)
+                        <input type="text" id="task-rules-task-content-recommended-vendor-link-ids" value="" />
+                      </label>
+                      <label class="checkbox"><input type="checkbox" id="task-rules-task-content-archived" /> archived</label>
+                    </div>
+                    <div class="row">
                       <label>timeMin
                         <input type="number" id="task-rules-task-content-time-min" class="input-sm" min="0" max="1440" value="20" />
                       </label>
@@ -1375,6 +1422,11 @@
                         <select id="task-rules-task-content-action-link-id" class="select-inline">
                           <option value="">Link Registryから選択</option>
                         </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label class="flex-1">checklist（改行; checklistItems未入力時のfallback）
+                        <textarea id="task-rules-task-content-checklist" rows="4"></textarea>
                       </label>
                     </div>
                     <div class="row">

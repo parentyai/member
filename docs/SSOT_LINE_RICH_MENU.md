@@ -244,3 +244,20 @@ Phase resolution:
 - 完全巻き戻し:
   - PR revert（コード/SSOT/UI差分）
 
+## Phase741 Add-only（Task OS Entry Menu）
+
+### Seed Script
+- dry-run:
+  - `node tools/migrations/rich_menu_task_os_seed.js`
+- apply:
+  - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy`
+- optional binding:
+  - `--line-users=Uxxx,Uyyy`
+
+### Template Action Mapping（message）
+- `今日の3つ` -> Journey command `next_tasks`
+- `TODO一覧` -> Journey command `todo_list`
+- `カテゴリ` -> Journey command `category_view`
+- `CityPack案内` -> Journey command `city_pack_module_guide`
+- `通知履歴` -> Journey command `delivery_history`
+- `相談` -> Journey command `support_guide`

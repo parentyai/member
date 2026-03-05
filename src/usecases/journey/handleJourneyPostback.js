@@ -48,6 +48,28 @@ function toCommandText(action) {
   if (action.action === 'todo_list') {
     return 'TODO一覧';
   }
+  if (action.action === 'next_tasks') {
+    return '今日の3つ';
+  }
+  if (action.action === 'category_view') {
+    if (action.category) return `カテゴリ:${action.category}`;
+    return 'カテゴリ';
+  }
+  if (action.action === 'category_view_missing') {
+    return 'カテゴリ:INVALID';
+  }
+  if (action.action === 'delivery_history') {
+    return '通知履歴';
+  }
+  if (action.action === 'support_guide') {
+    return '相談';
+  }
+  if (action.action === 'todo_vendor') {
+    return `TODO業者:${action.todoKey || ''}`;
+  }
+  if (action.action === 'todo_vendor_missing') {
+    return 'TODO業者:';
+  }
   if (action.action === 'city_pack_module_status') {
     return 'CityPack状況';
   }

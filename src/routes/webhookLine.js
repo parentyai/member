@@ -8,6 +8,7 @@ const { declareRedacMembershipIdFromLine } = require('../usecases/users/declareR
 const { getRedacMembershipStatusForLine } = require('../usecases/users/getRedacMembershipStatusForLine');
 const { replyMessage, pushMessage } = require('../infra/lineClient');
 const { declareCityRegionFromLine } = require('../usecases/cityPack/declareCityRegionFromLine');
+const { syncCityPackRecommendedTasks } = require('../usecases/cityPack/syncCityPackRecommendedTasks');
 const { declareCityPackFeedbackFromLine } = require('../usecases/cityPack/declareCityPackFeedbackFromLine');
 const { recordUserLlmConsent } = require('../usecases/llm/recordUserLlmConsent');
 const llmClient = require('../infra/llmClient');
@@ -1675,6 +1676,13 @@ async function handleLineWebhook(options) {
 
           const region = await declareCityRegionFromLine({ lineUserId: userId, text, requestId, traceId: requestId });
           if (region.status === 'declared') {
+            await syncCityPackRecommendedTasks({
+              lineUserId: userId,
+              regionKey: region.regionKey,
+              actor: 'webhook_line_region_declared',
+              traceId: requestId,
+              requestId
+            }).catch(() => null);
             await replyFn(replyToken, { type: 'text', text: regionDeclared(region.regionCity, region.regionState) });
             continue;
           }

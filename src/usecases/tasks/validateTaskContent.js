@@ -2,6 +2,8 @@
 
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
+const { TASK_CATEGORY_SET } = require('../../domain/tasks/taskCategories');
+const { getTaskDependencyMax } = require('../../domain/tasks/featureFlags');
 const { isTaskMicroLearningEnabled } = require('../../domain/tasks/featureFlags');
 
 const TASK_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]{1,63}$/;
@@ -45,6 +47,18 @@ function validateTaskContent(payload) {
   }
   if (normalized.timeMin !== null && normalized.timeMax !== null && normalized.timeMin > normalized.timeMax) {
     errors.push('timeMin must be <= timeMax');
+  }
+  if (normalized.category && !TASK_CATEGORY_SET.has(String(normalized.category).toUpperCase())) {
+    errors.push('category invalid');
+  }
+  if (Array.isArray(normalized.dependencies) && normalized.dependencies.length > getTaskDependencyMax()) {
+    errors.push(`dependencies max ${getTaskDependencyMax()}`);
+  }
+  if (Array.isArray(normalized.recommendedVendorLinkIds) && normalized.recommendedVendorLinkIds.length > 3) {
+    errors.push('recommendedVendorLinkIds max 3');
+  }
+  if (Array.isArray(normalized.checklist) && normalized.checklist.length > 50) {
+    warnings.push('checklist truncated to 50 recommended');
   }
   if (Array.isArray(normalized.checklistItems) && normalized.checklistItems.length > 20) {
     warnings.push('checklistItems truncated to 20 recommended');

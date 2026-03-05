@@ -1,6 +1,11 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { normalizeTaskCategory } = require('../../domain/tasks/taskCategories');
+const {
+  isTaskCategorySystemEnabled,
+  getTaskDependencyMax
+} = require('../../domain/tasks/featureFlags');
 
 const COLLECTION = 'task_contents';
 const DEFAULT_LIMIT = 100;
@@ -56,6 +61,19 @@ function normalizeChecklistItems(value) {
   return out;
 }
 
+function normalizeStringList(value, maxItems) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  value.forEach((item) => {
+    const text = normalizeText(item, null);
+    if (!text) return;
+    if (out.includes(text)) return;
+    out.push(text);
+  });
+  if (!Number.isInteger(maxItems) || maxItems < 1) return out;
+  return out.slice(0, maxItems);
+}
+
 function normalizeTextList(value, maxItems) {
   const rows = Array.isArray(value) ? value : [];
   const out = [];
@@ -69,24 +87,65 @@ function normalizeTextList(value, maxItems) {
   return out.slice(0, maxItems);
 }
 
+function normalizeChecklistTextList(value) {
+  return normalizeStringList(value, 50).map((item) => item.slice(0, 300));
+}
+
+function deriveChecklistItemsFromChecklist(checklist) {
+  const rows = Array.isArray(checklist) ? checklist : [];
+  return rows.map((text, index) => ({
+    id: `item_${index + 1}`,
+    text,
+    order: index + 1,
+    enabled: true
+  }));
+}
+
+function deriveChecklistFromItems(items) {
+  const rows = Array.isArray(items) ? items : [];
+  return rows
+    .filter((item) => item && item.enabled !== false && normalizeText(item.text, null))
+    .map((item) => normalizeText(item.text, null))
+    .filter(Boolean);
+}
+
 function normalizeTaskContent(taskKey, data) {
   const id = normalizeText(taskKey || (data && data.taskKey), '');
   if (!id) return null;
   const payload = data && typeof data === 'object' ? data : {};
   const timeMin = normalizeNumber(payload.timeMin, null, 0, 24 * 60);
   const timeMax = normalizeNumber(payload.timeMax, null, 0, 24 * 60);
+  const dependencyMax = getTaskDependencyMax();
+  const dependencies = normalizeStringList(payload.dependencies, dependencyMax);
+  const recommendedVendorLinkIds = normalizeStringList(payload.recommendedVendorLinkIds, 3);
+  const category = isTaskCategorySystemEnabled()
+    ? normalizeTaskCategory(payload.category, 'LIFE_SETUP')
+    : normalizeTaskCategory(payload.category, null);
+  const checklistItemsFromPayload = normalizeChecklistItems(payload.checklistItems);
+  const checklistFromPayload = normalizeChecklistTextList(payload.checklist);
+  const checklistItems = checklistItemsFromPayload.length
+    ? checklistItemsFromPayload
+    : deriveChecklistItemsFromChecklist(checklistFromPayload);
+  const checklist = checklistFromPayload.length
+    ? checklistFromPayload
+    : deriveChecklistFromItems(checklistItems);
   return {
     id,
     taskKey: id,
     title: normalizeText(payload.title, null),
+    category,
+    dependencies,
     timeMin: Number.isInteger(timeMin) ? timeMin : null,
     timeMax: Number.isInteger(timeMax) ? timeMax : null,
-    checklistItems: normalizeChecklistItems(payload.checklistItems),
+    checklistItems,
+    checklist,
     manualText: normalizeText(payload.manualText, null),
     failureText: normalizeText(payload.failureText, null),
     summaryShort: normalizeTextList(payload.summaryShort, 5),
     topMistakes: normalizeTextList(payload.topMistakes, 3),
     contextTips: normalizeTextList(payload.contextTips, 5),
+    recommendedVendorLinkIds,
+    archived: normalizeBoolean(payload.archived, false) === true,
     videoLinkId: normalizeText(payload.videoLinkId, null),
     actionLinkId: normalizeText(payload.actionLinkId, null),
     createdAt: payload.createdAt || null,
