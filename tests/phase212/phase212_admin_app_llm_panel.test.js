@@ -20,6 +20,7 @@ test('phase212: admin app includes LLM nav and pane controls', () => {
   assert.match(text, /id="llm-ops-explain-result"/);
   assert.match(text, /id="llm-next-actions-result"/);
   assert.match(text, /id="llm-faq-result"/);
+  assert.match(text, /id="llm-entry-control-dashboard"/);
 });
 
 test('phase212: admin app wires LLM endpoints from pane actions', () => {
@@ -32,5 +33,7 @@ test('phase212: admin app wires LLM endpoints from pane actions', () => {
   assert.match(text, /\/api\/phaseLLM2\/ops-explain/);
   assert.match(text, /\/api\/phaseLLM3\/ops-next-actions/);
   assert.match(text, /\/api\/admin\/llm\/faq\/answer/);
+  assert.match(text, /\/api\/admin\/os\/llm-usage\/summary/);
+  assert.match(text, /function renderLlmEntryControlDashboard\(\)/);
   assert.match(text, /function setupLlmControls\(\)/);
 });

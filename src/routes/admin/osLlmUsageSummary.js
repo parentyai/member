@@ -257,8 +257,17 @@ function buildGateAuditBaseline(rows) {
   const callsTotal = filtered.length;
   const blockedReasons = new Map();
   const blockedStages = new Map();
+  const entryTypes = new Map();
+  const gatesCoverage = new Map();
   let allowCount = 0;
   filtered.forEach((summary) => {
+    const entryType = normalizeReason(summary.entryType);
+    entryTypes.set(entryType, (entryTypes.get(entryType) || 0) + 1);
+    const gatesApplied = Array.isArray(summary.gatesApplied) ? summary.gatesApplied : [];
+    gatesApplied.forEach((gate) => {
+      const key = normalizeReason(gate);
+      gatesCoverage.set(key, (gatesCoverage.get(key) || 0) + 1);
+    });
     const decision = String(summary.decision || '').toLowerCase();
     if (decision === 'allow') {
       allowCount += 1;
@@ -280,7 +289,9 @@ function buildGateAuditBaseline(rows) {
     blockedCount,
     acceptedRate: callsTotal > 0 ? Math.round((allowCount / callsTotal) * 10000) / 10000 : 0,
     blockedReasons: sortCountEntries(blockedReasons, 'reason', 20),
-    blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20)
+    blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20),
+    entryTypes: sortCountEntries(entryTypes, 'entryType', 20),
+    gatesCoverage: sortCountEntries(gatesCoverage, 'gate', 20)
   };
 }
 

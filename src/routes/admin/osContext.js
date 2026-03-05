@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
+const { getPublicWriteSafetySnapshot } = require('../../repos/firestore/systemFlagsRepo');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -77,11 +78,107 @@ function logRouteError(routeId, err, context) {
   }).catch(() => {});
 }
 
+function writeJson(res, status, payload) {
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(payload || {}));
+}
+
+function normalizeRouteKey(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+async function appendKillSwitchAuditBestEffort(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const auditFn = deps && typeof deps.appendAuditLog === 'function' ? deps.appendAuditLog : appendAuditLog;
+  const routeKey = normalizeRouteKey(payload.routeKey) || 'llm_generation';
+  const traceId = payload.traceId || null;
+  const requestId = payload.requestId || null;
+  const actor = payload.actor || 'unknown';
+  const action = payload.action || 'llm_generation.blocked';
+  const reason = payload.reason || 'unknown';
+  const failCloseMode = payload.failCloseMode || null;
+  await auditFn({
+    actor,
+    action,
+    entityType: 'llm_generation',
+    entityId: routeKey,
+    traceId,
+    requestId,
+    payloadSummary: {
+      routeKey,
+      reason,
+      failCloseMode
+    }
+  }).catch(() => null);
+}
+
+async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const routeKey = normalizeRouteKey(payload.routeKey) || 'llm_generation';
+  const actor = payload.actor || resolveActor(req) || 'unknown';
+  const traceId = payload.traceId || resolveTraceId(req);
+  const requestId = payload.requestId || resolveRequestId(req);
+  const getSnapshot = deps && typeof deps.getPublicWriteSafetySnapshot === 'function'
+    ? deps.getPublicWriteSafetySnapshot
+    : getPublicWriteSafetySnapshot;
+  const snapshot = await getSnapshot(routeKey);
+
+  if (snapshot && snapshot.readError === true && snapshot.failCloseMode === 'enforce') {
+    await appendKillSwitchAuditBestEffort({
+      actor,
+      routeKey,
+      traceId,
+      requestId,
+      action: 'llm_generation.blocked',
+      reason: 'kill_switch_read_failed_fail_closed',
+      failCloseMode: snapshot.failCloseMode || null
+    }, deps);
+    writeJson(res, 503, {
+      ok: false,
+      error: 'temporarily unavailable',
+      reason: 'kill_switch_read_failed_fail_closed',
+      traceId,
+      requestId
+    });
+    return false;
+  }
+
+  if (snapshot && snapshot.readError === true && snapshot.failCloseMode === 'warn') {
+    await appendKillSwitchAuditBestEffort({
+      actor,
+      routeKey,
+      traceId,
+      requestId,
+      action: 'llm_generation.guard_warn',
+      reason: 'kill_switch_read_failed_fail_open',
+      failCloseMode: snapshot.failCloseMode || null
+    }, deps);
+  }
+
+  if (snapshot && snapshot.killSwitchOn === true) {
+    await appendKillSwitchAuditBestEffort({
+      actor,
+      routeKey,
+      traceId,
+      requestId,
+      action: 'llm_generation.blocked',
+      reason: 'kill_switch_on',
+      failCloseMode: snapshot.failCloseMode || null
+    }, deps);
+    writeJson(res, 409, { ok: false, error: 'kill switch on', traceId, requestId });
+    return false;
+  }
+
+  return true;
+}
+
 module.exports = {
   resolveActor,
   requireActor,
   resolveRequestId,
   resolveTraceId,
   parseJson,
-  logRouteError
+  logRouteError,
+  enforceLlmGenerationKillSwitch
 };

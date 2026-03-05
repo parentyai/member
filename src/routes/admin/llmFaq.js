@@ -1,6 +1,7 @@
 'use strict';
 
 const { answerFaqFromKb } = require('../../usecases/faq/answerFaqFromKb');
+const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
 const { parseJson, resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
 function handleError(res, err, traceId) {
@@ -31,6 +32,26 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       requestId,
       actor
     }, deps);
+    const lineUserId = typeof payload.lineUserId === 'string' && payload.lineUserId.trim()
+      ? payload.lineUserId.trim()
+      : null;
+    const blockedReason = result && result.blocked === true
+      ? (result.blockedReason || result.llmStatus || 'blocked')
+      : null;
+    await appendLlmGateDecision({
+      actor,
+      traceId,
+      requestId,
+      lineUserId,
+      plan: 'admin',
+      status: result && result.llmStatus ? result.llmStatus : (blockedReason ? 'blocked' : 'ok'),
+      intent: payload.intent || 'faq_search',
+      decision: blockedReason ? 'blocked' : 'allow',
+      blockedReason,
+      model: result && result.llmModel ? result.llmModel : null,
+      entryType: 'admin',
+      gatesApplied: ['kill_switch', 'url_guard']
+    }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));

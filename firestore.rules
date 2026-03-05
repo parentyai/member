@@ -146,6 +146,21 @@ service cloud.firestore {
       allow read, write: if isAdmin() || isServiceAccount();
     }
 
+    match /llm_action_logs/{docId} {
+      // Action logs are append-only: no update or delete.
+      allow read: if isAdmin() || isServiceAccount();
+      allow create: if isAdmin() || isServiceAccount();
+      allow update, delete: if false;
+    }
+
+    match /llm_bandit_state/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /llm_contextual_bandit_state/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
     match /llm_quality_logs/{docId} {
       // Quality logs are append-only: no update or delete.
       allow read: if isAdmin() || isServiceAccount();

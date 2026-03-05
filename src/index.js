@@ -2417,6 +2417,7 @@ function createServer() {
       handleConsentVerify,
       handleConsentRevoke
     } = require('./routes/admin/llmConsent');
+    const { enforceLlmGenerationKillSwitch } = require('./routes/admin/osContext');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -2469,15 +2470,21 @@ function createServer() {
         return;
       }
       if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_faq_answer' });
+        if (!allowed) return;
         const body = await collectBody();
         await handleAdminLlmFaqAnswer(req, res, body, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/ops-explain') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_ops_explain' });
+        if (!allowed) return;
         await handleAdminLlmOpsExplain(req, res, { llmAdapter: llmClient });
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/llm/next-actions') {
+        const allowed = await enforceLlmGenerationKillSwitch(req, res, { routeKey: 'admin_llm_next_actions' });
+        if (!allowed) return;
         await handleAdminLlmNextActions(req, res, { llmAdapter: llmClient });
         return;
       }

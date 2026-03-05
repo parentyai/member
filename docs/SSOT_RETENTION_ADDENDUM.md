@@ -9,9 +9,9 @@
 
 | kind | count |
 | --- | --- |
-| aggregate | 11 |
+| aggregate | 13 |
 | config | 49 |
-| event | 6 |
+| event | 7 |
 | evidence | 14 |
 | transient | 3 |
 
@@ -54,6 +54,9 @@
 | `journey_todo_items` | config | INDEFINITE | false | false |
 | `journey_todo_stats` | aggregate | 90d | false | false |
 | `link_registry` | config | INDEFINITE | false | false |
+| `llm_action_logs` | event | 180d | CONDITIONAL | true |
+| `llm_bandit_state` | aggregate | INDEFINITE | false | false |
+| `llm_contextual_bandit_state` | aggregate | INDEFINITE | false | false |
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |

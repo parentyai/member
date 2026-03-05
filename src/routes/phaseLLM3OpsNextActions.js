@@ -1,6 +1,8 @@
 'use strict';
 
 const { getNextActionCandidates } = require('../usecases/phaseLLM3/getNextActionCandidates');
+const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
+const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 
 async function handleOpsNextActions(req, res) {
   try {
@@ -13,7 +15,26 @@ async function handleOpsNextActions(req, res) {
     }
     const traceId = req.headers['x-trace-id'] || null;
     const actor = req.headers['x-actor'] || 'phaseLLM3_ops_next_actions';
+    const allowed = await enforceLlmGenerationKillSwitch(req, res, {
+      routeKey: 'compat_phaseLLM3_ops_next_actions',
+      actor,
+      traceId
+    });
+    if (!allowed) return;
     const result = await getNextActionCandidates({ lineUserId, traceId, actor });
+    await appendLlmGateDecision({
+      actor,
+      traceId,
+      lineUserId,
+      plan: 'admin',
+      status: result && result.llmStatus ? result.llmStatus : 'unknown',
+      intent: 'next_actions',
+      decision: result && result.llmUsed === true ? 'allow' : 'blocked',
+      blockedReason: result && result.llmUsed === true ? null : (result && result.llmStatus ? result.llmStatus : 'blocked'),
+      model: result && result.llmModel ? result.llmModel : null,
+      entryType: 'compat',
+      gatesApplied: ['kill_switch']
+    }).catch(() => null);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
