@@ -538,6 +538,46 @@ function formatPaidReply(output, constraints, disclaimer) {
   ].join('\n\n');
 }
 
+function resolvePaidAssistantConversationFormatEnabled(env) {
+  const source = env && typeof env === 'object' ? env : process.env;
+  const raw = source && source.ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1;
+  if (raw === true || raw === '1') return true;
+  if (typeof raw === 'string' && raw.trim().toLowerCase() === 'true') return true;
+  return false;
+}
+
+function formatPaidReplyConversation(output, constraints, disclaimer) {
+  const maxNextActions = Number.isFinite(Number(constraints && constraints.max_next_actions))
+    ? Number(constraints.max_next_actions)
+    : DEFAULT_OUTPUT_CONSTRAINTS.max_next_actions;
+  const maxGaps = Number.isFinite(Number(constraints && constraints.max_gaps))
+    ? Number(constraints.max_gaps)
+    : DEFAULT_OUTPUT_CONSTRAINTS.max_gaps;
+  const maxRisks = Number.isFinite(Number(constraints && constraints.max_risks))
+    ? Number(constraints.max_risks)
+    : DEFAULT_OUTPUT_CONSTRAINTS.max_risks;
+  const nextActions = Array.isArray(output && output.nextActions) ? output.nextActions.slice(0, maxNextActions) : [];
+  const gaps = Array.isArray(output && output.gaps) ? output.gaps.slice(0, maxGaps) : [];
+  const risks = Array.isArray(output && output.risks) ? output.risks.slice(0, maxRisks) : [];
+  const evidenceKeys = Array.isArray(output && output.evidenceKeys) ? output.evidenceKeys : [];
+  const disclaimerText = disclaimer && typeof disclaimer.text === 'string' ? disclaimer.text.trim() : '';
+
+  const sections = [];
+  sections.push(normalizeText(output && output.situation) || '状況の前提をもう少し整理します。');
+  if (nextActions.length) {
+    sections.push(`次に進める候補です:\n${nextActions.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+  }
+  if (gaps.length) {
+    sections.push(`見落としやすい点:\n${gaps.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+  }
+  if (risks.length) {
+    sections.push(`注意しておきたい点:\n${risks.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+  }
+  sections.push(`根拠キー: ${evidenceKeys.length ? evidenceKeys.join(', ') : '-'}`);
+  sections.push(`注記: ${disclaimerText || '提案です。最終判断は運用担当が行ってください。'}`);
+  return sections.join('\n\n');
+}
+
 function compactKbCandidates(rows) {
   return (Array.isArray(rows) ? rows : []).slice(0, 5).map((row) => ({
     articleId: row.articleId,
@@ -736,6 +776,7 @@ async function generatePaidAssistantReply(params) {
     };
   }
   const outputConstraints = resolveOutputConstraints(payload.llmPolicy || null, payload.maxNextActionsCap);
+  const conversationFormatEnabled = resolvePaidAssistantConversationFormatEnabled(payload.env || process.env);
   const faq = await searchFaqFromKb({
     question,
     locale: payload.locale || 'ja',
@@ -806,7 +847,9 @@ async function generatePaidAssistantReply(params) {
       }
 
       const disclaimer = getDisclaimer('paid_assistant', { policy: payload.llmPolicy || null });
-      const replyText = formatPaidReply(output, outputConstraints, disclaimer);
+      const replyText = conversationFormatEnabled
+        ? formatPaidReplyConversation(output, outputConstraints, disclaimer)
+        : formatPaidReply(output, outputConstraints, disclaimer);
       return {
         ok: true,
         intent,
