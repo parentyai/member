@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T13:35:24-05:00",
-  "gitCommit": "f65b390a821c82537d8d7f603221255c151ff5a5",
-  "branch": "codex/paid-concierge-opportunity-a1",
-  "sourceDigest": "310203bc02c69336637b1a18b3e0e8fcf84297b343ae7a1cbbce7c00c1d19b71",
+  "generatedAt": "2026-03-05T18:24:54-05:00",
+  "gitCommit": "be8ebb5d8288a91fd49f24d60baf6d9673c5f752",
+  "branch": "codex/emergency-full-staging",
+  "sourceDigest": "eebdcf3df5d9caed957ef283b7d14cd58d1cb64b42784d9eeb389545c9bb96d5",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

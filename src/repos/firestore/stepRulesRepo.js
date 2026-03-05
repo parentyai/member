@@ -2,7 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { LEAD_TIME_KIND, LEAD_TIME_KIND_VALUES } = require('../../domain/tasks/constants');
-const { normalizeTaskCategory } = require('../../domain/tasks/taskCategories');
+const { normalizeTaskCategory } = require('../../domain/tasks/usExpatTaxonomy');
 const {
   isTaskCategorySystemEnabled,
   getTaskDependencyMax

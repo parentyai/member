@@ -7,7 +7,6 @@
   },
   "allowlist": {
     "data_model_only": [
-      "task_contents",
       "user_city_pack_preferences"
     ],
     "data_lifecycle_only": []

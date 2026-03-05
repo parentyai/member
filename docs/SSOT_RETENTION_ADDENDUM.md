@@ -10,7 +10,7 @@
 | kind | count |
 | --- | --- |
 | aggregate | 13 |
-| config | 49 |
+| config | 50 |
 | event | 7 |
 | evidence | 14 |
 | transient | 3 |
@@ -96,6 +96,7 @@
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
+| `task_contents` | config | INDEFINITE | false | false |
 | `tasks` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |

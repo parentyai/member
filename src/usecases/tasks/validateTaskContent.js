@@ -2,7 +2,7 @@
 
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
-const { TASK_CATEGORY_SET } = require('../../domain/tasks/taskCategories');
+const { TASK_CATEGORY_VALUES } = require('../../domain/tasks/usExpatTaxonomy');
 const { getTaskDependencyMax } = require('../../domain/tasks/featureFlags');
 const { isTaskMicroLearningEnabled } = require('../../domain/tasks/featureFlags');
 
@@ -48,7 +48,7 @@ function validateTaskContent(payload) {
   if (normalized.timeMin !== null && normalized.timeMax !== null && normalized.timeMin > normalized.timeMax) {
     errors.push('timeMin must be <= timeMax');
   }
-  if (normalized.category && !TASK_CATEGORY_SET.has(String(normalized.category).toUpperCase())) {
+  if (normalized.category && !TASK_CATEGORY_VALUES.includes(String(normalized.category).toUpperCase())) {
     errors.push('category invalid');
   }
   if (Array.isArray(normalized.dependencies) && normalized.dependencies.length > getTaskDependencyMax()) {
