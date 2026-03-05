@@ -319,7 +319,10 @@
     ],
     "handleJourneyLineCommand": [
       "cityPacksRepo",
+      "deliveriesRepo",
       "journeyTodoItemsRepo",
+      "linkRegistryRepo",
+      "stepRulesRepo",
       "taskContentsRepo",
       "tasksRepo",
       "userCityPackPreferencesRepo",
@@ -400,6 +403,7 @@
     "normalizeLimit": [
       "analyticsReadRepo",
       "cityPackMetricsDailyRepo",
+      "cityPacksRepo",
       "deliveriesRepo",
       "emergencyBulletinsRepo",
       "emergencyDiffsRepo",
@@ -414,6 +418,8 @@
       "linkRegistryRepo",
       "notificationsRepo",
       "sourceRefsRepo",
+      "stepRulesRepo",
+      "userCityPackPreferencesRepo",
       "userJourneySchedulesRepo",
       "usersRepo"
     ],
@@ -638,6 +644,13 @@
       "emergencyBulletinsRepo",
       "emergencyDiffsRepo",
       "systemFlagsRepo"
+    ],
+    "syncCityPackRecommendedTasks": [
+      "cityPacksRepo",
+      "stepRulesRepo",
+      "tasksRepo",
+      "userCityPackPreferencesRepo",
+      "usersRepo"
     ],
     "testSendNotification": [
       "decisionTimelineRepo",
@@ -1099,6 +1112,9 @@
       "getKillSwitch",
       "setKillSwitch"
     ],
+    "src/routes/admin/osLinkRegistryImpact.js": [
+      "appendAuditLog"
+    ],
     "src/routes/admin/osLinkRegistryLookup.js": [
       "appendAuditLog"
     ],
@@ -1406,7 +1422,8 @@
       "recordLlmUsage",
       "recordUserLlmConsent",
       "resolvePlan",
-      "sendWelcomeMessage"
+      "sendWelcomeMessage",
+      "syncCityPackRecommendedTasks"
     ],
     "src/routes/webhookStripe.js": [
       "appendAuditLog",

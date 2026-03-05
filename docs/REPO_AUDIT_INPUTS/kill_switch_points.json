@@ -352,7 +352,7 @@
     },
     {
       "file": "src/routes/admin/taskRulesConfig.js",
-      "line": 1043,
+      "line": 1057,
       "symbol": "killSwitch"
     },
     {
