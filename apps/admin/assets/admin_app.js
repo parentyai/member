@@ -7036,6 +7036,7 @@ function clearCityPackManageForm(summaryText) {
   setInputValue('city-pack-manage-description', '');
   setInputValue('city-pack-manage-source-refs', '');
   setInputValue('city-pack-manage-metadata', '{}');
+  setInputValue('city-pack-manage-modules', '');
   CITY_PACK_MANAGE_SLOT_KEYS.forEach((slotKey) => {
     setCityPackManageSlotFormValue(slotKey, 'description', '');
     setCityPackManageSlotFormValue(slotKey, 'cta', '');
@@ -7066,6 +7067,7 @@ function loadCityPackManageFormFromPack(pack) {
   setInputValue('city-pack-manage-slot-schema-version', pack.slotSchemaVersion || '');
   const metadata = pack.metadata && typeof pack.metadata === 'object' ? pack.metadata : {};
   setInputValue('city-pack-manage-metadata', JSON.stringify(metadata, null, 2));
+  setInputValue('city-pack-manage-modules', Array.isArray(pack.modules) ? pack.modules.join('\n') : '');
   const slotContents = pack.slotContents && typeof pack.slotContents === 'object' ? pack.slotContents : {};
   CITY_PACK_MANAGE_SLOT_KEYS.forEach((slotKey) => {
     const row = slotContents[slotKey] && typeof slotContents[slotKey] === 'object' ? slotContents[slotKey] : null;
@@ -7234,6 +7236,16 @@ function parseCityPackManageMetadata() {
   }
 }
 
+function parseCityPackManageModules() {
+  const raw = String(document.getElementById('city-pack-manage-modules')?.value || '');
+  return Array.from(new Set(
+    raw
+      .split(/\r?\n|,/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  ));
+}
+
 function readCityPackManageSlotContents() {
   const slotContents = {};
   for (const slotKey of CITY_PACK_MANAGE_SLOT_KEYS) {
@@ -7285,7 +7297,8 @@ function readCityPackManageFormPayload(options) {
     regionKey,
     slotContents,
     slotSchemaVersion,
-    metadata
+    metadata,
+    modules: parseCityPackManageModules()
   };
 }
 
@@ -7299,6 +7312,7 @@ function buildCityPackManageCreatePayload(formPayload) {
     metadata: formPayload.metadata || {},
     slotContents: formPayload.slotContents || {},
     slotSchemaVersion: formPayload.slotSchemaVersion || null,
+    modules: Array.isArray(formPayload.modules) ? formPayload.modules.slice() : [],
     packClass: formPayload.packClass || 'regional',
     language: formPayload.language || 'ja',
     status: 'draft'
@@ -7334,6 +7348,7 @@ function buildCityPackManageClonePayload(basePack, regionKeyOverride) {
     overrides: basePack && basePack.overrides && typeof basePack.overrides === 'object' ? basePack.overrides : null,
     slotContents: basePack && basePack.slotContents && typeof basePack.slotContents === 'object' ? basePack.slotContents : {},
     slotSchemaVersion: basePack && typeof basePack.slotSchemaVersion === 'string' ? basePack.slotSchemaVersion : null,
+    modules: Array.isArray(basePack && basePack.modules) ? basePack.modules.slice() : [],
     packClass,
     language: basePack && basePack.language ? String(basePack.language) : 'ja',
     status: 'draft'
@@ -7467,6 +7482,7 @@ async function runCityPackManageSave() {
     const clonePayload = buildCityPackManageClonePayload(selectedPack, formPayload.regionKey);
     clonePayload.packClass = formPayload.packClass;
     clonePayload.language = formPayload.language;
+    clonePayload.modules = Array.isArray(formPayload.modules) ? formPayload.modules.slice() : [];
     clonePayload.targetingRules = replaceCityPackManageRegionTargetingRules(
       clonePayload.targetingRules,
       formPayload.regionKey,
@@ -7501,7 +7517,8 @@ async function runCityPackManageSave() {
     language: formPayload.language,
     slotContents: formPayload.slotContents,
     slotSchemaVersion: formPayload.slotSchemaVersion,
-    metadata: formPayload.metadata
+    metadata: formPayload.metadata,
+    modules: formPayload.modules
   };
   const saveData = await postJson(`/api/admin/city-packs/${encodeURIComponent(targetPackId)}/content`, contentPayload, traceId);
   if (saveData && saveData.ok) {
@@ -9771,6 +9788,30 @@ function readTaskRulesChecklistItems() {
     .filter(Boolean);
 }
 
+function parseTaskRulesTextLines(raw, maxItems) {
+  const lines = String(raw || '')
+    .split(/\r?\n/)
+    .map((line) => normalizeTaskRulesText(line, ''))
+    .filter(Boolean);
+  const out = [];
+  lines.forEach((line) => {
+    if (out.includes(line)) return;
+    out.push(line);
+  });
+  if (!Number.isFinite(Number(maxItems)) || Number(maxItems) < 1) return out;
+  return out.slice(0, Math.floor(Number(maxItems)));
+}
+
+function setTaskRulesTextLines(elementId, values) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  const rows = Array.isArray(values) ? values : [];
+  element.value = rows
+    .map((line) => normalizeTaskRulesText(line, ''))
+    .filter(Boolean)
+    .join('\n');
+}
+
 function normalizeTaskRulesTaskContentLinkManualMapping(item) {
   const row = item && typeof item === 'object' ? item : {};
   const sourceTaskKey = normalizeTaskRulesText(row.sourceTaskKey || row.taskKey, '');
@@ -9807,6 +9848,9 @@ function buildTaskRulesTaskContentPayload() {
     timeMin: Number.isFinite(timeMin) ? Math.max(0, Math.floor(timeMin)) : null,
     timeMax: Number.isFinite(timeMax) ? Math.max(0, Math.floor(timeMax)) : null,
     checklistItems: readTaskRulesChecklistItems(),
+    summaryShort: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-summary-short')?.value || '', 5),
+    topMistakes: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-top-mistakes')?.value || '', 3),
+    contextTips: parseTaskRulesTextLines(document.getElementById('task-rules-task-content-context-tips')?.value || '', 5),
     manualText: document.getElementById('task-rules-task-content-manual-text')?.value || '',
     failureText: document.getElementById('task-rules-task-content-failure-text')?.value || '',
     videoLinkId: document.getElementById('task-rules-task-content-video-link-id')?.value?.trim() || '',
@@ -9900,6 +9944,9 @@ function applyTaskRulesTaskContentEditor(taskContent) {
   if (document.getElementById('task-rules-task-content-failure-text')) {
     document.getElementById('task-rules-task-content-failure-text').value = row.failureText || '';
   }
+  setTaskRulesTextLines('task-rules-task-content-summary-short', row.summaryShort);
+  setTaskRulesTextLines('task-rules-task-content-top-mistakes', row.topMistakes);
+  setTaskRulesTextLines('task-rules-task-content-context-tips', row.contextTips);
   if (document.getElementById('task-rules-task-content-video-link-id')) {
     if (document.getElementById('task-rules-task-content-video-link-id').dataset) {
       document.getElementById('task-rules-task-content-video-link-id').dataset.pendingValue = normalizeTaskRulesText(row.videoLinkId, '');
@@ -10096,6 +10143,18 @@ function applyTaskRulesLinkEditorFields(item) {
   if (document.getElementById('task-rules-link-registry-enabled')) {
     document.getElementById('task-rules-link-registry-enabled').checked = row.enabled !== false;
   }
+  if (document.getElementById('task-rules-link-registry-intent-tag')) {
+    document.getElementById('task-rules-link-registry-intent-tag').value = normalizeTaskRulesText(row.intentTag, '');
+  }
+  if (document.getElementById('task-rules-link-registry-audience-tag')) {
+    document.getElementById('task-rules-link-registry-audience-tag').value = normalizeTaskRulesText(row.audienceTag, '');
+  }
+  if (document.getElementById('task-rules-link-registry-region-scope')) {
+    document.getElementById('task-rules-link-registry-region-scope').value = normalizeTaskRulesText(row.regionScope, '');
+  }
+  if (document.getElementById('task-rules-link-registry-risk-level')) {
+    document.getElementById('task-rules-link-registry-risk-level').value = normalizeTaskRulesText(row.riskLevel, '');
+  }
 }
 
 function buildTaskRulesLinkRegistryPayload() {
@@ -10104,7 +10163,11 @@ function buildTaskRulesLinkRegistryPayload() {
     label: document.getElementById('task-rules-link-registry-title')?.value?.trim() || '',
     url: document.getElementById('task-rules-link-registry-url')?.value?.trim() || '',
     kind: document.getElementById('task-rules-link-registry-kind')?.value?.trim() || 'web',
-    enabled: Boolean(document.getElementById('task-rules-link-registry-enabled')?.checked)
+    enabled: Boolean(document.getElementById('task-rules-link-registry-enabled')?.checked),
+    intentTag: document.getElementById('task-rules-link-registry-intent-tag')?.value?.trim() || '',
+    audienceTag: document.getElementById('task-rules-link-registry-audience-tag')?.value?.trim() || '',
+    regionScope: document.getElementById('task-rules-link-registry-region-scope')?.value?.trim() || '',
+    riskLevel: document.getElementById('task-rules-link-registry-risk-level')?.value?.trim() || ''
   };
 }
 

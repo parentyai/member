@@ -85,6 +85,7 @@
     "taskNodesRepo",
     "tasksRepo",
     "templatesVRepo",
+    "userCityPackPreferencesRepo",
     "userConsentsRepo",
     "userContextSnapshotsRepo",
     "userJourneyProfilesRepo",

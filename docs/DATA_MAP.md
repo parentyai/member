@@ -735,3 +735,31 @@ Typical fields:
 - `activeVersionId`
 - `previousAppliedVersionId`
 - `canary{ enabled, versionId, lineUserIds[] }`
+
+## Phase740 Add-only Data Map
+
+### `link_registry` add-only fields
+- `intentTag` (`task|city_pack|vendor|support|payment|null`)
+- `audienceTag` (`family|solo|corporate|null`)
+- `regionScope` (`nationwide|state|city|school_district|null`)
+- `riskLevel` (`safe|warn|blocked|null`)
+
+### `task_contents` add-only fields
+- `summaryShort[]`（最大5）
+- `topMistakes[]`（最大3）
+- `contextTips[]`（最大5）
+
+### `city_packs` add-only fields
+- `modules[]` (`schools|healthcare|driving|housing|utilities`)
+
+### New collection: `user_city_pack_preferences`
+- doc id: `lineUserId`
+- fields:
+  - `modulesSubscribed[]`（空配列=全購読扱い）
+  - `updatedAt`, `updatedBy`, `source`
+
+### Notification attention budget read path
+- 基準 collection: `notification_deliveries`（SSOT）
+- 日次上限計算:
+  - `countDeliveredByUserSince(lineUserId, dayStartAt)` を利用
+  - `user_journey_profiles.timezone` 優先、未設定は `UTC`

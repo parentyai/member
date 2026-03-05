@@ -86,6 +86,7 @@ function normalizeImportTemplate(input) {
     templateRefs: normalizeStringArray(template.templateRefs),
     basePackId: cityPacksRepo.normalizeBasePackId(template.basePackId),
     overrides: cityPacksRepo.normalizeOverrides(template.overrides),
+    modules: cityPacksRepo.normalizeModules(template.modules),
     packClass,
     language,
     nationwidePolicy,
@@ -139,6 +140,7 @@ async function handleCreateCityPack(req, res, bodyText, context) {
     templateRefs: payload.templateRefs,
     slotContents: payload.slotContents,
     slotSchemaVersion: payload.slotSchemaVersion,
+    modules: payload.modules,
     basePackId: payload.basePackId,
     overrides: payload.overrides,
     packClass: payload.packClass,
@@ -162,6 +164,8 @@ async function handleCreateCityPack(req, res, bodyText, context) {
       language: normalizedLanguage,
       nationwidePolicy: normalizedNationwidePolicy,
       slotContentCount: countSlotContentKeys(payload.slotContents)
+      ,
+      modulesCount: Array.isArray(payload.modules) ? payload.modules.length : 0
     }
   });
   writeJson(res, 201, {
@@ -241,6 +245,7 @@ async function handleExportCityPack(req, res, context, cityPackId) {
     slots: Array.isArray(cityPack.slots) ? cityPack.slots : [],
     metadata: cityPack.metadata && typeof cityPack.metadata === 'object' ? cityPack.metadata : {},
     templateRefs: Array.isArray(cityPack.templateRefs) ? cityPack.templateRefs : [],
+    modules: Array.isArray(cityPack.modules) ? cityPack.modules : [],
     basePackId: cityPack.basePackId || null,
     overrides: cityPack.overrides || null,
     packClass: cityPack.packClass || 'regional',
@@ -451,7 +456,8 @@ async function handleUpdateCityPackContent(req, res, bodyText, context, cityPack
       slotContentCount: countSlotContentKeys(contentPatch.slotContents),
       slotSchemaVersion: contentPatch.slotSchemaVersion || undefined,
       packClass: contentPatch.packClass || undefined,
-      language: contentPatch.language || undefined
+      language: contentPatch.language || undefined,
+      modulesCount: Array.isArray(contentPatch.modules) ? contentPatch.modules.length : undefined
     }
   });
   writeJson(res, 200, {

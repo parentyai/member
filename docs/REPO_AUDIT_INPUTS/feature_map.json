@@ -13,6 +13,8 @@
         "deliveriesRepo",
         "linkRegistryRepo",
         "notificationsRepo",
+        "userCityPackPreferencesRepo",
+        "userJourneyProfilesRepo",
         "usersRepo"
       ],
       "collections": [
@@ -21,13 +23,15 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "auth": "admin",
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 171,
+      "tests_count": 177,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -209,7 +213,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 210,
+      "tests_count": 212,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -389,7 +393,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 108,
+      "tests_count": 109,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -429,7 +433,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 94,
+      "tests_count": 95,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -673,7 +677,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 136,
+      "tests_count": 137,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -702,7 +706,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 63,
+      "tests_count": 64,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -885,7 +889,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 53,
+      "tests_count": 54,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -911,7 +915,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 149,
+      "tests_count": 151,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -931,6 +935,8 @@
         "deliveriesRepo",
         "linkRegistryRepo",
         "notificationsRepo",
+        "userCityPackPreferencesRepo",
+        "userJourneyProfilesRepo",
         "usersRepo"
       ],
       "collections": [
@@ -939,13 +945,15 @@
         "link_registry",
         "notification_deliveries",
         "notifications",
+        "user_city_pack_preferences",
+        "user_journey_profiles",
         "users"
       ],
       "auth": "admin",
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 241,
+      "tests_count": 247,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -975,7 +983,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 121,
+      "tests_count": 122,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1126,7 +1134,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 103,
+      "tests_count": 104,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1276,7 +1284,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 207,
+      "tests_count": 208,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1329,7 +1337,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 200,
+      "tests_count": 201,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1506,7 +1514,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 191,
+      "tests_count": 192,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1668,7 +1676,7 @@
       "killSwitch_dependent": true,
       "trace_linked": false,
       "audit_linked": true,
-      "tests_count": 115,
+      "tests_count": 116,
       "ssot_refs": [],
       "completion": "legacy"
     },
@@ -1725,7 +1733,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 144,
+      "tests_count": 146,
       "ssot_refs": [],
       "completion": "legacy"
     },
@@ -1932,7 +1940,7 @@
       "killSwitch_dependent": false,
       "trace_linked": false,
       "audit_linked": true,
-      "tests_count": 81,
+      "tests_count": 82,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1954,7 +1962,7 @@
       "killSwitch_dependent": false,
       "trace_linked": false,
       "audit_linked": true,
-      "tests_count": 80,
+      "tests_count": 81,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1980,7 +1988,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 99,
+      "tests_count": 100,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2006,7 +2014,7 @@
       "killSwitch_dependent": false,
       "trace_linked": false,
       "audit_linked": false,
-      "tests_count": 108,
+      "tests_count": 109,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2034,7 +2042,7 @@
       "killSwitch_dependent": false,
       "trace_linked": false,
       "audit_linked": true,
-      "tests_count": 114,
+      "tests_count": 115,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2551,7 +2559,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 109,
+      "tests_count": 110,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2793,18 +2801,20 @@
       "repos": [
         "stepRulesRepo",
         "systemFlagsRepo",
-        "tasksRepo"
+        "tasksRepo",
+        "userJourneyProfilesRepo"
       ],
       "collections": [
         "step_rules",
         "system_flags",
-        "tasks"
+        "tasks",
+        "user_journey_profiles"
       ],
       "auth": "internal",
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 32,
+      "tests_count": 35,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2852,7 +2862,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 174,
+      "tests_count": 176,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2875,7 +2885,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 38,
+      "tests_count": 40,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2927,7 +2937,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 128,
+      "tests_count": 130,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -2954,7 +2964,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 128,
+      "tests_count": 130,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3064,7 +3074,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 102,
+      "tests_count": 103,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3100,6 +3110,7 @@
         "auditLogsRepo",
         "cityPackFeedbackRepo",
         "cityPackRequestsRepo",
+        "cityPacksRepo",
         "deliveriesRepo",
         "eventsRepo",
         "journeyTodoItemsRepo",
@@ -3110,6 +3121,7 @@
         "systemFlagsRepo",
         "taskContentsRepo",
         "tasksRepo",
+        "userCityPackPreferencesRepo",
         "userConsentsRepo",
         "userContextSnapshotsRepo",
         "userJourneyProfilesRepo",
@@ -3121,6 +3133,7 @@
         "audit_logs",
         "city_pack_feedback",
         "city_pack_requests",
+        "city_packs",
         "events",
         "journey_todo_items",
         "llm_quality_logs",
@@ -3131,6 +3144,7 @@
         "system_flags",
         "task_contents",
         "tasks",
+        "user_city_pack_preferences",
         "user_consents",
         "user_context_snapshots",
         "user_journey_profiles",
@@ -3142,7 +3156,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 90,
+      "tests_count": 91,
       "ssot_refs": [],
       "completion": "completed"
     },

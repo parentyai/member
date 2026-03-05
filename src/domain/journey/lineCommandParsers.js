@@ -21,6 +21,7 @@ const HOUSEHOLD_TO_SCENARIO = Object.freeze({
   accompany1: 'C',
   accompany2: 'D'
 });
+const CITY_PACK_MODULE_PATTERN = /^[a-z_]{3,32}$/;
 const SCENARIO_MIRROR_FIELD = String.fromCharCode(
   115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121, 77, 105, 114, 114, 111, 114
 );
@@ -125,6 +126,28 @@ function parseJourneyLineCommand(text) {
       section: normalizeText(detailContinue[2]).toLowerCase(),
       startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
     };
+  }
+
+  if (/^(?:CityPack(?:案内|モジュール|購読)|CITYPACK(?:GUIDE|MODULE))$/i.test(raw)) {
+    return { action: 'city_pack_module_guide' };
+  }
+
+  const cityPackSubscribe = raw.match(/^CityPack(?:購読|SUBSCRIBE)\s*[:：]\s*([a-z_]{3,32})$/i);
+  if (cityPackSubscribe) {
+    const module = normalizeText(cityPackSubscribe[1]).toLowerCase();
+    if (!CITY_PACK_MODULE_PATTERN.test(module)) return { action: 'city_pack_module_subscribe_missing' };
+    return { action: 'city_pack_module_subscribe', module };
+  }
+
+  const cityPackUnsubscribe = raw.match(/^CityPack(?:解除|UNSUBSCRIBE)\s*[:：]\s*([a-z_]{3,32})$/i);
+  if (cityPackUnsubscribe) {
+    const module = normalizeText(cityPackUnsubscribe[1]).toLowerCase();
+    if (!CITY_PACK_MODULE_PATTERN.test(module)) return { action: 'city_pack_module_unsubscribe_missing' };
+    return { action: 'city_pack_module_unsubscribe', module };
+  }
+
+  if (/^(?:CityPack(?:状況|STATUS)|CITYPACK_STATUS)$/i.test(raw)) {
+    return { action: 'city_pack_module_status' };
   }
 
   const household = raw.match(/^属性\s*[:：]?\s*(.+)$/i);
@@ -238,6 +261,16 @@ function parseJourneyPostbackData(data) {
 
   if (action === 'todo_list') {
     return { action };
+  }
+
+  if (action === 'city_pack_module_status') {
+    return { action };
+  }
+
+  if (action === 'city_pack_module_subscribe' || action === 'city_pack_module_unsubscribe') {
+    const module = normalizeText(params.get('module')).toLowerCase();
+    if (!module || !CITY_PACK_MODULE_PATTERN.test(module)) return { action: `${action}_missing` };
+    return { action, module };
   }
 
   return null;

@@ -56,6 +56,19 @@ function normalizeChecklistItems(value) {
   return out;
 }
 
+function normalizeTextList(value, maxItems) {
+  const rows = Array.isArray(value) ? value : [];
+  const out = [];
+  rows.forEach((item) => {
+    const text = normalizeText(item, null);
+    if (!text) return;
+    if (out.includes(text)) return;
+    out.push(text.slice(0, 300));
+  });
+  if (!Number.isInteger(maxItems) || maxItems < 1) return out;
+  return out.slice(0, maxItems);
+}
+
 function normalizeTaskContent(taskKey, data) {
   const id = normalizeText(taskKey || (data && data.taskKey), '');
   if (!id) return null;
@@ -71,6 +84,9 @@ function normalizeTaskContent(taskKey, data) {
     checklistItems: normalizeChecklistItems(payload.checklistItems),
     manualText: normalizeText(payload.manualText, null),
     failureText: normalizeText(payload.failureText, null),
+    summaryShort: normalizeTextList(payload.summaryShort, 5),
+    topMistakes: normalizeTextList(payload.topMistakes, 3),
+    contextTips: normalizeTextList(payload.contextTips, 5),
     videoLinkId: normalizeText(payload.videoLinkId, null),
     actionLinkId: normalizeText(payload.actionLinkId, null),
     createdAt: payload.createdAt || null,
