@@ -438,3 +438,14 @@ MUST:
   - active/retired は直接編集しない。保存時は draft複製を作成し、その draft を更新する。
   - 物理削除は提供しない。削除操作は `POST /api/admin/city-packs/:id/retire` を使用する。
   - 即時停止は `ENABLE_CITY_PACK_CONTENT_MANAGE_V1=0` で UI導線を停止する。
+
+## Phase706 Add-only UI Contract（City Pack Operator Surface V2）
+- `/admin/app?pane=city-pack` に運用者向け `UI V2` を add-only で追加する。
+  - quick view（`要確認/Blocked/Draft/すべて`）
+  - unified list の行選択詳細（status badge / summary / RAW）
+  - 行アクションの圧縮表示（先頭2件 + More）
+- API契約:
+  - 既存 `city-pack` 関連 API を維持し、endpoint追加・変更は行わない。
+- 安全規約:
+  - 即時停止は `ENABLE_CITY_PACK_UI_V2=0`。
+  - 既存 `ENABLE_CITY_PACK_CONTENT_MANAGE_V1` と独立して切り戻し可能。
