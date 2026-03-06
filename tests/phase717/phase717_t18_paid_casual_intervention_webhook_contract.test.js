@@ -376,6 +376,48 @@ test('phase717: paid greeting stays casual and skips paid retrieval pipeline', {
   assert.equal(loaded.actionLogWrites[0].opportunityType, 'none');
 });
 
+test('phase717: paid greeting stays casual even when opportunity engine flag is disabled', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false'
+  });
+  const loaded = loadWebhookWithStubs({ plan: 'pro', recentActionLogs: [] });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('こんにちは');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase717_paid_greeting_flag_off',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.ok(replies[0].text.includes('こんにちは'));
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.equal(loaded.counters.paidAssistantCalled, 0);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.equal(loaded.counters.composeCalled, 0);
+
+  const summary = findGateSummary(loaded.auditCalls);
+  assert.ok(summary);
+  assert.equal(summary.conversationMode, 'casual');
+  assert.equal(summary.opportunityType, 'none');
+  assert.equal(summary.interventionBudget, 0);
+  assert.ok(Array.isArray(summary.opportunityReasonKeys));
+  assert.ok(summary.opportunityReasonKeys.includes('greeting_detected'));
+});
+
 test('phase717: paid opportunity keyword triggers concierge intervention once', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: HMAC_SEED,

@@ -136,6 +136,7 @@
       "linkRegistryRepo"
     ],
     "detectExplicitPaidIntent": [],
+    "detectMessagePosture": [],
     "detectOpportunity": [],
     "dryRunAutomationDecision": [
       "automationConfigRepo"
@@ -1415,6 +1416,7 @@
       "declareCityRegionFromLine",
       "declareRedacMembershipIdFromLine",
       "detectExplicitPaidIntent",
+      "detectMessagePosture",
       "detectOpportunity",
       "ensureUserFromWebhook",
       "evaluateLlmAvailability",

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T18:52:25-05:00",
-  "gitCommit": "3738771e55a25b31173bb3db6cfc364fa834cffe",
-  "branch": "codex/llm-latest-sync-pack",
-  "sourceDigest": "f6776accde82f4fe32c0f32ec15e1dbd0b6981ade6c027efcefff56cc03118a8",
+  "generatedAt": "2026-03-05T18:59:24-05:00",
+  "gitCommit": "862680994ae862c21243d178be9973eed5c13530",
+  "branch": "codex/llm-plan-impl-a1",
+  "sourceDigest": "b630ef5ba9e0e5d8e9d6ecd355d4dd0e74d84e810599bd09cf282195180b3e7a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

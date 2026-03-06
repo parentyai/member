@@ -121,8 +121,8 @@ test('phase653: paid faq quality gate allows schema-compliant answer when thresh
     });
 
     assert.equal(result.ok, true);
-    assert.match(result.replyText, /^1\. 状況整理/m);
-    assert.match(result.replyText, /^5\. 根拠参照キー/m);
+    assert.match(result.replyText, /状況は把握できています。/);
+    assert.match(result.replyText, /根拠キー: faq_1/);
 
     const logs = Object.values((db._state.collections.llm_quality_logs || { docs: {} }).docs || {});
     assert.equal(logs.length, 1);

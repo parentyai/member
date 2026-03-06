@@ -35,7 +35,7 @@ function loadGeneratePaidAssistantReplyWithStubbedFaq(faqResult) {
   };
 }
 
-test('phase653: paid assistant returns fixed 5-section template with citation-bound next actions', async (t) => {
+test('phase653: paid assistant returns conversation-format reply by default', async (t) => {
   const { generatePaidAssistantReply, restore } = loadGeneratePaidAssistantReplyWithStubbedFaq({
     ok: true,
     candidates: [
@@ -70,17 +70,15 @@ test('phase653: paid assistant returns fixed 5-section template with citation-bo
 
   assert.equal(response.ok, true);
   assert.equal(response.intent, 'next_action_generation');
-  assert.ok(response.replyText.includes('1) 要約（前提）'));
-  assert.ok(response.replyText.includes('2) 抜け漏れ（最大5）'));
-  assert.ok(response.replyText.includes('3) リスク（最大3）'));
-  assert.ok(response.replyText.includes('4) NextAction（最大3・根拠キー付）'));
-  assert.ok(response.replyText.includes('5) 参照（KB/CityPackキー）'));
-  assert.ok(response.replyText.includes('根拠:kb_insurance'));
+  assert.ok(!response.replyText.includes('1) 要約（前提）'));
+  assert.ok(response.replyText.includes('次に進める候補です'));
+  assert.ok(response.replyText.includes('根拠キー: kb_insurance, kb_school'));
+  assert.ok(response.replyText.includes('注記:'));
   assert.equal(response.tokensIn, 50);
   assert.equal(response.tokensOut, 80);
 });
 
-test('phase653: paid assistant supports conversation-format reply when flag is enabled', async (t) => {
+test('phase653: paid assistant returns legacy template when conversation-format flag is explicitly disabled', async (t) => {
   const { generatePaidAssistantReply, restore } = loadGeneratePaidAssistantReplyWithStubbedFaq({
     ok: true,
     candidates: [
@@ -95,7 +93,7 @@ test('phase653: paid assistant supports conversation-format reply when flag is e
     intent: 'next_action',
     locale: 'ja',
     llmPolicy: { model: 'gpt-4o-mini', max_output_tokens: 600 },
-    env: { ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1: 'true' },
+    env: { ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1: 'false' },
     llmAdapter: {
       answerFaq: async () => ({
         answer: {
@@ -115,10 +113,12 @@ test('phase653: paid assistant supports conversation-format reply when flag is e
   });
 
   assert.equal(response.ok, true);
-  assert.ok(!response.replyText.includes('1) 要約（前提）'));
-  assert.ok(response.replyText.includes('次に進める候補です'));
-  assert.ok(response.replyText.includes('根拠キー: kb_insurance, kb_school'));
-  assert.ok(response.replyText.includes('注記:'));
+  assert.ok(response.replyText.includes('1) 要約（前提）'));
+  assert.ok(response.replyText.includes('2) 抜け漏れ（最大5）'));
+  assert.ok(response.replyText.includes('3) リスク（最大3）'));
+  assert.ok(response.replyText.includes('4) NextAction（最大3・根拠キー付）'));
+  assert.ok(response.replyText.includes('5) 参照（KB/CityPackキー）'));
+  assert.ok(response.replyText.includes('根拠:kb_insurance'));
 });
 
 test('phase653: paid assistant blocks when citations are missing', async (t) => {

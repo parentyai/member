@@ -169,6 +169,18 @@ function normalizeCounterfactualEval(value) {
   };
 }
 
+function resolveOptimizationVersion(payload) {
+  const explicit = normalizeString(payload && payload.optimizationVersion, '');
+  if (explicit) return explicit;
+  const breakdown = payload && payload.scoreBreakdown && typeof payload.scoreBreakdown === 'object'
+    ? payload.scoreBreakdown
+    : {};
+  const hasV2Weights = Number.isFinite(Number(breakdown.wStyle))
+    || Number.isFinite(Number(breakdown.wTiming))
+    || Number.isFinite(Number(breakdown.wCta));
+  return hasV2Weights ? 'v2' : 'v1';
+}
+
 async function appendLlmActionLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
@@ -203,6 +215,7 @@ async function appendLlmActionLog(params) {
     scoreBreakdown: payload.scoreBreakdown && typeof payload.scoreBreakdown === 'object'
       ? Object.assign({}, payload.scoreBreakdown)
       : {},
+    optimizationVersion: resolveOptimizationVersion(payload),
     evidenceNeed: normalizeString(payload.evidenceNeed, 'none'),
     evidenceOutcome: normalizeString(payload.evidenceOutcome, 'SUPPORTED'),
     urlCount: Math.max(0, Math.floor(normalizeNumber(payload.urlCount, 0))),
@@ -232,6 +245,20 @@ async function appendLlmActionLog(params) {
   };
   await docRef.set(data, { merge: false });
   return { id: docRef.id, data };
+}
+
+async function listLlmActionLogsByCreatedAtRange(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const limit = Number.isInteger(payload.limit) && payload.limit > 0 ? Math.min(payload.limit, 5000) : 1000;
+  const fromAt = toDate(payload.fromAt);
+  const toAt = toDate(payload.toAt);
+  const db = getDb();
+
+  let query = db.collection(COLLECTION);
+  if (fromAt) query = query.where('createdAt', '>=', fromAt);
+  if (toAt) query = query.where('createdAt', '<=', toAt);
+  const snap = await query.orderBy('createdAt', 'desc').limit(limit).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 async function listPendingLlmActionLogs(params) {
@@ -286,6 +313,7 @@ async function patchLlmActionLog(id, patch) {
 module.exports = {
   COLLECTION,
   appendLlmActionLog,
+  listLlmActionLogsByCreatedAtRange,
   listPendingLlmActionLogs,
   listLlmActionLogsByLineUserId,
   patchLlmActionLog,

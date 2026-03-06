@@ -542,8 +542,13 @@ function resolvePaidAssistantConversationFormatEnabled(env) {
   const source = env && typeof env === 'object' ? env : process.env;
   const raw = source && source.ENABLE_PAID_ASSISTANT_CONVERSATION_FORMAT_V1;
   if (raw === true || raw === '1') return true;
-  if (typeof raw === 'string' && raw.trim().toLowerCase() === 'true') return true;
-  return false;
+  if (raw === false || raw === '0') return false;
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === 'true' || normalized === 'on' || normalized === 'yes') return true;
+    if (normalized === 'false' || normalized === 'off' || normalized === 'no') return false;
+  }
+  return true;
 }
 
 function formatPaidReplyConversation(output, constraints, disclaimer) {

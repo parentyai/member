@@ -184,6 +184,9 @@ async function finalizeLlmActionRewards(params, deps) {
       signals.taskComplete = signals.taskDone;
       const reward = computeReward(signals, payload.rewardWeights || DEFAULT_REWARD_WEIGHTS);
       const counterfactualEval = evaluateCounterfactualOutcome(row, reward);
+      const optimizationVersion = typeof row.optimizationVersion === 'string' && row.optimizationVersion.trim()
+        ? row.optimizationVersion.trim()
+        : 'v1';
 
       if (!dryRun) {
         await repo.patchLlmActionLog(row.id, {
@@ -191,6 +194,7 @@ async function finalizeLlmActionRewards(params, deps) {
           reward,
           rewardSignals: signals,
           rewardVersion: 'v2',
+          optimizationVersion,
           rewardWindowHours,
           rewardFinalizedAt: nowAt.toISOString(),
           counterfactualEval
@@ -232,6 +236,7 @@ async function finalizeLlmActionRewards(params, deps) {
         id: row.id,
         lineUserId: row.lineUserId || null,
         reward,
+        optimizationVersion,
         signals,
         counterfactualEval,
         fromAt: toIso(createdAt),
