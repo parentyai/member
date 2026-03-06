@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T02:52:27-05:00",
-  "gitCommit": "09a930af731b689b5281f957d908714740cbf78f",
-  "branch": "codex/wip-main-sync-20260305-232541",
-  "sourceDigest": "05758a1f11bb6793592c8c9d6542f05f5c2e57869312cf4acfc192eb12cde157",
+  "generatedAt": "2026-03-06T06:43:51-05:00",
+  "gitCommit": "56fe2b6c73394cf7a11d583a3e1c5e7a8d2d5ea7",
+  "branch": "codex/admin-ui-pr1-shell-nav",
+  "sourceDigest": "7a968923437926bbd6db564ff5546d815e4298fed4e95e85170a6688c735570c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

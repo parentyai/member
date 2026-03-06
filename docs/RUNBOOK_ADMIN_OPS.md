@@ -41,9 +41,9 @@
 
 | role | 左ナビ表示グループ |
 | --- | --- |
-| operator | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
-| admin | `dashboard`, `notifications`, `users`, `catalog`, `communication`, `operations` |
-| developer | `dashboard`, `notifications`, `users`, `catalog`, `developer`, `communication`, `operations` |
+| operator | `dashboard`, `run`, `control` |
+| admin | `dashboard`, `run`, `control` |
+| developer | `dashboard`, `run`, `control`, `developer` |
 
 運用フラグ:
 - `ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1=1`（既定）で、Role別許可paneに対応するカテゴリを可視化。
@@ -52,7 +52,7 @@
 
 補足:
 - 同一paneが複数groupにある場合、`data-nav-priority` の高い導線を優先して重複表示を抑制する。
-- `notifications` の create/list のような同一group内導線は維持する。
+- `run` 内の同一pane導線（例: monitor / journey状況）は維持する。
 
 ## Phase671 Addendum（Ops-Only運用 + Realtime Snapshot）
 運用者向けの既定導線を `Dashboard / Run / Control` に固定し、snapshot-first で状態を確認する。

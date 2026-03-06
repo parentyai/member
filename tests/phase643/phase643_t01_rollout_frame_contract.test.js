@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const { test } = require('node:test');
 const { navCore } = require('../../apps/admin/assets/admin_ui_core.js');
 
-test('phase643: communication/operations groups declare rollout attributes', () => {
+test('phase643: legacy rollout nav groups are removed from app shell', () => {
   const html = fs.readFileSync('apps/admin/app.html', 'utf8');
-  assert.ok(html.includes('data-nav-group="communication" data-nav-surface="hidden" data-nav-rollout="admin,developer"'));
-  assert.ok(html.includes('data-nav-group="operations" data-nav-surface="hidden" data-nav-rollout="admin,developer"'));
+  assert.ok(!html.includes('data-nav-group="communication"'));
+  assert.ok(!html.includes('data-nav-group="operations"'));
 });
 
 test('phase643: rollout flag injection and evaluator exist', () => {
