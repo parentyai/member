@@ -63,12 +63,12 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
 
 1) required variables が空でないこと
 - `deploy.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `PUBLIC_BASE_URL`, `FIRESTORE_PROJECT_ID`, `STORAGE_BUCKET`
-- `deploy-webhook.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `FIRESTORE_PROJECT_ID`
+- `deploy-webhook.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `FIRESTORE_PROJECT_ID`, `LLM_FEATURE_FLAG`, `OPENAI_MODEL`
 - `deploy-track.yml`: `GCP_PROJECT_ID`, `GCP_REGION`, `SERVICE_NAME`, `GCP_WIF_PROVIDER`, `RUNTIME_SA_EMAIL`, `DEPLOY_SA_EMAIL`, `ENV_NAME`, `FIRESTORE_PROJECT_ID`
 
 2) required secrets の preflight（存在確認と権限不足の切り分け）
 - `deploy.yml`: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `ADMIN_OS_TOKEN`, `TRACK_TOKEN_SECRET`, `REDAC_MEMBERSHIP_ID_HMAC_SECRET`, `OPS_CONFIRM_TOKEN_SECRET`
-- `deploy-webhook.yml`: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `REDAC_MEMBERSHIP_ID_HMAC_SECRET`
+- `deploy-webhook.yml`: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `REDAC_MEMBERSHIP_ID_HMAC_SECRET`, `OPENAI_API_KEY`
 - `deploy-track.yml`: `TRACK_TOKEN_SECRET`
 
 意図:
@@ -82,6 +82,16 @@ Deploy workflow は Cloud Run deploy 前に、runtime SA へ必要 Secret の
   `roles/secretmanager.viewer`（または同等）を付与する。
 - 参照権限がない運用でも、`NOT_FOUND` の fail-fast が必要な場合は、
   別の高権限 principal で手動 preflight を実行する。
+
+## Webhook Single-Region Guard
+- `deploy-webhook.yml` は deploy 前後で `scripts/check_cloud_run_service_uniqueness.js` を実行し、
+  `member-webhook` が単一リージョン (`GCP_REGION`) のみで存在することを必須化する。
+- pre-deploy チェックは `--allow-missing` 付き（初回bootstrap許容）。
+- post-deploy チェックは `--allow-missing` なし（deploy後に同名多重リージョンを即fail）。
+- 失敗時は `reasons` を確認する:
+  - `duplicate_regions_detected`: 同名サービスが複数リージョンに存在
+  - `region_mismatch`: 期待リージョン外にのみ存在
+  - `service_region_unknown`: リージョン情報を解決できない
 
 ## Firestore Index Drift Guard
 - Firestore composite index の運用定義は `docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json` を参照する。

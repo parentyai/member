@@ -37,6 +37,8 @@ test('phase182: deploy-webhook workflow preflight validates required vars and se
   assert.match(contents, /REDAC_MEMBERSHIP_ID_HMAC_SECRET/, 'deploy-webhook.yml: REDAC_MEMBERSHIP_ID_HMAC_SECRET secret check missing');
   assert.match(contents, /OPENAI_API_KEY/, 'deploy-webhook.yml: OPENAI_API_KEY secret check missing');
   assert.match(contents, /Verify webhook runtime contract/, 'deploy-webhook.yml: runtime contract verify step missing');
+  assert.match(contents, /Verify webhook single-region uniqueness \(pre-deploy\)/, 'deploy-webhook.yml: pre-deploy uniqueness guard missing');
+  assert.match(contents, /Verify webhook single-region uniqueness \(post-deploy\)/, 'deploy-webhook.yml: post-deploy uniqueness guard missing');
 });
 
 test('phase182: deploy-track workflow preflight validates required vars and secrets', () => {
