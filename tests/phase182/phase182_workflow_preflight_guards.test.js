@@ -32,7 +32,13 @@ test('phase182: deploy-webhook workflow preflight validates required vars and se
   const contents = read('.github/workflows/deploy-webhook.yml');
   assertHasPreflightGuard(contents, 'deploy-webhook.yml');
   assert.match(contents, /FIRESTORE_PROJECT_ID/, 'deploy-webhook.yml: FIRESTORE_PROJECT_ID required var check missing');
+  assert.match(contents, /LLM_FEATURE_FLAG/, 'deploy-webhook.yml: LLM_FEATURE_FLAG required var check missing');
+  assert.match(contents, /OPENAI_MODEL/, 'deploy-webhook.yml: OPENAI_MODEL required var check missing');
   assert.match(contents, /REDAC_MEMBERSHIP_ID_HMAC_SECRET/, 'deploy-webhook.yml: REDAC_MEMBERSHIP_ID_HMAC_SECRET secret check missing');
+  assert.match(contents, /OPENAI_API_KEY/, 'deploy-webhook.yml: OPENAI_API_KEY secret check missing');
+  assert.match(contents, /Verify webhook runtime contract/, 'deploy-webhook.yml: runtime contract verify step missing');
+  assert.match(contents, /Verify webhook single-region uniqueness \(pre-deploy\)/, 'deploy-webhook.yml: pre-deploy uniqueness guard missing');
+  assert.match(contents, /Verify webhook single-region uniqueness \(post-deploy\)/, 'deploy-webhook.yml: post-deploy uniqueness guard missing');
 });
 
 test('phase182: deploy-track workflow preflight validates required vars and secrets', () => {

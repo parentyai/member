@@ -64,6 +64,14 @@ test('phase716: llm config status/plan/set supports llmConciergeEnabled', async 
   assert.equal(statusJson.llmEnabled, false);
   assert.equal(statusJson.llmConciergeEnabled, false);
   assert.equal(statusJson.effectiveConciergeEnabled, false);
+  assert.equal(typeof statusJson.envFlag, 'boolean');
+  assert.equal(typeof statusJson.systemFlag, 'boolean');
+  assert.equal(typeof statusJson.effectiveEnabled, 'boolean');
+  assert.equal(typeof statusJson.runtimeState, 'object');
+  assert.equal(statusJson.runtimeState.envFlag, statusJson.envFlag);
+  assert.equal(statusJson.runtimeState.systemFlag, statusJson.systemFlag);
+  assert.equal(statusJson.runtimeState.effectiveEnabled, statusJson.effectiveEnabled);
+  assert.equal(statusJson.blockingReason, statusJson.runtimeState.blockingReason);
 
   const planRes = await request({
     port,

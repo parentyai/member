@@ -1,0 +1,3864 @@
+[
+  {
+    "bindingId": "BIND-0001",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadLocalPreflight",
+    "requestPath": "/api/admin/local-preflight",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "960",
+        "excerpt": "src/index.js:960:  if (req.method === 'GET' && (pathname === '/api/admin/local-preflight' || pathname === '/api/admin/local-preflight/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1293"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0002",
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "triggerFunction": "rebuildOpsSystemSnapshot",
+    "requestPath": "/api/admin/ops-system-snapshot/rebuild",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1809",
+        "excerpt": "src/index.js:1809:  if (req.method === 'POST' && (pathname === '/api/admin/ops-system-snapshot/rebuild' || pathname === '/api/admin/ops-system-snapshot/rebuild/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1904"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0003",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadDict",
+    "requestPath": "/admin/ui-dict",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "933",
+        "excerpt": "src/index.js:933:  if (req.method === 'GET' && pathname === '/admin/ui-dict') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "2340"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0004",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadLegacyStatus",
+    "requestPath": "/api/admin/legacy-status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1779",
+        "excerpt": "src/index.js:1779:  if (req.method === 'GET' && (pathname === '/api/admin/legacy-status' || pathname === '/api/admin/legacy-status/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3246"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0005",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "loadNotificationMatrixOverlay",
+    "requestPath": "/admin/read-model/notifications?limit=500",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "3580",
+        "excerpt": "src/index.js:3580:      if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3358"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0006",
+    "surfaceId": "UI-ADM-DEVELOPER-MAP",
+    "triggerFunction": "loadRepoMap",
+    "requestPath": "/api/admin/repo-map",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2354",
+        "excerpt": "src/index.js:2354:  if (req.method === 'GET' && pathname === '/api/admin/repo-map') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3484"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0007",
+    "surfaceId": "UI-ADM-DEVELOPER-MAP",
+    "triggerFunction": "loadRepoMap",
+    "requestPath": "/api/admin/os/kill-switch/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2027",
+        "excerpt": "src/index.js:2027:      if (req.method === 'GET' && pathname === '/api/admin/os/kill-switch/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3485"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0008",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadDashboardJourneyKpi",
+    "requestPath": "/api/admin/os/journey-kpi",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2276",
+        "excerpt": "src/index.js:2276:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-kpi') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "4298"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0009",
+    "surfaceId": "UI-ADM-ALERTS",
+    "triggerFunction": "loadAlertsSummary",
+    "requestPath": "/api/admin/os/alerts/summary?limit=200",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2101",
+        "excerpt": "src/index.js:2101:      if (req.method === 'GET' && pathname === '/api/admin/os/alerts/summary') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "4388"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0010",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackAuditRunDetail",
+    "requestPath": "/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "6584"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0011",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackManageCreateManual",
+    "requestPath": "/api/admin/city-packs",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1144",
+        "excerpt": "src/index.js:1144:  const isCityPackAdminRoute = pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1195",
+        "excerpt": "src/index.js:1195:      if (pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "495",
+        "excerpt": "src/routes/admin/cityPacks.js:495:    if (req.method === 'GET' && pathname === '/api/admin/city-packs') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "512",
+        "excerpt": "src/routes/admin/cityPacks.js:512:    if (req.method === 'POST' && pathname === '/api/admin/city-packs') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "7393"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0012",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackManageCreateAuto",
+    "requestPath": "/api/admin/city-packs",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1144",
+        "excerpt": "src/index.js:1144:  const isCityPackAdminRoute = pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1195",
+        "excerpt": "src/index.js:1195:      if (pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "495",
+        "excerpt": "src/routes/admin/cityPacks.js:495:    if (req.method === 'GET' && pathname === '/api/admin/city-packs') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "512",
+        "excerpt": "src/routes/admin/cityPacks.js:512:    if (req.method === 'POST' && pathname === '/api/admin/city-packs') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "7437"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0013",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackManageSave",
+    "requestPath": "/api/admin/city-packs",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1144",
+        "excerpt": "src/index.js:1144:  const isCityPackAdminRoute = pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1195",
+        "excerpt": "src/index.js:1195:      if (pathname === '/api/admin/city-packs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "495",
+        "excerpt": "src/routes/admin/cityPacks.js:495:    if (req.method === 'GET' && pathname === '/api/admin/city-packs') {"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "512",
+        "excerpt": "src/routes/admin/cityPacks.js:512:    if (req.method === 'POST' && pathname === '/api/admin/city-packs') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "7496"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0014",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackManageSave",
+    "requestPath": "/api/admin/city-packs/${encodeURIComponent(targetPackId)}/content",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "7523"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0015",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackManageRetire",
+    "requestPath": "/api/admin/city-packs/${encodeURIComponent(selectedPack.id)}/retire",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "7545"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0016",
+    "surfaceId": "UI-ADM-MONITOR",
+    "triggerFunction": "loadMonitorData",
+    "requestPath": "/api/admin/os/notifications/list?${listParams.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2308",
+        "excerpt": "src/index.js:2308:      if (req.method === 'GET' && pathname === '/api/admin/os/notifications/list') {"
+      },
+      {
+        "path": "src/routes/admin/phase1Notifications.js",
+        "lines": "10",
+        "excerpt": "src/routes/admin/phase1Notifications.js:10:const LEGACY_SUCCESSOR = '/api/admin/os/notifications/list';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8180"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0017",
+    "surfaceId": "UI-ADM-MONITOR",
+    "triggerFunction": "loadMonitorData",
+    "requestPath": "/admin/read-model/notifications?limit=500",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "3580",
+        "excerpt": "src/index.js:3580:      if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8181"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0018",
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "triggerFunction": "loadReadModelData",
+    "requestPath": "/admin/read-model/notifications?limit=50",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "3580",
+        "excerpt": "src/index.js:3580:      if (req.method === 'GET' && pathname === '/admin/read-model/notifications') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8253"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0019",
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "triggerFunction": "loadUsersSummaryBillingDetail",
+    "requestPath": "/api/admin/os/user-billing-detail?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2113",
+        "excerpt": "src/index.js:2113:      if (req.method === 'GET' && pathname === '/api/admin/os/user-billing-detail') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8547"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0020",
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "triggerFunction": "loadUsersSummaryAnalyze",
+    "requestPath": "/api/admin/os/users-summary/analyze?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2260",
+        "excerpt": "src/index.js:2260:      if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/analyze') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8797"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0021",
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "triggerFunction": "exportUsersSummaryCsv",
+    "requestPath": "/api/admin/os/users-summary/export?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2264",
+        "excerpt": "src/index.js:2264:      if (req.method === 'GET' && pathname === '/api/admin/os/users-summary/export') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8816"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0022",
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "triggerFunction": "loadUsersSummary",
+    "requestPath": "/api/phase5/ops/users-summary?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8840"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0023",
+    "surfaceId": "UI-ADM-ERRORS",
+    "triggerFunction": "loadErrors",
+    "requestPath": "/api/admin/os/errors/summary",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2105",
+        "excerpt": "src/index.js:2105:      if (req.method === 'GET' && pathname === '/api/admin/os/errors/summary') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8876"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0024",
+    "surfaceId": "UI-ADM-MONITOR",
+    "triggerFunction": "loadMonitorUserDeliveries",
+    "requestPath": "/api/admin/notification-deliveries?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1019",
+        "excerpt": "src/index.js:1019:  if (req.method === 'GET' && pathname === '/api/admin/notification-deliveries') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "8912"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0025",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadRichMenuStatus",
+    "requestPath": "/api/admin/os/rich-menu/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2237",
+        "excerpt": "src/index.js:2237:      if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9149"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0026",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadRichMenuHistory",
+    "requestPath": "/api/admin/os/rich-menu/history?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2251",
+        "excerpt": "src/index.js:2251:      if (req.method === 'GET' && pathname === '/api/admin/os/rich-menu/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9169"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0027",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "runRichMenuResolvePreview",
+    "requestPath": "/api/admin/os/rich-menu/resolve-preview",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2255",
+        "excerpt": "src/index.js:2255:      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/resolve-preview') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9195"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0028",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planRichMenuAction",
+    "requestPath": "/api/admin/os/rich-menu/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2241",
+        "excerpt": "src/index.js:2241:      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9219"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0029",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "setRichMenuAction",
+    "requestPath": "/api/admin/os/rich-menu/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2246",
+        "excerpt": "src/index.js:2246:      if (req.method === 'POST' && pathname === '/api/admin/os/rich-menu/set') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9250"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0030",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyGraphBranchQueueStatus",
+    "requestPath": "/api/admin/os/journey-graph/branch-queue/status?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2200",
+        "excerpt": "src/index.js:2200:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/branch-queue/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "9686"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0031",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planTaskRulesTaskContentAction",
+    "requestPath": "/api/admin/os/task-rules/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2125",
+        "excerpt": "src/index.js:2125:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10282"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0032",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "setTaskRulesTaskContentAction",
+    "requestPath": "/api/admin/os/task-rules/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2130",
+        "excerpt": "src/index.js:2130:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/set') {"
+      },
+      {
+        "path": "src/routes/admin/taskRulesConfig.js",
+        "lines": "35",
+        "excerpt": "src/routes/admin/taskRulesConfig.js:35:const TASK_RULES_SET_PATH = '/api/admin/os/task-rules/set';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10326"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0033",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planTaskRulesTaskContentLinkMigrationAction",
+    "requestPath": "/api/admin/os/task-rules/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2125",
+        "excerpt": "src/index.js:2125:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10366"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0034",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "applyTaskRulesTaskContentLinkMigrationAction",
+    "requestPath": "/api/admin/os/task-rules/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2130",
+        "excerpt": "src/index.js:2130:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/set') {"
+      },
+      {
+        "path": "src/routes/admin/taskRulesConfig.js",
+        "lines": "35",
+        "excerpt": "src/routes/admin/taskRulesConfig.js:35:const TASK_RULES_SET_PATH = '/api/admin/os/task-rules/set';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10399"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0035",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadTaskRulesLinkImpactAction",
+    "requestPath": "/api/admin/os/link-registry-impact?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2332",
+        "excerpt": "src/index.js:2332:      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "2340",
+        "excerpt": "src/index.js:2340:      if (req.method === 'GET' && pathname === '/api/admin/os/link-registry-impact') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10423"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0036",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadTaskRulesStatus",
+    "requestPath": "/api/admin/os/task-rules/status?limit=200",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2121",
+        "excerpt": "src/index.js:2121:      if (req.method === 'GET' && pathname === '/api/admin/os/task-rules/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10603"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0037",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "planTaskRuleAction",
+    "requestPath": "/api/admin/os/task-rules/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2125",
+        "excerpt": "src/index.js:2125:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10636"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0038",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "setTaskRuleAction",
+    "requestPath": "/api/admin/os/task-rules/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2130",
+        "excerpt": "src/index.js:2130:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/set') {"
+      },
+      {
+        "path": "src/routes/admin/taskRulesConfig.js",
+        "lines": "35",
+        "excerpt": "src/routes/admin/taskRulesConfig.js:35:const TASK_RULES_SET_PATH = '/api/admin/os/task-rules/set';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10667"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0039",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadTaskRulesHistory",
+    "requestPath": "/api/admin/os/task-rules/history?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2155",
+        "excerpt": "src/index.js:2155:      if (req.method === 'GET' && pathname === '/api/admin/os/task-rules/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10689"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0040",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "runTaskRulesDryRunAction",
+    "requestPath": "/api/admin/os/task-rules/dry-run",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2159",
+        "excerpt": "src/index.js:2159:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/dry-run') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10709"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0041",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planTaskRulesTemplateAction",
+    "requestPath": "/api/admin/os/task-rules/template/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2135",
+        "excerpt": "src/index.js:2135:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/template/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10737"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0042",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "setTaskRulesTemplateAction",
+    "requestPath": "/api/admin/os/task-rules/template/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2140",
+        "excerpt": "src/index.js:2140:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/template/set') {"
+      },
+      {
+        "path": "src/routes/admin/taskRulesConfig.js",
+        "lines": "37",
+        "excerpt": "src/routes/admin/taskRulesConfig.js:37:const TASK_RULES_TEMPLATE_SET_PATH = '/api/admin/os/task-rules/template/set';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10777"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0043",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planTaskRulesApplyAction",
+    "requestPath": "/api/admin/os/task-rules/apply/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2145",
+        "excerpt": "src/index.js:2145:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/apply/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10814"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0044",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "applyTaskRulesForSingleUserAction",
+    "requestPath": "/api/admin/os/task-rules/apply",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2145",
+        "excerpt": "src/index.js:2145:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/apply/plan') {"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "2150",
+        "excerpt": "src/index.js:2150:      if (req.method === 'POST' && pathname === '/api/admin/os/task-rules/apply') {"
+      },
+      {
+        "path": "src/routes/admin/taskRulesConfig.js",
+        "lines": "39",
+        "excerpt": "src/routes/admin/taskRulesConfig.js:39:const TASK_RULES_APPLY_PATH = '/api/admin/os/task-rules/apply';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10845"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0045",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyGraphStatus",
+    "requestPath": "/api/admin/os/journey-graph/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2174",
+        "excerpt": "src/index.js:2174:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10864"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0046",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planJourneyGraphCatalog",
+    "requestPath": "/api/admin/os/journey-graph/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2178",
+        "excerpt": "src/index.js:2178:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-graph/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10885"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0047",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "setJourneyGraphCatalog",
+    "requestPath": "/api/admin/os/journey-graph/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2183",
+        "excerpt": "src/index.js:2183:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-graph/set') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10916"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0048",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyGraphHistory",
+    "requestPath": "/api/admin/os/journey-graph/history?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2188",
+        "excerpt": "src/index.js:2188:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10937"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0049",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyParamStatus",
+    "requestPath": "/api/admin/os/journey-param/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2204",
+        "excerpt": "src/index.js:2204:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-param/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "10992"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0050",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "planJourneyParamVersion",
+    "requestPath": "/api/admin/os/journey-param/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2208",
+        "excerpt": "src/index.js:2208:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11025"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0051",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "validateJourneyParamVersionAction",
+    "requestPath": "/api/admin/os/journey-param/validate",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2213",
+        "excerpt": "src/index.js:2213:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/validate') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11053"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0052",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "dryRunJourneyParamVersionAction",
+    "requestPath": "/api/admin/os/journey-param/dry-run",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2218",
+        "excerpt": "src/index.js:2218:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/dry-run') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11078"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0053",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "applyJourneyParamVersionAction",
+    "requestPath": "/api/admin/os/journey-param/apply",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2223",
+        "excerpt": "src/index.js:2223:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/apply') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11109"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0054",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "rollbackJourneyParamVersionAction",
+    "requestPath": "/api/admin/os/journey-param/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2208",
+        "excerpt": "src/index.js:2208:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11135"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0055",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "rollbackJourneyParamVersionAction",
+    "requestPath": "/api/admin/os/journey-param/rollback",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2228",
+        "excerpt": "src/index.js:2228:      if (req.method === 'POST' && pathname === '/api/admin/os/journey-param/rollback') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11147"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0056",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyParamHistory",
+    "requestPath": "/api/admin/os/journey-param/history?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2233",
+        "excerpt": "src/index.js:2233:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-param/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11168"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0057",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyGraphRuntime",
+    "requestPath": "/api/admin/os/journey-graph/runtime?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2192",
+        "excerpt": "src/index.js:2192:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime') {"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "2196",
+        "excerpt": "src/index.js:2196:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11201"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0058",
+    "surfaceId": "UI-ADM-SETTINGS",
+    "triggerFunction": "loadJourneyGraphRuntimeHistory",
+    "requestPath": "/api/admin/os/journey-graph/runtime/history?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2196",
+        "excerpt": "src/index.js:2196:      if (req.method === 'GET' && pathname === '/api/admin/os/journey-graph/runtime/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11226"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0059",
+    "surfaceId": "UI-ADM-MONITOR",
+    "triggerFunction": "loadMonitorInsights",
+    "requestPath": "/api/admin/monitor-insights?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1025",
+        "excerpt": "src/index.js:1025:  if (req.method === 'GET' && pathname === '/api/admin/monitor-insights') {"
+      },
+      {
+        "path": "src/routes/admin/readPathFallbackSummary.js",
+        "lines": "25",
+        "excerpt": "src/routes/admin/readPathFallbackSummary.js:25:  'read_path.fallback.monitor_insights': '/api/admin/monitor-insights'"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11271"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0060",
+    "surfaceId": "UI-ADM-VENDORS",
+    "triggerFunction": "loadVendors",
+    "requestPath": "/api/admin/vendors?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1031",
+        "excerpt": "src/index.js:1031:  if (pathname === '/api/admin/vendors' || /^\\/api\\/admin\\/vendors\\/[^/]+\\/(edit|activate|disable)$/.test(pathname)) {"
+      },
+      {
+        "path": "src/routes/admin/vendors.js",
+        "lines": "127",
+        "excerpt": "src/routes/admin/vendors.js:127:  if (req.method === 'GET' && pathname === '/api/admin/vendors') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11309"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0061",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackRequests",
+    "requestPath": "/api/admin/city-pack-requests?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1152",
+        "excerpt": "src/index.js:1152:    || pathname === '/api/admin/city-pack-requests'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1213",
+        "excerpt": "src/index.js:1213:      if (pathname === '/api/admin/city-pack-requests' || /^\\/api\\/admin\\/city-pack-requests\\/[^/]+(\\/(approve|reject|request-changes|retry-job|activate))?$/.test(pathname)) {"
+      },
+      {
+        "path": "src/routes/admin/cityPackRequests.js",
+        "lines": "384",
+        "excerpt": "src/routes/admin/cityPackRequests.js:384:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-requests') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11388"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0062",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackBulletins",
+    "requestPath": "/api/admin/city-pack-bulletins?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1156",
+        "excerpt": "src/index.js:1156:    || pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1226",
+        "excerpt": "src/index.js:1226:      if (pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "281",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:281:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-bulletins') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "292",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:292:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-bulletins') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11451"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0063",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackProposals",
+    "requestPath": "/api/admin/city-pack-update-proposals?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1160",
+        "excerpt": "src/index.js:1160:    || pathname === '/api/admin/city-pack-update-proposals'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1240",
+        "excerpt": "src/index.js:1240:      if (pathname === '/api/admin/city-pack-update-proposals'"
+      },
+      {
+        "path": "src/routes/admin/cityPackUpdateProposals.js",
+        "lines": "286",
+        "excerpt": "src/routes/admin/cityPackUpdateProposals.js:286:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-update-proposals') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackUpdateProposals.js",
+        "lines": "297",
+        "excerpt": "src/routes/admin/cityPackUpdateProposals.js:297:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-update-proposals') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11475"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0064",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackRequestDetail",
+    "requestPath": "/api/admin/city-pack-requests/${encodeURIComponent(requestId)}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11562"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0065",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackReviewInbox",
+    "requestPath": "/api/admin/review-inbox?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1162",
+        "excerpt": "src/index.js:1162:    || pathname === '/api/admin/review-inbox'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1247",
+        "excerpt": "src/index.js:1247:      if (pathname === '/api/admin/review-inbox'"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "642",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:642:    if (req.method === 'GET' && pathname === '/api/admin/review-inbox') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11586"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0066",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackComposition",
+    "requestPath": "/api/admin/city-packs/composition?${params.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11617"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0067",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackEvidence",
+    "requestPath": "/api/admin/source-evidence/${encodeURIComponent(evidenceId)}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11639"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0068",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackKpi",
+    "requestPath": "/api/admin/city-pack-kpi",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1163",
+        "excerpt": "src/index.js:1163:    || pathname === '/api/admin/city-pack-kpi'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1248",
+        "excerpt": "src/index.js:1248:        || pathname === '/api/admin/city-pack-kpi'"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "647",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:647:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-kpi') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11655"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0069",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackMetrics",
+    "requestPath": "/api/admin/city-pack-metrics?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1164",
+        "excerpt": "src/index.js:1164:    || pathname === '/api/admin/city-pack-metrics'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1249",
+        "excerpt": "src/index.js:1249:        || pathname === '/api/admin/city-pack-metrics'"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "652",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:652:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-metrics') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11677"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0070",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "loadCityPackAuditRuns",
+    "requestPath": "/api/admin/city-pack-source-audit/runs?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1165",
+        "excerpt": "src/index.js:1165:    || pathname === '/api/admin/city-pack-source-audit/runs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1250",
+        "excerpt": "src/index.js:1250:        || pathname === '/api/admin/city-pack-source-audit/runs'"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "657",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:657:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-source-audit/runs') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11693"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0071",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackEducationAction",
+    "requestPath": "/api/admin/city-pack-education-links/${encodeURIComponent(educationId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11726"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0072",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "createCityPackEducationLink",
+    "requestPath": "/api/admin/city-pack-education-links",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1158",
+        "excerpt": "src/index.js:1158:    || pathname === '/api/admin/city-pack-education-links'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1233",
+        "excerpt": "src/index.js:1233:      if (pathname === '/api/admin/city-pack-education-links'"
+      },
+      {
+        "path": "src/routes/admin/cityPackEducationLinks.js",
+        "lines": "275",
+        "excerpt": "src/routes/admin/cityPackEducationLinks.js:275:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-education-links') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackEducationLinks.js",
+        "lines": "279",
+        "excerpt": "src/routes/admin/cityPackEducationLinks.js:279:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-education-links') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11760"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0073",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackCalendarApproveNotification",
+    "requestPath": "/api/admin/city-pack-bulletins",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1156",
+        "excerpt": "src/index.js:1156:    || pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1226",
+        "excerpt": "src/index.js:1226:      if (pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "281",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:281:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-bulletins') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "292",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:292:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-bulletins') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11784"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0074",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackCalendarApproveNotification",
+    "requestPath": "/api/admin/city-pack-bulletins/${encodeURIComponent(created.bulletinId)}/approve",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11793"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0075",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackSourceAction",
+    "requestPath": "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11824"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0076",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackSaveSourcePolicy",
+    "requestPath": "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/policy",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11850"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0077",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackRequestAction",
+    "requestPath": "/api/admin/city-pack-requests/${encodeURIComponent(requestId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11889"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0078",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackFeedbackAction",
+    "requestPath": "/api/admin/city-pack-feedback/${encodeURIComponent(feedbackId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11915"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0079",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackBulletinAction",
+    "requestPath": "/api/admin/city-pack-bulletins/${encodeURIComponent(bulletinId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11946"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0080",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackProposalAction",
+    "requestPath": "/api/admin/city-pack-update-proposals/${encodeURIComponent(proposalId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "11968"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0081",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "createCityPackBulletinDraft",
+    "requestPath": "/api/admin/city-pack-bulletins",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1156",
+        "excerpt": "src/index.js:1156:    || pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1226",
+        "excerpt": "src/index.js:1226:      if (pathname === '/api/admin/city-pack-bulletins'"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "281",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:281:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-bulletins') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackBulletins.js",
+        "lines": "292",
+        "excerpt": "src/routes/admin/cityPackBulletins.js:292:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-bulletins') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12007"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0082",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "createCityPackProposalDraft",
+    "requestPath": "/api/admin/city-pack-update-proposals",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1160",
+        "excerpt": "src/index.js:1160:    || pathname === '/api/admin/city-pack-update-proposals'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1240",
+        "excerpt": "src/index.js:1240:      if (pathname === '/api/admin/city-pack-update-proposals'"
+      },
+      {
+        "path": "src/routes/admin/cityPackUpdateProposals.js",
+        "lines": "286",
+        "excerpt": "src/routes/admin/cityPackUpdateProposals.js:286:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-update-proposals') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackUpdateProposals.js",
+        "lines": "297",
+        "excerpt": "src/routes/admin/cityPackUpdateProposals.js:297:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-update-proposals') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12042"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0083",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackTemplateLibraryAction",
+    "requestPath": "/api/admin/city-pack-template-library/${encodeURIComponent(templateId)}/${action}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12081"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0084",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "createCityPackTemplateLibraryEntry",
+    "requestPath": "/api/admin/city-pack-template-library",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1150",
+        "excerpt": "src/index.js:1150:    || pathname === '/api/admin/city-pack-template-library'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1206",
+        "excerpt": "src/index.js:1206:      if (pathname === '/api/admin/city-pack-template-library'"
+      },
+      {
+        "path": "src/routes/admin/cityPackTemplateLibrary.js",
+        "lines": "137",
+        "excerpt": "src/routes/admin/cityPackTemplateLibrary.js:137:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-template-library') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackTemplateLibrary.js",
+        "lines": "148",
+        "excerpt": "src/routes/admin/cityPackTemplateLibrary.js:148:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-template-library') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12135"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0085",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackTemplateImportDryRun",
+    "requestPath": "/api/admin/city-packs/import/dry-run",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12160"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0086",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackTemplateImportApply",
+    "requestPath": "/api/admin/city-packs/import/apply",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12202"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0087",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackSaveStructure",
+    "requestPath": "/api/admin/city-packs/${encodeURIComponent(cityPackId)}/structure",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1145",
+        "excerpt": "src/index.js:1145:    || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1196",
+        "excerpt": "src/index.js:1196:        || pathname === '/api/admin/city-packs/composition'"
+      },
+      {
+        "path": "src/routes/admin/cityPacks.js",
+        "lines": "491",
+        "excerpt": "src/routes/admin/cityPacks.js:491:    if (req.method === 'GET' && pathname === '/api/admin/city-packs/composition') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12255"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0088",
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "triggerFunction": "runCityPackAuditJob",
+    "requestPath": "/api/admin/city-pack-source-audit/run",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1165",
+        "excerpt": "src/index.js:1165:    || pathname === '/api/admin/city-pack-source-audit/runs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1167",
+        "excerpt": "src/index.js:1167:    || pathname === '/api/admin/city-pack-source-audit/run'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1250",
+        "excerpt": "src/index.js:1250:        || pathname === '/api/admin/city-pack-source-audit/runs'"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1252",
+        "excerpt": "src/index.js:1252:        || pathname === '/api/admin/city-pack-source-audit/run'"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "657",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:657:    if (req.method === 'GET' && pathname === '/api/admin/city-pack-source-audit/runs') {"
+      },
+      {
+        "path": "src/routes/admin/cityPackReviewInbox.js",
+        "lines": "670",
+        "excerpt": "src/routes/admin/cityPackReviewInbox.js:670:    if (req.method === 'POST' && pathname === '/api/admin/city-pack-source-audit/run') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12283"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0089",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "runHomeSafeTest",
+    "requestPath": "/api/admin/send-test",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "971",
+        "excerpt": "src/index.js:971:  if (pathname === '/api/admin/send-test' || pathname === '/api/admin/test-runs') {"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "994",
+        "excerpt": "src/index.js:994:      if (req.method === 'POST' && pathname === '/api/admin/send-test') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12341"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0090",
+    "surfaceId": "UI-ADM-AUDIT",
+    "triggerFunction": "loadAudit",
+    "requestPath": "/api/admin/trace?traceId=${encodeURIComponent(traceId)}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1773",
+        "excerpt": "src/index.js:1773:  if (req.method === 'GET' && (pathname === '/api/admin/trace' || pathname === '/api/admin/trace/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12358"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0091",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadStructDriftRuns",
+    "requestPath": "/api/admin/struct-drift/backfill-runs?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1065",
+        "excerpt": "src/index.js:1065:  if ((req.method === 'GET' && pathname === '/api/admin/struct-drift/backfill-runs')"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12437"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0092",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "runStructDriftBackfill",
+    "requestPath": "/api/admin/struct-drift/backfill",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1065",
+        "excerpt": "src/index.js:1065:  if ((req.method === 'GET' && pathname === '/api/admin/struct-drift/backfill-runs')"
+      },
+      {
+        "path": "src/index.js",
+        "lines": "1066",
+        "excerpt": "src/index.js:1066:    || (req.method === 'POST' && pathname === '/api/admin/struct-drift/backfill')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12467"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0093",
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "triggerFunction": "loadSnapshotHealth",
+    "requestPath": "/api/admin/ops-snapshot-health?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1791",
+        "excerpt": "src/index.js:1791:  if (req.method === 'GET' && (pathname === '/api/admin/ops-snapshot-health' || pathname === '/api/admin/ops-snapshot-health/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12583"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0094",
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "triggerFunction": "loadRetentionRuns",
+    "requestPath": "/api/admin/retention-runs?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1785",
+        "excerpt": "src/index.js:1785:  if (req.method === 'GET' && (pathname === '/api/admin/retention-runs' || pathname === '/api/admin/retention-runs/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12684"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0095",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadReadPathFallbackSummary",
+    "requestPath": "/api/admin/read-path-fallback-summary?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1845",
+        "excerpt": "src/index.js:1845:  if (req.method === 'GET' && (pathname === '/api/admin/read-path-fallback-summary' || pathname === '/api/admin/read-path-fallback-summary/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12772"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0096",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadMissingIndexSurface",
+    "requestPath": "/api/admin/missing-index-surface?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1839",
+        "excerpt": "src/index.js:1839:  if (req.method === 'GET' && (pathname === '/api/admin/missing-index-surface' || pathname === '/api/admin/missing-index-surface/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12860"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0097",
+    "surfaceId": "UI-ADM-HOME",
+    "triggerFunction": "loadProductReadiness",
+    "requestPath": "/api/admin/product-readiness?${qs.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "1851",
+        "excerpt": "src/index.js:1851:  if (req.method === 'GET' && (pathname === '/api/admin/product-readiness' || pathname === '/api/admin/product-readiness/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "12949"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0098",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "ensureComposerLinkRegistryOption",
+    "requestPath": "/api/admin/os/link-registry/${encodeURIComponent(id)}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2336",
+        "excerpt": "src/index.js:2336:      if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "13695"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0099",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "approveComposerSavedSelection",
+    "requestPath": "/api/admin/os/notifications/approve",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2299",
+        "excerpt": "src/index.js:2299:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/approve') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "13991"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0100",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "archiveComposerSavedSelection",
+    "requestPath": "/api/admin/os/notifications/archive",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2322",
+        "excerpt": "src/index.js:2322:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/archive') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14009"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0101",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "loadComposerSavedNotifications",
+    "requestPath": "/api/admin/os/notifications/list?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2308",
+        "excerpt": "src/index.js:2308:      if (req.method === 'GET' && pathname === '/api/admin/os/notifications/list') {"
+      },
+      {
+        "path": "src/routes/admin/phase1Notifications.js",
+        "lines": "10",
+        "excerpt": "src/routes/admin/phase1Notifications.js:10:const LEGACY_SUCCESSOR = '/api/admin/os/notifications/list';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14029"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0102",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "loadComposerLinkPreview",
+    "requestPath": "/api/admin/os/link-registry/${encodeURIComponent(linkId)}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2336",
+        "excerpt": "src/index.js:2336:      if (req.method === 'GET' && pathname.startsWith('/api/admin/os/link-registry/')) {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14071"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0103",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "loadComposerSafetyContext",
+    "requestPath": "/api/admin/os/kill-switch/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2027",
+        "excerpt": "src/index.js:2027:      if (req.method === 'GET' && pathname === '/api/admin/os/kill-switch/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14090"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0104",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "setupComposerActions",
+    "requestPath": "/api/admin/os/notifications/draft",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2289",
+        "excerpt": "src/index.js:2289:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/draft') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14259"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0105",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "setupComposerActions",
+    "requestPath": "/api/admin/os/notifications/preview",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2294",
+        "excerpt": "src/index.js:2294:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/preview') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14289"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0106",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "setupComposerActions",
+    "requestPath": "/api/admin/os/notifications/approve",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2299",
+        "excerpt": "src/index.js:2299:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/approve') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14325"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0107",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "setupComposerActions",
+    "requestPath": "/api/admin/os/notifications/send/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2312",
+        "excerpt": "src/index.js:2312:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14363"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0108",
+    "surfaceId": "UI-ADM-COMPOSER",
+    "triggerFunction": "setupComposerActions",
+    "requestPath": "/api/admin/os/notifications/send/execute",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2317",
+        "excerpt": "src/index.js:2317:      if (req.method === 'POST' && pathname === '/api/admin/os/notifications/send/execute') {"
+      },
+      {
+        "path": "src/routes/phase121OpsNoticeSend.js",
+        "lines": "6",
+        "excerpt": "src/routes/phase121OpsNoticeSend.js:6:const LEGACY_SUCCESSOR = '/api/admin/os/notifications/send/execute';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "14407"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0109",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "updateEmergencyRuleAction",
+    "requestPath": "/api/admin/emergency/rules/${encodeURIComponent(id)}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15210"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0110",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "previewEmergencyRuleAction",
+    "requestPath": "/api/admin/emergency/rules/${encodeURIComponent(id)}/preview",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15233"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0111",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "approveEmergencyBulletinAction",
+    "requestPath": "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15314"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0112",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "rejectEmergencyBulletinAction",
+    "requestPath": "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15330"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0113",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "updateEmergencyProvider",
+    "requestPath": "/api/admin/emergency/providers/${encodeURIComponent(key)}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15352"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0114",
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "triggerFunction": "updateEmergencyProviderSchedule",
+    "requestPath": "/api/admin/emergency/providers/${encodeURIComponent(key)}",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "未観測",
+        "lines": "未観測",
+        "excerpt": "未観測"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "15379"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0115",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "runLlmFaq",
+    "requestPath": "/api/admin/llm/faq/answer",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2497",
+        "excerpt": "src/index.js:2497:      if (req.method === 'POST' && pathname === '/api/admin/llm/faq/answer') {"
+      },
+      {
+        "path": "src/routes/phaseLLM4FaqAnswer.js",
+        "lines": "7",
+        "excerpt": "src/routes/phaseLLM4FaqAnswer.js:7:const LEGACY_SUCCESSOR = '/api/admin/llm/faq/answer';"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16182"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0116",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "loadLlmConfigStatus",
+    "requestPath": "/api/admin/llm/config/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2465",
+        "excerpt": "src/index.js:2465:      if (req.method === 'GET' && pathname === '/api/admin/llm/config/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16231"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0117",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "planLlmConfig",
+    "requestPath": "/api/admin/llm/config/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2469",
+        "excerpt": "src/index.js:2469:      if (req.method === 'POST' && pathname === '/api/admin/llm/config/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16280"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0118",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "setLlmConfig",
+    "requestPath": "/api/admin/llm/config/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2474",
+        "excerpt": "src/index.js:2474:      if (req.method === 'POST' && pathname === '/api/admin/llm/config/set') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16336"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0119",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "loadLlmPolicyStatus",
+    "requestPath": "/api/admin/llm/policy/status",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2479",
+        "excerpt": "src/index.js:2479:      if (req.method === 'GET' && pathname === '/api/admin/llm/policy/status') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16485"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0120",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "loadLlmPolicyHistory",
+    "requestPath": "/api/admin/os/llm-policy/history?limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2280",
+        "excerpt": "src/index.js:2280:      if (req.method === 'GET' && pathname === '/api/admin/os/llm-policy/history') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16503"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0121",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "loadLlmUsageSummary",
+    "requestPath": "/api/admin/os/llm-usage/summary?windowDays=${encodeURIComponent(String(windowDays))}&limit=20",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2268",
+        "excerpt": "src/index.js:2268:      if (req.method === 'GET' && pathname === '/api/admin/os/llm-usage/summary') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16519"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0122",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "exportLlmUsageCsv",
+    "requestPath": "/api/admin/os/llm-usage/export?${query.toString()}",
+    "requestMethodHint": "FETCH",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2272",
+        "excerpt": "src/index.js:2272:      if (req.method === 'GET' && pathname === '/api/admin/os/llm-usage/export') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16541"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0123",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "planLlmPolicy",
+    "requestPath": "/api/admin/llm/policy/plan",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2483",
+        "excerpt": "src/index.js:2483:      if (req.method === 'POST' && pathname === '/api/admin/llm/policy/plan') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16570"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  },
+  {
+    "bindingId": "BIND-0124",
+    "surfaceId": "UI-ADM-LLM",
+    "triggerFunction": "setLlmPolicy",
+    "requestPath": "/api/admin/llm/policy/set",
+    "requestMethodHint": "POST",
+    "routeHandlerRefs": [
+      {
+        "path": "src/index.js",
+        "lines": "2488",
+        "excerpt": "src/index.js:2488:      if (req.method === 'POST' && pathname === '/api/admin/llm/policy/set') {"
+      }
+    ],
+    "uiSourceRefs": [
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16603"
+      }
+    ],
+    "successUi": "toast/status更新（関数依存）",
+    "errorUi": "toast danger または panel error 表示（関数依存）",
+    "loadingUi": "is-loading / skeleton / disabled（関数依存）",
+    "guardSignals": [
+      "x-trace-id",
+      "x-actor",
+      "confirmToken(planHash) flow依存"
+    ]
+  }
+]

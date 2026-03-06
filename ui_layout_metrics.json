@@ -1,0 +1,948 @@
+[
+  {
+    "surfaceId": "UI-ADM-ALERTS",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-alerts-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-AUDIT",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-audit-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "viewport": "1024x768",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-city-pack-1024x768.png",
+    "regions": [
+      {
+        "name": "top-nav-scroll",
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 128
+      },
+      {
+        "name": "main-content",
+        "x": 0,
+        "y": 128,
+        "width": 1024,
+        "height": 640
+      },
+      {
+        "name": "topbar",
+        "x": 16,
+        "y": 144,
+        "width": 992,
+        "height": 220
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": [
+      "Review Inbox table rows",
+      "Template library lower sections"
+    ]
+  },
+  {
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-city-pack-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": [
+      "Review Inbox table rows",
+      "Template library lower sections"
+    ]
+  },
+  {
+    "surfaceId": "UI-ADM-COMPOSER",
+    "viewport": "1280x800",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-composer-1280x800.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 800
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1060,
+        "height": 800
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1012,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1012,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": [
+      "saved notifications table",
+      "advanced preview blocks"
+    ]
+  },
+  {
+    "surfaceId": "UI-ADM-COMPOSER",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-composer-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": [
+      "saved notifications table",
+      "advanced preview blocks"
+    ]
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-developer-manual-redac-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-developer-manual-user-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MAP",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-developer-map-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-emergency-layer-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-ERRORS",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-errors-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-HOME",
+    "viewport": "1024x768",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-home-1024x768.png",
+    "regions": [
+      {
+        "name": "top-nav-scroll",
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 128
+      },
+      {
+        "name": "main-content",
+        "x": 0,
+        "y": 128,
+        "width": 1024,
+        "height": 640
+      },
+      {
+        "name": "topbar",
+        "x": 16,
+        "y": 144,
+        "width": 992,
+        "height": 220
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-HOME",
+    "viewport": "1280x800",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-home-1280x800.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 800
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1060,
+        "height": 800
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1012,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1012,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-HOME",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-home-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-LLM",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-llm-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-maintenance-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-MONITOR",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-monitor-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": [
+      "detail pane/action aside"
+    ]
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-FEATURE-CATALOG",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-ops-feature-catalog-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-SYSTEM-HEALTH",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-ops-system-health-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-read-model-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-SETTINGS",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-settings-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  },
+  {
+    "surfaceId": "UI-ADM-VENDORS",
+    "viewport": "1440x900",
+    "measurementSource": "CSS grid + screenshot observation",
+    "screenshot": "artifacts/ui-audit-20260306/screenshots/admin-vendors-1440x900.png",
+    "regions": [
+      {
+        "name": "left-nav",
+        "x": 0,
+        "y": 0,
+        "width": 220,
+        "height": 900
+      },
+      {
+        "name": "main-content",
+        "x": 220,
+        "y": 0,
+        "width": 1220,
+        "height": 900
+      },
+      {
+        "name": "topbar",
+        "x": 244,
+        "y": 16,
+        "width": 1172,
+        "height": 140
+      },
+      {
+        "name": "page-header",
+        "x": 244,
+        "y": 160,
+        "width": 1172,
+        "height": 96
+      }
+    ],
+    "firstViewContains": [
+      "left navigation",
+      "role switch",
+      "page title",
+      "decision card"
+    ],
+    "belowFoldImportantItems": []
+  }
+]

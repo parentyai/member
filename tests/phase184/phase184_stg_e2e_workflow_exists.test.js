@@ -25,6 +25,8 @@ test('phase184: stg notification e2e workflow runs proxy and strict route error 
   assert.match(contents, /--fetch-route-errors/, 'fetch-route-errors option missing');
   assert.match(contents, /--fail-on-route-errors/, 'fail-on-route-errors option missing');
   assert.match(contents, /--project-id/, 'project-id option missing');
+  assert.match(contents, /Enforce LLM runtime gate input/, 'expect_llm_enabled strict input step missing');
+  assert.match(contents, /ARGS\+\=\(--expect-llm-enabled\)/, 'expect-llm-enabled must be enforced');
 });
 
 test('phase184: stg notification e2e workflow uploads artifacts', () => {

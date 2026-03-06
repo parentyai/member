@@ -1,0 +1,335 @@
+{
+  "navPolicy": {
+    "operator": [
+      "home",
+      "ops-feature-catalog",
+      "ops-system-health",
+      "alerts",
+      "composer",
+      "monitor",
+      "errors",
+      "read-model",
+      "vendors",
+      "emergency-layer",
+      "city-pack",
+      "audit",
+      "settings"
+    ],
+    "admin": [
+      "home",
+      "ops-feature-catalog",
+      "ops-system-health",
+      "alerts",
+      "composer",
+      "monitor",
+      "errors",
+      "read-model",
+      "vendors",
+      "emergency-layer",
+      "city-pack",
+      "audit",
+      "settings",
+      "llm",
+      "maintenance",
+      "developer-map",
+      "developer-manual-redac",
+      "developer-manual-user"
+    ],
+    "developer": [
+      "home",
+      "ops-feature-catalog",
+      "ops-system-health",
+      "alerts",
+      "composer",
+      "monitor",
+      "errors",
+      "read-model",
+      "vendors",
+      "emergency-layer",
+      "city-pack",
+      "audit",
+      "settings",
+      "llm",
+      "maintenance",
+      "developer-map",
+      "developer-manual-redac",
+      "developer-manual-user"
+    ]
+  },
+  "navGroupVisibility": {
+    "operator": [
+      "dashboard",
+      "notifications",
+      "users",
+      "catalog"
+    ],
+    "admin": [
+      "dashboard",
+      "notifications",
+      "users",
+      "catalog"
+    ],
+    "developer": [
+      "dashboard",
+      "notifications",
+      "users",
+      "catalog",
+      "developer"
+    ]
+  },
+  "navGroupRollout": {
+    "operator": [],
+    "admin": [
+      "communication",
+      "operations"
+    ],
+    "developer": [
+      "communication",
+      "operations"
+    ]
+  },
+  "paneRoleRestrictions": [
+    {
+      "pane": "developer-map",
+      "surfaceId": "UI-ADM-DEVELOPER-MAP",
+      "dataRole": "admin",
+      "roleAllow": "admin,developer",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "3913"
+      }
+    },
+    {
+      "pane": "developer-manual-redac",
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+      "dataRole": "admin",
+      "roleAllow": "admin,developer",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "4023"
+      }
+    },
+    {
+      "pane": "developer-manual-user",
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+      "dataRole": "admin",
+      "roleAllow": "admin,developer",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "4083"
+      }
+    },
+    {
+      "pane": "llm",
+      "surfaceId": "UI-ADM-LLM",
+      "dataRole": "admin",
+      "roleAllow": "admin,developer",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "4127"
+      }
+    },
+    {
+      "pane": "maintenance",
+      "surfaceId": "UI-ADM-MAINTENANCE",
+      "dataRole": "admin",
+      "roleAllow": "admin,developer",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "4408"
+      }
+    }
+  ],
+  "controlRoleRestrictions": [
+    {
+      "controlId": "CTRL-0014",
+      "surfaceId": "UI-ADM-LLM",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "76"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0015",
+      "surfaceId": "UI-ADM-MAINTENANCE",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "80"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0017",
+      "surfaceId": "UI-ADM-DEVELOPER-MAP",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "88"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0023",
+      "surfaceId": "UI-ADM-LLM",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "124"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0039",
+      "surfaceId": "UI-ADM-MAINTENANCE",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "199"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0043",
+      "surfaceId": "UI-ADM-LLM",
+      "roleControl": "roleAllow=admin,developer dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "218"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0371",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "2939"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15550"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0385",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3082"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0389",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3103"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15638"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0394",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3174"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15641"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0395",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3175"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15644"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0396",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3178"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15647"
+        }
+      ]
+    },
+    {
+      "controlId": "CTRL-0397",
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "roleControl": "roleAllow=- dataRole=admin",
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "3179"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "15650"
+        }
+      ]
+    }
+  ],
+  "guardRules": [
+    {
+      "rule": "admin route compat requires role=admin|developer + confirm token",
+      "sourceRef": {
+        "path": "src/index.js",
+        "lines": "377-415"
+      }
+    },
+    {
+      "rule": "operator role hides [data-role=\"admin\"] and developer scope",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "313-321"
+      }
+    },
+    {
+      "rule": "hidden rollout groups communication/operations require rollout flag",
+      "sourceRef": {
+        "path": "apps/admin/app.html",
+        "lines": "118-203"
+      }
+    }
+  ]
+}

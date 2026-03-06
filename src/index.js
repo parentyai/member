@@ -16,9 +16,19 @@ const {
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
 const MAX_BODY_BYTES = 1024 * 1024;
+let llmRuntimeWarningEmitted = false;
 
 function getServiceMode() {
   return process.env.SERVICE_MODE || 'member';
+}
+
+function emitLlmRuntimeStartupWarning(logger) {
+  if (llmRuntimeWarningEmitted) return;
+  const raw = typeof process.env.LLM_FEATURE_FLAG === 'string' ? process.env.LLM_FEATURE_FLAG.trim() : '';
+  if (raw) return;
+  const log = typeof logger === 'function' ? logger : console.warn;
+  log(`[LLM_RUNTIME_WARNING] missing_env_flag key=LLM_FEATURE_FLAG serviceMode=${getServiceMode()} env=${ENV_NAME}`);
+  llmRuntimeWarningEmitted = true;
 }
 
 function timingSafeEqualString(a, b) {
@@ -610,6 +620,7 @@ function handleTrackClickRoute(req, res) {
 }
 
 function createServer() {
+  emitLlmRuntimeStartupWarning(console.warn);
   return http.createServer((req, res) => {
   const pathname = getPathname(req.url);
   const SERVICE_MODE = getServiceMode();

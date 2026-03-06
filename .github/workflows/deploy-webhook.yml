@@ -37,6 +37,8 @@ env:
   ENV_NAME: ${{ vars.ENV_NAME }}
   FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
   ENABLE_STRIPE_WEBHOOK: ${{ vars.ENABLE_STRIPE_WEBHOOK }}
+  LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
+  OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
 
 jobs:
   deploy-webhook:
@@ -57,9 +59,16 @@ jobs:
       ENV_NAME: ${{ vars.ENV_NAME }}
       FIRESTORE_PROJECT_ID: ${{ vars.FIRESTORE_PROJECT_ID }}
       ENABLE_STRIPE_WEBHOOK: ${{ vars.ENABLE_STRIPE_WEBHOOK }}
+      LLM_FEATURE_FLAG: ${{ vars.LLM_FEATURE_FLAG }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Validate production confirmation
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment == 'prod' }}
@@ -80,6 +89,8 @@ jobs:
             DEPLOY_SA_EMAIL
             ENV_NAME
             FIRESTORE_PROJECT_ID
+            LLM_FEATURE_FLAG
+            OPENAI_MODEL
           )
           MISSING=0
           for VAR_NAME in "${REQUIRED_VARS[@]}"; do
@@ -104,6 +115,16 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
+      - name: Verify webhook single-region uniqueness (pre-deploy)
+        run: |
+          set -euo pipefail
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          node scripts/check_cloud_run_service_uniqueness.js \
+            --service-name "$WEBHOOK_SERVICE_NAME" \
+            --project-id "$GCP_PROJECT_ID" \
+            --expected-region "$GCP_REGION" \
+            --allow-missing
+
       - name: Validate required secrets exist
         run: |
           normalize_bool() {
@@ -117,6 +138,7 @@ jobs:
             LINE_CHANNEL_SECRET
             LINE_CHANNEL_ACCESS_TOKEN
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
+            OPENAI_API_KEY
           )
           if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
             REQUIRED_SECRETS+=(STRIPE_WEBHOOK_SECRET)
@@ -172,6 +194,7 @@ jobs:
             LINE_CHANNEL_SECRET
             LINE_CHANNEL_ACCESS_TOKEN
             REDAC_MEMBERSHIP_ID_HMAC_SECRET
+            OPENAI_API_KEY
           )
           if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
             REQUIRED_SECRETS+=(STRIPE_WEBHOOK_SECRET)
@@ -232,8 +255,8 @@ jobs:
 
           WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
           IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${WEBHOOK_SERVICE_NAME}:${GITHUB_SHA}"
-          SET_ENV_VARS="ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook"
-          SET_SECRETS="LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest"
+          SET_ENV_VARS="ENV_NAME=$ENV_NAME,FIRESTORE_PROJECT_ID=$FIRESTORE_PROJECT_ID,SERVICE_MODE=webhook,LLM_FEATURE_FLAG=$LLM_FEATURE_FLAG,OPENAI_MODEL=$OPENAI_MODEL"
+          SET_SECRETS="LINE_CHANNEL_SECRET=LINE_CHANNEL_SECRET:latest,LINE_CHANNEL_ACCESS_TOKEN=LINE_CHANNEL_ACCESS_TOKEN:latest,REDAC_MEMBERSHIP_ID_HMAC_SECRET=REDAC_MEMBERSHIP_ID_HMAC_SECRET:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest"
 
           if normalize_bool "${ENABLE_STRIPE_WEBHOOK:-0}"; then
             SET_ENV_VARS="${SET_ENV_VARS},ENABLE_STRIPE_WEBHOOK=1"
@@ -251,3 +274,23 @@ jobs:
             --service-account "$RUNTIME_SA_EMAIL" \
             --set-env-vars "$SET_ENV_VARS" \
             --set-secrets "$SET_SECRETS"
+
+      - name: Verify webhook runtime contract
+        run: |
+          set -euo pipefail
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          node scripts/check_cloud_run_runtime_contract.js \
+            --service-name "$WEBHOOK_SERVICE_NAME" \
+            --project-id "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --required-env "SERVICE_MODE,LLM_FEATURE_FLAG,OPENAI_MODEL" \
+            --required-secret-env "OPENAI_API_KEY,LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,REDAC_MEMBERSHIP_ID_HMAC_SECRET"
+
+      - name: Verify webhook single-region uniqueness (post-deploy)
+        run: |
+          set -euo pipefail
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          node scripts/check_cloud_run_service_uniqueness.js \
+            --service-name "$WEBHOOK_SERVICE_NAME" \
+            --project-id "$GCP_PROJECT_ID" \
+            --expected-region "$GCP_REGION"

@@ -1,0 +1,230 @@
+[
+  {
+    "stateName": "pane.active",
+    "displayText": "is-active paneのみ表示",
+    "style": ".app-pane.is-active",
+    "surfaces": "all panes",
+    "transitionCondition": "activatePane(target)",
+    "actionTrigger": "nav click / URL pane query",
+    "dataDependency": "state.activePane",
+    "uiDiff": "display:block vs none",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "223-229"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3640-3696"
+      }
+    ]
+  },
+  {
+    "stateName": "nav.active",
+    "displayText": "選択中nav",
+    "style": ".nav-item.is-active",
+    "surfaces": "global nav",
+    "transitionCondition": "pane一致",
+    "actionTrigger": "activatePane",
+    "dataDependency": "selected pane",
+    "uiDiff": "blue border/background",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "107-111"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "3662-3689"
+      }
+    ]
+  },
+  {
+    "stateName": "decision.ready",
+    "displayText": "READY",
+    "style": ".decision-state.state-ready",
+    "surfaces": "all workbench panes",
+    "transitionCondition": "decision vm update",
+    "actionTrigger": "renderDecisionCard",
+    "dataDependency": "snapshot/data load result",
+    "uiDiff": "green pill",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "799-813"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "2263-2292"
+      }
+    ]
+  },
+  {
+    "stateName": "decision.attention",
+    "displayText": "ATTENTION",
+    "style": ".decision-state.state-attention",
+    "surfaces": "all workbench panes",
+    "transitionCondition": "warn系 reason",
+    "actionTrigger": "renderDecisionCard",
+    "dataDependency": "vm.status",
+    "uiDiff": "yellow pill",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "805-807"
+      }
+    ]
+  },
+  {
+    "stateName": "decision.stop",
+    "displayText": "STOP",
+    "style": ".decision-state.state-stop",
+    "surfaces": "all workbench panes",
+    "transitionCondition": "danger/blocking",
+    "actionTrigger": "renderDecisionCard",
+    "dataDependency": "vm.status",
+    "uiDiff": "red pill",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "811-813"
+      }
+    ]
+  },
+  {
+    "stateName": "row.health.ok/warn/danger",
+    "displayText": "row-health-*",
+    "style": ".row-health-ok/.row-health-warn/.row-health-danger",
+    "surfaces": "tables (monitor/read-model/errors)",
+    "transitionCondition": "row data health/status",
+    "actionTrigger": "table render functions",
+    "dataDependency": "notificationHealth etc",
+    "uiDiff": "row background color",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1235-1245"
+      },
+      {
+        "path": "apps/admin/read_model.html",
+        "lines": "344-346"
+      }
+    ]
+  },
+  {
+    "stateName": "ops.status.card",
+    "displayText": "OK/WARN/ALERT/UNKNOWN",
+    "style": ".ops-status-card[data-status=*]",
+    "surfaces": "home/ops-feature/system-health",
+    "transitionCondition": "snapshot section status",
+    "actionTrigger": "renderOpsHomeDashboard/renderOpsFeatureCatalogRows",
+    "dataDependency": "ops snapshot APIs",
+    "uiDiff": "left border color + badge color",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "3012-3075"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1514-1717"
+      }
+    ]
+  },
+  {
+    "stateName": "guard.banner",
+    "displayText": "admin guard visible",
+    "style": "#admin-guard-banner.is-danger/.is-warn",
+    "surfaces": "global",
+    "transitionCondition": "role/pane guard violation",
+    "actionTrigger": "renderGuardBanner",
+    "dataDependency": "guard error payload",
+    "uiDiff": "banner tone + cause/impact/action fields",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "2478-2485"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1083-1183"
+      }
+    ]
+  },
+  {
+    "stateName": "local.preflight.banner",
+    "displayText": "local preflight warning",
+    "style": "#admin-local-preflight-banner.is-danger/.is-warn",
+    "surfaces": "global",
+    "transitionCondition": "loadLocalPreflight result",
+    "actionTrigger": "loadLocalPreflight",
+    "dataDependency": "preflight API",
+    "uiDiff": "banner + command list + checks JSON",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "2497-2504"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1187-1305"
+      }
+    ]
+  },
+  {
+    "stateName": "hidden.class",
+    "displayText": "hidden / is-hidden / is-hidden-by-flag",
+    "style": ".hidden .is-hidden .is-hidden-by-flag",
+    "surfaces": "global + pane local",
+    "transitionCondition": "role, flag, feature toggle",
+    "actionTrigger": "applyRoleVisibility / feature toggles",
+    "dataDependency": "ENV flags / role",
+    "uiDiff": "display none",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1268,2053,2762-2767,3001-3104"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1063-1078"
+      }
+    ]
+  },
+  {
+    "stateName": "loading.disabled",
+    "displayText": "is-loading / is-disabled / button[disabled]",
+    "style": ".is-loading .is-disabled button[disabled]",
+    "surfaces": "forms/actions",
+    "transitionCondition": "request pending/validation fail",
+    "actionTrigger": "plan/set/run handlers",
+    "dataDependency": "pending promises",
+    "uiDiff": "opacity, pointer-events, disabled cursor",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1309-1313,1475,2441"
+      }
+    ]
+  },
+  {
+    "stateName": "toast.warn/danger",
+    "displayText": "toast tone",
+    "style": ".toast.warn/.toast.danger",
+    "surfaces": "global",
+    "transitionCondition": "showToast(type)",
+    "actionTrigger": "any action handler",
+    "dataDependency": "action result",
+    "uiDiff": "toast color by severity",
+    "sourceRefs": [
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1371-1377"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "16615-16618"
+      }
+    ]
+  }
+]
