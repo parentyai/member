@@ -21,6 +21,9 @@ test('phase658: index wiring includes journey graph admin routes and reaction-v2
 
 test('phase658: monitor pane includes journey graph map/rule editor controls', () => {
   const html = read('apps/admin/app.html');
+  assert.ok(html.includes('data-scroll-target="monitor-journey-panel"'));
+  assert.ok(html.includes('id="monitor-journey-panel"'));
+  assert.ok(!html.includes('id="monitor-journey-panel" class="panel is-hidden"'));
   assert.ok(html.includes('id="journey-graph-runtime-reload"'));
   assert.ok(html.includes('id="journey-graph-runtime-history"'));
   assert.ok(html.includes('id="journey-graph-status-reload"'));
