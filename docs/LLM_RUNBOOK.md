@@ -108,12 +108,14 @@ LLM 統合機能を advisory-only のまま安全に運用する。
 2. `deploy.yml` の member デプロイが `OPENAI_API_KEY=OPENAI_API_KEY:latest` を runtime secret として参照できる状態にする。
 3. GitHub Environment Variables を設定する。
    - `stg`: `LLM_FEATURE_FLAG=true`, `OPENAI_MODEL=gpt-4o-mini`
-   - `prod`: `LLM_FEATURE_FLAG=false`, `OPENAI_MODEL=gpt-4o-mini`（stg検証完了まで維持）
+   - `prod`: `LLM_FEATURE_FLAG=true`, `OPENAI_MODEL=gpt-4o-mini`
+   - `deploy.yml` / `deploy-webhook.yml` は `LLM_FEATURE_FLAG` と `OPENAI_MODEL` が空値の場合に fail する（strict gate）。
 4. stg へ deploy 後、以下で config 適用:
    - `POST /api/admin/llm/config/plan`
    - `POST /api/admin/llm/config/set`
 5. `GET /api/admin/llm/config/status` で `effectiveEnabled: true` を確認。
-6. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認。
+6. deploy workflow の `Verify LLM runtime state (strict)` が success であることを確認（`envFlag=true/systemFlag=true/effectiveEnabled=true/blockingReason=null`）。
+7. `audit_logs` で `action='llm_faq_answer_blocked'` が減少していることを確認。
 
 ### LLM Config 適用 JSON（固定デフォルト）
 `legitimate_interest / consentVerified=false / crossBorder=true` を固定値として使う。
@@ -137,6 +139,17 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3. stg の trace/audit 証跡（`llm_config.status.view`, `llm_disclaimer_rendered`）を添付してレビュー。
 4. prod の `LLM_FEATURE_FLAG=true` へ切替。
 5. prod deploy 実施後、prod でも同一 `llmPolicy` を適用し `effectiveEnabled=true` を確認。
+
+### Runtime Safety Gate（必須）
+- member deploy:
+  - `Verify LLM runtime state (strict)` が fail した場合は release 中止。
+  - 失敗時は `LLM_FEATURE_FLAG` / `opsConfig.llmEnabled` / `blockingReason` を確認し、`/api/admin/llm/config/status` と deployログのJSONを証跡化する。
+- webhook deploy:
+  - `Verify webhook runtime contract` が fail した場合は release 中止。
+  - `LLM_FEATURE_FLAG`, `OPENAI_MODEL`, `OPENAI_API_KEY` の Cloud Run revision 反映を修正して再deployする。
+- stg release:
+  - `stg-notification-e2e.yml` は `--expect-llm-enabled` を常時適用する。
+  - `expect_llm_enabled=false` は許可しない（release blocker）。
 
 ### LLM を停止する手順（緊急時）
 1. `POST /api/admin/llm/config/set` `{ llmEnabled: false }`

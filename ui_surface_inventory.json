@@ -1,0 +1,1573 @@
+[
+  {
+    "surfaceId": "UI-ADM-HOME",
+    "title": "ダッシュボード",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-home",
+        "route": "/admin/app"
+      },
+      {
+        "type": "nav",
+        "label": "D ダッシュボード",
+        "paneId": "pane-home",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "16"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/app",
+        "paneId": "pane-home",
+        "route": "/admin/app"
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/ops",
+        "paneId": "pane-home",
+        "route": "/admin/ops"
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/ops_readonly",
+        "paneId": "pane-home",
+        "route": "/admin/ops_readonly"
+      }
+    ],
+    "routes": [
+      "/api/admin/local-preflight",
+      "/admin/ui-dict",
+      "/api/admin/legacy-status",
+      "/api/admin/os/journey-kpi",
+      "/api/admin/os/task-rules/plan",
+      "/api/admin/os/task-rules/set",
+      "/api/admin/send-test",
+      "/api/admin/struct-drift/backfill-runs?limit=20",
+      "/api/admin/struct-drift/backfill",
+      "/api/admin/read-path-fallback-summary?${qs.toString()}",
+      "/api/admin/missing-index-surface?${qs.toString()}",
+      "/api/admin/product-readiness?${qs.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "318-639"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "通知配信の判断指標を期間別に確認する",
+    "primaryCta": "dashboard-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/local-preflight",
+      "/admin/ui-dict",
+      "/api/admin/legacy-status",
+      "/api/admin/os/journey-kpi",
+      "/api/admin/os/task-rules/plan",
+      "/api/admin/os/task-rules/set",
+      "/api/admin/send-test",
+      "/api/admin/struct-drift/backfill-runs?limit=20",
+      "/api/admin/struct-drift/backfill",
+      "/api/admin/read-path-fallback-summary?${qs.toString()}",
+      "/api/admin/missing-index-surface?${qs.toString()}",
+      "/api/admin/product-readiness?${qs.toString()}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-home-1024x768.png",
+      "artifacts/ui-audit-20260306/screenshots/admin-home-1280x800.png",
+      "artifacts/ui-audit-20260306/screenshots/admin-home-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-FEATURE-CATALOG",
+    "title": "Feature Catalog",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-ops-feature-catalog",
+        "route": "/admin/app?pane=ops-feature-catalog"
+      },
+      {
+        "type": "nav",
+        "label": "FC Feature Catalog",
+        "paneId": "pane-ops-feature-catalog",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "20"
+        }
+      }
+    ],
+    "routes": [],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "640-666"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "機能カタログ状態を一覧把握する",
+    "primaryCta": "ops-feature-catalog-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-ops-feature-catalog-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-SYSTEM-HEALTH",
+    "title": "System Health",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-ops-system-health",
+        "route": "/admin/app?pane=ops-system-health"
+      },
+      {
+        "type": "nav",
+        "label": "SH System Health",
+        "paneId": "pane-ops-system-health",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "64"
+        }
+      }
+    ],
+    "routes": [],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "667-692"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用システム状態を監視する",
+    "primaryCta": "ops-system-health-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-ops-system-health-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-ALERTS",
+    "title": "要対応",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-alerts",
+        "route": "/admin/app?pane=alerts"
+      },
+      {
+        "type": "nav",
+        "label": "! 要対応",
+        "paneId": "pane-alerts",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "60"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "! 要対応",
+        "paneId": "pane-alerts",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "183"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/os/alerts/summary?limit=200"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "693-721"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "要対応案件を確認する",
+    "primaryCta": "alerts-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/os/alerts/summary?limit=200"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-alerts-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-COMPOSER",
+    "title": "通知作成",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-composer",
+        "route": "/admin/app?pane=composer"
+      },
+      {
+        "type": "nav",
+        "label": "N 作成",
+        "paneId": "pane-composer",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "28"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "N 作成",
+        "paneId": "pane-composer",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "96"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "L 一覧",
+        "paneId": "pane-composer",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "100"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/composer",
+        "paneId": "pane-composer",
+        "route": "/admin/composer"
+      }
+    ],
+    "routes": [
+      "/admin/read-model/notifications?limit=500",
+      "/api/admin/os/link-registry/${encodeURIComponent(id)}",
+      "/api/admin/os/notifications/approve",
+      "/api/admin/os/notifications/archive",
+      "/api/admin/os/notifications/list?${query.toString()}",
+      "/api/admin/os/link-registry/${encodeURIComponent(linkId)}",
+      "/api/admin/os/kill-switch/status",
+      "/api/admin/os/notifications/draft",
+      "/api/admin/os/notifications/preview",
+      "/api/admin/os/notifications/send/plan",
+      "/api/admin/os/notifications/send/execute"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "722-1101"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "通知の作成・承認・送信を実行する",
+    "primaryCta": "approve / execute",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/admin/read-model/notifications?limit=500",
+      "/api/admin/os/link-registry/${encodeURIComponent(id)}",
+      "/api/admin/os/notifications/approve",
+      "/api/admin/os/notifications/archive",
+      "/api/admin/os/notifications/list?${query.toString()}",
+      "/api/admin/os/link-registry/${encodeURIComponent(linkId)}",
+      "/api/admin/os/kill-switch/status",
+      "/api/admin/os/notifications/draft",
+      "/api/admin/os/notifications/preview",
+      "/api/admin/os/notifications/send/plan",
+      "/api/admin/os/notifications/send/execute"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-composer-1280x800.png",
+      "artifacts/ui-audit-20260306/screenshots/admin-composer-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-MONITOR",
+    "title": "配信結果",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-monitor",
+        "route": "/admin/app?pane=monitor"
+      },
+      {
+        "type": "nav",
+        "label": "M 配信結果",
+        "paneId": "pane-monitor",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "32"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "J Journey",
+        "paneId": "pane-monitor",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "36"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "U 検索",
+        "paneId": "pane-monitor",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "108"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "M 配信結果",
+        "paneId": "pane-monitor",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "206"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/monitor",
+        "paneId": "pane-monitor",
+        "route": "/admin/monitor"
+      }
+    ],
+    "routes": [
+      "/api/admin/os/notifications/list?${listParams.toString()}",
+      "/admin/read-model/notifications?limit=500",
+      "/api/admin/notification-deliveries?${params.toString()}",
+      "/api/admin/monitor-insights?${params.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1102-2219"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "配信結果とユーザー反応を監視する",
+    "primaryCta": "monitor-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/os/notifications/list?${listParams.toString()}",
+      "/admin/read-model/notifications?limit=500",
+      "/api/admin/notification-deliveries?${params.toString()}",
+      "/api/admin/monitor-insights?${params.toString()}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-monitor-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "title": "Emergency Layer",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-emergency-layer",
+        "route": "/admin/app?pane=emergency-layer"
+      },
+      {
+        "type": "nav",
+        "label": "EM Emergency Layer",
+        "paneId": "pane-emergency-layer",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "44"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "EM Emergency Layer",
+        "paneId": "pane-emergency-layer",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "135"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/emergency/rules/${encodeURIComponent(id)}",
+      "/api/admin/emergency/rules/${encodeURIComponent(id)}/preview",
+      "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve",
+      "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject",
+      "/api/admin/emergency/providers/${encodeURIComponent(key)}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "2220-2389"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "緊急情報の取り込みと承認送信を管理する",
+    "primaryCta": "emergency-provider-reload / emergency-bulletin-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/emergency/rules/${encodeURIComponent(id)}",
+      "/api/admin/emergency/rules/${encodeURIComponent(id)}/preview",
+      "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/approve",
+      "/api/admin/emergency/bulletins/${encodeURIComponent(id)}/reject",
+      "/api/admin/emergency/providers/${encodeURIComponent(key)}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-emergency-layer-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "title": "City Pack管理",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-city-pack",
+        "route": "/admin/app?pane=city-pack"
+      },
+      {
+        "type": "nav",
+        "label": "CP City Pack管理",
+        "paneId": "pane-city-pack",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "40"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "CP City Pack管理",
+        "paneId": "pane-city-pack",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "131"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}?${query.toString()}",
+      "/api/admin/city-packs",
+      "/api/admin/city-packs/${encodeURIComponent(targetPackId)}/content",
+      "/api/admin/city-packs/${encodeURIComponent(selectedPack.id)}/retire",
+      "/api/admin/city-pack-requests?${params.toString()}",
+      "/api/admin/city-pack-bulletins?${params.toString()}",
+      "/api/admin/city-pack-update-proposals?${params.toString()}",
+      "/api/admin/city-pack-requests/${encodeURIComponent(requestId)}",
+      "/api/admin/review-inbox?${params.toString()}",
+      "/api/admin/city-packs/composition?${params.toString()}",
+      "/api/admin/source-evidence/${encodeURIComponent(evidenceId)}",
+      "/api/admin/city-pack-kpi",
+      "/api/admin/city-pack-metrics?${qs.toString()}",
+      "/api/admin/city-pack-source-audit/runs?limit=20",
+      "/api/admin/city-pack-education-links/${encodeURIComponent(educationId)}/${action}",
+      "/api/admin/city-pack-education-links",
+      "/api/admin/city-pack-bulletins",
+      "/api/admin/city-pack-bulletins/${encodeURIComponent(created.bulletinId)}/approve",
+      "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/${action}",
+      "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/policy",
+      "/api/admin/city-pack-requests/${encodeURIComponent(requestId)}/${action}",
+      "/api/admin/city-pack-feedback/${encodeURIComponent(feedbackId)}/${action}",
+      "/api/admin/city-pack-bulletins/${encodeURIComponent(bulletinId)}/${action}",
+      "/api/admin/city-pack-update-proposals/${encodeURIComponent(proposalId)}/${action}",
+      "/api/admin/city-pack-update-proposals",
+      "/api/admin/city-pack-template-library/${encodeURIComponent(templateId)}/${action}",
+      "/api/admin/city-pack-template-library",
+      "/api/admin/city-packs/import/dry-run",
+      "/api/admin/city-packs/import/apply",
+      "/api/admin/city-packs/${encodeURIComponent(cityPackId)}/structure",
+      "/api/admin/city-pack-source-audit/run"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "2390-3323"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "City Packの申請/提案/テンプレ管理を行う",
+    "primaryCta": "city-pack-reload / city-pack-run-audit",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/city-pack-source-audit/runs/${encodeURIComponent(runId)}?${query.toString()}",
+      "/api/admin/city-packs",
+      "/api/admin/city-packs/${encodeURIComponent(targetPackId)}/content",
+      "/api/admin/city-packs/${encodeURIComponent(selectedPack.id)}/retire",
+      "/api/admin/city-pack-requests?${params.toString()}",
+      "/api/admin/city-pack-bulletins?${params.toString()}",
+      "/api/admin/city-pack-update-proposals?${params.toString()}",
+      "/api/admin/city-pack-requests/${encodeURIComponent(requestId)}",
+      "/api/admin/review-inbox?${params.toString()}",
+      "/api/admin/city-packs/composition?${params.toString()}",
+      "/api/admin/source-evidence/${encodeURIComponent(evidenceId)}",
+      "/api/admin/city-pack-kpi",
+      "/api/admin/city-pack-metrics?${qs.toString()}",
+      "/api/admin/city-pack-source-audit/runs?limit=20",
+      "/api/admin/city-pack-education-links/${encodeURIComponent(educationId)}/${action}",
+      "/api/admin/city-pack-education-links",
+      "/api/admin/city-pack-bulletins",
+      "/api/admin/city-pack-bulletins/${encodeURIComponent(created.bulletinId)}/approve",
+      "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/${action}",
+      "/api/admin/source-refs/${encodeURIComponent(sourceRefId)}/policy"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-city-pack-1024x768.png",
+      "artifacts/ui-audit-20260306/screenshots/admin-city-pack-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-ERRORS",
+    "title": "異常対応",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-errors",
+        "route": "/admin/app?pane=errors"
+      },
+      {
+        "type": "nav",
+        "label": "E 異常対応",
+        "paneId": "pane-errors",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "68"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "O 状態確認",
+        "paneId": "pane-errors",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "187"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "E 異常対応",
+        "paneId": "pane-errors",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "210"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/errors",
+        "paneId": "pane-errors",
+        "route": "/admin/errors"
+      }
+    ],
+    "routes": [
+      "/api/admin/os/errors/summary"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "3324-3427"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用エラーを分類・復帰する",
+    "primaryCta": "errors-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/os/errors/summary"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-errors-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "title": "通知集計",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-read-model",
+        "route": "/admin/app?pane=read-model"
+      },
+      {
+        "type": "nav",
+        "label": "RM 通知集計",
+        "paneId": "pane-read-model",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "52"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "S 状態一覧",
+        "paneId": "pane-read-model",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "112"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "R 通知集計",
+        "paneId": "pane-read-model",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "214"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/read-model",
+        "paneId": "pane-read-model",
+        "route": "/admin/read-model"
+      }
+    ],
+    "routes": [
+      "/admin/read-model/notifications?limit=50",
+      "/api/admin/os/user-billing-detail?${query.toString()}",
+      "/api/admin/os/users-summary/analyze?${query.toString()}",
+      "/api/admin/os/users-summary/export?${query.toString()}",
+      "/api/phase5/ops/users-summary?${query.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "3428-3688"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "通知/ユーザー状態を集計確認する",
+    "primaryCta": "users-summary-analyze",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/admin/read-model/notifications?limit=50",
+      "/api/admin/os/user-billing-detail?${query.toString()}",
+      "/api/admin/os/users-summary/analyze?${query.toString()}",
+      "/api/admin/os/users-summary/export?${query.toString()}",
+      "/api/phase5/ops/users-summary?${query.toString()}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-read-model-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-VENDORS",
+    "title": "ベンダー管理",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-vendors",
+        "route": "/admin/app?pane=vendors"
+      },
+      {
+        "type": "nav",
+        "label": "V ベンダー管理",
+        "paneId": "pane-vendors",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "48"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "V ベンダー管理",
+        "paneId": "pane-vendors",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "139"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/vendors?${params.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "3689-3843"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "Vendor状態と有効化/停止を管理する",
+    "primaryCta": "vendor-unified-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/vendors?${params.toString()}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-vendors-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-AUDIT",
+    "title": "判断ログ",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-audit",
+        "route": "/admin/app?pane=audit"
+      },
+      {
+        "type": "nav",
+        "label": "A 判断ログ",
+        "paneId": "pane-audit",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "84"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "F FAQ履歴",
+        "paneId": "pane-audit",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "120"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "A 判断ログ",
+        "paneId": "pane-audit",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "191"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/review",
+        "paneId": "pane-audit",
+        "route": "/admin/review"
+      }
+    ],
+    "routes": [
+      "/api/admin/trace?traceId=${encodeURIComponent(traceId)}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "3844-3912"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "traceId単位で監査証跡を追跡する",
+    "primaryCta": "audit-search",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/trace?traceId=${encodeURIComponent(traceId)}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-audit-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MAP",
+    "title": "Repo Map（全体像）",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-developer-map",
+        "route": "/admin/app?pane=developer-map"
+      },
+      {
+        "type": "nav",
+        "label": "LR Legacy Routes",
+        "paneId": "pane-developer-map",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "88"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/repo-map",
+      "/api/admin/os/kill-switch/status"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "3913-4022"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "システム全体像・Legacy導線を確認する",
+    "primaryCta": "repo-map-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/repo-map",
+      "/api/admin/os/kill-switch/status"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-developer-map-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+    "title": "取説（Redac）",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-developer-manual-redac",
+        "route": "/admin/app?pane=developer-manual-redac"
+      }
+    ],
+    "routes": [],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "4023-4082"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用者向け取説を確認する",
+    "primaryCta": "manual-redac-open-map",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-developer-manual-redac-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+    "title": "取説（ユーザー）",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-developer-manual-user",
+        "route": "/admin/app?pane=developer-manual-user"
+      }
+    ],
+    "routes": [],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "4083-4126"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "利用者向け取説を確認する",
+    "primaryCta": "manual-user-open-map",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-developer-manual-user-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LLM",
+    "title": "LLM支援",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-llm",
+        "route": "/admin/app?pane=llm"
+      },
+      {
+        "type": "nav",
+        "label": "L LLM支援",
+        "paneId": "pane-llm",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "76"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "K FAQナレッジ管理",
+        "paneId": "pane-llm",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "124"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "L LLM支援",
+        "paneId": "pane-llm",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "218"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/llm/faq/answer",
+      "/api/admin/llm/config/status",
+      "/api/admin/llm/config/plan",
+      "/api/admin/llm/config/set",
+      "/api/admin/llm/policy/status",
+      "/api/admin/os/llm-policy/history?limit=20",
+      "/api/admin/os/llm-usage/summary?windowDays=${encodeURIComponent(String(windowDays))}&limit=20",
+      "/api/admin/os/llm-usage/export?${query.toString()}",
+      "/api/admin/llm/policy/plan",
+      "/api/admin/llm/policy/set"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "4127-4385"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "LLM設定/利用状況/FAQ運用を管理する",
+    "primaryCta": "llm-run-faq / llm-config-set",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/llm/faq/answer",
+      "/api/admin/llm/config/status",
+      "/api/admin/llm/config/plan",
+      "/api/admin/llm/config/set",
+      "/api/admin/llm/policy/status",
+      "/api/admin/os/llm-policy/history?limit=20",
+      "/api/admin/os/llm-usage/summary?windowDays=${encodeURIComponent(String(windowDays))}&limit=20",
+      "/api/admin/os/llm-usage/export?${query.toString()}",
+      "/api/admin/llm/policy/plan",
+      "/api/admin/llm/policy/set"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-llm-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-SETTINGS",
+    "title": "設定",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-settings",
+        "route": "/admin/app?pane=settings"
+      },
+      {
+        "type": "nav",
+        "label": "S 設定",
+        "paneId": "pane-settings",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "72"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "S 設定",
+        "paneId": "pane-settings",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "143"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "S 設定",
+        "paneId": "pane-settings",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "195"
+        }
+      }
+    ],
+    "routes": [
+      "/api/admin/os/rich-menu/status",
+      "/api/admin/os/rich-menu/history?limit=20",
+      "/api/admin/os/rich-menu/resolve-preview",
+      "/api/admin/os/rich-menu/plan",
+      "/api/admin/os/rich-menu/set",
+      "/api/admin/os/journey-graph/branch-queue/status?${query.toString()}",
+      "/api/admin/os/task-rules/plan",
+      "/api/admin/os/task-rules/set",
+      "/api/admin/os/link-registry-impact?${query.toString()}",
+      "/api/admin/os/task-rules/status?limit=200",
+      "/api/admin/os/task-rules/history?limit=20",
+      "/api/admin/os/task-rules/dry-run",
+      "/api/admin/os/task-rules/template/plan",
+      "/api/admin/os/task-rules/template/set",
+      "/api/admin/os/task-rules/apply/plan",
+      "/api/admin/os/task-rules/apply",
+      "/api/admin/os/journey-graph/status",
+      "/api/admin/os/journey-graph/plan",
+      "/api/admin/os/journey-graph/set",
+      "/api/admin/os/journey-graph/history?limit=20",
+      "/api/admin/os/journey-param/status",
+      "/api/admin/os/journey-param/plan",
+      "/api/admin/os/journey-param/validate",
+      "/api/admin/os/journey-param/dry-run",
+      "/api/admin/os/journey-param/apply",
+      "/api/admin/os/journey-param/rollback",
+      "/api/admin/os/journey-param/history?limit=20",
+      "/api/admin/os/journey-graph/runtime?${query.toString()}",
+      "/api/admin/os/journey-graph/runtime/history?${query.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "4386-4407"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用設定系の参照導線を提供する",
+    "primaryCta": "nav-open-settings-ops-only",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/os/rich-menu/status",
+      "/api/admin/os/rich-menu/history?limit=20",
+      "/api/admin/os/rich-menu/resolve-preview",
+      "/api/admin/os/rich-menu/plan",
+      "/api/admin/os/rich-menu/set",
+      "/api/admin/os/journey-graph/branch-queue/status?${query.toString()}",
+      "/api/admin/os/task-rules/plan",
+      "/api/admin/os/task-rules/set",
+      "/api/admin/os/link-registry-impact?${query.toString()}",
+      "/api/admin/os/task-rules/status?limit=200",
+      "/api/admin/os/task-rules/history?limit=20",
+      "/api/admin/os/task-rules/dry-run",
+      "/api/admin/os/task-rules/template/plan",
+      "/api/admin/os/task-rules/template/set",
+      "/api/admin/os/task-rules/apply/plan",
+      "/api/admin/os/task-rules/apply",
+      "/api/admin/os/journey-graph/status",
+      "/api/admin/os/journey-graph/plan",
+      "/api/admin/os/journey-graph/set",
+      "/api/admin/os/journey-graph/history?limit=20"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-settings-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "title": "回復・保守",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app",
+        "paneId": "pane-maintenance",
+        "route": "/admin/app?pane=maintenance"
+      },
+      {
+        "type": "nav",
+        "label": "MT 回復・保守",
+        "paneId": "pane-maintenance",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "80"
+        }
+      },
+      {
+        "type": "nav",
+        "label": "M 回復・保守",
+        "paneId": "pane-maintenance",
+        "sourceRef": {
+          "path": "apps/admin/app.html",
+          "lines": "199"
+        }
+      },
+      {
+        "type": "legacyRoute",
+        "label": "/admin/master",
+        "paneId": "pane-maintenance",
+        "route": "/admin/master"
+      }
+    ],
+    "routes": [
+      "/api/admin/ops-system-snapshot/rebuild",
+      "/api/admin/ops-snapshot-health?${qs.toString()}",
+      "/api/admin/retention-runs?${qs.toString()}"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "4408-4581"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "500-16698"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-3113"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "回復・保守指標を管理する",
+    "primaryCta": "maintenance-product-readiness-reload",
+    "layoutSummary": "左ナビ + 上部topbar + page header + pane本文。pane本文は .pane-grid（main/detail/actions）またはpanel stackで構成。",
+    "dataSources": [
+      "/api/admin/ops-system-snapshot/rebuild",
+      "/api/admin/ops-snapshot-health?${qs.toString()}",
+      "/api/admin/retention-runs?${qs.toString()}"
+    ],
+    "states": [
+      "visible",
+      "hidden",
+      "loading",
+      "error",
+      "empty",
+      "ready"
+    ],
+    "screenshots": [
+      "artifacts/ui-audit-20260306/screenshots/admin-maintenance-1440x900.png"
+    ],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LOGIN",
+    "title": "Admin Login",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/login",
+        "paneId": "login",
+        "route": "/admin/login"
+      },
+      {
+        "type": "card",
+        "label": "Admin Login",
+        "paneId": "login",
+        "route": "/admin/login"
+      }
+    ],
+    "routes": [
+      "/admin/login",
+      "/admin/logout"
+    ],
+    "files": [
+      {
+        "path": "src/index.js",
+        "lines": "729-893"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "管理トークン認証",
+    "primaryCta": "Login",
+    "layoutSummary": "カードナビ + 認証フォーム（token textbox + Login button）。",
+    "dataSources": [
+      "/admin/login (POST)"
+    ],
+    "states": [
+      "unauthenticated",
+      "authenticated",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LEGACY-OPS",
+    "title": "運用判断支援（legacy ops_readonly）",
+    "entryPoints": [
+      {
+        "type": "legacyRoute",
+        "label": "/admin/ops",
+        "paneId": "legacy-ops",
+        "route": "/admin/ops"
+      }
+    ],
+    "routes": [
+      "/admin/ops",
+      "/admin/ops_readonly"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/ops_readonly.html",
+        "lines": "1-999"
+      },
+      {
+        "path": "src/shared/adminUiRoutesV2.js",
+        "lines": "12-24"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "legacy運用導線の互換表示（通常運用非推奨）",
+    "primaryCta": "参照のみ（実行は/appへ誘導）",
+    "layoutSummary": "カードナビ + 複数panel構成（legacy実装）。",
+    "dataSources": [
+      "/api/phase25/*",
+      "/api/phase26/*",
+      "/api/admin/send-test"
+    ],
+    "states": [
+      "legacy",
+      "read-only"
+    ],
+    "screenshots": [],
+    "observed": false
+  }
+]

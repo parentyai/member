@@ -105,6 +105,14 @@ jobs:
             exit 1
           fi
 
+      - name: Enforce LLM runtime gate input
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.expect_llm_enabled }}" != "true" ]; then
+            echo "::error title=Invalid input::expect_llm_enabled must be true for release gate."
+            exit 1
+          fi
+
       - name: Auth (OIDC)
         uses: google-github-actions/auth@v2
         with:
@@ -268,9 +276,7 @@ jobs:
             ARGS+=(--fail-on-missing-audit-actions)
           fi
 
-          if [ "${{ github.event.inputs.expect_llm_enabled }}" = "true" ]; then
-            ARGS+=(--expect-llm-enabled)
-          fi
+          ARGS+=(--expect-llm-enabled)
 
           if [ -n "${{ github.event.inputs.retry_queue_id }}" ]; then
             ARGS+=(--retry-queue-id "${{ github.event.inputs.retry_queue_id }}")

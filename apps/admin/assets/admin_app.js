@@ -16274,12 +16274,47 @@ async function runLlmFaq() {
   }
 }
 
+function renderLlmRuntimeStatus(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const runtime = payload.runtimeState && typeof payload.runtimeState === 'object' ? payload.runtimeState : {};
+  const envFlag = runtime.envFlag !== undefined
+    ? runtime.envFlag
+    : (payload.envFlag !== undefined ? payload.envFlag : payload.envLlmFeatureFlag);
+  const systemFlag = runtime.systemFlag !== undefined
+    ? runtime.systemFlag
+    : payload.llmEnabled;
+  const effectiveEnabled = runtime.effectiveEnabled !== undefined
+    ? runtime.effectiveEnabled
+    : payload.effectiveEnabled;
+  const blockingReason = runtime.blockingReason !== undefined
+    ? runtime.blockingReason
+    : payload.blockingReason;
+
+  setTextContent('llm-runtime-env-flag', envFlag === true ? 'true' : (envFlag === false ? 'false' : '-'));
+  setTextContent('llm-runtime-system-flag', systemFlag === true ? 'true' : (systemFlag === false ? 'false' : '-'));
+  setTextContent('llm-runtime-effective-enabled', effectiveEnabled === true ? 'true' : (effectiveEnabled === false ? 'false' : '-'));
+  setTextContent('llm-runtime-blocking-reason', blockingReason || 'none');
+
+  const warningEl = document.getElementById('llm-runtime-warning');
+  if (!warningEl) return;
+  warningEl.classList.remove('status-danger');
+  if (effectiveEnabled === false) {
+    warningEl.textContent = `WARNING: effectiveEnabled=false (${blockingReason || 'unknown'})`;
+    warningEl.classList.add('status-danger');
+  } else if (effectiveEnabled === true) {
+    warningEl.textContent = 'OK';
+  } else {
+    warningEl.textContent = '-';
+  }
+}
+
 async function loadLlmConfigStatus() {
   const traceId = ensureTraceInput('llm-trace');
   try {
     const res = await fetch('/api/admin/llm/config/status', { headers: buildHeaders({}, traceId) });
     const data = await readJsonResponse(res);
     renderLlmResult('llm-config-status', data);
+    renderLlmRuntimeStatus(data);
     if (data && data.ok) {
       const select = document.getElementById('llm-config-enabled');
       if (select) select.value = data.llmEnabled ? 'true' : 'false';
@@ -16297,6 +16332,7 @@ async function loadLlmConfigStatus() {
     }
   } catch (_err) {
     renderLlmResult('llm-config-status', { ok: false, error: 'fetch error' });
+    renderLlmRuntimeStatus(null);
     showToast(t('ui.toast.llm.configStatusFail', 'LLM設定状態の取得に失敗しました'), 'danger');
   }
 }
