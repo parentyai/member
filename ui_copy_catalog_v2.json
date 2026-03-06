@@ -1,0 +1,58 @@
+{
+  "version": "2026-03-06",
+  "locale": "ja",
+  "bannedTerms": [
+    "pane",
+    "rollout",
+    "not available",
+    "providerKey"
+  ],
+  "messageHierarchy": {
+    "system": [
+      "admin-guard-banner",
+      "admin-local-preflight-banner",
+      "ui-fixture-success-banner"
+    ],
+    "section": [
+      "composer-killswitch-banner"
+    ],
+    "inline": [
+      "composer-cta2-notice"
+    ],
+    "toast": [
+      "toast"
+    ]
+  },
+  "samples": [
+    {
+      "key": "ui.toast.composer.listOk",
+      "level": "toast",
+      "state": "success",
+      "text": "保存済み通知を更新しました"
+    },
+    {
+      "key": "ui.toast.composer.listFail",
+      "level": "toast",
+      "state": "error",
+      "text": "保存済み通知の取得に失敗しました"
+    },
+    {
+      "key": "ui.toast.composer.needRequired",
+      "level": "toast",
+      "state": "warn",
+      "text": "必須項目を入力してください"
+    },
+    {
+      "key": "ui.toast.localPreflight.blockedLoads",
+      "level": "system",
+      "state": "warn",
+      "text": "ローカル診断が未復旧のためデータ取得を停止中です"
+    },
+    {
+      "key": "ui.desc.composer.killSwitchBanner",
+      "level": "section",
+      "state": "warn",
+      "text": "KillSwitchがONです。通知送信は停止中です。"
+    }
+  ]
+}

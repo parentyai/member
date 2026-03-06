@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T06:42:27-05:00",
-  "gitCommit": "e88e663da952a5c36baed9e817727e7b773c1e07",
-  "branch": "codex/us-journey-uxmax-USJXMAX-01",
-  "sourceDigest": "2d5e50162a94d9a5b3baf92cb8db3aa06fe48869d8a8fd43ca7fb37c4cb315a4",
+  "generatedAt": "2026-03-06T08:27:18-05:00",
+  "gitCommit": "addd65d89b8a1bba221fafbf72d8406f9b1c69af",
+  "branch": "codex/admin-ui-pr2-status-copy",
+  "sourceDigest": "aca836e978c1a330eb4da482f45a60ab91c6335caf5220cfd2dbe8614d12ab62",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

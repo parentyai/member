@@ -1,0 +1,82 @@
+{
+  "version": "2026-03-06",
+  "sourceFiles": [
+    "apps/admin/assets/admin_app.js",
+    "apps/admin/assets/admin.css",
+    "apps/admin/app.html"
+  ],
+  "states": [
+    {
+      "state": "success",
+      "labelJa": "成功",
+      "badgeClass": "badge-ok",
+      "toastClass": "state-success",
+      "rowClass": "row-health-ok",
+      "bannerClass": "is-ok"
+    },
+    {
+      "state": "in_progress",
+      "labelJa": "進行中",
+      "badgeClass": "badge-info",
+      "toastClass": "state-in_progress",
+      "rowClass": "row-health-warn",
+      "bannerClass": "is-warn"
+    },
+    {
+      "state": "pending",
+      "labelJa": "保留",
+      "badgeClass": "badge-info",
+      "toastClass": "state-pending",
+      "rowClass": "row-health-warn",
+      "bannerClass": "is-warn"
+    },
+    {
+      "state": "warn",
+      "labelJa": "注意",
+      "badgeClass": "badge-warn",
+      "toastClass": "state-warn",
+      "rowClass": "row-health-warn",
+      "bannerClass": "is-warn"
+    },
+    {
+      "state": "error",
+      "labelJa": "失敗",
+      "badgeClass": "badge-danger",
+      "toastClass": "state-error",
+      "rowClass": "row-health-danger",
+      "bannerClass": "is-danger"
+    },
+    {
+      "state": "forbidden",
+      "labelJa": "権限不足",
+      "badgeClass": "badge-danger",
+      "toastClass": "state-forbidden",
+      "rowClass": "row-health-danger",
+      "bannerClass": "is-danger"
+    },
+    {
+      "state": "disabled",
+      "labelJa": "無効",
+      "badgeClass": "badge-disabled",
+      "toastClass": "state-disabled",
+      "rowClass": null,
+      "bannerClass": "is-warn"
+    },
+    {
+      "state": "unset",
+      "labelJa": "未設定",
+      "badgeClass": "badge-unset",
+      "toastClass": "state-unset",
+      "rowClass": null,
+      "bannerClass": "is-warn"
+    },
+    {
+      "state": "testing",
+      "labelJa": "テスト中",
+      "badgeClass": "badge-info",
+      "toastClass": "state-testing",
+      "rowClass": "row-health-warn",
+      "bannerClass": "is-warn"
+    }
+  ]
+}

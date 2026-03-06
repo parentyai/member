@@ -192,12 +192,12 @@
           <span id="managed-action-evidence-text">-</span>
           <button id="managed-action-open-audit" type="button" class="secondary-btn" data-control="open-audit-from-evidence">Open Audit</button>
         </div>
-        <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" data-ui="guard-banner" role="status" aria-live="polite">
+        <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" data-ui="guard-banner" data-ui-message-level="system" data-ui-state="unset" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>原因:</strong> <span data-guard-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-guard-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-guard-field="action">-</span></div>
         </div>
-        <div id="admin-local-preflight-banner" class="alert-banner admin-local-preflight-banner" data-admin-local-preflight="hidden" data-ui="local-preflight-banner" role="status" aria-live="polite">
+        <div id="admin-local-preflight-banner" class="alert-banner admin-local-preflight-banner" data-admin-local-preflight="hidden" data-ui="local-preflight-banner" data-ui-message-level="system" data-ui-state="unset" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>原因:</strong> <span data-local-preflight-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-local-preflight-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-local-preflight-field="action">-</span></div>
@@ -216,7 +216,7 @@
             <pre id="local-preflight-checks-json">-</pre>
           </details>
         </div>
-        <div id="ui-fixture-success-banner" class="alert-banner admin-fixture-success-banner hidden" data-ui="fixture-success-banner" data-ui-fixture="hidden" role="status" aria-live="polite">
+        <div id="ui-fixture-success-banner" class="alert-banner admin-fixture-success-banner hidden" data-ui="fixture-success-banner" data-ui-fixture="hidden" data-ui-message-level="system" data-ui-state="unset" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>検証:</strong> <span id="ui-fixture-success-message">-</span></div>
           <div class="admin-guard-line"><strong>対象:</strong> <span id="ui-fixture-success-target">-</span></div>
         </div>
@@ -653,7 +653,7 @@
               <div class="panel composer-header">
                 <div class="panel-body">
                   <input type="hidden" id="traceId" />
-                  <div id="composer-killswitch-banner" class="alert-banner"></div>
+                  <div id="composer-killswitch-banner" class="alert-banner" data-ui-message-level="section" data-ui-state="unset"></div>
                   <div class="composer-header-row">
                     <div class="composer-status-wrap">
                       <span class="metric-label" data-dict-key="ui.label.composer.statusSimple">状態</span>
@@ -724,7 +724,7 @@
                       <div>
                         <label for="ctaText2" data-dict-key="ui.label.composer.cta2" data-dict-tip="ui.help.composer.cta2">ボタン文言2</label>
                         <input id="ctaText2" data-dict-placeholder="ui.desc.composer.cta2Placeholder" placeholder="" />
-                        <div id="composer-cta2-notice" class="note">CTA2はプレビュー専用です。保存・送信には使われません。</div>
+                        <div id="composer-cta2-notice" class="note inline-notice" data-ui-message-level="inline">CTA2はプレビュー専用です。保存・送信には使われません。</div>
                       </div>
                       <div>
                         <label for="secondaryCtaText1" data-dict-key="ui.label.composer.ctaSecondary1" data-dict-tip="ui.help.composer.ctaSecondary">ボタン文言(副1)</label>
@@ -4484,7 +4484,7 @@
       </main>
     </div>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="toast" class="toast" data-ui-message-level="toast" data-ui-state="unset" role="status" aria-live="polite"></div>
 
     <script src="/admin/assets/admin_ui_core.js"></script>
     <script src="/admin/assets/admin_app.js"></script>
