@@ -3,6 +3,7 @@
 const DIRECT_URL_PATTERN = /https?:\/\/[^\s)]+/gi;
 const WWW_URL_PATTERN = /\bwww\.[^\s)]+/gi;
 const SOURCE_PATTERN = /\(source:\s*[^)]+\)/gi;
+const LEGACY_TEMPLATE_PATTERN = /(関連情報です|FAQ候補|CityPack候補|根拠キー|score=|-\s*\[\])/g;
 
 const CERTAINTY_REPLACEMENTS = [
   { pattern: /絶対に?/g, replace: '原則' },
@@ -61,6 +62,15 @@ function lintConciergeText(params) {
   if (DIRECT_URL_PATTERN.test(text) || WWW_URL_PATTERN.test(text)) {
     text = text.replace(DIRECT_URL_PATTERN, '[removed-url]').replace(WWW_URL_PATTERN, '[removed-url]');
     findings.push('direct_url_removed');
+  }
+
+  if (LEGACY_TEMPLATE_PATTERN.test(text)) {
+    text = text
+      .replace(LEGACY_TEMPLATE_PATTERN, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    findings.push('legacy_template_removed');
   }
 
   CERTAINTY_REPLACEMENTS.forEach((rule) => {

@@ -98,6 +98,57 @@ function buildHousingAtoms(topTasks, blockedTask, dueSoonTask) {
   };
 }
 
+function buildSchoolAtoms(topTasks, blockedTask, dueSoonTask) {
+  const nextActions = [];
+  if (blockedTask && blockedTask.key) nextActions.push(`${blockedTask.key} の必要書類を先に確定する`);
+  if (dueSoonTask && dueSoonTask.key) nextActions.push(`${dueSoonTask.key} の締切と提出先を確認する`);
+  topTasks.forEach((task) => {
+    if (!task || !task.key) return;
+    nextActions.push(`${task.key} の申請条件を整理する`);
+  });
+  nextActions.push('学区と対象校の条件を確認する');
+  nextActions.push('入学に必要な証明書を揃える');
+  return {
+    nextActions: Array.from(new Set(nextActions)).slice(0, 3),
+    pitfall: '学校側の提出要件が不足すると面談や受付が先送りになりやすくなります。',
+    question: '学年と希望エリアが分かれば、次の一手を具体化できます。'
+  };
+}
+
+function buildSsnAtoms(topTasks, blockedTask, dueSoonTask) {
+  const nextActions = [];
+  if (blockedTask && blockedTask.key) nextActions.push(`${blockedTask.key} の本人確認要件を確認する`);
+  if (dueSoonTask && dueSoonTask.key) nextActions.push(`${dueSoonTask.key} の期限と窓口を確認する`);
+  topTasks.forEach((task) => {
+    if (!task || !task.key) return;
+    nextActions.push(`${task.key} の必要書類を整理する`);
+  });
+  nextActions.push('SSN申請の必要書類を揃える');
+  nextActions.push('窓口予約の可否を確認する');
+  return {
+    nextActions: Array.from(new Set(nextActions)).slice(0, 3),
+    pitfall: '本人確認書類の不備があると再訪が必要になりやすくなります。',
+    question: '在留ステータスが分かれば、手順を具体化できます。'
+  };
+}
+
+function buildBankingAtoms(topTasks, blockedTask, dueSoonTask) {
+  const nextActions = [];
+  if (blockedTask && blockedTask.key) nextActions.push(`${blockedTask.key} の不足条件を1つ解消する`);
+  if (dueSoonTask && dueSoonTask.key) nextActions.push(`${dueSoonTask.key} の期限と必要書類を確認する`);
+  topTasks.forEach((task) => {
+    if (!task || !task.key) return;
+    nextActions.push(`${task.key} の条件を整理する`);
+  });
+  nextActions.push('口座種別を1つ決める');
+  nextActions.push('住所証明と本人確認書類を確認する');
+  return {
+    nextActions: Array.from(new Set(nextActions)).slice(0, 3),
+    pitfall: '住所証明の条件が合わないと口座開設が遅れやすくなります。',
+    question: '利用したい銀行や用途が分かれば、次の一手を絞れます。'
+  };
+}
+
 function detectOpportunity(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const userTier = normalizeText(payload.userTier).toLowerCase() || 'free';
@@ -112,7 +163,14 @@ function detectOpportunity(params) {
     : null;
   const posture = detectMessagePosture({ messageText: payload.messageText });
   const normalizedIntent = normalizeConversationIntent(payload.messageText);
-  const isHousingIntent = normalizedIntent === 'housing' || (posture.keywordHits && posture.keywordHits.housing === true);
+  const domainIntent = normalizedIntent !== 'general'
+    ? normalizedIntent
+    : (posture.keywordHits && posture.keywordHits.housing === true ? 'housing' : 'general');
+  const isDomainIntent = domainIntent !== 'general';
+  const isHousingIntent = domainIntent === 'housing';
+  const isSchoolIntent = domainIntent === 'school';
+  const isSsnIntent = domainIntent === 'ssn';
+  const isBankingIntent = domainIntent === 'banking';
   const recentEngagement = payload.recentEngagement && typeof payload.recentEngagement === 'object'
     ? payload.recentEngagement
     : {};
@@ -127,7 +185,7 @@ function detectOpportunity(params) {
     });
   }
 
-  if (!isHousingIntent && (posture.isGreeting || posture.isSmalltalk)) {
+  if (!isDomainIntent && (posture.isGreeting || posture.isSmalltalk)) {
     return buildOpportunityDecision({
       conversationMode: 'casual',
       opportunityType: 'none',
@@ -147,7 +205,7 @@ function detectOpportunity(params) {
   );
   const dueSoonMs = toMillis(dueSoonTask && dueSoonTask.due);
   const hasDueSoonSignal = Boolean(Number.isFinite(dueSoonMs) && dueSoonMs <= (Date.now() + (7 * 24 * 60 * 60 * 1000)));
-  const hasActionSignal = Boolean(isHousingIntent || posture.keywordHits.action || hasDueSoonSignal || topTasks.length > 0);
+  const hasActionSignal = Boolean(isDomainIntent || posture.keywordHits.action || hasDueSoonSignal || topTasks.length > 0);
   const hasLifeSignal = Boolean(posture.keywordHits.life || journeyPhase === 'return');
 
   if (hasBlockedSignal) {
@@ -156,11 +214,19 @@ function detectOpportunity(params) {
     if (blockedTask && blockedTask.key) reasons.push('blocked_task_present');
     if (posture.keywordHits.blocked) reasons.push('blocked_keyword');
     suggestedAtoms = buildBlockedAtoms(blockedTask);
-  } else if (isHousingIntent) {
+  } else if (isDomainIntent) {
     opportunityType = 'action';
-    reasons.push('housing_intent');
-    reasons.push('housing_intent_detected');
-    suggestedAtoms = buildHousingAtoms(topTasks, blockedTask, dueSoonTask);
+    reasons.push(`${domainIntent}_intent`);
+    reasons.push(`${domainIntent}_intent_detected`);
+    if (isSchoolIntent) {
+      suggestedAtoms = buildSchoolAtoms(topTasks, blockedTask, dueSoonTask);
+    } else if (isSsnIntent) {
+      suggestedAtoms = buildSsnAtoms(topTasks, blockedTask, dueSoonTask);
+    } else if (isBankingIntent) {
+      suggestedAtoms = buildBankingAtoms(topTasks, blockedTask, dueSoonTask);
+    } else {
+      suggestedAtoms = buildHousingAtoms(topTasks, blockedTask, dueSoonTask);
+    }
   } else if (hasActionSignal && (posture.keywordHits.action || hasDueSoonSignal)) {
     opportunityType = 'action';
     reasons.push('action_signal');
@@ -182,8 +248,8 @@ function detectOpportunity(params) {
   if (cooldownActive) reasons.push('intervention_cooldown_active');
 
   const allowIntervention = opportunityType !== 'none'
-    && (!cooldownActive || isHousingIntent)
-    && (llmConciergeEnabled || isHousingIntent);
+    && (!cooldownActive || isDomainIntent)
+    && (llmConciergeEnabled || isDomainIntent);
   return buildOpportunityDecision({
     conversationMode: allowIntervention ? 'concierge' : 'casual',
     opportunityType,

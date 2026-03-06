@@ -107,6 +107,13 @@ function normalizeInterventionBudget(value) {
   return num >= 1 ? 1 : 0;
 }
 
+function normalizeDomainIntent(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'general';
+  if (['housing', 'school', 'ssn', 'banking'].includes(normalized)) return normalized;
+  return 'general';
+}
+
 function normalizeContextualFeatures(value) {
   if (!value || typeof value !== 'object') return null;
   return {
@@ -203,6 +210,14 @@ async function appendLlmActionLog(params) {
     opportunityType: normalizeOpportunityType(payload.opportunityType),
     opportunityReasonKeys: normalizeStringList(payload.opportunityReasonKeys, 8),
     interventionBudget: normalizeInterventionBudget(payload.interventionBudget),
+    conversationNaturalnessVersion: normalizeString(payload.conversationNaturalnessVersion, 'v1'),
+    legacyTemplateHit: payload.legacyTemplateHit === true,
+    followupQuestionIncluded: payload.followupQuestionIncluded === true,
+    actionCount: Math.max(0, Math.min(3, Math.floor(normalizeNumber(payload.actionCount, 0)))),
+    pitfallIncluded: payload.pitfallIncluded === true,
+    domainIntent: normalizeDomainIntent(payload.domainIntent),
+    fallbackType: normalizeString(payload.fallbackType, null),
+    interventionSuppressedBy: normalizeString(payload.interventionSuppressedBy, null),
     contextVersion: normalizeString(payload.contextVersion, 'concierge_ctx_v1'),
     featureHash: normalizeString(payload.featureHash, null),
     contextSignature: normalizeString(payload.contextSignature, null),

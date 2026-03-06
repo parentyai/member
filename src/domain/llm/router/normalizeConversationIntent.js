@@ -1,20 +1,47 @@
 'use strict';
 
-const HOUSING_INTENT_PATTERN = /(家探し|住宅|部屋探し|賃貸|lease|apartment)/i;
+const DOMAIN_INTENT_PATTERNS = Object.freeze({
+  housing: /(家探し|住宅|部屋探し|賃貸|lease|apartment)/i,
+  school: /(学校|学区|入学|転校|ワクチン証明|school|district|enrollment)/i,
+  ssn: /(ssn|social security|ソーシャルセキュリティ|番号申請)/i,
+  banking: /(銀行|口座|debit|checking|wire|bank account)/i
+});
+
+const DOMAIN_INTENTS = Object.freeze(Object.keys(DOMAIN_INTENT_PATTERNS));
+const HOUSING_INTENT_PATTERN = DOMAIN_INTENT_PATTERNS.housing;
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
 }
 
-function normalizeConversationIntent(messageText) {
+function detectConversationIntentHits(messageText) {
   const normalized = normalizeText(messageText);
-  if (!normalized) return 'general';
-  if (HOUSING_INTENT_PATTERN.test(normalized)) return 'housing';
+  const hits = {
+    housing: false,
+    school: false,
+    ssn: false,
+    banking: false
+  };
+  if (!normalized) return hits;
+  DOMAIN_INTENTS.forEach((intent) => {
+    const pattern = DOMAIN_INTENT_PATTERNS[intent];
+    hits[intent] = Boolean(pattern && pattern.test(normalized));
+  });
+  return hits;
+}
+
+function normalizeConversationIntent(messageText) {
+  const hits = detectConversationIntentHits(messageText);
+  const intent = DOMAIN_INTENTS.find((key) => hits[key] === true);
+  if (intent) return intent;
   return 'general';
 }
 
 module.exports = {
   normalizeConversationIntent,
+  detectConversationIntentHits,
+  DOMAIN_INTENT_PATTERNS,
+  DOMAIN_INTENTS,
   HOUSING_INTENT_PATTERN
 };

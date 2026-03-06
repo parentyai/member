@@ -198,10 +198,12 @@
       "llmBanditStateRepo",
       "llmContextualBanditStateRepo"
     ],
+    "FORBIDDEN_REPLY_PATTERN": [],
     "generateFreeRetrievalReply": [],
     "generateOpsDailyReport": [],
     "generatePaidAssistantReply": [],
     "generatePaidCasualReply": [],
+    "generatePaidDomainConciergeReply": [],
     "generatePaidFaqReply": [
       "llmQualityLogsRepo"
     ],
@@ -1427,9 +1429,11 @@
       "ensureUserFromWebhook",
       "evaluateLlmAvailability",
       "evaluateLLMBudget",
+      "FORBIDDEN_REPLY_PATTERN",
       "generateFreeRetrievalReply",
       "generatePaidAssistantReply",
       "generatePaidCasualReply",
+      "generatePaidDomainConciergeReply",
       "generatePaidFaqReply",
       "generatePaidHousingConciergeReply",
       "getRedacMembershipStatusForLine",

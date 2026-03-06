@@ -71,9 +71,10 @@ test('phase653: paid assistant returns conversation-format reply by default', as
   assert.equal(response.ok, true);
   assert.equal(response.intent, 'next_action_generation');
   assert.ok(!response.replyText.includes('1) 要約（前提）'));
-  assert.ok(response.replyText.includes('次に進める候補です'));
-  assert.ok(response.replyText.includes('根拠キー: kb_insurance, kb_school'));
-  assert.ok(response.replyText.includes('注記:'));
+  assert.ok(response.replyText.includes('まずは次の一手です'));
+  assert.equal(response.replyText.includes('根拠キー'), false);
+  assert.equal(response.replyText.includes('FAQ候補'), false);
+  assert.equal(response.replyText.includes('CityPack候補'), false);
   assert.equal(response.tokensIn, 50);
   assert.equal(response.tokensOut, 80);
 });

@@ -1,6 +1,6 @@
 'use strict';
 
-const { HOUSING_INTENT_PATTERN } = require('../../../domain/llm/router/normalizeConversationIntent');
+const { detectConversationIntentHits } = require('../../../domain/llm/router/normalizeConversationIntent');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -17,13 +17,17 @@ function detectMessagePosture(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
   const lowered = messageText.toLowerCase();
+  const domainHits = detectConversationIntentHits(messageText);
 
   const isGreeting = Boolean(messageText && GREETING_PATTERN.test(messageText));
   const keywordHits = {
     action: Boolean(messageText && ACTION_KEYWORD_PATTERN.test(messageText)),
     blocked: Boolean(messageText && BLOCKED_KEYWORD_PATTERN.test(messageText)),
     life: Boolean(messageText && LIFE_KEYWORD_PATTERN.test(messageText)),
-    housing: Boolean(messageText && HOUSING_INTENT_PATTERN.test(messageText))
+    housing: domainHits.housing === true,
+    school: domainHits.school === true,
+    ssn: domainHits.ssn === true,
+    banking: domainHits.banking === true
   };
   const isSmalltalk = Boolean(
     messageText

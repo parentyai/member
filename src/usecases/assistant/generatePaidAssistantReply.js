@@ -12,6 +12,7 @@ const MAX_EVIDENCE_KEYS = 8;
 const MAX_PROMPT_KB_CANDIDATES = 5;
 const KB_CANDIDATE_DIVERSITY_PENALTY = 0.2;
 const KB_CANDIDATE_DUPLICATE_THRESHOLD = 0.9;
+const LEGACY_TEMPLATE_TOKEN_PATTERN = /(関連情報です|FAQ候補|CityPack候補|根拠キー|score=|-\s*\[\])/g;
 const DEFAULT_OUTPUT_CONSTRAINTS = Object.freeze({
   max_next_actions: 3,
   max_gaps: 5,
@@ -124,6 +125,16 @@ function normalizeIntentText(value) {
     .toLowerCase()
     .replace(/[。、，,！？!?:;；]/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripLegacyTemplateTokens(value) {
+  const text = normalizeText(value);
+  if (!text) return '';
+  return text
+    .replace(LEGACY_TEMPLATE_TOKEN_PATTERN, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -564,23 +575,27 @@ function formatPaidReplyConversation(output, constraints, disclaimer) {
   const nextActions = Array.isArray(output && output.nextActions) ? output.nextActions.slice(0, maxNextActions) : [];
   const gaps = Array.isArray(output && output.gaps) ? output.gaps.slice(0, maxGaps) : [];
   const risks = Array.isArray(output && output.risks) ? output.risks.slice(0, maxRisks) : [];
-  const evidenceKeys = Array.isArray(output && output.evidenceKeys) ? output.evidenceKeys : [];
   const disclaimerText = disclaimer && typeof disclaimer.text === 'string' ? disclaimer.text.trim() : '';
 
   const sections = [];
-  sections.push(normalizeText(output && output.situation) || '状況の前提をもう少し整理します。');
+  const situationLine = stripLegacyTemplateTokens(output && output.situation)
+    || 'いまの状況を短く整理します。';
+  sections.push(situationLine);
   if (nextActions.length) {
-    sections.push(`次に進める候補です:\n${nextActions.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+    sections.push(`まずは次の一手です:\n${nextActions.map((item) => `・${stripLegacyTemplateTokens(item)}`).join('\n')}`);
   }
-  if (gaps.length) {
-    sections.push(`見落としやすい点:\n${gaps.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+  const pitfall = stripLegacyTemplateTokens(risks[0] || gaps[0] || '');
+  if (pitfall) {
+    sections.push(`多くの人が詰まりやすいのは ${pitfall}`);
   }
-  if (risks.length) {
-    sections.push(`注意しておきたい点:\n${risks.map((item) => `- ${normalizeText(item)}`).join('\n')}`);
+  const followupQuestion = stripLegacyTemplateTokens(gaps[0] || '');
+  if (followupQuestion) {
+    sections.push(`${followupQuestion} の認識で進めてもよいですか？`);
   }
-  sections.push(`根拠キー: ${evidenceKeys.length ? evidenceKeys.join(', ') : '-'}`);
-  sections.push(`注記: ${disclaimerText || '提案です。最終判断は運用担当が行ってください。'}`);
-  return sections.join('\n\n');
+  if (disclaimerText) {
+    sections.push(stripLegacyTemplateTokens(disclaimerText));
+  }
+  return stripLegacyTemplateTokens(sections.join('\n\n'));
 }
 
 function compactKbCandidates(rows) {

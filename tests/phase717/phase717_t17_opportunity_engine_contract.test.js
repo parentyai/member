@@ -34,14 +34,14 @@ test('phase717: opportunity detector promotes action keyword to concierge interv
   const result = detectOpportunity({
     lineUserId: 'U717_OPP_2',
     userTier: 'paid',
-    messageText: '学校どうしよう',
+    messageText: '税金どうしよう',
     journeyPhase: 'arrival',
     topTasks: [
-      { key: 'school_registration', status: 'open', due: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
-      { key: 'vaccine_record', status: 'open', due: null }
+      { key: 'tax_filing', status: 'open', due: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
+      { key: 'insurance_update', status: 'open', due: null }
     ],
     blockedTask: null,
-    dueSoonTask: { key: 'school_registration', status: 'open', due: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
+    dueSoonTask: { key: 'tax_filing', status: 'open', due: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
     riskFlags: [],
     recentEngagement: {
       recentTurns: 5,
@@ -64,9 +64,9 @@ test('phase717: opportunity detector suppresses intervention when cooldown is ac
   const result = detectOpportunity({
     lineUserId: 'U717_OPP_3',
     userTier: 'paid',
-    messageText: '学校どうしよう',
+    messageText: '税金どうしよう',
     journeyPhase: 'arrival',
-    topTasks: [{ key: 'school_registration', status: 'open', due: null }],
+    topTasks: [{ key: 'tax_filing', status: 'open', due: null }],
     blockedTask: null,
     dueSoonTask: null,
     riskFlags: [],
@@ -135,4 +135,30 @@ test('phase717: housing keywords force concierge with housing_intent reason even
   assert.ok(result.opportunityReasonKeys.includes('housing_intent'));
   assert.ok(result.opportunityReasonKeys.includes('housing_intent_detected'));
   assert.ok(result.opportunityReasonKeys.includes('intervention_cooldown_active'));
+});
+
+test('phase717: school/ssn/banking intents force concierge even during cooldown', () => {
+  const samples = [
+    { messageText: '学校手続きを進めたい', reason: 'school_intent' },
+    { messageText: 'SSNを申請したい', reason: 'ssn_intent' },
+    { messageText: 'bank account を作りたい', reason: 'banking_intent' }
+  ];
+  samples.forEach((sample) => {
+    const result = detectOpportunity({
+      userTier: 'paid',
+      llmConciergeEnabled: false,
+      messageText: sample.messageText,
+      topTasks: [{ key: 'task_open', status: 'open' }],
+      blockedTask: null,
+      dueSoonTask: null,
+      recentEngagement: { recentTurns: 5, recentInterventions: 2 }
+    });
+
+    assert.equal(result.conversationMode, 'concierge');
+    assert.equal(result.opportunityType, 'action');
+    assert.equal(result.interventionBudget, 1);
+    assert.ok(result.opportunityReasonKeys.includes(sample.reason));
+    assert.ok(result.opportunityReasonKeys.includes(`${sample.reason}_detected`));
+    assert.ok(result.opportunityReasonKeys.includes('intervention_cooldown_active'));
+  });
 });
