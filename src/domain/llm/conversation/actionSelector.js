@@ -127,7 +127,8 @@ function buildDeterministicCandidates(params) {
         lengthBucket,
         timingBucket,
         score: scored.score,
-        scoreBreakdown: scored.scoreBreakdown
+        scoreBreakdown: scored.scoreBreakdown,
+        optimizationVersion: 'v2'
       });
     });
   });
@@ -157,7 +158,8 @@ function selectActionForConversation(params) {
     lengthBucket: 'short',
     timingBucket: 'daytime',
     score: 0,
-    scoreBreakdown: { base: 0, wStyle: 0, wTiming: 0, wCta: 0, penalties: 0 }
+    scoreBreakdown: { base: 0, wStyle: 0, wTiming: 0, wCta: 0, penalties: 0 },
+    optimizationVersion: 'v2'
   };
 
   const bandit = payload.bandit && typeof payload.bandit === 'object' ? payload.bandit : {};

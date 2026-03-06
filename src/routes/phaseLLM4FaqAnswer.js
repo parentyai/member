@@ -56,8 +56,12 @@ async function handleFaqAnswer(req, res, body) {
       decision: blockedReason ? 'blocked' : 'allow',
       blockedReason,
       model: result && result.llmModel ? result.llmModel : null,
+      sanitizeApplied: result && result.sanitizeApplied === true,
+      sanitizedCandidateCount: result && Number.isFinite(Number(result.sanitizedCandidateCount))
+        ? Number(result.sanitizedCandidateCount)
+        : 0,
       entryType: 'compat',
-      gatesApplied: ['kill_switch', 'url_guard']
+      gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);
     const status = result && Number.isInteger(result.httpStatus) ? result.httpStatus : 200;
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });

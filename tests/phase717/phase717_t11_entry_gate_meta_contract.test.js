@@ -32,6 +32,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     opportunityType: 'none',
     opportunityReasonKeys: ['greeting_detected'],
     interventionBudget: 0,
+    sanitizeApplied: true,
+    sanitizedCandidateCount: 3,
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -40,6 +42,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.opportunityType, 'none');
   assert.deepEqual(sanitized.opportunityReasonKeys, ['greeting_detected']);
   assert.equal(sanitized.interventionBudget, 0);
+  assert.equal(sanitized.sanitizeApplied, true);
+  assert.equal(sanitized.sanitizedCandidateCount, 3);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 
@@ -76,7 +80,7 @@ test('phase717: webhook/admin/compat routes set entryType and gatesApplied for l
   assert.ok(webhook.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
 
   assert.ok(adminFaq.includes("entryType: 'admin'"));
-  assert.ok(adminFaq.includes("gatesApplied: ['kill_switch', 'url_guard']"));
+  assert.ok(adminFaq.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
   assert.ok(adminOps.includes("entryType: 'admin'"));
   assert.ok(adminOps.includes("gatesApplied: ['kill_switch']"));
 
@@ -85,7 +89,7 @@ test('phase717: webhook/admin/compat routes set entryType and gatesApplied for l
   assert.ok(compat3.includes("entryType: 'compat'"));
   assert.ok(compat3.includes("gatesApplied: ['kill_switch']"));
   assert.ok(compat4.includes("entryType: 'compat'"));
-  assert.ok(compat4.includes("gatesApplied: ['kill_switch', 'url_guard']"));
+  assert.ok(compat4.includes("gatesApplied: ['kill_switch', 'injection', 'url_guard']"));
 
   assert.ok(internalJob.includes("entryType: ENTRY_TYPE"));
   assert.ok(internalJob.includes("gatesApplied: GATES_APPLIED"));

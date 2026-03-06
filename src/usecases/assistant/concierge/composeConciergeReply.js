@@ -10,7 +10,8 @@ const { resolveConversationState } = require('../../../domain/llm/conversation/c
 const { resolveConversationMove } = require('../../../domain/llm/conversation/conversationMoves');
 const {
   extractAnalysisFromBaseReply,
-  composeConversationDraft
+  composeConversationDraft,
+  composeConversationDraftFromSignals
 } = require('../../../domain/llm/conversation/conversationComposer');
 const { humanizeConciergeResponse } = require('../../../domain/llm/styleHumanizer');
 const { searchWebCandidates } = require('../../../infra/webSearch/provider');
@@ -340,7 +341,24 @@ async function composeConciergeReply(params) {
   });
 
   const baseReplyText = normalizeText(payload.baseReplyText);
-  const analysis = extractAnalysisFromBaseReply({ baseReplyText });
+  const opportunityHints = payload.opportunityHints && typeof payload.opportunityHints === 'object'
+    ? payload.opportunityHints
+    : null;
+  const opportunityActions = opportunityHints && Array.isArray(opportunityHints.nextActions)
+    ? opportunityHints.nextActions.map((item) => normalizeText(item)).filter(Boolean).slice(0, 3)
+    : [];
+  const opportunityPitfall = opportunityHints ? normalizeText(opportunityHints.pitfall) : '';
+  const opportunityQuestion = opportunityHints ? normalizeText(opportunityHints.question) : '';
+  const hasOpportunityHints = opportunityActions.length > 0 || opportunityPitfall.length > 0 || opportunityQuestion.length > 0;
+  const analysis = hasOpportunityHints
+    ? {
+      summary: normalizeText(opportunityHints.summary) || normalizeText(baseReplyText) || 'いま必要な対応を先に整理します。',
+      missing: [],
+      risks: opportunityPitfall ? [opportunityPitfall] : [],
+      nextActions: opportunityActions,
+      refs: []
+    }
+    : extractAnalysisFromBaseReply({ baseReplyText });
   const confidence = scoreConversationConfidence({
     question: payload.question,
     topic: policy.topic,
@@ -487,12 +505,22 @@ async function composeConciergeReply(params) {
     askClarifying: (chosenAction && chosenAction.questionFlag === true) || styleDecision.askClarifying === true || confidence.forceClarify
   });
 
-  const draftPacket = composeConversationDraft({
-    analysis,
-    state: conversationState,
-    move,
-    baseReplyText
-  });
+  const draftPacket = hasOpportunityHints
+    ? composeConversationDraftFromSignals({
+      summary: analysis.summary,
+      nextActions: opportunityActions,
+      pitfall: opportunityPitfall,
+      question: opportunityQuestion,
+      state: conversationState,
+      move,
+      baseReplyText
+    })
+    : composeConversationDraft({
+      analysis,
+      state: conversationState,
+      move,
+      baseReplyText
+    });
 
   const humanized = styleEngineEnabled
     ? humanizeConciergeResponse({

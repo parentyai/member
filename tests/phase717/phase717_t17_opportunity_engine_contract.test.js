@@ -84,3 +84,36 @@ test('phase717: opportunity detector suppresses intervention when cooldown is ac
   assert.equal(result.interventionBudget, 0);
   assert.ok(result.opportunityReasonKeys.includes('intervention_cooldown_active'));
 });
+
+test('phase717: opportunity detector prioritizes blocked opportunity when blocked signal exists', () => {
+  const result = detectOpportunity({
+    userTier: 'paid',
+    llmConciergeEnabled: true,
+    messageText: '手続きが進まない',
+    blockedTask: { key: 'visa_review', status: 'locked' },
+    topTasks: [{ key: 'visa_review', status: 'locked' }],
+    recentEngagement: { recentTurns: 5, recentInterventions: 0 }
+  });
+
+  assert.equal(result.opportunityType, 'blocked');
+  assert.equal(result.conversationMode, 'concierge');
+  assert.equal(result.interventionBudget, 1);
+  assert.ok(result.opportunityReasonKeys.includes('blocked_signal'));
+  assert.ok(result.opportunityReasonKeys.includes('blocked_keyword'));
+});
+
+test('phase717: opportunity detector marks life opportunity on weekend-like prompt', () => {
+  const result = detectOpportunity({
+    userTier: 'paid',
+    llmConciergeEnabled: true,
+    messageText: '週末どこから進めるべき？',
+    topTasks: [],
+    recentEngagement: { recentTurns: 5, recentInterventions: 0 }
+  });
+
+  assert.equal(result.opportunityType, 'life');
+  assert.equal(result.conversationMode, 'concierge');
+  assert.equal(result.interventionBudget, 1);
+  assert.ok(result.opportunityReasonKeys.includes('life_signal'));
+  assert.ok(result.opportunityReasonKeys.includes('life_keyword'));
+});

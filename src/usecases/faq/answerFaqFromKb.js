@@ -13,6 +13,7 @@ const { POLICY_SNAPSHOT_VERSION, buildRegulatoryProfile } = require('../../llm/r
 const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
+const { sanitizeRetrievalCandidates } = require('../assistant/retrieval/sanitizeRetrievalCandidates');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -151,6 +152,12 @@ function buildBlocked(params) {
     fallbackActions: Array.isArray(payload.fallbackActions) ? payload.fallbackActions : [],
     suggestedFaqs: Array.isArray(payload.suggestedFaqs) ? payload.suggestedFaqs : [],
     kbMeta: payload.kbMeta || null,
+    sanitizeApplied: payload.sanitizeApplied === true,
+    sanitizedCandidateCount: Number.isFinite(Number(payload.sanitizedCandidateCount))
+      ? Number(payload.sanitizedCandidateCount)
+      : 0,
+    sanitizeBlockedReasons: Array.isArray(payload.sanitizeBlockedReasons) ? payload.sanitizeBlockedReasons : [],
+    injectionFindings: payload.injectionFindings === true,
     policySnapshotVersion: payload.policySnapshotVersion || POLICY_SNAPSHOT_VERSION,
     faqAnswer: null,
     disclaimerVersion: payload.disclaimerVersion || null,
@@ -297,6 +304,12 @@ function buildAuditSummaryBase(params) {
     top1Top2Ratio: payload.confidence.top1Top2Ratio,
     guideMode: payload.guideMode,
     personalizationKeys: payload.personalizationKeys || [],
+    sanitizeApplied: payload.sanitizeApplied === true,
+    sanitizedCandidateCount: Number.isFinite(Number(payload.sanitizedCandidateCount))
+      ? Number(payload.sanitizedCandidateCount)
+      : 0,
+    sanitizeBlockedReasons: Array.isArray(payload.sanitizeBlockedReasons) ? payload.sanitizeBlockedReasons : [],
+    injectionFindings: payload.injectionFindings === true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -428,12 +441,22 @@ async function answerFaqFromKb(params, deps) {
   const llmEnabled = Boolean(envEnabled && dbEnabled);
 
   const kbRepo = deps && deps.faqArticlesRepo ? deps.faqArticlesRepo : faqArticlesRepo;
-  const candidates = await kbRepo.searchActiveArticles({
+  const rawCandidates = await kbRepo.searchActiveArticles({
     query: question,
     locale,
     intent,
     limit: 5
   });
+  const sanitizeResult = sanitizeRetrievalCandidates([rawCandidates]);
+  const candidates = Array.isArray(sanitizeResult.candidatesByGroup) && Array.isArray(sanitizeResult.candidatesByGroup[0])
+    ? sanitizeResult.candidatesByGroup[0]
+    : [];
+  const sanitizeApplied = sanitizeResult.sanitizeApplied === true;
+  const sanitizedCandidateCount = Number.isFinite(Number(sanitizeResult.sanitizedCandidateCount))
+    ? Number(sanitizeResult.sanitizedCandidateCount)
+    : candidates.length;
+  const sanitizeBlockedReasons = Array.isArray(sanitizeResult.blockedReasons) ? sanitizeResult.blockedReasons : [];
+  const injectionFindings = sanitizeResult.injectionFindings === true;
 
   const matchedArticleIds = candidates.map((item) => item.id);
   const allowedSourceIds = collectAllowedSourceIds(candidates);
@@ -591,6 +614,13 @@ async function answerFaqFromKb(params, deps) {
   }
 
   if (blocked) {
+    blocked.sanitizeApplied = sanitizeApplied;
+    blocked.sanitizedCandidateCount = sanitizedCandidateCount;
+    blocked.sanitizeBlockedReasons = sanitizeBlockedReasons.slice(0, 8);
+    blocked.injectionFindings = injectionFindings;
+  }
+
+  if (blocked) {
     blocked.disclaimerVersion = disclaimer.version;
     blocked.disclaimer = disclaimer.text;
     const auditId = await appendAudit({
@@ -612,6 +642,10 @@ async function answerFaqFromKb(params, deps) {
           confidence,
           guideMode,
           personalizationKeys: personalizationCheck.keys,
+          sanitizeApplied,
+          sanitizedCandidateCount,
+          sanitizeBlockedReasons,
+          injectionFindings,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -704,6 +738,10 @@ async function answerFaqFromKb(params, deps) {
       disclaimerVersion: disclaimer.version,
       disclaimer: disclaimer.text
     });
+    blockedResult.sanitizeApplied = sanitizeApplied;
+    blockedResult.sanitizedCandidateCount = sanitizedCandidateCount;
+    blockedResult.sanitizeBlockedReasons = sanitizeBlockedReasons.slice(0, 8);
+    blockedResult.injectionFindings = injectionFindings;
     const auditId = await appendAudit({
       actor,
       action: 'llm_faq_answer_blocked',
@@ -723,6 +761,10 @@ async function answerFaqFromKb(params, deps) {
           confidence,
           guideMode,
           personalizationKeys: personalizationCheck.keys,
+          sanitizeApplied,
+          sanitizedCandidateCount,
+          sanitizeBlockedReasons,
+          injectionFindings,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -780,6 +822,10 @@ async function answerFaqFromKb(params, deps) {
       disclaimerVersion: disclaimer.version,
       disclaimer: disclaimer.text
     });
+    blockedResult.sanitizeApplied = sanitizeApplied;
+    blockedResult.sanitizedCandidateCount = sanitizedCandidateCount;
+    blockedResult.sanitizeBlockedReasons = sanitizeBlockedReasons.slice(0, 8);
+    blockedResult.injectionFindings = injectionFindings;
     const auditId = await appendAudit({
       actor,
       action: 'llm_faq_answer_blocked',
@@ -799,6 +845,10 @@ async function answerFaqFromKb(params, deps) {
           confidence,
           guideMode,
           personalizationKeys: personalizationCheck.keys,
+          sanitizeApplied,
+          sanitizedCandidateCount,
+          sanitizeBlockedReasons,
+          injectionFindings,
           inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
         }),
         {
@@ -857,6 +907,10 @@ async function answerFaqFromKb(params, deps) {
         confidence,
         guideMode,
         personalizationKeys: personalizationCheck.keys,
+        sanitizeApplied,
+        sanitizedCandidateCount,
+        sanitizeBlockedReasons,
+        injectionFindings,
         inputFieldCategoriesUsed: view.inputFieldCategoriesUsed || []
       }),
         {
@@ -912,6 +966,10 @@ async function answerFaqFromKb(params, deps) {
     fallbackActions: [],
     suggestedFaqs,
     kbMeta,
+    sanitizeApplied,
+    sanitizedCandidateCount,
+    sanitizeBlockedReasons: sanitizeBlockedReasons.slice(0, 8),
+    injectionFindings,
     policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
     disclaimerVersion: disclaimer.version,
     disclaimer: disclaimer.text,

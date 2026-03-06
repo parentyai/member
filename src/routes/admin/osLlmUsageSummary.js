@@ -1,6 +1,7 @@
 'use strict';
 
 const llmUsageLogsRepo = require('../../repos/firestore/llmUsageLogsRepo');
+const llmActionLogsRepo = require('../../repos/firestore/llmActionLogsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
@@ -313,6 +314,51 @@ function buildGateAuditBaseline(rows) {
   };
 }
 
+function buildOptimizationSummary(actionRows, gateAuditBaseline) {
+  const rows = Array.isArray(actionRows) ? actionRows : [];
+  const versions = new Map();
+  const rewardVersions = new Map();
+  const selectionSources = new Map();
+  let rewardPendingCount = 0;
+  const rewards = [];
+  rows.forEach((row) => {
+    const optimizationVersion = normalizeReason(row && row.optimizationVersion ? row.optimizationVersion : 'v1');
+    versions.set(optimizationVersion, (versions.get(optimizationVersion) || 0) + 1);
+    const rewardVersion = normalizeReason(row && row.rewardVersion ? row.rewardVersion : 'v1');
+    rewardVersions.set(rewardVersion, (rewardVersions.get(rewardVersion) || 0) + 1);
+    const selectionSource = normalizeReason(row && row.selectionSource ? row.selectionSource : 'score');
+    selectionSources.set(selectionSource, (selectionSources.get(selectionSource) || 0) + 1);
+    if (row && row.rewardPending === true) rewardPendingCount += 1;
+    if (Number.isFinite(Number(row && row.reward))) rewards.push(Number(row.reward));
+  });
+  const versionRows = sortCountEntries(versions, 'optimizationVersion', 10);
+  const primaryVersion = versionRows.length > 0 ? versionRows[0].optimizationVersion : 'v1';
+
+  const baseline = gateAuditBaseline && typeof gateAuditBaseline === 'object' ? gateAuditBaseline : {};
+  const entryRows = Array.isArray(baseline.entryTypes) ? baseline.entryTypes : [];
+  let compatCount = 0;
+  let totalCount = 0;
+  entryRows.forEach((row) => {
+    const count = Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0;
+    totalCount += count;
+    if (normalizeReason(row && row.entryType) === 'compat') compatCount += count;
+  });
+  const compatShareWindow = totalCount > 0 ? Math.round((compatCount / totalCount) * 10000) / 10000 : 0;
+
+  return {
+    sampleCount: rows.length,
+    optimizationVersion: primaryVersion,
+    optimizationVersions: versionRows,
+    rewardVersions: sortCountEntries(rewardVersions, 'rewardVersion', 10),
+    selectionSources: sortCountEntries(selectionSources, 'selectionSource', 10),
+    rewardPendingCount,
+    avgReward: rewards.length > 0
+      ? Math.round((rewards.reduce((sum, value) => sum + value, 0) / rewards.length) * 10000) / 10000
+      : 0,
+    compatShareWindow
+  };
+}
+
 function toCountMap(rows, keyField) {
   const map = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
@@ -483,6 +529,7 @@ async function handleLlmUsageSummary(req, res) {
       limit: scanLimit
     });
     let gateAuditRows = [];
+    let actionRows = [];
     try {
       const rawAuditRows = await auditLogsRepo.listAuditLogs({
         action: 'llm_gate.decision',
@@ -497,6 +544,15 @@ async function handleLlmUsageSummary(req, res) {
     } catch (_err) {
       gateAuditRows = [];
     }
+    try {
+      actionRows = await llmActionLogsRepo.listLlmActionLogsByCreatedAtRange({
+        fromAt,
+        toAt,
+        limit: scanLimit
+      });
+    } catch (_err) {
+      actionRows = [];
+    }
 
     const callsTotal = Array.isArray(rows) ? rows.length : 0;
     const tokensTotal = sumBy(rows, (row) => row && row.tokenUsed);
@@ -509,6 +565,7 @@ async function handleLlmUsageSummary(req, res) {
 
     const assistantQualitySummary = buildAssistantQualitySummary(rows);
     const gateAuditBaselineSummary = buildGateAuditBaseline(gateAuditRows);
+    const optimizationSummary = buildOptimizationSummary(actionRows, gateAuditBaselineSummary);
     const releaseReadiness = buildReleaseReadiness({
       assistantQuality: assistantQualitySummary,
       gateAuditBaseline: gateAuditBaselineSummary
@@ -536,6 +593,7 @@ async function handleLlmUsageSummary(req, res) {
       byDecision: buildDecisionBreakdown(rows),
       assistantQuality: assistantQualitySummary,
       gateAuditBaseline: gateAuditBaselineSummary,
+      optimization: optimizationSummary,
       releaseReadiness
     };
 
@@ -552,6 +610,8 @@ async function handleLlmUsageSummary(req, res) {
         blockedRate,
         releaseReady: releaseReadiness.ready === true,
         releaseBlockedBy: releaseReadiness.blockedBy.slice(0, 6),
+        optimizationVersion: optimizationSummary.optimizationVersion,
+        compatShareWindow: optimizationSummary.compatShareWindow,
         scanLimit,
         topUserCount: summary.topUsers.length
       }
@@ -587,6 +647,7 @@ module.exports = {
   buildDecisionBreakdown,
   buildAssistantQualitySummary,
   buildGateAuditBaseline,
+  buildOptimizationSummary,
   buildReleaseReadiness,
   maskLineUserId
 };

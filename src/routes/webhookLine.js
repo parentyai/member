@@ -21,6 +21,7 @@ const { generateFreeRetrievalReply } = require('../usecases/assistant/generateFr
 const { composeConciergeReply, buildConciergeContextSnapshot } = require('../usecases/assistant/concierge/composeConciergeReply');
 const { generatePaidCasualReply } = require('../usecases/assistant/generatePaidCasualReply');
 const { detectOpportunity } = require('../usecases/assistant/opportunity/detectOpportunity');
+const { detectMessagePosture } = require('../usecases/assistant/opportunity/detectMessagePosture');
 const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
@@ -1328,7 +1329,23 @@ async function handleAssistantMessage(params) {
     ? snapshotResult.snapshot
     : null;
   let opportunityDecision = buildDefaultOpportunityDecision();
-  if (opportunityEngineEnabled) {
+  const messagePosture = detectMessagePosture({ messageText: text });
+  const greetingOrSmalltalk = messagePosture.isGreeting === true || messagePosture.isSmalltalk === true;
+  if (greetingOrSmalltalk) {
+    opportunityDecision = detectOpportunity(buildOpportunityInput({
+      lineUserId,
+      userTier: 'paid',
+      messageText: text,
+      contextSnapshot,
+      recentEngagement: {
+        recentTurns: 0,
+        recentInterventions: 0,
+        recentClicks: false,
+        recentTaskDone: false
+      },
+      llmConciergeEnabled
+    }));
+  } else if (opportunityEngineEnabled) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
     const recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
@@ -1343,8 +1360,14 @@ async function handleAssistantMessage(params) {
       llmConciergeEnabled
     }));
   }
+  const greetingOrSmalltalkCasual = (
+    opportunityDecision.conversationMode === 'casual'
+    && opportunityDecision.opportunityType === 'none'
+    && Array.isArray(opportunityDecision.opportunityReasonKeys)
+    && opportunityDecision.opportunityReasonKeys.some((reason) => reason === 'greeting_detected' || reason === 'smalltalk_detected')
+  );
 
-  if (opportunityEngineEnabled && opportunityDecision.conversationMode === 'casual') {
+  if ((opportunityEngineEnabled || greetingOrSmalltalkCasual) && opportunityDecision.conversationMode === 'casual') {
     const casual = generatePaidCasualReply({
       messageText: text,
       suggestedAtoms: opportunityDecision.suggestedAtoms
@@ -1529,6 +1552,22 @@ async function handleAssistantMessage(params) {
       const concierge = await composeConciergeReply({
         question: text,
         baseReplyText: replyText,
+        opportunityHints: opportunityDecision && opportunityDecision.opportunityType !== 'none'
+          ? {
+            summary: paid && paid.output && typeof paid.output.situation === 'string'
+              ? paid.output.situation
+              : text,
+            nextActions: opportunityDecision.suggestedAtoms && Array.isArray(opportunityDecision.suggestedAtoms.nextActions)
+              ? opportunityDecision.suggestedAtoms.nextActions.slice(0, 3)
+              : [],
+            pitfall: opportunityDecision.suggestedAtoms && typeof opportunityDecision.suggestedAtoms.pitfall === 'string'
+              ? opportunityDecision.suggestedAtoms.pitfall
+              : '',
+            question: opportunityDecision.suggestedAtoms && typeof opportunityDecision.suggestedAtoms.question === 'string'
+              ? opportunityDecision.suggestedAtoms.question
+              : ''
+          }
+          : null,
         userTier: 'paid',
         plan: planInfo.plan,
         locale: 'ja',
@@ -1588,12 +1627,12 @@ async function handleAssistantMessage(params) {
     fallbackReason: null
   });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
-  const conversationMode = opportunityEngineEnabled
+  const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual)
     ? opportunityDecision.conversationMode
     : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null);
-  const opportunityType = opportunityEngineEnabled ? opportunityDecision.opportunityType : 'none';
-  const opportunityReasonKeys = opportunityEngineEnabled ? opportunityDecision.opportunityReasonKeys : [];
-  const interventionBudget = opportunityEngineEnabled ? opportunityDecision.interventionBudget : 0;
+  const opportunityType = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.opportunityType : 'none';
+  const opportunityReasonKeys = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.opportunityReasonKeys : [];
+  const interventionBudget = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.interventionBudget : 0;
   const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,

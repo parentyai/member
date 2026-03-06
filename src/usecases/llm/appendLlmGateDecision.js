@@ -49,7 +49,9 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'conversationMode',
   'opportunityType',
   'opportunityReasonKeys',
-  'interventionBudget'
+  'interventionBudget',
+  'sanitizeApplied',
+  'sanitizedCandidateCount'
 ]);
 
 function resolveAppendAuditLog() {
@@ -118,6 +120,10 @@ async function appendLlmGateDecision(params, deps) {
   const assistantQuality = summaryFromInput.assistantQuality !== undefined
     ? normalizeAssistantQuality(summaryFromInput.assistantQuality)
     : normalizeAssistantQuality(payload.assistantQuality);
+  const sanitizeApplied = summaryFromInput.sanitizeApplied === true || payload.sanitizeApplied === true;
+  const sanitizedCandidateCount = Number.isFinite(Number(summaryFromInput.sanitizedCandidateCount))
+    ? Number(summaryFromInput.sanitizedCandidateCount)
+    : (Number.isFinite(Number(payload.sanitizedCandidateCount)) ? Number(payload.sanitizedCandidateCount) : 0);
 
   const summary = Object.assign(summaryFromInput, {
     lineUserId: summaryFromInput.lineUserId || payload.lineUserId || null,
@@ -135,7 +141,9 @@ async function appendLlmGateDecision(params, deps) {
     model: summaryFromInput.model || payload.model || null,
     entryType,
     gatesApplied,
-    assistantQuality
+    assistantQuality,
+    sanitizeApplied,
+    sanitizedCandidateCount
   });
 
   await auditFn({
