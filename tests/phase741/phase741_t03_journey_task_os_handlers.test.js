@@ -100,16 +100,34 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
   const prevEntry = process.env.ENABLE_RICH_MENU_TASK_OS_ENTRY_V1;
   const prevNext = process.env.ENABLE_NEXT_TASK_ENGINE_V1;
   const prevCity = process.env.ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1;
+  const prevRegional = process.env.ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1;
   process.env.ENABLE_TASK_ENGINE_V1 = '1';
   process.env.ENABLE_RICH_MENU_TASK_OS_ENTRY_V1 = '1';
   process.env.ENABLE_NEXT_TASK_ENGINE_V1 = '1';
   process.env.ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1 = '0';
+  process.env.ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1 = '1';
   try {
     const deps = createDeps();
 
     const next = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: '今日の3つ' }, deps);
     assert.equal(next.handled, true);
     assert.match(next.replyText, /今日の3つ/);
+
+    const dueSoon = await handleJourneyLineCommand({
+      lineUserId: 'U_PHASE741',
+      text: '今週の期限',
+      now: '2026-03-03T00:00:00.000Z'
+    }, deps);
+    assert.equal(dueSoon.handled, true);
+    assert.match(dueSoon.replyText, /今週の期限/);
+
+    const regional = await handleJourneyLineCommand({
+      lineUserId: 'U_PHASE741',
+      text: '地域手続き',
+      now: '2026-03-03T00:00:00.000Z'
+    }, deps);
+    assert.equal(regional.handled, true);
+    assert.match(regional.replyText, /地域手続き（us-ca-sanfrancisco）/);
 
     const category = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: 'カテゴリ:BANKING' }, deps);
     assert.equal(category.handled, true);
@@ -126,6 +144,18 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     const support = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: '相談' }, deps);
     assert.equal(support.handled, true);
     assert.match(support.replyText, /相談内容/);
+
+    const depsWithoutRegion = createDeps();
+    depsWithoutRegion.usersRepo = {
+      getUser: async () => ({})
+    };
+    const regionalWithoutRegion = await handleJourneyLineCommand({
+      lineUserId: 'U_PHASE741',
+      text: '地域手続き',
+      now: '2026-03-03T00:00:00.000Z'
+    }, depsWithoutRegion);
+    assert.equal(regionalWithoutRegion.handled, true);
+    assert.match(regionalWithoutRegion.replyText, /地域手続きは地域設定後に有効になります/);
   } finally {
     if (prevTaskEngine === undefined) delete process.env.ENABLE_TASK_ENGINE_V1;
     else process.env.ENABLE_TASK_ENGINE_V1 = prevTaskEngine;
@@ -135,5 +165,7 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     else process.env.ENABLE_NEXT_TASK_ENGINE_V1 = prevNext;
     if (prevCity === undefined) delete process.env.ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1;
     else process.env.ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1 = prevCity;
+    if (prevRegional === undefined) delete process.env.ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1;
+    else process.env.ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1 = prevRegional;
   }
 });
