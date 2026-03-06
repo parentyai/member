@@ -33,6 +33,10 @@
             <span class="nav-icon" aria-hidden="true">M</span>
             <span data-dict-key="ui.label.nav.monitor">配信結果</span>
           </button>
+          <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-journey-panel" data-nav-priority="238">
+            <span class="nav-icon" aria-hidden="true">J</span>
+            <span>Journey</span>
+          </button>
           <button class="nav-item" data-pane-target="city-pack" data-nav-priority="238">
             <span class="nav-icon" aria-hidden="true">CP</span>
             <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
@@ -1635,7 +1639,7 @@
 	                  </details>
                 </div>
               </div>
-              <div class="panel is-hidden" aria-hidden="true">
+              <div id="monitor-journey-panel" class="panel">
                 <div class="panel-title">Journey Map / Rule Editor</div>
                 <div class="panel-body">
                   <details class="section" open>
