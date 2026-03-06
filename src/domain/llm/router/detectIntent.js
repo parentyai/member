@@ -20,10 +20,10 @@ function detectIntent(params) {
   const posture = detectMessagePosture({ messageText });
   const normalizedIntent = normalizeConversationIntent(messageText);
 
-  if (normalizedIntent === 'housing') {
+  if (normalizedIntent !== 'general') {
     return {
       mode: 'problem',
-      reason: 'housing_intent_detected',
+      reason: `${normalizedIntent}_intent_detected`,
       posture
     };
   }

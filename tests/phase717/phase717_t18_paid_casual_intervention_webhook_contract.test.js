@@ -438,7 +438,7 @@ test('phase717: paid opportunity keyword triggers concierge intervention once', 
     restoreEnv();
   });
 
-  const body = createWebhookBody('学校どうしよう');
+  const body = createWebhookBody('税金どうしよう');
   const replies = [];
   const result = await loaded.handleLineWebhook({
     body,
@@ -493,7 +493,7 @@ test('phase717: cooldown suppresses consecutive interventions for paid opportuni
     restoreEnv();
   });
 
-  const body = createWebhookBody('学校どうしよう');
+  const body = createWebhookBody('税金どうしよう');
   const replies = [];
   const result = await loaded.handleLineWebhook({
     body,

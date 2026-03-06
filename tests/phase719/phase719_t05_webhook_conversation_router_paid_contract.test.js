@@ -390,7 +390,7 @@ test('phase719: router-disabled paid greeting keeps legacy order and evaluates b
   assert.equal(loaded.counters.retrievalCalled, 0);
 });
 
-test('phase719: paid housing intent never falls back to free retrieval across blocked paths', { concurrency: false }, async (t) => {
+test('phase719: paid domain intents never fall back to free retrieval across blocked paths', { concurrency: false }, async (t) => {
   const scenarios = [
     {
       name: 'budget_blocked',
@@ -413,43 +413,51 @@ test('phase719: paid housing intent never falls back to free retrieval across bl
       stubs: { paidFaqOk: false, paidFaqBlockedReason: 'llm_error' }
     }
   ];
+  const domains = [
+    { key: 'housing', text: '部屋探ししたい' },
+    { key: 'school', text: '学校手続きどうする？' },
+    { key: 'ssn', text: 'SSN申請どうする？' },
+    { key: 'banking', text: 'bank account を作りたい' }
+  ];
 
-  for (const scenario of scenarios) {
-    const restoreEnv = withEnv(Object.assign({
-      LINE_CHANNEL_SECRET: HMAC_SEED,
-      ENABLE_CONVERSATION_ROUTER: 'true',
-      ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true'
-    }, scenario.env));
-    const loaded = loadWebhookWithStubs(scenario.stubs);
-    const replies = [];
+  for (const domain of domains) {
+    for (const scenario of scenarios) {
+      const restoreEnv = withEnv(Object.assign({
+        LINE_CHANNEL_SECRET: HMAC_SEED,
+        ENABLE_CONVERSATION_ROUTER: 'true',
+        ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true'
+      }, scenario.env));
+      const loaded = loadWebhookWithStubs(scenario.stubs);
+      const replies = [];
 
-    try {
-      const body = createWebhookBody('部屋探ししたい');
-      const result = await loaded.handleLineWebhook({
-        body,
-        signature: signBody(body),
-        requestId: `phase719_housing_${scenario.name}`,
-        logger: () => {},
-        allowWelcome: false,
-        replyFn: async (_replyToken, message) => {
-          replies.push(message);
-        }
-      });
+      try {
+        const body = createWebhookBody(domain.text);
+        const result = await loaded.handleLineWebhook({
+          body,
+          signature: signBody(body),
+          requestId: `phase719_${domain.key}_${scenario.name}`,
+          logger: () => {},
+          allowWelcome: false,
+          replyFn: async (_replyToken, message) => {
+            replies.push(message);
+          }
+        });
 
-      assert.equal(result.status, 200, scenario.name);
-      assert.equal(replies.length, 1, scenario.name);
-      assertNoRetrievalTemplate(replies[0].text);
-      assert.equal(loaded.counters.retrievalCalled, 0, scenario.name);
+        assert.equal(result.status, 200, `${domain.key}_${scenario.name}`);
+        assert.equal(replies.length, 1, `${domain.key}_${scenario.name}`);
+        assertNoRetrievalTemplate(replies[0].text);
+        assert.equal(loaded.counters.retrievalCalled, 0, `${domain.key}_${scenario.name}`);
 
-      const summary = findGateSummary(loaded.auditCalls);
-      assert.ok(summary, scenario.name);
-      assert.equal(summary.conversationMode, 'concierge', scenario.name);
-      assert.equal(summary.routerReason, 'housing_intent_detected', scenario.name);
-      assert.ok(Array.isArray(summary.opportunityReasonKeys), scenario.name);
-      assert.ok(summary.opportunityReasonKeys.includes('housing_intent'), scenario.name);
-    } finally {
-      loaded.restore();
-      restoreEnv();
+        const summary = findGateSummary(loaded.auditCalls);
+        assert.ok(summary, `${domain.key}_${scenario.name}`);
+        assert.equal(summary.conversationMode, 'concierge', `${domain.key}_${scenario.name}`);
+        assert.equal(summary.routerReason, `${domain.key}_intent_detected`, `${domain.key}_${scenario.name}`);
+        assert.ok(Array.isArray(summary.opportunityReasonKeys), `${domain.key}_${scenario.name}`);
+        assert.ok(summary.opportunityReasonKeys.includes(`${domain.key}_intent`), `${domain.key}_${scenario.name}`);
+      } finally {
+        loaded.restore();
+        restoreEnv();
+      }
     }
   }
 });

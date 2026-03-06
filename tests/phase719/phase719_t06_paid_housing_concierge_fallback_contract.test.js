@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
 const { generatePaidHousingConciergeReply } = require('../../src/usecases/assistant/generatePaidHousingConciergeReply');
+const { generatePaidDomainConciergeReply } = require('../../src/usecases/assistant/generatePaidDomainConciergeReply');
 
 function countActionBullets(text) {
   return String(text || '')
@@ -65,4 +66,41 @@ test('phase719: paid housing fallback returns deterministic concierge reply with
   assert.equal(result.replyText.length > 0, true);
   assert.equal(countActionBullets(result.replyText) <= 3, true);
   assert.equal(result.auditMeta.evidenceOutcome, 'SUPPORTED');
+});
+
+test('phase719: paid domain fallback keeps natural format for school/ssn/banking', () => {
+  const samples = [
+    { domainIntent: 'school', messageText: '学校手続きで困ってる', reason: 'school_intent' },
+    { domainIntent: 'ssn', messageText: 'SSN申請で詰まりそう', reason: 'ssn_intent' },
+    { domainIntent: 'banking', messageText: 'bank accountを作りたい', reason: 'banking_intent' }
+  ];
+  samples.forEach((sample) => {
+    const result = generatePaidDomainConciergeReply({
+      domainIntent: sample.domainIntent,
+      messageText: sample.messageText,
+      blockedReason: 'llm_disabled',
+      opportunityDecision: {
+        conversationMode: 'concierge',
+        opportunityType: 'action',
+        opportunityReasonKeys: [`${sample.reason}_detected`],
+        interventionBudget: 1,
+        suggestedAtoms: {
+          nextActions: ['FAQ候補を確認する', 'score=1 を見る', '次の一手を整理する'],
+          pitfall: '根拠キーの確認漏れ',
+          question: '状況を教えてください。'
+        }
+      }
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.domainIntent, sample.domainIntent);
+    assert.equal(result.conversationMode, 'concierge');
+    assert.equal(result.replyText.includes('FAQ候補'), false);
+    assert.equal(result.replyText.includes('CityPack候補'), false);
+    assert.equal(result.replyText.includes('根拠キー'), false);
+    assert.equal(result.replyText.includes('score='), false);
+    assert.equal(result.replyText.includes('- [ ]'), false);
+    assert.equal(countActionBullets(result.replyText) <= 3, true);
+    assert.ok(result.opportunityReasonKeys.includes(sample.reason));
+  });
 });

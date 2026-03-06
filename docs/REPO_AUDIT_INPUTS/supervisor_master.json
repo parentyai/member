@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T12:18:03-05:00",
-  "gitCommit": "9fedce8d292958f7371d3b552d85f93b9659dfba",
-  "branch": "codex/housing-intent-concierge-r721",
-  "sourceDigest": "9eda3a44a333465521b4462f8a36d5e316ede5f77c1c9d728af45901e766ec85",
+  "generatedAt": "2026-03-06T12:26:47-05:00",
+  "gitCommit": "f75d42e280c959373b63d5f2d83eaa3eef0c3ef2",
+  "branch": "codex/paid-concierge-next3-r722",
+  "sourceDigest": "6322145143082ea59dec9a5d62df2d917830158f80d2551f92975b6d6e07da8e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

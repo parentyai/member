@@ -25,6 +25,7 @@ const { detectMessagePosture } = require('../usecases/assistant/opportunity/dete
 const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { routeConversation } = require('../domain/llm/router/conversationRouter');
 const { normalizeConversationIntent } = require('../domain/llm/router/normalizeConversationIntent');
+const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
@@ -77,6 +78,7 @@ const {
   declareServerMisconfigured
 } = require('../domain/redacLineMessages');
 const ROUTE_KEY = 'webhook_line';
+const PAID_CONCIERGE_DOMAIN_INTENTS = new Set(['housing', 'school', 'ssn', 'banking']);
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -221,6 +223,45 @@ function trimForPaidLineMessage(value) {
   const text = trimForLineMessage(value);
   if (!text) return '';
   return text.length > 420 ? `${text.slice(0, 420)}…` : text;
+}
+
+function stripLegacyTemplateTokensForPaid(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return '';
+  const pattern = new RegExp(FORBIDDEN_REPLY_PATTERN.source, 'gi');
+  return text
+    .replace(pattern, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function detectLegacyTemplateHit(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return false;
+  const pattern = new RegExp(FORBIDDEN_REPLY_PATTERN.source, 'gi');
+  return pattern.test(text);
+}
+
+function countActionBullets(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return 0;
+  return text
+    .split('\n')
+    .filter((line) => line.trim().startsWith('・') || line.trim().startsWith('- '))
+    .length;
+}
+
+function detectPitfallIncluded(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return false;
+  return /(詰まりやすい|注意|リスク|気をつけ)/.test(text);
+}
+
+function detectFollowupQuestionIncluded(value) {
+  const text = normalizeReplyText(value);
+  if (!text) return false;
+  return /[?？]$/.test(text) || text.includes('ですか？') || text.includes('ますか？');
 }
 
 function buildLowRelevanceConversationReply(questionText) {
@@ -465,10 +506,11 @@ async function loadFreshContextSnapshotBestEffort(lineUserId) {
   }
 }
 
-async function replyWithPaidHousingConcierge(params) {
+async function replyWithPaidDomainConcierge(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const lineUserId = payload.lineUserId;
   const text = normalizeReplyText(payload.text);
+  const domainIntent = normalizeDomainIntent(payload.domainIntent);
   const contextSnapshot = payload.contextSnapshot || await loadFreshContextSnapshotBestEffort(lineUserId);
   const recentTurns = resolvePaidInterventionCooldownTurns();
   const recentEngagement = await loadRecentInterventionSignals({
@@ -486,25 +528,53 @@ async function replyWithPaidHousingConcierge(params) {
     messageText: text,
     contextSnapshot,
     recentEngagement,
-    llmConciergeEnabled: true
-  }));
-  const housing = generatePaidHousingConciergeReply({
-    lineUserId,
-    messageText: text,
-    contextSnapshot,
-    opportunityDecision,
-    blockedReason: payload.blockedReason || null
-  });
-  const fallbackReplyText = '住まい探しの相談ですね。まずは希望条件と予算、必要書類の3点を整理していきましょう。希望エリアが分かれば具体化できます。';
-  const replyText = trimForPaidLineMessage(housing && housing.replyText ? housing.replyText : fallbackReplyText) || fallbackReplyText;
+      llmConciergeEnabled: true
+    }));
+  const domainReply = domainIntent === 'housing'
+    ? generatePaidHousingConciergeReply({
+      lineUserId,
+      messageText: text,
+      contextSnapshot,
+      opportunityDecision,
+      blockedReason: payload.blockedReason || null
+    })
+    : generatePaidDomainConciergeReply({
+      lineUserId,
+      messageText: text,
+      domainIntent,
+      contextSnapshot,
+      opportunityDecision,
+      blockedReason: payload.blockedReason || null
+    });
+  const fallbackReplyText = '状況を整理しながら進めましょう。まずは優先する手続きを3つ以内に絞るのがおすすめです。';
+  const rawReplyText = domainReply && domainReply.replyText ? domainReply.replyText : fallbackReplyText;
+  const sanitizedReplyText = stripLegacyTemplateTokensForPaid(rawReplyText) || fallbackReplyText;
+  const replyText = trimForPaidLineMessage(sanitizedReplyText) || fallbackReplyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+  const conversationQuality = buildConversationQualityMeta({
+    replyText,
+    domainIntent,
+    nextActions: opportunityDecision && opportunityDecision.suggestedAtoms
+      ? opportunityDecision.suggestedAtoms.nextActions
+      : [],
+    opportunityReasonKeys: opportunityDecision ? opportunityDecision.opportunityReasonKeys : [],
+    fallbackType: payload.blockedReason ? 'domain_concierge_fallback' : 'domain_concierge'
+  });
   return {
     ok: true,
     replyText,
     contextSnapshot,
     opportunityDecision,
-    conciergeMeta: housing && housing.auditMeta ? housing.auditMeta : null
+    conciergeMeta: domainReply && domainReply.auditMeta ? domainReply.auditMeta : null,
+    conversationQuality
   };
+}
+
+async function replyWithPaidHousingConcierge(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  return replyWithPaidDomainConcierge(Object.assign({}, payload, {
+    domainIntent: 'housing'
+  }));
 }
 
 async function loadTaskGraphSummary(lineUserId) {
@@ -686,6 +756,46 @@ function normalizeAssistantQuality(input, defaults) {
   };
 }
 
+function normalizeDomainIntent(value) {
+  const normalized = normalizeReplyText(value).toLowerCase();
+  if (PAID_CONCIERGE_DOMAIN_INTENTS.has(normalized)) return normalized;
+  return 'general';
+}
+
+function resolveInterventionSuppressedBy(opportunityReasonKeys) {
+  const reasons = Array.isArray(opportunityReasonKeys) ? opportunityReasonKeys : [];
+  if (reasons.includes('intervention_cooldown_active')) return 'cooldown';
+  if (reasons.includes('non_paid_tier')) return 'tier';
+  return null;
+}
+
+function buildConversationQualityMeta(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const replyText = normalizeReplyText(payload.replyText);
+  const domainIntent = normalizeDomainIntent(payload.domainIntent);
+  const actionCountFromAtoms = Array.isArray(payload.nextActions) ? payload.nextActions.length : null;
+  const actionCountFromReply = countActionBullets(replyText);
+  const actionCount = Number.isFinite(Number(actionCountFromAtoms))
+    ? Math.max(0, Math.min(3, Math.floor(Number(actionCountFromAtoms))))
+    : Math.max(0, Math.min(3, actionCountFromReply));
+  const pitfallIncluded = payload.pitfallIncluded === true ? true : detectPitfallIncluded(replyText);
+  const followupQuestionIncluded = payload.followupQuestionIncluded === true
+    ? true
+    : detectFollowupQuestionIncluded(replyText);
+  const legacyTemplateHit = payload.legacyTemplateHit === true ? true : detectLegacyTemplateHit(replyText);
+  const fallbackType = normalizeReplyText(payload.fallbackType).toLowerCase() || null;
+  return {
+    conversationNaturalnessVersion: 'v1',
+    legacyTemplateHit,
+    followupQuestionIncluded,
+    actionCount,
+    pitfallIncluded,
+    domainIntent,
+    fallbackType,
+    interventionSuppressedBy: resolveInterventionSuppressedBy(payload.opportunityReasonKeys)
+  };
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -854,6 +964,13 @@ async function appendLlmActionLogBestEffort(data) {
   const chosenAction = conciergeMeta.chosenAction && typeof conciergeMeta.chosenAction === 'object'
     ? conciergeMeta.chosenAction
     : {};
+  const qualityMeta = payload.conversationQuality && typeof payload.conversationQuality === 'object'
+    ? payload.conversationQuality
+    : buildConversationQualityMeta({
+      replyText: payload.replyText || '',
+      domainIntent: payload.domainIntent || 'general',
+      opportunityReasonKeys: payload.opportunityReasonKeys
+    });
 
   try {
     await llmActionLogsRepo.appendLlmActionLog({
@@ -929,7 +1046,15 @@ async function appendLlmActionLogBestEffort(data) {
       rewardPending: true,
       reward: null,
       rewardVersion: 'v1',
-      rewardWindowHours: 48
+      rewardWindowHours: 48,
+      conversationNaturalnessVersion: qualityMeta.conversationNaturalnessVersion,
+      legacyTemplateHit: qualityMeta.legacyTemplateHit === true,
+      followupQuestionIncluded: qualityMeta.followupQuestionIncluded === true,
+      actionCount: Number.isFinite(Number(qualityMeta.actionCount)) ? Number(qualityMeta.actionCount) : 0,
+      pitfallIncluded: qualityMeta.pitfallIncluded === true,
+      domainIntent: qualityMeta.domainIntent || 'general',
+      fallbackType: qualityMeta.fallbackType || null,
+      interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null
     });
   } catch (_err) {
     // best effort only
@@ -976,6 +1101,8 @@ async function appendWebhookBlockedAuditBestEffort(data) {
 
 async function replyWithFreeRetrieval(params) {
   const payload = params && typeof params === 'object' ? params : {};
+  const sanitizeLegacyTemplateForPaid = payload.sanitizeLegacyTemplateForPaid === true;
+  const domainIntent = normalizeDomainIntent(payload.domainIntent);
   const retrieval = await generateFreeRetrievalReply({
     lineUserId: payload.lineUserId,
     question: payload.text,
@@ -1080,10 +1207,23 @@ async function replyWithFreeRetrieval(params) {
     }
   }
 
+  if (sanitizeLegacyTemplateForPaid) {
+    const sanitizedText = stripLegacyTemplateTokensForPaid(replyText);
+    if (sanitizedText) replyText = sanitizedText;
+    replyText = trimForPaidLineMessage(replyText);
+  }
+
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+  const conversationQuality = buildConversationQualityMeta({
+    replyText,
+    domainIntent,
+    fallbackType: sanitizeLegacyTemplateForPaid ? 'free_retrieval_sanitized' : 'free_retrieval',
+    opportunityReasonKeys: []
+  });
   return Object.assign({}, retrieval, {
     replyText,
-    conciergeMeta
+    conciergeMeta,
+    conversationQuality
   });
 }
 
@@ -1202,9 +1342,9 @@ async function handleAssistantMessage(params) {
   const routerMode = routerDecision && typeof routerDecision.mode === 'string'
     ? routerDecision.mode
     : null;
-  const isPaidHousingIntent = planInfo.plan === 'pro' && normalizedConversationIntent === 'housing';
-  const routerReason = isPaidHousingIntent
-    ? 'housing_intent_detected'
+  const isPaidDomainIntent = planInfo.plan === 'pro' && PAID_CONCIERGE_DOMAIN_INTENTS.has(normalizedConversationIntent);
+  const routerReason = isPaidDomainIntent
+    ? `${normalizedConversationIntent}_intent_detected`
     : (routerDecision && typeof routerDecision.reason === 'string'
     ? routerDecision.reason
     : null);
@@ -1223,6 +1363,12 @@ async function handleAssistantMessage(params) {
       evidenceCoverage: 0,
       blockedStage: null,
       fallbackReason: null
+    });
+    const conversationQuality = buildConversationQualityMeta({
+      replyText,
+      domainIntent: normalizedConversationIntent,
+      opportunityReasonKeys: routerReason ? [routerReason] : [],
+      fallbackType: null
     });
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -1254,7 +1400,9 @@ async function handleAssistantMessage(params) {
       routerReason: routerReason || 'router_casual',
       opportunityType: 'none',
       opportunityReasonKeys: routerReason ? [routerReason] : [],
-      interventionBudget: 0
+      interventionBudget: 0,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1290,9 +1438,10 @@ async function handleAssistantMessage(params) {
       blockedStage: 'budget_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidHousingIntent
-      ? await replyWithPaidHousingConcierge(Object.assign({}, payload, {
-        blockedReason
+    const fallback = isPaidDomainIntent
+      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+        blockedReason,
+        domainIntent: normalizedConversationIntent
       }))
       : await replyWithFreeRetrieval(Object.assign({}, payload, {
         blockedReason,
@@ -1301,7 +1450,9 @@ async function handleAssistantMessage(params) {
         llmConciergeEnabled,
         llmWebSearchEnabled,
         llmStyleEngineEnabled,
-        llmBanditEnabled
+        llmBanditEnabled,
+        sanitizeLegacyTemplateForPaid: true,
+        domainIntent: normalizedConversationIntent
       }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
@@ -1331,7 +1482,7 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
@@ -1344,11 +1495,18 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'budget_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     return {
       handled: true,
@@ -1368,9 +1526,10 @@ async function handleAssistantMessage(params) {
       blockedStage: 'availability_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidHousingIntent
-      ? await replyWithPaidHousingConcierge(Object.assign({}, payload, {
-        blockedReason
+    const fallback = isPaidDomainIntent
+      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+        blockedReason,
+        domainIntent: normalizedConversationIntent
       }))
       : await replyWithFreeRetrieval(Object.assign({}, payload, {
         blockedReason,
@@ -1379,7 +1538,9 @@ async function handleAssistantMessage(params) {
         llmConciergeEnabled,
         llmWebSearchEnabled,
         llmStyleEngineEnabled,
-        llmBanditEnabled
+        llmBanditEnabled,
+        sanitizeLegacyTemplateForPaid: true,
+        domainIntent: normalizedConversationIntent
       }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
@@ -1410,7 +1571,7 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
@@ -1423,11 +1584,18 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'availability_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     return {
       handled: true,
@@ -1453,9 +1621,10 @@ async function handleAssistantMessage(params) {
       blockedStage: 'snapshot_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidHousingIntent
-      ? await replyWithPaidHousingConcierge(Object.assign({}, payload, {
-        blockedReason
+    const fallback = isPaidDomainIntent
+      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+        blockedReason,
+        domainIntent: normalizedConversationIntent
       }))
       : await replyWithFreeRetrieval(Object.assign({}, payload, {
         blockedReason,
@@ -1464,7 +1633,9 @@ async function handleAssistantMessage(params) {
         llmConciergeEnabled,
         llmWebSearchEnabled,
         llmStyleEngineEnabled,
-        llmBanditEnabled
+        llmBanditEnabled,
+        sanitizeLegacyTemplateForPaid: true,
+        domainIntent: normalizedConversationIntent
       }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
@@ -1495,7 +1666,7 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
@@ -1508,11 +1679,18 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidHousingIntent ? 'concierge' : null,
+      conversationMode: isPaidDomainIntent ? 'concierge' : null,
       routerReason,
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'snapshot_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     return {
       handled: true,
@@ -1532,7 +1710,7 @@ async function handleAssistantMessage(params) {
   const runRouterOpportunityPath = conversationRouterEnabled
     && opportunityEngineEnabled
     && (routerMode === 'problem' || routerMode === 'question');
-  if (isPaidHousingIntent) {
+  if (isPaidDomainIntent) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
     const recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
@@ -1649,6 +1827,12 @@ async function handleAssistantMessage(params) {
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
       interventionBudget: opportunityDecision.interventionBudget
     });
+    const conversationQuality = buildConversationQualityMeta({
+      replyText,
+      domainIntent: normalizedConversationIntent,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      fallbackType: null
+    });
     await appendLlmActionLogBestEffort({
       lineUserId,
       plan: planInfo.plan,
@@ -1659,7 +1843,9 @@ async function handleAssistantMessage(params) {
       routerReason,
       opportunityType: opportunityDecision.opportunityType,
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
-      interventionBudget: opportunityDecision.interventionBudget
+      interventionBudget: opportunityDecision.interventionBudget,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality
     });
     return {
       handled: true,
@@ -1668,13 +1854,14 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  if (isPaidHousingIntent) {
-    const housing = await replyWithPaidHousingConcierge(Object.assign({}, payload, {
+  if (isPaidDomainIntent) {
+    const domainConcierge = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
       blockedReason: null,
-      contextSnapshot
+      contextSnapshot,
+      domainIntent: normalizedConversationIntent
     }));
-    const housingDecision = housing && housing.opportunityDecision
-      ? housing.opportunityDecision
+    const domainDecision = domainConcierge && domainConcierge.opportunityDecision
+      ? domainConcierge.opportunityDecision
       : opportunityDecision;
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -1709,12 +1896,12 @@ async function handleAssistantMessage(params) {
       policy: budget.policy || null,
       traceId,
       requestId,
-      conciergeMeta: housing && housing.conciergeMeta ? housing.conciergeMeta : null,
+      conciergeMeta: domainConcierge && domainConcierge.conciergeMeta ? domainConcierge.conciergeMeta : null,
       assistantQuality,
       conversationMode: 'concierge',
       routerReason,
-      opportunityType: housingDecision.opportunityType,
-      opportunityReasonKeys: housingDecision.opportunityReasonKeys,
+      opportunityType: domainDecision.opportunityType,
+      opportunityReasonKeys: domainDecision.opportunityReasonKeys,
       interventionBudget: 1
     });
     await appendLlmActionLogBestEffort({
@@ -1722,17 +1909,26 @@ async function handleAssistantMessage(params) {
       plan: planInfo.plan,
       traceId,
       requestId,
-      conciergeMeta: housing && housing.conciergeMeta ? housing.conciergeMeta : null,
+      conciergeMeta: domainConcierge && domainConcierge.conciergeMeta ? domainConcierge.conciergeMeta : null,
       llmBanditEnabled,
       conversationMode: 'concierge',
       routerReason,
-      opportunityType: housingDecision.opportunityType,
-      opportunityReasonKeys: housingDecision.opportunityReasonKeys,
-      interventionBudget: 1
+      opportunityType: domainDecision.opportunityType,
+      opportunityReasonKeys: domainDecision.opportunityReasonKeys,
+      interventionBudget: 1,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: domainConcierge && domainConcierge.conversationQuality
+        ? domainConcierge.conversationQuality
+        : buildConversationQualityMeta({
+          replyText: domainConcierge && domainConcierge.replyText ? domainConcierge.replyText : '',
+          domainIntent: normalizedConversationIntent,
+          opportunityReasonKeys: domainDecision.opportunityReasonKeys,
+          fallbackType: null
+        })
     });
     return {
       handled: true,
-      mode: 'paid_housing_concierge',
+      mode: 'paid_domain_concierge',
       blockedReason: null
     };
   }
@@ -1770,11 +1966,12 @@ async function handleAssistantMessage(params) {
       fallbackReason: blockedReason
     });
     const shouldFallbackToFree = !['low_confidence_soft'].includes(blockedReason);
-    if (shouldFallbackToFree || isPaidHousingIntent) {
-      const fallback = isPaidHousingIntent
-        ? await replyWithPaidHousingConcierge(Object.assign({}, payload, {
+    if (shouldFallbackToFree || isPaidDomainIntent) {
+      const fallback = isPaidDomainIntent
+        ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
           blockedReason,
-          contextSnapshot
+          contextSnapshot,
+          domainIntent: normalizedConversationIntent
         }))
         : await replyWithFreeRetrieval(Object.assign({}, payload, {
           blockedReason,
@@ -1784,7 +1981,9 @@ async function handleAssistantMessage(params) {
           llmWebSearchEnabled,
           llmStyleEngineEnabled,
           llmBanditEnabled,
-          contextSnapshot
+          contextSnapshot,
+          sanitizeLegacyTemplateForPaid: true,
+          domainIntent: normalizedConversationIntent
         }));
       const fallbackDecision = fallback && fallback.opportunityDecision
         ? fallback.opportunityDecision
@@ -1817,11 +2016,11 @@ async function handleAssistantMessage(params) {
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         assistantQuality,
-        conversationMode: isPaidHousingIntent ? 'concierge' : opportunityDecision.conversationMode,
+        conversationMode: isPaidDomainIntent ? 'concierge' : opportunityDecision.conversationMode,
         routerReason,
         opportunityType: fallbackDecision.opportunityType,
         opportunityReasonKeys: fallbackDecision.opportunityReasonKeys,
-        interventionBudget: isPaidHousingIntent ? 1 : fallbackDecision.interventionBudget
+        interventionBudget: isPaidDomainIntent ? 1 : fallbackDecision.interventionBudget
       });
       await appendLlmActionLogBestEffort({
         lineUserId,
@@ -1830,11 +2029,18 @@ async function handleAssistantMessage(params) {
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         llmBanditEnabled,
-        conversationMode: isPaidHousingIntent ? 'concierge' : opportunityDecision.conversationMode,
+        conversationMode: isPaidDomainIntent ? 'concierge' : opportunityDecision.conversationMode,
         routerReason,
         opportunityType: fallbackDecision.opportunityType,
         opportunityReasonKeys: fallbackDecision.opportunityReasonKeys,
-        interventionBudget: isPaidHousingIntent ? 1 : fallbackDecision.interventionBudget
+        interventionBudget: isPaidDomainIntent ? 1 : fallbackDecision.interventionBudget,
+        domainIntent: normalizedConversationIntent,
+        conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+          replyText: fallback && fallback.replyText ? fallback.replyText : '',
+          domainIntent: normalizedConversationIntent,
+          fallbackType: 'paid_generation_fallback',
+          opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+        })
       });
       return {
         handled: true,
@@ -1846,7 +2052,7 @@ async function handleAssistantMessage(params) {
   }
 
   const isLowRelevanceWarning = paid.qualityWarning === 'low_relevance_query';
-  let replyText = trimForLineMessage(paid.replyText) || '回答の整形に失敗しました。';
+  let replyText = stripLegacyTemplateTokensForPaid(trimForLineMessage(paid.replyText)) || '回答の整形に失敗しました。';
   if (isLowRelevanceWarning) {
     replyText = buildLowRelevanceConversationReply(text);
   }
@@ -1932,6 +2138,7 @@ async function handleAssistantMessage(params) {
       };
     }
   }
+  replyText = stripLegacyTemplateTokensForPaid(replyText) || replyText;
   replyText = trimForPaidLineMessage(replyText);
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
@@ -1953,6 +2160,13 @@ async function handleAssistantMessage(params) {
   const opportunityType = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.opportunityType : 'none';
   const opportunityReasonKeys = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.opportunityReasonKeys : [];
   const interventionBudget = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.interventionBudget : 0;
+  const conversationQuality = buildConversationQualityMeta({
+    replyText,
+    domainIntent: normalizedConversationIntent,
+    nextActions: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    opportunityReasonKeys,
+    fallbackType: null
+  });
   const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,
@@ -1985,7 +2199,9 @@ async function handleAssistantMessage(params) {
     routerReason,
     opportunityType,
     opportunityReasonKeys,
-    interventionBudget
+    interventionBudget,
+    domainIntent: normalizedConversationIntent,
+    conversationQuality
   });
   await appendLlmActionLogBestEffort({
     lineUserId,

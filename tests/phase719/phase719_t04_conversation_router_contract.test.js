@@ -26,9 +26,24 @@ test('phase719: conversation router returns mode, reason, and normalized convers
   assert.equal(housing.mode, 'problem');
   assert.equal(housing.reason, 'housing_intent_detected');
   assert.equal(housing.conversationMode, 'concierge');
+
+  const school = routeConversation('school enrollment どう進める？', { llmConciergeEnabled: false });
+  assert.equal(school.mode, 'problem');
+  assert.equal(school.reason, 'school_intent_detected');
+  assert.equal(school.conversationMode, 'concierge');
+
+  const ssn = routeConversation('SSN 申請どうする？', { llmConciergeEnabled: false });
+  assert.equal(ssn.mode, 'problem');
+  assert.equal(ssn.reason, 'ssn_intent_detected');
+  assert.equal(ssn.conversationMode, 'concierge');
+
+  const banking = routeConversation('bank account を作りたい', { llmConciergeEnabled: false });
+  assert.equal(banking.mode, 'problem');
+  assert.equal(banking.reason, 'banking_intent_detected');
+  assert.equal(banking.conversationMode, 'concierge');
 });
 
 test('phase719: conversation router keeps non-problem modes casual even when concierge enabled', () => {
-  assert.equal(routeConversation('学校手続きどうする？', { llmConciergeEnabled: true }).conversationMode, 'casual');
+  assert.equal(routeConversation('税金どうする？', { llmConciergeEnabled: true }).conversationMode, 'casual');
   assert.equal(routeConversation('元気？', { llmConciergeEnabled: true }).conversationMode, 'casual');
 });

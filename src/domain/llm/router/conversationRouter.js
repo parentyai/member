@@ -11,7 +11,7 @@ function routeConversation(message, context) {
   const payload = context && typeof context === 'object' ? context : {};
   const intent = detectIntent({ messageText: message });
   const llmConciergeEnabled = normalizeBoolean(payload.llmConciergeEnabled, false);
-  const forceConcierge = intent.reason === 'housing_intent_detected';
+  const forceConcierge = /_intent_detected$/.test(intent.reason || '');
 
   const conversationMode = intent.mode === 'problem' && (llmConciergeEnabled || forceConcierge)
     ? 'concierge'

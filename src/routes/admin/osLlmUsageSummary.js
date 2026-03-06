@@ -359,6 +359,52 @@ function buildOptimizationSummary(actionRows, gateAuditBaseline) {
   };
 }
 
+function buildConversationQualitySummary(actionRows) {
+  const rows = Array.isArray(actionRows) ? actionRows : [];
+  const domainCounts = new Map();
+  const fallbackTypes = new Map();
+  let legacyTemplateHitCount = 0;
+  let followupQuestionIncludedCount = 0;
+  let pitfallIncludedCount = 0;
+  let actionCountTotal = 0;
+  let domainIntentCount = 0;
+  let domainConciergeCount = 0;
+
+  rows.forEach((row) => {
+    const domainIntent = normalizeReason(row && row.domainIntent ? row.domainIntent : 'general');
+    const conversationMode = normalizeReason(row && row.conversationMode ? row.conversationMode : 'casual');
+    const fallbackType = normalizeReason(row && row.fallbackType ? row.fallbackType : 'none');
+    const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
+    const legacyTemplateHit = row && row.legacyTemplateHit === true;
+    const followupQuestionIncluded = row && row.followupQuestionIncluded === true;
+    const pitfallIncluded = row && row.pitfallIncluded === true;
+
+    domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
+    fallbackTypes.set(fallbackType, (fallbackTypes.get(fallbackType) || 0) + 1);
+    actionCountTotal += Math.max(0, actionCount);
+    if (legacyTemplateHit) legacyTemplateHitCount += 1;
+    if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
+    if (pitfallIncluded) pitfallIncludedCount += 1;
+    if (domainIntent !== 'general') {
+      domainIntentCount += 1;
+      if (conversationMode === 'concierge') domainConciergeCount += 1;
+    }
+  });
+
+  const sampleCount = rows.length;
+  return {
+    sampleCount,
+    conversationNaturalnessVersion: 'v1',
+    legacyTemplateHitRate: sampleCount > 0 ? Math.round((legacyTemplateHitCount / sampleCount) * 10000) / 10000 : 0,
+    followupQuestionIncludedRate: sampleCount > 0 ? Math.round((followupQuestionIncludedCount / sampleCount) * 10000) / 10000 : 0,
+    pitfallIncludedRate: sampleCount > 0 ? Math.round((pitfallIncludedCount / sampleCount) * 10000) / 10000 : 0,
+    avgActionCount: sampleCount > 0 ? Math.round((actionCountTotal / sampleCount) * 10000) / 10000 : 0,
+    domainIntentConciergeRate: domainIntentCount > 0 ? Math.round((domainConciergeCount / domainIntentCount) * 10000) / 10000 : 0,
+    domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),
+    fallbackTypes: sortCountEntries(fallbackTypes, 'fallbackType', 10)
+  };
+}
+
 function toCountMap(rows, keyField) {
   const map = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
@@ -566,6 +612,7 @@ async function handleLlmUsageSummary(req, res) {
     const assistantQualitySummary = buildAssistantQualitySummary(rows);
     const gateAuditBaselineSummary = buildGateAuditBaseline(gateAuditRows);
     const optimizationSummary = buildOptimizationSummary(actionRows, gateAuditBaselineSummary);
+    const conversationQualitySummary = buildConversationQualitySummary(actionRows);
     const releaseReadiness = buildReleaseReadiness({
       assistantQuality: assistantQualitySummary,
       gateAuditBaseline: gateAuditBaselineSummary
@@ -594,6 +641,7 @@ async function handleLlmUsageSummary(req, res) {
       assistantQuality: assistantQualitySummary,
       gateAuditBaseline: gateAuditBaselineSummary,
       optimization: optimizationSummary,
+      conversationQuality: conversationQualitySummary,
       releaseReadiness
     };
 
@@ -648,6 +696,7 @@ module.exports = {
   buildAssistantQualitySummary,
   buildGateAuditBaseline,
   buildOptimizationSummary,
+  buildConversationQualitySummary,
   buildReleaseReadiness,
   maskLineUserId
 };
