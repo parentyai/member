@@ -29,6 +29,7 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     entryType: 'job',
     gatesApplied: ['kill_switch', 'snapshot'],
     conversationMode: 'casual',
+    routerReason: 'greeting_detected',
     opportunityType: 'none',
     opportunityReasonKeys: ['greeting_detected'],
     interventionBudget: 0,
@@ -39,6 +40,7 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.lineUserId, 'U1');
   assert.equal(sanitized.decision, 'allow');
   assert.equal(sanitized.conversationMode, 'casual');
+  assert.equal(sanitized.routerReason, 'greeting_detected');
   assert.equal(sanitized.opportunityType, 'none');
   assert.deepEqual(sanitized.opportunityReasonKeys, ['greeting_detected']);
   assert.equal(sanitized.interventionBudget, 0);

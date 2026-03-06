@@ -199,6 +199,7 @@ async function appendLlmActionLog(params) {
     conversationMove: normalizeString(payload.conversationMove, null),
     styleId: normalizeString(payload.styleId, null),
     conversationMode: normalizeConversationMode(payload.conversationMode),
+    routerReason: normalizeString(payload.routerReason, null),
     opportunityType: normalizeOpportunityType(payload.opportunityType),
     opportunityReasonKeys: normalizeStringList(payload.opportunityReasonKeys, 8),
     interventionBudget: normalizeInterventionBudget(payload.interventionBudget),
