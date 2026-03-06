@@ -15,4 +15,8 @@ test('phase718: deploy-webhook workflow enforces strict LLM runtime env/secret w
   assert.match(workflow, /SET_SECRETS=.*OPENAI_API_KEY=OPENAI_API_KEY:latest/s, 'deploy-webhook must bind OPENAI_API_KEY secret');
   assert.match(workflow, /Verify webhook runtime contract/, 'deploy-webhook must run runtime contract check');
   assert.match(workflow, /node scripts\/check_cloud_run_runtime_contract\.js/, 'deploy-webhook must run Cloud Run contract script');
+  assert.match(workflow, /Verify webhook single-region uniqueness \(pre-deploy\)/, 'deploy-webhook must run pre-deploy uniqueness check');
+  assert.match(workflow, /Verify webhook single-region uniqueness \(post-deploy\)/, 'deploy-webhook must run post-deploy uniqueness check');
+  assert.match(workflow, /node scripts\/check_cloud_run_service_uniqueness\.js/, 'deploy-webhook must run uniqueness contract script');
+  assert.match(workflow, /--allow-missing/, 'deploy-webhook pre-deploy uniqueness check must allow missing service for bootstrap');
 });

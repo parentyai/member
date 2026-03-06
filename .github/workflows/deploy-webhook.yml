@@ -115,6 +115,16 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
+      - name: Verify webhook single-region uniqueness (pre-deploy)
+        run: |
+          set -euo pipefail
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          node scripts/check_cloud_run_service_uniqueness.js \
+            --service-name "$WEBHOOK_SERVICE_NAME" \
+            --project-id "$GCP_PROJECT_ID" \
+            --expected-region "$GCP_REGION" \
+            --allow-missing
+
       - name: Validate required secrets exist
         run: |
           normalize_bool() {
@@ -275,3 +285,12 @@ jobs:
             --region "$GCP_REGION" \
             --required-env "SERVICE_MODE,LLM_FEATURE_FLAG,OPENAI_MODEL" \
             --required-secret-env "OPENAI_API_KEY,LINE_CHANNEL_SECRET,LINE_CHANNEL_ACCESS_TOKEN,REDAC_MEMBERSHIP_ID_HMAC_SECRET"
+
+      - name: Verify webhook single-region uniqueness (post-deploy)
+        run: |
+          set -euo pipefail
+          WEBHOOK_SERVICE_NAME="${SERVICE_NAME}-webhook"
+          node scripts/check_cloud_run_service_uniqueness.js \
+            --service-name "$WEBHOOK_SERVICE_NAME" \
+            --project-id "$GCP_PROJECT_ID" \
+            --expected-region "$GCP_REGION"
