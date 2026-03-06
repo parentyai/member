@@ -2504,6 +2504,12 @@ details:not([open]) > *:not(summary) {
   background: var(--status-warn-bg);
 }
 
+.admin-fixture-success-banner {
+  border-left-color: var(--status-ok);
+  border-color: #b8dfc4;
+  background: var(--status-ok-bg);
+}
+
 .admin-local-preflight-actions {
   display: flex;
   flex-wrap: wrap;
