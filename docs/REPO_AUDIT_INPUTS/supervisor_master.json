@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T20:00:56-05:00",
-  "gitCommit": "a0c0badb954ece97c62843decd0fa2fcbb9ecd61",
-  "branch": "codex/llm-plan-impl-a1-fix",
-  "sourceDigest": "fbf8a489f80f313ac059162c3ab1146e8ac3ac64237c96f53712eeb5b59f303e",
+  "generatedAt": "2026-03-05T20:50:36-05:00",
+  "gitCommit": "1dcc0add7d5031ff884ea75f84d3d035f48f57ca",
+  "branch": "codex/admin-open-shortcut",
+  "sourceDigest": "a5dcc289240ce26c92f5467d1ee7ac61d953626e4c6f1bb95eb7059739db6514",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
