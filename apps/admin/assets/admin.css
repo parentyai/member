@@ -1895,7 +1895,7 @@ details[data-json-collapsible="true"].json-collapsed > summary {
   margin-top: var(--space-2);
 }
 
-.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-notifications):not(.nav-group-users):not(.nav-group-catalog):not(.nav-group-developer) {
+.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-run):not(.nav-group-control):not(.nav-group-developer) {
   display: none;
 }
 

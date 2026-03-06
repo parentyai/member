@@ -19,12 +19,12 @@
           </button>
           <button class="nav-item" data-pane-target="ops-feature-catalog" data-nav-priority="99">
             <span class="nav-icon" aria-hidden="true">FC</span>
-            <span>Feature Catalog</span>
+            <span>機能カタログ</span>
           </button>
         </div>
 
         <div class="nav-group nav-group-run" data-nav-group="run" data-nav-surface="primary">
-          <div class="nav-group-label">Run</div>
+          <div class="nav-group-label">通知運用</div>
           <button class="nav-item" data-pane-target="composer" data-nav-priority="240">
             <span class="nav-icon" aria-hidden="true">N</span>
             <span data-dict-key="ui.label.nav.notifyCreate">作成</span>
@@ -35,7 +35,7 @@
           </button>
           <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-journey-panel" data-nav-priority="238">
             <span class="nav-icon" aria-hidden="true">J</span>
-            <span>Journey</span>
+            <span>ジャーニー状況</span>
           </button>
           <button class="nav-item" data-pane-target="city-pack" data-nav-priority="238">
             <span class="nav-icon" aria-hidden="true">CP</span>
@@ -43,7 +43,7 @@
           </button>
           <button class="nav-item" data-pane-target="emergency-layer" data-nav-priority="237">
             <span class="nav-icon" aria-hidden="true">EM</span>
-            <span data-dict-key="ui.label.nav.emergencyLayer">Emergency Layer</span>
+            <span data-dict-key="ui.label.nav.emergencyLayer">緊急レイヤー</span>
           </button>
           <button class="nav-item" data-pane-target="vendors" data-nav-priority="236">
             <span class="nav-icon" aria-hidden="true">V</span>
@@ -56,20 +56,20 @@
         </div>
 
         <div class="nav-group nav-group-control" data-nav-group="control" data-nav-surface="primary">
-          <div class="nav-group-label">Control</div>
+          <div class="nav-group-label">監視・設定</div>
           <button class="nav-item" data-pane-target="alerts" data-nav-priority="229">
             <span class="nav-icon" aria-hidden="true">!</span>
             <span data-dict-key="ui.label.nav.alerts">要対応</span>
           </button>
           <button class="nav-item" data-pane-target="ops-system-health" data-nav-priority="228">
             <span class="nav-icon" aria-hidden="true">SH</span>
-            <span>System Health</span>
+            <span>システム健全性</span>
           </button>
           <button class="nav-item" data-pane-target="errors" data-nav-priority="227">
             <span class="nav-icon" aria-hidden="true">E</span>
             <span data-dict-key="ui.label.nav.errors">異常対応</span>
           </button>
-          <button id="nav-open-settings-ops-only" class="nav-item" data-pane-target="settings" data-nav-priority="226">
+          <button id="nav-open-settings" class="nav-item" data-pane-target="settings" data-nav-priority="226">
             <span class="nav-icon" aria-hidden="true">S</span>
             <span data-dict-key="ui.label.nav.settings">設定</span>
           </button>
@@ -87,62 +87,7 @@
           </button>
           <button class="nav-item" data-pane-target="developer-map" data-scroll-target="developer-map-legacy" data-role="admin" data-role-allow="admin,developer" data-nav-priority="222">
             <span class="nav-icon" aria-hidden="true">LR</span>
-            <span>Legacy Routes</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-notifications" data-nav-group="notifications" data-nav-surface="primary" data-ops-nav-legacy="1">
-          <div class="nav-group-label" data-dict-key="ui.label.nav.group.notifications">通知</div>
-          <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-inputs" data-nav-priority="96">
-            <span class="nav-icon" aria-hidden="true">N</span>
-            <span data-dict-key="ui.label.nav.notifyCreate">作成</span>
-          </button>
-          <button class="nav-item" data-pane-target="composer" data-scroll-target="composer-saved-panel" data-nav-priority="95">
-            <span class="nav-icon" aria-hidden="true">L</span>
-            <span data-dict-key="ui.label.nav.notifyList">一覧</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-users" data-nav-group="users" data-nav-surface="primary" data-ops-nav-legacy="1">
-          <div class="nav-group-label" data-dict-key="ui.label.nav.group.users">ユーザー</div>
-          <button class="nav-item" data-pane-target="monitor" data-scroll-target="monitor-user-search" data-nav-priority="92">
-            <span class="nav-icon" aria-hidden="true">U</span>
-            <span data-dict-key="ui.label.nav.usersSearch">検索</span>
-          </button>
-          <button class="nav-item" data-pane-target="read-model" data-nav-priority="91">
-            <span class="nav-icon" aria-hidden="true">S</span>
-            <span data-dict-key="ui.label.nav.usersStatus">状態一覧</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-communication" data-nav-group="communication" data-nav-surface="hidden" data-nav-rollout="admin,developer" data-ops-nav-legacy="1">
-          <div class="nav-group-label" data-dict-key="ui.label.nav.group.communication">コミュニケーション</div>
-          <button class="nav-item" data-pane-target="audit" data-nav-priority="45">
-            <span class="nav-icon" aria-hidden="true">F</span>
-            <span data-dict-key="ui.label.nav.faqHistory">FAQ履歴</span>
-          </button>
-          <button class="nav-item" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer" data-nav-priority="44">
-            <span class="nav-icon" aria-hidden="true">K</span>
-            <span data-dict-key="ui.label.nav.faqKnowledge">FAQナレッジ管理</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-catalog" data-nav-group="catalog" data-nav-surface="primary" data-ops-nav-legacy="1">
-          <button class="nav-item" data-pane-target="city-pack" data-nav-priority="88">
-            <span class="nav-icon" aria-hidden="true">CP</span>
-            <span data-dict-key="ui.label.nav.cityPackManage">City Pack管理</span>
-          </button>
-          <button class="nav-item" data-pane-target="emergency-layer" data-nav-priority="87">
-            <span class="nav-icon" aria-hidden="true">EM</span>
-            <span data-dict-key="ui.label.nav.emergencyLayer">Emergency Layer</span>
-          </button>
-          <button class="nav-item" data-pane-target="vendors" data-nav-priority="87">
-            <span class="nav-icon" aria-hidden="true">V</span>
-            <span data-dict-key="ui.label.nav.vendorManage">ベンダー管理</span>
-          </button>
-          <button id="nav-open-settings" class="nav-item" data-pane-target="settings" data-nav-priority="86">
-            <span class="nav-icon" aria-hidden="true">S</span>
-            <span data-dict-key="ui.label.nav.settings">設定</span>
+            <span>運用証跡マップ</span>
           </button>
         </div>
 
@@ -175,49 +120,6 @@
           <button id="developer-open-manual-user" type="button" class="nav-item">
             <span class="nav-icon" aria-hidden="true">U</span>
             <span data-dict-key="ui.label.developer.manualUser">取説（ユーザー）</span>
-          </button>
-        </div>
-
-        <div class="nav-group nav-group-operations" data-nav-group="operations" data-nav-surface="hidden" data-nav-rollout="admin,developer" data-ops-nav-legacy="1">
-          <div class="nav-group-label" data-dict-key="ui.label.nav.group.operations">運用・管理</div>
-          <button class="nav-item" data-pane-target="alerts" data-nav-priority="42">
-            <span class="nav-icon" aria-hidden="true">!</span>
-            <span data-dict-key="ui.label.nav.alerts">要対応</span>
-          </button>
-          <button class="nav-item" data-pane-target="errors" data-nav-priority="41">
-            <span class="nav-icon" aria-hidden="true">O</span>
-            <span data-dict-key="ui.label.nav.opsStatus">状態確認</span>
-          </button>
-          <button class="nav-item" data-pane-target="audit" data-nav-priority="40">
-            <span class="nav-icon" aria-hidden="true">A</span>
-            <span data-dict-key="ui.label.nav.opsDecision">判断ログ</span>
-          </button>
-          <button class="nav-item" data-pane-target="settings" data-nav-priority="39">
-            <span class="nav-icon" aria-hidden="true">S</span>
-            <span data-dict-key="ui.label.nav.settings">設定</span>
-          </button>
-          <button class="nav-item" data-pane-target="maintenance" data-role="admin" data-role-allow="admin,developer" data-nav-priority="38">
-            <span class="nav-icon" aria-hidden="true">M</span>
-            <span data-dict-key="ui.label.nav.maintenance">回復・保守</span>
-          </button>
-        </div>
-
-        <div class="legacy-nav" aria-hidden="true">
-          <button class="nav-item" data-pane-target="monitor" data-nav-priority="6">
-            <span class="nav-icon" aria-hidden="true">M</span>
-            <span data-dict-key="ui.label.nav.monitor">配信結果</span>
-          </button>
-          <button class="nav-item" data-pane-target="errors" data-nav-priority="5">
-            <span class="nav-icon" aria-hidden="true">E</span>
-            <span data-dict-key="ui.label.nav.errors">異常対応</span>
-          </button>
-          <button class="nav-item" data-pane-target="read-model" data-nav-priority="4">
-            <span class="nav-icon" aria-hidden="true">R</span>
-            <span data-dict-key="ui.label.nav.readModel">通知集計</span>
-          </button>
-          <button class="nav-item" data-pane-target="llm" data-role="admin" data-role-allow="admin,developer" data-nav-priority="3">
-            <span class="nav-icon" aria-hidden="true">L</span>
-            <span data-dict-key="ui.label.nav.llm">LLM支援</span>
           </button>
         </div>
       </aside>

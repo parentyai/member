@@ -56,7 +56,7 @@ test('phase674: ops-only nav v1 css overrides are defined after legacy nav-group
 
   const legacyGroupHide = findRule(
     css,
-    '.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-notifications):not(.nav-group-users):not(.nav-group-catalog):not(.nav-group-developer)'
+    '.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-run):not(.nav-group-control):not(.nav-group-developer)'
   );
   const groupShowOverride = findRule(
     css,
@@ -91,7 +91,7 @@ test('phase674: ops-only nav v1 cascade keeps data-nav-visible=true shown and fa
 
   const legacyGroupHide = findRule(
     css,
-    '.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-notifications):not(.nav-group-users):not(.nav-group-catalog):not(.nav-group-developer)'
+    '.app-nav .nav-group:not(.nav-group-dashboard):not(.nav-group-run):not(.nav-group-control):not(.nav-group-developer)'
   );
   const groupVisible = findRule(css, '.app-nav .nav-group[data-nav-visible="true"]');
   const groupHidden = findRule(css, '.app-nav .nav-group[data-nav-visible="false"]');

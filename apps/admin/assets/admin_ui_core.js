@@ -590,9 +590,9 @@ function setTraceToUrl(url, traceId) {
   }
 
   const DEFAULT_NAV_GROUP_VISIBILITY_POLICY = Object.freeze({
-    operator: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
-    admin: Object.freeze(['dashboard', 'notifications', 'users', 'catalog']),
-    developer: Object.freeze(['dashboard', 'notifications', 'users', 'catalog', 'developer'])
+    operator: Object.freeze(['dashboard', 'run', 'control']),
+    admin: Object.freeze(['dashboard', 'run', 'control']),
+    developer: Object.freeze(['dashboard', 'run', 'control', 'developer'])
   });
 
   const DEFAULT_NAV_PANE_POLICY = Object.freeze({
@@ -603,8 +603,8 @@ function setTraceToUrl(url, traceId) {
 
   const DEFAULT_NAV_GROUP_ROLLOUT_POLICY = Object.freeze({
     operator: Object.freeze([]),
-    admin: Object.freeze(['communication', 'operations']),
-    developer: Object.freeze(['communication', 'operations'])
+    admin: Object.freeze([]),
+    developer: Object.freeze([])
   });
 
   function normalizeRole(role) {
