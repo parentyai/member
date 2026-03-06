@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T22:57:35-05:00",
-  "gitCommit": "448064ea702a57bd192ff82996d6a2825c7ce8d2",
-  "branch": "codex/conversation-router-r719-fix",
-  "sourceDigest": "9865b3886eae1d554ecf95e126b33b980d88ffa223b64770644f3b4c7ff056d0",
+  "generatedAt": "2026-03-05T23:38:58-05:00",
+  "gitCommit": "b1d586417ac09af5003ce7f64ad434d70d1f3b18",
+  "branch": "codex/admin-ui-pr0-guardrails",
+  "sourceDigest": "5210487bff378139ecaa156dd830bd3bd97d17e85fc822a3f698d7434da14732",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

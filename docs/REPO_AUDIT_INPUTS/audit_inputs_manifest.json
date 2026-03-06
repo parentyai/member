@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T22:57:35-05:00",
-  "gitCommit": "448064ea702a57bd192ff82996d6a2825c7ce8d2",
-  "branch": "codex/conversation-router-r719-fix",
-  "sourceDigest": "94fbfc8fd23c093f7cf921f13b4ded35ad2202b0f9db92d667a9bcbb27101e90",
+  "generatedAt": "2026-03-05T23:38:58-05:00",
+  "gitCommit": "b1d586417ac09af5003ce7f64ad434d70d1f3b18",
+  "branch": "codex/admin-ui-pr0-guardrails",
+  "sourceDigest": "3905ef64a894f009133371c16c4ffcbf4ad562201f0caf09dd7b450eafc9e9ac",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "426ed6ede336c8d2418324c8891914b739e11f28e126921f944e99590422789e",
+      "sha256": "169381a9507e7c2abef1db4e698b9d047c76542043fb2904969711139e15f24f",
       "bytes": 439942
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "3eedf888f218a0995fadd9c9268734ce6fde3aa82687e9bcfff80112cfeb2861",
-      "bytes": 2420
+      "sha256": "854a4081026bfe7fa407fe9aee60b143d0c41521b92ef0babac0bd83481d2d93",
+      "bytes": 2415
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
