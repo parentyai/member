@@ -1,5 +1,7 @@
 'use strict';
 
+const { HOUSING_INTENT_PATTERN } = require('../../../domain/llm/router/normalizeConversationIntent');
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
@@ -20,7 +22,8 @@ function detectMessagePosture(params) {
   const keywordHits = {
     action: Boolean(messageText && ACTION_KEYWORD_PATTERN.test(messageText)),
     blocked: Boolean(messageText && BLOCKED_KEYWORD_PATTERN.test(messageText)),
-    life: Boolean(messageText && LIFE_KEYWORD_PATTERN.test(messageText))
+    life: Boolean(messageText && LIFE_KEYWORD_PATTERN.test(messageText)),
+    housing: Boolean(messageText && HOUSING_INTENT_PATTERN.test(messageText))
   };
   const isSmalltalk = Boolean(
     messageText

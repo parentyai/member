@@ -2,6 +2,7 @@
 
 const { detectMessagePosture } = require('./detectMessagePosture');
 const { buildOpportunityDecision } = require('./opportunitySchemas');
+const { normalizeConversationIntent } = require('../../../domain/llm/router/normalizeConversationIntent');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -76,6 +77,27 @@ function buildLifeAtoms(phase) {
   };
 }
 
+function buildHousingAtoms(topTasks, blockedTask, dueSoonTask) {
+  const nextActions = [];
+  if (blockedTask && blockedTask.key) {
+    nextActions.push(`${blockedTask.key} に必要な書類を先に確定する`);
+  }
+  if (dueSoonTask && dueSoonTask.key) {
+    nextActions.push(`${dueSoonTask.key} の期限と担当窓口を確認する`);
+  }
+  topTasks.forEach((task) => {
+    if (!task || !task.key) return;
+    nextActions.push(`${task.key} の条件を整理する`);
+  });
+  nextActions.push('希望条件を3つに絞る');
+  nextActions.push('予算と入居時期を先に決める');
+  return {
+    nextActions: Array.from(new Set(nextActions)).slice(0, 3),
+    pitfall: '審査に必要な書類が不足すると契約手続きが止まりやすくなります。',
+    question: '希望エリアと入居時期が分かれば、次の一手を具体化できます。'
+  };
+}
+
 function detectOpportunity(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const userTier = normalizeText(payload.userTier).toLowerCase() || 'free';
@@ -89,6 +111,8 @@ function detectOpportunity(params) {
     ? normalizeTasks([payload.dueSoonTask])[0] || null
     : null;
   const posture = detectMessagePosture({ messageText: payload.messageText });
+  const normalizedIntent = normalizeConversationIntent(payload.messageText);
+  const isHousingIntent = normalizedIntent === 'housing' || (posture.keywordHits && posture.keywordHits.housing === true);
   const recentEngagement = payload.recentEngagement && typeof payload.recentEngagement === 'object'
     ? payload.recentEngagement
     : {};
@@ -103,7 +127,7 @@ function detectOpportunity(params) {
     });
   }
 
-  if (posture.isGreeting || posture.isSmalltalk) {
+  if (!isHousingIntent && (posture.isGreeting || posture.isSmalltalk)) {
     return buildOpportunityDecision({
       conversationMode: 'casual',
       opportunityType: 'none',
@@ -123,7 +147,7 @@ function detectOpportunity(params) {
   );
   const dueSoonMs = toMillis(dueSoonTask && dueSoonTask.due);
   const hasDueSoonSignal = Boolean(Number.isFinite(dueSoonMs) && dueSoonMs <= (Date.now() + (7 * 24 * 60 * 60 * 1000)));
-  const hasActionSignal = Boolean(posture.keywordHits.action || hasDueSoonSignal || topTasks.length > 0);
+  const hasActionSignal = Boolean(isHousingIntent || posture.keywordHits.action || hasDueSoonSignal || topTasks.length > 0);
   const hasLifeSignal = Boolean(posture.keywordHits.life || journeyPhase === 'return');
 
   if (hasBlockedSignal) {
@@ -132,6 +156,11 @@ function detectOpportunity(params) {
     if (blockedTask && blockedTask.key) reasons.push('blocked_task_present');
     if (posture.keywordHits.blocked) reasons.push('blocked_keyword');
     suggestedAtoms = buildBlockedAtoms(blockedTask);
+  } else if (isHousingIntent) {
+    opportunityType = 'action';
+    reasons.push('housing_intent');
+    reasons.push('housing_intent_detected');
+    suggestedAtoms = buildHousingAtoms(topTasks, blockedTask, dueSoonTask);
   } else if (hasActionSignal && (posture.keywordHits.action || hasDueSoonSignal)) {
     opportunityType = 'action';
     reasons.push('action_signal');
@@ -152,7 +181,9 @@ function detectOpportunity(params) {
   const cooldownActive = recentInterventions >= 1;
   if (cooldownActive) reasons.push('intervention_cooldown_active');
 
-  const allowIntervention = opportunityType !== 'none' && !cooldownActive && llmConciergeEnabled;
+  const allowIntervention = opportunityType !== 'none'
+    && (!cooldownActive || isHousingIntent)
+    && (llmConciergeEnabled || isHousingIntent);
   return buildOpportunityDecision({
     conversationMode: allowIntervention ? 'concierge' : 'casual',
     opportunityType,

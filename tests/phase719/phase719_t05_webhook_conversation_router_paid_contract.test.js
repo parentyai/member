@@ -118,9 +118,10 @@ function loadWebhookWithStubs(options) {
   setOverride('../../src/usecases/billing/evaluateLlmBudget', {
     evaluateLLMBudget: async () => {
       budgetCalled += 1;
+      const allowed = payload.budgetAllowed !== false;
       return {
-        allowed: true,
-        blockedReason: null,
+        allowed,
+        blockedReason: allowed ? null : (payload.budgetBlockedReason || 'plan_gate_blocked'),
         policy: {
           model: 'gpt-4o-mini',
           forbidden_domains: []
@@ -132,20 +133,28 @@ function loadWebhookWithStubs(options) {
     recordLlmUsage: async () => ({ costEstimate: 0 })
   });
   setOverride('../../src/usecases/assistant/llmAvailabilityGate', {
-    evaluateLlmAvailability: async () => ({ available: true })
+    evaluateLlmAvailability: async () => ({
+      available: payload.availabilityAvailable !== false,
+      reason: payload.availabilityAvailable === false ? (payload.availabilityReason || 'llm_unavailable') : null
+    })
   });
   setOverride('../../src/usecases/context/getUserContextSnapshot', {
-    getUserContextSnapshot: async () => ({
-      ok: true,
-      stale: false,
-      snapshot: {
-        phase: 'arrival',
-        topOpenTasks: [
-          { key: 'school_registration', status: 'open', due: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() }
-        ],
-        riskFlags: []
+    getUserContextSnapshot: async () => {
+      if (payload.snapshotResult && typeof payload.snapshotResult === 'object') {
+        return payload.snapshotResult;
       }
-    })
+      return {
+        ok: true,
+        stale: false,
+        snapshot: {
+          phase: 'arrival',
+          topOpenTasks: [
+            { key: 'school_registration', status: 'open', due: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() }
+          ],
+          riskFlags: []
+        }
+      };
+    }
   });
   setOverride('../../src/usecases/assistant/generateFreeRetrievalReply', {
     generateFreeRetrievalReply: async () => {
@@ -165,6 +174,20 @@ function loadWebhookWithStubs(options) {
   setOverride('../../src/usecases/assistant/generatePaidFaqReply', {
     generatePaidFaqReply: async () => {
       paidFaqCalled += 1;
+      const ok = payload.paidFaqOk !== false;
+      if (!ok) {
+        return {
+          ok: false,
+          blockedReason: payload.paidFaqBlockedReason || 'llm_error',
+          assistantQuality: {
+            intentResolved: 'situation_analysis',
+            kbTopScore: 0,
+            evidenceCoverage: 0,
+            blockedStage: 'paid_generation',
+            fallbackReason: payload.paidFaqBlockedReason || 'llm_error'
+          }
+        };
+      }
       return {
         ok: true,
         qualityWarning: null,
@@ -288,6 +311,13 @@ function findGateSummary(auditCalls) {
   return gate && gate.payloadSummary ? gate.payloadSummary : null;
 }
 
+function assertNoRetrievalTemplate(text) {
+  const message = String(text || '');
+  ['FAQ候補', 'CityPack候補', '根拠キー', 'score=', '- [ ]'].forEach((token) => {
+    assert.equal(message.includes(token), false, `unexpected token: ${token}`);
+  });
+}
+
 test('phase719: router-enabled paid greeting bypasses budget and retrieval with routerReason in audit', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: HMAC_SEED,
@@ -358,4 +388,68 @@ test('phase719: router-disabled paid greeting keeps legacy order and evaluates b
   assert.ok(replies[0].text.includes('こんにちは'));
   assert.equal(loaded.counters.budgetCalled > 0, true);
   assert.equal(loaded.counters.retrievalCalled, 0);
+});
+
+test('phase719: paid housing intent never falls back to free retrieval across blocked paths', { concurrency: false }, async (t) => {
+  const scenarios = [
+    {
+      name: 'budget_blocked',
+      env: {},
+      stubs: { budgetAllowed: false, budgetBlockedReason: 'llm_disabled' }
+    },
+    {
+      name: 'availability_blocked',
+      env: {},
+      stubs: { availabilityAvailable: false, availabilityReason: 'llm_unavailable' }
+    },
+    {
+      name: 'snapshot_blocked',
+      env: { ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: 'true' },
+      stubs: { snapshotResult: { ok: false, reason: 'snapshot_unavailable' } }
+    },
+    {
+      name: 'paid_generation_failure_like',
+      env: {},
+      stubs: { paidFaqOk: false, paidFaqBlockedReason: 'llm_error' }
+    }
+  ];
+
+  for (const scenario of scenarios) {
+    const restoreEnv = withEnv(Object.assign({
+      LINE_CHANNEL_SECRET: HMAC_SEED,
+      ENABLE_CONVERSATION_ROUTER: 'true',
+      ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true'
+    }, scenario.env));
+    const loaded = loadWebhookWithStubs(scenario.stubs);
+    const replies = [];
+
+    try {
+      const body = createWebhookBody('部屋探ししたい');
+      const result = await loaded.handleLineWebhook({
+        body,
+        signature: signBody(body),
+        requestId: `phase719_housing_${scenario.name}`,
+        logger: () => {},
+        allowWelcome: false,
+        replyFn: async (_replyToken, message) => {
+          replies.push(message);
+        }
+      });
+
+      assert.equal(result.status, 200, scenario.name);
+      assert.equal(replies.length, 1, scenario.name);
+      assertNoRetrievalTemplate(replies[0].text);
+      assert.equal(loaded.counters.retrievalCalled, 0, scenario.name);
+
+      const summary = findGateSummary(loaded.auditCalls);
+      assert.ok(summary, scenario.name);
+      assert.equal(summary.conversationMode, 'concierge', scenario.name);
+      assert.equal(summary.routerReason, 'housing_intent_detected', scenario.name);
+      assert.ok(Array.isArray(summary.opportunityReasonKeys), scenario.name);
+      assert.ok(summary.opportunityReasonKeys.includes('housing_intent'), scenario.name);
+    } finally {
+      loaded.restore();
+      restoreEnv();
+    }
+  }
 });

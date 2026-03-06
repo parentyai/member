@@ -14,9 +14,18 @@ test('phase719: detectIntent classifies greeting/casual/question/problem/activit
   assert.equal(detectIntent({ messageText: '週末どこ行く？' }).mode, 'activity');
 });
 
+test('phase719: detectIntent normalizes housing keywords into problem mode', () => {
+  ['部屋探ししたい', '住宅', '賃貸', 'lease', 'apartment'].forEach((messageText) => {
+    const result = detectIntent({ messageText });
+    assert.equal(result.mode, 'problem');
+    assert.equal(result.reason, 'housing_intent_detected');
+  });
+});
+
 test('phase719: detectIntent returns deterministic reasons', () => {
   assert.equal(detectIntent({ messageText: 'こんにちは' }).reason, 'greeting_detected');
   assert.equal(detectIntent({ messageText: 'ありがとう' }).reason, 'smalltalk_detected');
   assert.equal(detectIntent({ messageText: 'わからない' }).reason, 'blocked_signal');
   assert.equal(detectIntent({ messageText: '帰任前に何する？' }).reason, 'life_signal');
+  assert.equal(detectIntent({ messageText: '家探しで困ってる' }).reason, 'housing_intent_detected');
 });

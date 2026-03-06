@@ -117,3 +117,22 @@ test('phase717: opportunity detector marks life opportunity on weekend-like prom
   assert.ok(result.opportunityReasonKeys.includes('life_signal'));
   assert.ok(result.opportunityReasonKeys.includes('life_keyword'));
 });
+
+test('phase717: housing keywords force concierge with housing_intent reason even during cooldown', () => {
+  const result = detectOpportunity({
+    userTier: 'paid',
+    llmConciergeEnabled: false,
+    messageText: 'apartment を探してる',
+    topTasks: [{ key: 'housing_search', status: 'open' }],
+    blockedTask: null,
+    dueSoonTask: null,
+    recentEngagement: { recentTurns: 5, recentInterventions: 2 }
+  });
+
+  assert.equal(result.conversationMode, 'concierge');
+  assert.equal(result.opportunityType, 'action');
+  assert.equal(result.interventionBudget, 1);
+  assert.ok(result.opportunityReasonKeys.includes('housing_intent'));
+  assert.ok(result.opportunityReasonKeys.includes('housing_intent_detected'));
+  assert.ok(result.opportunityReasonKeys.includes('intervention_cooldown_active'));
+});

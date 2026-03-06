@@ -21,6 +21,11 @@ test('phase719: conversation router returns mode, reason, and normalized convers
   const activity = routeConversation('週末どこ行く？', { llmConciergeEnabled: true });
   assert.equal(activity.mode, 'activity');
   assert.equal(activity.conversationMode, 'casual');
+
+  const housing = routeConversation('部屋探ししたい', { llmConciergeEnabled: false });
+  assert.equal(housing.mode, 'problem');
+  assert.equal(housing.reason, 'housing_intent_detected');
+  assert.equal(housing.conversationMode, 'concierge');
 });
 
 test('phase719: conversation router keeps non-problem modes casual even when concierge enabled', () => {
