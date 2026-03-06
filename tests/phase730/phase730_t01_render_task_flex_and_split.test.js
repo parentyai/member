@@ -46,6 +46,8 @@ test('phase730: renderTaskFlexMessage renders checklist, understanding actions, 
   assert.equal(message.contents.type, 'bubble');
   const body = message.contents.body.contents;
   const bodyTexts = body.filter((item) => item && item.type === 'text').map((item) => item.text);
+  assert.ok(bodyTexts.includes('いまやる理由'));
+  assert.ok(bodyTexts.includes('今のステージで前提条件を満たす優先タスクです。'));
   assert.ok(bodyTexts.includes('必要時間'));
   assert.ok(bodyTexts.includes('20〜40分'));
   assert.ok(bodyTexts.includes('やること'));
