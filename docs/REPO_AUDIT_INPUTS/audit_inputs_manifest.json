@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T20:00:56-05:00",
-  "gitCommit": "a0c0badb954ece97c62843decd0fa2fcbb9ecd61",
-  "branch": "codex/llm-plan-impl-a1-fix",
-  "sourceDigest": "d755bd4a072088f82a4a34d2ded4063ab1fe7fa03f95db466df38c6c23b1914e",
+  "generatedAt": "2026-03-05T20:53:53-05:00",
+  "gitCommit": "6fa214e07bebde4b382a585ed5ae269ec147eb7f",
+  "branch": "codex/admin-open-shortcut",
+  "sourceDigest": "f74837a1a2c8779e243701718413d4adf09026723afcdef3a897ed63e38e6430",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "0f99e1c7a45ab0e58347a95fd750a8992d0763c05f04ed861f17170a803c06ce",
+      "sha256": "4568461edfe3870217c4a38c00a5d860cedf3caf5e92376f38a6bb965690eff3",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "3f52485de01d3595d513c55cf4d941854766f41dbfd40316419cb2458b4b8859",
+      "sha256": "7267387a4113e9d25207c794a038ce502ba60203ee5be3188f7be985c88d4daa",
       "bytes": 487
     },
     {
@@ -131,7 +131,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/protection_matrix.json",
-      "sha256": "b2ddddff69a2afd28fab00fcce6e4cf665ac4fd5b76ecb006d698c193f597cdf",
+      "sha256": "c8170cb60fd7dec32d7692d4a9bce601abc8f7f23b3870acfcd1db7eb767cebf",
       "bytes": 223135
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "2e6060784c64982a652e48af245c7a4c495dc617ac329f60ef8b5de2af7116da",
+      "sha256": "9d56a0ec4ed4cb015cd76357b9218d24e04819965ae94d798b0bb4370f8b1f73",
       "bytes": 740
     },
     {
@@ -161,13 +161,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "fd4f3e74dbe12e258d5481c75367b304e7201b1e4c7e7cf6c6f1afcf758ff9b6",
+      "sha256": "2731a74498d5b01857d21997b7bf731f4dd27e14b9d58d4460c3e506646ec283",
       "bytes": 3497
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "5246440952e20da5d55eb68e9e3312025bb4c06deb27e13730c3d5160e67c491",
-      "bytes": 2412
+      "sha256": "b64ff23018a8c1265aedad2ef18e03cb480d1042a175e2a9c10f1ca87bf40bf3",
+      "bytes": 2411
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
