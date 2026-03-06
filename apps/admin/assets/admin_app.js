@@ -324,6 +324,188 @@ function normalizeCopyForRole(text, role) {
   }, value);
 }
 
+const UI_STATE_TONE_ALIASES = Object.freeze({
+  success: 'success',
+  ok: 'success',
+  ready: 'success',
+  active: 'success',
+  approved: 'success',
+  executed: 'success',
+  sent: 'success',
+  manualonly: 'success',
+  enabled: 'success',
+
+  inprogress: 'in_progress',
+  running: 'in_progress',
+  processing: 'in_progress',
+  loading: 'in_progress',
+
+  pending: 'pending',
+  planned: 'pending',
+  plan: 'pending',
+  draft: 'pending',
+  queued: 'pending',
+  queue: 'pending',
+  reserved: 'pending',
+  scheduled: 'pending',
+
+  warn: 'warn',
+  warning: 'warn',
+  attention: 'warn',
+  caution: 'warn',
+  medium: 'warn',
+  confirm: 'warn',
+  needsreview: 'warn',
+  review: 'warn',
+
+  error: 'error',
+  danger: 'error',
+  failed: 'error',
+  fail: 'error',
+  dead: 'error',
+  blocked: 'error',
+  alert: 'error',
+  high: 'error',
+  retire: 'error',
+  conflict: 'error',
+
+  forbidden: 'forbidden',
+  unauthorized: 'forbidden',
+  denied: 'forbidden',
+  roleforbidden: 'forbidden',
+  paneforbidden: 'forbidden',
+
+  disabled: 'disabled',
+  inactive: 'disabled',
+  off: 'disabled',
+
+  unset: 'unset',
+  unknown: 'unset',
+  none: 'unset',
+  na: 'unset',
+  notavailable: 'unset',
+  empty: 'unset',
+  default: 'unset',
+
+  testing: 'testing',
+  test: 'testing',
+  dryrun: 'testing',
+  dry: 'testing'
+});
+
+const UI_STATE_CLASS_LIST = Object.freeze([
+  'state-success',
+  'state-in_progress',
+  'state-pending',
+  'state-warn',
+  'state-error',
+  'state-forbidden',
+  'state-disabled',
+  'state-unset',
+  'state-testing'
+]);
+
+const UI_ROW_STATE_CLASS_LIST = Object.freeze([
+  'row-state-success',
+  'row-state-in_progress',
+  'row-state-pending',
+  'row-state-warn',
+  'row-state-error',
+  'row-state-forbidden',
+  'row-state-disabled',
+  'row-state-unset',
+  'row-state-testing'
+]);
+
+const UI_BADGE_CLASS_LIST = Object.freeze([
+  'badge-ok',
+  'badge-warn',
+  'badge-danger',
+  'badge-info',
+  'badge-unset',
+  'badge-disabled'
+]);
+
+function normalizeUiStateTone(value, fallbackTone) {
+  const fallback = String(fallbackTone || 'unset');
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+  if (!normalized) return fallback;
+  return UI_STATE_TONE_ALIASES[normalized] || fallback;
+}
+
+function resolveLegacyToastTone(uiState) {
+  const tone = normalizeUiStateTone(uiState, 'unset');
+  if (tone === 'success') return 'ok';
+  if (tone === 'error' || tone === 'forbidden') return 'danger';
+  if (tone === 'warn' || tone === 'pending' || tone === 'in_progress' || tone === 'testing') return 'warn';
+  return '';
+}
+
+function resolveLegacyBadgeClass(uiState) {
+  const tone = normalizeUiStateTone(uiState, 'unset');
+  if (tone === 'success') return 'badge-ok';
+  if (tone === 'error' || tone === 'forbidden') return 'badge-danger';
+  if (tone === 'warn') return 'badge-warn';
+  if (tone === 'pending' || tone === 'in_progress' || tone === 'testing') return 'badge-info';
+  if (tone === 'disabled') return 'badge-disabled';
+  return 'badge-unset';
+}
+
+function applyBadgeState(el, value, tone, options) {
+  if (!el) return 'unset';
+  const opts = options && typeof options === 'object' ? options : {};
+  const baseClass = typeof opts.baseClass === 'string' && opts.baseClass.trim() ? opts.baseClass.trim() : 'badge';
+  const nextTone = normalizeUiStateTone(tone, opts.fallbackTone || 'unset');
+  const legacyClass = resolveLegacyBadgeClass(nextTone);
+  const className = [baseClass, legacyClass, `state-${nextTone}`].filter(Boolean).join(' ');
+  el.className = className;
+  UI_BADGE_CLASS_LIST.forEach((name) => {
+    if (className.includes(name)) return;
+    el.classList.remove(name);
+  });
+  UI_STATE_CLASS_LIST.forEach((name) => {
+    if (className.includes(name)) return;
+    el.classList.remove(name);
+  });
+  el.setAttribute('data-ui-state', nextTone);
+  if (opts.messageLevel) el.setAttribute('data-ui-message-level', String(opts.messageLevel));
+  if (value !== undefined) el.textContent = String(value);
+  return nextTone;
+}
+
+function resolveBadgeClassFromStateTone(tone, fallbackTone) {
+  const nextTone = normalizeUiStateTone(tone, fallbackTone || 'unset');
+  return ['badge', resolveLegacyBadgeClass(nextTone), `state-${nextTone}`].filter(Boolean).join(' ');
+}
+
+function applyRowHealthState(rowEl, tone) {
+  if (!rowEl) return 'unset';
+  const nextTone = normalizeUiStateTone(tone, 'unset');
+  rowEl.classList.remove('row-health-ok', 'row-health-warn', 'row-health-danger');
+  UI_ROW_STATE_CLASS_LIST.forEach((name) => rowEl.classList.remove(name));
+  if (nextTone === 'success') rowEl.classList.add('row-health-ok');
+  else if (nextTone === 'warn' || nextTone === 'pending' || nextTone === 'in_progress' || nextTone === 'testing') rowEl.classList.add('row-health-warn');
+  else if (nextTone === 'error' || nextTone === 'forbidden') rowEl.classList.add('row-health-danger');
+  rowEl.classList.add(`row-state-${nextTone}`);
+  rowEl.setAttribute('data-ui-state', nextTone);
+  return nextTone;
+}
+
+function applyBannerState(el, tone, level) {
+  if (!el) return 'unset';
+  const nextTone = normalizeUiStateTone(tone, 'error');
+  el.classList.remove('is-danger', 'is-warn', 'is-ok');
+  if (nextTone === 'success') el.classList.add('is-ok');
+  else if (nextTone === 'warn' || nextTone === 'pending' || nextTone === 'in_progress' || nextTone === 'testing') el.classList.add('is-warn');
+  else el.classList.add('is-danger');
+  el.setAttribute('data-ui-state', nextTone);
+  if (level) el.setAttribute('data-ui-message-level', String(level));
+  return nextTone;
+}
+
 function resolveUiFixtureModeFromUrl() {
   try {
     const currentUrl = new URL(globalThis.location.href);
@@ -1167,8 +1349,10 @@ function applyRecoveryUxFromPreflight(payload) {
 function clearGuardBanner() {
   const el = resolveGuardBannerElement();
   if (!el) return;
-  el.classList.remove('is-visible', 'is-danger', 'is-warn');
+  el.classList.remove('is-visible', 'is-danger', 'is-warn', 'is-ok');
   el.setAttribute('data-admin-guard', 'hidden');
+  el.setAttribute('data-ui-state', 'unset');
+  el.setAttribute('data-ui-message-level', 'system');
   const cause = el.querySelector('[data-guard-field="cause"]');
   const impact = el.querySelector('[data-guard-field="impact"]');
   const action = el.querySelector('[data-guard-field="action"]');
@@ -1207,9 +1391,7 @@ function renderGuardBanner(rawError) {
   if (impact) impact.textContent = normalized.impact || '-';
   if (action) action.textContent = actionText;
   el.classList.add('is-visible');
-  el.classList.remove('is-danger', 'is-warn');
-  if (normalized.tone === 'warn') el.classList.add('is-warn');
-  else el.classList.add('is-danger');
+  applyBannerState(el, normalized.tone, 'system');
   el.setAttribute('data-admin-guard', 'visible');
   state.recoveryUx = Object.assign({}, state.recoveryUx, { suppressedGuard: false });
 }
@@ -1221,8 +1403,10 @@ function resolveLocalPreflightBannerElement() {
 function clearLocalPreflightBanner() {
   const el = resolveLocalPreflightBannerElement();
   if (!el) return;
-  el.classList.remove('is-visible', 'is-danger', 'is-warn');
+  el.classList.remove('is-visible', 'is-danger', 'is-warn', 'is-ok');
   el.setAttribute('data-admin-local-preflight', 'hidden');
+  el.setAttribute('data-ui-state', 'unset');
+  el.setAttribute('data-ui-message-level', 'system');
   const cause = el.querySelector('[data-local-preflight-field="cause"]');
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
@@ -1289,9 +1473,7 @@ function renderLocalPreflightBanner(payload) {
   if (checksJson) checksJson.textContent = JSON.stringify((payload && payload.checks) || {}, null, 2);
   if (copyBtn) copyBtn.disabled = normalized.commands.length === 0;
   el.classList.add('is-visible');
-  el.classList.remove('is-danger', 'is-warn');
-  if (normalized.tone === 'warn') el.classList.add('is-warn');
-  else el.classList.add('is-danger');
+  applyBannerState(el, normalized.tone, 'system');
   el.setAttribute('data-admin-local-preflight', 'visible');
   applyRecoveryUxFromPreflight(payload);
 }
@@ -2181,10 +2363,15 @@ function hydrateListState() {
 
 function showToast(message, tone) {
   if (!toastEl) return;
-  toastEl.textContent = message;
-  toastEl.className = `toast ${tone || ''} show`;
+  const stateTone = normalizeUiStateTone(tone, 'unset');
+  const legacyTone = resolveLegacyToastTone(stateTone);
+  toastEl.textContent = String(message || '');
+  toastEl.setAttribute('data-ui-message-level', 'toast');
+  toastEl.setAttribute('data-ui-state', stateTone);
+  toastEl.className = ['toast', legacyTone, `state-${stateTone}`, 'show'].filter(Boolean).join(' ');
   setTimeout(() => {
     toastEl.className = 'toast';
+    toastEl.setAttribute('data-ui-state', 'unset');
     toastEl.textContent = '';
   }, 2200);
 }
@@ -3105,19 +3292,20 @@ function compareRepoMapMatrixEntries(left, right) {
 
 function resolveRepoMapMatrixTypeBadgeClass(type) {
   const normalizedType = normalizeComposerType(type || 'STEP');
-  if (normalizedType === 'STEP') return 'badge badge-ok';
-  if (normalizedType === 'GENERAL') return 'badge badge-warn';
-  if (normalizedType === 'ANNOUNCEMENT') return 'badge';
-  if (normalizedType === 'VENDOR') return 'badge badge-danger';
-  return 'badge badge-warn';
+  if (normalizedType === 'STEP') return resolveBadgeClassFromStateTone('success');
+  if (normalizedType === 'GENERAL') return resolveBadgeClassFromStateTone('warn');
+  if (normalizedType === 'ANNOUNCEMENT') return resolveBadgeClassFromStateTone('pending');
+  if (normalizedType === 'VENDOR') return resolveBadgeClassFromStateTone('error');
+  return resolveBadgeClassFromStateTone('warn');
 }
 
 function resolveRepoMapMatrixStatusBadgeClass(status) {
   const normalizedStatus = normalizeComposerSavedStatus(status);
-  if (normalizedStatus === 'executed' || normalizedStatus === 'sent') return 'badge badge-ok';
-  if (normalizedStatus === 'approved' || normalizedStatus === 'planned' || normalizedStatus === 'active') return 'badge badge-warn';
-  if (normalizedStatus === 'draft') return 'badge';
-  return 'badge badge-danger';
+  if (normalizedStatus === 'executed' || normalizedStatus === 'sent') return resolveBadgeClassFromStateTone('success');
+  if (normalizedStatus === 'approved' || normalizedStatus === 'active') return resolveBadgeClassFromStateTone('warn');
+  if (normalizedStatus === 'planned') return resolveBadgeClassFromStateTone('pending');
+  if (normalizedStatus === 'draft') return resolveBadgeClassFromStateTone('pending');
+  return resolveBadgeClassFromStateTone('error');
 }
 
 function renderRepoMapMatrixEntry(cellEl, entry) {
@@ -3716,6 +3904,7 @@ function renderUiFixtureSuccess(paneKey) {
   const nextPane = String(paneKey || state.activePane || 'home');
   banner.classList.remove('hidden');
   banner.classList.add('is-visible');
+  applyBannerState(banner, 'success', 'system');
   banner.dataset.uiFixture = 'visible';
   messageEl.textContent = '安全なローカル検証用に成功状態を表示しています。';
   targetEl.textContent = `role=${roleLabel}, pane=${nextPane}`;
@@ -4794,9 +4983,7 @@ function renderMonitorRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    if (item.notificationHealth === 'DANGER') tr.classList.add('row-health-danger');
-    if (item.notificationHealth === 'WARN') tr.classList.add('row-health-warn');
-    if (item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
+    applyRowHealthState(tr, item.notificationHealth);
     const cols = [
       formatDateLabel(item.createdAt || item.scheduledAt || item.lastSentAt),
       composerStatusLabel(item.status || 'draft'),
@@ -4833,9 +5020,7 @@ function renderReadModelRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    if (item.notificationHealth === 'DANGER') tr.classList.add('row-health-danger');
-    if (item.notificationHealth === 'WARN') tr.classList.add('row-health-warn');
-    if (item.notificationHealth === 'OK') tr.classList.add('row-health-ok');
+    applyRowHealthState(tr, item.notificationHealth);
     const cols = [
       item.title || '-',
       withTip(scenarioLabel(item.scenarioKey), buildTip('ui.help.scenarioCode', item.scenarioKey)),
@@ -6075,9 +6260,7 @@ function renderMonitorUserRows(items) {
   }
   items.forEach((item) => {
     const tr = document.createElement('tr');
-    if (item.health === 'DANGER') tr.classList.add('row-health-danger');
-    if (item.health === 'WARN') tr.classList.add('row-health-warn');
-    if (item.health === 'OK') tr.classList.add('row-health-ok');
+    applyRowHealthState(tr, item.health);
     const cols = [
       formatDateLabel(item.sentAt),
       formatDateLabel(item.deliveredAt),
@@ -6161,11 +6344,7 @@ function formatMonitorFreshness(minutes) {
 }
 
 function setMonitorBadge(el, value, tone) {
-  if (!el) return;
-  el.classList.remove('badge-ok', 'badge-warn', 'badge-danger');
-  const state = tone === 'ok' ? 'badge-ok' : (tone === 'warn' ? 'badge-warn' : 'badge-danger');
-  if (state) el.classList.add(state);
-  el.textContent = value;
+  applyBadgeState(el, value, tone, { messageLevel: 'inline', fallbackTone: 'unset' });
 }
 
 function setMonitorSummaryValue(id, value) {
@@ -6326,9 +6505,7 @@ function renderVendorRows(items) {
     tr.tabIndex = 0;
     tr.dataset.vendorIndex = String(idx);
     if (item.linkId) tr.dataset.vendorLinkId = String(item.linkId);
-    if (item.healthState === 'WARN') tr.classList.add('row-health-warn');
-    if (item.healthState === 'OK') tr.classList.add('row-health-ok');
-    if (item.healthState === 'DEAD') tr.classList.add('row-health-danger');
+    applyRowHealthState(tr, item.healthState === 'DEAD' ? 'error' : item.healthState);
     const cols = [
       item.vendorLabel || '-',
       statusLabel(item.healthState === 'DEAD' ? 'DANGER' : item.healthState),
@@ -6532,9 +6709,9 @@ function renderCityPackRunRows(payload) {
   items.forEach((run) => {
     const tr = document.createElement('tr');
     const status = run && run.status ? String(run.status) : 'RUNNING';
-    if (status === 'WARN') tr.classList.add('row-health-danger');
-    else if (status === 'RUNNING') tr.classList.add('row-health-warn');
-    else tr.classList.add('row-health-ok');
+    if (status === 'WARN') applyRowHealthState(tr, 'error');
+    else if (status === 'RUNNING') applyRowHealthState(tr, 'warn');
+    else applyRowHealthState(tr, 'success');
 
     const resultLabel = status === 'OK'
       ? t('ui.label.cityPack.runs.status.ok', '正常')
@@ -6807,12 +6984,20 @@ function renderCityPackInboxRows(items) {
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
     const priorityLevel = row && row.priorityLevel ? String(row.priorityLevel) : 'LOW';
-    if (row.recommendation === 'Retire') tr.classList.add('row-health-danger');
-    if (row.recommendation === 'Confirm') tr.classList.add('row-health-warn');
-    if (row.recommendation === 'ManualOnly') tr.classList.add('row-health-ok');
-    if (priorityLevel === 'HIGH') tr.classList.add('row-health-danger');
-    else if (priorityLevel === 'MEDIUM') tr.classList.add('row-health-warn');
-    else tr.classList.add('row-health-ok');
+    const recommendationTone = row.recommendation === 'Retire'
+      ? 'error'
+      : (row.recommendation === 'Confirm' ? 'warn' : (row.recommendation === 'ManualOnly' ? 'success' : 'unset'));
+    const priorityTone = priorityLevel === 'HIGH'
+      ? 'error'
+      : (priorityLevel === 'MEDIUM' ? 'warn' : 'success');
+    const finalTone = (recommendationTone === 'error' || priorityTone === 'error')
+      ? 'error'
+      : (recommendationTone === 'warn' || priorityTone === 'warn')
+        ? 'warn'
+        : (recommendationTone === 'success' || priorityTone === 'success')
+          ? 'success'
+          : 'unset';
+    applyRowHealthState(tr, finalTone);
     const priorityTd = document.createElement('td');
     priorityTd.textContent = `${row.priorityLevel || '-'}(${Number.isFinite(Number(row.priorityScore)) ? Number(row.priorityScore) : '-'})`;
     tr.appendChild(priorityTd);
@@ -7779,9 +7964,10 @@ function renderCityPackRequestRows(items) {
   items.forEach((row) => {
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
-    if (row.status === 'failed') tr.classList.add('row-health-danger');
-    else if (row.status === 'needs_review') tr.classList.add('row-health-warn');
-    else if (row.status === 'approved' || row.status === 'active') tr.classList.add('row-health-ok');
+    if (row.status === 'failed') applyRowHealthState(tr, 'error');
+    else if (row.status === 'needs_review') applyRowHealthState(tr, 'warn');
+    else if (row.status === 'approved' || row.status === 'active') applyRowHealthState(tr, 'success');
+    else applyRowHealthState(tr, 'unset');
 
     const regionLabel = [row.regionCity, row.regionState].filter(Boolean).join(', ') || row.regionKey || '-';
     const draftCount = Array.isArray(row.draftCityPackIds) ? row.draftCityPackIds.length : 0;
@@ -13299,15 +13485,18 @@ function mapComposerStatusLabel(statusLabelValue) {
   return 'draft';
 }
 
+function resolveComposerStatusTone(mappedStatus) {
+  if (mappedStatus === 'executed') return 'success';
+  if (mappedStatus === 'approved') return 'warn';
+  if (mappedStatus === 'planned') return 'pending';
+  return 'unset';
+}
+
 function updateComposerStatusPill() {
   const pill = document.getElementById('composer-status-pill');
   if (!pill) return;
   const mapped = mapComposerStatusLabel(state.currentComposerStatus);
-  pill.textContent = mapped;
-  pill.className = 'badge badge-info';
-  if (mapped === 'planned') pill.className = 'badge badge-info';
-  if (mapped === 'approved') pill.className = 'badge badge-warn';
-  if (mapped === 'executed') pill.className = 'badge badge-ok';
+  applyBadgeState(pill, mapped, resolveComposerStatusTone(mapped), { messageLevel: 'inline', fallbackTone: 'unset' });
 }
 
 function buildComposerNotificationMeta(type) {
@@ -13487,11 +13676,20 @@ function renderComposerSafety(issues) {
     banner.textContent = state.composerKillSwitch
       ? t('ui.desc.composer.killSwitchBanner', 'KillSwitchがONです。通知送信は停止中です。')
       : '';
+    if (state.composerKillSwitch) {
+      applyBannerState(banner, 'warn', 'section');
+    } else {
+      banner.classList.remove('is-danger', 'is-warn', 'is-ok');
+      banner.setAttribute('data-ui-state', 'unset');
+      banner.setAttribute('data-ui-message-level', 'section');
+    }
   }
   if (badge) {
     const hasIssue = Array.isArray(issues) && issues.length > 0;
-    badge.className = hasIssue ? 'badge badge-danger' : 'badge badge-ok';
-    badge.textContent = hasIssue ? 'NG' : 'OK';
+    applyBadgeState(badge, hasIssue ? 'NG' : 'OK', hasIssue ? 'error' : 'success', {
+      messageLevel: 'inline',
+      fallbackTone: 'unset'
+    });
     state.lastRisk = hasIssue
       ? t('ui.desc.composer.riskNeedsAction', '運用で解消できる要対応があります')
       : t('ui.desc.composer.riskOk', '問題なし');
