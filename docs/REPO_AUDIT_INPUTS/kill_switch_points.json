@@ -282,7 +282,7 @@
     },
     {
       "file": "src/routes/admin/osDashboardKpi.js",
-      "line": 475,
+      "line": 517,
       "symbol": "killSwitch"
     },
     {

@@ -3,7 +3,7 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "0dc23b8023fa140353f963319939069c47372467",
+      "hash": "021fd70e35192be0c9e94b69f7254414e4464168",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
@@ -2301,6 +2301,8 @@
             "SSOT_INDEXに説明ドキュメントを追記する。"
           ],
           "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyGraphCatalogRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js",
             "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyReminderRunsRepo.js",
@@ -2309,9 +2311,9 @@
             "/Users/parentyai.com/Projects/Member/src/routes/internal/journeyTodoReminderJob.js"
           ],
           "evidence": [
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyGraphCatalogRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js:1",
-            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyReminderRunsRepo.js:1"
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyGraphCatalogRepo.js:1"
           ]
         },
         {
@@ -4839,7 +4841,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 199,
+              "testsCount": 203,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6053,7 +6055,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 226,
+              "testsCount": 227,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7385,7 +7387,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 21,
+              "testsCount": 79,
               "killSwitchDependent": true,
               "auditDependent": false,
               "canDo": [
@@ -7401,6 +7403,8 @@
                 "SSOT_INDEXに説明ドキュメントを追記する。"
               ],
               "relatedRepos": [
+                "deliveriesRepo",
+                "eventsRepo",
                 "journeyGraphCatalogRepo",
                 "journeyPolicyRepo",
                 "journeyReminderRunsRepo",
@@ -7408,8 +7412,10 @@
                 "userJourneySchedulesRepo"
               ],
               "relatedCollections": [
+                "events",
                 "journey_reminder_runs",
                 "journey_todo_items",
+                "notification_deliveries",
                 "opsConfig",
                 "user_journey_schedules"
               ],
@@ -7417,9 +7423,9 @@
                 "src/routes/internal/journeyTodoReminderJob.js"
               ],
               "evidence": [
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyGraphCatalogRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyPolicyRepo.js:1",
-                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyReminderRunsRepo.js:1"
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/eventsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/journeyGraphCatalogRepo.js:1"
               ]
             },
             {

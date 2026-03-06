@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T02:52:27-05:00",
-  "gitCommit": "09a930af731b689b5281f957d908714740cbf78f",
-  "branch": "codex/wip-main-sync-20260305-232541",
-  "sourceDigest": "05758a1f11bb6793592c8c9d6542f05f5c2e57869312cf4acfc192eb12cde157",
+  "generatedAt": "2026-03-06T06:36:48-05:00",
+  "gitCommit": "8e2cfaae649b0d973369c6df2a3aa77bdd3bd4a0",
+  "branch": "codex/us-journey-uxmax-USJXMAX-01",
+  "sourceDigest": "4fbb982fc2866b5b15befaf699e3d157d2eaebeeadfa89ebcd08726fc4a30b4d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

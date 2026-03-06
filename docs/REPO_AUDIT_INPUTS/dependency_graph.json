@@ -324,6 +324,7 @@
     "handleJourneyLineCommand": [
       "cityPacksRepo",
       "deliveriesRepo",
+      "eventsRepo",
       "journeyTodoItemsRepo",
       "linkRegistryRepo",
       "stepRulesRepo",
@@ -331,7 +332,8 @@
       "tasksRepo",
       "userCityPackPreferencesRepo",
       "userJourneyProfilesRepo",
-      "userJourneySchedulesRepo"
+      "userJourneySchedulesRepo",
+      "usersRepo"
     ],
     "handleJourneyPostback": [],
     "importMunicipalitySchools": [
@@ -417,6 +419,7 @@
       "emergencyProvidersRepo",
       "emergencySnapshotsRepo",
       "emergencyUnmappedEventsRepo",
+      "eventsRepo",
       "journeyGraphCatalogRepo",
       "journeyParamVersionsRepo",
       "journeyPolicyRepo",
@@ -584,6 +587,8 @@
       "usersRepo"
     ],
     "runJourneyTodoReminderJob": [
+      "deliveriesRepo",
+      "eventsRepo",
       "journeyGraphCatalogRepo",
       "journeyPolicyRepo",
       "journeyReminderRunsRepo",
