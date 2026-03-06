@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T20:50:36-05:00",
-  "gitCommit": "1dcc0add7d5031ff884ea75f84d3d035f48f57ca",
+  "generatedAt": "2026-03-05T20:53:53-05:00",
+  "gitCommit": "6fa214e07bebde4b382a585ed5ae269ec147eb7f",
   "branch": "codex/admin-open-shortcut",
-  "sourceDigest": "a5dcc289240ce26c92f5467d1ee7ac61d953626e4c6f1bb95eb7059739db6514",
+  "sourceDigest": "812b7c6914d8261af830f88232d2190165ea48f118661931ca149fdfe6a73c6a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
