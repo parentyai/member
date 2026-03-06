@@ -23,6 +23,7 @@ const { generatePaidCasualReply } = require('../usecases/assistant/generatePaidC
 const { detectOpportunity } = require('../usecases/assistant/opportunity/detectOpportunity');
 const { detectMessagePosture } = require('../usecases/assistant/opportunity/detectMessagePosture');
 const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
+const { routeConversation } = require('../domain/llm/router/conversationRouter');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
@@ -276,6 +277,10 @@ function resolveProPredictiveActionsEnabled() {
 
 function resolvePaidOpportunityEngineEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PAID_OPPORTUNITY_ENGINE_V1', false);
+}
+
+function resolveConversationRouterEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_CONVERSATION_ROUTER', true);
 }
 
 function resolvePaidInterventionCooldownTurns() {
@@ -722,6 +727,9 @@ async function appendLlmGateDecisionBestEffort(data) {
         conversationMode: typeof payload.conversationMode === 'string' && payload.conversationMode.trim()
           ? payload.conversationMode.trim().toLowerCase()
           : null,
+        routerReason: typeof payload.routerReason === 'string' && payload.routerReason.trim()
+          ? payload.routerReason.trim().toLowerCase().replace(/\s+/g, '_')
+          : null,
         opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
           ? payload.opportunityType.trim().toLowerCase()
           : 'none',
@@ -806,6 +814,9 @@ async function appendLlmActionLogBestEffort(data) {
       conversationMode: typeof payload.conversationMode === 'string'
         ? payload.conversationMode
         : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
+      routerReason: typeof payload.routerReason === 'string' && payload.routerReason.trim()
+        ? payload.routerReason.trim().toLowerCase().replace(/\s+/g, '_')
+        : null,
       opportunityType: typeof payload.opportunityType === 'string' && payload.opportunityType.trim()
         ? payload.opportunityType.trim().toLowerCase()
         : 'none',
@@ -1122,6 +1133,86 @@ async function handleAssistantMessage(params) {
     };
   }
 
+  const conversationRouterEnabled = resolveConversationRouterEnabled();
+  const routerDecision = conversationRouterEnabled
+    ? routeConversation(text, {
+      userTier: 'paid',
+      llmConciergeEnabled
+    })
+    : null;
+  const routerMode = routerDecision && typeof routerDecision.mode === 'string'
+    ? routerDecision.mode
+    : null;
+  const routerReason = routerDecision && typeof routerDecision.reason === 'string'
+    ? routerDecision.reason
+    : null;
+  const shouldRouteToPaidCasual = conversationRouterEnabled && (routerMode === 'greeting' || routerMode === 'casual');
+
+  if (shouldRouteToPaidCasual) {
+    const casual = generatePaidCasualReply({
+      messageText: text,
+      suggestedAtoms: { nextActions: [], pitfall: null, question: null }
+    });
+    const replyText = trimForPaidLineMessage(casual && casual.replyText ? casual.replyText : 'こんにちは。');
+    await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
+    const assistantQuality = normalizeAssistantQuality(null, {
+      intentResolved: paidIntent,
+      kbTopScore: 0,
+      evidenceCoverage: 0,
+      blockedStage: null,
+      fallbackReason: null
+    });
+    const usage = await recordLlmUsage({
+      userId: lineUserId,
+      plan: planInfo.plan,
+      subscriptionStatus: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokensIn: 0,
+      tokensOut: 0,
+      tokenUsed: 0,
+      model: null,
+      assistantQuality
+    });
+    await appendLlmGateDecisionBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      status: planInfo.status,
+      intent: paidIntent,
+      decision: 'allow',
+      blockedReason: null,
+      tokenUsed: 0,
+      costEstimate: usage && usage.costEstimate,
+      model: null,
+      traceId,
+      requestId,
+      assistantQuality,
+      conversationMode: 'casual',
+      routerReason: routerReason || 'router_casual',
+      opportunityType: 'none',
+      opportunityReasonKeys: routerReason ? [routerReason] : [],
+      interventionBudget: 0
+    });
+    await appendLlmActionLogBestEffort({
+      lineUserId,
+      plan: planInfo.plan,
+      traceId,
+      requestId,
+      llmBanditEnabled,
+      conversationMode: 'casual',
+      routerReason: routerReason || 'router_casual',
+      opportunityType: 'none',
+      opportunityReasonKeys: routerReason ? [routerReason] : [],
+      interventionBudget: 0
+    });
+    return {
+      handled: true,
+      mode: 'paid_router_casual',
+      blockedReason: null
+    };
+  }
+
   const budget = await evaluateLLMBudget(lineUserId, {
     intent: paidIntent,
     tokenEstimate: 0,
@@ -1172,7 +1263,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      assistantQuality
+      assistantQuality,
+      routerReason
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1180,7 +1272,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      llmBanditEnabled
+      llmBanditEnabled,
+      routerReason
     });
     return {
       handled: true,
@@ -1236,7 +1329,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      assistantQuality
+      assistantQuality,
+      routerReason
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1244,7 +1338,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      llmBanditEnabled
+      llmBanditEnabled,
+      routerReason
     });
     return {
       handled: true,
@@ -1306,7 +1401,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      assistantQuality
+      assistantQuality,
+      routerReason
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1314,7 +1410,8 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      llmBanditEnabled
+      llmBanditEnabled,
+      routerReason
     });
     return {
       handled: true,
@@ -1331,7 +1428,10 @@ async function handleAssistantMessage(params) {
   let opportunityDecision = buildDefaultOpportunityDecision();
   const messagePosture = detectMessagePosture({ messageText: text });
   const greetingOrSmalltalk = messagePosture.isGreeting === true || messagePosture.isSmalltalk === true;
-  if (greetingOrSmalltalk) {
+  const runRouterOpportunityPath = conversationRouterEnabled
+    && opportunityEngineEnabled
+    && (routerMode === 'problem' || routerMode === 'question');
+  if (!conversationRouterEnabled && greetingOrSmalltalk) {
     opportunityDecision = detectOpportunity(buildOpportunityInput({
       lineUserId,
       userTier: 'paid',
@@ -1345,7 +1445,21 @@ async function handleAssistantMessage(params) {
       },
       llmConciergeEnabled
     }));
-  } else if (opportunityEngineEnabled) {
+  } else if (!conversationRouterEnabled && opportunityEngineEnabled) {
+    const recentTurns = resolvePaidInterventionCooldownTurns();
+    const recentEngagement = await loadRecentInterventionSignals({
+      lineUserId,
+      recentTurns
+    });
+    opportunityDecision = detectOpportunity(buildOpportunityInput({
+      lineUserId,
+      userTier: 'paid',
+      messageText: text,
+      contextSnapshot,
+      recentEngagement,
+      llmConciergeEnabled
+    }));
+  } else if (runRouterOpportunityPath) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
     const recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
@@ -1366,8 +1480,9 @@ async function handleAssistantMessage(params) {
     && Array.isArray(opportunityDecision.opportunityReasonKeys)
     && opportunityDecision.opportunityReasonKeys.some((reason) => reason === 'greeting_detected' || reason === 'smalltalk_detected')
   );
+  const routerAllowsOpportunityCasual = !conversationRouterEnabled || routerMode === 'problem' || routerMode === 'question';
 
-  if ((opportunityEngineEnabled || greetingOrSmalltalkCasual) && opportunityDecision.conversationMode === 'casual') {
+  if (routerAllowsOpportunityCasual && (opportunityEngineEnabled || greetingOrSmalltalkCasual) && opportunityDecision.conversationMode === 'casual') {
     const casual = generatePaidCasualReply({
       messageText: text,
       suggestedAtoms: opportunityDecision.suggestedAtoms
@@ -1409,6 +1524,7 @@ async function handleAssistantMessage(params) {
       requestId,
       assistantQuality,
       conversationMode: opportunityDecision.conversationMode,
+      routerReason,
       opportunityType: opportunityDecision.opportunityType,
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
       interventionBudget: opportunityDecision.interventionBudget
@@ -1420,6 +1536,7 @@ async function handleAssistantMessage(params) {
       requestId,
       llmBanditEnabled,
       conversationMode: opportunityDecision.conversationMode,
+      routerReason,
       opportunityType: opportunityDecision.opportunityType,
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
       interventionBudget: opportunityDecision.interventionBudget
@@ -1504,6 +1621,7 @@ async function handleAssistantMessage(params) {
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         assistantQuality,
         conversationMode: opportunityDecision.conversationMode,
+        routerReason,
         opportunityType: opportunityDecision.opportunityType,
         opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
         interventionBudget: opportunityDecision.interventionBudget
@@ -1516,6 +1634,7 @@ async function handleAssistantMessage(params) {
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         llmBanditEnabled,
         conversationMode: opportunityDecision.conversationMode,
+        routerReason,
         opportunityType: opportunityDecision.opportunityType,
         opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
         interventionBudget: opportunityDecision.interventionBudget
@@ -1542,9 +1661,11 @@ async function handleAssistantMessage(params) {
     if (addendum) replyText = trimForLineMessage(`${replyText}\n\n${addendum}`);
   }
   let conciergeMeta = null;
+  const routerAllowsConciergeCompose = !conversationRouterEnabled || routerMode === 'problem' || routerMode === 'question';
   if (
     llmConciergeEnabled
     && !isLowRelevanceWarning
+    && routerAllowsConciergeCompose
     && (!opportunityEngineEnabled || opportunityDecision.conversationMode === 'concierge')
   ) {
     try {
@@ -1627,12 +1748,14 @@ async function handleAssistantMessage(params) {
     fallbackReason: null
   });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
-  const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual)
+  const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
     ? opportunityDecision.conversationMode
-    : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null);
-  const opportunityType = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.opportunityType : 'none';
-  const opportunityReasonKeys = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.opportunityReasonKeys : [];
-  const interventionBudget = (opportunityEngineEnabled || greetingOrSmalltalkCasual) ? opportunityDecision.interventionBudget : 0;
+    : (conversationRouterEnabled
+      ? (routerMode === 'problem' && llmConciergeEnabled ? 'concierge' : 'casual')
+      : (llmConciergeEnabled && !isLowRelevanceWarning ? 'concierge' : null));
+  const opportunityType = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.opportunityType : 'none';
+  const opportunityReasonKeys = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.opportunityReasonKeys : [];
+  const interventionBudget = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath) ? opportunityDecision.interventionBudget : 0;
   const usage = await recordLlmUsage({
     userId: lineUserId,
     plan: planInfo.plan,
@@ -1662,6 +1785,7 @@ async function handleAssistantMessage(params) {
     conciergeMeta,
     assistantQuality,
     conversationMode,
+    routerReason,
     opportunityType,
     opportunityReasonKeys,
     interventionBudget
@@ -1674,6 +1798,7 @@ async function handleAssistantMessage(params) {
     conciergeMeta,
     llmBanditEnabled,
     conversationMode,
+    routerReason,
     opportunityType,
     opportunityReasonKeys,
     interventionBudget

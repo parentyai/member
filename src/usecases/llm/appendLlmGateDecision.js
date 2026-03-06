@@ -47,6 +47,7 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'entryType',
   'gatesApplied',
   'conversationMode',
+  'routerReason',
   'opportunityType',
   'opportunityReasonKeys',
   'interventionBudget',
