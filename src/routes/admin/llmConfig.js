@@ -6,6 +6,7 @@ const { createConfirmToken, verifyConfirmToken } = require('../../domain/confirm
 const systemFlagsRepo = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
+const { getLlmRuntimeState } = require('../../infra/llm/runtimeState');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
 function normalizeLlmEnabled(value) {
@@ -114,7 +115,12 @@ async function handleStatus(req, res) {
   })();
   const envStyleEngineAvailable = envFlagEnabled('STYLE_ENGINE_ENABLED', true);
   const envBanditAvailable = envFlagEnabled('BANDIT_ENABLED', true);
-  const effectiveEnabled = Boolean(llmEnabled && envEnabled);
+  const runtimeState = getLlmRuntimeState({
+    envFlag: envEnabled,
+    systemFlag: llmEnabled,
+    blockedReason: null
+  });
+  const effectiveEnabled = runtimeState.effectiveEnabled;
   const effectiveConciergeEnabled = Boolean(llmEnabled && llmConciergeEnabled && envEnabled);
   const effectiveWebSearchEnabled = Boolean(effectiveConciergeEnabled && llmWebSearchEnabled && envWebSearchAvailable);
   const effectiveStyleEngineEnabled = Boolean(effectiveConciergeEnabled && llmStyleEngineEnabled && envStyleEngineAvailable);
@@ -133,11 +139,14 @@ async function handleStatus(req, res) {
         llmWebSearchEnabled,
         llmStyleEngineEnabled,
         llmBanditEnabled,
+        envFlag: runtimeState.envFlag,
+        systemFlag: runtimeState.systemFlag,
         envLlmFeatureFlag: envEnabled,
         envWebSearchAvailable,
         envStyleEngineAvailable,
         envBanditAvailable,
         effectiveEnabled,
+        blockingReason: runtimeState.blockingReason,
         effectiveConciergeEnabled,
         effectiveWebSearchEnabled,
         effectiveStyleEngineEnabled,
@@ -159,12 +168,16 @@ async function handleStatus(req, res) {
     llmWebSearchEnabled,
     llmStyleEngineEnabled,
     llmBanditEnabled,
+    envFlag: runtimeState.envFlag,
+    systemFlag: runtimeState.systemFlag,
     llmPolicy,
+    runtimeState,
     envLlmFeatureFlag: envEnabled,
     envWebSearchAvailable,
     envStyleEngineAvailable,
     envBanditAvailable,
     effectiveEnabled,
+    blockingReason: runtimeState.blockingReason,
     effectiveConciergeEnabled,
     effectiveWebSearchEnabled,
     effectiveStyleEngineEnabled,

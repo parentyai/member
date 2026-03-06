@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T23:38:58-05:00",
-  "gitCommit": "b1d586417ac09af5003ce7f64ad434d70d1f3b18",
-  "branch": "codex/admin-ui-pr0-guardrails",
-  "sourceDigest": "5210487bff378139ecaa156dd830bd3bd97d17e85fc822a3f698d7434da14732",
+  "generatedAt": "2026-03-06T00:34:30-05:00",
+  "gitCommit": "7f4fbf44030708ac963a359f9bae4107351f69f2",
+  "branch": "codex/wip-main-sync-20260305-232541",
+  "sourceDigest": "1fdb213fa0a5c6e8cccb99b4661a9519076d3702e13289fccec24725924ce8f0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

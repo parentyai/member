@@ -1,0 +1,487 @@
+{
+  "files": [
+    "apps/admin/assets/admin.css"
+  ],
+  "tokens": [
+    {
+      "token": "--space-1",
+      "value": "4px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "2"
+      }
+    },
+    {
+      "token": "--space-2",
+      "value": "8px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "3"
+      }
+    },
+    {
+      "token": "--space-3",
+      "value": "12px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "4"
+      }
+    },
+    {
+      "token": "--space-4",
+      "value": "16px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "5"
+      }
+    },
+    {
+      "token": "--space-5",
+      "value": "24px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "6"
+      }
+    },
+    {
+      "token": "--space-6",
+      "value": "32px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "7"
+      }
+    },
+    {
+      "token": "--radius-sm",
+      "value": "12px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "9"
+      }
+    },
+    {
+      "token": "--radius-md",
+      "value": "16px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "10"
+      }
+    },
+    {
+      "token": "--shadow-card",
+      "value": "0 1px 2px rgba(16, 24, 40, 0.08)",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "12"
+      }
+    },
+    {
+      "token": "--shadow-pop",
+      "value": "0 8px 20px rgba(16, 24, 40, 0.14)",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "13"
+      }
+    },
+    {
+      "token": "--font-12",
+      "value": "12px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "15"
+      }
+    },
+    {
+      "token": "--font-14",
+      "value": "14px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "16"
+      }
+    },
+    {
+      "token": "--font-16",
+      "value": "16px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "17"
+      }
+    },
+    {
+      "token": "--font-20",
+      "value": "20px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "18"
+      }
+    },
+    {
+      "token": "--font-28",
+      "value": "28px",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "19"
+      }
+    },
+    {
+      "token": "--text-base",
+      "value": "#1f2328",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "21"
+      }
+    },
+    {
+      "token": "--text-muted",
+      "value": "#667085",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "22"
+      }
+    },
+    {
+      "token": "--border",
+      "value": "#e6e8ec",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "23"
+      }
+    },
+    {
+      "token": "--surface",
+      "value": "#ffffff",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "24"
+      }
+    },
+    {
+      "token": "--surface-2",
+      "value": "#f5f6f8",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "25"
+      }
+    },
+    {
+      "token": "--status-ok",
+      "value": "#2f7d4f",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "27"
+      }
+    },
+    {
+      "token": "--status-warn",
+      "value": "#8a5b1f",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "28"
+      }
+    },
+    {
+      "token": "--status-danger",
+      "value": "#a9372f",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "29"
+      }
+    },
+    {
+      "token": "--status-info",
+      "value": "#225ea8",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "30"
+      }
+    },
+    {
+      "token": "--status-ok-bg",
+      "value": "#e8f5e9",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "32"
+      }
+    },
+    {
+      "token": "--status-warn-bg",
+      "value": "#fff8e1",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "33"
+      }
+    },
+    {
+      "token": "--status-danger-bg",
+      "value": "#ffebee",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "34"
+      }
+    },
+    {
+      "token": "--status-info-bg",
+      "value": "#e7f0ff",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "35"
+      }
+    },
+    {
+      "token": "--status-unknown-bg",
+      "value": "#f5f5f5",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "36"
+      }
+    },
+    {
+      "token": "--status-unknown-text",
+      "value": "#666666",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "37"
+      }
+    },
+    {
+      "token": "--summary-bg",
+      "value": "#f8f9fb",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "39"
+      }
+    },
+    {
+      "token": "--summary-border",
+      "value": "#dfe3ea",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "40"
+      }
+    },
+    {
+      "token": "--summary-accent",
+      "value": "var(--status-info)",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "41"
+      }
+    }
+  ],
+  "colorSemantics": [
+    {
+      "meaning": "ok",
+      "token": "--status-ok / --status-ok-bg",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "27,32"
+      }
+    },
+    {
+      "meaning": "warn",
+      "token": "--status-warn / --status-warn-bg",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "28,33"
+      }
+    },
+    {
+      "meaning": "danger",
+      "token": "--status-danger / --status-danger-bg",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "29,34"
+      }
+    },
+    {
+      "meaning": "info",
+      "token": "--status-info / --status-info-bg",
+      "sourceRef": {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "30,35"
+      }
+    }
+  ],
+  "typography": [
+    {
+      "token": "--font-12",
+      "usage": "labels/meta"
+    },
+    {
+      "token": "--font-14",
+      "usage": "base body/buttons"
+    },
+    {
+      "token": "--font-20",
+      "usage": "top KPI value"
+    },
+    {
+      "token": "--font-28",
+      "usage": "large heading reserved"
+    }
+  ],
+  "spacing": [
+    "--space-1",
+    "--space-2",
+    "--space-3",
+    "--space-4",
+    "--space-5",
+    "--space-6"
+  ],
+  "reusablePatterns": [
+    "pane-grid (main/detail/actions)",
+    "decision-card + decision-state",
+    "status-card + status-pill/badge",
+    "table-scroll + sticky thead",
+    "workbench guard banner"
+  ],
+  "inconsistentPatterns": [
+    "app-shell/nav/item rule blocks duplicated in same file (likely merge accumulation)",
+    "legacy nav groups and ops-only groups coexist; visibility is runtime toggle dependent",
+    "status表現が status-* / badge-* / row-health-* で多系統"
+  ],
+  "duplicatedSelectors": [
+    {
+      "selector": ".app-shell",
+      "count": 3
+    },
+    {
+      "selector": ".app-nav",
+      "count": 3
+    },
+    {
+      "selector": ".nav-title",
+      "count": 2
+    },
+    {
+      "selector": ".nav-item",
+      "count": 2
+    },
+    {
+      "selector": ".nav-item:hover",
+      "count": 2
+    },
+    {
+      "selector": ".nav-item.is-active",
+      "count": 2
+    },
+    {
+      "selector": ".nav-icon",
+      "count": 2
+    },
+    {
+      "selector": ".app-content",
+      "count": 3
+    },
+    {
+      "selector": ".app-topbar",
+      "count": 3
+    },
+    {
+      "selector": ".top-metric",
+      "count": 2
+    },
+    {
+      "selector": ".top-label",
+      "count": 2
+    },
+    {
+      "selector": ".top-value",
+      "count": 2
+    },
+    {
+      "selector": ".top-sub",
+      "count": 2
+    },
+    {
+      "selector": ".top-role",
+      "count": 2
+    },
+    {
+      "selector": ".role-label",
+      "count": 2
+    },
+    {
+      "selector": ".role-switch",
+      "count": 2
+    },
+    {
+      "selector": ".role-btn",
+      "count": 2
+    },
+    {
+      "selector": ".role-btn.is-active",
+      "count": 2
+    },
+    {
+      "selector": ".app-pane",
+      "count": 2
+    },
+    {
+      "selector": ".app-pane.is-active",
+      "count": 2
+    },
+    {
+      "selector": ".pane-grid",
+      "count": 2
+    },
+    {
+      "selector": ".pane-detail",
+      "count": 2
+    },
+    {
+      "selector": ".pane-actions",
+      "count": 2
+    },
+    {
+      "selector": ".summary-header.is-compact",
+      "count": 2
+    },
+    {
+      "selector": ".summary-inline",
+      "count": 2
+    },
+    {
+      "selector": ".summary-divider",
+      "count": 2
+    },
+    {
+      "selector": ".today-card",
+      "count": 2
+    },
+    {
+      "selector": ".summary-metrics",
+      "count": 2
+    },
+    {
+      "selector": ".metric-label",
+      "count": 2
+    },
+    {
+      "selector": ".metric-value",
+      "count": 2
+    }
+  ],
+  "sourceRefs": [
+    {
+      "path": "apps/admin/assets/admin.css",
+      "lines": "1-42"
+    },
+    {
+      "path": "apps/admin/assets/admin.css",
+      "lines": "67-134"
+    },
+    {
+      "path": "apps/admin/assets/admin.css",
+      "lines": "223-248"
+    },
+    {
+      "path": "apps/admin/assets/admin.css",
+      "lines": "383-421"
+    },
+    {
+      "path": "apps/admin/assets/admin.css",
+      "lines": "3012-3075"
+    }
+  ]
+}

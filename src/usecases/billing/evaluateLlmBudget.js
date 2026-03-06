@@ -5,6 +5,7 @@ const opsConfigRepo = require('../../repos/firestore/opsConfigRepo');
 const llmUsageStatsRepo = require('../../repos/firestore/llmUsageStatsRepo');
 const { isLlmFeatureEnabled } = require('../../llm/featureFlag');
 const { resolvePlan, resolveAllowedIntent, normalizeIntentName } = require('./planGate');
+const { getLlmRuntimeState } = require('../../infra/llm/runtimeState');
 
 const GLOBAL_QPS_WINDOW_MS = 1000;
 const globalRequestTimestamps = [];
@@ -37,6 +38,18 @@ function buildBlockedDecision(base, reason) {
   });
 }
 
+function withRuntimeState(decision, params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const target = decision && typeof decision === 'object' ? decision : {};
+  return Object.assign({}, target, {
+    runtimeState: getLlmRuntimeState({
+      envFlag: payload.envFlag,
+      systemFlag: payload.systemFlag,
+      blockedReason: target.blockedReason || null
+    })
+  });
+}
+
 async function evaluateLLMBudget(lineUserId, params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -44,6 +57,8 @@ async function evaluateLLMBudget(lineUserId, params, deps) {
   const tokenEstimate = Math.max(0, toNumber(payload.tokenEstimate, 0));
   const planInfo = payload.planInfo || await resolvePlan(lineUserId, resolvedDeps);
   const policy = payload.policy || await (resolvedDeps.opsConfigRepo || opsConfigRepo).getLlmPolicy();
+  const envFlag = isLlmFeatureEnabled(process.env);
+  const llmEnabled = await (resolvedDeps.systemFlagsRepo || systemFlagsRepo).getLlmEnabled().catch(() => false);
 
   const base = {
     allowed: true,
@@ -57,33 +72,31 @@ async function evaluateLLMBudget(lineUserId, params, deps) {
   };
 
   if (!lineUserId || typeof lineUserId !== 'string' || !lineUserId.trim()) {
-    return buildBlockedDecision(base, 'user_missing');
+    return withRuntimeState(buildBlockedDecision(base, 'user_missing'), { envFlag, systemFlag: llmEnabled });
   }
 
   if (!policy || policy.enabled !== true) {
-    return buildBlockedDecision(base, 'policy_disabled');
+    return withRuntimeState(buildBlockedDecision(base, 'policy_disabled'), { envFlag, systemFlag: llmEnabled });
   }
 
-  const envFlag = isLlmFeatureEnabled(process.env);
-  const llmEnabled = await (resolvedDeps.systemFlagsRepo || systemFlagsRepo).getLlmEnabled().catch(() => false);
   if (!envFlag || !llmEnabled) {
-    return buildBlockedDecision(base, 'llm_disabled');
+    return withRuntimeState(buildBlockedDecision(base, 'llm_disabled'), { envFlag, systemFlag: llmEnabled });
   }
 
   const allowed = await resolveAllowedIntent(planInfo.plan, { policy, opsConfigRepo: resolvedDeps.opsConfigRepo || opsConfigRepo });
   if (!allowed.allowedIntents.includes(intent)) {
-    return buildBlockedDecision(base, 'intent_not_allowed');
+    return withRuntimeState(buildBlockedDecision(base, 'intent_not_allowed'), { envFlag, systemFlag: llmEnabled });
   }
 
   if (planInfo.plan !== 'pro' && intent !== 'faq_search') {
-    return buildBlockedDecision(base, 'plan_free');
+    return withRuntimeState(buildBlockedDecision(base, 'plan_free'), { envFlag, systemFlag: llmEnabled });
   }
 
   const stats = await (resolvedDeps.llmUsageStatsRepo || llmUsageStatsRepo).getUserUsageStats(lineUserId).catch(() => null);
   if (stats) {
     const dailyLimit = toNumber(policy.per_user_daily_limit, 0);
     if (dailyLimit > 0 && toNumber(stats.dailyUsageCount, 0) >= dailyLimit) {
-      return buildBlockedDecision(base, 'daily_limit_exceeded');
+      return withRuntimeState(buildBlockedDecision(base, 'daily_limit_exceeded'), { envFlag, systemFlag: llmEnabled });
     }
 
     const tokenBudgetSource = Object.prototype.hasOwnProperty.call(policy, 'per_user_token_budget')
@@ -91,16 +104,16 @@ async function evaluateLLMBudget(lineUserId, params, deps) {
       : policy.per_user_daily_token_budget;
     const tokenBudget = toNumber(tokenBudgetSource, 0);
     if (tokenBudget > 0 && (toNumber(stats.dailyTokenUsed, 0) + tokenEstimate) > tokenBudget) {
-      return buildBlockedDecision(base, 'token_budget_exceeded');
+      return withRuntimeState(buildBlockedDecision(base, 'token_budget_exceeded'), { envFlag, systemFlag: llmEnabled });
     }
   }
 
   const nowMs = Date.now();
   if (!reserveGlobalQpsSlot(policy.global_qps_limit, nowMs)) {
-    return buildBlockedDecision(base, 'global_qps_exceeded');
+    return withRuntimeState(buildBlockedDecision(base, 'global_qps_exceeded'), { envFlag, systemFlag: llmEnabled });
   }
 
-  return base;
+  return withRuntimeState(base, { envFlag, systemFlag: llmEnabled });
 }
 
 module.exports = {

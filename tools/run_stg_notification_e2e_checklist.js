@@ -1391,15 +1391,29 @@ async function runLlmGateScenario(ctx, opts, traceId) {
   const expectLlmEnabled = Boolean(opts && opts.expectLlmEnabled === true);
   const statusResp = await apiRequest(ctx, 'GET', '/api/admin/llm/config/status', traceId);
   const statusBody = requireHttpOk(statusResp, 'llm config status');
+  const runtime = statusBody && statusBody.runtimeState && typeof statusBody.runtimeState === 'object'
+    ? statusBody.runtimeState
+    : {};
+  const envFlag = typeof runtime.envFlag === 'boolean'
+    ? runtime.envFlag
+    : (typeof statusBody.envFlag === 'boolean' ? statusBody.envFlag : statusBody.envLlmFeatureFlag === true);
+  const systemFlag = typeof runtime.systemFlag === 'boolean'
+    ? runtime.systemFlag
+    : (typeof statusBody.systemFlag === 'boolean' ? statusBody.systemFlag : statusBody.llmEnabled === true);
+  const effectiveEnabled = typeof runtime.effectiveEnabled === 'boolean'
+    ? runtime.effectiveEnabled
+    : statusBody.effectiveEnabled === true;
+  const runtimeBlockingReason = typeof runtime.blockingReason === 'string' && runtime.blockingReason.trim().length > 0
+    ? runtime.blockingReason.trim()
+    : (typeof statusBody.blockingReason === 'string' && statusBody.blockingReason.trim().length > 0
+      ? statusBody.blockingReason.trim()
+      : 'none');
 
   if (expectLlmEnabled) {
-    const llmEnabledOk = statusBody.llmEnabled === true;
-    const envFlagOk = statusBody.envLlmFeatureFlag === true;
-    const effectiveOk = statusBody.effectiveEnabled === true;
-    if (!llmEnabledOk || !envFlagOk || !effectiveOk) {
+    if (!envFlag || !systemFlag || !effectiveEnabled || runtimeBlockingReason !== 'none') {
       return {
         status: 'FAIL',
-        reason: `llm_gate_status_not_enabled:llmEnabled=${statusBody.llmEnabled === true ? 'true' : 'false'}:envLlmFeatureFlag=${statusBody.envLlmFeatureFlag === true ? 'true' : 'false'}:effectiveEnabled=${statusBody.effectiveEnabled === true ? 'true' : 'false'}`,
+        reason: `llm_gate_runtime_not_enabled:envFlag=${envFlag ? 'true' : 'false'}:systemFlag=${systemFlag ? 'true' : 'false'}:effectiveEnabled=${effectiveEnabled ? 'true' : 'false'}:blockingReason=${runtimeBlockingReason}`,
         steps: {
           llmConfigStatus: summarizeResponse(statusResp)
         }
@@ -1425,7 +1439,7 @@ async function runLlmGateScenario(ctx, opts, traceId) {
   if (expectLlmEnabled && (!llmStatus || LLM_BLOCKED_STATUSES_WHEN_EXPECTED_ENABLED.has(llmStatus))) {
     return {
       status: 'FAIL',
-      reason: `llm_gate_status_blocked:${llmStatus || 'missing'}`,
+      reason: `llm_gate_status_blocked:${llmStatus || 'missing'}:envFlag=${envFlag ? 'true' : 'false'}:systemFlag=${systemFlag ? 'true' : 'false'}:effectiveEnabled=${effectiveEnabled ? 'true' : 'false'}:blockingReason=${runtimeBlockingReason}`,
       lineUserId,
       lineUserIdSource,
       steps: {
