@@ -10,6 +10,13 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETENTION_WINDOWS = [7, 30, 60, 90];
 const PHASES = new Set(['pre', 'arrival', 'settled', 'extend', 'return']);
+const BLOCKER_START_EVENT_TYPES = new Set(['dependency_locked', 'task_blocked', 'blocker_detected']);
+const BLOCKER_RESOLVED_EVENT_TYPES = new Set(['blocker_resolved', 'dependency_unblocked', 'unblocked']);
+const REGION_SET_EVENT_TYPES = new Set(['city_region_declared']);
+const LOCAL_TASK_OPENED_EVENT_TYPES = new Set(['local_task_surface_opened']);
+const PRIMARY_NOTIFICATION_SENT_EVENT_TYPES = new Set(['journey_primary_notification_sent']);
+const FATIGUE_GUARDED_EVENT_TYPES = new Set(['notification_fatigue_guarded']);
+const NEXT_ACTION_COMPLETION_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 function toMillis(value) {
   if (!value) return null;
@@ -63,6 +70,198 @@ function countEventActions(event) {
 function normalizeReason(value) {
   const text = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return text || 'none';
+}
+
+function normalizeEventType(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function extractNextActionKeys(event) {
+  const payload = event && typeof event === 'object' ? event : {};
+  const out = [];
+  const pushKey = (value) => {
+    if (typeof value !== 'string') return;
+    const normalized = value.trim();
+    if (!normalized) return;
+    if (out.includes(normalized)) return;
+    out.push(normalized);
+  };
+  const actions = Array.isArray(payload.nextActions)
+    ? payload.nextActions
+    : (Array.isArray(payload.actions) ? payload.actions : []);
+  actions.forEach((row) => {
+    if (typeof row === 'string') {
+      pushKey(row);
+      return;
+    }
+    const item = row && typeof row === 'object' ? row : {};
+    pushKey(item.key);
+    pushKey(item.todoKey);
+    pushKey(item.ruleId);
+    pushKey(item.taskId);
+  });
+  const ref = payload.ref && typeof payload.ref === 'object' ? payload.ref : {};
+  pushKey(payload.todoKey);
+  pushKey(payload.ruleId);
+  pushKey(payload.taskId);
+  pushKey(ref.todoKey);
+  pushKey(ref.ruleId);
+  if (!out.length) out.push('__generic__');
+  return out;
+}
+
+function toSortedEvents(events) {
+  const rows = Array.isArray(events) ? events : [];
+  return rows
+    .map((row) => (row && row.data ? row.data : row || {}))
+    .filter((event) => Number.isFinite(toMillis(event.createdAt)))
+    .sort((left, right) => toMillis(left.createdAt) - toMillis(right.createdAt));
+}
+
+function summarizeNextActionCompletion72h(events) {
+  const sortedEvents = toSortedEvents(events);
+  const pendingByUserAndKey = new Map();
+  let completedWithin72hCount = 0;
+
+  sortedEvents.forEach((event) => {
+    const lineUserId = typeof event.lineUserId === 'string' ? event.lineUserId.trim() : '';
+    const type = normalizeEventType(event.type);
+    const ms = toMillis(event.createdAt);
+    if (!lineUserId || !Number.isFinite(ms)) return;
+
+    const keys = extractNextActionKeys(event);
+    if (type === 'next_action_shown') {
+      keys.forEach((key) => {
+        const mapKey = `${lineUserId}::${key}`;
+        const pending = pendingByUserAndKey.get(mapKey) || [];
+        pending.push(ms);
+        pendingByUserAndKey.set(mapKey, pending);
+      });
+      return;
+    }
+
+    if (type === 'next_action_completed') {
+      keys.forEach((key) => {
+        const mapKey = `${lineUserId}::${key}`;
+        const pending = pendingByUserAndKey.get(mapKey);
+        if (!Array.isArray(pending) || pending.length === 0) return;
+        for (let i = pending.length - 1; i >= 0; i -= 1) {
+          const shownMs = pending[i];
+          if (!Number.isFinite(shownMs) || shownMs > ms) continue;
+          const elapsed = ms - shownMs;
+          if (elapsed > NEXT_ACTION_COMPLETION_WINDOW_MS) break;
+          completedWithin72hCount += 1;
+          pending.splice(i, 1);
+          break;
+        }
+      });
+    }
+  });
+
+  return {
+    nextActionCompletedWithin72hCount: completedWithin72hCount
+  };
+}
+
+function summarizeBlockerResolutionHours(events) {
+  const sortedEvents = toSortedEvents(events);
+  const pendingStartsByUser = new Map();
+  const resolutionHours = [];
+
+  sortedEvents.forEach((event) => {
+    const lineUserId = typeof event.lineUserId === 'string' ? event.lineUserId.trim() : '';
+    const type = normalizeEventType(event.type);
+    const ms = toMillis(event.createdAt);
+    if (!lineUserId || !Number.isFinite(ms)) return;
+
+    if (BLOCKER_START_EVENT_TYPES.has(type)) {
+      const queue = pendingStartsByUser.get(lineUserId) || [];
+      queue.push(ms);
+      pendingStartsByUser.set(lineUserId, queue);
+      return;
+    }
+
+    if (BLOCKER_RESOLVED_EVENT_TYPES.has(type)) {
+      const queue = pendingStartsByUser.get(lineUserId);
+      if (!Array.isArray(queue) || queue.length === 0) return;
+      const startMs = queue.shift();
+      if (!Number.isFinite(startMs) || ms < startMs) return;
+      resolutionHours.push((ms - startMs) / (60 * 60 * 1000));
+    }
+  });
+
+  if (!resolutionHours.length) {
+    return { blockerResolutionMedianHours: 0, blockerResolutionCount: 0 };
+  }
+
+  const sortedHours = resolutionHours.slice().sort((left, right) => left - right);
+  const center = Math.floor(sortedHours.length / 2);
+  const medianRaw = sortedHours.length % 2 === 1
+    ? sortedHours[center]
+    : (sortedHours[center - 1] + sortedHours[center]) / 2;
+
+  return {
+    blockerResolutionMedianHours: Math.round(medianRaw * 100) / 100,
+    blockerResolutionCount: sortedHours.length
+  };
+}
+
+function summarizeLocalTaskOpenAfterRegionSet(events, nowMs) {
+  const sortedEvents = toSortedEvents(events);
+  const regionSetByUser = new Map();
+  const localOpenedByUser = new Map();
+
+  sortedEvents.forEach((event) => {
+    const lineUserId = typeof event.lineUserId === 'string' ? event.lineUserId.trim() : '';
+    const type = normalizeEventType(event.type);
+    const ms = toMillis(event.createdAt);
+    if (!lineUserId || !Number.isFinite(ms)) return;
+    if (REGION_SET_EVENT_TYPES.has(type)) {
+      regionSetByUser.set(lineUserId, ms);
+      return;
+    }
+    if (LOCAL_TASK_OPENED_EVENT_TYPES.has(type)) {
+      const list = localOpenedByUser.get(lineUserId) || [];
+      list.push(ms);
+      localOpenedByUser.set(lineUserId, list);
+    }
+  });
+
+  let regionSetUserCount = 0;
+  let localTaskOpenedAfterRegionSetUserCount = 0;
+  regionSetByUser.forEach((regionSetMs, lineUserId) => {
+    if (!Number.isFinite(regionSetMs)) return;
+    if (Number.isFinite(nowMs) && regionSetMs > nowMs) return;
+    regionSetUserCount += 1;
+    const openedList = localOpenedByUser.get(lineUserId) || [];
+    const opened = openedList.some((ms) => Number.isFinite(ms) && ms >= regionSetMs && (!Number.isFinite(nowMs) || ms <= nowMs));
+    if (opened) localTaskOpenedAfterRegionSetUserCount += 1;
+  });
+
+  return {
+    localTaskOpenRateAfterRegionSet: normalizeRate(localTaskOpenedAfterRegionSetUserCount, regionSetUserCount),
+    regionSetUserCount,
+    localTaskOpenedAfterRegionSetUserCount
+  };
+}
+
+function summarizeNotificationFatigue(events) {
+  const rows = Array.isArray(events) ? events : [];
+  let primaryNotificationSentCount = 0;
+  let fatigueGuardedCount = 0;
+  rows.forEach((row) => {
+    const event = row && row.data ? row.data : row || {};
+    const type = normalizeEventType(event.type);
+    if (PRIMARY_NOTIFICATION_SENT_EVENT_TYPES.has(type)) primaryNotificationSentCount += 1;
+    if (FATIGUE_GUARDED_EVENT_TYPES.has(type)) fatigueGuardedCount += 1;
+  });
+  const denominator = primaryNotificationSentCount + fatigueGuardedCount;
+  return {
+    notificationFatigueRate: normalizeRate(fatigueGuardedCount, denominator),
+    primaryNotificationSentCount,
+    fatigueGuardedCount
+  };
 }
 
 function ensureUserStat(statsByUser, lineUserId) {
@@ -268,6 +467,11 @@ async function aggregateJourneyKpis(params, deps) {
     if (Number.isFinite(lockedCount) && lockedCount >= 0) totalLockedTaskCount += lockedCount;
   });
 
+  const nextAction72h = summarizeNextActionCompletion72h(eventsRows);
+  const blockerResolution = summarizeBlockerResolutionHours(eventsRows);
+  const localTaskOpen = summarizeLocalTaskOpenAfterRegionSet(eventsRows, nowMs);
+  const notificationFatigue = summarizeNotificationFatigue(eventsRows);
+
   const result = {
     dateKey,
     generatedAt: toIso(nowMs) || new Date(nowMs).toISOString(),
@@ -281,12 +485,22 @@ async function aggregateJourneyKpis(params, deps) {
     taskCompletionRate: normalizeRate(totalCompletedTaskCount, totalTaskCount),
     dependencyBlockRate: normalizeRate(totalLockedTaskCount, totalOpenTaskCount),
     nextActionExecutionRate: normalizeRate(nextActionCompletedCount, nextActionShownCount),
+    nextActionCompletion72h: normalizeRate(nextAction72h.nextActionCompletedWithin72hCount, nextActionShownCount),
+    blockerResolutionMedianHours: blockerResolution.blockerResolutionMedianHours,
+    localTaskOpenRateAfterRegionSet: localTaskOpen.localTaskOpenRateAfterRegionSet,
+    notificationFatigueRate: notificationFatigue.notificationFatigueRate,
     proConversionRate: normalizeRate(proConvertedCount, proPromptedCount),
     churnReasonRatio: summarizeChurnReasons(eventsRows, llmUsageLogs, subscriptions),
     nextActionShownCount,
     nextActionCompletedCount,
+    nextActionCompletedWithin72hCount: nextAction72h.nextActionCompletedWithin72hCount,
     proPromptedCount,
     proConvertedCount,
+    blockerResolutionCount: blockerResolution.blockerResolutionCount,
+    regionSetUserCount: localTaskOpen.regionSetUserCount,
+    localTaskOpenedAfterRegionSetUserCount: localTaskOpen.localTaskOpenedAfterRegionSetUserCount,
+    primaryNotificationSentCount: notificationFatigue.primaryNotificationSentCount,
+    fatigueGuardedCount: notificationFatigue.fatigueGuardedCount,
     metadata: {
       eventsScanned: Array.isArray(eventsRows) ? eventsRows.length : 0,
       llmLogsScanned: Array.isArray(llmUsageLogs) ? llmUsageLogs.length : 0,
@@ -314,6 +528,10 @@ async function aggregateJourneyKpis(params, deps) {
         taskCompletionRate: result.taskCompletionRate,
         dependencyBlockRate: result.dependencyBlockRate,
         nextActionExecutionRate: result.nextActionExecutionRate,
+        nextActionCompletion72h: result.nextActionCompletion72h,
+        blockerResolutionMedianHours: result.blockerResolutionMedianHours,
+        localTaskOpenRateAfterRegionSet: result.localTaskOpenRateAfterRegionSet,
+        notificationFatigueRate: result.notificationFatigueRate,
         proConversionRate: result.proConversionRate
       }
     });

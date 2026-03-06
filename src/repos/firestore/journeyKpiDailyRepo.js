@@ -41,6 +41,12 @@ function normalizeRate(value) {
   return Math.max(0, Math.min(1, Math.round(num * 10000) / 10000));
 }
 
+function normalizeHours(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return Math.round(num * 100) / 100;
+}
+
 function normalizeRetention(raw) {
   const payload = raw && typeof raw === 'object' ? raw : {};
   return {
@@ -77,12 +83,22 @@ function normalizeDailyKpi(dateKey, data) {
     taskCompletionRate: normalizeRate(payload.taskCompletionRate),
     dependencyBlockRate: normalizeRate(payload.dependencyBlockRate),
     nextActionExecutionRate: normalizeRate(payload.nextActionExecutionRate),
+    nextActionCompletion72h: normalizeRate(payload.nextActionCompletion72h),
+    blockerResolutionMedianHours: normalizeHours(payload.blockerResolutionMedianHours),
+    localTaskOpenRateAfterRegionSet: normalizeRate(payload.localTaskOpenRateAfterRegionSet),
+    notificationFatigueRate: normalizeRate(payload.notificationFatigueRate),
     proConversionRate: normalizeRate(payload.proConversionRate),
     churnReasonRatio: normalizeChurnReasons(payload.churnReasonRatio),
     nextActionShownCount: Math.max(0, Math.floor(normalizeNumber(payload.nextActionShownCount, 0))),
     nextActionCompletedCount: Math.max(0, Math.floor(normalizeNumber(payload.nextActionCompletedCount, 0))),
+    nextActionCompletedWithin72hCount: Math.max(0, Math.floor(normalizeNumber(payload.nextActionCompletedWithin72hCount, 0))),
     proPromptedCount: Math.max(0, Math.floor(normalizeNumber(payload.proPromptedCount, 0))),
     proConvertedCount: Math.max(0, Math.floor(normalizeNumber(payload.proConvertedCount, 0))),
+    blockerResolutionCount: Math.max(0, Math.floor(normalizeNumber(payload.blockerResolutionCount, 0))),
+    regionSetUserCount: Math.max(0, Math.floor(normalizeNumber(payload.regionSetUserCount, 0))),
+    localTaskOpenedAfterRegionSetUserCount: Math.max(0, Math.floor(normalizeNumber(payload.localTaskOpenedAfterRegionSetUserCount, 0))),
+    primaryNotificationSentCount: Math.max(0, Math.floor(normalizeNumber(payload.primaryNotificationSentCount, 0))),
+    fatigueGuardedCount: Math.max(0, Math.floor(normalizeNumber(payload.fatigueGuardedCount, 0))),
     metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {},
     updatedAt: payload.updatedAt || null,
     updatedBy: typeof payload.updatedBy === 'string' && payload.updatedBy.trim() ? payload.updatedBy.trim() : null

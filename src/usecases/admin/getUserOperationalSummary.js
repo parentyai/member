@@ -177,6 +177,30 @@ function buildDeliveryStatsByUser(deliveries) {
   return stats;
 }
 
+function buildLocalGuidanceStatsByUser(events) {
+  const stats = new Map();
+  const ensure = (lineUserId) => {
+    if (!stats.has(lineUserId)) {
+      stats.set(lineUserId, {
+        regionDeclaredCount: 0,
+        localTaskOpenedCount: 0
+      });
+    }
+    return stats.get(lineUserId);
+  };
+  (events || []).forEach((eventRow) => {
+    const data = eventRow && eventRow.data ? eventRow.data : {};
+    const lineUserId = typeof data.lineUserId === 'string' ? data.lineUserId.trim() : '';
+    if (!lineUserId) return;
+    const type = typeof data.type === 'string' ? data.type.trim().toLowerCase() : '';
+    if (!type) return;
+    const row = ensure(lineUserId);
+    if (type === 'city_region_declared') row.regionDeclaredCount += 1;
+    if (type === 'local_task_surface_opened') row.localTaskOpenedCount += 1;
+  });
+  return stats;
+}
+
 function resolveReactionRate(clickCount, deliveryCount) {
   if (!Number.isFinite(deliveryCount) || deliveryCount <= 0) return null;
   if (!Number.isFinite(clickCount) || clickCount < 0) return null;
@@ -464,6 +488,7 @@ async function getUserOperationalSummary(params) {
   const latestActionByUser = buildLatestActionByUser(events);
   const latestReactionByUser = buildLatestReactionByUser(deliveries);
   const deliveryStatsByUser = buildDeliveryStatsByUser(deliveries);
+  const localGuidanceStatsByUser = buildLocalGuidanceStatsByUser(events);
   const subscriptionByUser = buildKeyedMap(subscriptions, 'lineUserId');
   const usageByUser = buildKeyedMap(usageStats, 'lineUserId');
   const journeyProfileByUser = buildKeyedMap(journeyProfiles, 'lineUserId');
@@ -491,6 +516,10 @@ async function getUserOperationalSummary(params) {
     const journeyProfile = journeyProfileByUser.get(user.id) || null;
     const journeySchedule = journeyScheduleByUser.get(user.id) || null;
     const journeyStats = journeyTodoStatsByUser.get(user.id) || null;
+    const localGuidanceStats = localGuidanceStatsByUser.get(user.id) || { regionDeclaredCount: 0, localTaskOpenedCount: 0 };
+    const regionKey = typeof data.regionKey === 'string' && data.regionKey.trim().length > 0
+      ? data.regionKey.trim().toLowerCase()
+      : null;
     const deliveryCount = Number.isFinite(deliveryStats.deliveryCount) ? deliveryStats.deliveryCount : 0;
     const clickCount = Number.isFinite(deliveryStats.clickCount) ? deliveryStats.clickCount : 0;
     const lastReactionAt = latestClick
@@ -541,6 +570,9 @@ async function getUserOperationalSummary(params) {
       ? Number(journeyStats.dependencyBlockRate)
       : (todoOpenCount > 0 ? Math.round((todoLockedCount / todoOpenCount) * 10000) / 10000 : 0);
     const todoProgressRate = taskCompletionRate;
+    const localGuidanceCoverage = regionKey
+      ? (localGuidanceStats.localTaskOpenedCount > 0 ? 1 : 0)
+      : 0;
     const todoOverdueCount = journeyStats && Number.isFinite(Number(journeyStats.overdueCount))
       ? Number(journeyStats.overdueCount)
       : 0;
@@ -587,6 +619,10 @@ async function getUserOperationalSummary(params) {
       taskCompletionRate,
       dependencyBlockRate,
       todoProgressRate,
+      localGuidanceCoverage,
+      regionKey,
+      localTaskSurfaceOpenedCount: localGuidanceStats.localTaskOpenedCount,
+      regionDeclaredCount: localGuidanceStats.regionDeclaredCount,
       todoOpenCount,
       todoOverdueCount,
       nextTodoDueAt

@@ -244,6 +244,7 @@ const state = {
     'currentPeriodEnd',
     'llmUsage',
     'todoProgressRate',
+    'localGuidanceCoverage',
     'llmUsageToday',
     'tokensToday',
     'blockedRate',
@@ -445,6 +446,7 @@ const USERS_SUMMARY_SORT_TYPES = Object.freeze({
   llmUsage: 'number',
   llmUsageToday: 'number',
   todoProgressRate: 'number',
+  localGuidanceCoverage: 'number',
   tokensToday: 'number',
   blockedRate: 'number',
   billingIntegrity: 'string'
@@ -518,6 +520,7 @@ const USERS_SUMMARY_COLUMN_KEYS = Object.freeze([
   'currentPeriodEnd',
   'llmUsage',
   'todoProgressRate',
+  'localGuidanceCoverage',
   'llmUsageToday',
   'tokensToday',
   'blockedRate',
@@ -4305,6 +4308,10 @@ function renderDashboardJourneyKpi() {
   const taskCompletionEl = document.getElementById('dashboard-journey-task-completion');
   const dependencyBlockEl = document.getElementById('dashboard-journey-dependency-block');
   const nextActionEl = document.getElementById('dashboard-journey-next-action-rate');
+  const nextAction72hEl = document.getElementById('dashboard-journey-next-action-72h');
+  const blockerResolutionHoursEl = document.getElementById('dashboard-journey-blocker-resolution-hours');
+  const localOpenRateEl = document.getElementById('dashboard-journey-local-open-rate');
+  const notificationFatigueEl = document.getElementById('dashboard-journey-notification-fatigue');
   const conversionEl = document.getElementById('dashboard-journey-pro-conversion');
   const churnEl = document.getElementById('dashboard-journey-churn');
   const rawEl = document.getElementById('dashboard-journey-kpi-result');
@@ -4316,6 +4323,10 @@ function renderDashboardJourneyKpi() {
       if (taskCompletionEl) taskCompletionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
       if (dependencyBlockEl) dependencyBlockEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
       if (nextActionEl) nextActionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (nextAction72hEl) nextAction72hEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (blockerResolutionHoursEl) blockerResolutionHoursEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (localOpenRateEl) localOpenRateEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
+      if (notificationFatigueEl) notificationFatigueEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
       if (conversionEl) conversionEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
       if (churnEl) churnEl.textContent = t('ui.value.dashboard.blocked', 'BLOCKED');
       if (rawEl) rawEl.textContent = t('ui.desc.dashboard.blockedByLocalPreflight', 'ローカル診断が未復旧のため取得を停止中です');
@@ -4326,6 +4337,10 @@ function renderDashboardJourneyKpi() {
     if (taskCompletionEl) taskCompletionEl.textContent = '-';
     if (dependencyBlockEl) dependencyBlockEl.textContent = '-';
     if (nextActionEl) nextActionEl.textContent = '-';
+    if (nextAction72hEl) nextAction72hEl.textContent = '-';
+    if (blockerResolutionHoursEl) blockerResolutionHoursEl.textContent = '-';
+    if (localOpenRateEl) localOpenRateEl.textContent = '-';
+    if (notificationFatigueEl) notificationFatigueEl.textContent = '-';
     if (conversionEl) conversionEl.textContent = '-';
     if (churnEl) churnEl.textContent = '-';
     if (rawEl) rawEl.textContent = '-';
@@ -4345,6 +4360,13 @@ function renderDashboardJourneyKpi() {
   if (taskCompletionEl) taskCompletionEl.textContent = formatRatioPercent(payload.taskCompletionRate);
   if (dependencyBlockEl) dependencyBlockEl.textContent = formatRatioPercent(payload.dependencyBlockRate);
   if (nextActionEl) nextActionEl.textContent = formatRatioPercent(payload.nextActionExecutionRate);
+  if (nextAction72hEl) nextAction72hEl.textContent = formatRatioPercent(payload.nextActionCompletion72h);
+  if (blockerResolutionHoursEl) {
+    const hours = Number(payload.blockerResolutionMedianHours);
+    blockerResolutionHoursEl.textContent = Number.isFinite(hours) ? `${Math.round(hours * 100) / 100}h` : '-';
+  }
+  if (localOpenRateEl) localOpenRateEl.textContent = formatRatioPercent(payload.localTaskOpenRateAfterRegionSet);
+  if (notificationFatigueEl) notificationFatigueEl.textContent = formatRatioPercent(payload.notificationFatigueRate);
   if (conversionEl) conversionEl.textContent = formatRatioPercent(payload.proConversionRate);
 
   const churn = payload.churnReasonRatio && typeof payload.churnReasonRatio === 'object'
@@ -5032,6 +5054,7 @@ function resolveUsersSortValue(item, key) {
   if (key === 'llmUsage') return item && item.llmUsage;
   if (key === 'llmUsageToday') return item && item.llmUsageToday;
   if (key === 'todoProgressRate') return item && item.todoProgressRate;
+  if (key === 'localGuidanceCoverage') return item && item.localGuidanceCoverage;
   if (key === 'tokensToday') return item && item.llmTokenUsedToday;
   if (key === 'blockedRate') return item && item.llmBlockedRate;
   if (key === 'createdAt') return item && item.createdAt;
@@ -8372,6 +8395,7 @@ function mapUsersSummaryItem(item) {
   const llmBlockedToday = Number(row.llmBlockedToday);
   const llmBlockedRate = Number(row.llmBlockedRate);
   const todoProgressRate = Number(row.todoProgressRate);
+  const localGuidanceCoverage = Number(row.localGuidanceCoverage);
   const taskCompletionRate = Number(row.taskCompletionRate);
   const dependencyBlockRate = Number(row.dependencyBlockRate);
   const plan = normalizeBillingPlan(row.plan);
@@ -8404,6 +8428,7 @@ function mapUsersSummaryItem(item) {
     todoOpenCount: Number.isFinite(todoOpenCount) ? todoOpenCount : 0,
     todoOverdueCount: Number.isFinite(todoOverdueCount) ? todoOverdueCount : 0,
     todoProgressRate: Number.isFinite(todoProgressRate) ? todoProgressRate : 0,
+    localGuidanceCoverage: Number.isFinite(localGuidanceCoverage) ? localGuidanceCoverage : 0,
     taskCompletionRate: Number.isFinite(taskCompletionRate) ? taskCompletionRate : 0,
     dependencyBlockRate: Number.isFinite(dependencyBlockRate) ? dependencyBlockRate : 0,
     llmUsage: Number.isFinite(llmUsage) ? llmUsage : 0,
@@ -8703,7 +8728,10 @@ function renderUsersSummaryAnalyzeResult() {
   const avgDependencyBlock = Number.isFinite(Number(payload.avgDependencyBlockRate))
     ? `${Math.round(Number(payload.avgDependencyBlockRate) * 1000) / 10}%`
     : '-';
-  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio}), taskCompletion=${avgTaskCompletion}, dependencyBlock=${avgDependencyBlock}`;
+  const avgLocalGuidanceCoverage = Number.isFinite(Number(payload.avgLocalGuidanceCoverage))
+    ? `${Math.round(Number(payload.avgLocalGuidanceCoverage) * 1000) / 10}%`
+    : '-';
+  el.textContent = `Analyze: total=${payload.total || 0}, pro=${payload.proActiveCount || 0} (${ratio}), unknown=${payload.unknownCount || 0} (${unknownRatio}), taskCompletion=${avgTaskCompletion}, dependencyBlock=${avgDependencyBlock}, localGuidance=${avgLocalGuidanceCoverage}`;
 }
 
 function createUsersSummaryBadge(text, className) {
@@ -8761,6 +8789,7 @@ function renderUsersSummaryRows() {
     'currentPeriodEnd',
     'llmUsage',
     'todoProgressRate',
+    'localGuidanceCoverage',
     'llmUsageToday',
     'tokensToday',
     'blockedRate',
@@ -8814,6 +8843,7 @@ function renderUsersSummaryRows() {
       else if (columnKey === 'currentPeriodEnd') value = formatTimestampForList(item.currentPeriodEnd);
       else if (columnKey === 'llmUsage') value = Number.isFinite(Number(item.llmUsage)) ? String(item.llmUsage) : '-';
       else if (columnKey === 'todoProgressRate') value = formatRatioPercent(item.todoProgressRate);
+      else if (columnKey === 'localGuidanceCoverage') value = formatRatioPercent(item.localGuidanceCoverage);
       else if (columnKey === 'llmUsageToday') value = Number.isFinite(Number(item.llmUsageToday)) ? String(item.llmUsageToday) : '-';
       else if (columnKey === 'tokensToday') value = Number.isFinite(Number(item.llmTokenUsedToday)) ? String(item.llmTokenUsedToday) : '-';
       else if (columnKey === 'blockedRate') value = formatBlockedRateValue(item.llmBlockedRate);

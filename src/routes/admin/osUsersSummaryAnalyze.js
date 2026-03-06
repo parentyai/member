@@ -51,6 +51,8 @@ function buildSummary(items) {
   let taskCompletionRateSum = 0;
   let dependencyBlockRateSum = 0;
   let metricCount = 0;
+  let localGuidanceCoverageSum = 0;
+  let localGuidanceCoverageCount = 0;
 
   list.forEach((item) => {
     const plan = item && item.plan === 'pro' ? 'pro' : 'free';
@@ -66,12 +68,17 @@ function buildSummary(items) {
 
     const completion = Number(item && item.todoProgressRate);
     const blockRate = Number(item && item.dependencyBlockRate);
+    const localGuidanceCoverage = Number(item && item.localGuidanceCoverage);
     if (Number.isFinite(completion)) {
       taskCompletionRateSum += completion;
       metricCount += 1;
     }
     if (Number.isFinite(blockRate)) {
       dependencyBlockRateSum += blockRate;
+    }
+    if (Number.isFinite(localGuidanceCoverage)) {
+      localGuidanceCoverageSum += localGuidanceCoverage;
+      localGuidanceCoverageCount += 1;
     }
   });
 
@@ -89,6 +96,9 @@ function buildSummary(items) {
     unknownRatio,
     avgTaskCompletionRate: metricCount > 0 ? Number((taskCompletionRateSum / metricCount).toFixed(4)) : 0,
     avgDependencyBlockRate: metricCount > 0 ? Number((dependencyBlockRateSum / metricCount).toFixed(4)) : 0,
+    avgLocalGuidanceCoverage: localGuidanceCoverageCount > 0
+      ? Number((localGuidanceCoverageSum / localGuidanceCoverageCount).toFixed(4))
+      : 0,
     byPlan,
     byStatus,
     byIntegrity
@@ -143,6 +153,7 @@ async function handleUsersSummaryAnalyze(req, res) {
         unknownRatio: analyze.unknownRatio,
         avgTaskCompletionRate: analyze.avgTaskCompletionRate,
         avgDependencyBlockRate: analyze.avgDependencyBlockRate,
+        avgLocalGuidanceCoverage: analyze.avgLocalGuidanceCoverage,
         filters: {
           plan: plan || 'all',
           subscriptionStatus: subscriptionStatus || 'all',

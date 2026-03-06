@@ -44,6 +44,7 @@ test('phase653: users summary supports household/journey/todo filters and journe
       journeyStage: 'pre_departure',
       todoOpenCount: 2,
       todoOverdueCount: 0,
+      localGuidanceCoverage: 0.2,
       nextTodoDueAt: '2026-03-01T00:00:00.000Z'
     },
     {
@@ -57,6 +58,7 @@ test('phase653: users summary supports household/journey/todo filters and journe
       journeyStage: 'arrived',
       todoOpenCount: 3,
       todoOverdueCount: 2,
+      localGuidanceCoverage: 0.8,
       nextTodoDueAt: '2026-02-25T00:00:00.000Z'
     },
     {
@@ -70,6 +72,7 @@ test('phase653: users summary supports household/journey/todo filters and journe
       journeyStage: 'arrived',
       todoOpenCount: 0,
       todoOverdueCount: 0,
+      localGuidanceCoverage: 0.5,
       nextTodoDueAt: null
     }
   ];
@@ -91,6 +94,12 @@ test('phase653: users summary supports household/journey/todo filters and journe
   });
   assert.deepEqual(sortedByOpen.map((item) => item.lineUserId), ['U_J_2', 'U_J_1', 'U_J_3']);
 
+  const sortedByLocalGuidanceCoverage = await getUsersSummaryFiltered({
+    sortKey: 'localGuidanceCoverage',
+    sortDir: 'desc'
+  });
+  assert.deepEqual(sortedByLocalGuidanceCoverage.map((item) => item.lineUserId), ['U_J_2', 'U_J_3', 'U_J_1']);
+
   const todoNone = await getUsersSummaryFiltered({ todoState: 'none' });
   assert.equal(todoNone.length, 1);
   assert.equal(todoNone[0].lineUserId, 'U_J_3');
@@ -110,4 +119,5 @@ test('phase653: phase5 users-summary route exposes journey filter and sort query
   assert.ok(src.includes("'nextTodoDueAt'"));
   assert.ok(src.includes("'todoOpenCount'"));
   assert.ok(src.includes("'todoOverdueCount'"));
+  assert.ok(src.includes("'localGuidanceCoverage'"));
 });

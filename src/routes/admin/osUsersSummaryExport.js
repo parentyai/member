@@ -54,6 +54,7 @@ function parseSortKey(value) {
     'llmUsage',
     'llmUsageToday',
     'todoProgressRate',
+    'localGuidanceCoverage',
     'tokensToday',
     'blockedRate',
     'billingIntegrity'
@@ -102,6 +103,7 @@ function toCsv(items) {
     'updatedAt',
     'llmUsage',
     'todoProgressRate',
+    'localGuidanceCoverage',
     'llmUsageToday',
     'llmTokenUsedToday',
     'llmBlockedToday',
@@ -124,6 +126,7 @@ function toCsv(items) {
       item && item.updatedAt ? item.updatedAt : '',
       Number.isFinite(Number(item && item.llmUsage)) ? Number(item.llmUsage) : 0,
       Number.isFinite(Number(item && item.todoProgressRate)) ? Number(item.todoProgressRate) : 0,
+      Number.isFinite(Number(item && item.localGuidanceCoverage)) ? Number(item.localGuidanceCoverage) : 0,
       Number.isFinite(Number(item && item.llmUsageToday)) ? Number(item.llmUsageToday) : 0,
       Number.isFinite(Number(item && item.llmTokenUsedToday)) ? Number(item.llmTokenUsedToday) : 0,
       Number.isFinite(Number(item && item.llmBlockedToday)) ? Number(item.llmBlockedToday) : 0,
