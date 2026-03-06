@@ -10,7 +10,7 @@ function normalizeText(value) {
 function looksLikeQuestion(text) {
   if (!text) return false;
   if (/[?？]$/.test(text)) return true;
-  return /(どう|なに|何|いつ|どこ|どれ|どの|できますか|教えて|知りたい|方法)/.test(text);
+  return /(どう|なに|何|いつ|どこ|どれ|どの|できますか|教えて|知りたい|方法|次の行動|次アクション|整理して|進め方|優先順位)/.test(text);
 }
 
 function detectIntent(params) {

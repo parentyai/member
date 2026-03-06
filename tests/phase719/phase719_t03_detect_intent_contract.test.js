@@ -9,6 +9,7 @@ test('phase719: detectIntent classifies greeting/casual/question/problem/activit
   assert.equal(detectIntent({ messageText: 'こんにちは' }).mode, 'greeting');
   assert.equal(detectIntent({ messageText: '元気？' }).mode, 'casual');
   assert.equal(detectIntent({ messageText: '学校手続きどうする？' }).mode, 'question');
+  assert.equal(detectIntent({ messageText: '次の行動を整理して' }).mode, 'question');
   assert.equal(detectIntent({ messageText: '詰まって進まない' }).mode, 'problem');
   assert.equal(detectIntent({ messageText: '週末どこ行く？' }).mode, 'activity');
 });

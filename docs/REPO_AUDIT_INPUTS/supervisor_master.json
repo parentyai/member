@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T20:53:53-05:00",
-  "gitCommit": "6fa214e07bebde4b382a585ed5ae269ec147eb7f",
-  "branch": "codex/admin-open-shortcut",
-  "sourceDigest": "812b7c6914d8261af830f88232d2190165ea48f118661931ca149fdfe6a73c6a",
+  "generatedAt": "2026-03-05T22:57:35-05:00",
+  "gitCommit": "448064ea702a57bd192ff82996d6a2825c7ce8d2",
+  "branch": "codex/conversation-router-r719-fix",
+  "sourceDigest": "9865b3886eae1d554ecf95e126b33b980d88ffa223b64770644f3b4c7ff056d0",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
