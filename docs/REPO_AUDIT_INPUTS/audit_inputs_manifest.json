@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-05T18:59:24-05:00",
-  "gitCommit": "862680994ae862c21243d178be9973eed5c13530",
-  "branch": "codex/llm-plan-impl-a1",
-  "sourceDigest": "ebfd9a3e46cb825774be225cb9a77da14296817dea097eedf2c4c661bc05d909",
+  "generatedAt": "2026-03-05T20:00:56-05:00",
+  "gitCommit": "a0c0badb954ece97c62843decd0fa2fcbb9ecd61",
+  "branch": "codex/llm-plan-impl-a1-fix",
+  "sourceDigest": "d755bd4a072088f82a4a34d2ded4063ab1fe7fa03f95db466df38c6c23b1914e",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "a45efb6a0907fd76dddd9a84691b7a86b6f3eccb07e6e287ef712c67637b424a",
-      "bytes": 2408
+      "sha256": "5246440952e20da5d55eb68e9e3312025bb4c06deb27e13730c3d5160e67c491",
+      "bytes": 2412
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

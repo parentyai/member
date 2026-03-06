@@ -63,7 +63,8 @@ test('phase664: paid assistant applies maxNextActionsCap as min(policy cap, plan
     assert.equal(result.ok, true);
     assert.equal(Array.isArray(result.output.nextActions), true);
     assert.equal(result.output.nextActions.length, 1);
-    assert.match(result.replyText, /最大1/);
+    assert.match(result.replyText, /最初に住所確認/);
+    assert.doesNotMatch(result.replyText, /次に口座開設/);
   } finally {
     faqModule.searchFaqFromKb = originalSearch;
     delete require.cache[ASSISTANT_MODULE_PATH];
