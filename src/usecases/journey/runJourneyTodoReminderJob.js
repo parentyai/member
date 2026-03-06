@@ -6,11 +6,22 @@ const journeyGraphCatalogRepo = require('../../repos/firestore/journeyGraphCatal
 const userJourneySchedulesRepo = require('../../repos/firestore/userJourneySchedulesRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const journeyReminderRunsRepo = require('../../repos/firestore/journeyReminderRunsRepo');
+const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
+const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { resolvePlan } = require('../billing/planGate');
 const { computeNextReminderAt, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { resolveEffectiveJourneyParams } = require('./resolveEffectiveJourneyParams');
+const { isQuietHoursActive } = require('../../domain/notificationCaps');
+const {
+  isJourneyNotificationNarrowingEnabled,
+  getJourneyPrimaryNotificationDailyMax
+} = require('../../domain/tasks/featureFlags');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const NARROWING_LOOKBACK_HOURS = 72;
+const BLOCKER_RESOLVED_SIGNALS = new Set(['blocker_resolved', 'dependency_unblocked', 'unblocked']);
+const REGIONAL_CONFIRMED_SIGNALS = new Set(['regional_rule_confirmed', 'region_rule_updated', 'city_pack_updated']);
+const FAMILY_CRITICAL_SIGNALS = new Set(['family_critical', 'household_critical', 'school_deadline', 'dependent_deadline']);
 
 function normalizeBoolean(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -85,8 +96,152 @@ function resolveTriggeredOffset(item, nowIso, ruleSet) {
 }
 
 function parseIso(value) {
-  const parsed = Date.parse(value || '');
+  if (!value) return null;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.getTime();
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1000000000000 ? value : value * 1000;
+  }
+  if (value && typeof value.toDate === 'function') {
+    const converted = value.toDate();
+    if (converted instanceof Date && Number.isFinite(converted.getTime())) return converted.getTime();
+  }
+  const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolveQuietHours(policy) {
+  const payload = policy && typeof policy === 'object' ? policy : {};
+  const caps = payload.notificationCaps && typeof payload.notificationCaps === 'object'
+    ? payload.notificationCaps
+    : null;
+  const quietHours = caps && caps.quietHours && typeof caps.quietHours === 'object'
+    ? caps.quietHours
+    : null;
+  if (!quietHours) return null;
+  const startHourUtc = Number(quietHours.startHourUtc);
+  const endHourUtc = Number(quietHours.endHourUtc);
+  if (!Number.isInteger(startHourUtc) || !Number.isInteger(endHourUtc)) return null;
+  if (startHourUtc < 0 || startHourUtc > 23 || endHourUtc < 0 || endHourUtc > 23) return null;
+  if (startHourUtc === endHourUtc) return null;
+  return { startHourUtc, endHourUtc };
+}
+
+function resolveUtcDayStartIso(nowIso) {
+  const nowMs = parseIso(nowIso);
+  const base = Number.isFinite(nowMs) ? new Date(nowMs) : new Date();
+  base.setUTCHours(0, 0, 0, 0);
+  return base.toISOString();
+}
+
+function normalizeCounterKey(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function incrementCounter(map, key) {
+  const target = map && typeof map === 'object' ? map : {};
+  const normalizedKey = normalizeCounterKey(key) || 'unknown';
+  target[normalizedKey] = Number.isFinite(Number(target[normalizedKey])) ? Number(target[normalizedKey]) + 1 : 1;
+}
+
+function toEventMs(value) {
+  const parsed = parseIso(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolveRecentEventTypes(events, nowMs) {
+  const rows = Array.isArray(events) ? events : [];
+  const set = new Set();
+  const lookbackMs = Number.isFinite(nowMs) ? nowMs - (NARROWING_LOOKBACK_HOURS * 60 * 60 * 1000) : null;
+  rows.forEach((row) => {
+    const type = normalizeSignal(row && row.type);
+    if (!type) return;
+    const eventMs = toEventMs(row && row.createdAt);
+    if (Number.isFinite(lookbackMs) && Number.isFinite(eventMs) && eventMs < lookbackMs) return;
+    set.add(type);
+  });
+  return set;
+}
+
+function resolveReminderTrigger(item, nowMs, recentEventTypes) {
+  const row = item && typeof item === 'object' ? item : {};
+  const recentTypes = recentEventTypes instanceof Set ? recentEventTypes : new Set();
+  const signal = normalizeSignal(row.lastSignal);
+  const dueMs = parseIso(row.dueAt);
+  const dueSoon = Number.isFinite(dueMs) && Number.isFinite(nowMs) && dueMs >= nowMs && dueMs <= nowMs + (7 * DAY_MS);
+  if (dueSoon) {
+    return {
+      matched: true,
+      triggerType: 'due_soon_7d',
+      ctaAction: 'todo_detail'
+    };
+  }
+  if ((signal && BLOCKER_RESOLVED_SIGNALS.has(signal))
+    || Array.from(BLOCKER_RESOLVED_SIGNALS).some((key) => recentTypes.has(key))) {
+    return {
+      matched: true,
+      triggerType: 'blocker_resolved',
+      ctaAction: 'todo_detail'
+    };
+  }
+  const regionalTriggered = (signal && REGIONAL_CONFIRMED_SIGNALS.has(signal))
+    || Array.from(REGIONAL_CONFIRMED_SIGNALS).some((key) => recentTypes.has(key))
+    || recentTypes.has('city_region_declared')
+    || recentTypes.has('city_pack_requested');
+  if (regionalTriggered) {
+    return {
+      matched: true,
+      triggerType: 'regional_confirmed',
+      ctaAction: 'regional_procedures'
+    };
+  }
+  const householdType = normalizeSignal(row.householdType);
+  const riskLevel = normalizeSignal(row.riskLevel);
+  const familyCritical = (signal && FAMILY_CRITICAL_SIGNALS.has(signal))
+    || Array.from(FAMILY_CRITICAL_SIGNALS).some((key) => recentTypes.has(key))
+    || (householdType && householdType !== 'single' && riskLevel === 'high');
+  if (familyCritical) {
+    return {
+      matched: true,
+      triggerType: 'family_critical',
+      ctaAction: 'todo_detail'
+    };
+  }
+  return {
+    matched: false,
+    triggerType: 'narrowing_not_matched',
+    ctaAction: 'todo_detail'
+  };
+}
+
+function buildReminderMessage(item, reminderMeta) {
+  const row = item && typeof item === 'object' ? item : {};
+  const meta = reminderMeta && typeof reminderMeta === 'object' ? reminderMeta : {};
+  const title = row.title || '未対応タスク';
+  const dueDate = row.dueDate || '-';
+  const todoKey = row.todoKey || '-';
+  const ctaAction = meta.ctaAction === 'regional_procedures' ? '地域手続き' : `TODO詳細:${todoKey}`;
+  const triggerType = typeof meta.triggerType === 'string' && meta.triggerType ? meta.triggerType : 'due_soon_7d';
+  return {
+    type: 'text',
+    text: `期限が近いTODOがあります。\n[${todoKey}] ${title}\n期限: ${dueDate}\n確認: 「${ctaAction}」を送信してください。\ntrigger:${triggerType}`
+  };
+}
+
+async function appendJourneyReminderEventBestEffort(payload, deps) {
+  const item = payload && typeof payload === 'object' ? payload : {};
+  const lineUserId = typeof item.lineUserId === 'string' ? item.lineUserId.trim() : '';
+  const type = typeof item.type === 'string' ? item.type.trim() : '';
+  if (!lineUserId || !type) return;
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.eventsRepo || eventsRepo;
+  if (!repository || typeof repository.createEvent !== 'function') return;
+  const ref = item.ref && typeof item.ref === 'object' ? item.ref : {};
+  await repository.createEvent({
+    lineUserId,
+    type,
+    ref
+  }).catch(() => null);
 }
 
 function shouldSkipByRuleSet(item, plan, nowIso, ruleSet, perUserState) {
@@ -129,16 +284,6 @@ function shouldSkipByRuleSet(item, plan, nowIso, ruleSet, perUserState) {
   return { skip: false };
 }
 
-function buildReminderMessage(item) {
-  const title = item && item.title ? item.title : '未対応タスク';
-  const dueDate = item && item.dueDate ? item.dueDate : '-';
-  const todoKey = item && item.todoKey ? item.todoKey : '-';
-  return {
-    type: 'text',
-    text: `期限が近いTODOがあります。\n[${todoKey}] ${title}\n期限: ${dueDate}\n完了時は「TODO完了:${todoKey}」を送信してください。`
-  };
-}
-
 async function runJourneyTodoReminderJob(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
@@ -147,6 +292,8 @@ async function runJourneyTodoReminderJob(params, deps) {
   const todoRepo = resolvedDeps.journeyTodoItemsRepo || journeyTodoItemsRepo;
   const scheduleRepo = resolvedDeps.userJourneySchedulesRepo || userJourneySchedulesRepo;
   const runsRepo = resolvedDeps.journeyReminderRunsRepo || journeyReminderRunsRepo;
+  const deliveryRepo = resolvedDeps.deliveriesRepo || deliveriesRepo;
+  const eventRepo = resolvedDeps.eventsRepo || eventsRepo;
   const pushFn = resolvedDeps.pushMessage || pushMessage;
   const planResolver = resolvedDeps.resolvePlan || resolvePlan;
   const catalogRepo = resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo;
@@ -188,6 +335,12 @@ async function runJourneyTodoReminderJob(params, deps) {
     : {};
   const maxPerRun = normalizeLimit(policy && policy.reminder_max_per_run, 200, 5000);
   const limit = normalizeLimit(payload.limit, maxPerRun, maxPerRun);
+  const nowMs = parseIso(nowIso) || Date.now();
+  const nowDate = new Date(nowMs);
+  const narrowingEnabled = isJourneyNotificationNarrowingEnabled();
+  const primaryDailyMax = getJourneyPrimaryNotificationDailyMax();
+  const quietHours = resolveQuietHours(policy);
+  const utcDayStartIso = resolveUtcDayStartIso(nowIso);
 
   if (!resolveReminderJobEnabled()) {
     return {
@@ -227,11 +380,14 @@ async function runJourneyTodoReminderJob(params, deps) {
   let failedCount = 0;
   const errorSample = [];
   const perUserRuntime = new Map();
+  const skipReasonCounts = {};
+  const triggerCounts = {};
 
   const items = await todoRepo.listDueJourneyTodoItems({
     beforeAt: nowIso,
     limit
   });
+  const eventDeps = Object.assign({}, resolvedDeps, { eventsRepo: eventRepo });
 
   for (const item of items) {
     scannedCount += 1;
@@ -239,6 +395,7 @@ async function runJourneyTodoReminderJob(params, deps) {
       const lineUserId = item && item.lineUserId ? item.lineUserId : null;
       if (!lineUserId) {
         skippedCount += 1;
+        incrementCounter(skipReasonCounts, 'line_user_missing');
         continue;
       }
 
@@ -247,6 +404,7 @@ async function runJourneyTodoReminderJob(params, deps) {
         const hasSchedule = schedule && (schedule.departureDate || schedule.assignmentDate);
         if (!hasSchedule) {
           skippedCount += 1;
+          incrementCounter(skipReasonCounts, 'schedule_missing');
           continue;
         }
       }
@@ -256,25 +414,103 @@ async function runJourneyTodoReminderJob(params, deps) {
       if (policy.paid_only_reminders === true) {
         if (!planInfo || plan !== 'pro') {
           skippedCount += 1;
+          incrementCounter(skipReasonCounts, 'paid_only_guard');
           continue;
         }
       }
 
-      const userState = perUserRuntime.get(lineUserId) || { sentToday: 0 };
-      const ruleDecision = shouldSkipByRuleSet(item, plan, nowIso, ruleSet, userState);
+      const userState = perUserRuntime.get(lineUserId) || {
+        sentToday: 0,
+        primarySentToday: 0,
+        primaryBaselineLoaded: false,
+        recentEventTypes: new Set(),
+        recentEventsLoaded: false
+      };
+      const ruleDecision = shouldSkipByRuleSet(item, plan, nowIso, ruleSet, { sentToday: userState.sentToday });
       if (ruleDecision.skip) {
         skippedCount += 1;
+        incrementCounter(skipReasonCounts, ruleDecision.reason || 'rule_skipped');
+        perUserRuntime.set(lineUserId, userState);
         continue;
       }
 
       const triggeredOffset = resolveTriggeredOffset(item, nowIso, ruleSet);
       if (triggeredOffset === null) {
         skippedCount += 1;
+        incrementCounter(skipReasonCounts, 'offset_not_triggered');
+        perUserRuntime.set(lineUserId, userState);
         continue;
       }
 
+      if (narrowingEnabled && !userState.recentEventsLoaded) {
+        const recentEvents = eventRepo && typeof eventRepo.listEventsByUser === 'function'
+          ? await eventRepo.listEventsByUser(lineUserId, 80).catch(() => [])
+          : [];
+        userState.recentEventTypes = resolveRecentEventTypes(recentEvents, nowMs);
+        userState.recentEventsLoaded = true;
+      }
+
+      const reminderTrigger = narrowingEnabled
+        ? resolveReminderTrigger(item, nowMs, userState.recentEventTypes)
+        : { matched: true, triggerType: 'legacy_due_offset', ctaAction: 'todo_detail' };
+
+      if (narrowingEnabled && !reminderTrigger.matched) {
+        skippedCount += 1;
+        incrementCounter(skipReasonCounts, reminderTrigger.triggerType || 'narrowing_not_matched');
+        await appendJourneyReminderEventBestEffort({
+          lineUserId,
+          type: 'notification_narrowing_skipped',
+          ref: {
+            todoKey: item && item.todoKey ? item.todoKey : null,
+            reason: reminderTrigger.triggerType || 'narrowing_not_matched'
+          }
+        }, eventDeps);
+        perUserRuntime.set(lineUserId, userState);
+        continue;
+      }
+
+      if (narrowingEnabled && quietHours && isQuietHoursActive(nowDate, quietHours)) {
+        skippedCount += 1;
+        incrementCounter(skipReasonCounts, 'quiet_hours_active');
+        await appendJourneyReminderEventBestEffort({
+          lineUserId,
+          type: 'notification_quiet_hours_guarded',
+          ref: {
+            todoKey: item && item.todoKey ? item.todoKey : null,
+            triggerType: reminderTrigger.triggerType
+          }
+        }, eventDeps);
+        perUserRuntime.set(lineUserId, userState);
+        continue;
+      }
+
+      if (narrowingEnabled) {
+        if (!userState.primaryBaselineLoaded) {
+          const deliveredToday = deliveryRepo && typeof deliveryRepo.countDeliveredByUserSince === 'function'
+            ? await deliveryRepo.countDeliveredByUserSince(lineUserId, utcDayStartIso).catch(() => 0)
+            : 0;
+          userState.primarySentToday = Number.isFinite(Number(deliveredToday)) ? Number(deliveredToday) : 0;
+          userState.primaryBaselineLoaded = true;
+        }
+        if (userState.primarySentToday >= primaryDailyMax) {
+          skippedCount += 1;
+          incrementCounter(skipReasonCounts, 'primary_daily_cap');
+          await appendJourneyReminderEventBestEffort({
+            lineUserId,
+            type: 'notification_fatigue_guarded',
+            ref: {
+              todoKey: item && item.todoKey ? item.todoKey : null,
+              sentToday: userState.primarySentToday,
+              primaryDailyMax
+            }
+          }, eventDeps);
+          perUserRuntime.set(lineUserId, userState);
+          continue;
+        }
+      }
+
       if (!dryRun) {
-        await pushFn(lineUserId, buildReminderMessage(item));
+        await pushFn(lineUserId, buildReminderMessage(item, reminderTrigger));
 
         const remindedOffsetsDays = Array.isArray(item.remindedOffsetsDays)
           ? Array.from(new Set(item.remindedOffsetsDays.concat([triggeredOffset]).map((value) => Number(value)).filter((value) => Number.isInteger(value) && value >= 0)))
@@ -297,10 +533,23 @@ async function runJourneyTodoReminderJob(params, deps) {
           source: 'journey_reminder_job'
         });
         await refreshJourneyTodoStats(lineUserId, resolvedDeps, nowIso);
+        await appendJourneyReminderEventBestEffort({
+          lineUserId,
+          type: 'journey_primary_notification_sent',
+          ref: {
+            todoKey: item && item.todoKey ? item.todoKey : null,
+            triggerType: reminderTrigger.triggerType,
+            ctaAction: reminderTrigger.ctaAction,
+            triggeredOffset
+          }
+        }, eventDeps);
       }
 
       sentCount += 1;
-      perUserRuntime.set(lineUserId, { sentToday: userState.sentToday + 1 });
+      userState.sentToday += 1;
+      if (narrowingEnabled) userState.primarySentToday += 1;
+      incrementCounter(triggerCounts, reminderTrigger.triggerType || 'legacy_due_offset');
+      perUserRuntime.set(lineUserId, userState);
     } catch (err) {
       failedCount += 1;
       if (errorSample.length < 20) {
@@ -318,11 +567,16 @@ async function runJourneyTodoReminderJob(params, deps) {
     status: 'completed',
     runId: run.runId,
     policyVersionId,
+    notificationNarrowingEnabled: narrowingEnabled,
+    primaryNotificationDailyMax: primaryDailyMax,
+    quietHours,
     dryRun,
     scannedCount,
     sentCount,
     skippedCount,
     failedCount,
+    skipReasonCounts,
+    triggerCounts,
     errorSample
   };
 
@@ -331,6 +585,8 @@ async function runJourneyTodoReminderJob(params, deps) {
     sentCount,
     skippedCount,
     failedCount,
+    skipReasonCounts,
+    triggerCounts,
     errorSample
   });
 
