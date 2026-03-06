@@ -1,6 +1,7 @@
 'use strict';
 
 const { detectMessagePosture } = require('../../../usecases/assistant/opportunity/detectMessagePosture');
+const { normalizeConversationIntent } = require('./normalizeConversationIntent');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -17,6 +18,15 @@ function detectIntent(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
   const posture = detectMessagePosture({ messageText });
+  const normalizedIntent = normalizeConversationIntent(messageText);
+
+  if (normalizedIntent === 'housing') {
+    return {
+      mode: 'problem',
+      reason: 'housing_intent_detected',
+      posture
+    };
+  }
 
   if (posture.isGreeting) {
     return {

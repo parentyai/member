@@ -2921,7 +2921,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 50,
+      "tests_count": 51,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -3136,6 +3136,7 @@
         "generatePaidAssistantReply",
         "generatePaidCasualReply",
         "generatePaidFaqReply",
+        "generatePaidHousingConciergeReply",
         "getRedacMembershipStatusForLine",
         "getUserContextSnapshot",
         "handleJourneyLineCommand",
@@ -3204,7 +3205,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 51,
+      "tests_count": 52,
       "ssot_refs": [],
       "completion": "completed"
     },

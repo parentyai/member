@@ -205,6 +205,7 @@
     "generatePaidFaqReply": [
       "llmQualityLogsRepo"
     ],
+    "generatePaidHousingConciergeReply": [],
     "getAutomationConfig": [
       "automationConfigRepo"
     ],
@@ -1430,6 +1431,7 @@
       "generatePaidAssistantReply",
       "generatePaidCasualReply",
       "generatePaidFaqReply",
+      "generatePaidHousingConciergeReply",
       "getRedacMembershipStatusForLine",
       "getUserContextSnapshot",
       "handleJourneyLineCommand",

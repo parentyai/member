@@ -332,6 +332,13 @@ function findGateSummary(auditCalls) {
   return gate && gate.payloadSummary ? gate.payloadSummary : null;
 }
 
+function assertNoRetrievalTemplate(text) {
+  const message = String(text || '');
+  ['FAQ候補', 'CityPack候補', '根拠キー', 'score=', '- [ ]'].forEach((token) => {
+    assert.equal(message.includes(token), false, `unexpected token: ${token}`);
+  });
+}
+
 test('phase717: paid greeting stays casual and skips paid retrieval pipeline', { concurrency: false }, async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: HMAC_SEED,
@@ -514,6 +521,58 @@ test('phase717: cooldown suppresses consecutive interventions for paid opportuni
   assert.equal(loaded.actionLogWrites.length, 1);
   assert.equal(loaded.actionLogWrites[0].conversationMode, 'casual');
   assert.equal(loaded.actionLogWrites[0].opportunityType, 'action');
+});
+
+test('phase717: housing intent keeps concierge even when cooldown is active', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'true',
+    PAID_INTERVENTION_COOLDOWN_TURNS: '5'
+  });
+  const loaded = loadWebhookWithStubs({
+    plan: 'pro',
+    recentActionLogs: [
+      {
+        createdAt: new Date().toISOString(),
+        conversationMode: 'concierge',
+        opportunityType: 'action'
+      }
+    ]
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('賃貸で部屋探ししたい');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase717_paid_housing_cooldown_override',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assertNoRetrievalTemplate(replies[0].text);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.equal(loaded.counters.paidFaqCalled, 0);
+  assert.equal(loaded.counters.composeCalled, 0);
+
+  const summary = findGateSummary(loaded.auditCalls);
+  assert.ok(summary);
+  assert.equal(summary.conversationMode, 'concierge');
+  assert.equal(summary.routerReason, 'housing_intent_detected');
+  assert.ok(Array.isArray(summary.opportunityReasonKeys));
+  assert.ok(summary.opportunityReasonKeys.includes('housing_intent'));
+  assert.equal(loaded.actionLogWrites.length, 1);
+  assert.equal(loaded.actionLogWrites[0].conversationMode, 'concierge');
 });
 
 test('phase717: free path keeps retrieval-first behavior', { concurrency: false }, async (t) => {

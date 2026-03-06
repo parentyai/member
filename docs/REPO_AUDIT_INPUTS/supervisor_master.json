@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T08:27:18-05:00",
-  "gitCommit": "addd65d89b8a1bba221fafbf72d8406f9b1c69af",
-  "branch": "codex/admin-ui-pr2-status-copy",
-  "sourceDigest": "aca836e978c1a330eb4da482f45a60ab91c6335caf5220cfd2dbe8614d12ab62",
+  "generatedAt": "2026-03-06T12:18:03-05:00",
+  "gitCommit": "9fedce8d292958f7371d3b552d85f93b9659dfba",
+  "branch": "codex/housing-intent-concierge-r721",
+  "sourceDigest": "9eda3a44a333465521b4462f8a36d5e316ede5f77c1c9d728af45901e766ec85",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
