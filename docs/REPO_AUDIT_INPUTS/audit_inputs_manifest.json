@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T06:42:27-05:00",
-  "gitCommit": "e88e663da952a5c36baed9e817727e7b773c1e07",
-  "branch": "codex/us-journey-uxmax-USJXMAX-01",
-  "sourceDigest": "9845b98ec74eed3066c6e5c904197942c0e2cf2d5f3123d8798624fd37f1a6eb",
+  "generatedAt": "2026-03-06T08:27:18-05:00",
+  "gitCommit": "addd65d89b8a1bba221fafbf72d8406f9b1c69af",
+  "branch": "codex/admin-ui-pr2-status-copy",
+  "sourceDigest": "c390b91541e0040800846a53aff79a8ddf74d2811450747885966f0c019b60bc",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "e99f5e792f42edcdb2e94055e04999aa9c23ae800a65c2871bfac6377b0f0cc0",
+      "sha256": "52b554bf1606b5ec39b5aec62ab016cf73c03dfd57867dee66c8fb1881fe2f3b",
       "bytes": 440219
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "bd777ee19924b9c78d4d9f460aa2b28ce55a4b769df6664ddcbcab20907934fa",
-      "bytes": 2419
+      "sha256": "079040edaa8034029b8ce64bb6f3f072fd4da28b17b54016a0682c2facfe2916",
+      "bytes": 2416
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
