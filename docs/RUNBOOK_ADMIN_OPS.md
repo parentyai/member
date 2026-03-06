@@ -146,6 +146,20 @@
 6) （DB確認）`gcloud firestore databases list --project <your-project-id>`
 7) （Console）`https://console.cloud.google.com/firestore/databases/-default-/data?project=<your-project-id>`
 
+### 管理UIワンコマンド起動（admin:open）
+- 目的: 管理UIアクセス時のトークン取得・起動・ブラウザ起動を一本化する。
+- 実行: `npm run admin:open`
+- 既定動作:
+  - `ADMIN_OS_TOKEN` を `env` -> `token file` -> Secret Manager（`ADMIN_OS_TOKEN`）の順で解決
+  - `FIRESTORE_PROJECT_ID` を env / gcloud config から解決
+  - `http://127.0.0.1:18080/admin/login` を開く
+  - token をクリップボードへコピー（対応OSのみ）
+  - local preflight バナーは既定で `off`（`ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=0`）
+- 主なオプション:
+  - `npm run admin:open -- --preflight=on`
+  - `npm run admin:open -- --port=8080 --project-id=<your-project-id>`
+  - `npm run admin:open -- --no-open --no-copy`
+
 ### 判定
 - `ready=true`: 実装/データ条件を確認する
 - `ready=false`: 先に認証環境を修復する
