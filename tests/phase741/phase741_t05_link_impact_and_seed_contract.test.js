@@ -32,7 +32,7 @@ test('phase741: impact route computes shared and warn metrics fields', () => {
 
 test('phase741: rich menu task os seed script provides dry-run/apply commands and entry buttons', () => {
   const script = fs.readFileSync(seedScriptPath, 'utf8');
-  ['--apply', '--enable-policy', '今日の3つ', 'TODO一覧', 'カテゴリ', 'CityPack案内', '通知履歴', '相談']
+  ['--apply', '--enable-policy', '今やる', '今週の期限', '地域手続き', 'TODO一覧', '通知履歴', '相談']
     .forEach((token) => {
       assert.match(script, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     });

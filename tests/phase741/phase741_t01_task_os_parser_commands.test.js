@@ -9,7 +9,10 @@ const {
 } = require('../../src/domain/journey/lineCommandParsers');
 
 test('phase741: line parser resolves task os entry commands', () => {
+  assert.deepEqual(parseJourneyLineCommand('今やる'), { action: 'next_tasks' });
   assert.deepEqual(parseJourneyLineCommand('今日の3つ'), { action: 'next_tasks' });
+  assert.deepEqual(parseJourneyLineCommand('今週の期限'), { action: 'due_soon_tasks' });
+  assert.deepEqual(parseJourneyLineCommand('地域手続き'), { action: 'regional_procedures' });
   assert.deepEqual(parseJourneyLineCommand('やること一覧'), { action: 'todo_list' });
   assert.deepEqual(parseJourneyLineCommand('カテゴリ'), { action: 'category_view' });
   assert.deepEqual(parseJourneyLineCommand('カテゴリ:IMMIGRATION'), { action: 'category_view', category: 'IMMIGRATION' });
@@ -20,6 +23,8 @@ test('phase741: line parser resolves task os entry commands', () => {
 
 test('phase741: postback parser resolves task os actions', () => {
   assert.deepEqual(parseJourneyPostbackData('action=next_tasks'), { action: 'next_tasks' });
+  assert.deepEqual(parseJourneyPostbackData('action=due_soon_tasks'), { action: 'due_soon_tasks' });
+  assert.deepEqual(parseJourneyPostbackData('action=regional_procedures'), { action: 'regional_procedures' });
   assert.deepEqual(parseJourneyPostbackData('action=category_pick&category=HOUSING'), { action: 'category_view', category: 'HOUSING' });
   assert.deepEqual(parseJourneyPostbackData('action=delivery_history'), { action: 'delivery_history' });
   assert.deepEqual(parseJourneyPostbackData('action=todo_vendor&todoKey=visa_docs'), { action: 'todo_vendor', todoKey: 'visa_docs' });

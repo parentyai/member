@@ -52,28 +52,28 @@ function buildTemplate(templateId, locale) {
       size: 'large',
       areas: [
         {
-          label: '今日の3つ',
+          label: '今やる',
           bounds: { x: 0, y: 0, width: 833, height: 843 },
           actionType: 'message',
-          actionPayload: { text: '今日の3つ' }
+          actionPayload: { text: '今やる' }
         },
         {
-          label: 'やること一覧',
+          label: '今週の期限',
           bounds: { x: 833, y: 0, width: 834, height: 843 },
           actionType: 'message',
-          actionPayload: { text: 'TODO一覧' }
+          actionPayload: { text: '今週の期限' }
         },
         {
-          label: 'カテゴリ',
+          label: '地域手続き',
           bounds: { x: 1667, y: 0, width: 833, height: 843 },
           actionType: 'message',
-          actionPayload: { text: 'カテゴリ' }
+          actionPayload: { text: '地域手続き' }
         },
         {
-          label: 'CityPack',
+          label: 'TODO一覧',
           bounds: { x: 0, y: 843, width: 833, height: 843 },
           actionType: 'message',
-          actionPayload: { text: 'CityPack案内' }
+          actionPayload: { text: 'TODO一覧' }
         },
         {
           label: '通知履歴',
@@ -96,7 +96,7 @@ function buildTemplate(templateId, locale) {
     },
     version: 1,
     archived: false,
-    description: 'Task OS rich menu entry (today, todo list, category, citypack, history, support)',
+    description: 'Task OS rich menu entry (now, due soon, regional procedures, todo list, history, support)',
     labels: ['task_os', 'entry', 'line']
   };
 }

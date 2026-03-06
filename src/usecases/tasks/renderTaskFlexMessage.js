@@ -32,6 +32,19 @@ function resolveTitle(task, taskContent) {
   );
 }
 
+function resolveWhyNow(task, taskContent) {
+  const taskRow = task && typeof task === 'object' ? task : {};
+  const meaning = taskRow.meaning && typeof taskRow.meaning === 'object' ? taskRow.meaning : {};
+  const direct = normalizeText(
+    taskContent && taskContent.whyNow,
+    normalizeText(meaning.whyNow, normalizeText(taskRow.whyNow, null))
+  );
+  if (direct) return direct;
+  const dueAt = normalizeText(taskRow.dueAt, null);
+  if (dueAt) return '期限遅延を防ぐため、先に着手しておくと安全です。';
+  return '今のステージで前提条件を満たす優先タスクです。';
+}
+
 function buildPostbackData(action, todoKey, section) {
   const params = new URLSearchParams();
   params.set('action', action);
@@ -97,6 +110,7 @@ function renderTaskFlexMessage(params) {
   const linkRefs = payload.linkRefs && typeof payload.linkRefs === 'object' ? payload.linkRefs : {};
   const todoKey = normalizeText(payload.todoKey, normalizeText(task.ruleId, normalizeText(task.taskId, 'task')));
   const title = resolveTitle(task, taskContent);
+  const whyNow = resolveWhyNow(task, taskContent);
   const timeLabel = buildTimeLabel(taskContent.timeMin, taskContent.timeMax);
   const checklistLines = buildChecklistTexts(taskContent);
   const microLearning = isTaskMicroLearningEnabled()
@@ -104,6 +118,23 @@ function renderTaskFlexMessage(params) {
     : { summaryShort: [], topMistakes: [], contextTips: [] };
 
   const bodyContents = [
+    {
+      type: 'text',
+      text: 'いまやる理由',
+      size: 'sm',
+      color: '#777777'
+    },
+    {
+      type: 'text',
+      text: whyNow,
+      size: 'sm',
+      wrap: true,
+      margin: 'sm'
+    },
+    {
+      type: 'separator',
+      margin: 'md'
+    },
     {
       type: 'text',
       text: '必要時間',

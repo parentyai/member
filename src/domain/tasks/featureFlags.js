@@ -84,6 +84,18 @@ function getJourneyDailyAttentionBudgetMax() {
   return parseNumber('JOURNEY_DAILY_ATTENTION_BUDGET_MAX', 3, 1, 10);
 }
 
+function isJourneyNotificationNarrowingEnabled() {
+  return parseFlag('ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1', true);
+}
+
+function getJourneyPrimaryNotificationDailyMax() {
+  return parseNumber('JOURNEY_PRIMARY_NOTIFICATION_DAILY_MAX', 1, 1, 5);
+}
+
+function isJourneyRegionalProceduresEnabled() {
+  return parseFlag('ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1', true);
+}
+
 function isTaskCategorySystemEnabled() {
   return parseFlag('ENABLE_TASK_CATEGORY_SYSTEM_V1', true);
 }
@@ -137,6 +149,9 @@ module.exports = {
   isCityPackModuleSubscriptionEnabled,
   isJourneyAttentionBudgetEnabled,
   getJourneyDailyAttentionBudgetMax,
+  isJourneyNotificationNarrowingEnabled,
+  getJourneyPrimaryNotificationDailyMax,
+  isJourneyRegionalProceduresEnabled,
   isTaskCategorySystemEnabled,
   isNextTaskEngineEnabled,
   isCityPackRecommendedTasksEnabled,

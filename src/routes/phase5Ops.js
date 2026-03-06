@@ -169,6 +169,7 @@ function parseUsersSortKey(value) {
     'llmUsage',
     'llmUsageToday',
     'todoProgressRate',
+    'localGuidanceCoverage',
     'tokensToday',
     'blockedRate',
     'billingIntegrity',

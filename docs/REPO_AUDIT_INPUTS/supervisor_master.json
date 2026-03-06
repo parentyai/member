@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T06:43:51-05:00",
-  "gitCommit": "56fe2b6c73394cf7a11d583a3e1c5e7a8d2d5ea7",
-  "branch": "codex/admin-ui-pr1-shell-nav",
-  "sourceDigest": "7a968923437926bbd6db564ff5546d815e4298fed4e95e85170a6688c735570c",
+  "generatedAt": "2026-03-06T06:42:27-05:00",
+  "gitCommit": "e88e663da952a5c36baed9e817727e7b773c1e07",
+  "branch": "codex/us-journey-uxmax-USJXMAX-01",
+  "sourceDigest": "2d5e50162a94d9a5b3baf92cb8db3aa06fe48869d8a8fd43ca7fb37c4cb315a4",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

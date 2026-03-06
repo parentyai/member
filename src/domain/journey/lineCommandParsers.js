@@ -79,8 +79,16 @@ function parseJourneyLineCommand(text) {
     return { action: 'todo_list' };
   }
 
-  if (/^(?:今日の3つ|NEXT_TASKS)$/i.test(raw)) {
+  if (/^(?:今やる|今日の3つ|NEXT_TASKS)$/i.test(raw)) {
     return { action: 'next_tasks' };
+  }
+
+  if (/^(?:今週の期限|DUE_SOON)$/i.test(raw)) {
+    return { action: 'due_soon_tasks' };
+  }
+
+  if (/^(?:地域手続き|LOCAL_PROCEDURES|REGIONAL_PROCEDURES)$/i.test(raw)) {
+    return { action: 'regional_procedures' };
   }
 
   if (/^(?:カテゴリ|CATEGORY_VIEW)$/i.test(raw)) {
@@ -298,7 +306,13 @@ function parseJourneyPostbackData(data) {
     };
   }
 
-  if (action === 'next_tasks' || action === 'delivery_history' || action === 'support_guide') {
+  if (
+    action === 'next_tasks'
+    || action === 'due_soon_tasks'
+    || action === 'regional_procedures'
+    || action === 'delivery_history'
+    || action === 'support_guide'
+  ) {
     return { action };
   }
 

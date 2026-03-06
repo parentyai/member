@@ -10,11 +10,15 @@ const taskContentsRepo = require('../../repos/firestore/taskContentsRepo');
 const deliveriesRepo = require('../../repos/firestore/deliveriesRepo');
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
 const userCityPackPreferencesRepo = require('../../repos/firestore/userCityPackPreferencesRepo');
-const { ALLOWED_MODULES } = require('../../repos/firestore/cityPacksRepo');
+const cityPacksRepo = require('../../repos/firestore/cityPacksRepo');
+const usersRepo = require('../../repos/firestore/usersRepo');
+const eventsRepo = require('../../repos/firestore/eventsRepo');
+const { ALLOWED_MODULES } = cityPacksRepo;
 const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
+const { composeCityAndNationwidePacks } = require('../nationwidePack/composeCityAndNationwidePacks');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { computeNextTasks } = require('../tasks/computeNextTasks');
 const { computeTaskGraph } = require('../tasks/computeTaskGraph');
@@ -28,12 +32,15 @@ const {
 } = require('./taskDetailSectionReply');
 const { JOURNEY_SCENARIO_MIRROR_FIELD } = require('../../domain/constants');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const { regionPrompt } = require('../../domain/regionLineMessages');
 const { toBlockedReasonJa } = require('../../domain/tasks/blockedReasonJa');
 const {
   isJourneyUnifiedViewEnabled,
   isTaskDetailLineEnabled,
   isCityPackModuleSubscriptionEnabled,
-  isRichMenuTaskOsEntryEnabled
+  isRichMenuTaskOsEntryEnabled,
+  isCityPackRecommendedTasksEnabled,
+  isJourneyRegionalProceduresEnabled
 } = require('../../domain/tasks/featureFlags');
 const { normalizeTaskCategory, TASK_CATEGORIES } = require('../../domain/tasks/taskCategories');
 
@@ -125,14 +132,27 @@ function formatTaskList(tasks, graphResult) {
   return lines.join('\n');
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function formatNextTasksList(nextTasksResult) {
   const payload = nextTasksResult && typeof nextTasksResult === 'object' ? nextTasksResult : {};
   const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
   if (!tasks.length) {
-    return '今日優先のタスクはありません。まずは「TODO一覧」で全体を確認してください。';
+    return '今やるタスクはありません。まずは「TODO一覧」で全体を確認してください。';
   }
-  const lines = ['今日の3つ:'];
-  tasks.slice(0, 3).forEach((task, index) => {
+  const top = tasks.slice(0, 3);
+  const primary = top[0] && typeof top[0] === 'object' ? top[0] : {};
+  const primaryKey = normalizeText(
+    primary.ruleId,
+    normalizeText(primary.todoKey, normalizeText(primary.taskId, 'task_1'))
+  );
+  const primaryTitle = normalizeText(primary.title, primaryKey || '-');
+  const primaryDueDate = primary.dueAt ? toDateLabel(primary.dueAt) : '-';
+  const lines = [
+    `今やる: [${primaryKey}] ${primaryTitle}（期限:${primaryDueDate}）`,
+    '続けて今日の3つ:'
+  ];
+  top.forEach((task, index) => {
     const row = task && typeof task === 'object' ? task : {};
     const key = normalizeText(row.ruleId, normalizeText(row.todoKey, normalizeText(row.taskId, `task_${index + 1}`)));
     const title = normalizeText(row.title, key || '-');
@@ -141,7 +161,68 @@ function formatNextTasksList(nextTasksResult) {
     lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate} / カテゴリ:${category}）`);
   });
   lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  lines.push('今週の期限は「今週の期限」、地域差がある手続きは「地域手続き」で確認できます。');
   lines.push('カテゴリで絞る場合は「カテゴリ:IMMIGRATION」の形式で送信してください。');
+  return lines.join('\n');
+}
+
+function resolveNowMillis(value) {
+  const parsed = Date.parse(value || '');
+  if (Number.isFinite(parsed)) return parsed;
+  return Date.now();
+}
+
+function resolveTaskDueMillis(task) {
+  const row = task && typeof task === 'object' ? task : {};
+  const parsed = Date.parse(row.dueAt || '');
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isOpenTask(task) {
+  const status = normalizeText(task && task.status).toLowerCase();
+  return status === 'todo' || status === 'doing';
+}
+
+function resolveTaskKey(task, fallbackKey) {
+  const row = task && typeof task === 'object' ? task : {};
+  return normalizeText(
+    row.ruleId,
+    normalizeText(row.todoKey, normalizeText(row.taskId, fallbackKey || '-'))
+  );
+}
+
+function resolveTaskTitle(task, fallbackKey) {
+  const row = task && typeof task === 'object' ? task : {};
+  const meaningTitle = normalizeText(row.meaning && row.meaning.title, null);
+  return normalizeText(meaningTitle, normalizeText(row.title, resolveTaskKey(row, fallbackKey)));
+}
+
+function formatDueSoonTasksList(tasks, nowMs) {
+  const rows = Array.isArray(tasks) ? tasks : [];
+  if (!rows.length) {
+    return '今週の期限（7日以内）の未完了タスクはありません。';
+  }
+  const horizonMs = nowMs + (7 * DAY_MS);
+  const dueSoon = rows
+    .filter((row) => isOpenTask(row))
+    .filter((row) => {
+      const dueMs = resolveTaskDueMillis(row);
+      return Number.isFinite(dueMs) && dueMs >= nowMs && dueMs <= horizonMs;
+    })
+    .sort((left, right) => toSortDueMillis(left && left.dueAt) - toSortDueMillis(right && right.dueAt));
+
+  if (!dueSoon.length) {
+    return '今週の期限（7日以内）の未完了タスクはありません。';
+  }
+  const lines = ['今週の期限（7日以内）:'];
+  dueSoon.slice(0, 5).forEach((task, index) => {
+    const key = resolveTaskKey(task, `task_${index + 1}`);
+    const title = resolveTaskTitle(task, key);
+    const dueDate = task && task.dueAt ? toDateLabel(task.dueAt) : '-';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
+  });
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  lines.push('次に着手する項目は「今やる」で確認できます。');
   return lines.join('\n');
 }
 
@@ -244,6 +325,179 @@ async function buildCategoryViewReply(params, deps) {
     lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
   });
   lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  return lines.join('\n');
+}
+
+function resolvePackClassRank(packClass) {
+  return String(packClass || '').toLowerCase() === 'regional' ? 2 : 1;
+}
+
+function resolvePackClassLabel(packClass) {
+  return String(packClass || '').toLowerCase() === 'regional' ? 'regional' : 'nationwide';
+}
+
+function resolvePriorityBoost(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.floor(parsed));
+}
+
+function isModuleSubscribed(module, modulesSubscribed) {
+  const normalizedModule = normalizeText(module).toLowerCase();
+  if (!normalizedModule) return true;
+  const subscribed = normalizeCityPackModules(modulesSubscribed);
+  if (!subscribed.length) return true;
+  return subscribed.includes(normalizedModule);
+}
+
+function pickPreferredRecommendedRule(current, candidate) {
+  if (!current) return candidate;
+  const currentRank = resolvePackClassRank(current.packClass);
+  const candidateRank = resolvePackClassRank(candidate.packClass);
+  if (candidateRank !== currentRank) return candidateRank > currentRank ? candidate : current;
+  const currentBoost = resolvePriorityBoost(current.priorityBoost);
+  const candidateBoost = resolvePriorityBoost(candidate.priorityBoost);
+  if (candidateBoost !== currentBoost) return candidateBoost > currentBoost ? candidate : current;
+  return current;
+}
+
+async function appendJourneyEventBestEffort(event, deps) {
+  const payload = event && typeof event === 'object' ? event : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const type = normalizeText(payload.type);
+  if (!lineUserId || !type) return;
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.eventsRepo || eventsRepo;
+  if (!repository || typeof repository.createEvent !== 'function') return;
+  const extraFields = payload.fields && typeof payload.fields === 'object' ? payload.fields : {};
+  await repository.createEvent(Object.assign({
+    lineUserId,
+    type,
+    ref: payload.ref && typeof payload.ref === 'object' ? payload.ref : {}
+  }, extraFields)).catch(() => null);
+}
+
+async function buildRegionalProceduresReply(params, deps) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const nowMs = resolveNowMillis(payload.now);
+  const usersRepository = resolvedDeps.usersRepo || usersRepo;
+  const composePacks = resolvedDeps.composeCityAndNationwidePacks || composeCityAndNationwidePacks;
+  const cityPackRepository = resolvedDeps.cityPacksRepo || cityPacksRepo;
+  const preferenceRepo = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+
+  const user = await usersRepository.getUser(lineUserId).catch(() => null);
+  const regionKey = normalizeText(user && user.regionKey).toLowerCase();
+  if (!regionKey) {
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'local_task_surface_prompted',
+      ref: { reason: 'region_missing' }
+    }, resolvedDeps);
+    return `地域手続きは地域設定後に有効になります。\n${regionPrompt()}`;
+  }
+
+  const taskResult = await listUserTasks({
+    userId: lineUserId,
+    lineUserId,
+    forceRefresh: false,
+    actor: 'line_command_regional_procedures'
+  }, resolvedDeps).catch(() => ({ tasks: [] }));
+  const openTasks = (Array.isArray(taskResult.tasks) ? taskResult.tasks : []).filter((task) => isOpenTask(task));
+  if (!openTasks.length) {
+    return `地域手続き（${regionKey}）に紐づく未完了タスクはありません。`;
+  }
+
+  if (!isCityPackRecommendedTasksEnabled()) {
+    const fallbackDueSoon = formatDueSoonTasksList(openTasks, nowMs);
+    return `地域手続き（${regionKey}）は現在データ連携を停止中です。\n${fallbackDueSoon}`;
+  }
+
+  const preference = await preferenceRepo.getUserCityPackPreference(lineUserId).catch(() => null);
+  const modulesSubscribed = normalizeCityPackModules(preference && preference.modulesSubscribed);
+  const composition = await composePacks({
+    regionKey,
+    language: 'ja',
+    limit: 30
+  }, resolvedDeps).catch(() => ({ items: [], summary: { regional: 0, nationwide: 0 } }));
+  const composedItems = Array.isArray(composition && composition.items) ? composition.items : [];
+  const recommendedByRule = new Map();
+
+  for (const item of composedItems) {
+    const cityPackId = normalizeText(item && item.cityPackId);
+    if (!cityPackId) continue;
+    // eslint-disable-next-line no-await-in-loop
+    const cityPack = await cityPackRepository.getCityPack(cityPackId).catch(() => null);
+    const recommendedTasks = Array.isArray(cityPack && cityPack.recommendedTasks) ? cityPack.recommendedTasks : [];
+    recommendedTasks.forEach((recommended) => {
+      const ruleId = normalizeText(recommended && recommended.ruleId);
+      if (!ruleId) return;
+      if (!isModuleSubscribed(recommended && recommended.module, modulesSubscribed)) return;
+      const candidate = {
+        ruleId,
+        packClass: resolvePackClassLabel(item && item.packClass),
+        cityPackId,
+        packName: normalizeText(item && item.name, cityPackId),
+        priorityBoost: resolvePriorityBoost(recommended && recommended.priorityBoost)
+      };
+      recommendedByRule.set(ruleId, pickPreferredRecommendedRule(recommendedByRule.get(ruleId), candidate));
+    });
+  }
+
+  const taskByRuleId = new Map();
+  openTasks.forEach((task) => {
+    const ruleId = normalizeText(task && task.ruleId);
+    if (!ruleId) return;
+    if (!taskByRuleId.has(ruleId)) taskByRuleId.set(ruleId, task);
+  });
+
+  const regionalTasks = Array.from(recommendedByRule.values())
+    .filter((entry) => taskByRuleId.has(entry.ruleId))
+    .map((entry) => ({
+      ruleId: entry.ruleId,
+      task: taskByRuleId.get(entry.ruleId),
+      packClass: entry.packClass,
+      packName: entry.packName,
+      priorityBoost: entry.priorityBoost
+    }))
+    .sort((left, right) => {
+      const rankDiff = resolvePackClassRank(right.packClass) - resolvePackClassRank(left.packClass);
+      if (rankDiff !== 0) return rankDiff;
+      const dueDiff = toSortDueMillis(left && left.task && left.task.dueAt) - toSortDueMillis(right && right.task && right.task.dueAt);
+      if (dueDiff !== 0) return dueDiff;
+      const boostDiff = resolvePriorityBoost(right && right.priorityBoost) - resolvePriorityBoost(left && left.priorityBoost);
+      if (boostDiff !== 0) return boostDiff;
+      return toSortText(left && left.ruleId).localeCompare(toSortText(right && right.ruleId), 'ja');
+    });
+
+  const topRegionalTasks = regionalTasks.slice(0, 5);
+  await appendJourneyEventBestEffort({
+    lineUserId,
+    type: 'local_task_surface_opened',
+    ref: {
+      regionKey,
+      candidateCount: regionalTasks.length,
+      shownCount: topRegionalTasks.length,
+      regionalPackCount: Number(composition && composition.summary && composition.summary.regional) || 0,
+      nationwidePackCount: Number(composition && composition.summary && composition.summary.nationwide) || 0
+    }
+  }, resolvedDeps);
+
+  if (!topRegionalTasks.length) {
+    const dueSoonFallback = formatDueSoonTasksList(openTasks, nowMs);
+    return `地域手続き（${regionKey}）に一致するおすすめタスクは未検出です。\n${dueSoonFallback}`;
+  }
+
+  const lines = [`地域手続き（${regionKey}）:`];
+  topRegionalTasks.forEach((row, index) => {
+    const key = resolveTaskKey(row.task, row.ruleId || `task_${index + 1}`);
+    const title = resolveTaskTitle(row.task, key);
+    const dueDate = row && row.task && row.task.dueAt ? toDateLabel(row.task.dueAt) : '-';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate} / source:${resolvePackClassLabel(row.packClass)}）`);
+  });
+  lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
+  lines.push('補助情報のみ確認する場合は「CityPack案内」を送信してください。');
   return lines.join('\n');
 }
 
@@ -884,9 +1138,64 @@ async function handleJourneyLineCommand(params, deps) {
       userId: lineUserId,
       actor: 'line_command_next_tasks'
     }, resolvedDeps).catch(() => ({ tasks: [] }));
+    const nextActions = (Array.isArray(result && result.tasks) ? result.tasks : [])
+      .slice(0, 3)
+      .map((task, index) => ({
+        key: resolveTaskKey(task, `task_${index + 1}`),
+        status: normalizeText(task && task.status, 'open') || 'open'
+      }));
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'next_action_shown',
+      ref: { source: 'line_command_next_tasks', count: nextActions.length },
+      fields: { nextActions }
+    }, resolvedDeps);
     return {
       handled: true,
       replyText: formatNextTasksList(result)
+    };
+  }
+
+  if (command.action === 'due_soon_tasks') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    const result = await listUserTasks({
+      lineUserId,
+      userId: lineUserId,
+      forceRefresh: false,
+      actor: 'line_command_due_soon_tasks'
+    }, resolvedDeps).catch(() => ({ tasks: [] }));
+    const nowMs = resolveNowMillis(payload.now);
+    return {
+      handled: true,
+      replyText: formatDueSoonTasksList(result && result.tasks, nowMs)
+    };
+  }
+
+  if (command.action === 'regional_procedures') {
+    if (!isRichMenuTaskOsEntryEnabled()) {
+      return {
+        handled: true,
+        replyText: 'Task OS入口は現在停止中です。'
+      };
+    }
+    if (!isJourneyRegionalProceduresEnabled()) {
+      return {
+        handled: true,
+        replyText: '地域手続き導線は現在停止中です。'
+      };
+    }
+    const textReply = await buildRegionalProceduresReply({
+      lineUserId,
+      now: payload.now || null
+    }, resolvedDeps).catch(() => '地域手続きの取得に失敗しました。時間をおいて再度お試しください。');
+    return {
+      handled: true,
+      replyText: textReply
     };
   }
 
@@ -1077,6 +1386,8 @@ async function handleJourneyLineCommand(params, deps) {
       };
     }
     const taskId = `${lineUserId}__${todoKey}`;
+    const existingTodo = await todoRepo.getJourneyTodoItem(lineUserId, todoKey).catch(() => null);
+    const wasLocked = existingTodo && existingTodo.graphStatus === 'locked';
     const patchedTask = await patchTaskState({
       userId: lineUserId,
       taskId,
@@ -1099,6 +1410,19 @@ async function handleJourneyLineCommand(params, deps) {
       actor: 'line_command_todo_complete',
       failOnCycle: false
     }, resolvedDeps).catch(() => ({ ok: false, topActionableTasks: [] }));
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'next_action_completed',
+      ref: { source: 'line_command_todo_complete', todoKey },
+      fields: { nextActions: [{ key: todoKey, status: 'done' }] }
+    }, resolvedDeps);
+    if (wasLocked) {
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'blocker_resolved',
+        ref: { source: 'line_command_todo_complete', todoKey }
+      }, resolvedDeps);
+    }
     const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps);
     const topActionable = formatTopActionableTasks(graph);
     return {
@@ -1116,6 +1440,8 @@ async function handleJourneyLineCommand(params, deps) {
       };
     }
     const taskId = `${lineUserId}__${todoKey}`;
+    const existingTodo = await todoRepo.getJourneyTodoItem(lineUserId, todoKey).catch(() => null);
+    const wasLocked = existingTodo && existingTodo.graphStatus === 'locked';
     const progressState = command.action === 'todo_in_progress' ? 'in_progress' : 'not_started';
     const patchedTask = await patchTaskState({
       userId: lineUserId,
@@ -1146,6 +1472,13 @@ async function handleJourneyLineCommand(params, deps) {
       actor: 'line_command_todo_progress',
       failOnCycle: false
     }, resolvedDeps).catch(() => ({ ok: false, topActionableTasks: [] }));
+    if (wasLocked) {
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'blocker_resolved',
+        ref: { source: 'line_command_todo_progress', todoKey }
+      }, resolvedDeps);
+    }
     const stats = await refreshJourneyTodoStats(lineUserId, resolvedDeps);
     const topActionable = formatTopActionableTasks(graph);
     return {

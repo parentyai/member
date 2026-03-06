@@ -170,6 +170,7 @@
         "emergencyProvidersRepo",
         "emergencySnapshotsRepo",
         "emergencyUnmappedEventsRepo",
+        "eventsRepo",
         "journeyGraphCatalogRepo",
         "journeyParamVersionsRepo",
         "journeyPolicyRepo",
@@ -217,7 +218,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 199,
+      "tests_count": 203,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -598,6 +599,8 @@
         "runJourneyTodoReminderJob"
       ],
       "repos": [
+        "deliveriesRepo",
+        "eventsRepo",
         "journeyGraphCatalogRepo",
         "journeyPolicyRepo",
         "journeyReminderRunsRepo",
@@ -605,8 +608,10 @@
         "userJourneySchedulesRepo"
       ],
       "collections": [
+        "events",
         "journey_reminder_runs",
         "journey_todo_items",
+        "notification_deliveries",
         "opsConfig",
         "user_journey_schedules"
       ],
@@ -614,7 +619,7 @@
       "killSwitch_dependent": true,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 21,
+      "tests_count": 79,
       "ssot_refs": [],
       "completion": "completed"
     },
@@ -1246,6 +1251,7 @@
         "emergencyProvidersRepo",
         "emergencySnapshotsRepo",
         "emergencyUnmappedEventsRepo",
+        "eventsRepo",
         "journeyGraphCatalogRepo",
         "journeyParamVersionsRepo",
         "journeyPolicyRepo",
@@ -1294,7 +1300,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": true,
-      "tests_count": 226,
+      "tests_count": 227,
       "ssot_refs": [],
       "completion": "completed"
     },

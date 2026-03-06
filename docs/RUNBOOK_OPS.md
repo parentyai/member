@@ -244,19 +244,23 @@ STOP の方針:
 4. monitor > rich-menu status で `policy.enabled=true` と template/rule を確認する。
 
 ### LINE導線確認（Task OS）
-1. `今日の3つ`:
+1. `今やる`:
   - `next_tasks` が最大3件返ることを確認。
-2. `TODO一覧`:
-  - 従来一覧表示が非退行であることを確認。
-3. `カテゴリ`:
+2. `今週の期限`:
+  - `due_soon_tasks` が7日以内の未完了のみ返すことを確認。
+3. `地域手続き`:
+  - region未設定時は地域入力案内、設定済み時はregional/nationwide合成結果を返すことを確認。
+4. `TODO一覧`:
+  - 従来一覧表示が secondary surface として非退行であることを確認。
+5. `カテゴリ`:
   - カテゴリ件数表示が返ることを確認。
-4. `カテゴリ:IMMIGRATION`:
+6. `カテゴリ:IMMIGRATION`:
   - 該当カテゴリのみ表示されることを確認。
-5. `通知履歴`:
+7. `通知履歴`:
   - `notification_deliveries` ベースの履歴が返ることを確認。
-6. `TODO業者:<todoKey>`:
+8. `TODO業者:<todoKey>`:
   - `recommendedVendorLinkIds` から利用可能リンクのみ返ることを確認。
-7. `相談`:
+9. `相談`:
   - support guide 文面が返ることを確認。
 
 ### CityPack 推奨タスク seed
@@ -264,3 +268,31 @@ STOP の方針:
 2. LINEで地域申告を実施する（`declareCityRegionFromLine`）。
 3. `syncCityPackRecommendedTasks` が best-effort で起動し、未存在 task のみ作成されることを確認する。
 4. audit log `city_pack.recommended_tasks.sync` を確認する。
+
+### Notification narrowing（Journey reminder）
+1. 有効条件:
+  - `ENABLE_JOURNEY_REMINDER_JOB=1`
+  - `ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1=1`
+2. trigger 判定:
+  - `due_soon_7d|blocker_resolved|regional_confirmed|family_critical` 以外は送信しない。
+3. quiet hours:
+  - `journeyPolicy.notificationCaps.quietHours` が有効時間なら skip。
+4. daily cap:
+  - `JOURNEY_PRIMARY_NOTIFICATION_DAILY_MAX`（既定1）を超えたら skip。
+5. evidence:
+  - `journey_reminder_runs.skipReasonCounts/triggerCounts`
+  - events: `journey_primary_notification_sent`, `notification_fatigue_guarded`, `notification_quiet_hours_guarded`, `notification_narrowing_skipped`
+
+### Rollback（Journey UX-Max）
+1. 即時停止:
+  - `ENABLE_JOURNEY_REMINDER_JOB=0`
+  - `ENABLE_JOURNEY_RULE_ENGINE_V1=0`
+  - `ENABLE_CITY_PACK_MODULE_SUBSCRIPTION_V1=0`
+  - `ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1=0`
+  - `ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1=0`
+  - `opsConfig/llmPolicy.enabled=false`
+2. 段階巻き戻し:
+  - `地域手続き` 導線を feature flag で停止し `TODO一覧` 導線へ退避
+  - reminder narrowing のみ停止し既存 reminder 動作へ戻す
+3. 完全巻き戻し:
+  - PR revert（add-only データは参照停止で無害化）

@@ -218,7 +218,7 @@ Task Engine v1 の add-only SSOT。
   - `step_rules.estimatedTimeMin`, `step_rules.estimatedTimeMax`
   - `step_rules.recommendedVendorLinkIds[]`（max 3）
 - Next Task Engine（add-only）:
-  - command: `今日の3つ`（`next_tasks`）
+  - command: `今やる`（互換 alias: `今日の3つ` / `next_tasks`）
   - `computeNextTasks()` が `computeDailyTopTasks()` で決定論 top3 を返す
   - city pack 推奨タスクの `priorityBoost` を加味
   - max 件数は `JOURNEY_NEXT_TASK_MAX`（default 3）
@@ -234,7 +234,30 @@ Task Engine v1 の add-only SSOT。
   - 既存 task がある場合は上書きしない（add-only seed）
 - rich menu entry（add-only）:
   - 入口文言（message action）:
-    - `今日の3つ`, `TODO一覧`, `カテゴリ`, `CityPack案内`, `通知履歴`, `相談`
+    - `今やる`, `今週の期限`, `地域手続き`, `TODO一覧`, `通知履歴`, `相談`
+    - `TODO一覧` は secondary surface、`CityPack案内` は backstage command で維持
   - seed script:
     - `node tools/migrations/rich_menu_task_os_seed.js`（dry-run）
     - `node tools/migrations/rich_menu_task_os_seed.js --apply --enable-policy`（apply）
+
+### UX-Max logical mapping（add-only, non-destructive）
+- `Nationwide Pack`:
+  - 既存 `city_packs.packClass=nationwide` の論理分類。新エンティティは追加しない。
+- `Regional Pack`:
+  - 既存 `city_packs.packClass=regional` の論理分類。`regionKey` 一致を優先する。
+- `Core Journey`:
+  - `journey_templates` + `journey_todo_items` の既存契約を継続利用し、UI上の見せ方のみ更新する。
+- `Concierge`:
+  - 既存 LLM/Guide 系の fail-closed ガード（lawfulBasis/consent/kill-switch）を前提に、high-stakes 相談導線へ接続する。
+
+### Guided home and notification contract（add-only）
+- primary surface:
+  - `今やる` / `今週の期限` / `地域手続き` / `相談`
+- secondary surface:
+  - `TODO一覧`
+- reminders:
+  - trigger は `due_soon_7d|blocker_resolved|regional_confirmed|family_critical` のみ
+  - daily primary cap は `JOURNEY_PRIMARY_NOTIFICATION_DAILY_MAX`（default 1）
+  - narrowing toggle は `ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1`
+- CTA landing:
+  - `TODO詳細:<todoKey>` または `地域手続き` のみ

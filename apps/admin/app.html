@@ -522,6 +522,10 @@
                     <div class="note">Task完了率: <strong id="dashboard-journey-task-completion">-</strong></div>
                     <div class="note">依存ブロック率: <strong id="dashboard-journey-dependency-block">-</strong></div>
                     <div class="note">NextAction実行率: <strong id="dashboard-journey-next-action-rate">-</strong></div>
+                    <div class="note">NextAction 72h完了率: <strong id="dashboard-journey-next-action-72h">-</strong></div>
+                    <div class="note">Blocker解消中央値(h): <strong id="dashboard-journey-blocker-resolution-hours">-</strong></div>
+                    <div class="note">地域設定後Local導線開封率: <strong id="dashboard-journey-local-open-rate">-</strong></div>
+                    <div class="note">通知疲労率: <strong id="dashboard-journey-notification-fatigue">-</strong></div>
                     <div class="note">Pro conversion: <strong id="dashboard-journey-pro-conversion">-</strong></div>
                     <div class="note">Churn ratio: <strong id="dashboard-journey-churn">-</strong></div>
                   </div>
@@ -3462,6 +3466,7 @@
                       <label><input type="checkbox" data-users-column-toggle="currentPeriodEnd" checked /> 期限</label>
                       <label><input type="checkbox" data-users-column-toggle="llmUsage" checked /> llmUsage</label>
                       <label><input type="checkbox" data-users-column-toggle="todoProgressRate" checked /> todoProgressRate</label>
+                      <label><input type="checkbox" data-users-column-toggle="localGuidanceCoverage" checked /> localGuidanceCoverage</label>
                       <label><input type="checkbox" data-users-column-toggle="llmUsageToday" checked /> usageToday</label>
                       <label><input type="checkbox" data-users-column-toggle="tokensToday" checked /> tokensToday</label>
                       <label><input type="checkbox" data-users-column-toggle="blockedRate" checked /> blockedRate</label>
@@ -3493,6 +3498,7 @@
                         <th data-users-col="currentPeriodEnd"><button type="button" class="table-sort-btn" data-users-sort-key="currentPeriodEnd">期限</button></th>
                         <th data-users-col="llmUsage"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsage">llmUsage</button></th>
                         <th data-users-col="todoProgressRate"><button type="button" class="table-sort-btn" data-users-sort-key="todoProgressRate">todoProgressRate</button></th>
+                        <th data-users-col="localGuidanceCoverage"><button type="button" class="table-sort-btn" data-users-sort-key="localGuidanceCoverage">localGuidanceCoverage</button></th>
                         <th data-users-col="llmUsageToday"><button type="button" class="table-sort-btn" data-users-sort-key="llmUsageToday">usageToday</button></th>
                         <th data-users-col="tokensToday"><button type="button" class="table-sort-btn" data-users-sort-key="tokensToday">tokensToday</button></th>
                         <th data-users-col="blockedRate"><button type="button" class="table-sort-btn" data-users-sort-key="blockedRate">blockedRate</button></th>

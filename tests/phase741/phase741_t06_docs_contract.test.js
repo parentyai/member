@@ -27,7 +27,9 @@ test('phase741: runbook includes rich menu seed and task os line command checks'
   const text = fs.readFileSync(runbookDoc, 'utf8');
   [
     'rich_menu_task_os_seed.js',
-    '今日の3つ',
+    '今やる',
+    '今週の期限',
+    '地域手続き',
     'カテゴリ:IMMIGRATION',
     'TODO業者:<todoKey>',
     'city_pack.recommended_tasks.sync'

@@ -7409,8 +7409,10 @@
       "killSwitch_enforced": true,
       "killSwitch_confidence": "high",
       "writes_collections": [
+        "events",
         "journey_reminder_runs",
         "journey_todo_items",
+        "notification_deliveries",
         "opsConfig",
         "user_journey_schedules"
       ],

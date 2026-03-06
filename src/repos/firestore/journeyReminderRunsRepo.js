@@ -33,6 +33,8 @@ function normalizeSummary(data) {
     traceId: typeof payload.traceId === 'string' ? payload.traceId.trim() : null,
     actor: typeof payload.actor === 'string' ? payload.actor.trim() : null,
     requestId: typeof payload.requestId === 'string' ? payload.requestId.trim() : null,
+    skipReasonCounts: payload.skipReasonCounts && typeof payload.skipReasonCounts === 'object' ? payload.skipReasonCounts : {},
+    triggerCounts: payload.triggerCounts && typeof payload.triggerCounts === 'object' ? payload.triggerCounts : {},
     errorSample: Array.isArray(payload.errorSample) ? payload.errorSample.slice(0, 20) : []
   };
 }
@@ -48,7 +50,9 @@ async function createJourneyReminderRun(params) {
     scannedCount: 0,
     sentCount: 0,
     skippedCount: 0,
-    failedCount: 0
+    failedCount: 0,
+    skipReasonCounts: {},
+    triggerCounts: {}
   }));
   await db.collection(COLLECTION).doc(runId).set(data, { merge: true });
   return Object.assign({}, data, { runId });
@@ -75,6 +79,8 @@ async function finishJourneyReminderRun(runId, patch) {
   if (sentCount !== null) data.sentCount = sentCount;
   if (skippedCount !== null) data.skippedCount = skippedCount;
   if (failedCount !== null) data.failedCount = failedCount;
+  if (payload.skipReasonCounts && typeof payload.skipReasonCounts === 'object') data.skipReasonCounts = payload.skipReasonCounts;
+  if (payload.triggerCounts && typeof payload.triggerCounts === 'object') data.triggerCounts = payload.triggerCounts;
   if (Array.isArray(payload.errorSample)) data.errorSample = payload.errorSample.slice(0, 20);
   await db.collection(COLLECTION).doc(id).set(data, { merge: true });
   return getJourneyReminderRun(id);
