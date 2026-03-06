@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="/admin/assets/admin.css" />
   </head>
   <body class="app-body">
-    <div id="app-shell" class="app-shell" data-role="operator">
-      <aside class="app-nav">
+    <div id="app-shell" class="app-shell" data-role="operator" data-ui="admin-shell">
+      <aside class="app-nav" data-ui="left-nav">
         <div class="nav-title" data-dict-key="ui.label.nav.title">運用ナビ</div>
 
         <div class="nav-group nav-group-dashboard" data-nav-group="dashboard" data-nav-surface="primary">
@@ -222,8 +222,8 @@
         </div>
       </aside>
 
-      <main class="app-content">
-        <header class="app-topbar">
+      <main class="app-content" data-ui="content-root">
+        <header class="app-topbar" data-ui="topbar">
           <div class="top-metric top-metric-wide">
             <div class="top-label" data-dict-key="ui.label.nav.home">ダッシュボード</div>
             <div id="topbar-summary-line" class="top-summary-line">
@@ -255,7 +255,7 @@
             </div>
             <div id="topbar-build-meta" class="build-meta-badge" data-build-meta-state="pending" aria-live="polite">
               <span data-dict-key="ui.label.build.meta">Build</span>:
-              <span id="topbar-build-meta-value">NOT AVAILABLE</span>
+              <span id="topbar-build-meta-value">情報なし</span>
             </div>
           </div>
           <div class="top-developer hidden" data-role="admin" data-role-allow="admin,developer">
@@ -272,30 +272,30 @@
           </div>
         </header>
 
-        <section class="page-header">
+        <section class="page-header" data-ui="page-header">
           <div>
             <h1 id="page-title" data-dict-key="ui.label.app.title">通知運用ダッシュボード（Linear UI）</h1>
             <p id="page-subtitle" class="page-subtitle" data-dict-key="ui.desc.page.home">通知配信の判断指標を期間別に確認します。</p>
           </div>
           <div class="page-header-actions">
             <div id="page-last-updated" class="page-last-updated">最終更新: -</div>
-            <button id="page-action-primary" type="button" class="secondary-btn hidden"></button>
-            <button id="page-action-secondary" type="button" class="secondary-btn hidden"></button>
+            <button id="page-action-primary" type="button" class="secondary-btn hidden" data-control="page-primary-cta"></button>
+            <button id="page-action-secondary" type="button" class="secondary-btn hidden" data-control="page-secondary-cta"></button>
             <button id="header-consult-link" type="button" class="secondary-btn hidden" data-dict-key="ui.label.header.consult">相談窓口</button>
             <div id="header-readonly-note" class="note topbar-readonly-note">Topbarは参照ショートカット専用です（実行操作はWorkbench内のみ）。</div>
           </div>
         </section>
-        <div id="managed-action-evidence" class="managed-action-evidence is-hidden" aria-live="polite">
+        <div id="managed-action-evidence" class="managed-action-evidence is-hidden" data-ui="audit-evidence-block" aria-live="polite">
           <span class="managed-action-evidence-label">Evidence</span>
           <span id="managed-action-evidence-text">-</span>
-          <button id="managed-action-open-audit" type="button" class="secondary-btn">Open Audit</button>
+          <button id="managed-action-open-audit" type="button" class="secondary-btn" data-control="open-audit-from-evidence">Open Audit</button>
         </div>
-        <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" role="status" aria-live="polite">
+        <div id="admin-guard-banner" class="alert-banner admin-guard-banner" data-admin-guard="hidden" data-ui="guard-banner" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>原因:</strong> <span data-guard-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-guard-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-guard-field="action">-</span></div>
         </div>
-        <div id="admin-local-preflight-banner" class="alert-banner admin-local-preflight-banner" data-admin-local-preflight="hidden" role="status" aria-live="polite">
+        <div id="admin-local-preflight-banner" class="alert-banner admin-local-preflight-banner" data-admin-local-preflight="hidden" data-ui="local-preflight-banner" role="status" aria-live="polite">
           <div class="admin-guard-line"><strong>原因:</strong> <span data-local-preflight-field="cause">-</span></div>
           <div class="admin-guard-line"><strong>影響:</strong> <span data-local-preflight-field="impact">-</span></div>
           <div class="admin-guard-line"><strong>操作:</strong> <span data-local-preflight-field="action">-</span></div>
@@ -313,6 +313,10 @@
             <summary data-dict-key="ui.label.admin.localPreflight.checks">診断詳細</summary>
             <pre id="local-preflight-checks-json">-</pre>
           </details>
+        </div>
+        <div id="ui-fixture-success-banner" class="alert-banner admin-fixture-success-banner hidden" data-ui="fixture-success-banner" data-ui-fixture="hidden" role="status" aria-live="polite">
+          <div class="admin-guard-line"><strong>検証:</strong> <span id="ui-fixture-success-message">-</span></div>
+          <div class="admin-guard-line"><strong>対象:</strong> <span id="ui-fixture-success-target">-</span></div>
         </div>
 
         <section id="pane-home" class="app-pane is-active" data-pane="home">
@@ -1074,7 +1078,7 @@
                             <tbody id="composer-matrix-rows"></tbody>
                           </table>
                         </div>
-                        <div id="composer-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため NOT AVAILABLE を表示します。</div>
+                        <div id="composer-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため情報なしを表示します。</div>
                       </div>
                     </div>
                   </div>
@@ -2247,7 +2251,7 @@
                   <table class="table-compact">
                     <thead>
                       <tr>
-                        <th data-dict-key="ui.label.emergency.providerKey">providerKey</th>
+                        <th data-dict-key="ui.label.emergency.providerKey">提供元ID</th>
                         <th data-dict-key="ui.label.emergency.providerStatus">status</th>
                         <th data-dict-key="ui.label.emergency.scheduleMinutes">scheduleMinutes</th>
                         <th data-dict-key="ui.label.emergency.lastRunAt">lastRunAt</th>
@@ -2276,7 +2280,7 @@
                       <label>ruleId
                         <input id="emergency-rule-id" type="text" class="input-sm" placeholder="空欄で新規作成" />
                       </label>
-                      <label>providerKey
+                      <label>提供元ID
                         <input id="emergency-rule-provider-key" type="text" class="input-sm" placeholder="nws_alerts" />
                       </label>
                       <label>eventType
@@ -2317,7 +2321,7 @@
                         <thead>
                           <tr>
                             <th>ruleId</th>
-                            <th>providerKey</th>
+                            <th>提供元ID</th>
                             <th>eventType</th>
                             <th>severity</th>
                             <th>region</th>
@@ -3978,7 +3982,7 @@
                       <tbody id="repo-map-matrix-rows"></tbody>
                     </table>
                   </div>
-                  <div id="repo-map-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため NOT AVAILABLE を表示します。</div>
+                  <div id="repo-map-matrix-note" class="cell-muted" data-dict-key="ui.desc.developer.matrixNotAvailable">実データ不足のため情報なしを表示します。</div>
                 </div>
               </div>
               <div id="developer-map-legacy" class="panel" data-legacy-status-surface="1">
@@ -4521,7 +4525,7 @@
                       <tbody>
                         <tr>
                           <th data-dict-key="ui.label.maintenance.productReadiness.status">status</th>
-                          <td id="maintenance-product-readiness-status">NOT AVAILABLE</td>
+                          <td id="maintenance-product-readiness-status">情報なし</td>
                         </tr>
                         <tr>
                           <th data-dict-key="ui.label.maintenance.productReadiness.blockerCount">blockers</th>

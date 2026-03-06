@@ -304,6 +304,34 @@ const LOCAL_PREFLIGHT_CODE_SET = new Set([
   'FIRESTORE_PROJECT_ID_MISSING'
 ]);
 
+const UI_COPY_BANNED_TERMS_FOR_OPERATOR = Object.freeze([
+  Object.freeze({ pattern: /\bnot\s+available\b/gi, replacement: '情報なし' }),
+  Object.freeze({ pattern: /\bpane\b/gi, replacement: '画面' }),
+  Object.freeze({ pattern: /\brollout\b/gi, replacement: '段階公開' }),
+  Object.freeze({ pattern: /\bprovider[_\s-]*key\b/gi, replacement: '提供元ID' })
+]);
+const UI_FIXTURE_QUERY_KEY = 'ui_fixture';
+const UI_FIXTURE_SUCCESS_VALUE = 'success';
+
+function normalizeCopyForRole(text, role) {
+  const value = String(text || '');
+  const nextRole = role === 'admin' || role === 'developer' ? role : 'operator';
+  if (!value || nextRole === 'developer') return value;
+  return UI_COPY_BANNED_TERMS_FOR_OPERATOR.reduce((acc, rule) => {
+    if (!rule || !(rule.pattern instanceof RegExp)) return acc;
+    return acc.replace(rule.pattern, rule.replacement || '');
+  }, value);
+}
+
+function resolveUiFixtureModeFromUrl() {
+  try {
+    const currentUrl = new URL(globalThis.location.href);
+    return String(currentUrl.searchParams.get(UI_FIXTURE_QUERY_KEY) || '').trim().toLowerCase();
+  } catch (_err) {
+    return '';
+  }
+}
+
 if (!ADMIN_TREND_UI_ENABLED) {
   if (typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.classList.add('trend-ui-disabled');
@@ -2190,9 +2218,9 @@ async function copyTextToClipboardBestEffort(text) {
 
 function t(key, fallback) {
   if (state.dict && Object.prototype.hasOwnProperty.call(state.dict, key)) {
-    return state.dict[key];
+    return normalizeCopyForRole(state.dict[key], state.role);
   }
-  if (typeof fallback === 'string') return fallback;
+  if (typeof fallback === 'string') return normalizeCopyForRole(fallback, state.role);
   return '';
 }
 
@@ -2374,6 +2402,39 @@ function applyDict() {
   });
 }
 
+function applyUiContractSelectors() {
+  if (appShell) {
+    appShell.setAttribute('data-ui', appShell.getAttribute('data-ui') || 'admin-shell');
+    appShell.setAttribute('data-view-pane', state.activePane || 'home');
+  }
+  document.querySelectorAll('.app-pane[data-pane]').forEach((paneEl) => {
+    const pane = String(paneEl.getAttribute('data-pane') || '').trim();
+    if (!pane) return;
+    paneEl.setAttribute('data-ui', 'surface');
+    paneEl.setAttribute('data-surface', pane);
+  });
+  document.querySelectorAll('.nav-item[data-pane-target]').forEach((btnEl) => {
+    const pane = String(btnEl.getAttribute('data-pane-target') || '').trim();
+    btnEl.setAttribute('data-ui', 'nav-item');
+    if (pane && !btnEl.getAttribute('data-control')) {
+      btnEl.setAttribute('data-control', `open-${pane}`);
+    }
+  });
+  const stableControlIds = Object.freeze({
+    'page-action-primary': 'page-primary-cta',
+    'page-action-secondary': 'page-secondary-cta',
+    'local-preflight-recheck': 'local-preflight-recheck',
+    'local-preflight-copy-commands': 'local-preflight-copy-commands',
+    'local-preflight-open-audit': 'local-preflight-open-audit',
+    'managed-action-open-audit': 'open-audit-from-evidence'
+  });
+  Object.keys(stableControlIds).forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute('data-control', stableControlIds[id]);
+  });
+}
+
 function applyRoleNavPolicy(role) {
   const navCore = resolveCoreSlice('navCore');
   const normalizeRole = navCore && typeof navCore.normalizeRole === 'function'
@@ -2516,6 +2577,7 @@ function setRole(role, options) {
   if (opts.syncHistory !== false) {
     updateHistoryWithPaneRole(paneKey || 'home', nextRole, opts.historyMode || 'replace');
   }
+  renderUiFixtureSuccess(paneKey || 'home');
   applyBuildMetaBadge();
 }
 
@@ -3637,6 +3699,25 @@ function resolvePaneFromLocation() {
   return { pane: pane || null, source: 'hash' };
 }
 
+function isUiFixtureSuccessEnabled() {
+  return resolveUiFixtureModeFromUrl() === UI_FIXTURE_SUCCESS_VALUE;
+}
+
+function renderUiFixtureSuccess(paneKey) {
+  if (!isUiFixtureSuccessEnabled()) return;
+  const banner = document.getElementById('ui-fixture-success-banner');
+  const messageEl = document.getElementById('ui-fixture-success-message');
+  const targetEl = document.getElementById('ui-fixture-success-target');
+  if (!banner || !messageEl || !targetEl) return;
+  const roleLabel = state.role === 'developer' ? 'developer' : (state.role === 'admin' ? 'admin' : 'operator');
+  const nextPane = String(paneKey || state.activePane || 'home');
+  banner.classList.remove('hidden');
+  banner.classList.add('is-visible');
+  banner.dataset.uiFixture = 'visible';
+  messageEl.textContent = '安全なローカル検証用に成功状態を表示しています。';
+  targetEl.textContent = `role=${roleLabel}, pane=${nextPane}`;
+}
+
 function activatePane(target, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const paneTargetResult = normalizePaneTarget(target);
@@ -3693,6 +3774,7 @@ function activatePane(target, options) {
     pane.classList.toggle('is-active', pane.dataset.pane === nextPane);
   });
   state.activePane = nextPane;
+  if (appShell) appShell.setAttribute('data-view-pane', nextPane);
   if (!state.paneUpdatedAt[nextPane]) {
     setPaneUpdatedAt(nextPane);
   }
@@ -3715,6 +3797,7 @@ function activatePane(target, options) {
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
   }
+  renderUiFixtureSuccess(nextPane);
 }
 
 function activateInitialPane() {
@@ -16628,6 +16711,7 @@ function setupLlmControls() {
 (async () => {
   await loadDict();
   applyDict();
+  applyUiContractSelectors();
   applyBuildMetaBadge();
   applyTopSummaryVisibility();
   applyUsersStripeLayoutVisibility();
