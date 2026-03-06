@@ -255,9 +255,10 @@ Phase resolution:
   - `--line-users=Uxxx,Uyyy`
 
 ### Template Action Mapping（message）
-- `今日の3つ` -> Journey command `next_tasks`
-- `TODO一覧` -> Journey command `todo_list`
-- `カテゴリ` -> Journey command `category_view`
-- `CityPack案内` -> Journey command `city_pack_module_guide`
+- `今やる` -> Journey command `next_tasks`
+- `今週の期限` -> Journey command `due_soon_tasks`
+- `地域手続き` -> Journey command `regional_procedures`
+- `TODO一覧` -> Journey command `todo_list`（secondary surface）
 - `通知履歴` -> Journey command `delivery_history`
 - `相談` -> Journey command `support_guide`
+- `CityPack案内` は backstage command として維持（entry primary action には配置しない）
