@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T16:01:11-05:00",
-  "gitCommit": "46c7703913780990d060f25a01692d79872ca875",
-  "branch": "codex/journey-contract-pr1",
-  "sourceDigest": "ed552516e574b3a901501238d08ac0f5d5e14a58d1744f21d768092dd134bed7",
+  "generatedAt": "2026-03-07T16:36:22-05:00",
+  "gitCommit": "fbb038627013fc760991cffb74002ae09f5726c6",
+  "branch": "codex/llm-v3-pr1-legal-source",
+  "sourceDigest": "b6eb70319a32e82fd3187896bc9920e0defcf6da4293694c8c176c22e8b3ce57",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
