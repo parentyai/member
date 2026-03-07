@@ -342,7 +342,9 @@
       "userJourneySchedulesRepo",
       "usersRepo"
     ],
-    "handleJourneyPostback": [],
+    "handleJourneyPostback": [
+      "eventsRepo"
+    ],
     "importMunicipalitySchools": [
       "linkRegistryRepo",
       "municipalitySchoolsRepo"
