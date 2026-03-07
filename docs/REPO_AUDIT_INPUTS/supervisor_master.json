@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T16:36:46-05:00",
-  "gitCommit": "2fd793b145677f32836a7d99c3a09330fc57d48b",
-  "branch": "codex/journey-pr2-observability",
-  "sourceDigest": "30c1983783a995bd227c828313c55b27e134bc00a552e02b23616943601aff0d",
+  "generatedAt": "2026-03-07T16:44:34-05:00",
+  "gitCommit": "8616f725488423fb709c5604d3f8456d1992da19",
+  "branch": "codex/llm-v3-pr1-legal-source",
+  "sourceDigest": "76472463d4fb86901a511d8039b586f1f6824a70cb773f0e900fc93a4da1a3a6",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
