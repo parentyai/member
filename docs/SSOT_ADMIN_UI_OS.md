@@ -449,3 +449,26 @@ MUST:
 - 安全規約:
   - 即時停止は `ENABLE_CITY_PACK_UI_V2=0`。
   - 既存 `ENABLE_CITY_PACK_CONTENT_MANAGE_V1` と独立して切り戻し可能。
+
+## Phase742 Add-only UI Contract（UX Policy Read-only）
+- `/admin/app?pane=settings` に `UX Policy Console (read-only)` surface を add-only で追加できる。
+- 目的は横断可視化のみとし、既存 editor の置換や write 導線統合は行わない。
+
+### Read-only Contract
+- `ENABLE_UXOS_POLICY_READONLY_V1=1` のときのみ導線表示する。
+- data source は既存 GET/status/history API と read-only route のみ利用する。
+  - `GET /api/admin/os/journey-policy/status`
+  - `GET /api/admin/os/task-rules/status`
+  - `GET /api/admin/llm/policy/status`
+  - `GET /api/admin/os/next-best-action?lineUserId=...`
+  - `GET /api/admin/os/notification-fatigue-warning?lineUserId=...`
+- 新規 write endpoint は追加しない。
+- 既存 `/plan` `/set` API の意味は変更しない。
+
+### Guard/Audit Contract
+- 参照 API は `x-actor` / `traceId` / `appendAuditLog` 契約を継承する。
+- read API であっても監査証跡を残す（action は view 系）。
+
+### Fatigue Surface Contract
+- fatigue は warn-only 表示とする。
+- send blocking / delivery routing 変更 / emergency override はこの phase に含めない。

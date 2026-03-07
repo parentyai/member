@@ -5,6 +5,7 @@ const eventsRepo = require('../../repos/firestore/eventsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { applyJourneyReactionBranch } = require('../journey/applyJourneyReactionBranch');
+const { appendUxEvent } = require('../observability/appendUxEvent');
 
 const ACTIONS = new Set(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
@@ -102,6 +103,9 @@ async function markDeliveryReactionV2(params, deps) {
   const deliveries = resolvedDeps.deliveriesRepo || deliveriesRepo;
   const auditRepo = resolvedDeps.auditLogsRepo || auditLogsRepo;
   const events = resolvedDeps.eventsRepo || eventsRepo;
+  const appendUxEventFn = typeof resolvedDeps.appendUxEvent === 'function'
+    ? resolvedDeps.appendUxEvent
+    : appendUxEvent;
 
   const delivery = await deliveries.markReactionV2(deliveryId, action, {
     at,
@@ -139,6 +143,16 @@ async function markDeliveryReactionV2(params, deps) {
       responseText: action === 'response' ? responseText : null
     }).catch(() => null);
   }
+  await appendUxEventFn({
+    eventType: 'reaction_received',
+    deliveryId,
+    action,
+    lineUserId,
+    traceId,
+    requestId,
+    actor,
+    at
+  }, resolvedDeps).catch(() => null);
 
   const todoUpdate = await updateTodoSignalIfExists({
     lineUserId,
