@@ -54,6 +54,7 @@ const { generatePaidFaqReply } = require('../usecases/assistant/generatePaidFaqR
 const { selectConversationStyle } = require('../domain/llm/conversation/styleRouter');
 const { composeConversationDraftFromSignals } = require('../domain/llm/conversation/conversationComposer');
 const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
+const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domain/llm/conversation/paidReplyGuard');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
@@ -239,8 +240,30 @@ function stripLegacyTemplateTokensForPaid(value) {
 function detectLegacyTemplateHit(value) {
   const text = normalizeReplyText(value);
   if (!text) return false;
-  const pattern = new RegExp(FORBIDDEN_REPLY_PATTERN.source, 'gi');
-  return pattern.test(text);
+  return containsLegacyTemplateTerms(text);
+}
+
+function guardPaidMainReplyText(value, options) {
+  const payload = options && typeof options === 'object' ? options : {};
+  const fallbackText = normalizeReplyText(payload.fallbackText)
+    || '状況を整理しながら進めましょう。まずは優先する手続きを1つ決めるのがおすすめです。';
+  const guardResult = sanitizePaidMainReply(value, payload);
+  const guardedText = trimForPaidLineMessage(
+    normalizeReplyText(guardResult && guardResult.text ? guardResult.text : '')
+      || stripLegacyTemplateTokensForPaid(value)
+      || fallbackText
+  ) || fallbackText;
+  return {
+    replyText: guardedText,
+    legacyTemplateHit: guardResult ? guardResult.legacyTemplateHit === true : detectLegacyTemplateHit(value),
+    actionCount: guardResult && Number.isFinite(Number(guardResult.actionCount))
+      ? Number(guardResult.actionCount)
+      : countActionBullets(guardedText),
+    pitfallIncluded: guardResult ? guardResult.pitfallIncluded === true : detectPitfallIncluded(guardedText),
+    followupQuestionIncluded: guardResult
+      ? guardResult.followupQuestionIncluded === true
+      : detectFollowupQuestionIncluded(guardedText)
+  };
 }
 
 function countActionBullets(value) {
@@ -522,14 +545,26 @@ async function replyWithPaidDomainConcierge(params) {
     recentClicks: false,
     recentTaskDone: false
   }));
-  const opportunityDecision = detectOpportunity(buildOpportunityInput({
+  let opportunityDecision = detectOpportunity(buildOpportunityInput({
     lineUserId,
     userTier: 'paid',
     messageText: text,
     contextSnapshot,
     recentEngagement,
-      llmConciergeEnabled: true
-    }));
+    llmConciergeEnabled: true
+  }));
+  if (payload.forceConcierge === true && opportunityDecision.conversationMode !== 'concierge') {
+    const forcedReasons = Array.isArray(opportunityDecision.opportunityReasonKeys)
+      ? opportunityDecision.opportunityReasonKeys.slice(0, 8)
+      : [];
+    if (!forcedReasons.includes('paid_fallback_concierge')) forcedReasons.push('paid_fallback_concierge');
+    opportunityDecision = Object.assign({}, opportunityDecision, {
+      conversationMode: 'concierge',
+      opportunityType: opportunityDecision.opportunityType === 'none' ? 'action' : opportunityDecision.opportunityType,
+      opportunityReasonKeys: forcedReasons.slice(0, 8),
+      interventionBudget: 1
+    });
+  }
   const domainReply = domainIntent === 'housing'
     ? generatePaidHousingConciergeReply({
       lineUserId,
@@ -548,8 +583,19 @@ async function replyWithPaidDomainConcierge(params) {
     });
   const fallbackReplyText = '状況を整理しながら進めましょう。まずは優先する手続きを3つ以内に絞るのがおすすめです。';
   const rawReplyText = domainReply && domainReply.replyText ? domainReply.replyText : fallbackReplyText;
-  const sanitizedReplyText = stripLegacyTemplateTokensForPaid(rawReplyText) || fallbackReplyText;
-  const replyText = trimForPaidLineMessage(sanitizedReplyText) || fallbackReplyText;
+  const guardedReply = guardPaidMainReplyText(rawReplyText, {
+    fallbackText: fallbackReplyText,
+    nextActions: opportunityDecision && opportunityDecision.suggestedAtoms && Array.isArray(opportunityDecision.suggestedAtoms.nextActions)
+      ? opportunityDecision.suggestedAtoms.nextActions
+      : [],
+    pitfall: opportunityDecision && opportunityDecision.suggestedAtoms
+      ? opportunityDecision.suggestedAtoms.pitfall
+      : '',
+    followupQuestion: opportunityDecision && opportunityDecision.suggestedAtoms
+      ? opportunityDecision.suggestedAtoms.question
+      : ''
+  });
+  const replyText = guardedReply.replyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
   const conversationQuality = buildConversationQualityMeta({
     replyText,
@@ -558,7 +604,10 @@ async function replyWithPaidDomainConcierge(params) {
       ? opportunityDecision.suggestedAtoms.nextActions
       : [],
     opportunityReasonKeys: opportunityDecision ? opportunityDecision.opportunityReasonKeys : [],
-    fallbackType: payload.blockedReason ? 'domain_concierge_fallback' : 'domain_concierge'
+    fallbackType: payload.blockedReason ? 'domain_concierge_fallback' : 'domain_concierge',
+    legacyTemplateHit: guardedReply.legacyTemplateHit === true,
+    pitfallIncluded: guardedReply.pitfallIncluded === true,
+    followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
   });
   return {
     ok: true,
@@ -1355,7 +1404,16 @@ async function handleAssistantMessage(params) {
       messageText: text,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
-    const replyText = trimForPaidLineMessage(casual && casual.replyText ? casual.replyText : 'こんにちは。');
+    const guardedReply = guardPaidMainReplyText(casual && casual.replyText ? casual.replyText : 'こんにちは。', {
+      situationLine: casual && casual.replyText ? casual.replyText : 'こんにちは。',
+      nextActions: [],
+      pitfall: '',
+      followupQuestion: '',
+      defaultQuestion: '',
+      disablePitfall: true,
+      disableFollowup: true
+    });
+    const replyText = guardedReply.replyText;
     await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -1368,7 +1426,10 @@ async function handleAssistantMessage(params) {
       replyText,
       domainIntent: normalizedConversationIntent,
       opportunityReasonKeys: routerReason ? [routerReason] : [],
-      fallbackType: null
+      fallbackType: null,
+      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
+      pitfallIncluded: guardedReply.pitfallIncluded === true,
+      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
     });
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -1438,22 +1499,11 @@ async function handleAssistantMessage(params) {
       blockedStage: 'budget_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidDomainIntent
-      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
-        blockedReason,
-        domainIntent: normalizedConversationIntent
-      }))
-      : await replyWithFreeRetrieval(Object.assign({}, payload, {
-        blockedReason,
-        llmPolicy: budget.policy || null,
-        plan: planInfo.plan,
-        llmConciergeEnabled,
-        llmWebSearchEnabled,
-        llmStyleEngineEnabled,
-        llmBanditEnabled,
-        sanitizeLegacyTemplateForPaid: true,
-        domainIntent: normalizedConversationIntent
-      }));
+    const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+      blockedReason,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      forceConcierge: true
+    }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -1482,11 +1532,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: 1
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1495,11 +1545,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      interventionBudget: 1,
       domainIntent: normalizedConversationIntent,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
@@ -1526,22 +1576,11 @@ async function handleAssistantMessage(params) {
       blockedStage: 'availability_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidDomainIntent
-      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
-        blockedReason,
-        domainIntent: normalizedConversationIntent
-      }))
-      : await replyWithFreeRetrieval(Object.assign({}, payload, {
-        blockedReason,
-        llmPolicy: budget.policy || null,
-        plan: planInfo.plan,
-        llmConciergeEnabled,
-        llmWebSearchEnabled,
-        llmStyleEngineEnabled,
-        llmBanditEnabled,
-        sanitizeLegacyTemplateForPaid: true,
-        domainIntent: normalizedConversationIntent
-      }));
+    const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+      blockedReason,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      forceConcierge: true
+    }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -1571,11 +1610,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: 1
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1584,11 +1623,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      interventionBudget: 1,
       domainIntent: normalizedConversationIntent,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
@@ -1621,22 +1660,11 @@ async function handleAssistantMessage(params) {
       blockedStage: 'snapshot_gate',
       fallbackReason: blockedReason
     });
-    const fallback = isPaidDomainIntent
-      ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
-        blockedReason,
-        domainIntent: normalizedConversationIntent
-      }))
-      : await replyWithFreeRetrieval(Object.assign({}, payload, {
-        blockedReason,
-        llmPolicy: budget.policy || null,
-        plan: planInfo.plan,
-        llmConciergeEnabled,
-        llmWebSearchEnabled,
-        llmStyleEngineEnabled,
-        llmBanditEnabled,
-        sanitizeLegacyTemplateForPaid: true,
-        domainIntent: normalizedConversationIntent
-      }));
+    const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+      blockedReason,
+      domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+      forceConcierge: true
+    }));
     const fallbackDecision = fallback && fallback.opportunityDecision ? fallback.opportunityDecision : null;
     const usage = await recordLlmUsage({
       userId: lineUserId,
@@ -1666,11 +1694,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0
+      interventionBudget: 1
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1679,11 +1707,11 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      conversationMode: isPaidDomainIntent ? 'concierge' : null,
-      routerReason,
+      conversationMode: 'concierge',
+      routerReason: routerReason || 'paid_fallback_concierge',
       opportunityType: fallbackDecision ? fallbackDecision.opportunityType : 'none',
       opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : [],
-      interventionBudget: fallbackDecision ? fallbackDecision.interventionBudget : 0,
+      interventionBudget: 1,
       domainIntent: normalizedConversationIntent,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
@@ -1785,7 +1813,16 @@ async function handleAssistantMessage(params) {
       messageText: text,
       suggestedAtoms: opportunityDecision.suggestedAtoms
     });
-    const replyText = trimForPaidLineMessage(casual && casual.replyText ? casual.replyText : 'こんにちは。');
+    const guardedReply = guardPaidMainReplyText(casual && casual.replyText ? casual.replyText : 'こんにちは。', {
+      situationLine: casual && casual.replyText ? casual.replyText : 'こんにちは。',
+      nextActions: [],
+      pitfall: '',
+      followupQuestion: '',
+      defaultQuestion: '',
+      disablePitfall: true,
+      disableFollowup: true
+    });
+    const replyText = guardedReply.replyText;
     await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
     const assistantQuality = normalizeAssistantQuality(null, {
       intentResolved: paidIntent,
@@ -1831,7 +1868,10 @@ async function handleAssistantMessage(params) {
       replyText,
       domainIntent: normalizedConversationIntent,
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
-      fallbackType: null
+      fallbackType: null,
+      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
+      pitfallIncluded: guardedReply.pitfallIncluded === true,
+      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -1944,7 +1984,8 @@ async function handleAssistantMessage(params) {
       llmPolicy: budget.policy,
       contextSnapshot,
       maxNextActionsCap,
-      skipPersonalizedContext: snapshotStrictMode === true
+      skipPersonalizedContext: snapshotStrictMode === true,
+      forceConversationFormat: true
     })
     : await generatePaidAssistantReply({
       question: text,
@@ -1953,7 +1994,8 @@ async function handleAssistantMessage(params) {
       llmAdapter: llmClient,
       llmPolicy: budget.policy,
       contextSnapshot,
-      maxNextActionsCap
+      maxNextActionsCap,
+      forceConversationFormat: true
     });
 
   if (!paid.ok) {
@@ -1965,26 +2007,14 @@ async function handleAssistantMessage(params) {
       blockedStage: 'paid_generation',
       fallbackReason: blockedReason
     });
-    const shouldFallbackToFree = !['low_confidence_soft'].includes(blockedReason);
-    if (shouldFallbackToFree || isPaidDomainIntent) {
-      const fallback = isPaidDomainIntent
-        ? await replyWithPaidDomainConcierge(Object.assign({}, payload, {
-          blockedReason,
-          contextSnapshot,
-          domainIntent: normalizedConversationIntent
-        }))
-        : await replyWithFreeRetrieval(Object.assign({}, payload, {
-          blockedReason,
-          llmPolicy: budget.policy || null,
-          plan: planInfo.plan,
-          llmConciergeEnabled,
-          llmWebSearchEnabled,
-          llmStyleEngineEnabled,
-          llmBanditEnabled,
-          contextSnapshot,
-          sanitizeLegacyTemplateForPaid: true,
-          domainIntent: normalizedConversationIntent
-        }));
+    const shouldFallbackToConcierge = true;
+    if (shouldFallbackToConcierge) {
+      const fallback = await replyWithPaidDomainConcierge(Object.assign({}, payload, {
+        blockedReason,
+        contextSnapshot,
+        domainIntent: isPaidDomainIntent ? normalizedConversationIntent : 'general',
+        forceConcierge: true
+      }));
       const fallbackDecision = fallback && fallback.opportunityDecision
         ? fallback.opportunityDecision
         : opportunityDecision;
@@ -2016,11 +2046,11 @@ async function handleAssistantMessage(params) {
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         assistantQuality,
-        conversationMode: isPaidDomainIntent ? 'concierge' : opportunityDecision.conversationMode,
-        routerReason,
+        conversationMode: 'concierge',
+        routerReason: routerReason || 'paid_fallback_concierge',
         opportunityType: fallbackDecision.opportunityType,
         opportunityReasonKeys: fallbackDecision.opportunityReasonKeys,
-        interventionBudget: isPaidDomainIntent ? 1 : fallbackDecision.interventionBudget
+        interventionBudget: 1
       });
       await appendLlmActionLogBestEffort({
         lineUserId,
@@ -2029,11 +2059,11 @@ async function handleAssistantMessage(params) {
         requestId,
         conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
         llmBanditEnabled,
-        conversationMode: isPaidDomainIntent ? 'concierge' : opportunityDecision.conversationMode,
-        routerReason,
+        conversationMode: 'concierge',
+        routerReason: routerReason || 'paid_fallback_concierge',
         opportunityType: fallbackDecision.opportunityType,
         opportunityReasonKeys: fallbackDecision.opportunityReasonKeys,
-        interventionBudget: isPaidDomainIntent ? 1 : fallbackDecision.interventionBudget,
+        interventionBudget: 1,
         domainIntent: normalizedConversationIntent,
         conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
           replyText: fallback && fallback.replyText ? fallback.replyText : '',
@@ -2138,8 +2168,13 @@ async function handleAssistantMessage(params) {
       };
     }
   }
-  replyText = stripLegacyTemplateTokensForPaid(replyText) || replyText;
-  replyText = trimForPaidLineMessage(replyText);
+  const guardedMainReply = guardPaidMainReplyText(replyText, {
+    fallbackText: '状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。',
+    nextActions: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
+    pitfall: paid && paid.output && Array.isArray(paid.output.risks) ? paid.output.risks[0] : '',
+    followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : ''
+  });
+  replyText = guardedMainReply.replyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
 
   const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
@@ -2165,7 +2200,10 @@ async function handleAssistantMessage(params) {
     domainIntent: normalizedConversationIntent,
     nextActions: paid && paid.output && Array.isArray(paid.output.nextActions) ? paid.output.nextActions : [],
     opportunityReasonKeys,
-    fallbackType: null
+    fallbackType: null,
+    legacyTemplateHit: guardedMainReply.legacyTemplateHit === true,
+    pitfallIncluded: guardedMainReply.pitfallIncluded === true,
+    followupQuestionIncluded: guardedMainReply.followupQuestionIncluded === true
   });
   const usage = await recordLlmUsage({
     userId: lineUserId,
