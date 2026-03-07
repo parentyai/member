@@ -52,6 +52,15 @@ Purpose: operations decisions, readiness, and state tracking.
 ### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
 Purpose: product events, notification metadata, and checklist progress.
 
+Typical fields for `events/{id}` (add-only excerpts):
+- `lineUserId`, `type`, `createdAt`
+- `type=ux_event` の場合:
+  - `uxEventType` (`reaction_received` / `notification_sent`)
+  - `eventVersion`
+  - `ref` (`notificationId` / `deliveryId` / `todoKey` / `reaction`)
+  - `metrics` (`deliveredCount` / `skippedCount` / `capBlockedCount`)
+  - `traceId`, `requestId`, `actor`, `source`
+
 Typical fields for `notifications/{id}` (add-only excerpts):
 - `title`, `body`, `ctaText`, `linkRegistryId`
 - `scenarioKey`, `stepKey`, `notificationCategory`

@@ -7,6 +7,7 @@ const { approveNotification } = require('../../usecases/adminOs/approveNotificat
 const { previewNotification } = require('../../usecases/adminOs/previewNotification');
 const { planNotificationSend } = require('../../usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../usecases/adminOs/executeNotificationSend');
+const { evaluateFatigueWarning } = require('../../usecases/uxos/evaluateFatigueWarning');
 const { logReadPathLoadMetric } = require('../../ops/readPathLoadMetric');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { requireActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
@@ -231,8 +232,23 @@ async function handleSendPlan(req, res, body) {
       traceId: guardedTraceId,
       requestId
     });
+    const fatigueWarn = evaluateFatigueWarning({
+      recipientCount: result && Number(result.count),
+      capBlockedCount: result && Number(result.capBlockedCount)
+    });
+    if (fatigueWarn.warn) {
+      await appendAuditLog({
+        actor: guardedActor,
+        action: 'notifications.fatigue.warn',
+        entityType: 'notification',
+        entityId: payload.notificationId || 'unknown',
+        traceId: guardedTraceId,
+        requestId,
+        payloadSummary: addCheckedAt(fatigueWarn)
+      }).catch(() => null);
+    }
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(result));
+    res.end(JSON.stringify(Object.assign({}, result, { fatigueWarn })));
   } catch (err) {
     handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });
   }
