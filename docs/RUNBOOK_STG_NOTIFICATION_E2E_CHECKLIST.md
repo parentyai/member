@@ -65,7 +65,7 @@ gh workflow run stg-notification-e2e.yml --ref main \
 ### Optional Inputs
 - `admin_token_file`: workflow_dispatch でトークンファイルを直接指定
 - `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー（未指定時は `status=active` を自動解決）
-- `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決。候補が無い場合は draft+approve で active を bootstrap）
+- `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から候補を自動解決。候補が無い場合は draft+approve で active を bootstrap）
 - `retry-queue-id`: 未指定時は pending queue を自動検出。見つからない場合は e2e script が synthetic segment execute で retry queue 生成を試みる
 - `segment-template-version`: 固定バージョン指定が必要な場合のみ
 - `segment-query-json`: Segment フィルタを明示したい場合のみ

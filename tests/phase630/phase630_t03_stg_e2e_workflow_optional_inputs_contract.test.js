@@ -18,7 +18,7 @@ test('phase630: stg e2e workflow makes segment/composer inputs optional with aut
   assert.ok(text.includes('composer_notification_id:'));
   assert.ok(
     text.includes(
-      'description: "Active notificationId for composer cap scenario (empty = auto-detect plannable active)"'
+      'description: "Active notificationId for composer cap scenario (empty = auto-detect active candidate)"'
     )
   );
 });

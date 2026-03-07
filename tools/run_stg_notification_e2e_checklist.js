@@ -789,36 +789,16 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     }, { attempts: Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [] });
   }
 
-  const attempts = [];
-  for (let i = 0; i < activeCandidates.length; i += 1) {
-    const candidate = activeCandidates[i];
-    const planResp = await request(
-      ctx,
-      'POST',
-      '/api/admin/os/notifications/send/plan',
-      traceId,
-      { notificationId: candidate.id }
-    );
-    const summary = summarizeResponse(planResp);
-    attempts.push({ notificationId: candidate.id, response: summary });
-    if (planResp.okStatus && planResp.body && planResp.body.ok === true && typeof planResp.body.planHash === 'string') {
-      return {
-        notificationId: candidate.id,
-        source: 'auto',
-        reason: null,
-        attempts
-      };
-    }
-  }
-
-  const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
-  if (bootstrap.notificationId) return bootstrap;
-
+  const picked = activeCandidates[0];
   return {
-    notificationId: '',
+    notificationId: picked.id,
     source: 'auto',
-    reason: 'composer_notification_plannable_not_found',
-    attempts: attempts.concat(Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [])
+    reason: null,
+    attempts: [{
+      stage: 'active_candidate_selected',
+      notificationId: picked.id,
+      status: picked.status || 'active'
+    }]
   };
 }
 

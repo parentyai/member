@@ -25,7 +25,7 @@ test('phase630: resolveComposerNotificationId uses explicit input when provided'
   assert.strictEqual(called, false);
 });
 
-test('phase630: resolveComposerNotificationId auto-picks plannable active notification', async () => {
+test('phase630: resolveComposerNotificationId auto-picks active notification without send-plan side effects', async () => {
   const calls = [];
   const result = await resolveComposerNotificationId(
     {},
@@ -39,20 +39,11 @@ test('phase630: resolveComposerNotificationId auto-picks plannable active notifi
           body: {
             ok: true,
             items: [
-              { id: 'n_regular', title: 'regular send' },
-              { id: 'n_e2e', title: 'e2e smoke notification' }
+              { id: 'n_regular', title: 'regular send', status: 'active' },
+              { id: 'n_e2e', title: 'e2e smoke notification', status: 'active' }
             ]
           }
         };
-      }
-      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
-        if (body.notificationId === 'n_e2e') {
-          return {
-            okStatus: true,
-            body: { ok: true, planHash: 'plan_hash_x', confirmToken: 'token_x' }
-          };
-        }
-        return { okStatus: false, status: 400, body: { ok: false, reason: 'no_recipients' } };
       }
       throw new Error(`unexpected call: ${method} ${endpoint}`);
     }
@@ -63,12 +54,12 @@ test('phase630: resolveComposerNotificationId auto-picks plannable active notifi
   assert.strictEqual(result.reason, null);
   assert.strictEqual(Array.isArray(result.attempts), true);
   assert.strictEqual(result.attempts.length, 1);
+  assert.strictEqual(result.attempts[0].stage, 'active_candidate_selected');
   assert.strictEqual(calls[0].method, 'GET');
-  assert.strictEqual(calls[1].method, 'POST');
-  assert.strictEqual(calls[1].traceId, 'trace-2');
+  assert.strictEqual(calls.length, 1);
 });
 
-test('phase630: resolveComposerNotificationId returns plannable_not_found when all active candidates fail plan', async () => {
+test('phase630: resolveComposerNotificationId returns not_found when no active candidates and bootstrap fails', async () => {
   const result = await resolveComposerNotificationId(
     {},
     'trace-3',
@@ -79,22 +70,16 @@ test('phase630: resolveComposerNotificationId returns plannable_not_found when a
           okStatus: true,
           body: {
             ok: true,
-            items: [{ id: 'n1', title: 'normal' }]
+            items: []
           }
         };
       }
-      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
-        assert.strictEqual(body.notificationId, 'n1');
-        return { okStatus: false, status: 400, body: { ok: false, reason: 'no_recipients' } };
-      }
-      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
         return {
           okStatus: true,
           body: {
             ok: true,
-            items: [
-              { lineUserId: 'U1', scenarioKey: 'A', stepKey: 'week' }
-            ]
+            items: [{ id: 'n1', title: 'planned only', status: 'planned' }]
           }
         };
       }
@@ -107,16 +92,18 @@ test('phase630: resolveComposerNotificationId returns plannable_not_found when a
 
   assert.strictEqual(result.notificationId, '');
   assert.strictEqual(result.source, 'auto');
-  assert.strictEqual(result.reason, 'composer_notification_plannable_not_found');
+  assert.strictEqual(result.reason, 'composer_notification_not_found');
   assert.ok(result.attempts.length >= 1);
 });
 
 test('phase630: resolveComposerNotificationId ignores non-active candidates in fallback list', async () => {
+  const calls = [];
   const result = await resolveComposerNotificationId(
     {},
     'trace-4',
     '',
     async (_ctx, method, endpoint, _traceId, body) => {
+      calls.push({ method, endpoint, body });
       if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
         return { okStatus: false, status: 500, body: { ok: false, error: 'error' } };
       }
@@ -132,10 +119,6 @@ test('phase630: resolveComposerNotificationId ignores non-active candidates in f
           }
         };
       }
-      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
-        assert.strictEqual(body.notificationId, 'n_active_regular');
-        return { okStatus: true, body: { ok: true, planHash: 'plan_hash', confirmToken: 'token' } };
-      }
       throw new Error(`unexpected call: ${method} ${endpoint}`);
     }
   );
@@ -143,6 +126,7 @@ test('phase630: resolveComposerNotificationId ignores non-active candidates in f
   assert.strictEqual(result.notificationId, 'n_active_regular');
   assert.strictEqual(result.source, 'auto');
   assert.strictEqual(result.reason, null);
+  assert.strictEqual(calls.some((item) => item.method === 'POST' && item.endpoint === '/api/admin/os/notifications/send/plan'), false);
 });
 
 test('phase630: resolveComposerNotificationId bootstrap keeps notification active (no plan probe mutation)', async () => {
