@@ -1349,25 +1349,36 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     if (!planResp.okStatus || !planResp.body || planResp.body.ok !== true) {
       const bootstrap = await bootstrapComposerNotification(ctx, `${traceId}-bootstrap`, apiRequest, []);
       bootstrapAttempts = Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [];
-      if (bootstrap.notificationId) {
-        notificationId = bootstrap.notificationId;
-        notificationIdSource = 'bootstrap';
-        const bootstrapStatus = await ensureNotificationActive(notificationId, `${traceId}-bootstrap-status`);
-        if (!bootstrapStatus.ok) {
-          return {
-            status: 'FAIL',
-            reason: bootstrapStatus.reason,
-            notificationId,
-            notificationIdSource,
-            resolveAttempts,
-            bootstrapAttempts,
-            steps: bootstrapStatus.steps
-          };
-        }
-        planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
-          notificationId
-        });
+      if (!bootstrap.notificationId) {
+        return {
+          status: 'FAIL',
+          reason: bootstrap.reason || 'composer_notification_bootstrap_failed',
+          notificationId,
+          notificationIdSource,
+          resolveAttempts,
+          bootstrapAttempts,
+          steps: {
+            plan: summarizeResponse(planResp)
+          }
+        };
       }
+      notificationId = bootstrap.notificationId;
+      notificationIdSource = 'bootstrap';
+      const bootstrapStatus = await ensureNotificationActive(notificationId, `${traceId}-bootstrap-status`);
+      if (!bootstrapStatus.ok) {
+        return {
+          status: 'FAIL',
+          reason: bootstrapStatus.reason,
+          notificationId,
+          notificationIdSource,
+          resolveAttempts,
+          bootstrapAttempts,
+          steps: bootstrapStatus.steps
+        };
+      }
+      planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+        notificationId
+      });
     }
 
     const plan = requireHttpOk(planResp, 'composer send plan');
