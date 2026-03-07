@@ -16252,6 +16252,120 @@ function normalizeLlmEntryRows(rows, keyName, requiredOrder) {
   });
 }
 
+const LLM_COMPAT_SHARE_THRESHOLD = 0.15;
+let llmCompatShareWindow = null;
+let llmLastRouteTraceMeta = null;
+
+function computeCompatShareWindow(entryRows) {
+  const rows = Array.isArray(entryRows) ? entryRows : [];
+  const total = rows.reduce((sum, row) => sum + (Number.isFinite(Number(row && row.count)) ? Number(row.count) : 0), 0);
+  if (total <= 0) return null;
+  const compatRow = rows.find((row) => row && row.entryType === 'compat');
+  const compatCount = Number.isFinite(Number(compatRow && compatRow.count)) ? Number(compatRow.count) : 0;
+  return Number((compatCount / total).toFixed(4));
+}
+
+function resolveRouteKindFromApiSource(apiSource) {
+  return apiSource === 'compat' ? 'compat' : 'canonical';
+}
+
+function renderLlmRouteTraceInfo(payload, options) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const context = options && typeof options === 'object' ? options : {};
+  const apiSourceFromPayload = (typeof data._apiSource === 'string' && data._apiSource.trim())
+    ? data._apiSource.trim()
+    : (typeof data.apiSource === 'string' && data.apiSource.trim() ? data.apiSource.trim() : '');
+  const apiSource = apiSourceFromPayload
+    ? apiSourceFromPayload
+    : (typeof context.apiSource === 'string' && context.apiSource.trim() ? context.apiSource.trim() : 'admin');
+  const routeKind = resolveRouteKindFromApiSource(apiSource);
+  const entryType = typeof data.entryType === 'string' && data.entryType.trim()
+    ? data.entryType.trim()
+    : (routeKind === 'compat' ? 'compat' : 'admin');
+  const traceId = typeof data.traceId === 'string' && data.traceId.trim()
+    ? data.traceId.trim()
+    : (typeof context.traceId === 'string' && context.traceId.trim() ? context.traceId.trim() : '-');
+  const conversationMode = typeof data.conversationMode === 'string' && data.conversationMode.trim()
+    ? data.conversationMode.trim()
+    : '-';
+  const routerReason = typeof data.routerReason === 'string' && data.routerReason.trim()
+    ? data.routerReason.trim()
+    : '-';
+  const compatShare = Number.isFinite(Number(context.compatShareWindow)) ? Number(context.compatShareWindow) : llmCompatShareWindow;
+
+  llmLastRouteTraceMeta = {
+    apiSource,
+    routeKind,
+    entryType,
+    traceId,
+    conversationMode,
+    routerReason,
+    compatShareWindow: Number.isFinite(Number(compatShare)) ? Number(compatShare) : null
+  };
+
+  setTextContent('llm-route-api-source', apiSource || '-');
+  setTextContent('llm-route-kind', routeKind || '-');
+  setTextContent('llm-route-entry-type', entryType || '-');
+  setTextContent('llm-route-trace-id', traceId || '-');
+  setTextContent('llm-route-conversation-mode', conversationMode || '-');
+  setTextContent('llm-route-router-reason', routerReason || '-');
+  setTextContent(
+    'llm-route-compat-share',
+    Number.isFinite(Number(compatShare)) ? Number(compatShare).toFixed(4) : '-'
+  );
+
+  const warningEl = document.getElementById('llm-route-warning');
+  if (!warningEl) return;
+  warningEl.classList.remove('status-danger');
+  const compatHigh = Number.isFinite(Number(compatShare)) && Number(compatShare) > LLM_COMPAT_SHARE_THRESHOLD;
+  if (routeKind === 'compat' && compatHigh) {
+    warningEl.textContent = `ALERT: compat fallback active / compatShareWindow=${Number(compatShare).toFixed(4)} (> ${LLM_COMPAT_SHARE_THRESHOLD.toFixed(2)})`;
+    warningEl.classList.add('status-danger');
+    return;
+  }
+  if (routeKind === 'compat') {
+    warningEl.textContent = 'WARNING: compat fallback で取得しました (canonical route unavailable)';
+    return;
+  }
+  if (compatHigh) {
+    warningEl.textContent = `ALERT: compatShareWindow=${Number(compatShare).toFixed(4)} (> ${LLM_COMPAT_SHARE_THRESHOLD.toFixed(2)})`;
+    warningEl.classList.add('status-danger');
+    return;
+  }
+  warningEl.textContent = 'OK';
+}
+
+async function openLlmRouteTraceFromRoutePanel() {
+  const traceId = llmLastRouteTraceMeta && typeof llmLastRouteTraceMeta.traceId === 'string'
+    ? llmLastRouteTraceMeta.traceId.trim()
+    : '';
+  if (!traceId || traceId === '-') {
+    showToast('traceId が未設定です', 'warn');
+    return;
+  }
+  setTextContent('llm-route-trace-result', 'loading...');
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace) auditTrace.value = traceId;
+  try {
+    if (globalThis.navigator && globalThis.navigator.clipboard && typeof globalThis.navigator.clipboard.writeText === 'function') {
+      await globalThis.navigator.clipboard.writeText(traceId);
+    }
+  } catch (_err) {
+    // clipboard is best effort only
+  }
+  try {
+    const res = await fetch(`/api/admin/trace?traceId=${encodeURIComponent(traceId)}`, { headers: buildHeaders({}, traceId) });
+    const data = await readJsonResponse(res);
+    renderLlmResult('llm-route-trace-result', data);
+    activatePane('audit');
+    await loadAudit().catch(() => null);
+    showToast(data && data.ok ? 'trace を追跡しました' : 'trace 追跡でエラーが発生しました', data && data.ok ? 'ok' : 'warn');
+  } catch (_err) {
+    renderLlmResult('llm-route-trace-result', { ok: false, error: 'trace_fetch_error', traceId });
+    showToast('trace 追跡に失敗しました', 'danger');
+  }
+}
+
 function renderLlmEntryControlDashboard(summary) {
   const baseline = summary && summary.gateAuditBaseline && typeof summary.gateAuditBaseline === 'object'
     ? summary.gateAuditBaseline
@@ -16270,6 +16384,14 @@ function renderLlmEntryControlDashboard(summary) {
     blockedReasons: Array.isArray(baseline.blockedReasons) ? baseline.blockedReasons : [],
     blockedStages: Array.isArray(baseline.blockedStages) ? baseline.blockedStages : []
   });
+  llmCompatShareWindow = computeCompatShareWindow(baseline.entryTypes);
+  if (llmLastRouteTraceMeta) {
+    renderLlmRouteTraceInfo(llmLastRouteTraceMeta, {
+      apiSource: llmLastRouteTraceMeta.apiSource,
+      traceId: llmLastRouteTraceMeta.traceId,
+      compatShareWindow: llmCompatShareWindow
+    });
+  }
 }
 
 function llmBlockedReasonCategoryLabel(category) {
@@ -16447,10 +16569,18 @@ async function runLlmOpsExplain() {
       traceId
     );
     renderLlmResult('llm-ops-explain-result', data);
-    showToast(data && data.ok ? t('ui.toast.llm.opsExplainOk', 'Ops説明を取得しました') : t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
+    renderLlmRouteTraceInfo(data, { traceId, compatShareWindow: llmCompatShareWindow });
+    const source = data && data._apiSource === 'compat' ? 'compat' : 'canonical';
+    showToast(
+      data && data.ok
+        ? `${t('ui.toast.llm.opsExplainOk', 'Ops説明を取得しました')} (source: ${source})`
+        : `${t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました')} (source: ${source})`,
+      data && data.ok ? 'ok' : 'danger'
+    );
   } catch (_err) {
     const payload = { ok: false, error: 'fetch error' };
     renderLlmResult('llm-ops-explain-result', payload);
+    renderLlmRouteTraceInfo(payload, { traceId, apiSource: 'admin', compatShareWindow: llmCompatShareWindow });
     showToast(t('ui.toast.llm.opsExplainFail', 'Ops説明の取得に失敗しました'), 'danger');
   }
 }
@@ -16472,10 +16602,18 @@ async function runLlmNextActions() {
       traceId
     );
     renderLlmResult('llm-next-actions-result', data);
-    showToast(data && data.ok ? t('ui.toast.llm.nextActionsOk', '次候補を取得しました') : t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました'), data && data.ok ? 'ok' : 'danger');
+    renderLlmRouteTraceInfo(data, { traceId, compatShareWindow: llmCompatShareWindow });
+    const source = data && data._apiSource === 'compat' ? 'compat' : 'canonical';
+    showToast(
+      data && data.ok
+        ? `${t('ui.toast.llm.nextActionsOk', '次候補を取得しました')} (source: ${source})`
+        : `${t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました')} (source: ${source})`,
+      data && data.ok ? 'ok' : 'danger'
+    );
   } catch (_err) {
     const payload = { ok: false, error: 'fetch error' };
     renderLlmResult('llm-next-actions-result', payload);
+    renderLlmRouteTraceInfo(payload, { traceId, apiSource: 'admin', compatShareWindow: llmCompatShareWindow });
     showToast(t('ui.toast.llm.nextActionsFail', '次候補の取得に失敗しました'), 'danger');
   }
 }
@@ -16493,11 +16631,18 @@ async function runLlmFaq() {
     const data = await postJson('/api/admin/llm/faq/answer', { question, locale: 'ja' }, traceId);
     renderLlmResult('llm-faq-result', data);
     renderLlmFaqBlockPanel(data);
-    showToast(data && data.ok ? t('ui.toast.llm.faqOk', 'FAQ回答を生成しました') : t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), data && data.ok ? 'ok' : 'danger');
+    renderLlmRouteTraceInfo(data, { traceId, apiSource: 'admin', compatShareWindow: llmCompatShareWindow });
+    showToast(
+      data && data.ok
+        ? `${t('ui.toast.llm.faqOk', 'FAQ回答を生成しました')} (source: canonical)`
+        : `${t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました')} (source: canonical)`,
+      data && data.ok ? 'ok' : 'danger'
+    );
   } catch (_err) {
     const payload = { ok: false, error: 'fetch error' };
     renderLlmResult('llm-faq-result', payload);
     renderLlmFaqBlockPanel(payload);
+    renderLlmRouteTraceInfo(payload, { traceId, apiSource: 'admin', compatShareWindow: llmCompatShareWindow });
     showToast(t('ui.toast.llm.faqFail', 'FAQ回答の生成に失敗しました'), 'danger');
   }
 }
@@ -16938,6 +17083,9 @@ function setupLlmControls() {
   document.getElementById('llm-run-ops-explain')?.addEventListener('click', runLlmOpsExplain);
   document.getElementById('llm-run-next-actions')?.addEventListener('click', runLlmNextActions);
   document.getElementById('llm-run-faq')?.addEventListener('click', runLlmFaq);
+  document.getElementById('llm-route-trace-open')?.addEventListener('click', () => {
+    void openLlmRouteTraceFromRoutePanel();
+  });
   document.getElementById('llm-open-audit')?.addEventListener('click', async () => {
     copyLlmTraceToAudit();
     activatePane('audit');
@@ -16966,6 +17114,7 @@ function setupLlmControls() {
   document.getElementById('llm-usage-export')?.addEventListener('click', () => {
     void exportLlmUsageCsv();
   });
+  renderLlmRouteTraceInfo({}, { traceId: ensureTraceInput('llm-trace') || '-', apiSource: 'admin' });
   loadLlmConfigStatus();
   void loadLlmPolicyStatus({ notify: false });
   void loadLlmPolicyHistory({ notify: false });

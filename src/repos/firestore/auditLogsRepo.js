@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { sanitizeLlmAuditPayload } = require('../../domain/audit/llmAuditPayloadGuard');
 
 const COLLECTION = 'audit_logs';
 
@@ -23,7 +24,9 @@ function sortByCreatedAtDesc(rows) {
 async function appendAuditLog(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
-  const payload = Object.assign({}, data || {}, { createdAt: resolveTimestamp(data && data.createdAt) });
+  const payload = sanitizeLlmAuditPayload(
+    Object.assign({}, data || {}, { createdAt: resolveTimestamp(data && data.createdAt) })
+  );
   await docRef.set(payload, { merge: false });
   return { id: docRef.id };
 }

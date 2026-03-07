@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T12:26:47-05:00",
-  "gitCommit": "f75d42e280c959373b63d5f2d83eaa3eef0c3ef2",
-  "branch": "codex/paid-concierge-next3-r722",
-  "sourceDigest": "6322145143082ea59dec9a5d62df2d917830158f80d2551f92975b6d6e07da8e",
+  "generatedAt": "2026-03-06T13:43:27-05:00",
+  "gitCommit": "147de2f5ed98f44033c864633bc4db48e4ffcff4",
+  "branch": "codex/llm-ux-complete-3hands-v2",
+  "sourceDigest": "8757d64918ba2f9b52fc344f87451dbed8068cc6579b36f36ee900ef8ba6deef",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

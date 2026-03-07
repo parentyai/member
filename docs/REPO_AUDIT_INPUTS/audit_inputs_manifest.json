@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T12:26:47-05:00",
-  "gitCommit": "f75d42e280c959373b63d5f2d83eaa3eef0c3ef2",
-  "branch": "codex/paid-concierge-next3-r722",
-  "sourceDigest": "2444b7b07426719f1736b93de36997f74ac988da78e0a0d362808211407fa743",
+  "generatedAt": "2026-03-06T13:43:27-05:00",
+  "gitCommit": "147de2f5ed98f44033c864633bc4db48e4ffcff4",
+  "branch": "codex/llm-ux-complete-3hands-v2",
+  "sourceDigest": "9f4d57caea6f1f75c6b6cb61f7153517c05bbb6e18b71b8bfc5eabf139689a2d",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -71,7 +71,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "06d750937cd541b17496c4eb0da3eac8cadf2c23ff5ea612236365752e3827e9",
+      "sha256": "a3b3feb87049753914a3b3fc753143c8406febb422d3faca4f34032a0628f512",
       "bytes": 76109
     },
     {
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "8d7aa89c9bfeb86a8d3b788ef9dcc5971b855101addedfc1e4a67fb5c91fb87a",
+      "sha256": "b07b78a798deb513ce2a1e3f0a2f920628afddf706a0ebbbbf82dba093b9f94c",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "e1772cfebe747844b7f60394067c46d1b5942c21fb8f1026034a73c77e1a6098",
+      "sha256": "160f3c96ba7900b478a2db4e2c71b087ad522bd58057555210692160c3096060",
       "bytes": 487
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "a004a52e191e68ccc809c69a324e9721cbce078e3717a7474a0976d474a15d31",
+      "sha256": "1fb2e151f70c52c71e7277716480f3e274cdbf4322367f8711cab65deb4a475d",
       "bytes": 440219
     },
     {
@@ -166,7 +166,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b1393e786aa8369a2876e5aa7464b1201af8d68f70f12e8d24b3999c3943bb29",
+      "sha256": "c6abba0becb7248dc7f5084d18e3c55d99676bf0279f7cb1936a4400241a876c",
       "bytes": 2417
     },
     {

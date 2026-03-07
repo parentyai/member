@@ -796,7 +796,10 @@ async function generatePaidAssistantReply(params) {
     };
   }
   const outputConstraints = resolveOutputConstraints(payload.llmPolicy || null, payload.maxNextActionsCap);
-  const conversationFormatEnabled = resolvePaidAssistantConversationFormatEnabled(payload.env || process.env);
+  const forceConversationFormat = payload.forceConversationFormat === true;
+  const conversationFormatEnabled = forceConversationFormat
+    ? true
+    : resolvePaidAssistantConversationFormatEnabled(payload.env || process.env);
   const faq = await searchFaqFromKb({
     question,
     locale: payload.locale || 'ja',
