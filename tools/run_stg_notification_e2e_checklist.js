@@ -622,20 +622,21 @@ function buildComposerBootstrapPayload(seed, traceId, scenarioSeed) {
     : 'STG E2E composer bootstrap';
   const scenarioKey = scenarioSeed && typeof scenarioSeed.scenarioKey === 'string' && scenarioSeed.scenarioKey.trim()
     ? scenarioSeed.scenarioKey.trim()
-    : (seed && typeof seed.scenarioKey === 'string' && seed.scenarioKey.trim() ? seed.scenarioKey.trim() : 'A');
+    : '';
   const stepKey = scenarioSeed && typeof scenarioSeed.stepKey === 'string' && scenarioSeed.stepKey.trim()
     ? scenarioSeed.stepKey.trim()
-    : (seed && typeof seed.stepKey === 'string' && seed.stepKey.trim() ? seed.stepKey.trim() : '3mo');
-  return {
+    : '';
+  const payload = {
     title: `${baseTitle} ${marker}`.slice(0, 120),
     body: 'stg-e2e composer cap block bootstrap notification',
     ctaText: 'open',
     linkRegistryId: seed && typeof seed.linkRegistryId === 'string' ? seed.linkRegistryId.trim() : '',
-    scenarioKey,
-    stepKey,
     target: { limit: 1 },
     sourceRefs: [`stg-e2e:${traceId}`]
   };
+  if (scenarioKey) payload.scenarioKey = scenarioKey;
+  if (stepKey) payload.stepKey = stepKey;
+  return payload;
 }
 
 async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandidates) {
