@@ -1957,6 +1957,7 @@ function createServer() {
     const { handleSeedArchive: handleNotificationSeedArchive } = require('./routes/admin/osNotificationSeed');
     const { handleDashboardKpi } = require('./routes/admin/osDashboardKpi');
     const { handleUserBillingDetail } = require('./routes/admin/osUserBillingDetail');
+    const { handleNextBestAction } = require('./routes/admin/nextBestAction');
     const { handleUsersSummaryAnalyze } = require('./routes/admin/osUsersSummaryAnalyze');
     const { handleUsersSummaryExport } = require('./routes/admin/osUsersSummaryExport');
     const { handleLlmUsageSummary } = require('./routes/admin/osLlmUsageSummary');
@@ -2117,6 +2118,10 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/user-billing-detail') {
         await handleUserBillingDetail(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/next-best-action') {
+        await handleNextBestAction(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-policy/status') {
