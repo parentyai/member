@@ -1036,9 +1036,16 @@
           </div>
           <details id="monitor-pane-details" class="decision-details section">
             <summary data-dict-key="ui.label.decision.details">詳細</summary>
+            <div class="monitor-view-switch" data-ui="monitor-view-switch">
+              <div class="monitor-view-actions">
+                <button id="monitor-view-monitoring" type="button" class="secondary-btn monitor-view-btn is-active" data-monitor-view-target="monitoring" aria-pressed="true">監視</button>
+                <button id="monitor-view-configuration" type="button" class="secondary-btn monitor-view-btn" data-monitor-view-target="configuration" data-role-allow="admin,developer" aria-pressed="false">設定</button>
+              </div>
+              <div id="monitor-view-note" class="note">監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。</div>
+            </div>
             <div class="pane-grid">
             <div class="pane-main">
-              <div class="panel today-card">
+              <div class="panel today-card" data-monitor-surface="monitoring">
                 <div class="panel-title" data-dict-key="ui.label.monitor.today">今日の要対応</div>
                 <div class="panel-body">
                   <div class="today-metrics">
@@ -1048,7 +1055,7 @@
                   </div>
                 </div>
               </div>
-              <div class="panel">
+              <div class="panel" data-monitor-surface="monitoring">
                 <div class="panel-title" data-dict-key="ui.label.monitor.userTimeline">ユーザー別通知履歴</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.monitor.userTimeline">LINEユーザーIDまたは会員番号で、配信履歴を時系列で確認します。</div>
@@ -1556,7 +1563,7 @@
 	                  </details>
                 </div>
               </div>
-              <div id="monitor-journey-panel" class="panel">
+              <div id="monitor-journey-panel" class="panel" data-monitor-surface="configuration">
                 <div class="panel-title">Journey Map / Rule Editor</div>
                 <div class="panel-body">
                   <details class="section" open>
@@ -1831,7 +1838,7 @@
                   </details>
                 </div>
               </div>
-              <div class="panel">
+              <div class="panel" id="monitor-rich-menu-panel" data-monitor-surface="configuration">
                 <div class="panel-title">Rich Menu Ops（admin）</div>
                 <div class="panel-body">
                   <div class="note">free/paid + phase 解決を monitor で一元運用します（dry-run → apply → verify → rollback）。</div>
@@ -1938,7 +1945,7 @@
                   </details>
                 </div>
               </div>
-              <div class="panel">
+              <div class="panel" data-monitor-surface="monitoring">
                 <div class="panel-title" data-dict-key="ui.label.monitor.insights">クリック分析（7日/30日）</div>
                 <div class="panel-body">
                   <div class="note" data-dict-key="ui.desc.monitor.insights">配信実績からベンダー別反応率、AB状況、FAQ参照Topを表示します。</div>
@@ -2054,7 +2061,7 @@
 	                </div>
 	              </div>
 
-	              <details class="table-section section" open>
+	              <details class="table-section section" open data-monitor-surface="monitoring">
 	                <summary>全体の通知一覧</summary>
                   <div class="row row-top">
                     <button id="monitor-global-reload" type="button">全体一覧を更新</button>
