@@ -25,6 +25,10 @@ const { detectMessagePosture } = require('../usecases/assistant/opportunity/dete
 const { loadRecentInterventionSignals } = require('../usecases/assistant/opportunity/loadRecentInterventionSignals');
 const { routeConversation } = require('../domain/llm/router/conversationRouter');
 const { normalizeConversationIntent } = require('../domain/llm/router/normalizeConversationIntent');
+const {
+  resolveLlmLegalPolicySnapshot,
+  loadLlmLegalPolicySnapshot
+} = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
@@ -33,6 +37,7 @@ const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const {
   getPublicWriteSafetySnapshot,
+  getLlmPolicy,
   getLlmConciergeEnabled,
   getLlmWebSearchEnabled,
   getLlmStyleEngineEnabled,
@@ -889,6 +894,11 @@ async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
   if (!lineUserId) return;
+  const legalSnapshot = payload.legalSnapshot && typeof payload.legalSnapshot === 'object'
+    ? resolveLlmLegalPolicySnapshot({ policy: payload.legalSnapshot })
+    : await loadLlmLegalPolicySnapshot({
+      systemFlagsRepo: { getLlmPolicy }
+    });
   const policy = payload.policy && typeof payload.policy === 'object' ? payload.policy : null;
   const conciergeMeta = payload.conciergeMeta && typeof payload.conciergeMeta === 'object' ? payload.conciergeMeta : null;
   const refusalStrategy = resolveRefusalStrategy(policy);
@@ -999,6 +1009,11 @@ async function appendLlmGateDecisionBestEffort(data) {
         interventionBudget: Number.isFinite(Number(payload.interventionBudget))
           ? (Number(payload.interventionBudget) >= 1 ? 1 : 0)
           : 0,
+        lawfulBasis: legalSnapshot.lawfulBasis,
+        consentVerified: legalSnapshot.consentVerified,
+        crossBorder: legalSnapshot.crossBorder,
+        legalDecision: legalSnapshot.legalDecision,
+        legalReasonCodes: Array.isArray(legalSnapshot.legalReasonCodes) ? legalSnapshot.legalReasonCodes : [],
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1183,6 +1198,11 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
 async function tryHandlePaidOrchestratorV2(params) {
   const payload = params && typeof params === 'object' ? params : {};
   if (resolvePaidOrchestratorEnabled() !== true) return null;
+  const legalSnapshot = payload.legalSnapshot && typeof payload.legalSnapshot === 'object'
+    ? resolveLlmLegalPolicySnapshot({ policy: payload.legalSnapshot })
+    : await loadLlmLegalPolicySnapshot({
+      systemFlagsRepo: { getLlmPolicy }
+    });
   const recentTurns = resolvePaidInterventionCooldownTurns();
   const recentActionRows = await loadRecentActionRowsBestEffort(payload.lineUserId, recentTurns);
   const groundedReplyFactory = async (options) => {
@@ -1274,6 +1294,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     recentEngagement: payload.recentEngagement,
     opportunityDecision: payload.opportunityDecision,
     recentActionRows,
+    legalSnapshot,
     deps: {
       generatePaidCasualReply,
       generateGroundedReply: groundedReplyFactory,
@@ -1340,7 +1361,8 @@ async function tryHandlePaidOrchestratorV2(params) {
     opportunityReasonKeys: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityReasonKeys : [],
     interventionBudget: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.interventionBudget : 0,
     domainIntent: orchestrated.domainIntent,
-    conversationQuality
+    conversationQuality,
+    legalSnapshot
   });
   await appendLlmActionLogBestEffort({
     lineUserId: payload.lineUserId,
