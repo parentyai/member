@@ -96,6 +96,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_UNREACHABLE_FINALIZATION_V1.md`（unreachable 2ファイルの最終処置方針）
 - `docs/SSOT_JOURNEY_TEMPLATE_V1.md`（Journey template 3フェーズSSOT）
 - `docs/SSOT_TASK_ENGINE_V1.md`（Task engine決定契約 / task_events）
+- `docs/TASK_DETAIL_OBSERVABILITY_V1.md`（Task Detail開封/続き/完了の観測契約）
+- `docs/JOURNEY_FUNNEL_EVENT_CONTRACT_V1.md`（Journey KPI funnel event type/集計契約）
 - `docs/SSOT_STEP_RULES_V1.md`（Step rules契約 / template namespace）
 - `docs/SSOT_TASK_NOTIFICATION_LINKAGE_V1.md`（Task通知連携契約）
 - `docs/SSOT_TASK_TO_NOTIFICATION_LINKAGE_V1.md`（Task通知連携の名称統一版）

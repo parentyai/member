@@ -17,6 +17,21 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeOptionalToken(value) {
+  const text = normalizeText(value);
+  return text || null;
+}
+
+function normalizeAttribution(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return {
+    notificationId: normalizeOptionalToken(payload.notificationId),
+    deliveryId: normalizeOptionalToken(payload.deliveryId),
+    source: normalizeOptionalToken(payload.source),
+    traceId: normalizeOptionalToken(payload.traceId)
+  };
+}
+
 function resolveTaskDetailTaskKey(task, todoKey) {
   const row = task && typeof task === 'object' ? task : {};
   const parsed = tasksRepo.parseTaskId(row.taskId || '');
@@ -74,6 +89,7 @@ async function buildTaskDetailSectionReply(params, deps) {
   const startChunk = Number.isFinite(Number(payload.startChunk))
     ? Math.max(1, Math.floor(Number(payload.startChunk)))
     : 1;
+  const attribution = normalizeAttribution(payload.attribution || payload);
   if (!lineUserId || !todoKey || !section) return { handled: false };
   if (section !== 'manual' && section !== 'failure') return { handled: false };
 
@@ -127,10 +143,15 @@ async function buildTaskDetailSectionReply(params, deps) {
     sectionMeta: {
       taskKey,
       taskKeySource: keyResolution.source || null,
+      todoKey,
       section,
       startChunk: startIndex + 1,
       totalChunks,
-      safetyValveApplied: safetyValve && totalChunks > chunkLimit
+      chunkLimitApplied: chunkLimit,
+      visibleChunkCount: visible.length,
+      safetyValveApplied: safetyValve && totalChunks > chunkLimit,
+      continuationRequired: endExclusive < totalChunks,
+      attribution
     }
   };
 }

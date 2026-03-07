@@ -314,3 +314,30 @@ STOP の方針:
   - reminder narrowing のみ停止し既存 reminder 動作へ戻す
 3. 完全巻き戻し:
   - PR revert（add-only データは参照停止で無害化）
+
+## Phase747 Task Detail Observability運用
+
+### 目的
+- `TODO詳細` の開封/続き/完了を `events` と `journey_kpi_daily` で可視化し、完遂率の詰まりを運用判断できるようにする。
+
+### 監査対象イベント
+- `todo_detail_opened`
+- `todo_detail_section_opened`
+- `todo_detail_section_continue`
+- `todo_detail_completed`
+- `support_guide_opened`
+
+### 監査手順
+1. `GET /api/admin/os/journey-kpi?refresh=1` を実行する。
+2. `kpi.detailOpenCount/detailContinueCount/detailCompleteCount` を確認する。
+3. `kpi.detailOpenToContinueRate/detailOpenToCompleteRate` が急落していないか確認する。
+4. `kpi.deliveryToDetailToDoneRate` を確認し、通知→詳細→完了の導線詰まりを検知する。
+
+### しきい値例（運用推奨）
+- `detailOpenToContinueRate < 0.25` が3日連続: manualテキスト分割導線を確認。
+- `detailOpenToCompleteRate < 0.15` が3日連続: blocker文言とCTAを確認。
+- `deliveryToDetailToDoneRate < 0.10` が3日連続: 通知文言/CTA妥当性を確認。
+
+### 相談導線の意味
+- `相談` コマンドは案内表示のみで、この時点ではチケット作成しない。
+- 証跡は `support_guide_opened` イベントで確認する。

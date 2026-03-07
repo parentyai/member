@@ -33,6 +33,11 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeOptionalToken(value) {
+  const text = normalizeText(value);
+  return text || null;
+}
+
 function normalizeDateText(value) {
   const text = normalizeText(value).replace(/\//g, '-');
   if (!text) return null;
@@ -289,7 +294,14 @@ function parseJourneyPostbackData(data) {
   if (action === 'todo_detail') {
     const todoKey = normalizeText(params.get('todoKey'));
     if (!todoKey) return { action: 'todo_detail_missing' };
-    return { action, todoKey };
+    return {
+      action,
+      todoKey,
+      notificationId: normalizeOptionalToken(params.get('notificationId')),
+      deliveryId: normalizeOptionalToken(params.get('deliveryId')),
+      attributionSource: normalizeOptionalToken(params.get('source')),
+      attributionTraceId: normalizeOptionalToken(params.get('traceId'))
+    };
   }
 
   if (action === 'todo_detail_section') {
@@ -302,7 +314,11 @@ function parseJourneyPostbackData(data) {
       action,
       todoKey,
       section,
-      startChunk: Number.isInteger(chunk) && chunk >= 1 ? chunk : 1
+      startChunk: Number.isInteger(chunk) && chunk >= 1 ? chunk : 1,
+      notificationId: normalizeOptionalToken(params.get('notificationId')),
+      deliveryId: normalizeOptionalToken(params.get('deliveryId')),
+      attributionSource: normalizeOptionalToken(params.get('source')),
+      attributionTraceId: normalizeOptionalToken(params.get('traceId'))
     };
   }
 

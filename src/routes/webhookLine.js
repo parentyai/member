@@ -164,6 +164,8 @@ async function sendJourneyResponse(options) {
   if (!journey || journey.handled !== true) return false;
   const replyToken = payload.replyToken;
   const lineUserId = payload.lineUserId;
+  const traceId = typeof payload.traceId === 'string' && payload.traceId.trim() ? payload.traceId.trim() : null;
+  const requestId = typeof payload.requestId === 'string' && payload.requestId.trim() ? payload.requestId.trim() : null;
   const replyFn = payload.replyFn;
   const pushFn = payload.pushFn;
   if (!replyToken || typeof replyFn !== 'function') return false;
@@ -194,6 +196,27 @@ async function sendJourneyResponse(options) {
       // eslint-disable-next-line no-await-in-loop
       await pushFn(lineUserId, message);
     }
+  }
+  const sectionMeta = journey.sectionMeta && typeof journey.sectionMeta === 'object' ? journey.sectionMeta : null;
+  if (sectionMeta && lineUserId) {
+    await appendAuditLog({
+      actor: lineUserId,
+      action: 'journey.todo_detail.section.replied',
+      entityType: 'journey_todo_detail_section',
+      entityId: `${lineUserId}:${sectionMeta.todoKey || 'todo'}:${sectionMeta.section || 'section'}`,
+      traceId,
+      requestId,
+      payloadSummary: {
+        taskKey: sectionMeta.taskKey || null,
+        taskKeySource: sectionMeta.taskKeySource || null,
+        section: sectionMeta.section || null,
+        startChunk: Number(sectionMeta.startChunk) || 1,
+        totalChunks: Number(sectionMeta.totalChunks) || 0,
+        visibleChunkCount: Number(sectionMeta.visibleChunkCount) || 0,
+        continuationRequired: sectionMeta.continuationRequired === true,
+        safetyValveApplied: sectionMeta.safetyValveApplied === true
+      }
+    }).catch(() => null);
   }
   return true;
 }
@@ -2690,9 +2713,19 @@ async function handleLineWebhook(options) {
         try {
           const journey = await handleJourneyPostback({
             lineUserId: userId,
-            data: postbackData
+            data: postbackData,
+            traceId,
+            requestId
           });
-          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
+          if (await sendJourneyResponse({
+            journey,
+            replyToken,
+            lineUserId: userId,
+            replyFn,
+            pushFn,
+            traceId,
+            requestId
+          })) {
             continue;
           }
         } catch (err) {
@@ -2708,8 +2741,21 @@ async function handleLineWebhook(options) {
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
-          const journey = await handleJourneyLineCommand({ lineUserId: userId, text });
-          if (await sendJourneyResponse({ journey, replyToken, lineUserId: userId, replyFn, pushFn })) {
+          const journey = await handleJourneyLineCommand({
+            lineUserId: userId,
+            text,
+            traceId,
+            requestId
+          });
+          if (await sendJourneyResponse({
+            journey,
+            replyToken,
+            lineUserId: userId,
+            replyFn,
+            pushFn,
+            traceId,
+            requestId
+          })) {
             continue;
           }
 
