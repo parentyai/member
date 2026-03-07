@@ -1500,6 +1500,30 @@ th {
   margin-top: var(--space-1);
 }
 
+.monitor-view-switch {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.monitor-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.monitor-view-btn.is-active {
+  border-color: var(--status-info);
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  font-weight: 600;
+}
+
+#pane-monitor[data-monitor-workspace-view="monitoring"] [data-monitor-surface="configuration"],
+#pane-monitor[data-monitor-workspace-view="configuration"] [data-monitor-surface="monitoring"] {
+  display: none !important;
+}
+
 .safe-next-step {
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);

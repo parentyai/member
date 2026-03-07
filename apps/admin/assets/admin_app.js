@@ -160,6 +160,7 @@ const state = {
   monitorItems: [],
   monitorUserItems: [],
   monitorInsights: null,
+  monitorWorkspaceView: 'monitoring',
   taskRulesRules: [],
   taskRulesTaskContents: [],
   taskRulesTaskContentLinks: [],
@@ -323,6 +324,8 @@ const UI_COPY_BANNED_TERMS_FOR_OPERATOR = Object.freeze([
 ]);
 const UI_FIXTURE_QUERY_KEY = 'ui_fixture';
 const UI_FIXTURE_SUCCESS_VALUE = 'success';
+const MONITOR_WORKSPACE_VIEW_MONITORING = 'monitoring';
+const MONITOR_WORKSPACE_VIEW_CONFIGURATION = 'configuration';
 
 function normalizeCopyForRole(text, role) {
   const value = String(text || '');
@@ -2790,6 +2793,53 @@ function resolveAllowedPaneForRole(role, pane, fallbackPane) {
   return fallbackPane || 'home';
 }
 
+function canUseMonitorConfigurationView(role) {
+  const nextRole = normalizeRoleValue(role);
+  return nextRole === 'admin' || nextRole === 'developer';
+}
+
+function normalizeMonitorWorkspaceView(view, role) {
+  const raw = String(view || '').trim().toLowerCase();
+  const candidate = raw === MONITOR_WORKSPACE_VIEW_CONFIGURATION
+    ? MONITOR_WORKSPACE_VIEW_CONFIGURATION
+    : MONITOR_WORKSPACE_VIEW_MONITORING;
+  if (candidate === MONITOR_WORKSPACE_VIEW_CONFIGURATION && !canUseMonitorConfigurationView(role)) {
+    return MONITOR_WORKSPACE_VIEW_MONITORING;
+  }
+  return candidate;
+}
+
+function applyMonitorWorkspaceView(view, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const pane = document.getElementById('pane-monitor');
+  if (!pane) return;
+  const nextView = normalizeMonitorWorkspaceView(view, state.role);
+  state.monitorWorkspaceView = nextView;
+  pane.setAttribute('data-monitor-workspace-view', nextView);
+  pane.querySelectorAll('[data-monitor-view-target]').forEach((buttonEl) => {
+    const target = normalizeMonitorWorkspaceView(buttonEl.getAttribute('data-monitor-view-target'), state.role);
+    const isActive = target === nextView;
+    buttonEl.classList.toggle('is-active', isActive);
+    buttonEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  pane.querySelectorAll('[data-monitor-surface]').forEach((surfaceEl) => {
+    const scope = String(surfaceEl.getAttribute('data-monitor-surface') || '').trim().toLowerCase();
+    const visible = scope === nextView;
+    surfaceEl.classList.toggle('is-hidden', !visible);
+    if (!visible) surfaceEl.setAttribute('aria-hidden', 'true');
+    else surfaceEl.removeAttribute('aria-hidden');
+  });
+  const noteEl = document.getElementById('monitor-view-note');
+  if (noteEl) {
+    noteEl.textContent = nextView === MONITOR_WORKSPACE_VIEW_CONFIGURATION
+      ? '設定を表示中です。監視確認が必要な場合は「監視」を開いてください。'
+      : '監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。';
+  }
+  if (opts.persist === true) {
+    state.monitorWorkspaceView = nextView;
+  }
+}
+
 function setRole(role, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const navCore = resolveCoreSlice('navCore');
@@ -2814,6 +2864,7 @@ function setRole(role, options) {
   const visibleEntries = resolveVisibleNavEntries(nextRole);
   applyNavGroupVisibilityPolicy(nextRole, visibleEntries);
   applyNavItemVisibilityPolicy(nextRole, visibleEntries);
+  applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
   const activePane = document.querySelector('.app-pane.is-active');
   const paneKey = activePane && activePane.dataset ? activePane.dataset.pane : (state.activePane || 'home');
   let allowedPane = resolveAllowedPaneForRole(nextRole, paneKey, 'home');
@@ -4084,6 +4135,9 @@ function activatePane(target, options) {
     void loadOpsSystemSnapshot({ notify: false });
   }
   expandPaneDetails(nextPane);
+  if (nextPane === 'monitor') {
+    applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
+  }
   if (opts.scrollTarget) {
     scrollToPaneAnchor(opts.scrollTarget);
   }
@@ -14961,6 +15015,13 @@ function setupAudit() {
 }
 
 function setupMonitorControls() {
+  document.querySelectorAll('[data-monitor-view-target]').forEach((buttonEl) => {
+    buttonEl.addEventListener('click', () => {
+      const target = buttonEl.getAttribute('data-monitor-view-target');
+      applyMonitorWorkspaceView(target, { persist: true });
+    });
+  });
+  applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
   document.getElementById('monitor-regen')?.addEventListener('click', () => {
     const el = document.getElementById('monitor-trace');
     if (el) el.value = newTraceId();
