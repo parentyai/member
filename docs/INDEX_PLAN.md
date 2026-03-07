@@ -15,3 +15,5 @@
 - `docs/UX_OS_PLAN2_HARDENED_V1.md`:
   - UX OS foundation-only (P0) execution constraints.
   - Multi-PR ordering, kill-switch matrix, test matrix, rollback matrix.
+- `docs/EVIDENCE_UX_OS_FOUNDATION_V1.md`:
+  - PR0-PR5 verification logs, route/read-only evidence, rollback rehearsal.
