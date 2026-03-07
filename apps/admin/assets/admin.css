@@ -1519,6 +1519,15 @@ th {
   font-weight: 600;
 }
 
+#monitor-view-configuration.role-hidden {
+  display: inline-flex !important;
+}
+
+#monitor-view-configuration[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .monitor-table-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1542,6 +1551,12 @@ th {
 #pane-monitor[data-monitor-workspace-view="monitoring"] [data-monitor-surface="configuration"],
 #pane-monitor[data-monitor-workspace-view="configuration"] [data-monitor-surface="monitoring"] {
   display: none !important;
+}
+
+@media (max-width: 1100px) {
+  #pane-monitor .pane-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .safe-next-step {
