@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
+const { PHASE0_SCENARIOS, STEP_ORDER } = require('../src/domain/constants');
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:18080';
 const DEFAULT_ACTOR = 'ops_stg_e2e';
@@ -43,6 +44,25 @@ const LLM_BLOCKED_STATUSES_WHEN_EXPECTED_ENABLED = new Set([
   'OPENAI_API_KEY is not set',
   'consent_missing'
 ]);
+const VALID_NOTIFICATION_SCENARIOS = new Set(PHASE0_SCENARIOS);
+const VALID_NOTIFICATION_STEPS = new Set(STEP_ORDER);
+
+function normalizeAllowedValue(value, allowedSet) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return allowedSet.has(trimmed) ? trimmed : '';
+}
+
+function resolveComposerBootstrapScenarioStep(seed, scenarioSeed) {
+  const scenarioKey = normalizeAllowedValue(scenarioSeed && scenarioSeed.scenarioKey, VALID_NOTIFICATION_SCENARIOS)
+    || normalizeAllowedValue(seed && seed.scenarioKey, VALID_NOTIFICATION_SCENARIOS)
+    || (Array.isArray(PHASE0_SCENARIOS) && PHASE0_SCENARIOS[0] ? PHASE0_SCENARIOS[0] : 'A');
+  const stepKey = normalizeAllowedValue(scenarioSeed && scenarioSeed.stepKey, VALID_NOTIFICATION_STEPS)
+    || normalizeAllowedValue(seed && seed.stepKey, VALID_NOTIFICATION_STEPS)
+    || (Array.isArray(STEP_ORDER) && STEP_ORDER[0] ? STEP_ORDER[0] : '2w');
+  return { scenarioKey, stepKey };
+}
 
 function readValue(argv, index, label) {
   if (index >= argv.length) throw new Error(`${label} value required`);
@@ -620,22 +640,17 @@ function buildComposerBootstrapPayload(seed, traceId, scenarioSeed) {
   const baseTitle = seed && typeof seed.title === 'string' && seed.title.trim()
     ? seed.title.trim()
     : 'STG E2E composer bootstrap';
-  const scenarioKey = scenarioSeed && typeof scenarioSeed.scenarioKey === 'string' && scenarioSeed.scenarioKey.trim()
-    ? scenarioSeed.scenarioKey.trim()
-    : '';
-  const stepKey = scenarioSeed && typeof scenarioSeed.stepKey === 'string' && scenarioSeed.stepKey.trim()
-    ? scenarioSeed.stepKey.trim()
-    : '';
+  const resolvedScenario = resolveComposerBootstrapScenarioStep(seed, scenarioSeed);
   const payload = {
     title: `${baseTitle} ${marker}`.slice(0, 120),
     body: 'stg-e2e composer cap block bootstrap notification',
     ctaText: 'open',
     linkRegistryId: seed && typeof seed.linkRegistryId === 'string' ? seed.linkRegistryId.trim() : '',
+    scenarioKey: resolvedScenario.scenarioKey,
+    stepKey: resolvedScenario.stepKey,
     target: { limit: 1 },
     sourceRefs: [`stg-e2e:${traceId}`]
   };
-  if (scenarioKey) payload.scenarioKey = scenarioKey;
-  if (stepKey) payload.stepKey = stepKey;
   return payload;
 }
 
