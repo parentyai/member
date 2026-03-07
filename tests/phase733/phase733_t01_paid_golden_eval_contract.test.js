@@ -20,7 +20,7 @@ test('phase733: paid golden eval case enforces natural reply constraints', () =>
 
 test('phase733: paid golden eval script passes bundled fixture set', () => {
   const stdout = execFileSync('node', ['tools/run_paid_llm_golden_eval.js'], {
-    cwd: '/Volumes/Arumamihs/Member',
+    cwd: process.cwd(),
     encoding: 'utf8'
   });
   const body = JSON.parse(stdout);
