@@ -224,7 +224,9 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
 
   assert.equal(res1.status, 200);
   assert.equal(replies1.length, 1);
-  assert.equal(replies1[0].text, 'PAID FAQ PATH');
+  assert.ok(replies1[0].text.startsWith('PAID FAQ PATH'));
+  assert.ok(!replies1[0].text.includes('FAQ候補'));
+  assert.ok(!replies1[0].text.includes('CityPack候補'));
   assert.equal(loaded.counters.faq, 1);
   assert.equal(loaded.counters.assistant, 0);
 
@@ -245,7 +247,9 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
 
   assert.equal(res2.status, 200);
   assert.equal(replies2.length, 1);
-  assert.equal(replies2[0].text, 'PAID ASSISTANT PATH');
+  assert.ok(replies2[0].text.startsWith('PAID ASSISTANT PATH'));
+  assert.ok(!replies2[0].text.includes('FAQ候補'));
+  assert.ok(!replies2[0].text.includes('CityPack候補'));
   assert.equal(loaded.counters.faq, 1);
   assert.equal(loaded.counters.assistant, 1);
 
@@ -257,7 +261,7 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
   assert.equal(allowAudit.payloadSummary.assistantQuality.intentResolved, 'situation_analysis');
 });
 
-test('phase656: snapshot strict mode blocks paid generation and falls back to free retrieval', async (t) => {
+test('phase656: snapshot strict mode blocks paid generation and falls back to paid concierge text', async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: '1',
@@ -287,7 +291,9 @@ test('phase656: snapshot strict mode blocks paid generation and falls back to fr
 
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
-  assert.equal(replies[0].text, 'FREE FALLBACK');
+  assert.ok(replies[0].text.includes('まずは次の一手'));
+  assert.ok(!replies[0].text.includes('FAQ候補'));
+  assert.ok(!replies[0].text.includes('CityPack候補'));
   assert.equal(loaded.counters.faq, 0);
   assert.equal(loaded.counters.assistant, 0);
 

@@ -212,7 +212,7 @@ test('phase654: free plan appends simplified dependency lock reason when task gr
   assert.ok(replies[0].text.includes('ロック理由: 依存未完了:visa_documents'));
 });
 
-test('phase654: pro plan appends dependency addendum with actionable top3 when predictive actions are enabled', async (t) => {
+test('phase654: pro plan keeps paid natural reply contract when predictive actions are enabled', async (t) => {
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_TASK_GRAPH_V1: '1',
@@ -281,7 +281,8 @@ test('phase654: pro plan appends dependency addendum with actionable top3 when p
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
   assert.ok(replies[0].text.includes('PAID FAQ'));
-  assert.ok(replies[0].text.includes('補足（依存グラフ）'));
-  assert.ok(replies[0].text.includes('ロック中: 1件'));
-  assert.ok(replies[0].text.includes('次アクション候補(最大3):'));
+  assert.ok(!replies[0].text.includes('FAQ候補'));
+  assert.ok(!replies[0].text.includes('CityPack候補'));
+  assert.ok(!replies[0].text.includes('根拠キー'));
+  assert.ok(!replies[0].text.includes('score='));
 });
