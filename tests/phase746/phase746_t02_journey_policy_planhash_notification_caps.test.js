@@ -12,6 +12,21 @@ const {
 } = require('../../src/infra/firestore');
 const { handlePlan } = require('../../src/routes/admin/journeyPolicyConfig');
 
+function withEnv(patch) {
+  const prev = {};
+  Object.keys(patch).forEach((key) => {
+    prev[key] = process.env[key];
+    if (patch[key] === null || patch[key] === undefined) delete process.env[key];
+    else process.env[key] = String(patch[key]);
+  });
+  return () => {
+    Object.keys(patch).forEach((key) => {
+      if (prev[key] === undefined) delete process.env[key];
+      else process.env[key] = prev[key];
+    });
+  };
+}
+
 function createResCapture() {
   const out = {
     statusCode: null,
@@ -32,6 +47,9 @@ function createResCapture() {
 }
 
 test('phase746: journey policy plan hash reflects notificationCaps contract', async () => {
+  const restoreEnv = withEnv({
+    OPS_CONFIRM_TOKEN_SECRET: 'phase746_confirm_secret'
+  });
   const db = createDbStub();
   setDbForTest(db);
   setServerTimestampForTest('SERVER_TIMESTAMP');
@@ -74,6 +92,7 @@ test('phase746: journey policy plan hash reflects notificationCaps contract', as
     const plan2 = res2.readJson();
     assert.notEqual(plan1.planHash, plan2.planHash);
   } finally {
+    restoreEnv();
     clearDbForTest();
     clearServerTimestampForTest();
   }
