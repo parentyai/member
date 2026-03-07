@@ -92,7 +92,8 @@
     "userJourneySchedulesRepo",
     "usersPhase1Repo",
     "usersRepo",
-    "userSubscriptionsRepo"
+    "userSubscriptionsRepo",
+    "uxEventsRepo"
   ],
   "legacy_repos": [],
   "merge_candidates": [],

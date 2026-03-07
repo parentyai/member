@@ -787,7 +787,7 @@
     },
     {
       "file": "src/usecases/notifications/sendNotification.js",
-      "line": 137,
+      "line": 140,
       "symbol": "killSwitch"
     },
     {

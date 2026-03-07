@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T07:18:25.420Z",
+  "generatedAt": "2026-03-07T15:20:33.901Z",
   "source": "docs/REPO_AUDIT_INPUTS/design_ai_meta.json",
-  "sourceDigest": "e3fa7b9a9625af2ea9989f2e539fcab6f64a5cde0fff3aa9774998146f72d5fe",
-  "canonical_repos_count": 93,
+  "sourceDigest": "68cf80f04fd7e76e9787aa479e16f0b6126c395340a94e54809a9f9703219dcf",
+  "canonical_repos_count": 94,
   "legacy_repos_count": 0,
   "merge_candidates_count": 0,
   "unresolved_dynamic_dep_count": 0,
@@ -102,7 +102,8 @@
     "userJourneySchedulesRepo",
     "userSubscriptionsRepo",
     "usersPhase1Repo",
-    "usersRepo"
+    "usersRepo",
+    "uxEventsRepo"
   ],
   "legacy_repos": [],
   "merge_candidates": [],
