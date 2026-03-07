@@ -85,6 +85,9 @@
       "notificationsRepo",
       "sourceRefsRepo"
     ],
+    "computeNotificationFatigueWarning": [
+      "deliveriesRepo"
+    ],
     "computePlanHash": [
       "deliveriesRepo"
     ],
@@ -243,6 +246,7 @@
     "getNextActionCandidates": [
       "systemFlagsRepo"
     ],
+    "getNextBestAction": [],
     "getNotificationDeliveries": [
       "deliveriesRepo",
       "linkRegistryRepo",
@@ -1051,6 +1055,11 @@
     ],
     "src/routes/admin/monitorInsights.js": [
       "appendAuditLog"
+    ],
+    "src/routes/admin/nextBestAction.js": [
+      "appendAuditLog",
+      "computeNotificationFatigueWarning",
+      "getNextBestAction"
     ],
     "src/routes/admin/notificationDeliveries.js": [
       "getNotificationDeliveries"

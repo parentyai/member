@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T02:49:31-05:00",
-  "gitCommit": "29568e7abf911d52c0eba915e4bfb068b434ad6a",
-  "branch": "codex/orchestrator-canary-gate-r734",
-  "sourceDigest": "98a2b8a3af0e4248e9fc89be1f691208b02fdf4448368de8fb43ad5199a2f0bb",
+  "generatedAt": "2026-03-07T10:14:18-05:00",
+  "gitCommit": "f80d8f138ae4816b8be00806a1812333383e1fe3",
+  "branch": "codex/uxos-foundation-pr5",
+  "sourceDigest": "00f19349ea17e600aa36326afeef3c39fe454854ed53ce480f2f31e99ddc2f32",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
