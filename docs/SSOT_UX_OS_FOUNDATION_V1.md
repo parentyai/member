@@ -80,3 +80,11 @@ Default behavior:
 - Immediate stop by flag-off per capability.
 - Full rollback by commit/PR revert.
 - Sidecar data can remain after rollback because existing source-of-truth is unchanged.
+
+## Addendum: Journey/Task Semantic Contracts (Phase746)
+- Journey policy quiet-hours contract is standardized at `journeyPolicy.notificationCaps.quietHours`.
+- `normalizeJourneyPolicy` must accept legacy shape (`notification_caps`, top-level `quietHours` / `quiet_hours`) and emit canonical `notificationCaps`.
+- Task meaning contract includes add-only `task_contents.whyNow` as the first-class field for Task Detail semantics.
+- Detailed references:
+  - `docs/UX_OS_POLICY_CONTRACTS_V1.md`
+  - `docs/UX_OS_MEANING_FIELDS_V1.md`

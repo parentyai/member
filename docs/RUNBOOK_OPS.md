@@ -283,6 +283,24 @@ STOP の方針:
   - `journey_reminder_runs.skipReasonCounts/triggerCounts`
   - events: `journey_primary_notification_sent`, `notification_fatigue_guarded`, `notification_quiet_hours_guarded`, `notification_narrowing_skipped`
 
+### Journey policy quietHours 契約（Phase746）
+1. canonical:
+  - `opsConfig/journeyPolicy.notificationCaps.quietHours`
+2. backward-compatible accepted input（normalize吸収のみ）:
+  - `notification_caps`（snake_case）
+  - top-level `quietHours`
+  - top-level `quiet_hours`
+3. invalid条件:
+  - `startHourUtc/endHourUtc` が整数0..23以外
+  - `startHourUtc === endHourUtc`
+4. plan/set運用:
+  - quietHours含む `notificationCaps` 変更時は `journey-policy/plan` を再実行して confirm token を更新する。
+
+### Task Detail whyNow 契約（Phase746）
+1. `task_contents.whyNow` は Task Detail 意味表示の最優先フィールド。
+2. 未設定時は既存 fallback（`tasks.meaning.whyNow` → `tasks.whyNow`）を使う。
+3. `task_contents` の既存ドキュメントは移行不要（read-time fallback互換）。
+
 ### Rollback（Journey UX-Max）
 1. 即時停止:
   - `ENABLE_JOURNEY_REMINDER_JOB=0`

@@ -7,6 +7,22 @@ const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const journeyPolicyRepo = require('../../repos/firestore/journeyPolicyRepo');
 const { parseJson, requireActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
+function serializeNotificationCaps(value) {
+  const payload = value && typeof value === 'object' ? value : {};
+  const quietHours = payload.quietHours && typeof payload.quietHours === 'object'
+    ? {
+      startHourUtc: Number(payload.quietHours.startHourUtc),
+      endHourUtc: Number(payload.quietHours.endHourUtc)
+    }
+    : null;
+  return {
+    perUserWeeklyCap: payload.perUserWeeklyCap === null ? null : Number(payload.perUserWeeklyCap),
+    perUserDailyCap: payload.perUserDailyCap === null ? null : Number(payload.perUserDailyCap),
+    perCategoryWeeklyCap: payload.perCategoryWeeklyCap === null ? null : Number(payload.perCategoryWeeklyCap),
+    quietHours
+  };
+}
+
 function serializePolicy(policy) {
   const payload = policy && typeof policy === 'object' ? policy : {};
   return JSON.stringify({
@@ -14,6 +30,7 @@ function serializePolicy(policy) {
     reminder_offsets_days: Array.isArray(payload.reminder_offsets_days) ? payload.reminder_offsets_days : [7, 3, 1],
     reminder_max_per_run: payload.reminder_max_per_run,
     paid_only_reminders: payload.paid_only_reminders === true,
+    notificationCaps: serializeNotificationCaps(payload.notificationCaps),
     rich_menu_enabled: payload.rich_menu_enabled === true,
     schedule_required_for_reminders: payload.schedule_required_for_reminders !== false,
     rich_menu_map: payload.rich_menu_map && typeof payload.rich_menu_map === 'object' ? payload.rich_menu_map : {},
