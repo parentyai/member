@@ -161,6 +161,10 @@ const state = {
   monitorUserItems: [],
   monitorInsights: null,
   monitorWorkspaceView: 'monitoring',
+  selectedMonitorNotificationId: null,
+  monitorSavedView: 'all',
+  monitorSearchQuery: '',
+  monitorStatusFilter: '',
   taskRulesRules: [],
   taskRulesTaskContents: [],
   taskRulesTaskContentLinks: [],
@@ -5120,21 +5124,143 @@ function buildMonitorLastExecutionSummary(item) {
   return `${lastSentAt} / ${reason} / 配信:${delivered} click:${click} CTR:${ctr}`;
 }
 
+function normalizeMonitorSavedView(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'attention' || normalized === 'pending' || normalized === 'sent') return normalized;
+  return 'all';
+}
+
+function normalizeMonitorStatusFilter(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'draft' || normalized === 'active' || normalized === 'sent' || normalized === 'archived') return normalized;
+  return '';
+}
+
+function syncMonitorTableToolbar() {
+  const savedViewEl = document.getElementById('monitor-saved-view');
+  const queryEl = document.getElementById('monitor-toolbar-query');
+  const statusEl = document.getElementById('monitor-toolbar-status');
+  if (savedViewEl) savedViewEl.value = normalizeMonitorSavedView(state.monitorSavedView);
+  if (queryEl) queryEl.value = state.monitorSearchQuery || '';
+  if (statusEl) statusEl.value = normalizeMonitorStatusFilter(state.monitorStatusFilter);
+}
+
+function readMonitorTableToolbar() {
+  const savedViewEl = document.getElementById('monitor-saved-view');
+  const queryEl = document.getElementById('monitor-toolbar-query');
+  const statusEl = document.getElementById('monitor-toolbar-status');
+  state.monitorSavedView = normalizeMonitorSavedView(savedViewEl && typeof savedViewEl.value === 'string' ? savedViewEl.value : state.monitorSavedView);
+  state.monitorSearchQuery = queryEl && typeof queryEl.value === 'string' ? queryEl.value.trim() : '';
+  state.monitorStatusFilter = normalizeMonitorStatusFilter(statusEl && typeof statusEl.value === 'string' ? statusEl.value : state.monitorStatusFilter);
+}
+
+function resolveMonitorVisibleItems(items) {
+  readMonitorTableToolbar();
+  const rows = Array.isArray(items) ? items.slice() : [];
+  return rows.filter((item) => {
+    if (!item || typeof item !== 'object') return false;
+    if (state.monitorSavedView === 'attention') {
+      const tone = normalizeUiStateTone(item.notificationHealth, 'unset');
+      if (tone !== 'warn' && tone !== 'error') return false;
+    } else if (state.monitorSavedView === 'pending') {
+      const status = String(item.status || '').trim().toLowerCase();
+      if (status !== 'draft' && status !== 'active') return false;
+    } else if (state.monitorSavedView === 'sent') {
+      const status = String(item.status || '').trim().toLowerCase();
+      if (status !== 'sent') return false;
+    }
+    if (state.monitorStatusFilter) {
+      const status = String(item.status || '').trim().toLowerCase();
+      if (status !== state.monitorStatusFilter) return false;
+    }
+    if (state.monitorSearchQuery) {
+      const needle = state.monitorSearchQuery.toLowerCase();
+      const haystack = [
+        item.title || '',
+        item.id || '',
+        item.scenarioKey || '',
+        item.stepKey || '',
+        item.planHash || ''
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(needle)) return false;
+    }
+    return true;
+  });
+}
+
+function renderMonitorDetail(item) {
+  const detailEl = document.getElementById('monitor-detail');
+  const rawEl = document.getElementById('monitor-raw');
+  const safeStepEl = document.getElementById('monitor-safe-next-step');
+  if (!item) {
+    if (detailEl) detailEl.textContent = '行を選択すると詳細を表示します。';
+    if (rawEl) rawEl.textContent = '-';
+    renderSafeNextStep(safeStepEl, t('ui.desc.monitor.safeNextStep', '次の安全な一手: 反応率が低い通知の詳細を確認する'));
+    return;
+  }
+  if (detailEl) {
+    detailEl.textContent = [
+      `通知ID: ${item.id || '-'}`,
+      `タイトル: ${item.title || '-'}`,
+      `状態: ${composerStatusLabel(item.status || 'draft')}`,
+      `種別: ${normalizeComposerType(item.notificationType || 'STEP')}`,
+      `シナリオ/ステップ: ${scenarioLabel(item.scenarioKey)} / ${stepLabel(item.stepKey)}`,
+      `対象: ${formatMonitorTargetSummary(item.target)}`,
+      `計画ハッシュ: ${item.planHash || '-'}`,
+      `最終実行: ${buildMonitorLastExecutionSummary(item)}`
+    ].join('\n');
+  }
+  if (rawEl) rawEl.textContent = JSON.stringify(item.raw || item, null, 2);
+  const tone = normalizeUiStateTone(item.notificationHealth, 'unset');
+  if (tone === 'error') {
+    renderSafeNextStep(safeStepEl, '次の安全な一手: 失敗理由とtraceIdを確認して再送条件を見直す');
+  } else if (tone === 'warn') {
+    renderSafeNextStep(safeStepEl, '次の安全な一手: 注意状態の通知を優先して詳細確認する');
+  } else {
+    renderSafeNextStep(safeStepEl, '次の安全な一手: 更新して最新状態を再確認する');
+  }
+}
+
+function selectMonitorRow(tbody, rowEl, item, options) {
+  if (!tbody || !rowEl || !item) return;
+  tbody.querySelectorAll('tr').forEach((node) => {
+    node.classList.remove('row-active');
+    node.removeAttribute('aria-selected');
+  });
+  rowEl.classList.add('row-active');
+  rowEl.setAttribute('aria-selected', 'true');
+  state.selectedMonitorNotificationId = item.id || null;
+  renderMonitorDetail(item);
+
+  if (options && options.focusRow && typeof rowEl.focus === 'function') {
+    rowEl.focus({ preventScroll: true });
+    rowEl.scrollIntoView({ block: 'nearest' });
+  }
+}
+
 function renderMonitorRows(items) {
   const tbody = document.getElementById('monitor-rows');
   if (!tbody) return;
+  syncMonitorTableToolbar();
+  const visibleItems = resolveMonitorVisibleItems(items);
   tbody.innerHTML = '';
-  if (!items.length) {
+  if (!visibleItems.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 9;
     td.textContent = t('ui.label.common.empty', 'データなし');
     tr.appendChild(td);
     tbody.appendChild(tr);
+    state.selectedMonitorNotificationId = null;
+    renderMonitorDetail(null);
     return;
   }
-  items.forEach((item) => {
+  visibleItems.forEach((item, idx) => {
     const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    tr.tabIndex = 0;
+    tr.dataset.monitorIndex = String(idx);
+    if (item.id) tr.dataset.monitorNotificationId = String(item.id);
     applyRowHealthState(tr, item.notificationHealth);
     const cols = [
       formatDateLabel(item.createdAt || item.scheduledAt || item.lastSentAt),
@@ -5153,8 +5279,29 @@ function renderMonitorRows(items) {
       else td.textContent = value;
       tr.appendChild(td);
     });
+    tr.addEventListener('click', () => selectMonitorRow(tbody, tr, item, { focusRow: false }));
+    tr.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      selectMonitorRow(tbody, tr, item, { focusRow: false });
+    });
     tbody.appendChild(tr);
   });
+
+  let selectedRow = null;
+  if (state.selectedMonitorNotificationId) {
+    selectedRow = visibleItems.find((item) => item && item.id === state.selectedMonitorNotificationId) || null;
+  }
+  if (!selectedRow) {
+    selectedRow = visibleItems[0] || null;
+    state.selectedMonitorNotificationId = selectedRow && selectedRow.id ? selectedRow.id : null;
+  }
+  if (selectedRow) {
+    const rowEl = tbody.querySelector(`[data-monitor-notification-id="${selectedRow.id}"]`) || tbody.querySelector('tr[data-monitor-index]');
+    if (rowEl) selectMonitorRow(tbody, rowEl, selectedRow, { focusRow: false });
+  } else {
+    renderMonitorDetail(null);
+  }
 }
 
 function renderReadModelRows(items) {
@@ -8662,7 +8809,11 @@ async function loadMonitorData(options) {
         notificationHealth: readModel && readModel.notificationHealth ? readModel.notificationHealth : fallbackHealth,
         deliveredCount: readModel && Number.isFinite(Number(readModel.deliveredCount)) ? Number(readModel.deliveredCount) : 0,
         clickCount: readModel && Number.isFinite(Number(readModel.clickCount)) ? Number(readModel.clickCount) : 0,
-        weekOverWeek: readModel && readModel.weekOverWeek ? readModel.weekOverWeek : null
+        weekOverWeek: readModel && readModel.weekOverWeek ? readModel.weekOverWeek : null,
+        raw: {
+          list: item || null,
+          readModel: readModel || null
+        }
       };
     });
     state.monitorItems.sort((a, b) => toMillis(b.createdAt || b.scheduledAt || b.lastSentAt) - toMillis(a.createdAt || a.scheduledAt || a.lastSentAt));
@@ -15022,9 +15173,22 @@ function setupMonitorControls() {
     });
   });
   applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });
+  syncMonitorTableToolbar();
+  document.getElementById('monitor-saved-view')?.addEventListener('change', () => {
+    renderMonitorRows(state.monitorItems);
+  });
+  document.getElementById('monitor-toolbar-query')?.addEventListener('input', () => {
+    renderMonitorRows(state.monitorItems);
+  });
+  document.getElementById('monitor-toolbar-status')?.addEventListener('change', () => {
+    renderMonitorRows(state.monitorItems);
+  });
   document.getElementById('monitor-regen')?.addEventListener('click', () => {
     const el = document.getElementById('monitor-trace');
     if (el) el.value = newTraceId();
+  });
+  document.getElementById('monitor-reload')?.addEventListener('click', () => {
+    loadMonitorData({ notify: true });
   });
   document.getElementById('monitor-global-reload')?.addEventListener('click', () => {
     loadMonitorData({ notify: true });
