@@ -894,6 +894,18 @@
     ]
   },
   {
+    "collection": "task_events",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/repos/firestore/taskEventsRepo.js:6",
+      "src/repos/firestore/taskEventsRepo.js:97",
+      "src/repos/firestore/taskEventsRepo.js:110"
+    ]
+  },
+  {
     "collection": "tasks",
     "kind": "config",
     "recomputable": false,

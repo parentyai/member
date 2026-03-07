@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T10:20:19-05:00",
-  "gitCommit": "0d4a6655380f40e7bbbfb93f42bcca627b9825b3",
-  "branch": "codex/uxos-foundation-p0-mergefix",
-  "sourceDigest": "3f20d918d7a251bc5f1dc3a859a40712771786c1efb4fa514e7a363a5143045a",
+  "generatedAt": "2026-03-07T11:56:11-05:00",
+  "gitCommit": "e28ac3f1cdbd0327feed3291b0f1895e51fdedbe",
+  "branch": "codex/orchestrator-canary-complete-r735",
+  "sourceDigest": "da159cfff9382e99ae0e224fded27944ea5e3f5dfbf4985979cec46ef45bb4ef",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

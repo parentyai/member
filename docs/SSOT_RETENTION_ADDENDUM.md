@@ -12,7 +12,7 @@
 | aggregate | 13 |
 | config | 49 |
 | event | 7 |
-| evidence | 14 |
+| evidence | 15 |
 | transient | 3 |
 
 ## Collection方針
@@ -96,6 +96,7 @@
 | `stripe_webhook_dead_letters` | transient | 30d | CONDITIONAL | true |
 | `stripe_webhook_events` | evidence | INDEFINITE | false | false |
 | `system_flags` | config | INDEFINITE | false | false |
+| `task_events` | evidence | 365d | false | false |
 | `tasks` | config | INDEFINITE | false | false |
 | `templates_v` | config | INDEFINITE | false | false |
 | `user_checklists` | config | INDEFINITE | false | false |

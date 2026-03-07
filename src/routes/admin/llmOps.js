@@ -3,17 +3,11 @@
 const { getOpsExplanation } = require('../../usecases/phaseLLM2/getOpsExplanation');
 const { getNextActionCandidates } = require('../../usecases/phaseLLM3/getNextActionCandidates');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
-const { resolveTraceId } = require('./osContext');
+const { requireActor, resolveTraceId } = require('./osContext');
 
 function readLineUserId(req) {
   const url = new URL(req.url, 'http://localhost');
   return url.searchParams.get('lineUserId');
-}
-
-function resolveActor(req, fallback) {
-  const actor = req && req.headers && req.headers['x-actor'];
-  if (typeof actor === 'string' && actor.trim().length > 0) return actor.trim();
-  return fallback;
 }
 
 function sendBadRequest(res, message) {
@@ -33,8 +27,9 @@ async function handleAdminLlmOpsExplain(req, res, deps) {
       sendBadRequest(res, 'lineUserId required');
       return;
     }
+    const actor = requireActor(req, res);
+    if (!actor) return;
     const traceId = resolveTraceId(req);
-    const actor = resolveActor(req, 'admin_llm_ops_explain');
     const result = await getOpsExplanation({ lineUserId, traceId, actor }, deps);
     await appendLlmGateDecision({
       actor,
@@ -68,8 +63,9 @@ async function handleAdminLlmNextActions(req, res, deps) {
       sendBadRequest(res, 'lineUserId required');
       return;
     }
+    const actor = requireActor(req, res);
+    if (!actor) return;
     const traceId = resolveTraceId(req);
-    const actor = resolveActor(req, 'admin_llm_next_actions');
     const result = await getNextActionCandidates({ lineUserId, traceId, actor }, deps);
     await appendLlmGateDecision({
       actor,
