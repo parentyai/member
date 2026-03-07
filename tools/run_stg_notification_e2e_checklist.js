@@ -1279,22 +1279,38 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     };
   }
 
-  const statusResp = await apiRequest(
-    ctx,
-    'GET',
-    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(resolved.notificationId)}`,
-    traceId
-  );
-  const statusBody = requireHttpOk(statusResp, 'composer notification status');
-  if (statusBody.status !== 'active') {
+  async function ensureNotificationActive(notificationId, activeTraceId) {
+    const statusResp = await apiRequest(
+      ctx,
+      'GET',
+      `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(notificationId)}`,
+      activeTraceId
+    );
+    const statusBody = requireHttpOk(statusResp, 'composer notification status');
+    if (statusBody.status !== 'active') {
+      return {
+        ok: false,
+        reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
+        steps: { status: summarizeResponse(statusResp) }
+      };
+    }
+    return { ok: true, steps: { status: summarizeResponse(statusResp) } };
+  }
+
+  let notificationId = resolved.notificationId;
+  let notificationIdSource = resolved.source || 'input';
+  const resolveAttempts = Array.isArray(resolved.attempts) ? resolved.attempts.length : 0;
+  let bootstrapAttempts = [];
+
+  const initialStatus = await ensureNotificationActive(notificationId, traceId);
+  if (!initialStatus.ok) {
     return {
       status: 'FAIL',
-      reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
-      notificationId: resolved.notificationId,
-      notificationIdSource: resolved.source || 'input',
-      steps: {
-        status: summarizeResponse(statusResp)
-      }
+      reason: initialStatus.reason,
+      notificationId,
+      notificationIdSource,
+      resolveAttempts,
+      steps: initialStatus.steps
     };
   }
 
@@ -1312,13 +1328,39 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     });
     configChanged = true;
 
-    const planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
-      notificationId: resolved.notificationId
+    let planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+      notificationId
     });
+    let planSummary = summarizeResponse(planResp);
+    if ((!planResp.okStatus || !planResp.body || planResp.body.ok !== true) && planSummary.reason === 'no_recipients') {
+      const bootstrap = await bootstrapComposerNotification(ctx, `${traceId}-bootstrap`, apiRequest, []);
+      bootstrapAttempts = Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [];
+      if (bootstrap.notificationId) {
+        notificationId = bootstrap.notificationId;
+        notificationIdSource = 'bootstrap';
+        const bootstrapStatus = await ensureNotificationActive(notificationId, `${traceId}-bootstrap-status`);
+        if (!bootstrapStatus.ok) {
+          return {
+            status: 'FAIL',
+            reason: bootstrapStatus.reason,
+            notificationId,
+            notificationIdSource,
+            resolveAttempts,
+            bootstrapAttempts,
+            steps: bootstrapStatus.steps
+          };
+        }
+        planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+          notificationId
+        });
+        planSummary = summarizeResponse(planResp);
+      }
+    }
+
     const plan = requireHttpOk(planResp, 'composer send plan');
 
     const executeResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/execute', traceId, {
-      notificationId: resolved.notificationId,
+      notificationId,
       planHash: plan.planHash,
       confirmToken: plan.confirmToken
     });
@@ -1327,8 +1369,10 @@ async function runComposerCapScenario(ctx, opts, traceId) {
       return {
         status: 'FAIL',
         reason: `composer_expected_cap_block_got:${execute.reason || 'unknown'}`,
-        notificationId: resolved.notificationId,
-        notificationIdSource: resolved.source || 'input',
+        notificationId,
+        notificationIdSource,
+        resolveAttempts,
+        bootstrapAttempts,
         steps: {
           plan: summarizeResponse(planResp),
           execute: summarizeResponse(executeResp)
@@ -1337,9 +1381,10 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     }
     return {
       status: 'PASS',
-      notificationId: resolved.notificationId,
-      notificationIdSource: resolved.source || 'input',
-      resolveAttempts: Array.isArray(resolved.attempts) ? resolved.attempts.length : 0,
+      notificationId,
+      notificationIdSource,
+      resolveAttempts,
+      bootstrapAttempts,
       steps: {
         plan: summarizeResponse(planResp),
         execute: summarizeResponse(executeResp)
