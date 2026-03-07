@@ -61,6 +61,7 @@
     "audit:collection-drift:queue": "node scripts/report_collection_drift_remediation_queue.js",
     "llm:rollout:check": "node scripts/check_llm_rollout_readiness.js",
     "llm:retention:check": "node scripts/check_llm_retention_contract.js",
+    "llm:eval:paid-golden": "node tools/run_paid_llm_golden_eval.js",
     "audit:phase-origin:check": "node scripts/check_phase_origin.js",
     "audit:unreachable:check": "node scripts/check_unreachable_classification.js",
     "audit:unreachable:status": "node scripts/report_unreachable_finalization_status.js",

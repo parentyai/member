@@ -361,30 +361,59 @@ function buildOptimizationSummary(actionRows, gateAuditBaseline) {
 
 function buildConversationQualitySummary(actionRows) {
   const rows = Array.isArray(actionRows) ? actionRows : [];
+  const naturalnessVersions = new Map();
   const domainCounts = new Map();
   const fallbackTypes = new Map();
+  const strategies = new Map();
+  const retrievalQualities = new Map();
+  const verificationOutcomes = new Map();
+  const judgeWinners = new Map();
+  const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
   let pitfallIncludedCount = 0;
   let actionCountTotal = 0;
   let domainIntentCount = 0;
   let domainConciergeCount = 0;
+  let candidateCountTotal = 0;
+  let retrieveNeededCount = 0;
+  let contradictionRowCount = 0;
 
   rows.forEach((row) => {
+    const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
     const domainIntent = normalizeReason(row && row.domainIntent ? row.domainIntent : 'general');
     const conversationMode = normalizeReason(row && row.conversationMode ? row.conversationMode : 'casual');
     const fallbackType = normalizeReason(row && row.fallbackType ? row.fallbackType : 'none');
+    const strategy = normalizeReason(row && row.strategy ? row.strategy : 'none');
+    const retrievalQuality = normalizeReason(row && row.retrievalQuality ? row.retrievalQuality : 'none');
+    const verificationOutcome = normalizeReason(row && row.verificationOutcome ? row.verificationOutcome : 'none');
+    const judgeWinner = normalizeReason(row && row.judgeWinner ? row.judgeWinner : 'none');
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
+    const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
+    const retrieveNeeded = row && row.retrieveNeeded === true;
+    const rowContradictionFlags = Array.isArray(row && row.contradictionFlags) ? row.contradictionFlags : [];
     const legacyTemplateHit = row && row.legacyTemplateHit === true;
     const followupQuestionIncluded = row && row.followupQuestionIncluded === true;
     const pitfallIncluded = row && row.pitfallIncluded === true;
 
+    naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
     fallbackTypes.set(fallbackType, (fallbackTypes.get(fallbackType) || 0) + 1);
+    strategies.set(strategy, (strategies.get(strategy) || 0) + 1);
+    retrievalQualities.set(retrievalQuality, (retrievalQualities.get(retrievalQuality) || 0) + 1);
+    verificationOutcomes.set(verificationOutcome, (verificationOutcomes.get(verificationOutcome) || 0) + 1);
+    judgeWinners.set(judgeWinner, (judgeWinners.get(judgeWinner) || 0) + 1);
     actionCountTotal += Math.max(0, actionCount);
+    candidateCountTotal += Math.max(0, candidateCount);
+    if (retrieveNeeded) retrieveNeededCount += 1;
     if (legacyTemplateHit) legacyTemplateHitCount += 1;
     if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
     if (pitfallIncluded) pitfallIncludedCount += 1;
+    if (rowContradictionFlags.length > 0) contradictionRowCount += 1;
+    rowContradictionFlags.forEach((flag) => {
+      const normalizedFlag = normalizeReason(flag);
+      contradictionFlags.set(normalizedFlag, (contradictionFlags.get(normalizedFlag) || 0) + 1);
+    });
     if (domainIntent !== 'general') {
       domainIntentCount += 1;
       if (conversationMode === 'concierge') domainConciergeCount += 1;
@@ -392,14 +421,24 @@ function buildConversationQualitySummary(actionRows) {
   });
 
   const sampleCount = rows.length;
+  const versionRows = sortCountEntries(naturalnessVersions, 'conversationNaturalnessVersion', 10);
   return {
     sampleCount,
-    conversationNaturalnessVersion: 'v1',
+    conversationNaturalnessVersion: versionRows.length > 0 ? versionRows[0].conversationNaturalnessVersion : 'v1',
+    conversationNaturalnessVersions: versionRows,
     legacyTemplateHitRate: sampleCount > 0 ? Math.round((legacyTemplateHitCount / sampleCount) * 10000) / 10000 : 0,
     followupQuestionIncludedRate: sampleCount > 0 ? Math.round((followupQuestionIncludedCount / sampleCount) * 10000) / 10000 : 0,
     pitfallIncludedRate: sampleCount > 0 ? Math.round((pitfallIncludedCount / sampleCount) * 10000) / 10000 : 0,
     avgActionCount: sampleCount > 0 ? Math.round((actionCountTotal / sampleCount) * 10000) / 10000 : 0,
+    avgCandidateCount: sampleCount > 0 ? Math.round((candidateCountTotal / sampleCount) * 10000) / 10000 : 0,
+    retrieveNeededRate: sampleCount > 0 ? Math.round((retrieveNeededCount / sampleCount) * 10000) / 10000 : 0,
+    contradictionRate: sampleCount > 0 ? Math.round((contradictionRowCount / sampleCount) * 10000) / 10000 : 0,
     domainIntentConciergeRate: domainIntentCount > 0 ? Math.round((domainConciergeCount / domainIntentCount) * 10000) / 10000 : 0,
+    strategies: sortCountEntries(strategies, 'strategy', 10),
+    retrievalQualities: sortCountEntries(retrievalQualities, 'retrievalQuality', 10),
+    verificationOutcomes: sortCountEntries(verificationOutcomes, 'verificationOutcome', 10),
+    judgeWinners: sortCountEntries(judgeWinners, 'judgeWinner', 10),
+    contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),
     fallbackTypes: sortCountEntries(fallbackTypes, 'fallbackType', 10)
   };

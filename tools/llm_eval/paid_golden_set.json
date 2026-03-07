@@ -1,0 +1,23 @@
+[
+  {
+    "id": "paid_greeting_natural",
+    "replyText": "こんにちは。いま気になっていることがあれば、そのまま短く送ってください。",
+    "maxActions": 0,
+    "expectFollowupQuestion": false,
+    "mustNotContain": ["FAQ候補", "CityPack候補", "根拠キー", "score=", "- [ ]", "関連情報です"]
+  },
+  {
+    "id": "paid_domain_concierge_natural",
+    "replyText": "住まい探しの相談ですね。\nまずは次の一手です。\n・希望条件を3つに絞る\n・予算と入居時期を決める\n・必要書類を確認する\n多くの人が詰まりやすいのは 審査書類の不足です。\n希望エリアが分かれば、次の一手を具体化できますか？",
+    "maxActions": 3,
+    "expectFollowupQuestion": true,
+    "mustNotContain": ["FAQ候補", "CityPack候補", "根拠キー", "score=", "- [ ]", "関連情報です"]
+  },
+  {
+    "id": "paid_general_clarify_natural",
+    "replyText": "対象を絞って案内したいので、いま一番気になっている手続きと期限を1つずつ教えてください。",
+    "maxActions": 0,
+    "expectFollowupQuestion": false,
+    "mustNotContain": ["FAQ候補", "CityPack候補", "根拠キー", "score=", "- [ ]", "関連情報です"]
+  }
+]

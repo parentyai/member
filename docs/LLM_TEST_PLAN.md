@@ -42,3 +42,24 @@
   - tests/phaseLLM6/phaseLLM6_allowlist_prevents_secret.test.js
 - audit traceability: blocked/success both append trace-linked audit logs
   - tests/phaseLLM6/phaseLLM6_audit_trace_required.test.js
+
+## Phase731-733 Additions
+- paid orchestrator strategy:
+  - greeting/casual stays retrieval-free
+  - broad paid question prefers `clarify`
+  - domain intent stays `domain_concierge`
+  - tests/phase731/phase731_t01_paid_orchestrator_strategy_contract.test.js
+- paid orchestrator execution:
+  - judge rejects legacy template candidates
+  - verifier softens or clarifies weak evidence
+  - tests/phase731/phase731_t02_paid_orchestrator_run_contract.test.js
+  - tests/phase732/phase732_t01_candidate_judge_verifier_contract.test.js
+- webhook wiring:
+  - `ENABLE_PAID_ORCHESTRATOR_V2` keeps rollout behind a dedicated flag
+  - tests/phase731/phase731_t03_webhook_paid_orchestrator_wiring_contract.test.js
+- action telemetry:
+  - `strategy/retrievalQuality/judgeWinner/judgeScores/verificationOutcome/contradictionFlags/candidateCount`
+  - tests/phase732/phase732_t02_llm_action_orchestrator_telemetry_contract.test.js
+- offline golden eval:
+  - paid natural reply constraints remain fixture-verifiable
+  - tests/phase733/phase733_t01_paid_golden_eval_contract.test.js

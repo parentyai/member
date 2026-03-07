@@ -27,6 +27,7 @@ const { routeConversation } = require('../domain/llm/router/conversationRouter')
 const { normalizeConversationIntent } = require('../domain/llm/router/normalizeConversationIntent');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
+const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
@@ -349,6 +350,10 @@ function resolveConversationRouterEnabled() {
   return resolveBooleanEnvFlag('ENABLE_CONVERSATION_ROUTER', true);
 }
 
+function resolvePaidOrchestratorEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_PAID_ORCHESTRATOR_V2', false);
+}
+
 function resolvePaidInterventionCooldownTurns() {
   const raw = Number(process.env.PAID_INTERVENTION_COOLDOWN_TURNS || 5);
   if (!Number.isFinite(raw)) return 5;
@@ -529,30 +534,34 @@ async function loadFreshContextSnapshotBestEffort(lineUserId) {
   }
 }
 
-async function replyWithPaidDomainConcierge(params) {
+async function buildPaidDomainConciergeResult(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const lineUserId = payload.lineUserId;
   const text = normalizeReplyText(payload.text);
   const domainIntent = normalizeDomainIntent(payload.domainIntent);
   const contextSnapshot = payload.contextSnapshot || await loadFreshContextSnapshotBestEffort(lineUserId);
   const recentTurns = resolvePaidInterventionCooldownTurns();
-  const recentEngagement = await loadRecentInterventionSignals({
-    lineUserId,
-    recentTurns
-  }).catch(() => ({
-    recentTurns,
-    recentInterventions: 0,
-    recentClicks: false,
-    recentTaskDone: false
-  }));
-  let opportunityDecision = detectOpportunity(buildOpportunityInput({
-    lineUserId,
-    userTier: 'paid',
-    messageText: text,
-    contextSnapshot,
-    recentEngagement,
-    llmConciergeEnabled: true
-  }));
+  const recentEngagement = payload.recentEngagement && typeof payload.recentEngagement === 'object'
+    ? payload.recentEngagement
+    : await loadRecentInterventionSignals({
+      lineUserId,
+      recentTurns
+    }).catch(() => ({
+      recentTurns,
+      recentInterventions: 0,
+      recentClicks: false,
+      recentTaskDone: false
+    }));
+  let opportunityDecision = payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
+    ? payload.opportunityDecision
+    : detectOpportunity(buildOpportunityInput({
+      lineUserId,
+      userTier: 'paid',
+      messageText: text,
+      contextSnapshot,
+      recentEngagement,
+      llmConciergeEnabled: true
+    }));
   if (payload.forceConcierge === true && opportunityDecision.conversationMode !== 'concierge') {
     const forcedReasons = Array.isArray(opportunityDecision.opportunityReasonKeys)
       ? opportunityDecision.opportunityReasonKeys.slice(0, 8)
@@ -596,7 +605,6 @@ async function replyWithPaidDomainConcierge(params) {
       : ''
   });
   const replyText = guardedReply.replyText;
-  await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
   const conversationQuality = buildConversationQualityMeta({
     replyText,
     domainIntent,
@@ -607,7 +615,8 @@ async function replyWithPaidDomainConcierge(params) {
     fallbackType: payload.blockedReason ? 'domain_concierge_fallback' : 'domain_concierge',
     legacyTemplateHit: guardedReply.legacyTemplateHit === true,
     pitfallIncluded: guardedReply.pitfallIncluded === true,
-    followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
+    followupQuestionIncluded: guardedReply.followupQuestionIncluded === true,
+    conversationNaturalnessVersion: payload.conversationNaturalnessVersion || 'v2'
   });
   return {
     ok: true,
@@ -617,6 +626,13 @@ async function replyWithPaidDomainConcierge(params) {
     conciergeMeta: domainReply && domainReply.auditMeta ? domainReply.auditMeta : null,
     conversationQuality
   };
+}
+
+async function replyWithPaidDomainConcierge(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const result = await buildPaidDomainConciergeResult(payload);
+  await payload.replyFn(payload.replyToken, { type: 'text', text: result.replyText });
+  return result;
 }
 
 async function replyWithPaidHousingConcierge(params) {
@@ -833,8 +849,9 @@ function buildConversationQualityMeta(params) {
     : detectFollowupQuestionIncluded(replyText);
   const legacyTemplateHit = payload.legacyTemplateHit === true ? true : detectLegacyTemplateHit(replyText);
   const fallbackType = normalizeReplyText(payload.fallbackType).toLowerCase() || null;
+  const conversationNaturalnessVersion = normalizeReplyText(payload.conversationNaturalnessVersion) || 'v1';
   return {
-    conversationNaturalnessVersion: 'v1',
+    conversationNaturalnessVersion,
     legacyTemplateHit,
     followupQuestionIncluded,
     actionCount,
@@ -1103,11 +1120,252 @@ async function appendLlmActionLogBestEffort(data) {
       pitfallIncluded: qualityMeta.pitfallIncluded === true,
       domainIntent: qualityMeta.domainIntent || 'general',
       fallbackType: qualityMeta.fallbackType || null,
-      interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null
+      interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
+      strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
+      retrieveNeeded: payload.retrieveNeeded === true,
+      retrievalQuality: typeof payload.retrievalQuality === 'string' ? payload.retrievalQuality : null,
+      judgeWinner: typeof payload.judgeWinner === 'string' ? payload.judgeWinner : null,
+      judgeScores: Array.isArray(payload.judgeScores) ? payload.judgeScores : [],
+      verificationOutcome: typeof payload.verificationOutcome === 'string' ? payload.verificationOutcome : null,
+      contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
+      candidateCount: Number.isFinite(Number(payload.candidateCount)) ? Number(payload.candidateCount) : 0,
+      humanReviewLabel: typeof payload.humanReviewLabel === 'string' ? payload.humanReviewLabel : null,
+      committedNextActions: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+      committedFollowupQuestion: typeof payload.committedFollowupQuestion === 'string'
+        ? payload.committedFollowupQuestion
+        : null,
+      recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
     });
   } catch (_err) {
     // best effort only
   }
+}
+
+async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
+  const normalizedUserId = normalizeReplyText(lineUserId);
+  if (!normalizedUserId) return [];
+  const limit = Number.isFinite(Number(recentTurns))
+    ? Math.max(5, Math.min(20, Math.floor(Number(recentTurns)) * 2))
+    : 10;
+  try {
+    return await llmActionLogsRepo.listLlmActionLogsByLineUserId({
+      lineUserId: normalizedUserId,
+      limit
+    });
+  } catch (_err) {
+    return [];
+  }
+}
+
+async function tryHandlePaidOrchestratorV2(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  if (resolvePaidOrchestratorEnabled() !== true) return null;
+  const recentTurns = resolvePaidInterventionCooldownTurns();
+  const recentActionRows = await loadRecentActionRowsBestEffort(payload.lineUserId, recentTurns);
+  const groundedReplyFactory = async (options) => {
+    const input = Object.assign({}, options, {
+      lineUserId: payload.lineUserId,
+      locale: 'ja',
+      llmAdapter: llmClient,
+      llmPolicy: payload.budgetPolicy,
+      skipPersonalizedContext: payload.snapshotStrictMode === true,
+      forceConversationFormat: true
+    });
+    if (payload.qualityEnabled === true) {
+      return generatePaidFaqReply(input);
+    }
+    return generatePaidAssistantReply(input);
+  };
+  const domainCandidateFactory = async (options) => buildPaidDomainConciergeResult({
+    lineUserId: payload.lineUserId,
+    text: options && typeof options.messageText === 'string' ? options.messageText : payload.text,
+    domainIntent: options && typeof options.domainIntent === 'string' ? options.domainIntent : payload.normalizedConversationIntent,
+    contextSnapshot: options && options.contextSnapshot ? options.contextSnapshot : payload.contextSnapshot,
+    opportunityDecision: options && options.opportunityDecision ? options.opportunityDecision : payload.opportunityDecision,
+    recentEngagement: payload.recentEngagement,
+    blockedReason: options && Object.prototype.hasOwnProperty.call(options, 'blockedReason') ? options.blockedReason : null,
+    forceConcierge: true,
+    conversationNaturalnessVersion: 'v2'
+  });
+  const composeCandidateFactory = async ({ groundedResult, packet }) => {
+    if (!groundedResult || groundedResult.ok !== true || payload.llmConciergeEnabled !== true) return null;
+    const storedCandidates = await resolveStoredCandidatesForPaid(groundedResult);
+    return composeConciergeReply({
+      question: packet.messageText,
+      baseReplyText: groundedResult.replyText,
+      opportunityHints: packet.opportunityDecision && packet.opportunityDecision.opportunityType !== 'none'
+        ? {
+          summary: groundedResult && groundedResult.output && typeof groundedResult.output.situation === 'string'
+            ? groundedResult.output.situation
+            : packet.messageText,
+          nextActions: packet.opportunityDecision.suggestedAtoms && Array.isArray(packet.opportunityDecision.suggestedAtoms.nextActions)
+            ? packet.opportunityDecision.suggestedAtoms.nextActions.slice(0, 3)
+            : [],
+          pitfall: packet.opportunityDecision.suggestedAtoms && typeof packet.opportunityDecision.suggestedAtoms.pitfall === 'string'
+            ? packet.opportunityDecision.suggestedAtoms.pitfall
+            : '',
+          question: packet.opportunityDecision.suggestedAtoms && typeof packet.opportunityDecision.suggestedAtoms.question === 'string'
+            ? packet.opportunityDecision.suggestedAtoms.question
+            : ''
+        }
+        : null,
+      userTier: 'paid',
+      plan: payload.planInfo.plan,
+      locale: 'ja',
+      contextSnapshot: packet.contextSnapshot,
+      storedCandidates,
+      denylist: payload.budgetPolicy && Array.isArray(payload.budgetPolicy.forbidden_domains)
+        ? payload.budgetPolicy.forbidden_domains
+        : [],
+      webSearchEnabled: payload.llmWebSearchEnabled,
+      styleEngineEnabled: payload.llmStyleEngineEnabled,
+      bandit: {
+        enabled: payload.llmBanditEnabled,
+        epsilon: 0.1,
+        stateFetcher: payload.banditStateFetcher
+      },
+      env: process.env
+    });
+  };
+
+  const orchestrated = await runPaidConversationOrchestrator({
+    lineUserId: payload.lineUserId,
+    traceId: payload.traceId,
+    requestId: payload.requestId,
+    messageText: payload.text,
+    explicitPaidIntent: payload.explicitPaidIntent,
+    paidIntent: payload.paidIntent,
+    planInfo: payload.planInfo,
+    routerMode: payload.routerMode,
+    routerReason: payload.routerReason,
+    contextSnapshot: payload.contextSnapshot,
+    llmFlags: {
+      llmConciergeEnabled: payload.llmConciergeEnabled,
+      llmWebSearchEnabled: payload.llmWebSearchEnabled,
+      llmStyleEngineEnabled: payload.llmStyleEngineEnabled,
+      llmBanditEnabled: payload.llmBanditEnabled,
+      qualityEnabled: payload.qualityEnabled,
+      snapshotStrictMode: payload.snapshotStrictMode
+    },
+    maxNextActionsCap: payload.maxNextActionsCap,
+    recentEngagement: payload.recentEngagement,
+    opportunityDecision: payload.opportunityDecision,
+    recentActionRows,
+    deps: {
+      generatePaidCasualReply,
+      generateGroundedReply: groundedReplyFactory,
+      generateDomainConciergeCandidate: domainCandidateFactory,
+      composeConciergeCandidate: composeCandidateFactory
+    }
+  });
+
+  if (!orchestrated || orchestrated.ok !== true) return null;
+
+  await payload.replyFn(payload.replyToken, { type: 'text', text: orchestrated.replyText });
+  const conversationQuality = buildConversationQualityMeta({
+    replyText: orchestrated.replyText,
+    domainIntent: orchestrated.domainIntent,
+    nextActions: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
+      ? orchestrated.finalMeta.committedNextActions
+      : [],
+    opportunityReasonKeys: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityReasonKeys : [],
+    fallbackType: orchestrated.strategyPlan && orchestrated.strategyPlan.fallbackType ? orchestrated.strategyPlan.fallbackType : null,
+    legacyTemplateHit: orchestrated.finalMeta && orchestrated.finalMeta.legacyTemplateHit === true,
+    pitfallIncluded: orchestrated.finalMeta && orchestrated.finalMeta.pitfallIncluded === true,
+    followupQuestionIncluded: orchestrated.finalMeta && orchestrated.finalMeta.followupQuestionIncluded === true,
+    conversationNaturalnessVersion: 'v2'
+  });
+  const assistantQuality = normalizeAssistantQuality(orchestrated.assistantQuality, {
+    intentResolved: payload.paidIntent,
+    kbTopScore: 0,
+    evidenceCoverage: 0,
+    blockedStage: orchestrated.blockedReason ? 'orchestrator' : null,
+    fallbackReason: orchestrated.blockedReason || null
+  });
+  const tokenUsed = (orchestrated.tokensIn || 0) + (orchestrated.tokensOut || 0);
+  const usage = await recordLlmUsage({
+    userId: payload.lineUserId,
+    plan: payload.planInfo.plan,
+    subscriptionStatus: payload.planInfo.status,
+    intent: payload.paidIntent,
+    decision: 'allow',
+    blockedReason: null,
+    tokensIn: orchestrated.tokensIn || 0,
+    tokensOut: orchestrated.tokensOut || 0,
+    tokenUsed,
+    model: orchestrated.model || (payload.budgetPolicy && payload.budgetPolicy.model),
+    assistantQuality
+  });
+  await appendLlmGateDecisionBestEffort({
+    lineUserId: payload.lineUserId,
+    plan: payload.planInfo.plan,
+    status: payload.planInfo.status,
+    intent: payload.paidIntent,
+    decision: 'allow',
+    blockedReason: null,
+    tokenUsed,
+    costEstimate: usage && usage.costEstimate,
+    model: orchestrated.model || (payload.budgetPolicy && payload.budgetPolicy.model),
+    policy: payload.budgetPolicy || null,
+    traceId: payload.traceId,
+    requestId: payload.requestId,
+    conciergeMeta: orchestrated.conciergeMeta,
+    assistantQuality,
+    conversationMode: orchestrated.conversationMode,
+    routerReason: orchestrated.routerReason,
+    opportunityType: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityType : 'none',
+    opportunityReasonKeys: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityReasonKeys : [],
+    interventionBudget: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.interventionBudget : 0,
+    domainIntent: orchestrated.domainIntent,
+    conversationQuality
+  });
+  await appendLlmActionLogBestEffort({
+    lineUserId: payload.lineUserId,
+    plan: payload.planInfo.plan,
+    traceId: payload.traceId,
+    requestId: payload.requestId,
+    conciergeMeta: orchestrated.conciergeMeta,
+    llmBanditEnabled: payload.llmBanditEnabled,
+    conversationMode: orchestrated.conversationMode,
+    routerReason: orchestrated.routerReason,
+    opportunityType: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityType : 'none',
+    opportunityReasonKeys: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.opportunityReasonKeys : [],
+    interventionBudget: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.interventionBudget : 0,
+    domainIntent: orchestrated.domainIntent,
+    conversationQuality,
+    strategy: orchestrated.telemetry ? orchestrated.telemetry.strategy : null,
+    retrieveNeeded: orchestrated.telemetry ? orchestrated.telemetry.retrieveNeeded === true : false,
+    retrievalQuality: orchestrated.telemetry ? orchestrated.telemetry.retrievalQuality : null,
+    judgeWinner: orchestrated.telemetry ? orchestrated.telemetry.judgeWinner : null,
+    judgeScores: orchestrated.telemetry ? orchestrated.telemetry.judgeScores : [],
+    verificationOutcome: orchestrated.telemetry ? orchestrated.telemetry.verificationOutcome : null,
+    contradictionFlags: orchestrated.telemetry ? orchestrated.telemetry.contradictionFlags : [],
+    candidateCount: orchestrated.telemetry ? orchestrated.telemetry.candidateCount : 0,
+    committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
+    committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
+    recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
+      ? (orchestrated.packet.recentUserGoals[0] || null)
+      : null
+  });
+  await appendJourneyEventBestEffort({
+    lineUserId: payload.lineUserId,
+    type: 'next_action_shown',
+    intent: payload.paidIntent,
+    phase: payload.contextSnapshot && payload.contextSnapshot.phase ? payload.contextSnapshot.phase : null,
+    nextActions: orchestrated.finalMeta && Array.isArray(orchestrated.finalMeta.committedNextActions)
+      ? orchestrated.finalMeta.committedNextActions
+      : [],
+    evidenceKeys: [],
+    summary: orchestrated.replyText.split('\n')[0] || null,
+    createdAt: new Date().toISOString()
+  });
+
+  return {
+    handled: true,
+    mode: 'paid_orchestrated',
+    blockedReason: null,
+    strategy: orchestrated.telemetry ? orchestrated.telemetry.strategy : null
+  };
 }
 
 async function appendJourneyEventBestEffort(data) {
@@ -1733,6 +1991,12 @@ async function handleAssistantMessage(params) {
     ? snapshotResult.snapshot
     : null;
   let opportunityDecision = buildDefaultOpportunityDecision();
+  let recentEngagement = {
+    recentTurns: 0,
+    recentInterventions: 0,
+    recentClicks: false,
+    recentTaskDone: false
+  };
   const messagePosture = detectMessagePosture({ messageText: text });
   const greetingOrSmalltalk = messagePosture.isGreeting === true || messagePosture.isSmalltalk === true;
   const runRouterOpportunityPath = conversationRouterEnabled
@@ -1740,7 +2004,7 @@ async function handleAssistantMessage(params) {
     && (routerMode === 'problem' || routerMode === 'question');
   if (isPaidDomainIntent) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
-    const recentEngagement = await loadRecentInterventionSignals({
+    recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
       recentTurns
     }).catch(() => ({
@@ -1763,17 +2027,12 @@ async function handleAssistantMessage(params) {
       userTier: 'paid',
       messageText: text,
       contextSnapshot,
-      recentEngagement: {
-        recentTurns: 0,
-        recentInterventions: 0,
-        recentClicks: false,
-        recentTaskDone: false
-      },
+      recentEngagement,
       llmConciergeEnabled
     }));
   } else if (!conversationRouterEnabled && opportunityEngineEnabled) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
-    const recentEngagement = await loadRecentInterventionSignals({
+    recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
       recentTurns
     });
@@ -1787,7 +2046,7 @@ async function handleAssistantMessage(params) {
     }));
   } else if (runRouterOpportunityPath) {
     const recentTurns = resolvePaidInterventionCooldownTurns();
-    const recentEngagement = await loadRecentInterventionSignals({
+    recentEngagement = await loadRecentInterventionSignals({
       lineUserId,
       recentTurns
     });
@@ -1799,6 +2058,36 @@ async function handleAssistantMessage(params) {
       recentEngagement,
       llmConciergeEnabled
     }));
+  }
+  const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
+  const orchestrated = await tryHandlePaidOrchestratorV2({
+    lineUserId,
+    text,
+    replyToken: payload.replyToken,
+    replyFn: payload.replyFn,
+    planInfo,
+    explicitPaidIntent,
+    paidIntent,
+    routerMode,
+    routerReason,
+    normalizedConversationIntent,
+    contextSnapshot,
+    llmConciergeEnabled,
+    llmWebSearchEnabled,
+    llmStyleEngineEnabled,
+    llmBanditEnabled,
+    qualityEnabled,
+    snapshotStrictMode,
+    maxNextActionsCap,
+    recentEngagement,
+    opportunityDecision,
+    budgetPolicy: budget.policy || null,
+    banditStateFetcher,
+    traceId,
+    requestId
+  });
+  if (orchestrated && orchestrated.handled === true) {
+    return orchestrated;
   }
   const greetingOrSmalltalkCasual = (
     opportunityDecision.conversationMode === 'casual'
@@ -1973,7 +2262,6 @@ async function handleAssistantMessage(params) {
     };
   }
 
-  const maxNextActionsCap = await resolveMaxNextActionsCapFromJourneyCatalog(planInfo);
   const paid = qualityEnabled
     ? await generatePaidFaqReply({
       lineUserId,
