@@ -261,3 +261,17 @@ Task Engine v1 の add-only SSOT。
   - narrowing toggle は `ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1`
 - CTA landing:
   - `TODO詳細:<todoKey>` または `地域手続き` のみ
+
+## Phase742 Add-only（Canonical NBA Adapter Boundary）
+- 目的:
+  - `computeNextTasks()` の決定論 authority を維持したまま、運用可視化用の adapter を追加する。
+- canonical authority:
+  - `computeNextTasks()` を唯一の selector authority とする。
+  - `getNextBestAction()` は adapter/read model としてのみ使用し、独立 engine として扱わない。
+- non-goal:
+  - `phaseLLM3/getNextActionCandidates` を member canonical NBA に昇格しない。
+  - LLM に state mutation authority を与えない。
+- admin read-only surface（add-only）:
+  - `GET /api/admin/os/next-best-action?lineUserId=...`
+  - `x-actor` 必須 + `traceId` 解決 + `appendAuditLog` を必須化する。
+  - write path は追加しない。
