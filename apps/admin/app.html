@@ -2063,8 +2063,28 @@
 
 	              <details class="table-section section" open data-monitor-surface="monitoring">
 	                <summary>全体の通知一覧</summary>
-                  <div class="row row-top">
-                    <button id="monitor-global-reload" type="button">全体一覧を更新</button>
+                  <div class="table-toolbar monitor-table-toolbar" data-ui="monitor-table-toolbar">
+                    <label>表示ビュー
+                      <select id="monitor-saved-view" class="select-inline">
+                        <option value="all">全件</option>
+                        <option value="attention">要対応</option>
+                        <option value="pending">下書き/未送信</option>
+                        <option value="sent">配信済み</option>
+                      </select>
+                    </label>
+                    <label>検索
+                      <input id="monitor-toolbar-query" type="text" class="input-inline input-sm" placeholder="タイトル / シナリオ / ステップ" />
+                    </label>
+                    <label>状態
+                      <select id="monitor-toolbar-status" class="select-inline">
+                        <option value="">すべて</option>
+                        <option value="draft">draft</option>
+                        <option value="active">active</option>
+                        <option value="sent">sent</option>
+                        <option value="archived">archived</option>
+                      </select>
+                    </label>
+                    <button id="monitor-global-reload" type="button">一覧を更新</button>
                   </div>
 	                <div class="table-scroll">
 	                  <table class="table-compact">
@@ -2086,7 +2106,7 @@
 	                </div>
 	              </details>
             </div>
-            <div class="pane-detail is-hidden" aria-hidden="true">
+            <div class="pane-detail" data-monitor-surface="monitoring">
               <div class="panel">
                 <div class="panel-title" data-dict-key="ui.label.monitor.detail">詳細</div>
                 <div class="panel-body">
