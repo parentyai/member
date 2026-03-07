@@ -133,6 +133,7 @@ function normalizeTaskContent(taskKey, data) {
     id,
     taskKey: id,
     title: normalizeText(payload.title, null),
+    whyNow: normalizeText(payload.whyNow, null),
     category,
     dependencies,
     timeMin: Number.isInteger(timeMin) ? timeMin : null,

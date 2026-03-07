@@ -36,6 +36,7 @@ test('phase741: normalizeTaskContent keeps checklist/checklistItems compatibilit
   const row = normalizeTaskContent('bank_open', {
     taskKey: 'bank_open',
     title: '銀行口座を作る',
+    whyNow: '初月の生活基盤を整えるため',
     category: 'BANKING',
     dependencies: ['immigration_complete'],
     checklist: ['パスポート準備', 'SSN確認'],
@@ -44,6 +45,7 @@ test('phase741: normalizeTaskContent keeps checklist/checklistItems compatibilit
   });
   assert.ok(row);
   assert.equal(row.category, 'BANKING');
+  assert.equal(row.whyNow, '初月の生活基盤を整えるため');
   assert.deepEqual(row.dependencies, ['immigration_complete']);
   assert.deepEqual(row.checklist, ['パスポート準備', 'SSN確認']);
   assert.equal(row.checklistItems.length, 2);
