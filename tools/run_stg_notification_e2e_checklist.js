@@ -693,6 +693,20 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     response: scenarioSeedResult.response || null,
     seed: scenarioSeedResult.seed || null
   });
+  if (scenarioSeedResult.seed && scenarioSeedResult.seed.lineUserId) {
+    const userReviewResp = await request(
+      ctx,
+      'POST',
+      '/api/phase5/admin/users/review',
+      traceId,
+      { lineUserId: scenarioSeedResult.seed.lineUserId }
+    );
+    attempts.push({
+      stage: 'user_seed_upsert',
+      lineUserId: scenarioSeedResult.seed.lineUserId,
+      response: summarizeResponse(userReviewResp)
+    });
+  }
   const draftPayload = buildComposerBootstrapPayload(seed, traceId, scenarioSeedResult.seed);
   const draftResp = await request(ctx, 'POST', '/api/admin/os/notifications/draft', traceId, draftPayload);
   attempts.push({ stage: 'draft', response: summarizeResponse(draftResp) });

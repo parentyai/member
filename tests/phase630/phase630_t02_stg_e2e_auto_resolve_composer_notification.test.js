@@ -152,6 +152,10 @@ test('phase630: resolveComposerNotificationId bootstrap keeps notification activ
           body: { ok: true, items: [{ lineUserId: 'U1', scenarioKey: 'A', stepKey: 'week' }] }
         };
       }
+      if (method === 'POST' && endpoint === '/api/phase5/admin/users/review') {
+        assert.strictEqual(body.lineUserId, 'U1');
+        return { okStatus: true, body: { ok: true } };
+      }
       if (method === 'POST' && endpoint === '/api/admin/os/notifications/draft') {
         return { okStatus: true, body: { ok: true, notificationId: 'n_bootstrap' } };
       }
