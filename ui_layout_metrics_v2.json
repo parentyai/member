@@ -1,0 +1,781 @@
+{
+  "version": "2026-03-07",
+  "observedRuntime": false,
+  "note": "本ファイルはDOM/CSS静的観測のみ。実ランタイム座標は未観測。",
+  "surfaces": [
+    {
+      "surfaceId": "UI-ADM-HOME",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-OPS-FEATURE-CATALOG",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-OPS-SYSTEM-HEALTH",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-ALERTS",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-COMPOSER",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-MONITOR",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-ERRORS",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-READ-MODEL",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-VENDORS",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-AUDIT",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MAP",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-LLM",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-SETTINGS",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-MAINTENANCE",
+      "viewport": "unobserved",
+      "regions": [
+        {
+          "name": "left-nav",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "topbar",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        },
+        {
+          "name": "main-content",
+          "x": null,
+          "y": null,
+          "width": null,
+          "height": null
+        }
+      ],
+      "firstViewContains": [
+        "page title",
+        "primary actions",
+        "summary cards (when available)"
+      ],
+      "belowFoldImportantItems": [],
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "1-9999"
+        }
+      ]
+    }
+  ]
+}

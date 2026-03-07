@@ -1,0 +1,424 @@
+{
+  "version": "2026-03-07",
+  "roles": [
+    "operator",
+    "admin",
+    "developer"
+  ],
+  "surfaces": [
+    {
+      "surfaceId": "UI-ADM-HOME",
+      "pane": "home",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-OPS-FEATURE-CATALOG",
+      "pane": "ops-feature-catalog",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-OPS-SYSTEM-HEALTH",
+      "pane": "ops-system-health",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-ALERTS",
+      "pane": "alerts",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-COMPOSER",
+      "pane": "composer",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-MONITOR",
+      "pane": "monitor",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+      "pane": "emergency-layer",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-CITY-PACK",
+      "pane": "city-pack",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-ERRORS",
+      "pane": "errors",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-READ-MODEL",
+      "pane": "read-model",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-VENDORS",
+      "pane": "vendors",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-AUDIT",
+      "pane": "audit",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MAP",
+      "pane": "developer-map",
+      "visibility": {
+        "operator": false,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+      "pane": "developer-manual-redac",
+      "visibility": {
+        "operator": false,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+      "pane": "developer-manual-user",
+      "visibility": {
+        "operator": false,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-LLM",
+      "pane": "llm",
+      "visibility": {
+        "operator": false,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-SETTINGS",
+      "pane": "settings",
+      "visibility": {
+        "operator": true,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    },
+    {
+      "surfaceId": "UI-ADM-MAINTENANCE",
+      "pane": "maintenance",
+      "visibility": {
+        "operator": false,
+        "admin": true,
+        "developer": true
+      },
+      "sourceRefs": [
+        {
+          "path": "apps/admin/app.html",
+          "lines": "1-9999"
+        },
+        {
+          "path": "apps/admin/assets/admin_app.js",
+          "lines": "2637-2787"
+        },
+        {
+          "path": "apps/admin/assets/admin.css",
+          "lines": "315-321"
+        }
+      ]
+    }
+  ]
+}
