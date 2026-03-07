@@ -5,6 +5,9 @@ const { getDb, serverTimestamp } = require('../../infra/firestore');
 const COLLECTION = 'llm_action_logs';
 const CONVERSATION_MODES = new Set(['casual', 'concierge']);
 const OPPORTUNITY_TYPES = new Set(['none', 'action', 'blocked', 'life']);
+const STRATEGIES = new Set(['casual', 'domain_concierge', 'concierge', 'recommendation', 'clarify', 'grounded_answer']);
+const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
+const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -114,6 +117,46 @@ function normalizeDomainIntent(value) {
   return 'general';
 }
 
+function normalizeStrategy(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return STRATEGIES.has(normalized) ? normalized : null;
+}
+
+function normalizeRetrievalQuality(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'none';
+  return RETRIEVAL_QUALITIES.has(normalized) ? normalized : 'none';
+}
+
+function normalizeVerificationOutcome(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return VERIFICATION_OUTCOMES.has(normalized) ? normalized : null;
+}
+
+function normalizeJudgeScores(value) {
+  const rows = Array.isArray(value) ? value : [];
+  return rows.slice(0, 5).map((item, index) => {
+    const row = item && typeof item === 'object' ? item : {};
+    const metrics = row.metrics && typeof row.metrics === 'object' ? row.metrics : {};
+    return {
+      rank: index + 1,
+      candidateId: normalizeString(row.candidateId, null),
+      total: normalizeNumber(row.total, 0),
+      rejectedReasons: normalizeStringList(row.rejectedReasons, 8),
+      metrics: {
+        sensibleness: normalizeNumber(metrics.sensibleness, 0),
+        contextConsistency: normalizeNumber(metrics.contextConsistency, 0),
+        taskProgress: normalizeNumber(metrics.taskProgress, 0),
+        groundedness: normalizeNumber(metrics.groundedness, 0),
+        naturalness: normalizeNumber(metrics.naturalness, 0),
+        safety: normalizeNumber(metrics.safety, 0)
+      }
+    };
+  }).filter((row) => row.candidateId);
+}
+
 function normalizeContextualFeatures(value) {
   if (!value || typeof value !== 'object') return null;
   return {
@@ -218,6 +261,18 @@ async function appendLlmActionLog(params) {
     domainIntent: normalizeDomainIntent(payload.domainIntent),
     fallbackType: normalizeString(payload.fallbackType, null),
     interventionSuppressedBy: normalizeString(payload.interventionSuppressedBy, null),
+    strategy: normalizeStrategy(payload.strategy),
+    retrieveNeeded: payload.retrieveNeeded === true,
+    retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),
+    judgeWinner: normalizeString(payload.judgeWinner, null),
+    judgeScores: normalizeJudgeScores(payload.judgeScores),
+    verificationOutcome: normalizeVerificationOutcome(payload.verificationOutcome),
+    contradictionFlags: normalizeStringList(payload.contradictionFlags, 8),
+    candidateCount: Math.max(0, Math.min(5, Math.floor(normalizeNumber(payload.candidateCount, 0)))),
+    humanReviewLabel: normalizeString(payload.humanReviewLabel, null),
+    committedNextActions: normalizeStringList(payload.committedNextActions, 3),
+    committedFollowupQuestion: normalizeString(payload.committedFollowupQuestion, null),
+    recentUserGoal: normalizeString(payload.recentUserGoal, null),
     contextVersion: normalizeString(payload.contextVersion, 'concierge_ctx_v1'),
     featureHash: normalizeString(payload.featureHash, null),
     contextSignature: normalizeString(payload.contextSignature, null),

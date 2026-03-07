@@ -518,3 +518,71 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1) `ENABLE_PAID_OPPORTUNITY_ENGINE_V1=false` で即時停止。  
 2) 必要時 `llmConciergeEnabled=false` を併用。  
 3) 重大時は `llmEnabled=false` で全停止。  
+
+## Phase733 Addendum（Paid Orchestrator Foundation / Judge / Golden Eval）
+
+### Feature Flags
+- `ENABLE_PAID_ORCHESTRATOR_V2`（default: false）
+  - paid webhook 本流のみを新しい orchestrator 経路へ切り替える。
+  - `false` の場合は既存 paid pipeline を維持する。
+
+### 運用対象
+- 対象経路:
+  - paid webhook のみ
+- 非対象:
+  - free webhook
+  - admin API
+  - compat routes
+
+### Orchestrator 戦略
+- `strategy=casual`
+  - greeting / casual を retrieval なしで返す。
+- `strategy=clarify`
+  - broad question は retrieval より先に clarification を返す。
+- `strategy=grounded_answer`
+  - retrieval が必要な paid question を grounded answer として返す。
+- `strategy=domain_concierge`
+  - `housing/school/ssn/banking` は concierge-first を維持する。
+- `strategy=recommendation`
+  - activity 系は retrieval quality が低い場合に hedge / clarify を優先する。
+
+### 監査確認（llm_action_logs / usage summary）
+- `llm_action_logs` 追加確認項目:
+  - `strategy`
+  - `retrieveNeeded`
+  - `retrievalQuality`
+  - `judgeWinner`
+  - `judgeScores`
+  - `verificationOutcome`
+  - `contradictionFlags`
+  - `candidateCount`
+  - `committedNextActions`
+  - `committedFollowupQuestion`
+- `GET /api/admin/os/llm-usage/summary?windowDays=7` 追加確認項目:
+  - `assistantQuality.conversationQuality.strategies`
+  - `assistantQuality.conversationQuality.retrievalQualities`
+  - `assistantQuality.conversationQuality.verificationOutcomes`
+  - `assistantQuality.conversationQuality.judgeWinners`
+  - `assistantQuality.conversationQuality.avgCandidateCount`
+  - `assistantQuality.conversationQuality.retrieveNeededRate`
+  - `assistantQuality.conversationQuality.contradictionRate`
+
+### Golden Eval
+- 実行コマンド:
+  - `npm run llm:eval:paid-golden`
+- 目的:
+  - paid reply の自然会話制約を fixture ベースで確認する。
+- 失敗時の扱い:
+  - `legacyTemplateHit` 相当の文面混入、action 数超過、FAQ/CityPack dump は rollout 中止。
+
+### 段階導入
+1. stg で `ENABLE_PAID_ORCHESTRATOR_V2=true`
+2. `node --test tests/phase731/*.test.js tests/phase732/*.test.js tests/phase733/*.test.js`
+3. `npm run llm:eval:paid-golden`
+4. `GET /api/admin/os/llm-usage/summary?windowDays=7` で `contradictionRate` と `retrieveNeededRate` を確認
+5. 問題がなければ prod で同じ flag を有効化
+
+### 即時停止
+1. `ENABLE_PAID_ORCHESTRATOR_V2=false`
+2. 必要時 `ENABLE_CONVERSATION_ROUTER=false`
+3. 重大時は `llmEnabled=false`
