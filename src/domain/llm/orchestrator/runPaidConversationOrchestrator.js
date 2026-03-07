@@ -10,6 +10,7 @@ const {
 const { judgeCandidates } = require('./judgeCandidates');
 const { verifyCandidate } = require('./verifyCandidate');
 const { finalizeCandidate } = require('./finalizeCandidate');
+const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPolicySnapshot');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -184,8 +185,12 @@ async function runPaidConversationOrchestrator(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const deps = payload.deps && typeof payload.deps === 'object' ? payload.deps : {};
   const recentActionRows = Array.isArray(payload.recentActionRows) ? payload.recentActionRows : [];
+  const legalSnapshot = resolveLlmLegalPolicySnapshot({
+    policy: payload.legalSnapshot && typeof payload.legalSnapshot === 'object' ? payload.legalSnapshot : null
+  });
   const packet = buildConversationPacket(Object.assign({}, payload, {
-    recentActionRows
+    recentActionRows,
+    legalSnapshot
   }));
   const strategyPlan = buildStrategyPlan(packet);
   strategyPlan.retrieveNeeded = judgeNeedRetrieval(packet, strategyPlan);
@@ -259,7 +264,8 @@ async function runPaidConversationOrchestrator(params) {
       committedNextActions: finalized.finalMeta.committedNextActions,
       committedFollowupQuestion: finalized.finalMeta.committedFollowupQuestion
     },
-    finalMeta: finalized.finalMeta
+    finalMeta: finalized.finalMeta,
+    legalSnapshot
   };
 }
 

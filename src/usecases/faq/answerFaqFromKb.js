@@ -14,6 +14,7 @@ const { appendAuditLog } = require('../audit/appendAuditLog');
 const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
 const { sanitizeRetrievalCandidates } = require('../assistant/retrieval/sanitizeRetrievalCandidates');
+const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -274,15 +275,12 @@ function toNumberOrNull(value) {
 }
 
 function resolveLlmPolicySnapshot(policy) {
-  const normalized = systemFlagsRepo.normalizeLlmPolicy(policy);
-  if (normalized === null) {
-    return Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY);
-  }
-  return normalized;
+  return resolveLlmLegalPolicySnapshot({ policy }).policy;
 }
 
 function isConsentMissingByPolicy(policy) {
-  return Boolean(policy && policy.lawfulBasis === 'consent' && policy.consentVerified !== true);
+  const snapshot = resolveLlmLegalPolicySnapshot({ policy });
+  return snapshot.legalDecision === 'blocked' && snapshot.legalReasonCodes.includes('consent_missing');
 }
 
 function buildAuditSummaryBase(params) {
@@ -298,6 +296,8 @@ function buildAuditSummaryBase(params) {
     lawfulBasis: payload.llmPolicy.lawfulBasis,
     consentVerified: payload.llmPolicy.consentVerified,
     crossBorder: payload.llmPolicy.crossBorder,
+    legalDecision: payload.legalDecision || null,
+    legalReasonCodes: Array.isArray(payload.legalReasonCodes) ? payload.legalReasonCodes : [],
     kbMatchedIds: payload.matchedArticleIds,
     top1Score: payload.confidence.top1Score,
     top2Score: payload.confidence.top2Score,
@@ -436,7 +436,8 @@ async function answerFaqFromKb(params, deps) {
     ? deps.getLlmPolicy
     : (deps ? async () => Object.assign({}, systemFlagsRepo.DEFAULT_LLM_POLICY) : systemFlagsRepo.getLlmPolicy);
   const dbEnabled = await getLlmEnabled();
-  const llmPolicy = resolveLlmPolicySnapshot(await getLlmPolicy());
+  const legalSnapshot = resolveLlmLegalPolicySnapshot({ policy: await getLlmPolicy() });
+  const llmPolicy = legalSnapshot.policy;
   const disclaimer = getDisclaimer('faq', { policy: llmPolicy });
   const llmEnabled = Boolean(envEnabled && dbEnabled);
 
@@ -637,6 +638,8 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          legalDecision: legalSnapshot.legalDecision,
+          legalReasonCodes: legalSnapshot.legalReasonCodes,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -756,6 +759,8 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          legalDecision: legalSnapshot.legalDecision,
+          legalReasonCodes: legalSnapshot.legalReasonCodes,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -840,6 +845,8 @@ async function answerFaqFromKb(params, deps) {
           envEnabled,
           dbEnabled,
           llmPolicy,
+          legalDecision: legalSnapshot.legalDecision,
+          legalReasonCodes: legalSnapshot.legalReasonCodes,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -902,6 +909,8 @@ async function answerFaqFromKb(params, deps) {
         envEnabled,
         dbEnabled,
         llmPolicy,
+        legalDecision: legalSnapshot.legalDecision,
+        legalReasonCodes: legalSnapshot.legalReasonCodes,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
         confidence,

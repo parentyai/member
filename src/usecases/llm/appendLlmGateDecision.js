@@ -52,7 +52,12 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'opportunityReasonKeys',
   'interventionBudget',
   'sanitizeApplied',
-  'sanitizedCandidateCount'
+  'sanitizedCandidateCount',
+  'lawfulBasis',
+  'consentVerified',
+  'crossBorder',
+  'legalDecision',
+  'legalReasonCodes'
 ]);
 
 function resolveAppendAuditLog() {
