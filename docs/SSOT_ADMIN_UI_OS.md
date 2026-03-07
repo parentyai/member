@@ -254,6 +254,15 @@ MUST:
   - `ENABLE_UXOS_FATIGUE_WARN=1` 時に `notifications.send.plan` の応答へ warning を add-only で返す。
   - 送信を停止しない（blockしない）。
 
+## Phase743 Add-only（UX OS Emergency Override / Read-only）
+- `getNextBestAction` は add-only で emergency override を先行評価する。
+  - 条件: `ENABLE_UXOS_EMERGENCY_OVERRIDE=1` かつ user `regionKey` に一致する `emergency_bulletins(status=sent)` が有効時間内に存在。
+  - 一致時は `source=emergency_override` / `action=CHECK_EMERGENCY_ALERT` を返す。
+- `GET /api/admin/os/ux-policy/readonly` の snapshot を add-only 拡張:
+  - `flags.uxosEmergencyOverrideEnabled`
+  - `snapshot.notification.emergencyOverrideMode`（`disabled|region_sent_bulletin`）
+- override 判定は fail-open（判定失敗時は task/LLM の既存導線を継続）。
+
 ### ブックマーク更新ガイド（短縮版）
 - 推奨: `/admin/app?pane=<pane>` を保存する（例: `composer` / `monitor` / `errors` / `read-model` / `maintenance` / `audit`）。
 - 旧URLブックマークは互換 redirect で到達可能だが、通常運用は新URLへ更新する。

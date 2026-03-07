@@ -21,6 +21,9 @@ UX OS Foundation P0 の add-only 契約。
   - UX Policy 編集UI（write）
   - 既存 API/Firestore フィールド意味変更
 
+注記:
+- Emergency override は P0対象外のまま維持し、別契約 `docs/SSOT_UXOS_EMERGENCY_OVERRIDE_P1_V1.md` で add-only 拡張する。
+
 ## 2. Feature Flags
 
 - `ENABLE_UXOS_EVENTS`（default: `0`）
