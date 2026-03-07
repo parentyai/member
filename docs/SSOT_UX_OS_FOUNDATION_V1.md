@@ -88,3 +88,16 @@ Default behavior:
 - Detailed references:
   - `docs/UX_OS_POLICY_CONTRACTS_V1.md`
   - `docs/UX_OS_MEANING_FIELDS_V1.md`
+
+## Addendum: Task Detail Observability (Phase747)
+- Task Detail read flow adds add-only observation events:
+  - `todo_detail_opened`
+  - `todo_detail_section_opened`
+  - `todo_detail_section_continue`
+  - `todo_detail_completed`
+- `sectionMeta` is now a first-class observability payload, reused by:
+  - webhook audit (`journey.todo_detail.section.replied`)
+  - Journey KPI aggregation (`detailOpenToContinueRate`, `detailOpenToCompleteRate`, `deliveryToDetailToDoneRate`)
+- References:
+  - `docs/TASK_DETAIL_OBSERVABILITY_V1.md`
+  - `docs/JOURNEY_FUNNEL_EVENT_CONTRACT_V1.md`

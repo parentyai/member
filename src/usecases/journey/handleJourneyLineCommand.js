@@ -58,6 +58,33 @@ function normalizeText(value, fallback) {
   return normalized || fallback || '';
 }
 
+function normalizeOptionalToken(value) {
+  const normalized = normalizeText(value, '');
+  return normalized || null;
+}
+
+function buildTaskDetailAttribution(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const nested = payload.attribution && typeof payload.attribution === 'object' ? payload.attribution : {};
+  return {
+    notificationId: normalizeOptionalToken(payload.notificationId) || normalizeOptionalToken(nested.notificationId),
+    deliveryId: normalizeOptionalToken(payload.deliveryId) || normalizeOptionalToken(nested.deliveryId),
+    source: normalizeOptionalToken(payload.source) || normalizeOptionalToken(nested.source),
+    traceId: normalizeOptionalToken(payload.traceId) || normalizeOptionalToken(nested.traceId),
+    requestId: normalizeOptionalToken(payload.requestId) || normalizeOptionalToken(nested.requestId)
+  };
+}
+
+function buildTaskDetailAttributionKey(lineUserId, todoKey, attribution) {
+  const user = normalizeText(lineUserId);
+  const key = normalizeText(todoKey);
+  const row = attribution && typeof attribution === 'object' ? attribution : {};
+  if (normalizeText(row.deliveryId)) return `delivery:${normalizeText(row.deliveryId)}`;
+  if (normalizeText(row.notificationId)) return `notification:${normalizeText(row.notificationId)}:${user}:${key}`;
+  if (normalizeText(row.traceId)) return `trace:${normalizeText(row.traceId)}:${user}:${key}`;
+  return `todo:${user}:${key}`;
+}
+
 function formatTodoStateLabel(item) {
   const row = item && typeof item === 'object' ? item : {};
   const taskStatus = String(row.taskStatus || row.status || '').toLowerCase();
@@ -964,6 +991,28 @@ async function handleTodoDetailCommand(params, deps) {
     linkRefs: links,
     todoKey
   });
+  const attribution = buildTaskDetailAttribution({
+    attribution: payload.attribution,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null
+  });
+  await appendJourneyEventBestEffort({
+    lineUserId,
+    type: 'todo_detail_opened',
+    ref: {
+      source: 'line_command_todo_detail',
+      todoKey,
+      taskKey,
+      taskKeySource: taskKeyResolution && taskKeyResolution.source ? taskKeyResolution.source : null
+    },
+    fields: {
+      attribution,
+      attributionKey: buildTaskDetailAttributionKey(lineUserId, todoKey, attribution),
+      hasManualText: Boolean(normalizeText((taskContent || fallbackContent).manualText)),
+      hasFailureText: Boolean(normalizeText((taskContent || fallbackContent).failureText)),
+      linkWarningCount: Array.isArray(links && links.warnings) ? links.warnings.length : 0
+    }
+  }, resolvedDeps);
   return {
     handled: true,
     replyMessage: flexMessage
@@ -972,6 +1021,7 @@ async function handleTodoDetailCommand(params, deps) {
 
 async function handleTodoDetailSectionContinueCommand(params, deps) {
   const payload = params && typeof params === 'object' ? params : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const todoKey = normalizeText(payload.todoKey);
   const section = normalizeText(payload.section).toLowerCase();
   const startChunk = Number(payload.startChunk);
@@ -981,12 +1031,41 @@ async function handleTodoDetailSectionContinueCommand(params, deps) {
       replyText: '続き表示の形式が不正です。例: TODO詳細続き:todoKey:manual:2'
     };
   }
-  return buildTaskDetailSectionReply({
+  const reply = await buildTaskDetailSectionReply({
     lineUserId: normalizeText(payload.lineUserId),
     todoKey,
     section,
-    startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1
-  }, deps);
+    startChunk: Number.isInteger(startChunk) && startChunk >= 1 ? startChunk : 1,
+    attribution: buildTaskDetailAttribution({
+      attribution: payload.attribution,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
+    })
+  }, resolvedDeps);
+  const sectionMeta = reply && reply.sectionMeta && typeof reply.sectionMeta === 'object' ? reply.sectionMeta : null;
+  if (reply && reply.handled === true && sectionMeta) {
+    const attribution = buildTaskDetailAttribution({
+      attribution: sectionMeta.attribution,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
+    });
+    const eventType = Number(sectionMeta.startChunk) > 1 ? 'todo_detail_section_continue' : 'todo_detail_section_opened';
+    await appendJourneyEventBestEffort({
+      lineUserId: normalizeText(payload.lineUserId),
+      type: eventType,
+      ref: {
+        source: 'line_command_todo_detail_section_continue',
+        todoKey,
+        section: sectionMeta.section || section
+      },
+      fields: {
+        sectionMeta,
+        attribution,
+        attributionKey: buildTaskDetailAttributionKey(normalizeText(payload.lineUserId), todoKey, attribution)
+      }
+    }, resolvedDeps);
+  }
+  return reply;
 }
 
 async function handleJourneyLineCommand(params, deps) {
@@ -1245,9 +1324,21 @@ async function handleJourneyLineCommand(params, deps) {
         replyText: 'Task OS入口は現在停止中です。'
       };
     }
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'support_guide_opened',
+      ref: {
+        source: 'line_command_support_guide'
+      },
+      fields: {
+        supportMode: 'guide_only',
+        ticketCreated: false,
+        handoff: 'line_free_text'
+      }
+    }, resolvedDeps);
     return {
       handled: true,
-      replyText: '相談内容を受け付けます。\n困っている内容を1メッセージで送ってください。\n例: 口座開設の必要書類が分からない'
+      replyText: '相談内容を受け付けます（このコマンド時点ではチケット作成は行いません）。\n困っている内容を1メッセージで送ってください。\n例: 口座開設の必要書類が分からない'
     };
   }
 
@@ -1280,7 +1371,10 @@ async function handleJourneyLineCommand(params, deps) {
     }
     return handleTodoDetailCommand({
       lineUserId,
-      todoKey: command.todoKey
+      todoKey: command.todoKey,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      attribution: payload.attribution || null
     }, resolvedDeps);
   }
 
@@ -1295,7 +1389,10 @@ async function handleJourneyLineCommand(params, deps) {
       lineUserId,
       todoKey: command.todoKey,
       section: command.section,
-      startChunk: command.startChunk
+      startChunk: command.startChunk,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      attribution: payload.attribution || null
     }, resolvedDeps);
   }
 
@@ -1415,6 +1512,20 @@ async function handleJourneyLineCommand(params, deps) {
       type: 'next_action_completed',
       ref: { source: 'line_command_todo_complete', todoKey },
       fields: { nextActions: [{ key: todoKey, status: 'done' }] }
+    }, resolvedDeps);
+    const completionAttribution = buildTaskDetailAttribution({
+      attribution: payload.attribution,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
+    });
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'todo_detail_completed',
+      ref: { source: 'line_command_todo_complete', todoKey },
+      fields: {
+        attribution: completionAttribution,
+        attributionKey: buildTaskDetailAttributionKey(lineUserId, todoKey, completionAttribution)
+      }
     }, resolvedDeps);
     if (wasLocked) {
       await appendJourneyEventBestEffort({

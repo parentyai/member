@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T16:01:11-05:00",
-  "gitCommit": "46c7703913780990d060f25a01692d79872ca875",
-  "branch": "codex/journey-contract-pr1",
-  "sourceDigest": "ed552516e574b3a901501238d08ac0f5d5e14a58d1744f21d768092dd134bed7",
+  "generatedAt": "2026-03-07T16:36:46-05:00",
+  "gitCommit": "2fd793b145677f32836a7d99c3a09330fc57d48b",
+  "branch": "codex/journey-pr2-observability",
+  "sourceDigest": "30c1983783a995bd227c828313c55b27e134bc00a552e02b23616943601aff0d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

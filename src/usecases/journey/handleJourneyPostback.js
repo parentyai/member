@@ -3,6 +3,7 @@
 const { parseJourneyPostbackData } = require('../../domain/journey/lineCommandParsers');
 const { handleJourneyLineCommand } = require('./handleJourneyLineCommand');
 const { buildTaskDetailSectionReply } = require('./taskDetailSectionReply');
+const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { isTaskDetailLineEnabled } = require('../../domain/tasks/featureFlags');
 
 const HOUSEHOLD_TEXT = Object.freeze({
@@ -15,6 +16,48 @@ const HOUSEHOLD_TEXT = Object.freeze({
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
+}
+
+function normalizeOptionalToken(value) {
+  const text = normalizeText(value);
+  return text || null;
+}
+
+function buildTaskDetailAttribution(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return {
+    notificationId: normalizeOptionalToken(payload.notificationId),
+    deliveryId: normalizeOptionalToken(payload.deliveryId),
+    source: normalizeOptionalToken(payload.attributionSource) || normalizeOptionalToken(payload.source),
+    traceId: normalizeOptionalToken(payload.attributionTraceId) || normalizeOptionalToken(payload.traceId),
+    requestId: normalizeOptionalToken(payload.requestId)
+  };
+}
+
+function buildTaskDetailAttributionKey(lineUserId, todoKey, attribution) {
+  const user = normalizeText(lineUserId);
+  const key = normalizeText(todoKey);
+  const row = attribution && typeof attribution === 'object' ? attribution : {};
+  if (normalizeText(row.deliveryId)) return `delivery:${normalizeText(row.deliveryId)}`;
+  if (normalizeText(row.notificationId)) return `notification:${normalizeText(row.notificationId)}:${user}:${key}`;
+  if (normalizeText(row.traceId)) return `trace:${normalizeText(row.traceId)}:${user}:${key}`;
+  return `todo:${user}:${key}`;
+}
+
+async function appendJourneyEventBestEffort(event, deps) {
+  const payload = event && typeof event === 'object' ? event : {};
+  const lineUserId = normalizeText(payload.lineUserId);
+  const type = normalizeText(payload.type);
+  if (!lineUserId || !type) return;
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const repository = resolvedDeps.eventsRepo || eventsRepo;
+  if (!repository || typeof repository.createEvent !== 'function') return;
+  const extraFields = payload.fields && typeof payload.fields === 'object' ? payload.fields : {};
+  await repository.createEvent(Object.assign({
+    lineUserId,
+    type,
+    ref: payload.ref && typeof payload.ref === 'object' ? payload.ref : {}
+  }, extraFields)).catch(() => null);
 }
 
 function toCommandText(action) {
@@ -97,7 +140,7 @@ function toCommandText(action) {
   return '';
 }
 
-async function handleTodoDetailSectionAction(lineUserId, action, deps) {
+async function handleTodoDetailSectionAction(lineUserId, action, context, deps) {
   if (!isTaskDetailLineEnabled()) {
     return {
       handled: true,
@@ -107,12 +150,34 @@ async function handleTodoDetailSectionAction(lineUserId, action, deps) {
   const todoKey = normalizeText(action && action.todoKey);
   const section = normalizeText(action && action.section).toLowerCase();
   const startChunk = Number(action && action.startChunk);
-  return buildTaskDetailSectionReply({
+  const payload = context && typeof context === 'object' ? context : {};
+  const attribution = buildTaskDetailAttribution(Object.assign({}, action || {}, payload || {}));
+  const reply = await buildTaskDetailSectionReply({
     lineUserId,
     todoKey,
     section,
-    startChunk: Number.isFinite(startChunk) ? startChunk : 1
+    startChunk: Number.isFinite(startChunk) ? startChunk : 1,
+    attribution
   }, deps);
+  const sectionMeta = reply && reply.sectionMeta && typeof reply.sectionMeta === 'object' ? reply.sectionMeta : null;
+  if (reply && reply.handled === true && sectionMeta) {
+    const eventType = Number(sectionMeta.startChunk) > 1 ? 'todo_detail_section_continue' : 'todo_detail_section_opened';
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: eventType,
+      ref: {
+        source: 'line_postback_todo_detail_section',
+        todoKey,
+        section: sectionMeta.section || section
+      },
+      fields: {
+        sectionMeta,
+        attribution,
+        attributionKey: buildTaskDetailAttributionKey(lineUserId, todoKey, attribution)
+      }
+    }, deps);
+  }
+  return reply;
 }
 
 async function handleJourneyPostback(params, deps) {
@@ -125,12 +190,27 @@ async function handleJourneyPostback(params, deps) {
   if (!action) return { handled: false };
 
   if (action.action === 'todo_detail_section') {
-    return handleTodoDetailSectionAction(lineUserId, action, deps);
+    return handleTodoDetailSectionAction(lineUserId, action, payload, deps);
+  }
+
+  if (action.action === 'todo_detail') {
+    return handleJourneyLineCommand({
+      lineUserId,
+      text: `TODO詳細:${action.todoKey || ''}`,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      attribution: buildTaskDetailAttribution(Object.assign({}, action || {}, payload || {}))
+    }, deps);
   }
 
   const text = toCommandText(action);
   if (!text) return { handled: false };
-  return handleJourneyLineCommand({ lineUserId, text }, deps);
+  return handleJourneyLineCommand({
+    lineUserId,
+    text,
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null
+  }, deps);
 }
 
 module.exports = {

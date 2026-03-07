@@ -103,6 +103,32 @@ test('phase653: journey kpi aggregate computes retention/ltv metrics and pro cou
       type: 'notification_fatigue_guarded',
       createdAt: new Date(now - (4 * 24 * 60 * 60 * 1000))
     }, { merge: true });
+    await db.collection('events').doc('E15').set({
+      lineUserId: 'U1',
+      type: 'todo_detail_opened',
+      ref: { todoKey: 'insurance' },
+      attribution: { notificationId: 'N001', deliveryId: 'D001' },
+      createdAt: new Date(now - (3 * 24 * 60 * 60 * 1000))
+    }, { merge: true });
+    await db.collection('events').doc('E16').set({
+      lineUserId: 'U1',
+      type: 'todo_detail_section_continue',
+      ref: { todoKey: 'insurance', section: 'manual' },
+      createdAt: new Date(now - (2.5 * 24 * 60 * 60 * 1000))
+    }, { merge: true });
+    await db.collection('events').doc('E17').set({
+      lineUserId: 'U1',
+      type: 'todo_detail_completed',
+      ref: { todoKey: 'insurance' },
+      attribution: { notificationId: 'N001', deliveryId: 'D001' },
+      createdAt: new Date(now - (2 * 24 * 60 * 60 * 1000))
+    }, { merge: true });
+    await db.collection('events').doc('E18').set({
+      lineUserId: 'U1',
+      type: 'todo_detail_section_opened',
+      ref: { todoKey: 'insurance', section: 'failure' },
+      createdAt: new Date(now - (1.5 * 24 * 60 * 60 * 1000))
+    }, { merge: true });
 
     await db.collection('llm_usage_logs').doc('L1').set({
       userId: 'U1',
@@ -147,6 +173,16 @@ test('phase653: journey kpi aggregate computes retention/ltv metrics and pro cou
     assert.ok(kpi.blockerResolutionMedianHours > 0);
     assert.equal(kpi.localTaskOpenRateAfterRegionSet, 1);
     assert.ok(kpi.notificationFatigueRate > 0);
+    assert.equal(kpi.detailOpenCount, 1);
+    assert.equal(kpi.detailSectionOpenCount, 1);
+    assert.equal(kpi.detailContinueCount, 1);
+    assert.equal(kpi.detailCompleteCount, 1);
+    assert.equal(kpi.detailOpenedAttributedCount, 1);
+    assert.equal(kpi.detailCompletedAttributedCount, 1);
+    assert.equal(kpi.detailOpenToContinueRate, 1);
+    assert.equal(kpi.detailOpenToCompleteRate, 1);
+    assert.equal(kpi.detailContinueToCompleteRate, 1);
+    assert.equal(kpi.deliveryToDetailToDoneRate, 1);
     assert.equal(kpi.proPromptedCount, 1);
     assert.equal(kpi.proConvertedCount, 1);
     assert.equal(kpi.proConversionRate, 1);

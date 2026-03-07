@@ -23,6 +23,17 @@ test('phase730: postback parser resolves todo_detail_section payload', () => {
   assert.equal(action.section, 'manual');
 });
 
+test('phase730: postback parser keeps detail attribution metadata when provided', () => {
+  const action = parseJourneyPostbackData('action=todo_detail&todoKey=bank_open&notificationId=n1&deliveryId=d1&source=notification&traceId=t1');
+  assert.ok(action);
+  assert.equal(action.action, 'todo_detail');
+  assert.equal(action.todoKey, 'bank_open');
+  assert.equal(action.notificationId, 'n1');
+  assert.equal(action.deliveryId, 'd1');
+  assert.equal(action.attributionSource, 'notification');
+  assert.equal(action.attributionTraceId, 't1');
+});
+
 test('phase730: postback parser rejects invalid todo_detail_section payload', () => {
   const action = parseJourneyPostbackData('action=todo_detail_section&todoKey=bank_open&section=unknown');
   assert.ok(action);
