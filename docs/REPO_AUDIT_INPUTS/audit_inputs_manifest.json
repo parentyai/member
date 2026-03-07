@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T16:01:11-05:00",
-  "gitCommit": "46c7703913780990d060f25a01692d79872ca875",
-  "branch": "codex/journey-contract-pr1",
-  "sourceDigest": "976a3d7fbcbafe41883aeb59d92dba02ef7a73b1ca519756b7a35996749229a2",
+  "generatedAt": "2026-03-07T16:19:56-05:00",
+  "gitCommit": "4a5e80a2a5e1a3438943e179e9c7934aa2c904e6",
+  "branch": "HEAD",
+  "sourceDigest": "d3be57e07f7058ebb3c7672553c372ea0901cb6eeb822ebaa87b965b308c6e14",
   "counts": {
     "endpoints": 287,
     "routes": 128,
@@ -71,7 +71,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "a323b4dc445311858e5c0c601cd408d2e40b7485f8a79cda9ebf0724288979eb",
+      "sha256": "180d31496f7399025c8a6cd9ecad23b97a10a7d926c7aa290518426b73119b85",
       "bytes": 76672
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "2e7d5cb5c14ec421545321b2b85c96a7bb27cb203973ce0370fdb6f038971af9",
+      "sha256": "3bd8bf9def76c952b5f269850e51292e29dc1f0e66968f4fa816114b10c7df00",
       "bytes": 443850
     },
     {
