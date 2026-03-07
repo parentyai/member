@@ -10,10 +10,3 @@
 ## CI Gate
 - 新規 fallback 発生箇所を追加した場合は fail。
 - index未定義クエリの追加時は本ドキュメント追記を必須化。
-
-## Related Execution Plans
-- `docs/UX_OS_PLAN2_HARDENED_V1.md`:
-  - UX OS foundation-only (P0) execution constraints.
-  - Multi-PR ordering, kill-switch matrix, test matrix, rollback matrix.
-- `docs/EVIDENCE_UX_OS_FOUNDATION_V1.md`:
-  - PR0-PR5 verification logs, route/read-only evidence, rollback rehearsal.
