@@ -14,7 +14,7 @@ on:
         default: ""
         type: string
       composer_notification_id:
-        description: "Active notificationId for composer cap scenario (empty = auto-detect plannable active)"
+        description: "Active notificationId for composer cap scenario (empty = auto-detect active candidate)"
         required: false
         default: ""
         type: string

@@ -17,6 +17,6 @@ test('phase630: runbook marks segment/composer inputs as optional with auto-reso
   );
   assert.ok(
     text.includes('composer-notification-id')
-      && text.includes('active 一覧から `send/plan` 可能な候補を自動解決')
+      && text.includes('active 一覧から候補を自動解決')
   );
 });

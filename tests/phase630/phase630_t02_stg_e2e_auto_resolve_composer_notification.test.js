@@ -4,7 +4,8 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const {
-  resolveComposerNotificationId
+  resolveComposerNotificationId,
+  bootstrapRetryQueue
 } = require('../../tools/run_stg_notification_e2e_checklist');
 
 test('phase630: resolveComposerNotificationId uses explicit input when provided', async () => {
@@ -24,7 +25,7 @@ test('phase630: resolveComposerNotificationId uses explicit input when provided'
   assert.strictEqual(called, false);
 });
 
-test('phase630: resolveComposerNotificationId auto-picks plannable active notification', async () => {
+test('phase630: resolveComposerNotificationId auto-picks active notification without send-plan side effects', async () => {
   const calls = [];
   const result = await resolveComposerNotificationId(
     {},
@@ -38,20 +39,11 @@ test('phase630: resolveComposerNotificationId auto-picks plannable active notifi
           body: {
             ok: true,
             items: [
-              { id: 'n_regular', title: 'regular send' },
-              { id: 'n_e2e', title: 'e2e smoke notification' }
+              { id: 'n_regular', title: 'regular send', status: 'active' },
+              { id: 'n_e2e', title: 'e2e smoke notification', status: 'active' }
             ]
           }
         };
-      }
-      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
-        if (body.notificationId === 'n_e2e') {
-          return {
-            okStatus: true,
-            body: { ok: true, planHash: 'plan_hash_x', confirmToken: 'token_x' }
-          };
-        }
-        return { okStatus: false, status: 400, body: { ok: false, reason: 'no_recipients' } };
       }
       throw new Error(`unexpected call: ${method} ${endpoint}`);
     }
@@ -62,12 +54,12 @@ test('phase630: resolveComposerNotificationId auto-picks plannable active notifi
   assert.strictEqual(result.reason, null);
   assert.strictEqual(Array.isArray(result.attempts), true);
   assert.strictEqual(result.attempts.length, 1);
+  assert.strictEqual(result.attempts[0].stage, 'active_candidate_selected');
   assert.strictEqual(calls[0].method, 'GET');
-  assert.strictEqual(calls[1].method, 'POST');
-  assert.strictEqual(calls[1].traceId, 'trace-2');
+  assert.strictEqual(calls.length, 1);
 });
 
-test('phase630: resolveComposerNotificationId returns plannable_not_found when all active candidates fail plan', async () => {
+test('phase630: resolveComposerNotificationId returns not_found when no active candidates and bootstrap fails', async () => {
   const result = await resolveComposerNotificationId(
     {},
     'trace-3',
@@ -78,22 +70,16 @@ test('phase630: resolveComposerNotificationId returns plannable_not_found when a
           okStatus: true,
           body: {
             ok: true,
-            items: [{ id: 'n1', title: 'normal' }]
+            items: []
           }
         };
       }
-      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
-        assert.strictEqual(body.notificationId, 'n1');
-        return { okStatus: false, status: 400, body: { ok: false, reason: 'no_recipients' } };
-      }
-      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
         return {
           okStatus: true,
           body: {
             ok: true,
-            items: [
-              { lineUserId: 'U1', scenarioKey: 'A', stepKey: 'week' }
-            ]
+            items: [{ id: 'n1', title: 'planned only', status: 'planned' }]
           }
         };
       }
@@ -106,6 +92,167 @@ test('phase630: resolveComposerNotificationId returns plannable_not_found when a
 
   assert.strictEqual(result.notificationId, '');
   assert.strictEqual(result.source, 'auto');
-  assert.strictEqual(result.reason, 'composer_notification_plannable_not_found');
+  assert.strictEqual(result.reason, 'composer_notification_not_found');
   assert.ok(result.attempts.length >= 1);
+});
+
+test('phase630: resolveComposerNotificationId ignores non-active candidates in fallback list', async () => {
+  const calls = [];
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-4',
+    '',
+    async (_ctx, method, endpoint, _traceId, body) => {
+      calls.push({ method, endpoint, body });
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: false, status: 500, body: { ok: false, error: 'error' } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return {
+          okStatus: true,
+          body: {
+            ok: true,
+            items: [
+              { id: 'n_planned_e2e', title: 'e2e planned', status: 'planned' },
+              { id: 'n_active_regular', title: 'regular active', status: 'active' }
+            ]
+          }
+        };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_active_regular');
+  assert.strictEqual(result.source, 'auto');
+  assert.strictEqual(result.reason, null);
+  assert.strictEqual(calls.some((item) => item.method === 'POST' && item.endpoint === '/api/admin/os/notifications/send/plan'), false);
+});
+
+test('phase630: resolveComposerNotificationId bootstrap keeps notification active (no plan probe mutation)', async () => {
+  const calls = [];
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-5',
+    '',
+    async (_ctx, method, endpoint, traceId, body) => {
+      calls.push({ method, endpoint, traceId, body });
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'POST' && endpoint === '/admin/link-registry') {
+        return { okStatus: true, body: { ok: true, id: 'link_1' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+        return {
+          okStatus: true,
+          body: { ok: true, items: [{ lineUserId: 'U1', scenarioKey: 'A', stepKey: 'week' }] }
+        };
+      }
+      if (method === 'POST' && endpoint === '/api/phase5/admin/users/review') {
+        assert.strictEqual(body.lineUserId, 'U1');
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/draft') {
+        return { okStatus: true, body: { ok: true, notificationId: 'n_bootstrap' } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/approve') {
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/status?notificationId=n_bootstrap') {
+        return { okStatus: true, body: { ok: true, status: 'active' } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_bootstrap');
+  assert.strictEqual(result.reason, null);
+  assert.ok(!calls.some((call) => call.method === 'POST' && call.endpoint === '/api/admin/os/notifications/send/plan'));
+});
+
+test('phase630: bootstrap user seed prefers row with scenarioKey/stepKey when leading row is incomplete', async () => {
+  let reviewedLineUserId = null;
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-5b',
+    '',
+    async (_ctx, method, endpoint, traceId, body) => {
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'POST' && endpoint === '/admin/link-registry') {
+        return { okStatus: true, body: { ok: true, id: 'link_2' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+        return {
+          okStatus: true,
+          body: {
+            ok: true,
+            items: [
+              { lineUserId: 'U_missing_shape' },
+              { lineUserId: 'U_with_shape', scenarioKey: 'A', stepKey: 'week' }
+            ]
+          }
+        };
+      }
+      if (method === 'POST' && endpoint === '/api/phase5/admin/users/review') {
+        reviewedLineUserId = body && body.lineUserId;
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/draft') {
+        return { okStatus: true, body: { ok: true, notificationId: 'n_bootstrap_2' } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/approve') {
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/status?notificationId=n_bootstrap_2') {
+        return { okStatus: true, body: { ok: true, status: 'active' } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint} trace=${traceId}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_bootstrap_2');
+  assert.strictEqual(result.reason, null);
+  assert.strictEqual(reviewedLineUserId, 'U_with_shape');
+});
+
+test('phase630: bootstrapRetryQueue builds pending queue via synthetic segment execute when queue is empty', async () => {
+  const result = await bootstrapRetryQueue(
+    {},
+    'trace-6',
+    async (_ctx, method, endpoint, _traceId, body) => {
+      if (method === 'GET' && endpoint === '/api/phase61/templates?status=active') {
+        return { okStatus: true, body: { ok: true, items: [{ key: 'tmpl_active' }] } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase67/send/plan') {
+        assert.strictEqual(body.templateKey, 'tmpl_active');
+        assert.ok(Array.isArray(body.segmentQuery.lineUserIds));
+        assert.ok(body.segmentQuery.lineUserIds[0].startsWith('U_STG_E2E_RETRY_'));
+        return { okStatus: true, body: { ok: true, planHash: 'plan_hash' } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase81/segment-send/dry-run') {
+        return { okStatus: true, body: { ok: true, confirmToken: 'confirm_token' } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase68/send/execute') {
+        return { okStatus: true, body: { ok: false, reason: 'send_failed' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase73/retry-queue?limit=10') {
+        return { okStatus: true, body: { ok: true, items: [{ id: 'queue_1', status: 'PENDING' }] } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.queueId, 'queue_1');
+  assert.strictEqual(result.reason, null);
+  assert.ok(Array.isArray(result.attempts));
+  assert.ok(result.attempts.length >= 5);
 });

@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
+const { PHASE0_SCENARIOS, STEP_ORDER } = require('../src/domain/constants');
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:18080';
 const DEFAULT_ACTOR = 'ops_stg_e2e';
@@ -43,6 +44,25 @@ const LLM_BLOCKED_STATUSES_WHEN_EXPECTED_ENABLED = new Set([
   'OPENAI_API_KEY is not set',
   'consent_missing'
 ]);
+const VALID_NOTIFICATION_SCENARIOS = new Set(PHASE0_SCENARIOS);
+const VALID_NOTIFICATION_STEPS = new Set(STEP_ORDER);
+
+function normalizeAllowedValue(value, allowedSet) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return allowedSet.has(trimmed) ? trimmed : '';
+}
+
+function resolveComposerBootstrapScenarioStep(seed, scenarioSeed) {
+  const scenarioKey = normalizeAllowedValue(scenarioSeed && scenarioSeed.scenarioKey, VALID_NOTIFICATION_SCENARIOS)
+    || normalizeAllowedValue(seed && seed.scenarioKey, VALID_NOTIFICATION_SCENARIOS)
+    || (Array.isArray(PHASE0_SCENARIOS) && PHASE0_SCENARIOS[0] ? PHASE0_SCENARIOS[0] : 'A');
+  const stepKey = normalizeAllowedValue(scenarioSeed && scenarioSeed.stepKey, VALID_NOTIFICATION_STEPS)
+    || normalizeAllowedValue(seed && seed.stepKey, VALID_NOTIFICATION_STEPS)
+    || (Array.isArray(STEP_ORDER) && STEP_ORDER[0] ? STEP_ORDER[0] : '2w');
+  return { scenarioKey, stepKey };
+}
 
 function readValue(argv, index, label) {
   if (index >= argv.length) throw new Error(`${label} value required`);
@@ -473,19 +493,22 @@ function pickPreferredTemplate(items) {
 
 function pickUserSeed(items) {
   const rows = Array.isArray(items) ? items : [];
+  let fallback = null;
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const lineUserId = typeof row.lineUserId === 'string' ? row.lineUserId.trim() : '';
     if (!lineUserId) continue;
     const scenarioKey = typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '';
     const stepKey = typeof row.stepKey === 'string' ? row.stepKey.trim() : '';
-    return {
+    const candidate = {
       lineUserId,
       scenarioKey: scenarioKey || null,
       stepKey: stepKey || null
     };
+    if (scenarioKey && stepKey) return candidate;
+    if (!fallback) fallback = candidate;
   }
-  return null;
+  return fallback;
 }
 
 async function resolveUserSeed(ctx, traceId, requestFn) {
@@ -594,6 +617,7 @@ function rankComposerCandidates(items) {
     .map((row) => ({
       id: row.id.trim(),
       title: typeof row.title === 'string' ? row.title : '',
+      status: typeof row.status === 'string' ? row.status.trim().toLowerCase() : '',
       linkRegistryId: typeof row.linkRegistryId === 'string' ? row.linkRegistryId.trim() : '',
       scenarioKey: typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '',
       stepKey: typeof row.stepKey === 'string' ? row.stepKey.trim() : '',
@@ -608,27 +632,29 @@ function rankComposerCandidates(items) {
     });
 }
 
+function isActiveComposerCandidate(candidate) {
+  if (!candidate || typeof candidate !== 'object') return false;
+  if (!candidate.status) return true;
+  return candidate.status === 'active';
+}
+
 function buildComposerBootstrapPayload(seed, traceId, scenarioSeed) {
   const marker = utcCompact(new Date());
   const baseTitle = seed && typeof seed.title === 'string' && seed.title.trim()
     ? seed.title.trim()
     : 'STG E2E composer bootstrap';
-  const scenarioKey = scenarioSeed && typeof scenarioSeed.scenarioKey === 'string' && scenarioSeed.scenarioKey.trim()
-    ? scenarioSeed.scenarioKey.trim()
-    : (seed && typeof seed.scenarioKey === 'string' && seed.scenarioKey.trim() ? seed.scenarioKey.trim() : 'A');
-  const stepKey = scenarioSeed && typeof scenarioSeed.stepKey === 'string' && scenarioSeed.stepKey.trim()
-    ? scenarioSeed.stepKey.trim()
-    : (seed && typeof seed.stepKey === 'string' && seed.stepKey.trim() ? seed.stepKey.trim() : '3mo');
-  return {
+  const resolvedScenario = resolveComposerBootstrapScenarioStep(seed, scenarioSeed);
+  const payload = {
     title: `${baseTitle} ${marker}`.slice(0, 120),
     body: 'stg-e2e composer cap block bootstrap notification',
     ctaText: 'open',
     linkRegistryId: seed && typeof seed.linkRegistryId === 'string' ? seed.linkRegistryId.trim() : '',
-    scenarioKey,
-    stepKey,
+    scenarioKey: resolvedScenario.scenarioKey,
+    stepKey: resolvedScenario.stepKey,
     target: { limit: 1 },
     sourceRefs: [`stg-e2e:${traceId}`]
   };
+  return payload;
 }
 
 async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandidates) {
@@ -685,6 +711,20 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     response: scenarioSeedResult.response || null,
     seed: scenarioSeedResult.seed || null
   });
+  if (scenarioSeedResult.seed && scenarioSeedResult.seed.lineUserId) {
+    const userReviewResp = await request(
+      ctx,
+      'POST',
+      '/api/phase5/admin/users/review',
+      traceId,
+      { lineUserId: scenarioSeedResult.seed.lineUserId }
+    );
+    attempts.push({
+      stage: 'user_seed_upsert',
+      lineUserId: scenarioSeedResult.seed.lineUserId,
+      response: summarizeResponse(userReviewResp)
+    });
+  }
   const draftPayload = buildComposerBootstrapPayload(seed, traceId, scenarioSeedResult.seed);
   const draftResp = await request(ctx, 'POST', '/api/admin/os/notifications/draft', traceId, draftPayload);
   attempts.push({ stage: 'draft', response: summarizeResponse(draftResp) });
@@ -715,15 +755,15 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     };
   }
 
-  const planProbeResp = await request(
+  const statusResp = await request(
     ctx,
-    'POST',
-    '/api/admin/os/notifications/send/plan',
+    'GET',
+    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(notificationId)}`,
     traceId,
-    { notificationId }
+    undefined
   );
-  attempts.push({ stage: 'plan_probe', notificationId, response: summarizeResponse(planProbeResp) });
-  if (planProbeResp.okStatus && planProbeResp.body && planProbeResp.body.ok === true && typeof planProbeResp.body.planHash === 'string') {
+  attempts.push({ stage: 'status_probe', notificationId, response: summarizeResponse(statusResp) });
+  if (statusResp.okStatus && statusResp.body && statusResp.body.ok === true && statusResp.body.status === 'active') {
     return {
       notificationId,
       source: 'bootstrap',
@@ -735,7 +775,9 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
   return {
     notificationId: '',
     source: 'bootstrap',
-    reason: 'composer_notification_bootstrap_not_plannable',
+    reason: `composer_notification_bootstrap_not_active:${statusResp && statusResp.body && statusResp.body.status
+      ? statusResp.body.status
+      : 'unknown'}`,
     attempts
   };
 }
@@ -768,7 +810,8 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     listResp = fallbackResp;
     candidates = rankComposerCandidates(fallbackResp.body.items);
   }
-  if (candidates.length === 0) {
+  const activeCandidates = candidates.filter((candidate) => isActiveComposerCandidate(candidate));
+  if (activeCandidates.length === 0) {
     const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
     if (bootstrap.notificationId) return bootstrap;
     return Object.assign({
@@ -779,37 +822,85 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     }, { attempts: Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [] });
   }
 
+  const picked = activeCandidates[0];
+  return {
+    notificationId: picked.id,
+    source: 'auto',
+    reason: null,
+    attempts: [{
+      stage: 'active_candidate_selected',
+      notificationId: picked.id,
+      status: picked.status || 'active'
+    }]
+  };
+}
+
+async function bootstrapRetryQueue(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
   const attempts = [];
-  for (let i = 0; i < candidates.length; i += 1) {
-    const candidate = candidates[i];
-    const planResp = await request(
-      ctx,
-      'POST',
-      '/api/admin/os/notifications/send/plan',
-      traceId,
-      { notificationId: candidate.id }
-    );
-    const summary = summarizeResponse(planResp);
-    attempts.push({ notificationId: candidate.id, response: summary });
-    if (planResp.okStatus && planResp.body && planResp.body.ok === true && typeof planResp.body.planHash === 'string') {
+  try {
+    const resolvedTemplate = await resolveSegmentTemplateKey(ctx, `${traceId}-retry-bootstrap-template`, '', request);
+    attempts.push({
+      stage: 'segment_template_resolve',
+      templateKey: resolvedTemplate.templateKey || '',
+      source: resolvedTemplate.source || 'auto',
+      reason: resolvedTemplate.reason || null
+    });
+    if (!resolvedTemplate.templateKey) {
       return {
-        notificationId: candidate.id,
-        source: 'auto',
-        reason: null,
+        queueId: '',
+        reason: resolvedTemplate.reason || 'retry_queue_bootstrap_template_missing',
         attempts
       };
     }
+
+    const bootstrapLineUserId = `U_STG_E2E_RETRY_${utcCompact(new Date())}`.slice(0, 64);
+    const payload = {
+      templateKey: resolvedTemplate.templateKey,
+      segmentQuery: {
+        lineUserIds: [bootstrapLineUserId]
+      }
+    };
+
+    const planResp = await request(ctx, 'POST', '/api/phase67/send/plan', traceId, payload);
+    attempts.push({ stage: 'segment_plan', response: summarizeResponse(planResp) });
+    const plan = requireHttpOk(planResp, 'retry bootstrap segment plan');
+
+    const dryResp = await request(ctx, 'POST', '/api/phase81/segment-send/dry-run', traceId, payload);
+    attempts.push({ stage: 'segment_dry_run', response: summarizeResponse(dryResp) });
+    const dry = requireHttpOk(dryResp, 'retry bootstrap segment dry-run');
+
+    const executeResp = await request(ctx, 'POST', '/api/phase68/send/execute', traceId, {
+      templateKey: payload.templateKey,
+      segmentQuery: payload.segmentQuery,
+      planHash: plan.planHash,
+      confirmToken: dry.confirmToken
+    });
+    attempts.push({ stage: 'segment_execute', response: summarizeResponse(executeResp) });
+    requireHttpOk(executeResp, 'retry bootstrap segment execute');
+
+    const queueId = await resolveRetryQueueId(ctx, `${traceId}-retry-bootstrap-list`, '', request);
+    attempts.push({ stage: 'retry_queue_resolve', queueId: queueId || '' });
+    if (!queueId) {
+      return {
+        queueId: '',
+        reason: 'retry_queue_bootstrap_no_pending',
+        attempts
+      };
+    }
+
+    return {
+      queueId,
+      reason: null,
+      attempts
+    };
+  } catch (err) {
+    return {
+      queueId: '',
+      reason: err && err.message ? `retry_queue_bootstrap_failed:${err.message}` : 'retry_queue_bootstrap_failed',
+      attempts
+    };
   }
-
-  const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
-  if (bootstrap.notificationId) return bootstrap;
-
-  return {
-    notificationId: '',
-    source: 'auto',
-    reason: 'composer_notification_plannable_not_found',
-    attempts: attempts.concat(Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [])
-  };
 }
 
 function requireHttpOk(resp, label) {
@@ -821,6 +912,51 @@ function requireHttpOk(resp, label) {
     throw new Error(`${label} failed: non-json response`);
   }
   return resp.body;
+}
+
+function responseErrorText(resp) {
+  const body = resp && resp.body && typeof resp.body === 'object' ? resp.body : null;
+  const explicit = body && typeof body.error === 'string' ? body.error.trim() : '';
+  if (explicit) return explicit;
+  const reason = body && typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (reason) return reason;
+  const text = typeof resp.text === 'string' ? resp.text.trim() : '';
+  return text;
+}
+
+function isNoRecipientsResponse(resp) {
+  const message = responseErrorText(resp);
+  return typeof message === 'string' && message.toLowerCase().includes('no recipients');
+}
+
+async function listActiveComposerNotificationIds(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const attempts = [];
+  const primaryResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?status=active&limit=100', traceId);
+  attempts.push({ stage: 'list_active', response: summarizeResponse(primaryResp) });
+  if (primaryResp.okStatus && primaryResp.body && typeof primaryResp.body === 'object') {
+    const active = rankComposerCandidates(primaryResp.body.items).filter((item) => isActiveComposerCandidate(item));
+    return {
+      ids: active.map((item) => item.id),
+      attempts,
+      reason: null
+    };
+  }
+  const fallbackResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?limit=100', `${traceId}-fallback`);
+  attempts.push({ stage: 'list_all_fallback', response: summarizeResponse(fallbackResp) });
+  if (fallbackResp.okStatus && fallbackResp.body && typeof fallbackResp.body === 'object') {
+    const active = rankComposerCandidates(fallbackResp.body.items).filter((item) => isActiveComposerCandidate(item));
+    return {
+      ids: active.map((item) => item.id),
+      attempts,
+      reason: null
+    };
+  }
+  return {
+    ids: [],
+    attempts,
+    reason: 'composer_candidate_list_failed'
+  };
 }
 
 async function fetchTraceBundle(ctx, traceId) {
@@ -1021,9 +1157,10 @@ async function setSystemConfig(ctx, traceId, config) {
   return true;
 }
 
-async function resolveRetryQueueId(ctx, traceId, preferredId) {
+async function resolveRetryQueueId(ctx, traceId, preferredId, requestFn) {
   if (preferredId && preferredId.trim()) return preferredId.trim();
-  const resp = await apiRequest(ctx, 'GET', '/api/phase73/retry-queue?limit=10', traceId);
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const resp = await request(ctx, 'GET', '/api/phase73/retry-queue?limit=10', traceId);
   const body = requireHttpOk(resp, 'retry-queue list');
   const items = Array.isArray(body.items) ? body.items : [];
   const pending = items.find((item) => item && item.status === 'PENDING' && typeof item.id === 'string');
@@ -1098,8 +1235,19 @@ async function runSegmentScenario(ctx, opts, traceId) {
 
 async function runRetryScenario(ctx, opts, traceId) {
   if (opts.skipRetry) return { status: 'SKIP', reason: 'skip_retry_flag' };
-  const queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
-  if (!queueId) return { status: 'SKIP', reason: 'retry_queue_not_found' };
+  let queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
+  let bootstrap = null;
+  if (!queueId) {
+    bootstrap = await bootstrapRetryQueue(ctx, traceId);
+    queueId = bootstrap && typeof bootstrap.queueId === 'string' ? bootstrap.queueId : '';
+  }
+  if (!queueId) {
+    return {
+      status: 'SKIP',
+      reason: bootstrap && bootstrap.reason ? bootstrap.reason : 'retry_queue_not_found',
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : []
+    };
+  }
 
   const planResp = await apiRequest(ctx, 'POST', '/api/phase73/retry-queue/plan', traceId, { queueId });
   const plan = requireHttpOk(planResp, 'retry plan');
@@ -1129,6 +1277,7 @@ async function runRetryScenario(ctx, opts, traceId) {
   return {
     status: 'PASS',
     queueId,
+    bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [],
     steps: {
       plan: summarizeResponse(planResp),
       retry: summarizeResponse(retryResp)
@@ -1139,8 +1288,19 @@ async function runRetryScenario(ctx, opts, traceId) {
 async function runKillSwitchScenario(ctx, opts, traceId) {
   if (opts.skipKillSwitch) return { status: 'SKIP', reason: 'skip_killswitch_flag' };
 
-  const queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
-  if (!queueId) return { status: 'SKIP', reason: 'retry_queue_not_found_for_killswitch' };
+  let queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
+  let bootstrap = null;
+  if (!queueId) {
+    bootstrap = await bootstrapRetryQueue(ctx, traceId);
+    queueId = bootstrap && typeof bootstrap.queueId === 'string' ? bootstrap.queueId : '';
+  }
+  if (!queueId) {
+    return {
+      status: 'SKIP',
+      reason: bootstrap && bootstrap.reason ? bootstrap.reason : 'retry_queue_not_found_for_killswitch',
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : []
+    };
+  }
 
   const baseline = await getKillSwitchStatus(ctx, traceId);
   const changed = !baseline;
@@ -1168,6 +1328,7 @@ async function runKillSwitchScenario(ctx, opts, traceId) {
     return {
       status: 'PASS',
       queueId,
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [],
       steps: {
         plan: summarizeResponse(planResp),
         retry: summarizeResponse(retryResp)
@@ -1196,22 +1357,40 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     };
   }
 
-  const statusResp = await apiRequest(
-    ctx,
-    'GET',
-    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(resolved.notificationId)}`,
-    traceId
-  );
-  const statusBody = requireHttpOk(statusResp, 'composer notification status');
-  if (statusBody.status !== 'active') {
+  async function ensureNotificationActive(notificationId, activeTraceId) {
+    const statusResp = await apiRequest(
+      ctx,
+      'GET',
+      `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(notificationId)}`,
+      activeTraceId
+    );
+    const statusBody = requireHttpOk(statusResp, 'composer notification status');
+    if (statusBody.status !== 'active') {
+      return {
+        ok: false,
+        reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
+        steps: { status: summarizeResponse(statusResp) }
+      };
+    }
+    return { ok: true, steps: { status: summarizeResponse(statusResp) } };
+  }
+
+  let notificationId = resolved.notificationId;
+  let notificationIdSource = resolved.source || 'input';
+  const resolveAttempts = Array.isArray(resolved.attempts) ? resolved.attempts.length : 0;
+  let bootstrapAttempts = [];
+  let candidateAttempts = [];
+
+  const initialStatus = await ensureNotificationActive(notificationId, traceId);
+  if (!initialStatus.ok) {
     return {
       status: 'FAIL',
-      reason: `composer_notification_not_active:${statusBody.status || 'unknown'}`,
-      notificationId: resolved.notificationId,
-      notificationIdSource: resolved.source || 'input',
-      steps: {
-        status: summarizeResponse(statusResp)
-      }
+      reason: initialStatus.reason,
+      notificationId,
+      notificationIdSource,
+      resolveAttempts,
+      candidateAttempts,
+      steps: initialStatus.steps
     };
   }
 
@@ -1229,13 +1408,97 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     });
     configChanged = true;
 
-    const planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
-      notificationId: resolved.notificationId
-    });
+    const candidateList = await listActiveComposerNotificationIds(ctx, `${traceId}-candidates`, apiRequest);
+    candidateAttempts = Array.isArray(candidateList.attempts) ? candidateList.attempts.slice() : [];
+    const orderedCandidates = [];
+    const seen = new Set();
+    const appendCandidate = (id, source) => {
+      const value = typeof id === 'string' ? id.trim() : '';
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      orderedCandidates.push({ notificationId: value, source });
+    };
+    appendCandidate(notificationId, notificationIdSource);
+    (candidateList.ids || []).forEach((id) => appendCandidate(id, 'active_list'));
+
+    let planResp = null;
+    let selected = null;
+    for (const candidate of orderedCandidates) {
+      const activeCheck = await ensureNotificationActive(candidate.notificationId, `${traceId}-candidate-status`);
+      candidateAttempts.push({
+        stage: 'candidate_status',
+        notificationId: candidate.notificationId,
+        source: candidate.source,
+        ok: activeCheck.ok === true,
+        reason: activeCheck.ok ? null : activeCheck.reason
+      });
+      if (!activeCheck.ok) continue;
+      const attemptedPlan = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+        notificationId: candidate.notificationId
+      });
+      candidateAttempts.push({
+        stage: 'candidate_plan',
+        notificationId: candidate.notificationId,
+        source: candidate.source,
+        response: summarizeResponse(attemptedPlan)
+      });
+      planResp = attemptedPlan;
+      if (attemptedPlan.okStatus && attemptedPlan.body && attemptedPlan.body.ok === true) {
+        selected = candidate;
+        break;
+      }
+      if (!isNoRecipientsResponse(attemptedPlan)) {
+        break;
+      }
+    }
+
+    if (selected) {
+      notificationId = selected.notificationId;
+      if (selected.source !== notificationIdSource) {
+        notificationIdSource = selected.source;
+      }
+    }
+    if (!planResp || !planResp.okStatus || !planResp.body || planResp.body.ok !== true) {
+      const bootstrap = await bootstrapComposerNotification(ctx, `${traceId}-bootstrap`, apiRequest, []);
+      bootstrapAttempts = Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [];
+      if (!bootstrap.notificationId) {
+        return {
+          status: 'FAIL',
+          reason: bootstrap.reason || 'composer_notification_bootstrap_failed',
+          notificationId,
+          notificationIdSource,
+          resolveAttempts,
+          bootstrapAttempts,
+          candidateAttempts,
+          steps: {
+            plan: planResp ? summarizeResponse(planResp) : null
+          }
+        };
+      }
+      notificationId = bootstrap.notificationId;
+      notificationIdSource = 'bootstrap';
+      const bootstrapStatus = await ensureNotificationActive(notificationId, `${traceId}-bootstrap-status`);
+      if (!bootstrapStatus.ok) {
+        return {
+          status: 'FAIL',
+          reason: bootstrapStatus.reason,
+          notificationId,
+          notificationIdSource,
+          resolveAttempts,
+          bootstrapAttempts,
+          candidateAttempts,
+          steps: bootstrapStatus.steps
+        };
+      }
+      planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+        notificationId
+      });
+    }
+
     const plan = requireHttpOk(planResp, 'composer send plan');
 
     const executeResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/execute', traceId, {
-      notificationId: resolved.notificationId,
+      notificationId,
       planHash: plan.planHash,
       confirmToken: plan.confirmToken
     });
@@ -1244,8 +1507,11 @@ async function runComposerCapScenario(ctx, opts, traceId) {
       return {
         status: 'FAIL',
         reason: `composer_expected_cap_block_got:${execute.reason || 'unknown'}`,
-        notificationId: resolved.notificationId,
-        notificationIdSource: resolved.source || 'input',
+        notificationId,
+        notificationIdSource,
+        resolveAttempts,
+        bootstrapAttempts,
+        candidateAttempts,
         steps: {
           plan: summarizeResponse(planResp),
           execute: summarizeResponse(executeResp)
@@ -1254,9 +1520,11 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     }
     return {
       status: 'PASS',
-      notificationId: resolved.notificationId,
-      notificationIdSource: resolved.source || 'input',
-      resolveAttempts: Array.isArray(resolved.attempts) ? resolved.attempts.length : 0,
+      notificationId,
+      notificationIdSource,
+      resolveAttempts,
+      bootstrapAttempts,
+      candidateAttempts,
       steps: {
         plan: summarizeResponse(planResp),
         execute: summarizeResponse(executeResp)
@@ -1546,7 +1814,7 @@ async function runScenario(ctx, scenarioName, runner) {
       coverage,
       ctx.failOnMissingAuditActions === true
     );
-    return {
+    const output = {
       name: scenarioName,
       traceId,
       startedAt,
@@ -1561,6 +1829,14 @@ async function runScenario(ctx, scenarioName, runner) {
       requiredAuditActions: coverage.required,
       missingAuditActions: coverage.missing
     };
+    if (result && typeof result === 'object') {
+      if (result.notificationId) output.notificationId = result.notificationId;
+      if (result.notificationIdSource) output.notificationIdSource = result.notificationIdSource;
+      if (Number.isFinite(Number(result.resolveAttempts))) output.resolveAttempts = Number(result.resolveAttempts);
+      if (Array.isArray(result.bootstrapAttempts)) output.bootstrapAttempts = result.bootstrapAttempts;
+      if (Array.isArray(result.candidateAttempts)) output.candidateAttempts = result.candidateAttempts;
+    }
+    return output;
   } catch (err) {
     const traceBundle = await fetchTraceBundle(ctx, traceId);
     const coverage = evaluateAuditActionCoverage(
@@ -1739,7 +2015,8 @@ module.exports = {
   evaluateProductReadinessBody,
   ADMIN_READINESS_ENDPOINTS,
   resolveSegmentTemplateKey,
-  resolveComposerNotificationId
+  resolveComposerNotificationId,
+  bootstrapRetryQueue
 };
 
 if (require.main === module) {
