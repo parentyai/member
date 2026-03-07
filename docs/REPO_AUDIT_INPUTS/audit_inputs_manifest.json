@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T11:56:11-05:00",
-  "gitCommit": "e28ac3f1cdbd0327feed3291b0f1895e51fdedbe",
-  "branch": "codex/orchestrator-canary-complete-r735",
-  "sourceDigest": "8413921c0d9f97babe47c703ae91c825076c22cebad0d410395c30e48a825b51",
+  "generatedAt": "2026-03-07T13:24:08-05:00",
+  "gitCommit": "729368f356c39c165190bf3a2f8032091f184564",
+  "branch": "codex/admin-ui-pr1-dashboard",
+  "sourceDigest": "c5177eb4074a468f6527f595fdbc8a0ddece7848278ff1f2a6ec1977331c33e4",
   "counts": {
     "endpoints": 287,
     "routes": 128,
@@ -71,8 +71,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "82046cf3e2ad54b980da630ac732b95e07bc4e643fdca411175310a7e4187e53",
-      "bytes": 76671
+      "sha256": "d377fd753774d2a7098b7491079689255de5441b5845fcc70c6f01de05a1a966",
+      "bytes": 76672
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/firestore_required_indexes.json",
@@ -141,8 +141,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "ed09dc40c1e808d0f9c6bc1e56bde1edf935a50f428f73f594dcf1c928d9f96b",
-      "bytes": 443849
+      "sha256": "63825b402ba10fad09aee4367532be8c802f73c53a8529aea254056bc04aa84f",
+      "bytes": 443850
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
