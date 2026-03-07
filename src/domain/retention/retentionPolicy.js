@@ -81,6 +81,7 @@ const RETENTION_POLICY = Object.freeze({
   'step_rules': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'system_flags': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'tasks': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
+  'task_events': Object.freeze({ kind: 'evidence', retentionDays: 365, deletable: 'NO', recomputable: false }),
   'templates_v': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'user_checklists': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),
   'user_consents': Object.freeze({ kind: 'config', retentionDays: 'INDEFINITE', deletable: 'NO', recomputable: false }),

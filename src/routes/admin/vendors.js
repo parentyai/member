@@ -6,7 +6,7 @@ const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const {
-  resolveActor,
+  requireActor,
   resolveRequestId,
   resolveTraceId,
   parseJson
@@ -119,7 +119,8 @@ async function handleSetHealth(res, actor, traceId, requestId, linkId, state, st
 }
 
 async function handleVendors(req, res, bodyText) {
-  const actor = resolveActor(req);
+  const actor = requireActor(req, res);
+  if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const url = new URL(req.url, 'http://localhost');

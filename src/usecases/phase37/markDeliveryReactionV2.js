@@ -6,6 +6,7 @@ const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { applyJourneyReactionBranch } = require('../journey/applyJourneyReactionBranch');
 const { appendUxEvent } = require('../observability/appendUxEvent');
+const { sanitizeReactionResponseText } = require('./sanitizeReactionResponseText');
 
 const ACTIONS = new Set(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
@@ -94,7 +95,11 @@ async function markDeliveryReactionV2(params, deps) {
   const action = requireAction(payload.action);
   const at = parseIso(payload.at);
   const snoozeUntil = parseOptionalIso(payload.snoozeUntil);
-  const responseText = parseOptionalString(payload.responseText);
+  const inputResponseText = parseOptionalString(payload.responseText);
+  const responsePolicy = action === 'response'
+    ? sanitizeReactionResponseText(inputResponseText)
+    : { value: null, stored: false, reason: 'not_response_action', length: 0 };
+  const responseText = responsePolicy.value;
   const traceId = parseOptionalString(payload.traceId);
   const requestId = parseOptionalString(payload.requestId);
   const actor = parseOptionalString(payload.actor) || 'phase37_delivery_reaction_v2';
@@ -126,7 +131,10 @@ async function markDeliveryReactionV2(params, deps) {
     todoKey,
     traceId,
     requestId,
-    actor
+    actor,
+    responseTextStored: responsePolicy.stored === true,
+    responseTextPolicyReason: responsePolicy.reason || null,
+    responseTextLength: Number.isFinite(Number(responsePolicy.length)) ? Number(responsePolicy.length) : 0
   });
 
   if (lineUserId) {
@@ -234,7 +242,9 @@ async function markDeliveryReactionV2(params, deps) {
       queuedCount: Number.isFinite(Number(branchResult && branchResult.queuedCount))
         ? Number(branchResult.queuedCount)
         : 0
-    }
+    },
+    responseTextStored: responsePolicy.stored === true,
+    responseTextPolicyReason: responsePolicy.reason || null
   };
 }
 

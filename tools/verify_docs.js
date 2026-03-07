@@ -127,6 +127,9 @@ if (readme && !readme.includes('docs/ADMIN_MANUAL_JA.md')) {
 // 3) Admin UI dictionary routes must match implemented routes
 const dictPath = path.join(DOCS_DIR, 'ADMIN_UI_DICTIONARY_JA.md');
 const dictText = readText(dictPath);
+if (dictText && /\/Users\/parentyai\.com\/Projects\/Member\//.test(dictText)) {
+  fail('ADMIN_UI_DICTIONARY_JA.md に旧ローカル絶対パスが残っています（相対パスへ正規化してください）');
+}
 const routesDoc = parseJsonBlock(dictText, '<!-- ADMIN_UI_ROUTES_BEGIN -->', '<!-- ADMIN_UI_ROUTES_END -->', 'ADMIN_UI_ROUTES');
 const uiTextsDoc = parseJsonBlock(dictText, '<!-- ADMIN_UI_TEXTS_BEGIN -->', '<!-- ADMIN_UI_TEXTS_END -->', 'ADMIN_UI_TEXTS');
 if (routesDoc) {
