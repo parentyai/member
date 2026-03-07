@@ -2609,6 +2609,21 @@ details:not([open]) > *:not(summary) {
   min-width: 140px;
 }
 
+.admin-local-preflight-summary {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.admin-local-preflight-detail {
+  margin-top: var(--space-2);
+  border-top: 1px dashed var(--line);
+  padding-top: var(--space-2);
+}
+
+.admin-local-preflight-detail.is-collapsed {
+  display: none;
+}
+
 .admin-local-preflight-commands {
   margin-top: var(--space-2);
 }
@@ -3202,6 +3217,7 @@ details:not([open]) > *:not(summary) {
 .app-shell.home-clean-surface-v1 .top-developer,
 .app-shell.home-clean-surface-v1 #admin-guard-banner,
 .app-shell.home-clean-surface-v1 #ops-home-dashboard,
+.app-shell.home-clean-surface-v1 #home-decision-card .decision-actions,
 .app-shell.home-clean-surface-v1 .dashboard-journey-panel {
   display: none !important;
 }

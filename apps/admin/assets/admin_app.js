@@ -152,6 +152,7 @@ const state = {
     blockingReasonCode: null,
     lastCheckedAt: null,
     commands: [],
+    localPreflightDetailExpanded: false,
     canRetry: false,
     suppressedGuard: false,
     pendingBootstrapLoads: false
@@ -738,6 +739,23 @@ const PANE_HEADER_MAP = Object.freeze({
   llm: { titleKey: 'ui.label.page.faq', subtitleKey: 'ui.desc.page.faq' },
   settings: { titleKey: 'ui.label.page.settings', subtitleKey: 'ui.desc.page.settings' },
   maintenance: { titleKey: 'ui.label.page.maintenance', subtitleKey: 'ui.desc.page.maintenance' }
+});
+
+const PAGE_HEADER_ACTION_MAP = Object.freeze({
+  home: Object.freeze({
+    primary: Object.freeze({
+      labelKey: 'ui.label.decision.action.createEdit',
+      fallback: '作成・編集',
+      paneTarget: 'composer'
+    })
+  }),
+  'city-pack': Object.freeze({
+    primary: Object.freeze({
+      labelKey: 'ui.label.nav.cityPackManage',
+      fallback: 'City Pack管理',
+      paneTarget: 'city-pack'
+    })
+  })
 });
 
 const NAV_POLICY = Object.freeze({
@@ -1409,6 +1427,27 @@ function resolveLocalPreflightBannerElement() {
   return document.getElementById('admin-local-preflight-banner');
 }
 
+function resolveLocalPreflightDetailPanelElement() {
+  return document.getElementById('local-preflight-detail-panel');
+}
+
+function setLocalPreflightDetailExpanded(expanded) {
+  const panel = resolveLocalPreflightDetailPanelElement();
+  const toggleBtn = document.getElementById('local-preflight-toggle-detail');
+  const isExpanded = expanded === true;
+  if (panel) {
+    panel.classList.toggle('is-collapsed', !isExpanded);
+    panel.setAttribute('data-local-preflight-detail', isExpanded ? 'expanded' : 'collapsed');
+  }
+  if (toggleBtn) {
+    toggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    toggleBtn.textContent = isExpanded ? '詳細を閉じる' : '詳細を開く';
+  }
+  state.recoveryUx = Object.assign({}, state.recoveryUx, {
+    localPreflightDetailExpanded: isExpanded
+  });
+}
+
 function clearLocalPreflightBanner() {
   const el = resolveLocalPreflightBannerElement();
   if (!el) return;
@@ -1420,14 +1459,19 @@ function clearLocalPreflightBanner() {
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
   const rawHint = el.querySelector('[data-local-preflight-field="rawHint"]');
+  const summaryCode = document.getElementById('local-preflight-summary-code');
+  const summaryCause = document.getElementById('local-preflight-summary-cause');
   const commandList = document.getElementById('local-preflight-command-list');
   const checksJson = document.getElementById('local-preflight-checks-json');
   const checksDetails = document.getElementById('local-preflight-checks');
   const copyBtn = document.getElementById('local-preflight-copy-commands');
+  setLocalPreflightDetailExpanded(false);
   if (cause) cause.textContent = '-';
   if (impact) impact.textContent = '-';
   if (action) action.textContent = '-';
   if (rawHint) rawHint.textContent = '-';
+  if (summaryCode) summaryCode.textContent = '-';
+  if (summaryCause) summaryCause.textContent = '-';
   if (commandList) commandList.textContent = '-';
   if (checksJson) checksJson.textContent = '-';
   if (checksDetails) checksDetails.open = false;
@@ -1467,6 +1511,8 @@ function renderLocalPreflightBanner(payload) {
   const el = resolveLocalPreflightBannerElement();
   if (!el) return;
   const normalized = normalizeLocalPreflightPayload(payload);
+  const summaryCode = document.getElementById('local-preflight-summary-code');
+  const summaryCause = document.getElementById('local-preflight-summary-cause');
   const cause = el.querySelector('[data-local-preflight-field="cause"]');
   const impact = el.querySelector('[data-local-preflight-field="impact"]');
   const action = el.querySelector('[data-local-preflight-field="action"]');
@@ -1474,6 +1520,8 @@ function renderLocalPreflightBanner(payload) {
   const commandList = document.getElementById('local-preflight-command-list');
   const checksJson = document.getElementById('local-preflight-checks-json');
   const copyBtn = document.getElementById('local-preflight-copy-commands');
+  if (summaryCode) summaryCode.textContent = normalized.code;
+  if (summaryCause) summaryCause.textContent = normalized.cause;
   if (cause) cause.textContent = normalized.cause;
   if (impact) impact.textContent = normalized.impact;
   if (action) action.textContent = normalized.action;
@@ -1481,6 +1529,7 @@ function renderLocalPreflightBanner(payload) {
   if (commandList) commandList.textContent = normalized.commands.length ? normalized.commands.join('\n') : '-';
   if (checksJson) checksJson.textContent = JSON.stringify((payload && payload.checks) || {}, null, 2);
   if (copyBtn) copyBtn.disabled = normalized.commands.length === 0;
+  setLocalPreflightDetailExpanded(state.recoveryUx && state.recoveryUx.localPreflightDetailExpanded === true);
   el.classList.add('is-visible');
   applyBannerState(el, normalized.tone, 'system');
   el.setAttribute('data-admin-local-preflight', 'visible');
@@ -2145,6 +2194,10 @@ function setupLocalPreflightControls() {
   document.getElementById('local-preflight-open-audit')?.addEventListener('click', () => {
     openLocalPreflightAuditPane();
   });
+  document.getElementById('local-preflight-toggle-detail')?.addEventListener('click', () => {
+    const isExpanded = state.recoveryUx && state.recoveryUx.localPreflightDetailExpanded === true;
+    setLocalPreflightDetailExpanded(!isExpanded);
+  });
 }
 
 function runDangerActionGuard(options) {
@@ -2801,6 +2854,7 @@ function setupNav() {
 
 function updatePageHeader(paneKey) {
   const meta = PANE_HEADER_MAP[paneKey] || PANE_HEADER_MAP.home;
+  const actionMeta = PAGE_HEADER_ACTION_MAP[paneKey] || null;
   const titleEl = document.getElementById('page-title');
   const subtitleEl = document.getElementById('page-subtitle');
   const updatedEl = document.getElementById('page-last-updated');
@@ -2825,8 +2879,26 @@ function updatePageHeader(paneKey) {
     const updatedAt = resolvePaneUpdatedAt(paneKey);
     updatedEl.textContent = `最終更新: ${updatedAt && updatedAt !== '-' ? formatDateLabel(updatedAt) : '-'}`;
   }
-  if (primaryAction) primaryAction.classList.add('hidden');
-  if (secondaryAction) secondaryAction.classList.add('hidden');
+  if (primaryAction) {
+    primaryAction.classList.add('hidden');
+    primaryAction.removeAttribute('data-open-pane');
+    primaryAction.textContent = '';
+  }
+  if (secondaryAction) {
+    secondaryAction.classList.add('hidden');
+    secondaryAction.removeAttribute('data-open-pane');
+    secondaryAction.textContent = '';
+  }
+  if (actionMeta && primaryAction && actionMeta.primary) {
+    primaryAction.textContent = t(actionMeta.primary.labelKey, actionMeta.primary.fallback);
+    primaryAction.setAttribute('data-open-pane', actionMeta.primary.paneTarget);
+    primaryAction.classList.remove('hidden');
+  }
+  if (actionMeta && secondaryAction && actionMeta.secondary) {
+    secondaryAction.textContent = t(actionMeta.secondary.labelKey, actionMeta.secondary.fallback);
+    secondaryAction.setAttribute('data-open-pane', actionMeta.secondary.paneTarget);
+    secondaryAction.classList.remove('hidden');
+  }
 }
 
 function expandPaneDetails(paneKey) {
@@ -2983,6 +3055,16 @@ function setupHomeControls() {
 }
 
 function setupHeaderActions() {
+  const primaryAction = document.getElementById('page-action-primary');
+  const secondaryAction = document.getElementById('page-action-secondary');
+  [primaryAction, secondaryAction].forEach((buttonEl) => {
+    if (!buttonEl) return;
+    buttonEl.addEventListener('click', () => {
+      const targetPane = buttonEl.getAttribute('data-open-pane');
+      if (!targetPane) return;
+      activatePane(targetPane, { historyMode: 'push' });
+    });
+  });
   bindReadOnlyShortcut({
     elementId: 'header-consult-link',
     paneTarget: 'llm',
