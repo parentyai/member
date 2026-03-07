@@ -12,7 +12,8 @@ const {
   isUxosPolicyReadonlyEnabled,
   isUxosEventsEnabled,
   isUxosNbaEnabled,
-  isUxosFatigueWarnEnabled
+  isUxosFatigueWarnEnabled,
+  isUxosEmergencyOverrideEnabled
 } = require('../../domain/uxos/featureFlags');
 const {
   isTaskEngineEnabled,
@@ -30,6 +31,7 @@ function buildFeatureFlagsSnapshot() {
     uxosEventsEnabled: isUxosEventsEnabled(),
     uxosNbaEnabled: isUxosNbaEnabled(),
     uxosFatigueWarnEnabled: isUxosFatigueWarnEnabled(),
+    uxosEmergencyOverrideEnabled: isUxosEmergencyOverrideEnabled(),
     uxosPolicyReadonlyEnabled: isUxosPolicyReadonlyEnabled(),
     taskEngineEnabled: isTaskEngineEnabled(),
     taskNudgeEnabled: isTaskNudgeEnabled(),
@@ -37,12 +39,31 @@ function buildFeatureFlagsSnapshot() {
   };
 }
 
-async function handleStatus(req, res) {
+async function handleStatus(req, res, deps) {
   const actor = requireActor(req, res);
   if (!actor) return;
   const traceId = resolveTraceId(req);
   const requestId = resolveRequestId(req);
   const flags = buildFeatureFlagsSnapshot();
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const journeyPolicyRepoResolved = resolvedDeps.journeyPolicyRepo && typeof resolvedDeps.journeyPolicyRepo.getJourneyPolicy === 'function'
+    ? resolvedDeps.journeyPolicyRepo
+    : journeyPolicyRepo;
+  const journeyGraphCatalogRepoResolved = resolvedDeps.journeyGraphCatalogRepo && typeof resolvedDeps.journeyGraphCatalogRepo.getJourneyGraphCatalog === 'function'
+    ? resolvedDeps.journeyGraphCatalogRepo
+    : journeyGraphCatalogRepo;
+  const journeyParamRuntimeRepoResolved = resolvedDeps.journeyParamRuntimeRepo && typeof resolvedDeps.journeyParamRuntimeRepo.getJourneyParamRuntime === 'function'
+    ? resolvedDeps.journeyParamRuntimeRepo
+    : journeyParamRuntimeRepo;
+  const richMenuPolicyRepoResolved = resolvedDeps.richMenuPolicyRepo && typeof resolvedDeps.richMenuPolicyRepo.getRichMenuPolicy === 'function'
+    ? resolvedDeps.richMenuPolicyRepo
+    : richMenuPolicyRepo;
+  const opsConfigRepoResolved = resolvedDeps.opsConfigRepo && typeof resolvedDeps.opsConfigRepo.getLlmPolicy === 'function'
+    ? resolvedDeps.opsConfigRepo
+    : opsConfigRepo;
+  const systemFlagsRepoResolved = resolvedDeps.systemFlagsRepo && typeof resolvedDeps.systemFlagsRepo.getLlmEnabled === 'function'
+    ? resolvedDeps.systemFlagsRepo
+    : systemFlagsRepo;
 
   if (!flags.uxosPolicyReadonlyEnabled) {
     writeJson(res, 200, {
@@ -65,12 +86,12 @@ async function handleStatus(req, res) {
       llmPolicy,
       systemLlmEnabled
     ] = await Promise.all([
-      journeyPolicyRepo.getJourneyPolicy().catch(() => null),
-      journeyGraphCatalogRepo.getJourneyGraphCatalog().catch(() => null),
-      journeyParamRuntimeRepo.getJourneyParamRuntime().catch(() => null),
-      richMenuPolicyRepo.getRichMenuPolicy().catch(() => null),
-      opsConfigRepo.getLlmPolicy().catch(() => null),
-      systemFlagsRepo.getLlmEnabled().catch(() => false)
+      journeyPolicyRepoResolved.getJourneyPolicy().catch(() => null),
+      journeyGraphCatalogRepoResolved.getJourneyGraphCatalog().catch(() => null),
+      journeyParamRuntimeRepoResolved.getJourneyParamRuntime().catch(() => null),
+      richMenuPolicyRepoResolved.getRichMenuPolicy().catch(() => null),
+      opsConfigRepoResolved.getLlmPolicy().catch(() => null),
+      systemFlagsRepoResolved.getLlmEnabled().catch(() => false)
     ]);
 
     const snapshot = {
@@ -90,7 +111,8 @@ async function handleStatus(req, res) {
           : null
       },
       notification: {
-        fatigueWarnMode: flags.uxosFatigueWarnEnabled ? 'warn_only' : 'disabled'
+        fatigueWarnMode: flags.uxosFatigueWarnEnabled ? 'warn_only' : 'disabled',
+        emergencyOverrideMode: flags.uxosEmergencyOverrideEnabled ? 'region_sent_bulletin' : 'disabled'
       },
       llm: {
         systemEnabled: Boolean(systemLlmEnabled),

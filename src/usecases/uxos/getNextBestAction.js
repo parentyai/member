@@ -3,6 +3,7 @@
 const { computeNextTasks } = require('../tasks/computeNextTasks');
 const { getNextActionCandidates } = require('../phaseLLM3/getNextActionCandidates');
 const { isUxosNbaEnabled } = require('../../domain/uxos/featureFlags');
+const { resolveEmergencyOverride } = require('./resolveEmergencyOverride');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -60,6 +61,24 @@ async function getNextBestAction(params, deps) {
   const actor = normalizeText(payload.actor) || 'uxos_next_best_action';
   const traceId = normalizeText(payload.traceId) || null;
   const requestId = normalizeText(payload.requestId) || null;
+
+  const emergencyOverride = await resolveEmergencyOverride({
+    lineUserId,
+    now,
+    actor,
+    traceId,
+    requestId
+  }, resolvedDeps).catch(() => null);
+  if (emergencyOverride && emergencyOverride.active === true && emergencyOverride.recommendation) {
+    return {
+      ok: true,
+      enabled: true,
+      lineUserId,
+      source: 'emergency_override',
+      recommendation: emergencyOverride.recommendation,
+      debug: emergencyOverride.debug || null
+    };
+  }
 
   const taskResult = await computeNextTasks({
     lineUserId,

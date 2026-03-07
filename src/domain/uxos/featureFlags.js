@@ -36,6 +36,10 @@ function isUxosPolicyReadonlyEnabled() {
   return parseFlag('ENABLE_UXOS_POLICY_READONLY', false);
 }
 
+function isUxosEmergencyOverrideEnabled() {
+  return parseFlag('ENABLE_UXOS_EMERGENCY_OVERRIDE', false);
+}
+
 function getUxosEventsAppendMaxPerSend() {
   return parseNumber('UXOS_EVENTS_APPEND_MAX_PER_SEND', 300, 1, 5000);
 }
@@ -52,12 +56,23 @@ function getUxosFatigueWarnBlockedRateThreshold() {
   return Math.min(1, Math.max(0, parsed));
 }
 
+function getUxosEmergencyOverrideScanLimit() {
+  return parseNumber('UXOS_EMERGENCY_OVERRIDE_SCAN_LIMIT', 120, 10, 300);
+}
+
+function getUxosEmergencyOverrideMaxAgeHours() {
+  return parseNumber('UXOS_EMERGENCY_OVERRIDE_MAX_AGE_HOURS', 24, 1, 336);
+}
+
 module.exports = {
   isUxosEventsEnabled,
   isUxosNbaEnabled,
   isUxosFatigueWarnEnabled,
   isUxosPolicyReadonlyEnabled,
+  isUxosEmergencyOverrideEnabled,
   getUxosEventsAppendMaxPerSend,
   getUxosFatigueWarnMinRecipients,
-  getUxosFatigueWarnBlockedRateThreshold
+  getUxosFatigueWarnBlockedRateThreshold,
+  getUxosEmergencyOverrideScanLimit,
+  getUxosEmergencyOverrideMaxAgeHours
 };
