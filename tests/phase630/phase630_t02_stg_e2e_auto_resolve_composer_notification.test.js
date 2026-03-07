@@ -174,6 +174,56 @@ test('phase630: resolveComposerNotificationId bootstrap keeps notification activ
   assert.ok(!calls.some((call) => call.method === 'POST' && call.endpoint === '/api/admin/os/notifications/send/plan'));
 });
 
+test('phase630: bootstrap user seed prefers row with scenarioKey/stepKey when leading row is incomplete', async () => {
+  let reviewedLineUserId = null;
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-5b',
+    '',
+    async (_ctx, method, endpoint, traceId, body) => {
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'POST' && endpoint === '/admin/link-registry') {
+        return { okStatus: true, body: { ok: true, id: 'link_2' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+        return {
+          okStatus: true,
+          body: {
+            ok: true,
+            items: [
+              { lineUserId: 'U_missing_shape' },
+              { lineUserId: 'U_with_shape', scenarioKey: 'A', stepKey: 'week' }
+            ]
+          }
+        };
+      }
+      if (method === 'POST' && endpoint === '/api/phase5/admin/users/review') {
+        reviewedLineUserId = body && body.lineUserId;
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/draft') {
+        return { okStatus: true, body: { ok: true, notificationId: 'n_bootstrap_2' } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/approve') {
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/status?notificationId=n_bootstrap_2') {
+        return { okStatus: true, body: { ok: true, status: 'active' } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint} trace=${traceId}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_bootstrap_2');
+  assert.strictEqual(result.reason, null);
+  assert.strictEqual(reviewedLineUserId, 'U_with_shape');
+});
+
 test('phase630: bootstrapRetryQueue builds pending queue via synthetic segment execute when queue is empty', async () => {
   const result = await bootstrapRetryQueue(
     {},

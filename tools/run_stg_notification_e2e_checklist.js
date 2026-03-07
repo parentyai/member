@@ -493,19 +493,22 @@ function pickPreferredTemplate(items) {
 
 function pickUserSeed(items) {
   const rows = Array.isArray(items) ? items : [];
+  let fallback = null;
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const lineUserId = typeof row.lineUserId === 'string' ? row.lineUserId.trim() : '';
     if (!lineUserId) continue;
     const scenarioKey = typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '';
     const stepKey = typeof row.stepKey === 'string' ? row.stepKey.trim() : '';
-    return {
+    const candidate = {
       lineUserId,
       scenarioKey: scenarioKey || null,
       stepKey: stepKey || null
     };
+    if (scenarioKey && stepKey) return candidate;
+    if (!fallback) fallback = candidate;
   }
-  return null;
+  return fallback;
 }
 
 async function resolveUserSeed(ctx, traceId, requestFn) {
@@ -909,6 +912,51 @@ function requireHttpOk(resp, label) {
     throw new Error(`${label} failed: non-json response`);
   }
   return resp.body;
+}
+
+function responseErrorText(resp) {
+  const body = resp && resp.body && typeof resp.body === 'object' ? resp.body : null;
+  const explicit = body && typeof body.error === 'string' ? body.error.trim() : '';
+  if (explicit) return explicit;
+  const reason = body && typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (reason) return reason;
+  const text = typeof resp.text === 'string' ? resp.text.trim() : '';
+  return text;
+}
+
+function isNoRecipientsResponse(resp) {
+  const message = responseErrorText(resp);
+  return typeof message === 'string' && message.toLowerCase().includes('no recipients');
+}
+
+async function listActiveComposerNotificationIds(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const attempts = [];
+  const primaryResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?status=active&limit=100', traceId);
+  attempts.push({ stage: 'list_active', response: summarizeResponse(primaryResp) });
+  if (primaryResp.okStatus && primaryResp.body && typeof primaryResp.body === 'object') {
+    const active = rankComposerCandidates(primaryResp.body.items).filter((item) => isActiveComposerCandidate(item));
+    return {
+      ids: active.map((item) => item.id),
+      attempts,
+      reason: null
+    };
+  }
+  const fallbackResp = await request(ctx, 'GET', '/api/admin/os/notifications/list?limit=100', `${traceId}-fallback`);
+  attempts.push({ stage: 'list_all_fallback', response: summarizeResponse(fallbackResp) });
+  if (fallbackResp.okStatus && fallbackResp.body && typeof fallbackResp.body === 'object') {
+    const active = rankComposerCandidates(fallbackResp.body.items).filter((item) => isActiveComposerCandidate(item));
+    return {
+      ids: active.map((item) => item.id),
+      attempts,
+      reason: null
+    };
+  }
+  return {
+    ids: [],
+    attempts,
+    reason: 'composer_candidate_list_failed'
+  };
 }
 
 async function fetchTraceBundle(ctx, traceId) {
@@ -1331,6 +1379,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
   let notificationIdSource = resolved.source || 'input';
   const resolveAttempts = Array.isArray(resolved.attempts) ? resolved.attempts.length : 0;
   let bootstrapAttempts = [];
+  let candidateAttempts = [];
 
   const initialStatus = await ensureNotificationActive(notificationId, traceId);
   if (!initialStatus.ok) {
@@ -1340,6 +1389,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
       notificationId,
       notificationIdSource,
       resolveAttempts,
+      candidateAttempts,
       steps: initialStatus.steps
     };
   }
@@ -1358,10 +1408,57 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     });
     configChanged = true;
 
-    let planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
-      notificationId
-    });
-    if (!planResp.okStatus || !planResp.body || planResp.body.ok !== true) {
+    const candidateList = await listActiveComposerNotificationIds(ctx, `${traceId}-candidates`, apiRequest);
+    candidateAttempts = Array.isArray(candidateList.attempts) ? candidateList.attempts.slice() : [];
+    const orderedCandidates = [];
+    const seen = new Set();
+    const appendCandidate = (id, source) => {
+      const value = typeof id === 'string' ? id.trim() : '';
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      orderedCandidates.push({ notificationId: value, source });
+    };
+    appendCandidate(notificationId, notificationIdSource);
+    (candidateList.ids || []).forEach((id) => appendCandidate(id, 'active_list'));
+
+    let planResp = null;
+    let selected = null;
+    for (const candidate of orderedCandidates) {
+      const activeCheck = await ensureNotificationActive(candidate.notificationId, `${traceId}-candidate-status`);
+      candidateAttempts.push({
+        stage: 'candidate_status',
+        notificationId: candidate.notificationId,
+        source: candidate.source,
+        ok: activeCheck.ok === true,
+        reason: activeCheck.ok ? null : activeCheck.reason
+      });
+      if (!activeCheck.ok) continue;
+      const attemptedPlan = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
+        notificationId: candidate.notificationId
+      });
+      candidateAttempts.push({
+        stage: 'candidate_plan',
+        notificationId: candidate.notificationId,
+        source: candidate.source,
+        response: summarizeResponse(attemptedPlan)
+      });
+      planResp = attemptedPlan;
+      if (attemptedPlan.okStatus && attemptedPlan.body && attemptedPlan.body.ok === true) {
+        selected = candidate;
+        break;
+      }
+      if (!isNoRecipientsResponse(attemptedPlan)) {
+        break;
+      }
+    }
+
+    if (selected) {
+      notificationId = selected.notificationId;
+      if (selected.source !== notificationIdSource) {
+        notificationIdSource = selected.source;
+      }
+    }
+    if (!planResp || !planResp.okStatus || !planResp.body || planResp.body.ok !== true) {
       const bootstrap = await bootstrapComposerNotification(ctx, `${traceId}-bootstrap`, apiRequest, []);
       bootstrapAttempts = Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [];
       if (!bootstrap.notificationId) {
@@ -1372,8 +1469,9 @@ async function runComposerCapScenario(ctx, opts, traceId) {
           notificationIdSource,
           resolveAttempts,
           bootstrapAttempts,
+          candidateAttempts,
           steps: {
-            plan: summarizeResponse(planResp)
+            plan: planResp ? summarizeResponse(planResp) : null
           }
         };
       }
@@ -1388,6 +1486,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
           notificationIdSource,
           resolveAttempts,
           bootstrapAttempts,
+          candidateAttempts,
           steps: bootstrapStatus.steps
         };
       }
@@ -1412,6 +1511,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
         notificationIdSource,
         resolveAttempts,
         bootstrapAttempts,
+        candidateAttempts,
         steps: {
           plan: summarizeResponse(planResp),
           execute: summarizeResponse(executeResp)
@@ -1424,6 +1524,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
       notificationIdSource,
       resolveAttempts,
       bootstrapAttempts,
+      candidateAttempts,
       steps: {
         plan: summarizeResponse(planResp),
         execute: summarizeResponse(executeResp)
@@ -1713,7 +1814,7 @@ async function runScenario(ctx, scenarioName, runner) {
       coverage,
       ctx.failOnMissingAuditActions === true
     );
-    return {
+    const output = {
       name: scenarioName,
       traceId,
       startedAt,
@@ -1728,6 +1829,14 @@ async function runScenario(ctx, scenarioName, runner) {
       requiredAuditActions: coverage.required,
       missingAuditActions: coverage.missing
     };
+    if (result && typeof result === 'object') {
+      if (result.notificationId) output.notificationId = result.notificationId;
+      if (result.notificationIdSource) output.notificationIdSource = result.notificationIdSource;
+      if (Number.isFinite(Number(result.resolveAttempts))) output.resolveAttempts = Number(result.resolveAttempts);
+      if (Array.isArray(result.bootstrapAttempts)) output.bootstrapAttempts = result.bootstrapAttempts;
+      if (Array.isArray(result.candidateAttempts)) output.candidateAttempts = result.candidateAttempts;
+    }
+    return output;
   } catch (err) {
     const traceBundle = await fetchTraceBundle(ctx, traceId);
     const coverage = evaluateAuditActionCoverage(
