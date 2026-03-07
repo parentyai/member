@@ -1331,13 +1331,7 @@ async function runComposerCapScenario(ctx, opts, traceId) {
     let planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
       notificationId
     });
-    let planSummary = summarizeResponse(planResp);
-    const normalizedPlanReason = (
-      typeof planSummary.reason === 'string' && planSummary.reason.trim()
-        ? planSummary.reason
-        : (typeof planSummary.error === 'string' ? planSummary.error : '')
-    ).trim().toLowerCase().replace(/\s+/g, '_');
-    if ((!planResp.okStatus || !planResp.body || planResp.body.ok !== true) && normalizedPlanReason === 'no_recipients') {
+    if (!planResp.okStatus || !planResp.body || planResp.body.ok !== true) {
       const bootstrap = await bootstrapComposerNotification(ctx, `${traceId}-bootstrap`, apiRequest, []);
       bootstrapAttempts = Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [];
       if (bootstrap.notificationId) {
@@ -1358,7 +1352,6 @@ async function runComposerCapScenario(ctx, opts, traceId) {
         planResp = await apiRequest(ctx, 'POST', '/api/admin/os/notifications/send/plan', traceId, {
           notificationId
         });
-        planSummary = summarizeResponse(planResp);
       }
     }
 
