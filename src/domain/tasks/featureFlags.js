@@ -132,6 +132,22 @@ function getTaskNudgeLinkPolicy() {
   return 'strict';
 }
 
+function isUxOsEventsEnabled() {
+  return parseFlag('ENABLE_UXOS_EVENTS_V1', false);
+}
+
+function isUxOsNbaEnabled() {
+  return parseFlag('ENABLE_UXOS_NBA_V1', false);
+}
+
+function isUxOsFatigueWarnEnabled() {
+  return parseFlag('ENABLE_UXOS_FATIGUE_WARN_V1', false);
+}
+
+function isUxOsPolicyReadonlyEnabled() {
+  return parseFlag('ENABLE_UXOS_POLICY_READONLY_V1', false);
+}
+
 module.exports = {
   isTaskEngineEnabled,
   isTaskNudgeEnabled,
@@ -159,5 +175,9 @@ module.exports = {
   getTaskDependencyMax,
   getJourneyNextTaskMax,
   isLinkRegistryImpactMapEnabled,
-  getTaskNudgeLinkPolicy
+  getTaskNudgeLinkPolicy,
+  isUxOsEventsEnabled,
+  isUxOsNbaEnabled,
+  isUxOsFatigueWarnEnabled,
+  isUxOsPolicyReadonlyEnabled
 };
