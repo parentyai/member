@@ -2817,12 +2817,21 @@ function applyMonitorWorkspaceView(view, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const pane = document.getElementById('pane-monitor');
   if (!pane) return;
+  const canUseConfiguration = canUseMonitorConfigurationView(state.role);
   const nextView = normalizeMonitorWorkspaceView(view, state.role);
   state.monitorWorkspaceView = nextView;
   pane.setAttribute('data-monitor-workspace-view', nextView);
   pane.querySelectorAll('[data-monitor-view-target]').forEach((buttonEl) => {
     const target = normalizeMonitorWorkspaceView(buttonEl.getAttribute('data-monitor-view-target'), state.role);
     const isActive = target === nextView;
+    const isConfigurationButton = buttonEl.id === 'monitor-view-configuration';
+    const isDisabled = isConfigurationButton && !canUseConfiguration;
+    if (isConfigurationButton) {
+      buttonEl.classList.remove('role-hidden');
+    }
+    buttonEl.disabled = isDisabled;
+    buttonEl.setAttribute('aria-disabled', isDisabled ? 'true' : 'false');
+    buttonEl.classList.toggle('is-disabled', isDisabled);
     buttonEl.classList.toggle('is-active', isActive);
     buttonEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
@@ -2838,6 +2847,11 @@ function applyMonitorWorkspaceView(view, options) {
     noteEl.textContent = nextView === MONITOR_WORKSPACE_VIEW_CONFIGURATION
       ? '設定を表示中です。監視確認が必要な場合は「監視」を開いてください。'
       : '監視を表示中です。設定変更が必要な場合のみ「設定」を開いてください。';
+  }
+  const permissionNoticeEl = document.getElementById('monitor-view-permission-notice');
+  if (permissionNoticeEl) {
+    permissionNoticeEl.classList.toggle('is-hidden', canUseConfiguration);
+    permissionNoticeEl.setAttribute('aria-hidden', canUseConfiguration ? 'true' : 'false');
   }
   if (opts.persist === true) {
     state.monitorWorkspaceView = nextView;

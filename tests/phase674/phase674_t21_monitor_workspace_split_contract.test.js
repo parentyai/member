@@ -12,6 +12,7 @@ test('phase674: monitor pane provides monitoring/configuration workspace switch 
   assert.ok(html.includes('data-monitor-view-target="monitoring"'));
   assert.ok(html.includes('data-monitor-view-target="configuration"'));
   assert.ok(html.includes('data-role-allow="admin,developer"'));
+  assert.ok(html.includes('id="monitor-view-permission-notice"'));
 
   assert.ok(html.includes('id="monitor-journey-panel" class="panel" data-monitor-surface="configuration"'));
   assert.ok(html.includes('id="monitor-rich-menu-panel" data-monitor-surface="configuration"'));
@@ -27,9 +28,15 @@ test('phase674: monitor workspace split is role-aware and applied by runtime con
   assert.ok(js.includes('function canUseMonitorConfigurationView(role)'));
   assert.ok(js.includes('function applyMonitorWorkspaceView(view, options)'));
   assert.ok(js.includes('document.querySelectorAll(\'[data-monitor-view-target]\')'));
+  assert.ok(js.includes('buttonEl.id === \'monitor-view-configuration\''));
+  assert.ok(js.includes('buttonEl.classList.remove(\'role-hidden\');'));
+  assert.ok(js.includes('permissionNoticeEl.classList.toggle(\'is-hidden\', canUseConfiguration);'));
   assert.ok(js.includes('applyMonitorWorkspaceView(state.monitorWorkspaceView, { persist: true });'));
 
   assert.ok(css.includes('.monitor-view-switch'));
   assert.ok(css.includes('.monitor-view-btn.is-active'));
+  assert.ok(css.includes('#monitor-view-configuration.role-hidden'));
+  assert.ok(css.includes('#monitor-view-configuration[disabled]'));
+  assert.ok(css.includes('#pane-monitor .pane-grid'));
   assert.ok(css.includes('#pane-monitor[data-monitor-workspace-view="monitoring"] [data-monitor-surface="configuration"]'));
 });
