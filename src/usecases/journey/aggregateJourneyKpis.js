@@ -16,6 +16,10 @@ const REGION_SET_EVENT_TYPES = new Set(['city_region_declared']);
 const LOCAL_TASK_OPENED_EVENT_TYPES = new Set(['local_task_surface_opened']);
 const PRIMARY_NOTIFICATION_SENT_EVENT_TYPES = new Set(['journey_primary_notification_sent']);
 const FATIGUE_GUARDED_EVENT_TYPES = new Set(['notification_fatigue_guarded']);
+const DETAIL_OPEN_EVENT_TYPES = new Set(['todo_detail_opened']);
+const DETAIL_SECTION_OPEN_EVENT_TYPES = new Set(['todo_detail_section_opened']);
+const DETAIL_SECTION_CONTINUE_EVENT_TYPES = new Set(['todo_detail_section_continue']);
+const DETAIL_COMPLETE_EVENT_TYPES = new Set(['todo_detail_completed']);
 const NEXT_ACTION_COMPLETION_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 function toMillis(value) {
@@ -264,6 +268,68 @@ function summarizeNotificationFatigue(events) {
   };
 }
 
+function extractAttribution(event) {
+  const payload = event && typeof event === 'object' ? event : {};
+  const attribution = payload.attribution && typeof payload.attribution === 'object' ? payload.attribution : {};
+  const sectionMeta = payload.sectionMeta && typeof payload.sectionMeta === 'object' ? payload.sectionMeta : {};
+  const sectionAttribution = sectionMeta.attribution && typeof sectionMeta.attribution === 'object'
+    ? sectionMeta.attribution
+    : {};
+  const deliveryId = typeof (attribution.deliveryId || sectionAttribution.deliveryId) === 'string'
+    ? String(attribution.deliveryId || sectionAttribution.deliveryId).trim()
+    : '';
+  const notificationId = typeof (attribution.notificationId || sectionAttribution.notificationId) === 'string'
+    ? String(attribution.notificationId || sectionAttribution.notificationId).trim()
+    : '';
+  return {
+    deliveryId: deliveryId || null,
+    notificationId: notificationId || null
+  };
+}
+
+function summarizeTaskDetailFunnel(events) {
+  const rows = Array.isArray(events) ? events : [];
+  let detailOpenCount = 0;
+  let detailSectionOpenCount = 0;
+  let detailContinueCount = 0;
+  let detailCompleteCount = 0;
+  let detailOpenedAttributedCount = 0;
+  let detailCompletedAttributedCount = 0;
+
+  rows.forEach((row) => {
+    const event = row && row.data ? row.data : row || {};
+    const type = normalizeEventType(event.type);
+    const attribution = extractAttribution(event);
+    const hasAttribution = Boolean(attribution.deliveryId || attribution.notificationId);
+    if (DETAIL_OPEN_EVENT_TYPES.has(type)) {
+      detailOpenCount += 1;
+      if (hasAttribution) detailOpenedAttributedCount += 1;
+      return;
+    }
+    if (DETAIL_SECTION_OPEN_EVENT_TYPES.has(type)) {
+      detailSectionOpenCount += 1;
+      return;
+    }
+    if (DETAIL_SECTION_CONTINUE_EVENT_TYPES.has(type)) {
+      detailContinueCount += 1;
+      return;
+    }
+    if (DETAIL_COMPLETE_EVENT_TYPES.has(type)) {
+      detailCompleteCount += 1;
+      if (hasAttribution) detailCompletedAttributedCount += 1;
+    }
+  });
+
+  return {
+    detailOpenCount,
+    detailSectionOpenCount,
+    detailContinueCount,
+    detailCompleteCount,
+    detailOpenedAttributedCount,
+    detailCompletedAttributedCount
+  };
+}
+
 function ensureUserStat(statsByUser, lineUserId) {
   const id = typeof lineUserId === 'string' ? lineUserId.trim() : '';
   if (!id) return null;
@@ -471,6 +537,7 @@ async function aggregateJourneyKpis(params, deps) {
   const blockerResolution = summarizeBlockerResolutionHours(eventsRows);
   const localTaskOpen = summarizeLocalTaskOpenAfterRegionSet(eventsRows, nowMs);
   const notificationFatigue = summarizeNotificationFatigue(eventsRows);
+  const detailFunnel = summarizeTaskDetailFunnel(eventsRows);
 
   const result = {
     dateKey,
@@ -489,6 +556,13 @@ async function aggregateJourneyKpis(params, deps) {
     blockerResolutionMedianHours: blockerResolution.blockerResolutionMedianHours,
     localTaskOpenRateAfterRegionSet: localTaskOpen.localTaskOpenRateAfterRegionSet,
     notificationFatigueRate: notificationFatigue.notificationFatigueRate,
+    detailOpenToContinueRate: normalizeRate(detailFunnel.detailContinueCount, detailFunnel.detailOpenCount),
+    detailOpenToCompleteRate: normalizeRate(detailFunnel.detailCompleteCount, detailFunnel.detailOpenCount),
+    detailContinueToCompleteRate: normalizeRate(detailFunnel.detailCompleteCount, detailFunnel.detailContinueCount),
+    deliveryToDetailToDoneRate: normalizeRate(
+      detailFunnel.detailCompletedAttributedCount,
+      detailFunnel.detailOpenedAttributedCount
+    ),
     proConversionRate: normalizeRate(proConvertedCount, proPromptedCount),
     churnReasonRatio: summarizeChurnReasons(eventsRows, llmUsageLogs, subscriptions),
     nextActionShownCount,
@@ -501,6 +575,12 @@ async function aggregateJourneyKpis(params, deps) {
     localTaskOpenedAfterRegionSetUserCount: localTaskOpen.localTaskOpenedAfterRegionSetUserCount,
     primaryNotificationSentCount: notificationFatigue.primaryNotificationSentCount,
     fatigueGuardedCount: notificationFatigue.fatigueGuardedCount,
+    detailOpenCount: detailFunnel.detailOpenCount,
+    detailSectionOpenCount: detailFunnel.detailSectionOpenCount,
+    detailContinueCount: detailFunnel.detailContinueCount,
+    detailCompleteCount: detailFunnel.detailCompleteCount,
+    detailOpenedAttributedCount: detailFunnel.detailOpenedAttributedCount,
+    detailCompletedAttributedCount: detailFunnel.detailCompletedAttributedCount,
     metadata: {
       eventsScanned: Array.isArray(eventsRows) ? eventsRows.length : 0,
       llmLogsScanned: Array.isArray(llmUsageLogs) ? llmUsageLogs.length : 0,
@@ -532,6 +612,10 @@ async function aggregateJourneyKpis(params, deps) {
         blockerResolutionMedianHours: result.blockerResolutionMedianHours,
         localTaskOpenRateAfterRegionSet: result.localTaskOpenRateAfterRegionSet,
         notificationFatigueRate: result.notificationFatigueRate,
+        detailOpenToContinueRate: result.detailOpenToContinueRate,
+        detailOpenToCompleteRate: result.detailOpenToCompleteRate,
+        detailContinueToCompleteRate: result.detailContinueToCompleteRate,
+        deliveryToDetailToDoneRate: result.deliveryToDetailToDoneRate,
         proConversionRate: result.proConversionRate
       }
     });
