@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T23:21:20-05:00",
-  "gitCommit": "6e17697d601c877574d7e6950df33ab9d2d21c47",
-  "branch": "codex/llm-human-orchestrator-r730",
-  "sourceDigest": "4fe30344b26745925d06bdfefd52e5b0abd30f1d40fceb7829f598c87756bde7",
+  "generatedAt": "2026-03-07T02:49:31-05:00",
+  "gitCommit": "29568e7abf911d52c0eba915e4bfb068b434ad6a",
+  "branch": "codex/orchestrator-canary-gate-r734",
+  "sourceDigest": "e401006cf24fe2a2eb96aba741cbb09f0835859a1853b0bbe5b1097f23ec9684",
   "counts": {
     "endpoints": 285,
     "routes": 127,
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "bf06178664191315e55f4b7d2114b12fb92746d05d30dbae78d68df340ad3131",
-      "bytes": 2419
+      "sha256": "35e477edac7f0664df80ce8ec44633f40b41a94158cd569c510705140ddd530a",
+      "bytes": 2421
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
