@@ -4342,6 +4342,42 @@
                   <p data-dict-key="ui.desc.settings.notice">設定・回復は /admin/master に集約されています。</p>
                 </div>
               </div>
+              <div id="ux-policy-readonly-panel" class="panel hidden">
+                <div class="panel-title">UX Policy Console (read-only)</div>
+                <div class="panel-body">
+                  <div class="note">P0 foundation: GET-only で policy / advisory / fatigue warning を横断参照します。</div>
+                  <div class="row row-top">
+                    <label class="flex-1" for="ux-policy-line-user-id">LINEユーザーID
+                      <input id="ux-policy-line-user-id" type="text" />
+                    </label>
+                    <label class="flex-1" for="ux-policy-notification-category">通知カテゴリ（任意）
+                      <input id="ux-policy-notification-category" type="text" />
+                    </label>
+                    <button id="ux-policy-reload" type="button">状態更新</button>
+                    <button id="ux-policy-open-audit" type="button">監査ログへ</button>
+                  </div>
+                  <details class="section" open>
+                    <summary>Journey Policy（status）</summary>
+                    <pre id="ux-policy-journey-status">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>Task Rules（status）</summary>
+                    <pre id="ux-policy-task-rules-status">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>LLM Policy（status）</summary>
+                    <pre id="ux-policy-llm-policy-status">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>Next Best Action（advisory）</summary>
+                    <pre id="ux-policy-next-best-action">-</pre>
+                  </details>
+                  <details class="section" open>
+                    <summary>Notification Fatigue Warning（warn-only）</summary>
+                    <pre id="ux-policy-fatigue-warning">-</pre>
+                  </details>
+                </div>
+              </div>
             </div>
             <div class="pane-detail"></div>
             <aside class="pane-actions">
@@ -4349,6 +4385,13 @@
                 <div class="panel-title" data-dict-key="ui.label.panel.actions">操作パネル</div>
                 <div class="panel-body">
                   <a class="btn" href="/admin/master" data-dict-key="ui.label.settings.toMaster">設定画面へ</a>
+                </div>
+              </div>
+              <div id="ux-policy-readonly-actions" class="action-panel hidden">
+                <div class="panel-title">UX Policy</div>
+                <div class="panel-body">
+                  <div class="note">参照専用です。編集操作は既存 Workbench で実施します。</div>
+                  <button id="ux-policy-reload-action" type="button">状態更新</button>
                 </div>
               </div>
             </aside>

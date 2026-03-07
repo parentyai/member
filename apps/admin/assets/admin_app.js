@@ -129,6 +129,14 @@ const COMPOSER_AB_OPTION_V1 = resolveFrontendFeatureFlag(
   typeof window !== 'undefined' ? window.ENABLE_COMPOSER_AB_OPTION_V1 : null,
   false
 );
+const UXOS_POLICY_READONLY_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_UXOS_POLICY_READONLY_V1 : null,
+  false
+);
+const UXOS_FATIGUE_WARN_V1 = resolveFrontendFeatureFlag(
+  typeof window !== 'undefined' ? window.ENABLE_UXOS_FATIGUE_WARN_V1 : null,
+  false
+);
 const EMERGENCY_MANUAL_APPROVE_FALLBACK = false;
 
 function isOpsRealtimeSnapshotEnabled() {
@@ -284,7 +292,8 @@ const state = {
   opsFeatureCatalogRowSource: null,
   opsFeatureCatalogWarnings: [],
   opsFeatureCatalogLoadError: false,
-  opsFeatureCatalogLoadMessage: null
+  opsFeatureCatalogLoadMessage: null,
+  uxPolicyLastTraceId: null
 };
 
 const LOCAL_PREFLIGHT_CODE_SET = new Set([
@@ -16088,6 +16097,141 @@ function setupVendorControls() {
   });
 }
 
+function setUxPolicyReadonlyVisibility() {
+  const panel = document.getElementById('ux-policy-readonly-panel');
+  const actions = document.getElementById('ux-policy-readonly-actions');
+  const enabled = UXOS_POLICY_READONLY_V1 === true;
+  if (panel) panel.classList.toggle('hidden', !enabled);
+  if (actions) actions.classList.toggle('hidden', !enabled);
+}
+
+function renderUxPolicyReadonlyResult(targetId, payload) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.textContent = JSON.stringify(payload || {}, null, 2);
+}
+
+function readUxPolicyLineUserId() {
+  const value = document.getElementById('ux-policy-line-user-id')?.value;
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function readUxPolicyNotificationCategory() {
+  const value = document.getElementById('ux-policy-notification-category')?.value;
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+async function fetchUxPolicyReadonlyJson(url, traceId) {
+  const res = await fetch(url, { headers: buildHeaders({}, traceId) });
+  return readJsonResponse(res);
+}
+
+function toReadonlyLoadFailure(err) {
+  return {
+    ok: false,
+    error: 'fetch_failed',
+    message: err && err.message ? String(err.message) : 'fetch failed'
+  };
+}
+
+async function loadUxPolicyReadonlySnapshot(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  if (!UXOS_POLICY_READONLY_V1) return;
+  const notify = opts.notify === true;
+  const traceId = ensureTraceInput('traceId') || newTraceId();
+  state.uxPolicyLastTraceId = traceId;
+
+  const journeyPromise = fetchUxPolicyReadonlyJson('/api/admin/os/journey-policy/status', traceId)
+    .catch(toReadonlyLoadFailure);
+  const taskRulesPromise = fetchUxPolicyReadonlyJson('/api/admin/os/task-rules/status', traceId)
+    .catch(toReadonlyLoadFailure);
+  const llmPolicyPromise = fetchUxPolicyReadonlyJson('/api/admin/llm/policy/status', traceId)
+    .catch(toReadonlyLoadFailure);
+  const [journeyStatus, taskRulesStatus, llmPolicyStatus] = await Promise.all([
+    journeyPromise,
+    taskRulesPromise,
+    llmPolicyPromise
+  ]);
+
+  renderUxPolicyReadonlyResult('ux-policy-journey-status', journeyStatus);
+  renderUxPolicyReadonlyResult('ux-policy-task-rules-status', taskRulesStatus);
+  renderUxPolicyReadonlyResult('ux-policy-llm-policy-status', llmPolicyStatus);
+
+  const lineUserId = readUxPolicyLineUserId();
+  if (!lineUserId) {
+    renderUxPolicyReadonlyResult('ux-policy-next-best-action', {
+      ok: false,
+      error: 'lineUserId required',
+      note: 'LINEユーザーIDを入力すると advisory を取得できます。'
+    });
+    renderUxPolicyReadonlyResult('ux-policy-fatigue-warning', {
+      ok: UXOS_FATIGUE_WARN_V1 === true,
+      enabled: UXOS_FATIGUE_WARN_V1 === true,
+      error: UXOS_FATIGUE_WARN_V1 === true ? 'lineUserId required' : undefined,
+      fallbackReason: UXOS_FATIGUE_WARN_V1 ? null : 'ENABLE_UXOS_FATIGUE_WARN_V1_off'
+    });
+    if (notify) showToast('UX Policy status を更新しました', 'ok');
+    setPaneUpdatedAt('settings');
+    return;
+  }
+
+  const nbaUrl = `/api/admin/os/next-best-action?lineUserId=${encodeURIComponent(lineUserId)}`;
+  const fatigueCategory = readUxPolicyNotificationCategory();
+  const fatigueParams = new URLSearchParams({ lineUserId });
+  if (fatigueCategory) fatigueParams.set('notificationCategory', fatigueCategory);
+  const fatigueUrl = `/api/admin/os/notification-fatigue-warning?${fatigueParams.toString()}`;
+
+  const nbaResult = await fetchUxPolicyReadonlyJson(nbaUrl, traceId).catch(toReadonlyLoadFailure);
+  const fatigueResult = UXOS_FATIGUE_WARN_V1
+    ? await fetchUxPolicyReadonlyJson(fatigueUrl, traceId).catch(toReadonlyLoadFailure)
+    : {
+      ok: true,
+      result: {
+        ok: true,
+        enabled: false,
+        lineUserId,
+        warning: null,
+        fallbackReason: 'ENABLE_UXOS_FATIGUE_WARN_V1_off'
+      }
+    };
+  renderUxPolicyReadonlyResult('ux-policy-next-best-action', nbaResult);
+  renderUxPolicyReadonlyResult('ux-policy-fatigue-warning', fatigueResult);
+  if (notify) showToast('UX Policy status を更新しました', 'ok');
+  setPaneUpdatedAt('settings');
+}
+
+async function openUxPolicyAuditPane() {
+  const traceId = state.uxPolicyLastTraceId || ensureTraceInput('traceId') || newTraceId();
+  const auditTrace = document.getElementById('audit-trace');
+  if (auditTrace) auditTrace.value = traceId;
+  activatePane('audit');
+  await loadAudit().catch(() => {
+    showToast(t('ui.toast.audit.fail', 'audit 失敗'), 'danger');
+  });
+}
+
+function setupUxPolicyReadonlyControls() {
+  setUxPolicyReadonlyVisibility();
+  if (!UXOS_POLICY_READONLY_V1) return;
+  const onReload = () => {
+    void loadUxPolicyReadonlySnapshot({ notify: true });
+  };
+  document.getElementById('ux-policy-reload')?.addEventListener('click', onReload);
+  document.getElementById('ux-policy-reload-action')?.addEventListener('click', onReload);
+  document.getElementById('ux-policy-open-audit')?.addEventListener('click', () => {
+    void openUxPolicyAuditPane();
+  });
+  ['ux-policy-line-user-id', 'ux-policy-notification-category'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('keydown', (event) => {
+      if (!event || event.key !== 'Enter') return;
+      void loadUxPolicyReadonlySnapshot({ notify: true });
+    });
+  });
+  void loadUxPolicyReadonlySnapshot({ notify: false });
+}
+
 function setupMaintenanceControls() {
   document.getElementById('maintenance-snapshot-health-reload')?.addEventListener('click', () => {
     void loadSnapshotHealth({ notify: true });
@@ -17143,6 +17287,7 @@ function setupLlmControls() {
   setupEmergencyLayerControls();
   setupCityPackControls();
   setupVendorControls();
+  setupUxPolicyReadonlyControls();
   setupMaintenanceControls();
   setupDecisionActions();
   setupAudit();
