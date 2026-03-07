@@ -3,7 +3,7 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "8009977a953118653b2146d1e0cf3cd30fc3d4fe",
+      "hash": "2b2311c695ac413e5533e2b638de773dd80b4134",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
@@ -16,7 +16,7 @@
       "操作履歴は追跡IDでたどれ、監査ログで確認できます。"
     ],
     "statusSummary": {
-      "implemented": 122,
+      "implemented": 123,
       "legacy": 5
     }
   },
@@ -2491,6 +2491,38 @@
           ]
         },
         {
+          "id": "nextBestAction",
+          "nameJa": "共通基盤機能（nextBestAction）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1"
+          ]
+        },
+        {
           "id": "opsFeatureCatalogStatus",
           "nameJa": "共通基盤機能（opsFeatureCatalogStatus）",
           "status": "実装済み",
@@ -4119,7 +4151,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 247,
+              "testsCount": 251,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4185,7 +4217,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 127,
+              "testsCount": 130,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4238,7 +4270,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 83,
+              "testsCount": 85,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4278,7 +4310,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 82,
+              "testsCount": 84,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4315,7 +4347,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 104,
+              "testsCount": 108,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4358,7 +4390,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4438,7 +4470,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 125,
+              "testsCount": 126,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4596,7 +4628,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 198,
+              "testsCount": 201,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4660,7 +4692,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 111,
+              "testsCount": 113,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4708,7 +4740,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 156,
+              "testsCount": 160,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4751,7 +4783,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4799,7 +4831,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 59,
+              "testsCount": 60,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4841,7 +4873,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 203,
+              "testsCount": 209,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -4899,7 +4931,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 102,
+              "testsCount": 103,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -4989,7 +5021,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5078,7 +5110,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 46,
+              "testsCount": 47,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5120,7 +5152,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5162,7 +5194,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 87,
+              "testsCount": 88,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5212,7 +5244,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5254,7 +5286,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 182,
+              "testsCount": 186,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -5318,7 +5350,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5612,7 +5644,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 111,
+              "testsCount": 114,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5657,7 +5689,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 44,
+              "testsCount": 45,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5702,7 +5734,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 147,
+              "testsCount": 150,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5757,7 +5789,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 72,
+              "testsCount": 74,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -5793,7 +5825,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 136,
+              "testsCount": 139,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5842,7 +5874,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 143,
+              "testsCount": 146,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5887,7 +5919,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 44,
+              "testsCount": 45,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5929,7 +5961,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 56,
+              "testsCount": 57,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -5971,7 +6003,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6013,7 +6045,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6055,7 +6087,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 227,
+              "testsCount": 233,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6113,7 +6145,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 207,
+              "testsCount": 211,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6171,7 +6203,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 66,
+              "testsCount": 67,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6216,7 +6248,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6258,7 +6290,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6300,7 +6332,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6342,7 +6374,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6489,7 +6521,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 120,
+              "testsCount": 122,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6533,7 +6565,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6575,7 +6607,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 47,
+              "testsCount": 48,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6617,7 +6649,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 47,
+              "testsCount": 48,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6659,7 +6691,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 76,
+              "testsCount": 77,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6713,7 +6745,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 60,
+              "testsCount": 61,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -6804,7 +6836,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 173,
+              "testsCount": 176,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6862,7 +6894,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 60,
+              "testsCount": 61,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -6918,7 +6950,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 111,
+              "testsCount": 115,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -6965,7 +6997,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 106,
+              "testsCount": 109,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7062,7 +7094,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 114,
+              "testsCount": 117,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7120,7 +7152,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 99,
+              "testsCount": 103,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7163,7 +7195,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7205,7 +7237,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7247,7 +7279,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7289,7 +7321,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 110,
+              "testsCount": 113,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7345,7 +7377,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 44,
+              "testsCount": 45,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7387,7 +7419,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 79,
+              "testsCount": 83,
               "killSwitchDependent": true,
               "auditDependent": false,
               "canDo": [
@@ -7435,7 +7467,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7477,7 +7509,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 70,
+              "testsCount": 72,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7528,7 +7560,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 46,
+              "testsCount": 47,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7596,7 +7628,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 48,
+              "testsCount": 49,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7638,7 +7670,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 58,
+              "testsCount": 60,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7670,13 +7702,58 @@
               ]
             },
             {
+              "id": "nextBestAction",
+              "nameJa": "共通基盤機能（nextBestAction）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 89,
+              "killSwitchDependent": false,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "auditLogsRepo",
+                "deliveriesRepo"
+              ],
+              "relatedCollections": [
+                "audit_logs",
+                "notification_deliveries"
+              ],
+              "entrypoints": [
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/deliveriesRepo.js:1"
+              ]
+            },
+            {
               "id": "opsFeatureCatalogStatus",
               "nameJa": "共通基盤機能（opsFeatureCatalogStatus）",
               "categoryJa": "共通基盤",
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7718,7 +7795,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7796,7 +7873,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7841,7 +7918,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 105,
+              "testsCount": 107,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7889,7 +7966,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -7931,7 +8008,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -7973,7 +8050,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 43,
+              "testsCount": 44,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8015,7 +8092,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 49,
+              "testsCount": 50,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8057,7 +8134,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8125,7 +8202,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8167,7 +8244,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8209,7 +8286,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 42,
+              "testsCount": 43,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8251,7 +8328,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 121,
+              "testsCount": 123,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8297,7 +8374,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 74,
+              "testsCount": 77,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8349,7 +8426,7 @@
               "status": "deprecated",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 150,
+              "testsCount": 154,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8516,7 +8593,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 74,
+              "testsCount": 76,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -8829,7 +8906,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 56,
+              "testsCount": 57,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -8871,7 +8948,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8913,7 +8990,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8955,7 +9032,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 44,
+              "testsCount": 45,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -8997,7 +9074,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 45,
+              "testsCount": 46,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9039,7 +9116,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 46,
+              "testsCount": 47,
               "killSwitchDependent": false,
               "auditDependent": true,
               "canDo": [
@@ -9081,7 +9158,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 52,
+              "testsCount": 53,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9229,7 +9306,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 183,
+              "testsCount": 189,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9287,7 +9364,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 51,
+              "testsCount": 55,
               "killSwitchDependent": false,
               "auditDependent": false,
               "canDo": [
@@ -9324,7 +9401,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 134,
+              "testsCount": 138,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9374,7 +9451,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 134,
+              "testsCount": 138,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9424,7 +9501,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 78,
+              "testsCount": 81,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9472,7 +9549,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 78,
+              "testsCount": 81,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9578,7 +9655,7 @@
               "status": "completed",
               "version": "0.0.0",
               "lastChanged": "NOT AVAILABLE",
-              "testsCount": 62,
+              "testsCount": 65,
               "killSwitchDependent": true,
               "auditDependent": true,
               "canDo": [
@@ -9862,7 +9939,7 @@
           "作成（通知作成）: `/admin/composer`"
         ],
         "roadmap": [
-          "実装済み機能は 122 件です。",
+          "実装済み機能は 123 件です。",
           "非推奨機能は 5 件で、正本導線への集約対象です。",
           "構造監査入力JSONを基準に運用改善を継続します。"
         ],
