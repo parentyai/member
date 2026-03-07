@@ -2479,11 +2479,18 @@ function t(key, fallback) {
 function toUnifiedDisplay(value, fallbackValue) {
   const tableCore = resolveCoreSlice('tableCore');
   if (tableCore && typeof tableCore.toDisplayValue === 'function') {
-    return tableCore.toDisplayValue(value, fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE'));
+    return normalizeCopyForRole(
+      tableCore.toDisplayValue(value, fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE')),
+      state.role
+    );
   }
-  if (value === null || value === undefined) return fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
-  if (typeof value === 'string' && value.trim().length === 0) return fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE');
-  return String(value);
+  if (value === null || value === undefined) {
+    return normalizeCopyForRole(fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE'), state.role);
+  }
+  if (typeof value === 'string' && value.trim().length === 0) {
+    return normalizeCopyForRole(fallbackValue || t('ui.value.dashboard.notAvailable', 'NOT AVAILABLE'), state.role);
+  }
+  return normalizeCopyForRole(String(value), state.role);
 }
 
 function statusLabel(status) {
@@ -3100,9 +3107,9 @@ function renderStringList(elementId, values, fallbackValue) {
 }
 
 function asText(value, fallback) {
-  if (typeof value === 'string' && value.trim().length > 0) return value;
-  if (Number.isFinite(value)) return String(value);
-  return fallback || '-';
+  if (typeof value === 'string' && value.trim().length > 0) return normalizeCopyForRole(value, state.role);
+  if (Number.isFinite(value)) return normalizeCopyForRole(String(value), state.role);
+  return normalizeCopyForRole(fallback || '-', state.role);
 }
 
 function renderRepoMapFaqRows(rows) {
@@ -4532,9 +4539,9 @@ function renderDashboardMetricCard(metricKey, payload) {
     ? metric.valueLabel
     : formatDashboardSeriesValue(currentSeriesValue, config.unit);
 
-  currentEl.textContent = displayCurrent || '-';
+  currentEl.textContent = normalizeCopyForRole(displayCurrent || '-', state.role);
   previousEl.textContent = formatDashboardSeriesValue(previousSeriesValue, config.unit);
-  noteEl.textContent = metric.note || '-';
+  noteEl.textContent = normalizeCopyForRole(metric.note || '-', state.role);
   renderDashboardLineChartSvg(metricKey, series, config.unit);
 
   const currentNumeric = parseDashboardNumericValue(displayCurrent);
