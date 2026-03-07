@@ -5,6 +5,7 @@ const eventsRepo = require('../../repos/firestore/eventsRepo');
 const auditLogsRepo = require('../../repos/firestore/auditLogsRepo');
 const journeyTodoItemsRepo = require('../../repos/firestore/journeyTodoItemsRepo');
 const { applyJourneyReactionBranch } = require('../journey/applyJourneyReactionBranch');
+const { appendUxEvent } = require('../uxos/appendUxEvent');
 
 const ACTIONS = new Set(['open', 'save', 'snooze', 'none', 'redeem', 'response']);
 
@@ -138,6 +139,23 @@ async function markDeliveryReactionV2(params, deps) {
       createdAt: at,
       responseText: action === 'response' ? responseText : null
     }).catch(() => null);
+    await appendUxEvent({
+      lineUserId,
+      uxEventType: 'reaction_received',
+      traceId,
+      requestId,
+      actor,
+      source: 'phase37_delivery_reaction_v2',
+      ref: {
+        deliveryId,
+        notificationId: parseOptionalString(delivery && delivery.notificationId),
+        todoKey: todoKey || null,
+        reaction: action
+      },
+      metrics: {
+        responseTextLength: action === 'response' && responseText ? responseText.length : 0
+      }
+    }, resolvedDeps).catch(() => null);
   }
 
   const todoUpdate = await updateTodoSignalIfExists({

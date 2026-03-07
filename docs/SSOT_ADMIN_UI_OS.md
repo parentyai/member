@@ -241,6 +241,19 @@ MUST:
   - `/admin/composer` は compat HTML 配信対象に含めない（redirect only）
   - legacy表示は調査目的に限定し、運用実行（approve/plan/execute）は正規導線で行う
 
+## Phase742 Add-only（UX OS Foundation P0 / Read-only）
+- 追加read-only API:
+  - `GET /api/admin/os/uxos/next-action`
+    - `lineUserId` を必須とし、最小 Next Best Action を返す。
+    - `ENABLE_UXOS_NBA=0` の場合は `enabled=false` を返す（非破壊）。
+  - `GET /api/admin/os/ux-policy/readonly`
+    - Journey/Notification/LLM/RichMenu の policy snapshot を返す。
+    - `ENABLE_UXOS_POLICY_READONLY=0` の場合は `enabled=false` を返す（非破壊）。
+- write UI は追加しない（read-only 先行）。
+- fatigue は warn-only:
+  - `ENABLE_UXOS_FATIGUE_WARN=1` 時に `notifications.send.plan` の応答へ warning を add-only で返す。
+  - 送信を停止しない（blockしない）。
+
 ### ブックマーク更新ガイド（短縮版）
 - 推奨: `/admin/app?pane=<pane>` を保存する（例: `composer` / `monitor` / `errors` / `read-model` / `maintenance` / `audit`）。
 - 旧URLブックマークは互換 redirect で到達可能だが、通常運用は新URLへ更新する。

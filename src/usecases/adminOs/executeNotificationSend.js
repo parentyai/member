@@ -15,6 +15,8 @@ const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy'
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
+const { appendUxEvent } = require('../uxos/appendUxEvent');
+const { getUxosEventsAppendMaxPerSend } = require('../../domain/uxos/featureFlags');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -339,6 +341,29 @@ async function executeNotificationSend(params, deps) {
     throw err;
   }
 
+  const uxEventAppendLimit = getUxosEventsAppendMaxPerSend();
+  const uxEventTargets = capEligibleLineUserIds.slice(0, uxEventAppendLimit);
+  if (uxEventTargets.length) {
+    await Promise.all(uxEventTargets.map((lineUserId) => appendUxEvent({
+      lineUserId,
+      uxEventType: 'notification_sent',
+      traceId,
+      requestId,
+      actor,
+      source: 'notifications_send_execute',
+      ref: {
+        notificationId,
+        notificationCategory: notification.notificationCategory || null
+      },
+      metrics: {
+        deliveredCount: Number(result && result.deliveredCount) || 0,
+        skippedCount: Number(result && result.skippedCount) || 0,
+        capBlockedCount
+      }
+    }, deps).catch(() => null)));
+  }
+  const uxEventTargetOverflow = Math.max(0, capEligibleLineUserIds.length - uxEventTargets.length);
+
     await audit({
       actor,
       action: 'notifications.send.execute',
@@ -353,6 +378,8 @@ async function executeNotificationSend(params, deps) {
         deliveredCount: result.deliveredCount,
         skippedCount: result.skippedCount || 0,
         capBlockedCount,
+        uxEventTargetsCount: uxEventTargets.length,
+        uxEventTargetOverflow,
         capBlockedSummary,
         capCountMode,
         capCountSource,
@@ -380,6 +407,8 @@ async function executeNotificationSend(params, deps) {
             deliveredCount: result.deliveredCount,
             skippedCount: result.skippedCount || 0,
             capBlockedCount,
+            uxEventTargetsCount: uxEventTargets.length,
+            uxEventTargetOverflow,
             capBlockedSummary,
             capCountMode,
             capCountSource,
@@ -402,6 +431,8 @@ async function executeNotificationSend(params, deps) {
     traceId,
     requestId,
     capBlockedCount,
+    uxEventTargetsCount: uxEventTargets.length,
+    uxEventTargetOverflow,
     capBlockedSummary,
     capCountMode,
     capCountSource,

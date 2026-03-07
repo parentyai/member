@@ -2004,6 +2004,8 @@ function createServer() {
       handleResolvePreview: handleRichMenuResolvePreview
     } = require('./routes/admin/richMenuConfig');
     const { handleHistory: handleLlmPolicyHistory } = require('./routes/admin/llmPolicyConfig');
+    const { handleStatus: handleUxosNextActionStatus } = require('./routes/admin/uxosNextAction');
+    const { handleStatus: handleUxPolicyReadonlyStatus } = require('./routes/admin/uxPolicyReadonly');
     let bytes = 0;
     const chunks = [];
     let tooLarge = false;
@@ -2275,6 +2277,14 @@ function createServer() {
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/journey-kpi') {
         await handleJourneyKpi(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/uxos/next-action') {
+        await handleUxosNextActionStatus(req, res);
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/admin/os/ux-policy/readonly') {
+        await handleUxPolicyReadonlyStatus(req, res);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/admin/os/llm-policy/history') {
