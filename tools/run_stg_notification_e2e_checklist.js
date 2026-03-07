@@ -594,6 +594,7 @@ function rankComposerCandidates(items) {
     .map((row) => ({
       id: row.id.trim(),
       title: typeof row.title === 'string' ? row.title : '',
+      status: typeof row.status === 'string' ? row.status.trim().toLowerCase() : '',
       linkRegistryId: typeof row.linkRegistryId === 'string' ? row.linkRegistryId.trim() : '',
       scenarioKey: typeof row.scenarioKey === 'string' ? row.scenarioKey.trim() : '',
       stepKey: typeof row.stepKey === 'string' ? row.stepKey.trim() : '',
@@ -606,6 +607,12 @@ function rankComposerCandidates(items) {
       if (a.e2ePreferred === b.e2ePreferred) return 0;
       return a.e2ePreferred ? -1 : 1;
     });
+}
+
+function isActiveComposerCandidate(candidate) {
+  if (!candidate || typeof candidate !== 'object') return false;
+  if (!candidate.status) return true;
+  return candidate.status === 'active';
 }
 
 function buildComposerBootstrapPayload(seed, traceId, scenarioSeed) {
@@ -715,15 +722,15 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
     };
   }
 
-  const planProbeResp = await request(
+  const statusResp = await request(
     ctx,
-    'POST',
-    '/api/admin/os/notifications/send/plan',
+    'GET',
+    `/api/admin/os/notifications/status?notificationId=${encodeURIComponent(notificationId)}`,
     traceId,
-    { notificationId }
+    undefined
   );
-  attempts.push({ stage: 'plan_probe', notificationId, response: summarizeResponse(planProbeResp) });
-  if (planProbeResp.okStatus && planProbeResp.body && planProbeResp.body.ok === true && typeof planProbeResp.body.planHash === 'string') {
+  attempts.push({ stage: 'status_probe', notificationId, response: summarizeResponse(statusResp) });
+  if (statusResp.okStatus && statusResp.body && statusResp.body.ok === true && statusResp.body.status === 'active') {
     return {
       notificationId,
       source: 'bootstrap',
@@ -735,7 +742,9 @@ async function bootstrapComposerNotification(ctx, traceId, requestFn, seedCandid
   return {
     notificationId: '',
     source: 'bootstrap',
-    reason: 'composer_notification_bootstrap_not_plannable',
+    reason: `composer_notification_bootstrap_not_active:${statusResp && statusResp.body && statusResp.body.status
+      ? statusResp.body.status
+      : 'unknown'}`,
     attempts
   };
 }
@@ -768,7 +777,8 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     listResp = fallbackResp;
     candidates = rankComposerCandidates(fallbackResp.body.items);
   }
-  if (candidates.length === 0) {
+  const activeCandidates = candidates.filter((candidate) => isActiveComposerCandidate(candidate));
+  if (activeCandidates.length === 0) {
     const bootstrap = await bootstrapComposerNotification(ctx, traceId, request, candidates);
     if (bootstrap.notificationId) return bootstrap;
     return Object.assign({
@@ -780,8 +790,8 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
   }
 
   const attempts = [];
-  for (let i = 0; i < candidates.length; i += 1) {
-    const candidate = candidates[i];
+  for (let i = 0; i < activeCandidates.length; i += 1) {
+    const candidate = activeCandidates[i];
     const planResp = await request(
       ctx,
       'POST',
@@ -810,6 +820,74 @@ async function resolveComposerNotificationId(ctx, traceId, preferredId, requestF
     reason: 'composer_notification_plannable_not_found',
     attempts: attempts.concat(Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [])
   };
+}
+
+async function bootstrapRetryQueue(ctx, traceId, requestFn) {
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const attempts = [];
+  try {
+    const resolvedTemplate = await resolveSegmentTemplateKey(ctx, `${traceId}-retry-bootstrap-template`, '', request);
+    attempts.push({
+      stage: 'segment_template_resolve',
+      templateKey: resolvedTemplate.templateKey || '',
+      source: resolvedTemplate.source || 'auto',
+      reason: resolvedTemplate.reason || null
+    });
+    if (!resolvedTemplate.templateKey) {
+      return {
+        queueId: '',
+        reason: resolvedTemplate.reason || 'retry_queue_bootstrap_template_missing',
+        attempts
+      };
+    }
+
+    const bootstrapLineUserId = `U_STG_E2E_RETRY_${utcCompact(new Date())}`.slice(0, 64);
+    const payload = {
+      templateKey: resolvedTemplate.templateKey,
+      segmentQuery: {
+        lineUserIds: [bootstrapLineUserId]
+      }
+    };
+
+    const planResp = await request(ctx, 'POST', '/api/phase67/send/plan', traceId, payload);
+    attempts.push({ stage: 'segment_plan', response: summarizeResponse(planResp) });
+    const plan = requireHttpOk(planResp, 'retry bootstrap segment plan');
+
+    const dryResp = await request(ctx, 'POST', '/api/phase81/segment-send/dry-run', traceId, payload);
+    attempts.push({ stage: 'segment_dry_run', response: summarizeResponse(dryResp) });
+    const dry = requireHttpOk(dryResp, 'retry bootstrap segment dry-run');
+
+    const executeResp = await request(ctx, 'POST', '/api/phase68/send/execute', traceId, {
+      templateKey: payload.templateKey,
+      segmentQuery: payload.segmentQuery,
+      planHash: plan.planHash,
+      confirmToken: dry.confirmToken
+    });
+    attempts.push({ stage: 'segment_execute', response: summarizeResponse(executeResp) });
+    requireHttpOk(executeResp, 'retry bootstrap segment execute');
+
+    const queueId = await resolveRetryQueueId(ctx, `${traceId}-retry-bootstrap-list`, '', request);
+    attempts.push({ stage: 'retry_queue_resolve', queueId: queueId || '' });
+    if (!queueId) {
+      return {
+        queueId: '',
+        reason: 'retry_queue_bootstrap_no_pending',
+        attempts
+      };
+    }
+
+    return {
+      queueId,
+      reason: null,
+      attempts
+    };
+  } catch (err) {
+    return {
+      queueId: '',
+      reason: err && err.message ? `retry_queue_bootstrap_failed:${err.message}` : 'retry_queue_bootstrap_failed',
+      attempts
+    };
+  }
 }
 
 function requireHttpOk(resp, label) {
@@ -1021,9 +1099,10 @@ async function setSystemConfig(ctx, traceId, config) {
   return true;
 }
 
-async function resolveRetryQueueId(ctx, traceId, preferredId) {
+async function resolveRetryQueueId(ctx, traceId, preferredId, requestFn) {
   if (preferredId && preferredId.trim()) return preferredId.trim();
-  const resp = await apiRequest(ctx, 'GET', '/api/phase73/retry-queue?limit=10', traceId);
+  const request = typeof requestFn === 'function' ? requestFn : apiRequest;
+  const resp = await request(ctx, 'GET', '/api/phase73/retry-queue?limit=10', traceId);
   const body = requireHttpOk(resp, 'retry-queue list');
   const items = Array.isArray(body.items) ? body.items : [];
   const pending = items.find((item) => item && item.status === 'PENDING' && typeof item.id === 'string');
@@ -1098,8 +1177,19 @@ async function runSegmentScenario(ctx, opts, traceId) {
 
 async function runRetryScenario(ctx, opts, traceId) {
   if (opts.skipRetry) return { status: 'SKIP', reason: 'skip_retry_flag' };
-  const queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
-  if (!queueId) return { status: 'SKIP', reason: 'retry_queue_not_found' };
+  let queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
+  let bootstrap = null;
+  if (!queueId) {
+    bootstrap = await bootstrapRetryQueue(ctx, traceId);
+    queueId = bootstrap && typeof bootstrap.queueId === 'string' ? bootstrap.queueId : '';
+  }
+  if (!queueId) {
+    return {
+      status: 'SKIP',
+      reason: bootstrap && bootstrap.reason ? bootstrap.reason : 'retry_queue_not_found',
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : []
+    };
+  }
 
   const planResp = await apiRequest(ctx, 'POST', '/api/phase73/retry-queue/plan', traceId, { queueId });
   const plan = requireHttpOk(planResp, 'retry plan');
@@ -1129,6 +1219,7 @@ async function runRetryScenario(ctx, opts, traceId) {
   return {
     status: 'PASS',
     queueId,
+    bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [],
     steps: {
       plan: summarizeResponse(planResp),
       retry: summarizeResponse(retryResp)
@@ -1139,8 +1230,19 @@ async function runRetryScenario(ctx, opts, traceId) {
 async function runKillSwitchScenario(ctx, opts, traceId) {
   if (opts.skipKillSwitch) return { status: 'SKIP', reason: 'skip_killswitch_flag' };
 
-  const queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
-  if (!queueId) return { status: 'SKIP', reason: 'retry_queue_not_found_for_killswitch' };
+  let queueId = await resolveRetryQueueId(ctx, traceId, opts.retryQueueId);
+  let bootstrap = null;
+  if (!queueId) {
+    bootstrap = await bootstrapRetryQueue(ctx, traceId);
+    queueId = bootstrap && typeof bootstrap.queueId === 'string' ? bootstrap.queueId : '';
+  }
+  if (!queueId) {
+    return {
+      status: 'SKIP',
+      reason: bootstrap && bootstrap.reason ? bootstrap.reason : 'retry_queue_not_found_for_killswitch',
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : []
+    };
+  }
 
   const baseline = await getKillSwitchStatus(ctx, traceId);
   const changed = !baseline;
@@ -1168,6 +1270,7 @@ async function runKillSwitchScenario(ctx, opts, traceId) {
     return {
       status: 'PASS',
       queueId,
+      bootstrapAttempts: bootstrap && Array.isArray(bootstrap.attempts) ? bootstrap.attempts : [],
       steps: {
         plan: summarizeResponse(planResp),
         retry: summarizeResponse(retryResp)
@@ -1739,7 +1842,8 @@ module.exports = {
   evaluateProductReadinessBody,
   ADMIN_READINESS_ENDPOINTS,
   resolveSegmentTemplateKey,
-  resolveComposerNotificationId
+  resolveComposerNotificationId,
+  bootstrapRetryQueue
 };
 
 if (require.main === module) {

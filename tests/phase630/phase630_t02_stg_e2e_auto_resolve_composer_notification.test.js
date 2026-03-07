@@ -4,7 +4,8 @@ const assert = require('assert');
 const { test } = require('node:test');
 
 const {
-  resolveComposerNotificationId
+  resolveComposerNotificationId,
+  bootstrapRetryQueue
 } = require('../../tools/run_stg_notification_e2e_checklist');
 
 test('phase630: resolveComposerNotificationId uses explicit input when provided', async () => {
@@ -108,4 +109,112 @@ test('phase630: resolveComposerNotificationId returns plannable_not_found when a
   assert.strictEqual(result.source, 'auto');
   assert.strictEqual(result.reason, 'composer_notification_plannable_not_found');
   assert.ok(result.attempts.length >= 1);
+});
+
+test('phase630: resolveComposerNotificationId ignores non-active candidates in fallback list', async () => {
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-4',
+    '',
+    async (_ctx, method, endpoint, _traceId, body) => {
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: false, status: 500, body: { ok: false, error: 'error' } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return {
+          okStatus: true,
+          body: {
+            ok: true,
+            items: [
+              { id: 'n_planned_e2e', title: 'e2e planned', status: 'planned' },
+              { id: 'n_active_regular', title: 'regular active', status: 'active' }
+            ]
+          }
+        };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/send/plan') {
+        assert.strictEqual(body.notificationId, 'n_active_regular');
+        return { okStatus: true, body: { ok: true, planHash: 'plan_hash', confirmToken: 'token' } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_active_regular');
+  assert.strictEqual(result.source, 'auto');
+  assert.strictEqual(result.reason, null);
+});
+
+test('phase630: resolveComposerNotificationId bootstrap keeps notification active (no plan probe mutation)', async () => {
+  const calls = [];
+  const result = await resolveComposerNotificationId(
+    {},
+    'trace-5',
+    '',
+    async (_ctx, method, endpoint, traceId, body) => {
+      calls.push({ method, endpoint, traceId, body });
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?status=active&limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/list?limit=100') {
+        return { okStatus: true, body: { ok: true, items: [] } };
+      }
+      if (method === 'POST' && endpoint === '/admin/link-registry') {
+        return { okStatus: true, body: { ok: true, id: 'link_1' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase5/ops/users-summary?limit=100&snapshotMode=prefer&fallbackMode=allow&fallbackOnEmpty=true') {
+        return {
+          okStatus: true,
+          body: { ok: true, items: [{ lineUserId: 'U1', scenarioKey: 'A', stepKey: 'week' }] }
+        };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/draft') {
+        return { okStatus: true, body: { ok: true, notificationId: 'n_bootstrap' } };
+      }
+      if (method === 'POST' && endpoint === '/api/admin/os/notifications/approve') {
+        return { okStatus: true, body: { ok: true } };
+      }
+      if (method === 'GET' && endpoint === '/api/admin/os/notifications/status?notificationId=n_bootstrap') {
+        return { okStatus: true, body: { ok: true, status: 'active' } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.notificationId, 'n_bootstrap');
+  assert.strictEqual(result.reason, null);
+  assert.ok(!calls.some((call) => call.method === 'POST' && call.endpoint === '/api/admin/os/notifications/send/plan'));
+});
+
+test('phase630: bootstrapRetryQueue builds pending queue via synthetic segment execute when queue is empty', async () => {
+  const result = await bootstrapRetryQueue(
+    {},
+    'trace-6',
+    async (_ctx, method, endpoint, _traceId, body) => {
+      if (method === 'GET' && endpoint === '/api/phase61/templates?status=active') {
+        return { okStatus: true, body: { ok: true, items: [{ key: 'tmpl_active' }] } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase67/send/plan') {
+        assert.strictEqual(body.templateKey, 'tmpl_active');
+        assert.ok(Array.isArray(body.segmentQuery.lineUserIds));
+        assert.ok(body.segmentQuery.lineUserIds[0].startsWith('U_STG_E2E_RETRY_'));
+        return { okStatus: true, body: { ok: true, planHash: 'plan_hash' } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase81/segment-send/dry-run') {
+        return { okStatus: true, body: { ok: true, confirmToken: 'confirm_token' } };
+      }
+      if (method === 'POST' && endpoint === '/api/phase68/send/execute') {
+        return { okStatus: true, body: { ok: false, reason: 'send_failed' } };
+      }
+      if (method === 'GET' && endpoint === '/api/phase73/retry-queue?limit=10') {
+        return { okStatus: true, body: { ok: true, items: [{ id: 'queue_1', status: 'PENDING' }] } };
+      }
+      throw new Error(`unexpected call: ${method} ${endpoint}`);
+    }
+  );
+
+  assert.strictEqual(result.queueId, 'queue_1');
+  assert.strictEqual(result.reason, null);
+  assert.ok(Array.isArray(result.attempts));
+  assert.ok(result.attempts.length >= 5);
 });

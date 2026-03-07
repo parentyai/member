@@ -65,8 +65,8 @@ gh workflow run stg-notification-e2e.yml --ref main \
 ### Optional Inputs
 - `admin_token_file`: workflow_dispatch でトークンファイルを直接指定
 - `segment-template-key`: Segment plan/dry-run/execute 用テンプレートキー（未指定時は `status=active` を自動解決）
-- `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決）
-- `retry-queue-id`: 未指定時は pending queue を自動検出（見つからなければ `SKIP`）
+- `composer-notification-id`: Composer cap block 検証対象 notificationId（未指定時は active 一覧から `send/plan` 可能な候補を自動解決。候補が無い場合は draft+approve で active を bootstrap）
+- `retry-queue-id`: 未指定時は pending queue を自動検出。見つからない場合は e2e script が synthetic segment execute で retry queue 生成を試みる
 - `segment-template-version`: 固定バージョン指定が必要な場合のみ
 - `segment-query-json`: Segment フィルタを明示したい場合のみ
 - `fetch-route-errors + project-id`: FAIL時に Cloud Logging の `[route_error]` を traceId で回収
@@ -203,6 +203,12 @@ notes: <optional>
 - ブロック理由が `notification_policy_blocked` または `notification_cap_blocked` で一貫
 - 個人情報（平文ID）は証跡に残さない
 - 6ステップ+Product Readiness Gate内7本端点の `result` が記録されている（PASS/FAIL問わず）
+
+## Fixture不足時の判定
+- `retry_queue_bootstrap_*` が出た場合:
+  - synthetic segment execute でも pending queue が作れなかった状態。`send_retry_queue` の pending 生成が運用環境で止まっていないか確認する。
+- `composer_notification_bootstrap_not_active:*` が出た場合:
+  - draft/approve 後に active へ遷移できていない。通知ワークフローの状態遷移監査（`notifications.approve`, `notifications.status.view`）を確認する。
 
 ## Latest Mainline Evidence (W7)
 - date: `2026-02-23`
