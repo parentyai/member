@@ -27,6 +27,7 @@ const { isCityPackModuleSubscribed, normalizeModules } = require('../cityPack/fi
 const { computeAttentionBudget } = require('./computeAttentionBudget');
 const { buildLineNotificationMessage } = require('./buildLineNotificationMessage');
 const { resolveLinkIntent } = require('../linkRegistry/resolveLinkIntent');
+const { appendUxEvent } = require('../observability/appendUxEvent');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -248,6 +249,9 @@ async function sendNotification(params) {
       : null
   };
   const skipStatusUpdate = payload.skipStatusUpdate === true;
+  const appendUxEventFn = typeof payload.appendUxEventFn === 'function'
+    ? payload.appendUxEventFn
+    : appendUxEvent;
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
@@ -350,6 +354,21 @@ async function sendNotification(params) {
         lastError: null,
         lastErrorAt: null
       });
+      try {
+        await appendUxEventFn({
+          eventType: 'notification_sent',
+          deliveryId,
+          notificationId,
+          lineUserId: user.id,
+          notificationCategory: effectiveNotification.notificationCategory || null,
+          traceId,
+          requestId,
+          actor: actor || 'send_notification',
+          sentAt
+        });
+      } catch (_err) {
+        // best-effort only
+      }
     } catch (err) {
       try {
         await deliveriesRepo.createDeliveryWithId(deliveryId, {
