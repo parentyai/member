@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-06T13:43:27-05:00",
-  "gitCommit": "147de2f5ed98f44033c864633bc4db48e4ffcff4",
-  "branch": "codex/llm-ux-complete-3hands-v2",
-  "sourceDigest": "8757d64918ba2f9b52fc344f87451dbed8068cc6579b36f36ee900ef8ba6deef",
+  "generatedAt": "2026-03-06T23:21:20-05:00",
+  "gitCommit": "6e17697d601c877574d7e6950df33ab9d2d21c47",
+  "branch": "codex/llm-human-orchestrator-r730",
+  "sourceDigest": "1b1d9844eafdeb1ec93e97966d68a8fd8555f9cb4c774c698bee829cb88dc474",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
