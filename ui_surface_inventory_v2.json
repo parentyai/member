@@ -1,0 +1,1087 @@
+[
+  {
+    "surfaceId": "UI-ADM-HOME",
+    "title": "home",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "D ダッシュボード",
+        "paneId": "home",
+        "priority": 100,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=home",
+      "/admin/app",
+      "/admin/ops",
+      "/admin/ops_readonly"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "全体状況の判断と優先アクション決定",
+    "primaryCta": "作成・編集",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-FEATURE-CATALOG",
+    "title": "ops-feature-catalog",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "FC 機能カタログ",
+        "paneId": "ops-feature-catalog",
+        "priority": 99,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=ops-feature-catalog"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "Feature Catalogの状態確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-OPS-SYSTEM-HEALTH",
+    "title": "ops-system-health",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "SH システム健全性",
+        "paneId": "ops-system-health",
+        "priority": 228,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=ops-system-health"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "システム健全性確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-ALERTS",
+    "title": "alerts",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "! 要対応",
+        "paneId": "alerts",
+        "priority": 229,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=alerts"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "要対応アラートの確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-COMPOSER",
+    "title": "composer",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "N 作成",
+        "paneId": "composer",
+        "priority": 240,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=composer",
+      "/admin/composer"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "通知作成・承認・送信計画・実行",
+    "primaryCta": "送信実行",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-MONITOR",
+    "title": "monitor",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "M 配信結果",
+        "paneId": "monitor",
+        "priority": 239,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      },
+      {
+        "type": "nav",
+        "label": "J ジャーニー状況",
+        "paneId": "monitor",
+        "priority": 238,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=monitor",
+      "/admin/monitor"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "配信結果とユーザー反応の監視",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-EMERGENCY-LAYER",
+    "title": "emergency-layer",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "EM 緊急レイヤー",
+        "paneId": "emergency-layer",
+        "priority": 237,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=emergency-layer"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "緊急レイヤー運用",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-CITY-PACK",
+    "title": "city-pack",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "CP City Pack管理",
+        "paneId": "city-pack",
+        "priority": 238,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=city-pack"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "City Packの一覧確認・編集・証跡確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-ERRORS",
+    "title": "errors",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "E 異常対応",
+        "paneId": "errors",
+        "priority": 227,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=errors",
+      "/admin/errors"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "異常対応",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-READ-MODEL",
+    "title": "read-model",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "RM 通知集計",
+        "paneId": "read-model",
+        "priority": 235,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=read-model",
+      "/admin/read-model"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "通知読み取りモデルの確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-VENDORS",
+    "title": "vendors",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "V ベンダー管理",
+        "paneId": "vendors",
+        "priority": 236,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=vendors"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "ベンダー情報の確認と運用判断",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-AUDIT",
+    "title": "audit",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "A 判断ログ",
+        "paneId": "audit",
+        "priority": 223,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=audit",
+      "/admin/review"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "監査ログと証跡確認",
+    "primaryCta": "監査ログへ移動",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MAP",
+    "title": "developer-map",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "LR 運用証跡マップ",
+        "paneId": "developer-map",
+        "priority": 222,
+        "roleVisibility": [
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=developer-map"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "開発向けRepo Map・内部情報確認",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-REDAC",
+    "title": "developer-manual-redac",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app?pane=developer-manual-redac",
+        "paneId": "developer-manual-redac"
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=developer-manual-redac"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用画面",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-DEVELOPER-MANUAL-USER",
+    "title": "developer-manual-user",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/app?pane=developer-manual-user",
+        "paneId": "developer-manual-user"
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=developer-manual-user"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用画面",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LLM",
+    "title": "llm",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "L LLM支援",
+        "paneId": "llm",
+        "priority": 225,
+        "roleVisibility": [
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=llm"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "LLM関連設定・監視",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-SETTINGS",
+    "title": "settings",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "S 設定",
+        "paneId": "settings",
+        "priority": 226,
+        "roleVisibility": [
+          "operator",
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=settings"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "運用設定の変更",
+    "primaryCta": "保存",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-MAINTENANCE",
+    "title": "maintenance",
+    "entryPoints": [
+      {
+        "type": "nav",
+        "label": "MT 回復・保守",
+        "paneId": "maintenance",
+        "priority": 224,
+        "roleVisibility": [
+          "admin",
+          "developer"
+        ]
+      }
+    ],
+    "routes": [
+      "/admin/app?pane=maintenance",
+      "/admin/master"
+    ],
+    "files": [
+      {
+        "path": "apps/admin/app.html",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin_app.js",
+        "lines": "1-9999"
+      },
+      {
+        "path": "apps/admin/assets/admin.css",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "回復・保守オペレーション",
+    "primaryCta": "更新",
+    "layoutSummary": "左ナビ + ヘッダー + 本文パネル構成。詳細は画面固有パネルで表示。",
+    "dataSources": [
+      "admin API endpoints",
+      "read model",
+      "runtime state"
+    ],
+    "states": [
+      "empty",
+      "loading",
+      "success",
+      "warn",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LOGIN",
+    "title": "login",
+    "entryPoints": [
+      {
+        "type": "url",
+        "label": "/admin/login"
+      }
+    ],
+    "routes": [
+      "/admin/login"
+    ],
+    "files": [
+      {
+        "path": "src/index.js",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "管理UIへの認証",
+    "primaryCta": "ログイン",
+    "layoutSummary": "ログイン画面",
+    "dataSources": [
+      "auth token"
+    ],
+    "states": [
+      "idle",
+      "authenticating",
+      "success",
+      "error"
+    ],
+    "screenshots": [],
+    "observed": true
+  },
+  {
+    "surfaceId": "UI-ADM-LEGACY-COMPAT",
+    "title": "legacy-compat",
+    "entryPoints": [
+      {
+        "type": "route",
+        "label": "/admin/ops,/admin/master,/admin/review"
+      }
+    ],
+    "routes": [
+      "/admin/ops",
+      "/admin/ops_readonly",
+      "/admin/master",
+      "/admin/review"
+    ],
+    "files": [
+      {
+        "path": "src/shared/adminUiRoutesV2.js",
+        "lines": "1-9999"
+      }
+    ],
+    "roleVisibility": [
+      "operator",
+      "admin",
+      "developer"
+    ],
+    "primaryGoal": "旧導線からapp shellへ互換遷移",
+    "primaryCta": "appへ遷移",
+    "layoutSummary": "互換リダイレクト",
+    "dataSources": [
+      "route contract"
+    ],
+    "states": [
+      "redirect",
+      "compat_legacy"
+    ],
+    "screenshots": [],
+    "observed": true
+  }
+]
