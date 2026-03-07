@@ -54,11 +54,18 @@ UX OS foundation-only (P0) contract for Member.
 - Read-only means:
   - GET-only endpoint
   - no state mutation on Firestore write paths
+- Foundation read routes:
+  - `GET /api/admin/os/next-best-action?lineUserId=...`
+  - `GET /api/admin/os/notification-fatigue-warning?lineUserId=...`
 
 ## Fatigue Contract (P0)
 - Fatigue is warn-only.
 - No send blocking and no routing override.
 - Existing reminder-side fatigue behavior remains unchanged.
+- `sendNotification` may return add-only metadata:
+  - `fatigueWarnEnabled`
+  - `fatigueWarningCount`
+  - `fatigueWarnings` (max 20 summarized entries)
 
 ## Feature Flags (P0)
 - `ENABLE_UXOS_EVENTS_V1`

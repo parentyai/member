@@ -451,12 +451,17 @@ MUST:
   - 既存 `ENABLE_CITY_PACK_CONTENT_MANAGE_V1` と独立して切り戻し可能。
 
 ## Phase742 Add-only UI Contract（UX Policy Read-only）
-- `/admin/app` に `UX Policy` pane を add-only で追加できる。
+- `/admin/app?pane=settings` に `UX Policy Console (read-only)` surface を add-only で追加できる。
 - 目的は横断可視化のみとし、既存 editor の置換や write 導線統合は行わない。
 
 ### Read-only Contract
 - `ENABLE_UXOS_POLICY_READONLY_V1=1` のときのみ導線表示する。
-- data source は既存 GET/status/history API と read-only 集約 route のみ利用する。
+- data source は既存 GET/status/history API と read-only route のみ利用する。
+  - `GET /api/admin/os/journey-policy/status`
+  - `GET /api/admin/os/task-rules/status`
+  - `GET /api/admin/llm/policy/status`
+  - `GET /api/admin/os/next-best-action?lineUserId=...`
+  - `GET /api/admin/os/notification-fatigue-warning?lineUserId=...`
 - 新規 write endpoint は追加しない。
 - 既存 `/plan` `/set` API の意味は変更しない。
 

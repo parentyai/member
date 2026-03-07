@@ -21,10 +21,12 @@ const { validateCityPackSources } = require('../cityPack/validateCityPackSources
 const {
   isCityPackModuleSubscriptionEnabled,
   isJourneyAttentionBudgetEnabled,
-  getJourneyDailyAttentionBudgetMax
+  getJourneyDailyAttentionBudgetMax,
+  isUxOsFatigueWarnEnabled
 } = require('../../domain/tasks/featureFlags');
 const { isCityPackModuleSubscribed, normalizeModules } = require('../cityPack/filterCityPackModules');
 const { computeAttentionBudget } = require('./computeAttentionBudget');
+const { computeNotificationFatigueWarning } = require('./computeNotificationFatigueWarning');
 const { buildLineNotificationMessage } = require('./buildLineNotificationMessage');
 const { resolveLinkIntent } = require('../linkRegistry/resolveLinkIntent');
 const { appendUxEvent } = require('../observability/appendUxEvent');
@@ -252,12 +254,18 @@ async function sendNotification(params) {
   const appendUxEventFn = typeof payload.appendUxEventFn === 'function'
     ? payload.appendUxEventFn
     : appendUxEvent;
+  const fatigueWarnEnabled = isUxOsFatigueWarnEnabled();
+  const computeFatigueWarningFn = typeof payload.computeNotificationFatigueWarningFn === 'function'
+    ? payload.computeNotificationFatigueWarningFn
+    : computeNotificationFatigueWarning;
   const trackBaseUrl = resolveTrackBaseUrl();
   const trackEnabled = Boolean(trackBaseUrl && hasTrackTokenSecret());
 
   let deliveredCount = 0;
   let skippedCount = 0;
   let lineMessageType = 'text';
+  let fatigueWarningCount = 0;
+  const fatigueWarnings = [];
 
   for (const user of effectiveUsers) {
     if (applyAttentionBudget) {
@@ -369,6 +377,35 @@ async function sendNotification(params) {
       } catch (_err) {
         // best-effort only
       }
+      if (fatigueWarnEnabled) {
+        try {
+          const warning = await computeFatigueWarningFn({
+            lineUserId: user.id,
+            sentAt,
+            notificationCategory: effectiveNotification.notificationCategory || null
+          }, {
+            deliveriesRepo
+          });
+          if (warning && warning.warn === true) {
+            fatigueWarningCount += 1;
+            if (fatigueWarnings.length < 20) {
+              fatigueWarnings.push({
+                lineUserId: warning.lineUserId || user.id,
+                notificationCategory: warning.notificationCategory || null,
+                sinceAt: warning.sinceAt || null,
+                deliveredToday: Number.isFinite(Number(warning.deliveredToday)) ? Number(warning.deliveredToday) : 0,
+                projectedDeliveredToday: Number.isFinite(Number(warning.projectedDeliveredToday))
+                  ? Number(warning.projectedDeliveredToday)
+                  : 0,
+                threshold: Number.isFinite(Number(warning.threshold)) ? Number(warning.threshold) : 0,
+                reason: warning.reason || 'daily_notification_volume_high'
+              });
+            }
+          }
+        } catch (_err) {
+          // best-effort only
+        }
+      }
     } catch (err) {
       try {
         await deliveriesRepo.createDeliveryWithId(deliveryId, {
@@ -445,7 +482,10 @@ async function sendNotification(params) {
     cityPackModulesUpdated,
     cityPackSubscriptionFilterApplied,
     cityPackSubscriptionFilterSkipped,
-    attentionBudgetApplied: applyAttentionBudget
+    attentionBudgetApplied: applyAttentionBudget,
+    fatigueWarnEnabled,
+    fatigueWarningCount,
+    fatigueWarnings
   };
 }
 

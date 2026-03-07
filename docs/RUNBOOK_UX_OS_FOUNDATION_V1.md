@@ -31,6 +31,7 @@ Operational runbook for UX OS foundation-only (P0).
 4. Admin NBA route writes audit entries with traceId.
 5. Fatigue output is warning-only and does not block sends.
 6. Policy pane is read-only and does not call write routes.
+7. `GET /api/admin/os/notification-fatigue-warning` is read-only and writes view audit.
 
 ## Required Test Commands
 - `npm run test:docs`
