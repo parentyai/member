@@ -26,7 +26,8 @@ function createDeps() {
           ruleId: 'imm_visa',
           status: 'todo',
           dueAt: '2026-03-07T00:00:00.000Z',
-          meaning: { title: 'ビザ書類準備' }
+          meaning: { title: 'ビザ書類準備' },
+          blockedReason: '住所証明待ち'
         },
         {
           taskId: 'U_PHASE741__bank_open',
@@ -112,14 +113,16 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     const next = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: '今日の3つ' }, deps);
     assert.equal(next.handled, true);
     assert.match(next.replyText, /今日の3つ/);
+    assert.match(next.replyText, /ブロッカー:住所証明待ち/);
 
     const dueSoon = await handleJourneyLineCommand({
       lineUserId: 'U_PHASE741',
       text: '今週の期限',
-      now: '2026-03-03T00:00:00.000Z'
+      now: '2026-03-08T00:00:00.000Z'
     }, deps);
     assert.equal(dueSoon.handled, true);
-    assert.match(dueSoon.replyText, /今週の期限/);
+    assert.match(dueSoon.replyText, /期限（7日以内）/);
+    assert.match(dueSoon.replyText, /期限超過/);
 
     const regional = await handleJourneyLineCommand({
       lineUserId: 'U_PHASE741',
@@ -128,6 +131,10 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
     }, deps);
     assert.equal(regional.handled, true);
     assert.match(regional.replyText, /地域手続き（us-ca-sanfrancisco）/);
+
+    const categorySummary = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: 'カテゴリ' }, deps);
+    assert.equal(categorySummary.handled, true);
+    assert.match(categorySummary.replyText, /ブロック:1件/);
 
     const category = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: 'カテゴリ:BANKING' }, deps);
     assert.equal(category.handled, true);
@@ -143,7 +150,7 @@ test('phase741: journey command handlers cover next/category/history/vendor/supp
 
     const support = await handleJourneyLineCommand({ lineUserId: 'U_PHASE741', text: '相談' }, deps);
     assert.equal(support.handled, true);
-    assert.match(support.replyText, /相談内容/);
+    assert.match(support.replyText, /案内表示/);
 
     const depsWithoutRegion = createDeps();
     depsWithoutRegion.usersRepo = {

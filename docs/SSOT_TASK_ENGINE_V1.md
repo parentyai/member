@@ -262,6 +262,16 @@ Task Engine v1 の add-only SSOT。
 - CTA landing:
   - `TODO詳細:<todoKey>` または `地域手続き` のみ
 
+## Phase748 Add-only（Journey Command Surface: 期限/ブロッカー整合）
+- `今週の期限` のユーザー表示は内部語 `due_soon` を露出せず、次の2セクションで返す:
+  - `期限（7日以内）`
+  - `期限超過`
+- 0件時の固定文言:
+  - `期限（7日以内）/期限超過の未完了タスクはありません。`
+- `今やる` / `カテゴリ` 表示は、`blockedReason` があるタスクに `ブロッカー:<reason>` を add-only 表示する。
+- `カテゴリ` 一覧は `カテゴリ別TODO件数` に加えて `ブロック件数` を表示する（例: `IMMIGRATION: 4件（ブロック:1件）`）。
+- `相談` コマンドの意味は `案内表示 + 利用イベント記録` であり、コマンド時点ではチケットを作成しない。
+
 ## Phase742 Add-only（Canonical NBA Adapter Boundary）
 - 目的:
   - `computeNextTasks()` の決定論 authority を維持したまま、運用可視化用の adapter を追加する。
