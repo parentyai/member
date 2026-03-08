@@ -202,11 +202,40 @@ async function runTaskNudgeJob(params, deps) {
   const getNotificationCaps = resolvedDeps.getNotificationCaps || systemFlagsRepo.getNotificationCaps;
   const computeAttentionBudgetFn = resolvedDeps.computeAttentionBudget || computeAttentionBudget;
 
-  const killSwitch = await getKillSwitch().catch(() => false);
+  let killSwitch = false;
+  try {
+    killSwitch = await getKillSwitch();
+  } catch (_err) {
+    if (!dryRun) {
+      await appendAuditLog({
+        actor: payload.actor || 'task_nudge_job',
+        action: 'tasks.nudge.blocked',
+        entityType: 'task_nudge_job',
+        entityId: 'global',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        payloadSummary: {
+          ok: false,
+          reason: 'kill_switch_read_failed',
+          checkedAt: nowIso
+        }
+      }).catch(() => null);
+    }
+    return {
+      ok: false,
+      status: 'blocked_by_killswitch_read_failed',
+      reason: 'kill_switch_read_failed',
+      scannedCount: 0,
+      sentCount: 0,
+      skippedCount: 0,
+      failedCount: 0
+    };
+  }
   if (killSwitch) {
     return {
       ok: false,
       status: 'blocked_by_killswitch',
+      reason: 'kill_switch_on',
       scannedCount: 0,
       sentCount: 0,
       skippedCount: 0,
@@ -340,12 +369,29 @@ async function runTaskNudgeJob(params, deps) {
       continue;
     }
 
-    const cap = await checkNotificationCap({
-      lineUserId: row.userId,
-      notificationCategory,
-      notificationCaps,
-      now: new Date(nowIso)
-    }).catch(() => ({ ok: true, blocked: false }));
+    let cap = null;
+    try {
+      cap = await checkNotificationCap({
+        lineUserId: row.userId,
+        notificationCategory,
+        notificationCaps,
+        now: new Date(nowIso)
+      });
+    } catch (_err) {
+      skippedCount += 1;
+      results.push({ taskId: row.taskId || null, status: 'skipped', reason: 'cap_check_failed' });
+      await appendSuppressedAuditLog({
+        dryRun,
+        actor: payload.actor || 'task_nudge_job',
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        taskId: row.taskId || null,
+        ruleId: row.ruleId || null,
+        reason: 'cap_check_failed',
+        checkedAt: nowIso
+      });
+      continue;
+    }
 
     if (cap && cap.blocked) {
       skippedCount += 1;
