@@ -8,6 +8,7 @@ const OPPORTUNITY_TYPES = new Set(['none', 'action', 'blocked', 'life']);
 const STRATEGIES = new Set(['casual', 'domain_concierge', 'concierge', 'recommendation', 'clarify', 'grounded_answer']);
 const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
 const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse']);
+const INTENT_RISK_TIERS = new Set(['low', 'medium', 'high']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -115,6 +116,12 @@ function normalizeDomainIntent(value) {
   if (!normalized) return 'general';
   if (['housing', 'school', 'ssn', 'banking'].includes(normalized)) return normalized;
   return 'general';
+}
+
+function normalizeIntentRiskTier(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'low';
+  return INTENT_RISK_TIERS.has(normalized) ? normalized : 'low';
 }
 
 function normalizeStrategy(value) {
@@ -259,6 +266,8 @@ async function appendLlmActionLog(params) {
     actionCount: Math.max(0, Math.min(3, Math.floor(normalizeNumber(payload.actionCount, 0)))),
     pitfallIncluded: payload.pitfallIncluded === true,
     domainIntent: normalizeDomainIntent(payload.domainIntent),
+    intentRiskTier: normalizeIntentRiskTier(payload.intentRiskTier),
+    riskReasonCodes: normalizeStringList(payload.riskReasonCodes, 8),
     fallbackType: normalizeString(payload.fallbackType, null),
     interventionSuppressedBy: normalizeString(payload.interventionSuppressedBy, null),
     strategy: normalizeStrategy(payload.strategy),

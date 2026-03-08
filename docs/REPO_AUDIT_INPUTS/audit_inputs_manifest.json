@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:11:35-05:00",
-  "gitCommit": "5c3d27acd170d652cbb9fbac88fa1d6a66380975",
-  "branch": "codex/llm-v3-pr2-faq-sink-clean",
-  "sourceDigest": "6e8cb416f56818e680bbecf8a4d85b8a546c8fab31e0a106c06823b5b7b1128a",
+  "generatedAt": "2026-03-07T19:18:17-05:00",
+  "gitCommit": "b5973ed39d0fdd44a8233a979230add197963bd7",
+  "branch": "codex/llm-v3-pr3a-risk-tier",
+  "sourceDigest": "4e4752b1d4743edf1b7a554dd6c5ef140f0f48209ca2b76541e7d0a48c6b85bc",
   "counts": {
     "endpoints": 287,
     "routes": 128,
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "542b783d7a93e9bf0469771a06475b06227b375291bb19a9aa9f019812b8abbb",
+      "sha256": "48758604689630f3d1b86b1386ebefdd0621eff10237b530df04627a0d4d9dfe",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "d84b91651f90cc13a89bd885154b78c47bdc71e0597bdbf71a7918332f72e70e",
+      "sha256": "f89006f3ba5a4fde9827bd341d084af43f1599992cbd343b807bbba226da7bfc",
       "bytes": 487
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "923050b1b5465e5ea2aa8c0a00bed10b18452c28d5080213de8075e9bd43fda5",
+      "sha256": "b52bdd504bea6bd5634847e192654b398729d2a62d41874e806b53fd49ffe2d4",
       "bytes": 443850
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "1ede25cf1d753e6c2c40808e9455fcbf9f1d540d8f1de9f5d5018f839f8c910d",
-      "bytes": 2417
+      "sha256": "53c438b701f33804a0a0d4d682cdd67ce14e10ca86bbd641e87142010a2dfb33",
+      "bytes": 2413
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

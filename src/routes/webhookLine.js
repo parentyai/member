@@ -29,6 +29,7 @@ const {
   resolveLlmLegalPolicySnapshot,
   loadLlmLegalPolicySnapshot
 } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
+const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
@@ -894,6 +895,10 @@ async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
   if (!lineUserId) return;
+  const riskSnapshot = resolveIntentRiskTier({
+    domainIntent: payload.domainIntent,
+    reasonCodes: payload.riskReasonCodes
+  });
   const legalSnapshot = payload.legalSnapshot && typeof payload.legalSnapshot === 'object'
     ? resolveLlmLegalPolicySnapshot({ policy: payload.legalSnapshot })
     : await loadLlmLegalPolicySnapshot({
@@ -1014,6 +1019,8 @@ async function appendLlmGateDecisionBestEffort(data) {
         crossBorder: legalSnapshot.crossBorder,
         legalDecision: legalSnapshot.legalDecision,
         legalReasonCodes: Array.isArray(legalSnapshot.legalReasonCodes) ? legalSnapshot.legalReasonCodes : [],
+        intentRiskTier: riskSnapshot.intentRiskTier,
+        riskReasonCodes: riskSnapshot.riskReasonCodes,
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1075,6 +1082,10 @@ async function appendLlmActionLogBestEffort(data) {
       domainIntent: payload.domainIntent || 'general',
       opportunityReasonKeys: payload.opportunityReasonKeys
     });
+  const riskSnapshot = resolveIntentRiskTier({
+    domainIntent: qualityMeta.domainIntent || payload.domainIntent,
+    reasonCodes: payload.riskReasonCodes
+  });
 
   try {
     await llmActionLogsRepo.appendLlmActionLog({
@@ -1157,6 +1168,8 @@ async function appendLlmActionLogBestEffort(data) {
       actionCount: Number.isFinite(Number(qualityMeta.actionCount)) ? Number(qualityMeta.actionCount) : 0,
       pitfallIncluded: qualityMeta.pitfallIncluded === true,
       domainIntent: qualityMeta.domainIntent || 'general',
+      intentRiskTier: riskSnapshot.intentRiskTier,
+      riskReasonCodes: riskSnapshot.riskReasonCodes,
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,

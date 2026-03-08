@@ -40,6 +40,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     crossBorder: true,
     legalDecision: 'blocked',
     legalReasonCodes: ['consent_missing'],
+    intentRiskTier: 'high',
+    riskReasonCodes: ['intent_ssn', 'risk_high'],
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -56,6 +58,8 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.crossBorder, true);
   assert.equal(sanitized.legalDecision, 'blocked');
   assert.deepEqual(sanitized.legalReasonCodes, ['consent_missing']);
+  assert.equal(sanitized.intentRiskTier, 'high');
+  assert.deepEqual(sanitized.riskReasonCodes, ['intent_ssn', 'risk_high']);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 
