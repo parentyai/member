@@ -7,6 +7,7 @@ const { sendNotification } = require('../../usecases/notifications/sendNotificat
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { resolveTraceId } = require('./osContext');
+const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 const SCENARIO_KEY_FIELD = String.fromCharCode(115,99,101,110,97,114,105,111,75,101,121);
 
 function resolveActor(req) {
@@ -177,11 +178,14 @@ async function handleSend(req, res, body, notificationId) {
   try {
     const traceId = resolveTraceId(req);
     const killSwitch = await getKillSwitch();
-    const result = await sendNotification({
+    const rawResult = await sendNotification({
       notificationId,
       sentAt: payload.sentAt,
-      killSwitch
+      killSwitch,
+      continueOnError: true
     });
+    const result = attachNotificationSendSummary(rawResult);
+    const partialFailure = result.sendSummary && result.sendSummary.partialFailure === true;
     await appendAuditLog({
       actor: resolveActor(req),
       action: 'notifications.send',
@@ -189,10 +193,26 @@ async function handleSend(req, res, body, notificationId) {
       entityId: notificationId,
       traceId,
       requestId: resolveRequestId(req),
-      payloadSummary: { deliveredCount: result.deliveredCount }
+      payloadSummary: {
+        deliveredCount: result.deliveredCount,
+        skippedCount: result.skippedCount || 0,
+        failedCount: result.failedCount || 0,
+        partialFailure,
+        sendSummary: result.sendSummary || null
+      }
     });
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount, traceId }));
+    const statusCode = partialFailure ? 207 : 200;
+    res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: partialFailure ? false : true,
+      partial: partialFailure,
+      reason: partialFailure ? 'send_partial_failure' : null,
+      deliveredCount: result.deliveredCount,
+      skippedCount: result.skippedCount || 0,
+      failedCount: result.failedCount || 0,
+      sendSummary: result.sendSummary || null,
+      traceId
+    }));
   } catch (err) {
     if (isKillSwitchError(err)) {
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });

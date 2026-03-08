@@ -30,6 +30,7 @@ const { computeNotificationFatigueWarning } = require('./computeNotificationFati
 const { buildLineNotificationMessage } = require('./buildLineNotificationMessage');
 const { resolveLinkIntent } = require('../linkRegistry/resolveLinkIntent');
 const { appendUxEvent } = require('../observability/appendUxEvent');
+const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -516,7 +517,7 @@ async function sendNotification(params) {
     });
   }
 
-  return {
+  return attachNotificationSendSummary({
     ok: !partialFailure,
     status: partialFailure ? 'completed_with_failures' : 'completed',
     notificationId,
@@ -537,7 +538,9 @@ async function sendNotification(params) {
     fatigueWarnEnabled,
     fatigueWarningCount,
     fatigueWarnings
-  };
+  }, {
+    totalRecipients: effectiveUsers.length
+  });
 }
 
 module.exports = {

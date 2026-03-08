@@ -10,6 +10,7 @@ const { appendEmergencyAudit } = require('./audit');
 const { FANOUT_SCENARIOS, FANOUT_STEPS } = require('./constants');
 const { buildEmergencyMessageDraft } = require('./messageTemplates');
 const { normalizeString } = require('./utils');
+const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
 const DEFAULT_CTA_TEXT = '公式情報を確認';
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
@@ -383,10 +384,11 @@ async function approveEmergencyBulletin(params, deps) {
       }
 
       try {
-        const sendResult = await sendNotificationFn({
+        const rawSendResult = await sendNotificationFn({
           notificationId,
           sentAt: approvedAt,
           killSwitch: killSwitchOn,
+          continueOnError: true,
           traceId,
           requestId: requestId || undefined,
           actor,
@@ -398,7 +400,19 @@ async function approveEmergencyBulletin(params, deps) {
             }
             : undefined
         });
+        const sendResult = attachNotificationSendSummary(rawSendResult || {});
         deliveries.push(Object.assign({ [FIELD_SCK]: sck, stepKey, notificationId }, sendResult || {}));
+        if (sendResult && sendResult.sendSummary && sendResult.sendSummary.partialFailure === true) {
+          failures.push({
+            [FIELD_SCK]: sck,
+            stepKey,
+            phase: 'send_partial',
+            notificationId,
+            reason: 'send_partial_failure',
+            failureCode: FAILURE_CODES.UNEXPECTED_EXCEPTION,
+            sendSummary: sendResult.sendSummary
+          });
+        }
       } catch (err) {
         if (isNoRecipientsError(err)) {
           deliveries.push({
@@ -487,6 +501,7 @@ async function approveEmergencyBulletin(params, deps) {
       notificationIds,
       sendResult: {
         ok: false,
+        reason: 'send_partial_failure',
         deliveredCount,
         skippedNoRecipientsCount,
         failures,
@@ -515,6 +530,7 @@ async function approveEmergencyBulletin(params, deps) {
     return {
       ok: false,
       reason: 'send_partial_failure',
+      partial: true,
       bulletinId,
       traceId,
       deliveredCount,

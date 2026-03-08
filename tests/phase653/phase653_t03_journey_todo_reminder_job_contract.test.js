@@ -217,6 +217,9 @@ test('phase653: reminder route returns partial status when push fails', async ()
     assert.equal(body.partialFailure, true);
     assert.equal(body.status, 'completed_with_failures');
     assert.equal(body.failedCount, 1);
+    assert.equal(body.sendSummary && body.sendSummary.partialFailure, true);
+    assert.equal(Number(body.sendSummary && body.sendSummary.failedCount), 1);
+    assert.equal(Number(body.sendSummary && body.sendSummary.deliveredCount), 0);
     assert.equal(body.outcome && body.outcome.state, 'partial');
     assert.equal(body.outcome && body.outcome.reason, 'completed_with_failures');
     assert.equal(res.result.headers['x-member-outcome-state'], 'partial');
