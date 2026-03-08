@@ -30,6 +30,7 @@ const {
   loadLlmLegalPolicySnapshot
 } = require('../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../domain/llm/policy/resolveIntentRiskTier');
+const { evaluateAnswerReadiness } = require('../domain/llm/quality/evaluateAnswerReadiness');
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
@@ -891,6 +892,37 @@ function buildConversationQualityMeta(params) {
   };
 }
 
+function resolveAnswerReadinessTelemetry(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const contradictionFlags = Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [];
+  const contradictionDetected = payload.contradictionDetected === true || contradictionFlags.length > 0;
+  const unsupportedClaimCount = Number.isFinite(Number(payload.unsupportedClaimCount))
+    ? Math.max(0, Math.floor(Number(payload.unsupportedClaimCount)))
+    : contradictionFlags.filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported')).length;
+  const readiness = evaluateAnswerReadiness({
+    lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
+    consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
+    crossBorder: payload.legalSnapshot && payload.legalSnapshot.crossBorder === true,
+    legalDecision: payload.legalSnapshot && payload.legalSnapshot.legalDecision,
+    intentRiskTier: payload.riskSnapshot && payload.riskSnapshot.intentRiskTier,
+    sourceAuthorityScore: payload.sourceAuthorityScore,
+    sourceFreshnessScore: payload.sourceFreshnessScore,
+    sourceReadinessDecision: payload.sourceReadinessDecision,
+    officialOnlySatisfied: payload.officialOnlySatisfied,
+    unsupportedClaimCount,
+    contradictionDetected,
+    evidenceCoverage: payload.assistantQuality && Number.isFinite(Number(payload.assistantQuality.evidenceCoverage))
+      ? Number(payload.assistantQuality.evidenceCoverage)
+      : 0,
+    fallbackType: payload.fallbackType || null
+  });
+  return {
+    readiness,
+    unsupportedClaimCount,
+    contradictionDetected
+  };
+}
+
 async function appendLlmGateDecisionBestEffort(data) {
   const payload = data && typeof data === 'object' ? data : {};
   const lineUserId = typeof payload.lineUserId === 'string' ? payload.lineUserId.trim() : '';
@@ -914,6 +946,33 @@ async function appendLlmGateDecisionBestEffort(data) {
     intentResolved: payload.intent || 'faq_search',
     blockedStage: payload.decision === 'allow' ? null : 'route_gate',
     fallbackReason: payload.blockedReason || null
+  });
+  const sourceAuthorityScore = Number.isFinite(Number(payload.sourceAuthorityScore))
+    ? Number(payload.sourceAuthorityScore)
+    : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null);
+  const sourceFreshnessScore = Number.isFinite(Number(payload.sourceFreshnessScore))
+    ? Number(payload.sourceFreshnessScore)
+    : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null);
+  const sourceReadinessDecision = typeof payload.sourceReadinessDecision === 'string'
+    ? payload.sourceReadinessDecision
+    : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null);
+  const sourceReadinessReasons = Array.isArray(payload.sourceReadinessReasons)
+    ? payload.sourceReadinessReasons
+    : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []);
+  const officialOnlySatisfied = payload.officialOnlySatisfied === true
+    || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true);
+  const readinessTelemetry = resolveAnswerReadinessTelemetry({
+    legalSnapshot,
+    riskSnapshot,
+    sourceAuthorityScore,
+    sourceFreshnessScore,
+    sourceReadinessDecision,
+    officialOnlySatisfied,
+    assistantQuality,
+    fallbackType: assistantQuality && assistantQuality.fallbackReason ? assistantQuality.fallbackReason : payload.blockedReason,
+    contradictionFlags: payload.contradictionFlags,
+    unsupportedClaimCount: payload.unsupportedClaimCount,
+    contradictionDetected: payload.contradictionDetected === true
   });
   try {
     await appendLlmGateDecision({
@@ -1021,20 +1080,17 @@ async function appendLlmGateDecisionBestEffort(data) {
         legalReasonCodes: Array.isArray(legalSnapshot.legalReasonCodes) ? legalSnapshot.legalReasonCodes : [],
         intentRiskTier: riskSnapshot.intentRiskTier,
         riskReasonCodes: riskSnapshot.riskReasonCodes,
-        sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore))
-          ? Number(payload.sourceAuthorityScore)
-          : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null),
-        sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore))
-          ? Number(payload.sourceFreshnessScore)
-          : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null),
-        sourceReadinessDecision: typeof payload.sourceReadinessDecision === 'string'
-          ? payload.sourceReadinessDecision
-          : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null),
-        sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
-          ? payload.sourceReadinessReasons
-          : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []),
-        officialOnlySatisfied: payload.officialOnlySatisfied === true
-          || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true),
+        sourceAuthorityScore,
+        sourceFreshnessScore,
+        sourceReadinessDecision,
+        sourceReadinessReasons,
+        officialOnlySatisfied,
+        readinessDecision: readinessTelemetry.readiness.decision,
+        readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
+        readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
+        unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
+        contradictionDetected: readinessTelemetry.contradictionDetected,
+        answerReadinessLogOnly: true,
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1099,6 +1155,41 @@ async function appendLlmActionLogBestEffort(data) {
   const riskSnapshot = resolveIntentRiskTier({
     domainIntent: qualityMeta.domainIntent || payload.domainIntent,
     reasonCodes: payload.riskReasonCodes
+  });
+  const legalSnapshot = payload.legalSnapshot && typeof payload.legalSnapshot === 'object'
+    ? resolveLlmLegalPolicySnapshot({ policy: payload.legalSnapshot })
+    : resolveLlmLegalPolicySnapshot({ policy: null });
+  const sourceAuthorityScore = Number.isFinite(Number(payload.sourceAuthorityScore))
+    ? Number(payload.sourceAuthorityScore)
+    : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null);
+  const sourceFreshnessScore = Number.isFinite(Number(payload.sourceFreshnessScore))
+    ? Number(payload.sourceFreshnessScore)
+    : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null);
+  const sourceReadinessDecision = typeof payload.sourceReadinessDecision === 'string'
+    ? payload.sourceReadinessDecision
+    : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null);
+  const sourceReadinessReasons = Array.isArray(payload.sourceReadinessReasons)
+    ? payload.sourceReadinessReasons
+    : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []);
+  const officialOnlySatisfied = payload.officialOnlySatisfied === true
+    || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true);
+  const assistantQualityForReadiness = normalizeAssistantQuality(payload.assistantQuality, {
+    intentResolved: payload.intent || 'faq_search',
+    blockedStage: payload.decision === 'allow' ? null : 'route_gate',
+    fallbackReason: qualityMeta.fallbackType || payload.blockedReason || null
+  });
+  const readinessTelemetry = resolveAnswerReadinessTelemetry({
+    legalSnapshot,
+    riskSnapshot,
+    sourceAuthorityScore,
+    sourceFreshnessScore,
+    sourceReadinessDecision,
+    officialOnlySatisfied,
+    assistantQuality: assistantQualityForReadiness,
+    fallbackType: qualityMeta.fallbackType || payload.blockedReason || null,
+    contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
+    unsupportedClaimCount: payload.unsupportedClaimCount,
+    contradictionDetected: payload.contradictionDetected === true
   });
 
   try {
@@ -1184,20 +1275,17 @@ async function appendLlmActionLogBestEffort(data) {
       domainIntent: qualityMeta.domainIntent || 'general',
       intentRiskTier: riskSnapshot.intentRiskTier,
       riskReasonCodes: riskSnapshot.riskReasonCodes,
-      sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore))
-        ? Number(payload.sourceAuthorityScore)
-        : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null),
-      sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore))
-        ? Number(payload.sourceFreshnessScore)
-        : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null),
-      sourceReadinessDecision: typeof payload.sourceReadinessDecision === 'string'
-        ? payload.sourceReadinessDecision
-        : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null),
-      sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
-        ? payload.sourceReadinessReasons
-        : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []),
-      officialOnlySatisfied: payload.officialOnlySatisfied === true
-        || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true),
+      sourceAuthorityScore,
+      sourceFreshnessScore,
+      sourceReadinessDecision,
+      sourceReadinessReasons,
+      officialOnlySatisfied,
+      readinessDecision: readinessTelemetry.readiness.decision,
+      readinessReasonCodes: readinessTelemetry.readiness.reasonCodes,
+      readinessSafeResponseMode: readinessTelemetry.readiness.safeResponseMode,
+      unsupportedClaimCount: readinessTelemetry.unsupportedClaimCount,
+      contradictionDetected: readinessTelemetry.contradictionDetected,
+      answerReadinessLogOnly: true,
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
@@ -1277,6 +1365,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     return composeConciergeReply({
       question: packet.messageText,
       baseReplyText: groundedResult.replyText,
+      legalSnapshot,
       domainIntent: packet.normalizedConversationIntent || 'general',
       intentRiskTier: resolveIntentRiskTier({
         domainIntent: packet.normalizedConversationIntent || 'general'
@@ -1412,6 +1501,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
     sourceReadinessReasons: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessReasons : [],
     officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false,
+    readinessDecision: orchestrated.telemetry ? orchestrated.telemetry.readinessDecision : null,
+    readinessReasonCodes: orchestrated.telemetry ? orchestrated.telemetry.readinessReasonCodes : [],
+    readinessSafeResponseMode: orchestrated.telemetry ? orchestrated.telemetry.readinessSafeResponseMode : null,
+    unsupportedClaimCount: orchestrated.telemetry ? orchestrated.telemetry.unsupportedClaimCount : 0,
+    contradictionDetected: orchestrated.telemetry ? orchestrated.telemetry.contradictionDetected === true : false,
+    answerReadinessLogOnly: true,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1441,6 +1536,12 @@ async function tryHandlePaidOrchestratorV2(params) {
     sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
     sourceReadinessReasons: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessReasons : [],
     officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false,
+    readinessDecision: orchestrated.telemetry ? orchestrated.telemetry.readinessDecision : null,
+    readinessReasonCodes: orchestrated.telemetry ? orchestrated.telemetry.readinessReasonCodes : [],
+    readinessSafeResponseMode: orchestrated.telemetry ? orchestrated.telemetry.readinessSafeResponseMode : null,
+    unsupportedClaimCount: orchestrated.telemetry ? orchestrated.telemetry.unsupportedClaimCount : 0,
+    contradictionDetected: orchestrated.telemetry ? orchestrated.telemetry.contradictionDetected === true : false,
+    answerReadinessLogOnly: true,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
@@ -1560,6 +1661,7 @@ async function replyWithFreeRetrieval(params) {
       const concierge = await composeConciergeReply({
         question: payload.text,
         baseReplyText: replyText,
+        legalSnapshot: payload.legalSnapshot || null,
         domainIntent,
         intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier,
         userTier: payload.plan === 'pro' ? 'paid' : 'free',
@@ -2496,6 +2598,7 @@ async function handleAssistantMessage(params) {
       const concierge = await composeConciergeReply({
         question: text,
         baseReplyText: replyText,
+        legalSnapshot: payload.legalSnapshot || null,
         domainIntent: normalizedConversationIntent,
         intentRiskTier: resolveIntentRiskTier({
           domainIntent: normalizedConversationIntent

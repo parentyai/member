@@ -28,6 +28,7 @@ const { buildContextSignature } = require('../../../domain/llm/bandit/contextual
 const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/counterfactualEvaluator');
 const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
+const { evaluateAnswerReadiness } = require('../../../domain/llm/quality/evaluateAnswerReadiness');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -287,7 +288,17 @@ function buildAuditMeta(input) {
     sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
       ? payload.sourceReadinessReasons.filter(Boolean).slice(0, 8)
       : [],
-    officialOnlySatisfied: payload.officialOnlySatisfied === true
+    officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    readinessDecision: normalizeText(payload.readinessDecision) || null,
+    readinessReasonCodes: Array.isArray(payload.readinessReasonCodes)
+      ? payload.readinessReasonCodes.filter(Boolean).slice(0, 12)
+      : [],
+    readinessSafeResponseMode: normalizeText(payload.readinessSafeResponseMode) || null,
+    unsupportedClaimCount: Number.isFinite(Number(payload.unsupportedClaimCount))
+      ? Math.max(0, Math.floor(Number(payload.unsupportedClaimCount)))
+      : 0,
+    contradictionDetected: payload.contradictionDetected === true,
+    answerReadinessLogOnly: payload.answerReadinessLogOnly !== false
   };
 }
 
@@ -366,6 +377,27 @@ async function composeConciergeReply(params) {
     evidenceDecision.evidenceOutcome = 'BLOCKED';
     blockedReasons.push('source_readiness_refuse');
   }
+  const readinessResult = evaluateAnswerReadiness({
+    lawfulBasis: payload && payload.legalSnapshot && typeof payload.legalSnapshot.lawfulBasis === 'string'
+      ? payload.legalSnapshot.lawfulBasis
+      : 'unspecified',
+    consentVerified: payload && payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
+    crossBorder: payload && payload.legalSnapshot && payload.legalSnapshot.crossBorder === true,
+    legalDecision: payload && payload.legalSnapshot && typeof payload.legalSnapshot.legalDecision === 'string'
+      ? payload.legalSnapshot.legalDecision
+      : null,
+    intentRiskTier: payload.intentRiskTier || riskSnapshot.intentRiskTier,
+    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    unsupportedClaimCount: 0,
+    contradictionDetected: false,
+    evidenceCoverage: evidenceDecision.evidenceOutcome === 'SUPPORTED'
+      ? 1
+      : (evidenceDecision.evidenceOutcome === 'INSUFFICIENT' ? 0.35 : 0),
+    fallbackType: blockedReasons.length > 0 ? blockedReasons[0] : null
+  });
 
   const baseReplyText = normalizeText(payload.baseReplyText);
   const opportunityHints = payload.opportunityHints && typeof payload.opportunityHints === 'object'
@@ -643,7 +675,13 @@ async function composeConciergeReply(params) {
     sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
     sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
     sourceReadinessReasons: sourceReadiness.reasonCodes,
-    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    readinessDecision: readinessResult.decision,
+    readinessReasonCodes: readinessResult.reasonCodes,
+    readinessSafeResponseMode: readinessResult.safeResponseMode,
+    unsupportedClaimCount: readinessResult.qualitySnapshot.unsupportedClaimCount,
+    contradictionDetected: readinessResult.qualitySnapshot.contradictionDetected === true,
+    answerReadinessLogOnly: true
   });
 
   return {

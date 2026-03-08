@@ -18,6 +18,12 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
       routerReason: 'greeting_detected',
       intentRiskTier: 'low',
       riskReasonCodes: ['intent_general', 'risk_low'],
+      readinessDecision: 'allow',
+      readinessReasonCodes: ['readiness_allow'],
+      readinessSafeResponseMode: 'answer',
+      unsupportedClaimCount: 0,
+      contradictionDetected: false,
+      answerReadinessLogOnly: true,
       fullReplyText: 'should_not_be_saved',
       rawPrompt: 'should_not_be_saved',
       rawKbBodies: ['drop'],
@@ -34,6 +40,12 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
   assert.equal(sanitized.payloadSummary.routerReason, 'greeting_detected');
   assert.equal(sanitized.payloadSummary.intentRiskTier, 'low');
   assert.deepEqual(sanitized.payloadSummary.riskReasonCodes, ['intent_general', 'risk_low']);
+  assert.equal(sanitized.payloadSummary.readinessDecision, 'allow');
+  assert.deepEqual(sanitized.payloadSummary.readinessReasonCodes, ['readiness_allow']);
+  assert.equal(sanitized.payloadSummary.readinessSafeResponseMode, 'answer');
+  assert.equal(sanitized.payloadSummary.unsupportedClaimCount, 0);
+  assert.equal(sanitized.payloadSummary.contradictionDetected, false);
+  assert.equal(sanitized.payloadSummary.answerReadinessLogOnly, true);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'fullReplyText'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawPrompt'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawKbBodies'), false);

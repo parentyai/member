@@ -10,6 +10,8 @@ const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
 const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse']);
 const INTENT_RISK_TIERS = new Set(['low', 'medium', 'high']);
 const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
+const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
+const READINESS_SAFE_RESPONSE_MODES = new Set(['answer', 'answer_with_hedge', 'clarify', 'refuse']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -149,6 +151,18 @@ function normalizeSourceReadinessDecision(value) {
   return SOURCE_READINESS_DECISIONS.has(normalized) ? normalized : null;
 }
 
+function normalizeReadinessDecision(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return READINESS_DECISIONS.has(normalized) ? normalized : null;
+}
+
+function normalizeReadinessSafeResponseMode(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return READINESS_SAFE_RESPONSE_MODES.has(normalized) ? normalized : null;
+}
+
 function normalizeJudgeScores(value) {
   const rows = Array.isArray(value) ? value : [];
   return rows.slice(0, 5).map((item, index) => {
@@ -282,6 +296,12 @@ async function appendLlmActionLog(params) {
     sourceReadinessDecision: normalizeSourceReadinessDecision(payload.sourceReadinessDecision),
     sourceReadinessReasons: normalizeStringList(payload.sourceReadinessReasons, 8),
     officialOnlySatisfied: payload.officialOnlySatisfied === true,
+    readinessDecision: normalizeReadinessDecision(payload.readinessDecision),
+    readinessReasonCodes: normalizeStringList(payload.readinessReasonCodes, 12),
+    readinessSafeResponseMode: normalizeReadinessSafeResponseMode(payload.readinessSafeResponseMode),
+    unsupportedClaimCount: Math.max(0, Math.floor(normalizeNumber(payload.unsupportedClaimCount, 0))),
+    contradictionDetected: payload.contradictionDetected === true,
+    answerReadinessLogOnly: payload.answerReadinessLogOnly !== false,
     strategy: normalizeStrategy(payload.strategy),
     retrieveNeeded: payload.retrieveNeeded === true,
     retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),
