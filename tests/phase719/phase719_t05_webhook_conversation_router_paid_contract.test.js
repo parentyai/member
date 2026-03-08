@@ -107,6 +107,15 @@ function loadWebhookWithStubs(options) {
       readError: false,
       source: 'test'
     }),
+    getLlmPolicy: async () => ({
+      lawful_basis: 'consent',
+      consent_required: false,
+      cross_border_transfer_allowed: true,
+      risk_control: {
+        official_source_required: false,
+        stale_after_days: 30
+      }
+    }),
     getLlmConciergeEnabled: async () => true,
     getLlmWebSearchEnabled: async () => true,
     getLlmStyleEngineEnabled: async () => true,
@@ -263,7 +272,9 @@ function loadWebhookWithStubs(options) {
       actionLogWrites.push(entry);
       return { id: 'log_1', data: entry };
     },
-    listLlmActionLogsByLineUserId: async () => []
+    listLlmActionLogsByLineUserId: async () => (
+      Array.isArray(payload.recentActionRows) ? payload.recentActionRows : []
+    )
   });
   setOverride('../../src/usecases/journey/handleJourneyLineCommand', {
     handleJourneyLineCommand: async () => ({ handled: false })
@@ -355,6 +366,7 @@ test('phase719: router-enabled paid greeting bypasses budget and retrieval with 
   assert.ok(summary);
   assert.equal(summary.conversationMode, 'casual');
   assert.equal(summary.routerReason, 'greeting_detected');
+  assert.equal(summary.orchestratorPathUsed, true);
 });
 
 test('phase719: router-disabled paid greeting keeps legacy order and evaluates budget before casual reply', { concurrency: false }, async (t) => {
@@ -388,6 +400,54 @@ test('phase719: router-disabled paid greeting keeps legacy order and evaluates b
   assert.ok(replies[0].text.includes('こんにちは'));
   assert.equal(loaded.counters.budgetCalled > 0, true);
   assert.equal(loaded.counters.retrievalCalled, 0);
+});
+
+test('phase719: ambiguous short utterance resumes recent school context via orchestrator', { concurrency: false }, async (t) => {
+  const restoreEnv = withEnv({
+    LINE_CHANNEL_SECRET: HMAC_SEED,
+    ENABLE_CONVERSATION_ROUTER: 'true',
+    ENABLE_PAID_OPPORTUNITY_ENGINE_V1: 'false',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'true'
+  });
+  const loaded = loadWebhookWithStubs({
+    recentActionRows: [
+      {
+        createdAt: '2026-03-08T20:30:00.000Z',
+        domainIntent: 'school',
+        committedFollowupQuestion: '優先したい手続きを1つだけ教えてください。'
+      }
+    ]
+  });
+
+  t.after(() => {
+    loaded.restore();
+    restoreEnv();
+  });
+
+  const body = createWebhookBody('ヒザ');
+  const replies = [];
+  const result = await loaded.handleLineWebhook({
+    body,
+    signature: signBody(body),
+    requestId: 'phase719_context_resume_school',
+    logger: () => {},
+    allowWelcome: false,
+    replyFn: async (_replyToken, message) => {
+      replies.push(message);
+    }
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(loaded.counters.retrievalCalled, 0);
+  assert.ok(replies[0].text.includes('学校') || replies[0].text.includes('手続き'));
+
+  const summary = findGateSummary(loaded.auditCalls);
+  assert.ok(summary);
+  assert.equal(summary.routerReason, 'contextual_domain_resume');
+  assert.equal(summary.conversationMode, 'concierge');
+  assert.equal(summary.contextResumeDomain, 'school');
+  assert.equal(summary.orchestratorPathUsed, true);
 });
 
 test('phase719: paid domain intents never fall back to free retrieval across blocked paths', { concurrency: false }, async (t) => {

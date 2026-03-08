@@ -20,6 +20,27 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeForSimilarity(value) {
+  return normalizeText(value).toLowerCase().replace(/\s+/g, ' ');
+}
+
+function similarityScore(left, right) {
+  const a = normalizeForSimilarity(left);
+  const b = normalizeForSimilarity(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.92;
+  const aTokens = new Set(a.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  const bTokens = new Set(b.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  if (!aTokens.size || !bTokens.size) return 0;
+  let overlap = 0;
+  aTokens.forEach((token) => {
+    if (bTokens.has(token)) overlap += 1;
+  });
+  const denominator = Math.max(aTokens.size, bTokens.size);
+  return denominator > 0 ? overlap / denominator : 0;
+}
+
 function buildClarifyCandidate(packet, strategy) {
   const domainIntent = normalizeText(packet.normalizedConversationIntent).toLowerCase();
   const replyText = strategy === 'recommendation'
@@ -124,9 +145,13 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
   if (strategy === 'casual') {
     const casualReply = await deps.generatePaidCasualReply({
       messageText: packet.messageText,
+      contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
       suggestedAtoms: { nextActions: [], pitfall: null, question: null }
     });
     candidates.push(buildCasualCandidate(casualReply, packet));
+    if (packet.intentDecision && packet.intentDecision.reason !== 'greeting_detected') {
+      candidates.push(buildClarifyCandidate(packet, strategy));
+    }
     return { candidates, groundedResult, retrievalQuality };
   }
 
@@ -165,6 +190,15 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     }
   }
 
+  if (strategy === 'clarify') {
+    const casualReply = await deps.generatePaidCasualReply({
+      messageText: packet.messageText,
+      contextHint: packet.contextResumeDomain || packet.normalizedConversationIntent,
+      suggestedAtoms: { nextActions: [], pitfall: null, question: null }
+    });
+    candidates.push(buildCasualCandidate(casualReply, packet));
+  }
+
   if (strategy === 'clarify' || strategy === 'grounded_answer' || strategy === 'recommendation') {
     candidates.push(buildClarifyCandidate(packet, strategy));
   }
@@ -182,6 +216,68 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
   }
 
   return { candidates, groundedResult, retrievalQuality };
+}
+
+function resolveLoopSafeCandidate(packet, selected, candidates) {
+  const current = selected && typeof selected === 'object' ? selected : null;
+  if (!current) {
+    return {
+      selected: current,
+      loopBreakApplied: false
+    };
+  }
+  const intentReason = packet && packet.intentDecision && typeof packet.intentDecision.reason === 'string'
+    ? packet.intentDecision.reason
+    : '';
+  if (intentReason === 'greeting_detected' || intentReason === 'smalltalk_detected') {
+    return {
+      selected: current,
+      loopBreakApplied: false
+    };
+  }
+  if (current.kind !== 'casual_candidate') {
+    return {
+      selected: current,
+      loopBreakApplied: false
+    };
+  }
+
+  const clarifyCandidate = Array.isArray(candidates)
+    ? candidates.find((item) => item && item.kind === 'clarify_candidate')
+    : null;
+  if (!clarifyCandidate) {
+    return {
+      selected: current,
+      loopBreakApplied: false
+    };
+  }
+
+  const normalizedReply = normalizeForSimilarity(current.replyText);
+  const fallbackPhrase = '優先したい手続きがあれば1つだけ教えてください。';
+  const responseHints = []
+    .concat(Array.isArray(packet.recentAssistantCommitments) ? packet.recentAssistantCommitments : [])
+    .concat(Array.isArray(packet.recentResponseHints) ? packet.recentResponseHints : [])
+    .filter((item) => typeof item === 'string' && item.trim());
+  const maxHintSimilarity = responseHints.reduce((max, item) => {
+    const score = similarityScore(normalizedReply, item);
+    return Math.max(max, score);
+  }, 0);
+  const defaultPhraseSimilarity = similarityScore(normalizedReply, fallbackPhrase);
+  const shouldBreak = packet.lowInformationMessage === true
+    || packet.contextResume === true
+    || defaultPhraseSimilarity >= 0.85
+    || maxHintSimilarity >= 0.85;
+
+  if (!shouldBreak) {
+    return {
+      selected: current,
+      loopBreakApplied: false
+    };
+  }
+  return {
+    selected: clarifyCandidate,
+    loopBreakApplied: true
+  };
 }
 
 async function runPaidConversationOrchestrator(params) {
@@ -216,6 +312,21 @@ async function runPaidConversationOrchestrator(params) {
       ? groundedResult.assistantQuality.evidenceCoverage
       : 0
   });
+  const readinessSourceAuthorityScore = strategyPlan.retrieveNeeded === true
+    ? sourceReadiness.sourceAuthorityScore
+    : 1;
+  const readinessSourceFreshnessScore = strategyPlan.retrieveNeeded === true
+    ? sourceReadiness.sourceFreshnessScore
+    : 1;
+  const readinessSourceDecision = strategyPlan.retrieveNeeded === true
+    ? sourceReadiness.sourceReadinessDecision
+    : 'allow';
+  const readinessSourceReasons = strategyPlan.retrieveNeeded === true
+    ? sourceReadiness.reasonCodes
+    : ['no_retrieval_strategy'];
+  const readinessOfficialOnlySatisfied = strategyPlan.retrieveNeeded === true
+    ? sourceReadiness.officialOnlySatisfied === true
+    : true;
   const evidenceSufficiency = judgeEvidenceSufficiency({
     strategy: strategyPlan.strategy,
     retrieveNeeded: strategyPlan.retrieveNeeded,
@@ -230,9 +341,10 @@ async function runPaidConversationOrchestrator(params) {
     strategy: strategyPlan.strategy,
     candidates: candidateSet.candidates
   });
+  const loopResolved = resolveLoopSafeCandidate(packet, judged.selected, candidateSet.candidates);
   const verified = verifyCandidate({
     packet,
-    selected: judged.selected,
+    selected: loopResolved.selected,
     evidenceSufficiency: effectiveEvidenceSufficiency
   });
   const evidenceCoverage = groundedResult && groundedResult.assistantQuality
@@ -241,19 +353,20 @@ async function runPaidConversationOrchestrator(params) {
   const unsupportedClaimCount = (Array.isArray(verified.contradictionFlags) ? verified.contradictionFlags : [])
     .filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported'))
     .length;
+  const readinessEvidenceCoverage = strategyPlan.retrieveNeeded === true ? evidenceCoverage : 1;
   const readinessResult = evaluateAnswerReadiness({
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
     crossBorder: legalSnapshot.crossBorder,
     legalDecision: legalSnapshot.legalDecision,
     intentRiskTier: riskSnapshot.intentRiskTier,
-    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
-    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
-    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    sourceAuthorityScore: readinessSourceAuthorityScore,
+    sourceFreshnessScore: readinessSourceFreshnessScore,
+    sourceReadinessDecision: readinessSourceDecision,
+    officialOnlySatisfied: readinessOfficialOnlySatisfied,
     unsupportedClaimCount,
     contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
-    evidenceCoverage,
+    evidenceCoverage: readinessEvidenceCoverage,
     fallbackType: groundedResult && groundedResult.ok !== true && groundedResult.blockedReason
       ? groundedResult.blockedReason
       : null
@@ -301,11 +414,14 @@ async function runPaidConversationOrchestrator(params) {
       strategy: strategyPlan.strategy,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
-      sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
-      sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
-      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
-      sourceReadinessReasons: sourceReadiness.reasonCodes,
-      officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+      orchestratorPathUsed: true,
+      contextResumeDomain: packet.contextResumeDomain || null,
+      loopBreakApplied: loopResolved.loopBreakApplied === true,
+      sourceAuthorityScore: readinessSourceAuthorityScore,
+      sourceFreshnessScore: readinessSourceFreshnessScore,
+      sourceReadinessDecision: readinessSourceDecision,
+      sourceReadinessReasons: readinessSourceReasons,
+      officialOnlySatisfied: readinessOfficialOnlySatisfied,
       readinessDecision: readinessResult.decision,
       readinessReasonCodes: readinessResult.reasonCodes,
       readinessSafeResponseMode: readinessResult.safeResponseMode,

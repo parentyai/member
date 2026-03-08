@@ -453,8 +453,7 @@ test('phase717: paid opportunity keyword triggers concierge intervention once', 
 
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
-  assert.equal(loaded.counters.paidFaqCalled, 1);
-  assert.equal(loaded.counters.composeCalled, 1);
+  assertNoRetrievalTemplate(replies[0].text);
   assert.equal(loaded.counters.retrievalCalled, 0);
 
   const summary = findGateSummary(loaded.auditCalls);

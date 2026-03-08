@@ -88,7 +88,10 @@ const LLM_GATE_KEYS = new Set([
   'readinessSafeResponseMode',
   'unsupportedClaimCount',
   'contradictionDetected',
-  'answerReadinessLogOnly'
+  'answerReadinessLogOnly',
+  'orchestratorPathUsed',
+  'contextResumeDomain',
+  'loopBreakApplied'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

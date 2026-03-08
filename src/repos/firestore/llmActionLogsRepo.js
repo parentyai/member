@@ -121,6 +121,13 @@ function normalizeDomainIntent(value) {
   return 'general';
 }
 
+function normalizeContextResumeDomain(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  if (['housing', 'school', 'ssn', 'banking'].includes(normalized)) return normalized;
+  return null;
+}
+
 function normalizeIntentRiskTier(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return 'low';
@@ -302,6 +309,9 @@ async function appendLlmActionLog(params) {
     unsupportedClaimCount: Math.max(0, Math.floor(normalizeNumber(payload.unsupportedClaimCount, 0))),
     contradictionDetected: payload.contradictionDetected === true,
     answerReadinessLogOnly: payload.answerReadinessLogOnly !== false,
+    orchestratorPathUsed: payload.orchestratorPathUsed === true,
+    contextResumeDomain: normalizeContextResumeDomain(payload.contextResumeDomain),
+    loopBreakApplied: payload.loopBreakApplied === true,
     strategy: normalizeStrategy(payload.strategy),
     retrieveNeeded: payload.retrieveNeeded === true,
     retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),

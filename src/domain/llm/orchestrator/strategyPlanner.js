@@ -16,6 +16,9 @@ function buildStrategyPlan(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const routerMode = normalizeText(payload.routerMode || 'casual').toLowerCase();
   const normalizedIntent = normalizeText(payload.normalizedConversationIntent || 'general').toLowerCase();
+  const intentReason = payload.intentDecision && typeof payload.intentDecision === 'object'
+    ? normalizeText(payload.intentDecision.reason).toLowerCase()
+    : '';
   const llmConciergeEnabled = payload.llmFlags && payload.llmFlags.llmConciergeEnabled === true;
   const opportunityDecision = payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
     ? payload.opportunityDecision
@@ -23,6 +26,27 @@ function buildStrategyPlan(params) {
   const messageText = normalizeText(payload.messageText);
 
   if (routerMode === 'greeting' || routerMode === 'casual') {
+    if (payload.contextResume === true && normalizedIntent !== 'general') {
+      return {
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'contextual_domain_resume'
+      };
+    }
+    const isGreetingOrSmalltalk = intentReason === 'greeting_detected' || intentReason === 'smalltalk_detected';
+    if (payload.lowInformationMessage === true && !isGreetingOrSmalltalk) {
+      return {
+        strategy: 'clarify',
+        conversationMode: 'casual',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['clarify_candidate', 'conversation_candidate'],
+        fallbackType: 'low_information_clarify'
+      };
+    }
     return {
       strategy: 'casual',
       conversationMode: 'casual',
