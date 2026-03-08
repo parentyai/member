@@ -321,6 +321,25 @@ STOP の方針:
 4. plan/set運用:
   - quietHours含む `notificationCaps` 変更時は `journey-policy/plan` を再実行して confirm token を更新する。
 
+### Canonical Authority 契約（Phase PR3）
+1. Redac naming:
+  - canonical: `redac_membership_links`, `redacMembershipIdHash`, `redacMembershipIdLast4`
+  - legacy read fallback: `ridac_membership_links`, `ridacMembershipIdHash`, `ridacMembershipIdLast4`
+  - new write は canonical のみ。legacy への新規writeは禁止。
+2. Ops state naming:
+  - canonical collection: `ops_states`
+  - legacy read fallback: `ops_state`
+  - `setOpsReview` を含む運用writeは canonical のみ。
+3. 互換read証跡:
+  - warning log: `[canonical_authority] scope=... mode=legacy_read ...`
+  - audit payload: `legacyReadUsed`, `authoritySource` もしくは `authority.{canonicalCollection,legacyCollection,...}`
+4. 監視対象:
+  - `canonical_authority.legacy_read_detected`（監査ログ）
+  - `redac_membership.status.view` の `summary.usersLegacyReadSampled/linksLegacyReadSampled`
+5. 収束条件（sunset）:
+  - 連続14日で `legacyReadUsed=false` を維持
+  - `ridac_membership_links` と `ops_state` への運用依存ゼロを確認後に legacy read fallback を段階停止
+
 ### Task Detail whyNow 契約（Phase746）
 1. `task_contents.whyNow` は Task Detail 意味表示の最優先フィールド。
 2. 未設定時は既存 fallback（`tasks.meaning.whyNow` → `tasks.whyNow`）を使う。

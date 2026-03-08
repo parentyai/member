@@ -9,8 +9,39 @@ const {
   extractLast4,
   computeRedacMembershipIdHash
 } = require('../../domain/redacMembershipId');
+const {
+  REDAC_CANONICAL_LINK_COLLECTION,
+  REDAC_LEGACY_LINK_COLLECTION,
+  REDAC_HASH_FIELD,
+  REDAC_LAST4_FIELD,
+  logCanonicalAuthorityLegacyRead
+} = require('../../domain/canonicalAuthority');
 
-const LINKS_COLLECTION = 'redac_membership_links';
+const LINKS_COLLECTION = REDAC_CANONICAL_LINK_COLLECTION;
+
+async function readLinkByHashInTx(db, tx, hash) {
+  const canonicalRef = db.collection(REDAC_CANONICAL_LINK_COLLECTION).doc(hash);
+  const canonicalSnap = await tx.get(canonicalRef);
+  if (canonicalSnap.exists) {
+    return {
+      ref: canonicalRef,
+      collection: REDAC_CANONICAL_LINK_COLLECTION,
+      data: canonicalSnap.data() || {},
+      legacyReadUsed: false
+    };
+  }
+  const legacyRef = db.collection(REDAC_LEGACY_LINK_COLLECTION).doc(hash);
+  const legacySnap = await tx.get(legacyRef);
+  if (legacySnap.exists) {
+    return {
+      ref: legacyRef,
+      collection: REDAC_LEGACY_LINK_COLLECTION,
+      data: legacySnap.data() || {},
+      legacyReadUsed: true
+    };
+  }
+  return null;
+}
 
 function resolveHmacSecret() {
   const v = process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET;
@@ -126,37 +157,41 @@ async function declareRedacMembershipIdFromLine(params) {
 
   const db = getDb();
   const userRef = db.collection('users').doc(lineUserId);
-  const linkRef = db.collection(LINKS_COLLECTION).doc(hash);
-
   const txResult = await db.runTransaction(async (tx) => {
     const ensured = await ensureUserExistsInTx(tx, lineUserId);
     const user = ensured.user || {};
     const prevHash = typeof user.redacMembershipIdHash === 'string' ? user.redacMembershipIdHash : null;
+    let legacyReadUsed = false;
 
     // If switching to a different membership id, release the previous link (only if it belongs to the same user).
     if (prevHash && prevHash !== hash) {
-      const prevRef = db.collection(LINKS_COLLECTION).doc(prevHash);
-      const prevSnap = await tx.get(prevRef);
-      if (prevSnap.exists) {
-        const prevData = prevSnap.data() || {};
-        if (prevData.lineUserId === lineUserId) {
-          tx.delete(prevRef);
+      const prevLink = await readLinkByHashInTx(db, tx, prevHash);
+      if (prevLink) {
+        if (prevLink.legacyReadUsed) legacyReadUsed = true;
+        if (prevLink.data && prevLink.data.lineUserId === lineUserId) {
+          tx.delete(prevLink.ref);
         }
       }
     }
 
-    const linkSnap = await tx.get(linkRef);
-    if (linkSnap.exists) {
-      const existing = linkSnap.data() || {};
+    const existingLink = await readLinkByHashInTx(db, tx, hash);
+    if (existingLink) {
+      if (existingLink.legacyReadUsed) legacyReadUsed = true;
+      const existing = existingLink.data || {};
       if (existing.lineUserId && existing.lineUserId !== lineUserId) {
-        return { status: 'duplicate' };
+        return {
+          status: 'duplicate',
+          legacyReadUsed,
+          duplicateCollection: existingLink.collection
+        };
       }
     }
 
     // Create/overwrite the link doc for this membership id.
+    const linkRef = db.collection(REDAC_CANONICAL_LINK_COLLECTION).doc(hash);
     tx.set(linkRef, {
-      redacMembershipIdHash: hash,
-      redacMembershipIdLast4: last4,
+      [REDAC_HASH_FIELD]: hash,
+      [REDAC_LAST4_FIELD]: last4,
       lineUserId,
       linkedAt: serverTimestamp(),
       linkedBy: 'user'
@@ -165,15 +200,29 @@ async function declareRedacMembershipIdFromLine(params) {
     tx.set(userRef, {
       redacMembershipIdHash: hash,
       redacMembershipIdLast4: last4,
+      ridacMembershipIdHash: null,
+      ridacMembershipIdLast4: null,
       redacMembershipDeclaredAt: serverTimestamp(),
       redacMembershipDeclaredBy: 'user'
     }, { merge: true });
 
-    return { status: 'linked' };
+    return { status: 'linked', legacyReadUsed };
   });
 
   const ok = txResult && txResult.status === 'linked';
   const status = txResult && typeof txResult.status === 'string' ? txResult.status : 'error';
+  const legacyReadUsed = Boolean(txResult && txResult.legacyReadUsed);
+  const duplicateCollection = txResult && typeof txResult.duplicateCollection === 'string'
+    ? txResult.duplicateCollection
+    : null;
+
+  if (legacyReadUsed) {
+    logCanonicalAuthorityLegacyRead('redac_membership.declare', {
+      lineUserId,
+      requestId,
+      legacyCollection: REDAC_LEGACY_LINK_COLLECTION
+    });
+  }
 
   try {
     await appendAuditLog({
@@ -186,7 +235,13 @@ async function declareRedacMembershipIdFromLine(params) {
       payloadSummary: {
         ok,
         status,
-        redacMembershipIdLast4: last4
+        redacMembershipIdLast4: last4,
+        authority: {
+          canonicalCollection: REDAC_CANONICAL_LINK_COLLECTION,
+          legacyCollection: REDAC_LEGACY_LINK_COLLECTION,
+          legacyReadUsed,
+          duplicateCollection
+        }
       }
     });
   } catch (_err) {
@@ -206,16 +261,16 @@ async function declareRedacMembershipIdFromLine(params) {
   if (!ok && status === 'duplicate') {
     // Ensure the user doc does not get a partial update.
     // (Nothing to do: transaction guarded it.)
-    return { ok: false, status: 'duplicate', last4 };
+    return { ok: false, status: 'duplicate', last4, legacyReadUsed, duplicateCollection };
   }
 
   if (!ok) {
     // Unexpected.
-    return { ok: false, status: 'error' };
+    return { ok: false, status: 'error', legacyReadUsed };
   }
 
   // Also update derived memberNumber semantics if needed (not here).
-  return { ok: true, status: 'linked', last4 };
+  return { ok: true, status: 'linked', last4, legacyReadUsed };
 }
 
 module.exports = {

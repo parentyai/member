@@ -82,6 +82,8 @@ async function setRedacMembership(lineUserId, params) {
   return updateUser(lineUserId, {
     redacMembershipIdHash: hash,
     redacMembershipIdLast4: last4,
+    ridacMembershipIdHash: null,
+    ridacMembershipIdLast4: null,
     redacMembershipDeclaredAt: serverTimestamp(),
     redacMembershipDeclaredBy: declaredBy
   });
@@ -93,6 +95,8 @@ async function clearRedacMembership(lineUserId, params) {
   return updateUser(lineUserId, {
     redacMembershipIdHash: null,
     redacMembershipIdLast4: null,
+    ridacMembershipIdHash: null,
+    ridacMembershipIdLast4: null,
     redacMembershipUnlinkedAt: serverTimestamp(),
     redacMembershipUnlinkedBy: unlinkedBy
   });

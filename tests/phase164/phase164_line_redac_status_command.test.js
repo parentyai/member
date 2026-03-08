@@ -82,12 +82,24 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
     redacMembershipIdLast4: null
   });
 
+  // Legacy alias-only user (ridac*)
+  await usersRepo.createUser('U4', {
+    createdAt: '2026-02-10T00:00:00.000Z',
+    scenarioKey: 'A',
+    stepKey: 'THREE_MONTHS',
+    memberNumber: null,
+    memberCardAsset: null,
+    ridacMembershipIdHash: 'RIDAC_HASH4',
+    ridacMembershipIdLast4: '7777'
+  });
+
   const replies = [];
   const payload = {
     events: [
       makeEvent({ userId: 'U1', text: '会員ID 確認', replyToken: 'rt1' }),
       makeEvent({ userId: 'U2', text: '会員ID 確認', replyToken: 'rt2' }),
-      makeEvent({ userId: 'U3', text: '会員ID 確認', replyToken: 'rt3' })
+      makeEvent({ userId: 'U3', text: '会員ID 確認', replyToken: 'rt3' }),
+      makeEvent({ userId: 'U4', text: '会員ID 確認', replyToken: 'rt4' })
     ]
   };
   const body = JSON.stringify(payload);
@@ -107,11 +119,12 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
   });
 
   assert.strictEqual(result.status, 200);
-  assert.strictEqual(replies.length, 3);
+  assert.strictEqual(replies.length, 4);
 
   const r1 = replies.find((r) => r.replyToken === 'rt1');
   const r2 = replies.find((r) => r.replyToken === 'rt2');
   const r3 = replies.find((r) => r.replyToken === 'rt3');
+  const r4 = replies.find((r) => r.replyToken === 'rt4');
 
   assert.ok(r1 && r1.message && typeof r1.message.text === 'string');
   assert.ok(r1.message.text.includes('末尾: 3456'));
@@ -125,4 +138,8 @@ test('phase164: LINE command "会員ID 確認" replies with status (last4 only)'
   assert.ok(r3 && r3.message && typeof r3.message.text === 'string');
   assert.ok(r3.message.text.includes('未登録'));
   assert.ok(r3.message.text.includes('会員ID 00-0000'));
+
+  assert.ok(r4 && r4.message && typeof r4.message.text === 'string');
+  assert.ok(r4.message.text.includes('末尾: 7777'));
+  assert.ok(r4.message.text.includes('会員ID 00-0000'));
 });

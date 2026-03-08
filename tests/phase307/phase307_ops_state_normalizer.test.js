@@ -43,6 +43,8 @@ test('phase307: opsStateRepo read prefers canonical ops_states then falls back t
   const legacyRead = await opsStateRepo.getOpsState();
   assert.strictEqual(legacyRead.collection, 'ops_state');
   assert.strictEqual(legacyRead.lastReviewedBy, 'legacy_user');
+  assert.strictEqual(legacyRead.legacyReadUsed, true);
+  assert.strictEqual(legacyRead.authoritySource, 'ops_state');
 
   await db.collection('ops_states').doc('global').set({
     lastReviewedAt: '2026-02-01T00:00:00Z',
@@ -52,9 +54,14 @@ test('phase307: opsStateRepo read prefers canonical ops_states then falls back t
   const canonicalRead = await opsStateRepo.getOpsState();
   assert.strictEqual(canonicalRead.collection, 'ops_states');
   assert.strictEqual(canonicalRead.lastReviewedBy, 'canonical_user');
+  assert.strictEqual(canonicalRead.legacyReadUsed, false);
+  assert.strictEqual(canonicalRead.authoritySource, 'ops_states');
 
   await opsStateRepo.setOpsReview({ reviewedBy: 'bridge_writer' });
   const written = await db.collection('ops_states').doc('global').get();
   assert.strictEqual(written.exists, true);
   assert.strictEqual(written.data().lastReviewedBy, 'bridge_writer');
+  const legacyAfterWrite = await db.collection('ops_state').doc('global').get();
+  assert.strictEqual(legacyAfterWrite.exists, true);
+  assert.strictEqual(legacyAfterWrite.data().lastReviewedBy, 'legacy_user');
 });

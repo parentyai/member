@@ -77,6 +77,8 @@ test('phase6 member summary: returns minimal summary', async () => {
     redac: {
       hasRedacMembership: false,
       redacMembershipIdLast4: null,
+      authoritySource: 'none',
+      legacyReadUsed: false,
       redacMembershipDeclaredAt: null,
       redacMembershipDeclaredBy: null,
       redacMembershipUnlinkedAt: null,
@@ -139,6 +141,28 @@ test('phase6 member summary: includes redac status (last4 only)', async () => {
   assert.strictEqual(payload.ok, true);
   assert.strictEqual(payload.member.redac.hasRedacMembership, true);
   assert.strictEqual(payload.member.redac.redacMembershipIdLast4, '7654');
+  assert.strictEqual(payload.member.redac.authoritySource, 'redac');
+  assert.strictEqual(payload.member.redac.legacyReadUsed, false);
   assert.strictEqual(payload.member.redac.redacMembershipDeclaredBy, 'user');
   assert.ok(typeof payload.member.redac.redacMembershipDeclaredAt === 'string');
+});
+
+test('phase6 member summary: resolves legacy ridac fields when canonical fields are absent', async () => {
+  await usersRepo.createUser('U_LEGACY', {
+    memberNumber: null,
+    createdAt: '2000-01-01T00:00:00Z',
+    ridacMembershipIdHash: 'RIDAC_HASH_1',
+    ridacMembershipIdLast4: '9999'
+  });
+
+  const res = createRes();
+  const req = { url: '/api/phase6/member/summary?lineUserId=U_LEGACY' };
+  await handlePhase6MemberSummary(req, res);
+
+  assert.strictEqual(res.statusCode, 200);
+  const payload = JSON.parse(res.body);
+  assert.strictEqual(payload.member.redac.hasRedacMembership, true);
+  assert.strictEqual(payload.member.redac.redacMembershipIdLast4, '9999');
+  assert.strictEqual(payload.member.redac.authoritySource, 'ridac');
+  assert.strictEqual(payload.member.redac.legacyReadUsed, true);
 });

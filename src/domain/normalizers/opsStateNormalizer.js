@@ -1,6 +1,11 @@
 'use strict';
 
-const READ_ORDER = Object.freeze(['ops_states', 'ops_state']);
+const {
+  OPS_STATE_CANONICAL_COLLECTION,
+  OPS_STATE_LEGACY_COLLECTION
+} = require('../canonicalAuthority');
+
+const READ_ORDER = Object.freeze([OPS_STATE_CANONICAL_COLLECTION, OPS_STATE_LEGACY_COLLECTION]);
 
 function resolveOpsStateReadOrder() {
   return READ_ORDER.slice();
