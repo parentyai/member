@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T16:44:34-05:00",
-  "gitCommit": "8616f725488423fb709c5604d3f8456d1992da19",
-  "branch": "codex/llm-v3-pr1-legal-source",
-  "sourceDigest": "76472463d4fb86901a511d8039b586f1f6824a70cb773f0e900fc93a4da1a3a6",
+  "generatedAt": "2026-03-07T19:10:07-05:00",
+  "gitCommit": "332ec713a2018583e57e25807fca31bcb44b25c2",
+  "branch": "codex/llm-v3-pr2-faq-sink-clean",
+  "sourceDigest": "e7a1769ea449d665f111de24f9dd636f7c4dc1496c9551c23e9c9676898221a1",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
