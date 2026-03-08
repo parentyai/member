@@ -475,7 +475,8 @@ async function handleSendExecute(req, res, body, deps) {
       traceId: guardedTraceId,
       requestId
     }, deps);
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    const statusCode = result && result.partial === true ? 207 : 200;
+    res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(result));
   } catch (err) {
     handleError(res, err, { traceId: guardedTraceId, requestId, actor: guardedActor });

@@ -30,3 +30,8 @@ test('phase741: postback parser resolves task os actions', () => {
   assert.deepEqual(parseJourneyPostbackData('action=todo_vendor&todoKey=visa_docs'), { action: 'todo_vendor', todoKey: 'visa_docs' });
   assert.deepEqual(parseJourneyPostbackData('action=support_guide'), { action: 'support_guide' });
 });
+
+test('phase741: parser rejects invalid calendar date and keeps leap-day valid', () => {
+  assert.deepEqual(parseJourneyLineCommand('渡航日:2026-02-31'), { action: 'invalid_departure_date' });
+  assert.deepEqual(parseJourneyLineCommand('着任日:2024-02-29'), { action: 'set_assignment_date', assignmentDate: '2024-02-29' });
+});

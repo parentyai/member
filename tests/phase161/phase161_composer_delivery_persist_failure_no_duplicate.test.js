@@ -14,13 +14,13 @@ const {
 const usersRepo = require('../../src/repos/firestore/usersRepo');
 const linkRegistryRepo = require('../../src/repos/firestore/linkRegistryRepo');
 const notificationsRepo = require('../../src/repos/firestore/notificationsRepo');
-const auditLogsRepo = require('../../src/repos/firestore/auditLogsRepo');
 const deliveriesRepo = require('../../src/repos/firestore/deliveriesRepo');
 
 const { createNotification } = require('../../src/usecases/notifications/createNotification');
 const { approveNotification } = require('../../src/usecases/adminOs/approveNotification');
 const { planNotificationSend } = require('../../src/usecases/adminOs/planNotificationSend');
 const { executeNotificationSend } = require('../../src/usecases/adminOs/executeNotificationSend');
+const { computeNotificationDeliveryId } = require('../../src/domain/deliveryId');
 
 const ORIGINAL_SECRET = process.env.OPS_CONFIRM_TOKEN_SECRET;
 
@@ -40,11 +40,10 @@ afterEach(() => {
   }
 });
 
-test('phase161: execute failure writes notifications.send.execute audit with ok=false', async () => {
+test('phase161: push success + persistence failure does not trigger duplicate resend', async () => {
   const link = await linkRegistryRepo.createLink({ title: 't', url: 'https://example.com' });
 
   await usersRepo.createUser('U1', { scenarioKey: 'A', stepKey: 'week' });
-  await usersRepo.createUser('U2', { scenarioKey: 'A', stepKey: 'week' });
 
   const created = await createNotification({
     title: 'Title',
@@ -63,44 +62,76 @@ test('phase161: execute failure writes notifications.send.execute audit with ok=
   const plan = await planNotificationSend({
     notificationId: created.id,
     actor: 'admin_composer',
-    traceId: 'TRACE_FAIL_1',
+    traceId: 'TRACE_PERSIST_FAIL_1',
     requestId: 'REQ_1'
   }, { now: new Date('2026-02-10T00:00:00.000Z') });
   assert.strictEqual(plan.ok, true);
 
-  const result = await executeNotificationSend({
+  const originalCreateDeliveryWithId = deliveriesRepo.createDeliveryWithId;
+  let injected = false;
+  deliveriesRepo.createDeliveryWithId = async (deliveryId, data) => {
+    if (!injected && data && data.state === 'delivered' && data.delivered === true) {
+      injected = true;
+      throw new Error('persist_failed_after_push');
+    }
+    return originalCreateDeliveryWithId(deliveryId, data);
+  };
+
+  const firstSent = [];
+  let first = null;
+  try {
+    first = await executeNotificationSend({
+      notificationId: created.id,
+      planHash: plan.planHash,
+      confirmToken: plan.confirmToken,
+      actor: 'admin_composer',
+      traceId: 'TRACE_PERSIST_FAIL_1',
+      requestId: 'REQ_2'
+    }, {
+      now: new Date('2026-02-10T00:00:30.000Z'),
+      getKillSwitch: async () => false,
+      pushFn: async (lineUserId) => {
+        firstSent.push(lineUserId);
+        return { status: 200 };
+      }
+    });
+  } finally {
+    deliveriesRepo.createDeliveryWithId = originalCreateDeliveryWithId;
+  }
+
+  assert.strictEqual(first.ok, false);
+  assert.strictEqual(first.partial, true);
+  assert.strictEqual(first.reason, 'send_partial_failure');
+  assert.deepStrictEqual(firstSent, ['U1']);
+
+  const deliveryId = computeNotificationDeliveryId({ notificationId: created.id, lineUserId: 'U1' });
+  const deliveryAfterFirst = await deliveriesRepo.getDelivery(deliveryId);
+  assert.ok(deliveryAfterFirst);
+  assert.strictEqual(deliveryAfterFirst.state, 'delivery_persist_failed_after_push');
+  assert.strictEqual(Boolean(deliveryAfterFirst.lastError), false);
+
+  const secondSent = [];
+  const second = await executeNotificationSend({
     notificationId: created.id,
     planHash: plan.planHash,
     confirmToken: plan.confirmToken,
     actor: 'admin_composer',
-    traceId: 'TRACE_FAIL_1',
-    requestId: 'REQ_2'
+    traceId: 'TRACE_PERSIST_FAIL_1',
+    requestId: 'REQ_3'
   }, {
-    now: new Date('2026-02-10T00:00:30.000Z'),
+    now: new Date('2026-02-10T00:02:00.000Z'),
     getKillSwitch: async () => false,
-    pushFn: async () => {
-      throw new Error('push_failed');
+    pushFn: async (lineUserId) => {
+      secondSent.push(lineUserId);
+      return { status: 200 };
     }
   });
-  assert.strictEqual(result.ok, false);
-  assert.strictEqual(result.partial, true);
-  assert.strictEqual(result.reason, 'send_partial_failure');
-  assert.strictEqual(result.failedCount, 2);
 
-  const after = await notificationsRepo.getNotification(created.id);
-  assert.strictEqual(after.status, 'planned', 'notification should remain planned on failure');
+  assert.strictEqual(second.ok, true);
+  assert.strictEqual(second.deliveredCount, 0);
+  assert.strictEqual(second.skippedCount, 1);
+  assert.deepStrictEqual(secondSent, [], 'rerun should skip user to prevent duplicate send');
 
-  const deliveries = await deliveriesRepo.listDeliveriesByNotificationId(created.id);
-  assert.strictEqual(deliveries.length, 2, 'delivery should be reserved and marked failed for each failed recipient');
-  deliveries.forEach((delivery) => {
-    assert.strictEqual(delivery.delivered, false);
-    assert.strictEqual(delivery.state, 'failed');
-    assert.ok(String(delivery.lastError || '').includes('push_failed'));
-  });
-
-  const audits = await auditLogsRepo.listAuditLogsByTraceId('TRACE_FAIL_1', 50);
-  const execAudits = audits.filter((a) => a.action === 'notifications.send.execute');
-  assert.ok(execAudits.length >= 1, 'expected notifications.send.execute audit');
-  assert.ok(execAudits.some((a) => a.payloadSummary && a.payloadSummary.ok === false), 'expected ok=false in audit');
-  assert.ok(execAudits.some((a) => a.payloadSummary && a.payloadSummary.reason === 'send_partial_failure'), 'expected reason=send_partial_failure in audit');
+  const afterOk = await notificationsRepo.getNotification(created.id);
+  assert.strictEqual(afterOk.status, 'sent');
 });

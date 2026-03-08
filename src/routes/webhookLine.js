@@ -39,6 +39,7 @@ const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
 const {
+  DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE,
   getPublicWriteSafetySnapshot,
   getLlmPolicy,
   getLlmConciergeEnabled,
@@ -2919,7 +2920,7 @@ async function handleLineWebhook(options) {
       const killSwitchOn = await customKillSwitchFn();
       safety = {
         killSwitchOn: Boolean(killSwitchOn),
-        failCloseMode: 'warn',
+        failCloseMode: DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE,
         readError: false
       };
     } catch (err) {
@@ -3189,7 +3190,8 @@ async function handleLineWebhook(options) {
           }
         } catch (err) {
           const msg = err && err.message ? err.message : 'error';
-          logger(`[webhook] requestId=${requestId} redac_membership=error message=${msg}`);
+          const errorClass = err && err.name ? String(err.name) : 'Error';
+          logger(`[webhook] requestId=${requestId} event_handler=error errorClass=${errorClass} message=${msg}`);
         }
       }
     }

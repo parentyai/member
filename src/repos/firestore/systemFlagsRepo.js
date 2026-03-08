@@ -5,7 +5,7 @@ const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 
 const COLLECTION = 'system_flags';
 const DOC_ID = 'phase0';
-const DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE = 'warn';
+const DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE = 'enforce';
 const DEFAULT_TRACK_AUDIT_WRITE_MODE = 'best_effort';
 const ALLOWED_PUBLIC_WRITE_FAIL_CLOSE_MODES = new Set(['off', 'warn', 'enforce']);
 const ALLOWED_TRACK_AUDIT_WRITE_MODES = new Set(['best_effort', 'await']);
