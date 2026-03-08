@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:18:17-05:00",
-  "gitCommit": "b5973ed39d0fdd44a8233a979230add197963bd7",
-  "branch": "codex/llm-v3-pr3a-risk-tier",
-  "sourceDigest": "3f9b3861dab0668b1bf2ecacb04702e6914c6cd3edf9e046a3122c859340974d",
+  "generatedAt": "2026-03-07T19:30:06-05:00",
+  "gitCommit": "c4d04c7ee9be1551fa4b238dd0134ff6ef9e2dcd",
+  "branch": "codex/city-pack-vendor-pr-pure",
+  "sourceDigest": "9e369906bd0c9847126e9ee7b2bf865385cb8bee9a6da43c914ec3e936756992",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
