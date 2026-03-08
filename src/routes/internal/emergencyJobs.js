@@ -20,7 +20,23 @@ function parseJson(bodyText) {
   }
 }
 
-async function handleEmergencyJobs(req, res, bodyText) {
+function resolveInternalJobStatusCode(result) {
+  const row = result && typeof result === 'object' ? result : null;
+  if (!row || row.ok !== false) return 200;
+  if (row.blocked === true || row.reason === 'kill_switch_on') return 409;
+  if (row.partial === true || row.partialFailure === true) return 207;
+  if (Number.isInteger(row.httpStatus) && row.httpStatus >= 400 && row.httpStatus <= 599) return row.httpStatus;
+  if (Number.isInteger(row.statusCode) && row.statusCode >= 400 && row.statusCode <= 599) return row.statusCode;
+  return 500;
+}
+
+async function handleEmergencyJobs(req, res, bodyText, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const getKillSwitchFn = resolvedDeps.getKillSwitch || getKillSwitch;
+  const runEmergencySyncFn = resolvedDeps.runEmergencySync || runEmergencySync;
+  const fetchProviderSnapshotFn = resolvedDeps.fetchProviderSnapshot || fetchProviderSnapshot;
+  const normalizeAndDiffProviderFn = resolvedDeps.normalizeAndDiffProvider || normalizeAndDiffProvider;
+  const summarizeDraftWithLLMFn = resolvedDeps.summarizeDraftWithLLM || summarizeDraftWithLLM;
   const pathname = new URL(req.url, 'http://localhost').pathname;
   if (req.method !== 'POST') {
     writeJson(res, 404, { ok: false, error: 'not found' });
@@ -28,7 +44,7 @@ async function handleEmergencyJobs(req, res, bodyText) {
   }
   if (!requireInternalJobToken(req, res)) return;
 
-  const killSwitchOn = await getKillSwitch();
+  const killSwitchOn = await getKillSwitchFn();
   if (killSwitchOn) {
     writeJson(res, 409, { ok: false, error: 'kill switch on' });
     return;
@@ -45,7 +61,7 @@ async function handleEmergencyJobs(req, res, bodyText) {
   const traceId = traceIdHeader || payload.traceId || null;
 
   if (pathname === '/internal/jobs/emergency-sync') {
-    const result = await runEmergencySync({
+    const result = await runEmergencySyncFn({
       runId: payload.runId,
       traceId,
       actor: 'emergency_sync_job',
@@ -57,24 +73,24 @@ async function handleEmergencyJobs(req, res, bodyText) {
       dryRun: payload.dryRun === true,
       maxRecipientsPerRun: payload.maxRecipientsPerRun
     });
-    writeJson(res, 200, result);
+    writeJson(res, resolveInternalJobStatusCode(result), result);
     return;
   }
 
   if (pathname === '/internal/jobs/emergency-provider-fetch') {
-    const result = await fetchProviderSnapshot({
+    const result = await fetchProviderSnapshotFn({
       providerKey: payload.providerKey,
       runId: payload.runId,
       traceId,
       actor: 'emergency_provider_fetch_job',
       forceRefresh: payload.forceRefresh === true
     });
-    writeJson(res, 200, result);
+    writeJson(res, resolveInternalJobStatusCode(result), result);
     return;
   }
 
   if (pathname === '/internal/jobs/emergency-provider-normalize') {
-    const result = await normalizeAndDiffProvider({
+    const result = await normalizeAndDiffProviderFn({
       providerKey: payload.providerKey,
       snapshotId: payload.snapshotId,
       payloadJson: payload.payloadJson || null,
@@ -83,18 +99,18 @@ async function handleEmergencyJobs(req, res, bodyText) {
       traceId,
       actor: 'emergency_provider_normalize_job'
     });
-    writeJson(res, 200, result);
+    writeJson(res, resolveInternalJobStatusCode(result), result);
     return;
   }
 
   if (pathname === '/internal/jobs/emergency-provider-summarize') {
-    const result = await summarizeDraftWithLLM({
+    const result = await summarizeDraftWithLLMFn({
       diffId: payload.diffId,
       runId: payload.runId,
       traceId,
       actor: 'emergency_provider_summarize_job'
     });
-    writeJson(res, 200, result);
+    writeJson(res, resolveInternalJobStatusCode(result), result);
     return;
   }
 

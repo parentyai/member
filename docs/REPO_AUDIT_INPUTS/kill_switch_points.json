@@ -392,7 +392,7 @@
     },
     {
       "file": "src/routes/internal/emergencyJobs.js",
-      "line": 31,
+      "line": 35,
       "symbol": "getKillSwitch"
     },
     {
@@ -492,12 +492,22 @@
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 48,
+      "line": 43,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/routes/internal/taskNudgeJob.js",
-      "line": 49,
+      "line": 51,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/taskNudgeJob.js",
+      "line": 53,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/routes/internal/taskNudgeJob.js",
+      "line": 58,
       "symbol": "killSwitch"
     },
     {
@@ -963,11 +973,16 @@
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
       "line": 205,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/usecases/tasks/runTaskNudgeJob.js",
+      "line": 207,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/usecases/tasks/runTaskNudgeJob.js",
-      "line": 206,
+      "line": 234,
       "symbol": "killSwitch"
     }
   ]

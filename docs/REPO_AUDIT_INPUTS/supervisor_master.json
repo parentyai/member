@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T01:13:36-05:00",
-  "gitCommit": "2d817f08245419ce00bc5a992f282ffabecf495c",
-  "branch": "codex/member-next5-pr4-observability-hygiene",
-  "sourceDigest": "a5ccafb5432e817e6607ee352b1fd345a42fa32a42d7f371c81efd0e83779d19",
+  "generatedAt": "2026-03-08T09:28:12-04:00",
+  "gitCommit": "05b5ae4e4fafedd8b8b94f3050ad1188dfcce5bc",
+  "branch": "codex/member-nextfix-prA-stopship-guard",
+  "sourceDigest": "83cd9bfb1717736844d966f16aff05f607633de1c89528f13f5045137ffc01c2",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
