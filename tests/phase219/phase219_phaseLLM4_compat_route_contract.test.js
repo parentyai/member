@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const USECASE_PATH = require.resolve('../../src/usecases/faq/answerFaqFromKb');
 const ROUTE_PATH = require.resolve('../../src/routes/phaseLLM4FaqAnswer');
+const OS_CONTEXT_PATH = require.resolve('../../src/routes/admin/osContext');
 
 function createResCapture() {
   const out = {
@@ -29,11 +30,20 @@ function createResCapture() {
 async function withMockedRoute(mockAnswerFaqFromKb, fn) {
   const prevUsecase = require.cache[USECASE_PATH];
   const prevRoute = require.cache[ROUTE_PATH];
+  const prevOsContext = require.cache[OS_CONTEXT_PATH];
   require.cache[USECASE_PATH] = {
     id: USECASE_PATH,
     filename: USECASE_PATH,
     loaded: true,
     exports: { answerFaqFromKb: mockAnswerFaqFromKb }
+  };
+  require.cache[OS_CONTEXT_PATH] = {
+    id: OS_CONTEXT_PATH,
+    filename: OS_CONTEXT_PATH,
+    loaded: true,
+    exports: {
+      enforceLlmGenerationKillSwitch: async () => true
+    }
   };
   delete require.cache[ROUTE_PATH];
   const route = require('../../src/routes/phaseLLM4FaqAnswer');
@@ -44,6 +54,8 @@ async function withMockedRoute(mockAnswerFaqFromKb, fn) {
     if (prevUsecase) require.cache[USECASE_PATH] = prevUsecase;
     else delete require.cache[USECASE_PATH];
     if (prevRoute) require.cache[ROUTE_PATH] = prevRoute;
+    if (prevOsContext) require.cache[OS_CONTEXT_PATH] = prevOsContext;
+    else delete require.cache[OS_CONTEXT_PATH];
   }
 }
 

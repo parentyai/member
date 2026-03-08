@@ -30,13 +30,37 @@ function fail(errors, msg) {
   errors.push(msg);
 }
 
+function splitMarkdownCells(rowBody) {
+  const cells = [];
+  let buffer = '';
+  let escaped = false;
+  for (let idx = 0; idx < rowBody.length; idx += 1) {
+    const ch = rowBody[idx];
+    if (escaped) {
+      buffer += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      buffer += ch;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(buffer.trim().replace(/\\\|/g, '|'));
+      buffer = '';
+      continue;
+    }
+    buffer += ch;
+  }
+  cells.push(buffer.trim().replace(/\\\|/g, '|'));
+  return cells;
+}
+
 function parseRow(line) {
   const trimmed = line.trim();
   if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return [];
-  return trimmed
-    .slice(1, -1)
-    .split('|')
-    .map((cell) => cell.trim());
+  return splitMarkdownCells(trimmed.slice(1, -1));
 }
 
 function parseTables(text) {

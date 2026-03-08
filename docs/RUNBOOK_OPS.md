@@ -284,6 +284,18 @@ STOP の方針:
   - `journey_reminder_runs.skipReasonCounts/triggerCounts`
   - events: `journey_primary_notification_sent`, `notification_fatigue_guarded`, `notification_quiet_hours_guarded`, `notification_narrowing_skipped`
 
+### Partial / Degraded Semantics（通知・Reminder）
+1. `POST /internal/jobs/journey-todo-reminder`
+  - 全件成功: `200`, `ok=true`, `status=completed`
+  - 部分失敗: `207`, `ok=false`, `status=completed_with_failures`, `partialFailure=true`
+2. `POST /api/admin/os/notifications/send/execute`
+  - 全件成功: `200`, `ok=true`
+  - 部分失敗: `207`, `ok=false`, `partial=true`, `reason=send_partial_failure`
+3. 監視:
+  - `failedCount`
+  - `failureSample`
+  - `reason=send_partial_failure`
+
 ### Journey policy quietHours 契約（Phase746）
 1. canonical:
   - `opsConfig/journeyPolicy.notificationCaps.quietHours`

@@ -433,6 +433,51 @@ test('phase675: WARN mode allows phase1Events when killSwitch read fails and app
   assert.equal(guardWarn.payloadSummary.failCloseMode, 'warn');
 });
 
+test('phase675: default mode fail-closes phase1Events when killSwitch read fails', async (t) => {
+  const restoreEnv = withEnv({
+    SERVICE_MODE: null,
+    ADMIN_OS_TOKEN: 'phase675_admin',
+    PUBLIC_WRITE_FAIL_CLOSE_MODE: null
+  });
+  const db = createDbStub();
+  const failDb = createSystemFlagsReadFailDb(db);
+  setDbForTest(failDb);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const boot = await startServer();
+  t.after(async () => {
+    await new Promise((resolve) => boot.server.close(resolve));
+    clearDbForTest();
+    clearServerTimestampForTest();
+    restoreEnv();
+  });
+
+  const response = await httpRequest({
+    port: boot.port,
+    method: 'POST',
+    path: '/api/phase1/events',
+    headers: {
+      'content-type': 'application/json',
+      'x-admin-token': 'phase675_admin'
+    },
+    body: JSON.stringify({
+      lineUserId: 'U_PHASE675_DEFAULT_ENFORCE',
+      type: 'click',
+      ref: { notificationId: 'N_PHASE675_DEFAULT_ENFORCE' }
+    })
+  });
+
+  assert.equal(response.status, 503);
+  const parsed = JSON.parse(response.body);
+  assert.equal(parsed.ok, false);
+  assert.equal(parsed.error, 'temporarily unavailable');
+
+  const blocked = listAuditRows(db).find((row) => row.action === 'phase1.events.blocked');
+  assert.ok(blocked);
+  assert.equal(blocked.payloadSummary.errorCode, 'kill_switch_read_failed_fail_closed');
+  assert.equal(blocked.payloadSummary.failCloseMode, 'enforce');
+});
+
 test('phase675: ENFORCE mode fail-closes track click when killSwitch read fails', async (t) => {
   const restoreEnv = withEnv({
     SERVICE_MODE: 'track',

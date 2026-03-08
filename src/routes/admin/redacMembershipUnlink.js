@@ -40,6 +40,11 @@ function resolveHmacSecret() {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
+function logRedacAdminBestEffortFailure(stage, requestId, err) {
+  const message = err && err.message ? String(err.message) : 'error';
+  console.warn(`[redac_membership_admin] stage=${stage} requestId=${requestId || 'unknown'} message=${message}`);
+}
+
 async function handleRedacMembershipUnlink(req, res, body) {
   const actor = resolveActor(req);
   const requestId = resolveRequestId(req);
@@ -60,7 +65,9 @@ async function handleRedacMembershipUnlink(req, res, body) {
         requestId,
         payloadSummary: { ok: false, reason: 'invalid_format' }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacAdminBestEffortFailure('unlink_invalid_audit', requestId, err);
+    }
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'invalid redacMembershipId format' }));
     return;
@@ -79,7 +86,9 @@ async function handleRedacMembershipUnlink(req, res, body) {
         requestId,
         payloadSummary: { ok: false, reason: 'server_misconfigured' }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacAdminBestEffortFailure('unlink_misconfigured_audit', requestId, err);
+    }
     res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'server misconfigured' }));
     return;
@@ -129,7 +138,9 @@ async function handleRedacMembershipUnlink(req, res, body) {
         requestId,
         payloadSummary: { ok: false, status: 'not_found', redacMembershipIdLast4: last4 }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacAdminBestEffortFailure('unlink_not_found_audit', requestId, err);
+    }
     res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'not_found' }));
     return;
@@ -147,7 +158,9 @@ async function handleRedacMembershipUnlink(req, res, body) {
       requestId,
       payloadSummary: { ok: true, redacMembershipIdLast4: last4, lineUserId }
     });
-  } catch (_err) {}
+  } catch (err) {
+    logRedacAdminBestEffortFailure('unlink_ok_audit', requestId, err);
+  }
 
   if (lineUserId) {
     try {
@@ -156,7 +169,9 @@ async function handleRedacMembershipUnlink(req, res, body) {
         type: 'redac_membership.unlink_ok',
         ref: { requestId, redacMembershipIdLast4: last4 }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacAdminBestEffortFailure('unlink_event_append', requestId, err);
+    }
   }
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
@@ -166,4 +181,3 @@ async function handleRedacMembershipUnlink(req, res, body) {
 module.exports = {
   handleRedacMembershipUnlink
 };
-

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   KG_DIR,
+  AUDIT_INPUT_DIR,
   ensureDir,
   readJson,
   writeText,
@@ -58,12 +59,39 @@ function parseMetadata(lines) {
   return out;
 }
 
+function splitMarkdownCells(rowBody) {
+  const cells = [];
+  let buffer = '';
+  let escaped = false;
+  for (let idx = 0; idx < rowBody.length; idx += 1) {
+    const ch = rowBody[idx];
+    if (escaped) {
+      buffer += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      buffer += ch;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(buffer.trim().replace(/\\\|/g, '|'));
+      buffer = '';
+      continue;
+    }
+    buffer += ch;
+  }
+  cells.push(buffer.trim().replace(/\\\|/g, '|'));
+  return cells;
+}
+
 function parseTableCells(line) {
   const trimmed = String(line || '').trim();
   if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
   const body = trimmed.slice(1, -1).trim();
   if (!body) return [];
-  return body.split(/\s\|\s/).map((cell) => cell.trim());
+  return splitMarkdownCells(body);
 }
 
 function parseTablesWithLine(lines) {
@@ -125,6 +153,14 @@ function methodToAction(method) {
   return String(method || '').toUpperCase() === 'GET' ? 'read' : 'write';
 }
 
+function normalizeApiPathForKey(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === 'UNOBSERVED_IN_DOCS') return raw || 'UNOBSERVED_IN_DOCS';
+  const [pathOnly] = raw.split('?');
+  if (!pathOnly) return raw;
+  return pathOnly.replace(/\/+$/, '') || '/';
+}
+
 function stripPrefix(value, prefix) {
   const text = String(value || '');
   return text.startsWith(prefix) ? text.slice(prefix.length) : text;
@@ -179,8 +215,15 @@ function appendOrReplaceSection(docPath, sectionKey, sectionTitle, body) {
   writeText(docPath, next);
 }
 
-function buildFirestoreRuntimeMap(metadata, runtimeProbe) {
+function buildFirestoreRuntimeMap(metadata, runtimeProbe, staticCollections) {
   const firestore = runtimeProbe && runtimeProbe.firestore ? runtimeProbe.firestore : {};
+  const staticSet = new Set(Array.isArray(staticCollections) ? staticCollections.filter(Boolean) : []);
+  const runtimeSet = new Set(Array.isArray(firestore.collections) ? firestore.collections.filter(Boolean) : []);
+  const staticOnly = Array.from(staticSet).filter((name) => !runtimeSet.has(name)).sort((a, b) => a.localeCompare(b));
+  const runtimeOnly = Array.from(runtimeSet).filter((name) => !staticSet.has(name)).sort((a, b) => a.localeCompare(b));
+  const coverageText = firestore.status === 'OBSERVED_RUNTIME'
+    ? `${runtimeSet.size}/${Math.max(staticSet.size, 1)}`
+    : 'UNOBSERVED_RUNTIME';
   const rows = [];
   if (firestore.status === 'OBSERVED_RUNTIME' && Array.isArray(firestore.collectionSummaries) && firestore.collectionSummaries.length > 0) {
     for (const row of firestore.collectionSummaries) {
@@ -211,6 +254,9 @@ function buildFirestoreRuntimeMap(metadata, runtimeProbe) {
   lines.push(`- generatedAt: ${new Date().toISOString()}`);
   lines.push(`- source.generatedAt: ${metadata['generatedAt'] || 'UNOBSERVED_IN_DOCS'}`);
   lines.push(`- runtime.firestore: ${firestore.status || 'UNOBSERVED_RUNTIME'}`);
+  lines.push(`- staticVsRuntimeCoverage: ${coverageText}`);
+  lines.push(`- staticOnlyCollections: ${staticOnly.length ? staticOnly.slice(0, 40).join(', ') : 'none'}`);
+  lines.push(`- runtimeOnlyCollections: ${runtimeOnly.length ? runtimeOnly.slice(0, 40).join(', ') : 'none'}`);
   lines.push('');
   lines.push('`gcloud auth login --update-adc` and `gcloud auth application-default login` are required for Firestore runtime sampling.');
   lines.push('');
@@ -359,7 +405,24 @@ function buildOperationGraph(entityRelationsTable, entityApiTable, entitySchemaT
     current.evidence = unique(splitEvidence(current.evidence).concat(splitEvidence(row.evidence))).join('<br>');
     merged.set(key, current);
   }
-  return Array.from(merged.values());
+  const normalized = new Map();
+  for (const row of merged.values()) {
+    const key = `${row.operation}||${normalizeApiPathForKey(row.api)}||${String(row.method || '').toUpperCase()}||${row.entity}`;
+    if (!normalized.has(key)) {
+      normalized.set(key, Object.assign({}, row));
+      continue;
+    }
+    const current = normalized.get(key);
+    if ((current.api === 'UNOBSERVED_IN_DOCS' || !current.api) && row.api && row.api !== 'UNOBSERVED_IN_DOCS') {
+      current.api = row.api;
+    }
+    if ((current.writeFields === 'UNOBSERVED_IN_DOCS' || !current.writeFields) && row.writeFields && row.writeFields !== 'UNOBSERVED_IN_DOCS') {
+      current.writeFields = row.writeFields;
+    }
+    current.evidence = unique(splitEvidence(current.evidence).concat(splitEvidence(row.evidence))).join('<br>');
+    normalized.set(key, current);
+  }
+  return Array.from(normalized.values());
 }
 
 function buildPermissionOperationRows(permissionTable, operationRows) {
@@ -393,7 +456,21 @@ function buildPermissionOperationRows(permissionTable, operationRows) {
       });
     }
   }
-  return rows;
+  const dedup = new Map();
+  for (const row of rows) {
+    const key = `${row.role}||${row.operation}||${row.entity}`;
+    if (!dedup.has(key)) {
+      dedup.set(key, Object.assign({}, row));
+      continue;
+    }
+    const current = dedup.get(key);
+    if (current.allowed !== row.allowed) {
+      current.allowed = current.allowed === 'YES' || row.allowed === 'YES' ? 'YES' : 'NO';
+    }
+    current.evidence = unique(splitEvidence(current.evidence).concat(splitEvidence(row.evidence))).join('<br>');
+    dedup.set(key, current);
+  }
+  return Array.from(dedup.values());
 }
 
 function buildUiParameterRows(entitySchemaTable, operationRows) {
@@ -635,6 +712,10 @@ function run() {
     docMap[key] = readDoc(DOCS[key]);
   }
   const runtimeProbe = readJson(DOCS.runtimeProbe, {});
+  const dataModelMap = readJson(path.join(AUDIT_INPUT_DIR, 'data_model_map.json'), { collections: [] });
+  const staticCollections = Array.isArray(dataModelMap.collections)
+    ? dataModelMap.collections.map((row) => row && row.collection).filter(Boolean)
+    : [];
 
   const scopeTables = parseTablesWithLine(docMap.scope.lines);
   const metadata = parseMetadata(docMap.scope.lines);
@@ -649,7 +730,7 @@ function run() {
     throw new Error('required source tables not found in docs/knowledge-graph/*.md');
   }
 
-  writeText(OUTPUTS.firestoreRuntime, buildFirestoreRuntimeMap(metadata, runtimeProbe));
+  writeText(OUTPUTS.firestoreRuntime, buildFirestoreRuntimeMap(metadata, runtimeProbe, staticCollections));
 
   const expandedRelations = buildExpandedEntityRelations(relationsTable);
   appendOrReplaceSection(DOCS.relations, 'RELATIONS_JOIN', 'V2 Join/Cardinality Extension', expandedRelations.markdownTable);

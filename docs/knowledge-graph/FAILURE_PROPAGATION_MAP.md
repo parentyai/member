@@ -1,9 +1,9 @@
 # FAILURE_PROPAGATION_MAP
 
-- generatedAt: 2026-03-08T03:08:08.742Z
-- source.generatedAt: 2026-03-08T03:08:07.132Z
-- source.gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
-- source.branch: codex/knowledge-graph-v2-finalize
+- generatedAt: 2026-03-08T04:34:19.289Z
+- source.generatedAt: 2026-03-08T04:34:11.724Z
+- source.gitCommit: 690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f
+- source.branch: codex/member-integrated-remediation-v1
 - note: derived from PROJECT_FAILURE_RECOVERY_MAP + ENTITY_RELATIONS
 
 | Failure | Propagation | Recovery | Evidence |

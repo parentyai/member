@@ -11,6 +11,10 @@ This document describes what data the Member system stores, where it is stored, 
 - `memberNumber`: user-provided number (not verified by Member)
 - `redacMembershipIdHash`: HMAC-SHA256 of user-declared Redac membership id (not reversible without secret)
 
+## Canonical Naming Authority
+- canonical prefix is `redac_*` (legacy `ridac_*` は互換readのみ、new write禁止)
+- canonical collection is `ops_states` (legacy `ops_state` は互換readのみ、new write禁止)
+
 ## Stored Data (Firestore)
 ### `users/{lineUserId}`
 Purpose: user profile + minimal state needed for operations.
@@ -49,6 +53,10 @@ Fields:
 ### `decision_logs/{id}` / `decision_timeline/{id}` / `ops_states/{lineUserId}`
 Purpose: operations decisions, readiness, and state tracking.
 
+Compatibility note:
+- `ops_states` が canonical。
+- `ops_state` は read fallback 互換としてのみ維持し、運用書き込み先には使わない。
+
 ### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
 Purpose: product events, notification metadata, and checklist progress.
 
@@ -73,11 +81,12 @@ Purpose: delivery idempotency / reaction tracking / cap evaluation source-of-tru
 
 Typical fields:
 - `notificationId`, `lineUserId`
-- `state` (`reserved`/`failed`/`delivered`/`sealed`)
+- `state` (`reserved`/`failed`/`delivered`/`sealed`/`delivery_persist_failed_after_push`)
 - `delivered` (boolean)
 - `sentAt` (timestamp|string|null)
 - `deliveredAt` (timestamp|string|null, cap evaluation primary time)
 - `readAt`, `clickAt`, `lastError`, `lastErrorAt`
+- `deliveryPersistError`, `deliveryPersistErrorAt`（push成功後の保存失敗を再送誘発なしで記録）
 - `sealed`, `sealedAt`, `sealedBy`, `sealedReason`
 - `deliveredAtBackfilledAt`, `deliveredAtBackfilledBy` (manual backfill evidence)
 

@@ -79,6 +79,7 @@
     "audit:scenariokey-drift:check": "node scripts/check_scenariokey_drift.js",
     "audit:scenariokey-drift:details": "node scripts/report_scenariokey_drift_details.js",
     "audit:scenariokey-drift:queue": "node scripts/report_scenariokey_remediation_queue.js",
+    "feature-flags:task:check": "node scripts/check_task_feature_flag_registry.js",
     "audit:consistency:status": "node scripts/report_consistency_status.js",
     "firestore-indexes:check": "node scripts/check_firestore_indexes.js --check",
     "firestore-indexes:plan": "node scripts/check_firestore_indexes.js --plan",

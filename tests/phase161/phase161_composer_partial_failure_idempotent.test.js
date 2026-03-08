@@ -70,28 +70,27 @@ test('phase161: partial send failure -> rerun executes remaining only (no double
   assert.strictEqual(plan.ok, true);
 
   const firstSent = [];
-  let firstErr = null;
-  try {
-    await executeNotificationSend({
-      notificationId: created.id,
-      planHash: plan.planHash,
-      confirmToken: plan.confirmToken,
-      actor: 'admin_composer',
-      traceId: 'TRACE_PARTIAL_1',
-      requestId: 'REQ_2'
-    }, {
-      now: new Date('2026-02-10T00:00:30.000Z'),
-      getKillSwitch: async () => false,
-      pushFn: async (lineUserId) => {
-        firstSent.push(lineUserId);
-        if (lineUserId === 'U2') throw new Error('push_failed');
-        return { status: 200 };
-      }
-    });
-  } catch (err) {
-    firstErr = err;
-  }
-  assert.ok(firstErr, 'expected first execute to throw');
+  const first = await executeNotificationSend({
+    notificationId: created.id,
+    planHash: plan.planHash,
+    confirmToken: plan.confirmToken,
+    actor: 'admin_composer',
+    traceId: 'TRACE_PARTIAL_1',
+    requestId: 'REQ_2'
+  }, {
+    now: new Date('2026-02-10T00:00:30.000Z'),
+    getKillSwitch: async () => false,
+    pushFn: async (lineUserId) => {
+      firstSent.push(lineUserId);
+      if (lineUserId === 'U2') throw new Error('push_failed');
+      return { status: 200 };
+    }
+  });
+  assert.strictEqual(first.ok, false);
+  assert.strictEqual(first.partial, true);
+  assert.strictEqual(first.reason, 'send_partial_failure');
+  assert.strictEqual(first.deliveredCount, 1);
+  assert.strictEqual(first.failedCount, 1);
 
   const afterFail = await notificationsRepo.getNotification(created.id);
   assert.strictEqual(afterFail.status, 'planned', 'should remain planned when send fails');

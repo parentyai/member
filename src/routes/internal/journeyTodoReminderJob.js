@@ -73,7 +73,8 @@ async function handleJourneyTodoReminderJob(req, res, bodyText) {
     requestId: payload.requestId || null
   });
 
-  writeJson(res, 200, result);
+  const statusCode = result && result.partialFailure === true ? 207 : 200;
+  writeJson(res, statusCode, result);
 }
 
 module.exports = {

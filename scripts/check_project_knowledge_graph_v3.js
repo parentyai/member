@@ -21,12 +21,39 @@ const REQUIRED_EXTENSIONS = Object.freeze([
 
 const EVIDENCE_RE = /^(runtime:[^@]+@.+|[A-Za-z0-9_.\/-]+\.[A-Za-z0-9]+:[0-9]+)$/;
 
+function splitMarkdownCells(rowBody) {
+  const cells = [];
+  let buffer = '';
+  let escaped = false;
+  for (let idx = 0; idx < rowBody.length; idx += 1) {
+    const ch = rowBody[idx];
+    if (escaped) {
+      buffer += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      buffer += ch;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(buffer.trim().replace(/\\\|/g, '|'));
+      buffer = '';
+      continue;
+    }
+    buffer += ch;
+  }
+  cells.push(buffer.trim().replace(/\\\|/g, '|'));
+  return cells;
+}
+
 function parseRow(line) {
   const trimmed = String(line || '').trim();
   if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
   const body = trimmed.slice(1, -1).trim();
   if (!body) return [];
-  return body.split(/\s\|\s/).map((cell) => cell.trim());
+  return splitMarkdownCells(body);
 }
 
 function parseTables(text) {
@@ -56,6 +83,40 @@ function parseTables(text) {
 
 function tableHasHeaders(table, headers) {
   return headers.every((header) => table.header.includes(header));
+}
+
+function validateUniqueKeyRows(errors, fileName, table, keyHeaders, label) {
+  const keyIndexes = keyHeaders.map((header) => table.header.indexOf(header));
+  if (keyIndexes.some((idx) => idx === -1)) return;
+  const seen = new Set();
+  for (const row of table.rows) {
+    const key = keyIndexes.map((idx) => String(row[idx] || '').trim()).join('||');
+    if (seen.has(key)) {
+      errors.push(`${fileName}: duplicate ${label} key "${key}"`);
+      continue;
+    }
+    seen.add(key);
+  }
+}
+
+function validateYesNoConflicts(errors, fileName, table) {
+  const roleIdx = table.header.indexOf('Role');
+  const operationIdx = table.header.indexOf('Operation');
+  const entityIdx = table.header.indexOf('Entity');
+  const allowedIdx = table.header.indexOf('Allowed');
+  if (roleIdx === -1 || operationIdx === -1 || entityIdx === -1 || allowedIdx === -1) return;
+  const seen = new Map();
+  for (const row of table.rows) {
+    const key = [row[roleIdx], row[operationIdx], row[entityIdx]].map((value) => String(value || '').trim()).join('||');
+    const allowed = String(row[allowedIdx] || '').trim().toUpperCase();
+    if (!seen.has(key)) {
+      seen.set(key, allowed);
+      continue;
+    }
+    if (seen.get(key) !== allowed) {
+      errors.push(`${fileName}: YES/NO conflict for key "${key}"`);
+    }
+  }
 }
 
 function validateEvidenceFromTables(errors, fileName, tables) {
@@ -106,6 +167,19 @@ function run() {
     }
     if (!tables.some((table) => tableHasHeaders(table, spec.headers))) {
       errors.push(`${spec.file}: required headers missing (${spec.headers.join(', ')})`);
+    }
+    if (spec.file === 'API_OPERATION_MAP.md') {
+      const opTable = tables.find((table) => tableHasHeaders(table, ['Operation', 'API', 'Method', 'Entity']));
+      if (opTable) {
+        validateUniqueKeyRows(errors, spec.file, opTable, ['Operation', 'API', 'Method', 'Entity'], 'operation');
+      }
+    }
+    if (spec.file === 'PERMISSION_OPERATION_MAP.md') {
+      const permissionTable = tables.find((table) => tableHasHeaders(table, ['Role', 'Operation', 'Entity', 'Allowed']));
+      if (permissionTable) {
+        validateUniqueKeyRows(errors, spec.file, permissionTable, ['Role', 'Operation', 'Entity'], 'permission');
+        validateYesNoConflicts(errors, spec.file, permissionTable);
+      }
     }
     validateEvidenceFromTables(errors, spec.file, tables);
     if (spec.file === 'ADMIN_UI_DATA_RELATION_MAP.md') {

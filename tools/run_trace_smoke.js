@@ -75,7 +75,7 @@ async function runTraceSmoke(options) {
 
   const mode = opts.mode || envString('TRACE_SMOKE_MODE', 'stub');
   const evidencePath = opts.evidencePath || envString('TRACE_SMOKE_EVIDENCE_PATH', path.join('docs', 'TRACE_SMOKE_EVIDENCE.md'));
-  const writeEvidence = opts.writeEvidence !== undefined ? Boolean(opts.writeEvidence) : envBool('TRACE_SMOKE_WRITE_EVIDENCE', true);
+  const writeEvidence = opts.writeEvidence !== undefined ? Boolean(opts.writeEvidence) : envBool('TRACE_SMOKE_WRITE_EVIDENCE', false);
   const startServer = opts.startServer !== undefined ? Boolean(opts.startServer) : !envBool('TRACE_SMOKE_NO_START_SERVER', false);
 
   if (mode !== 'stub' && mode !== 'emulator') {

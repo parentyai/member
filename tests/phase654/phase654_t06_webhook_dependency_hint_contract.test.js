@@ -130,6 +130,25 @@ function loadWebhookWithStubs(options) {
   setOverride('../../src/repos/firestore/taskNodesRepo', {
     listTaskNodesByLineUserId: async () => taskNodes
   });
+  setOverride('../../src/repos/firestore/systemFlagsRepo', {
+    DEFAULT_PUBLIC_WRITE_FAIL_CLOSE_MODE: 'enforce',
+    getPublicWriteSafetySnapshot: async () => ({
+      killSwitchOn: false,
+      failCloseMode: 'enforce',
+      trackAuditWriteMode: 'best_effort',
+      readError: false,
+      source: 'test_stub'
+    }),
+    getLlmPolicy: async () => ({
+      lawfulBasis: 'unspecified',
+      consentVerified: false,
+      crossBorder: false
+    }),
+    getLlmConciergeEnabled: async () => false,
+    getLlmWebSearchEnabled: async () => true,
+    getLlmStyleEngineEnabled: async () => true,
+    getLlmBanditEnabled: async () => false
+  });
 
   overrides.forEach((entry, modulePath) => {
     require.cache[modulePath] = entry.replacement;

@@ -1,12 +1,12 @@
 # PROJECT_KNOWLEDGE_GRAPH_V2
 
-- generatedAt: 2026-03-08T03:08:08.742Z
+- generatedAt: 2026-03-08T04:34:19.289Z
 - source: docs/knowledge-graph/*.md (existing artifacts only) + runtime_probe.json
 - firestoreRuntime: OBSERVED_RUNTIME
 
 ## Coverage
-- operations: 9292
-- ui-parameter-links: 93
+- operations: 159
+- ui-parameter-links: 58
 - failure-propagation-rows: 6
 
 ## Key Paths

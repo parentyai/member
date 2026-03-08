@@ -562,9 +562,11 @@ async function runJourneyTodoReminderJob(params, deps) {
     }
   }
 
+  const partialFailure = failedCount > 0;
   const result = {
-    ok: true,
-    status: 'completed',
+    ok: !partialFailure,
+    status: partialFailure ? 'completed_with_failures' : 'completed',
+    partialFailure,
     runId: run.runId,
     policyVersionId,
     notificationNarrowingEnabled: narrowingEnabled,
