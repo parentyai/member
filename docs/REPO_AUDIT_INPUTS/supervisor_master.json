@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T21:00:32-05:00",
-  "gitCommit": "746298fa07a773f7a9e066c29481c8c44c9ca081",
-  "branch": "main",
-  "sourceDigest": "7e5408ff6d720365039fe25c4a2ff8a8ff743a71faffcdd08d6bb5b66a83f8bc",
+  "generatedAt": "2026-03-07T21:48:33-05:00",
+  "gitCommit": "8bae8342b36e44b086956dc2e1ec93d72398e0a5",
+  "branch": "codex/knowledge-graph-v2-finalize",
+  "sourceDigest": "6f56e91e2341dcf37c789a1431ebef288c0ec6849b5d1fe48dc8137d0a80502a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

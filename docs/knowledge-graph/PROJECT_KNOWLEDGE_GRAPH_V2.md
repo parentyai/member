@@ -1,6 +1,6 @@
 # PROJECT_KNOWLEDGE_GRAPH_V2
 
-- generatedAt: 2026-03-08T02:47:49.730Z
+- generatedAt: 2026-03-08T03:08:08.742Z
 - source: docs/knowledge-graph/*.md (existing artifacts only) + runtime_probe.json
 - firestoreRuntime: OBSERVED_RUNTIME
 

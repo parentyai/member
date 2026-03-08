@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-08T02:47:49.454Z",
-  "gitCommit": "746298fa07a773f7a9e066c29481c8c44c9ca081",
+  "generatedAt": "2026-03-08T03:08:01.041Z",
+  "gitCommit": "8bae8342b36e44b086956dc2e1ec93d72398e0a5",
   "branch": "codex/knowledge-graph-v2-finalize",
   "projectId": "member-485303",
   "activeAccount": "nshimamura@parentyai.com",
@@ -9,28 +9,28 @@
       "name": "gcloud_project",
       "command": "gcloud config get-value project",
       "status": 0,
-      "evidence": "runtime:gcloud config get-value project@2026-03-08T02:47:49.454Z",
+      "evidence": "runtime:gcloud config get-value project@2026-03-08T03:08:01.041Z",
       "stderr": null
     },
     {
       "name": "gcloud_auth_list",
       "command": "gcloud auth list --filter=status:ACTIVE --format=json",
       "status": 0,
-      "evidence": "runtime:gcloud auth list --filter=status:ACTIVE --format=json@2026-03-08T02:47:49.454Z",
+      "evidence": "runtime:gcloud auth list --filter=status:ACTIVE --format=json@2026-03-08T03:08:01.041Z",
       "stderr": null
     },
     {
       "name": "cloud_run_services",
       "command": "gcloud run services list --format=json --project member-485303",
       "status": 0,
-      "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+      "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
       "stderr": null
     },
     {
       "name": "secret_manager_list",
       "command": "gcloud secrets list --format=json --project member-485303",
       "status": 0,
-      "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+      "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
       "stderr": null
     }
   ],
@@ -45,7 +45,7 @@
         "url": "https://member-pvxgenwkba-ue.a.run.app",
         "ingress": null,
         "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
-        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "envVars": [
           "ADMIN_OS_TOKEN",
           "ENABLE_PAID_ORCHESTRATOR_V2",
@@ -73,7 +73,7 @@
         "url": "https://member-track-pvxgenwkba-ue.a.run.app",
         "ingress": null,
         "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
-        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "envVars": [
           "ENV_NAME",
           "FIRESTORE_PROJECT_ID",
@@ -90,7 +90,7 @@
         "url": "https://member-webhook-pvxgenwkba-ue.a.run.app",
         "ingress": null,
         "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
-        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "envVars": [
           "ENABLE_STRIPE_WEBHOOK",
           "ENV_NAME",
@@ -109,7 +109,7 @@
         "minScale": null
       }
     ],
-    "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+    "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
     "reason": null
   },
   "secretManager": {
@@ -131,7 +131,7 @@
       "STRIPE_WEBHOOK_SECRET",
       "TRACK_TOKEN_SECRET"
     ],
-    "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+    "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
     "reason": null
   },
   "firestore": {
@@ -196,257 +196,960 @@
       {
         "collection": "audit_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "entityId",
+          "entityType",
+          "payloadSummary",
+          "requestId",
+          "traceId"
+        ]
       },
       {
         "collection": "automation_config",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowNextActions",
+          "allowScenarios",
+          "allowSteps",
+          "createdAt",
+          "enabled",
+          "mode",
+          "updatedBy"
+        ]
       },
       {
         "collection": "automation_runs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "confirmTokenId",
+          "counters",
+          "createdAt",
+          "cursor",
+          "evidence",
+          "kind",
+          "lastError",
+          "limits",
+          "planHash",
+          "segmentKey",
+          "status",
+          "templateKey",
+          "templateVersion",
+          "updatedAt"
+        ]
       },
       {
         "collection": "checklists",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "items",
+          "scenario",
+          "scenarioKey",
+          "seed",
+          "step",
+          "stepKey",
+          "title"
+        ]
       },
       {
         "collection": "city_pack_requests",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "draftCityPackIds",
+          "draftLinkRegistryIds",
+          "draftSourceCandidates",
+          "draftSourceRefIds",
+          "draftTemplateIds",
+          "error",
+          "experienceStage",
+          "lastJobRunId",
+          "lastReviewAt",
+          "lineUserId",
+          "regionCity",
+          "regionKey",
+          "regionState",
+          "requestClass",
+          "requestedAt",
+          "requestedLanguage",
+          "status",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "city_packs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowedIntents",
+          "basePackId",
+          "createdAt",
+          "description",
+          "language",
+          "metadata",
+          "name",
+          "nationwidePolicy",
+          "overrides",
+          "packClass",
+          "requestId",
+          "rules",
+          "slotContents",
+          "slots",
+          "slotSchemaVersion",
+          "sourceRefs",
+          "status",
+          "targetingRules",
+          "templateRefs",
+          "updatedAt",
+          "validUntil"
+        ]
       },
       {
         "collection": "decision_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "audit",
+          "createdAt",
+          "decidedAt",
+          "decidedBy",
+          "decision",
+          "reason",
+          "requestId",
+          "subjectId",
+          "subjectType",
+          "traceId"
+        ]
       },
       {
         "collection": "decision_timeline",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "lineUserId",
+          "notificationId",
+          "refId",
+          "requestId",
+          "snapshot",
+          "source",
+          "traceId"
+        ]
       },
       {
         "collection": "emergency_diffs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "category",
+          "changedKeys",
+          "createdAt",
+          "diffType",
+          "eventDocId",
+          "eventKey",
+          "providerKey",
+          "regionKey",
+          "runId",
+          "severity",
+          "snapshotId",
+          "summaryDraft",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_events_normalized",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "category",
+          "createdAt",
+          "endsAt",
+          "eventHash",
+          "eventKey",
+          "headline",
+          "isActive",
+          "officialLinkRegistryId",
+          "providerKey",
+          "rawMeta",
+          "regionKey",
+          "resolvedAt",
+          "runId",
+          "severity",
+          "snapshotId",
+          "startsAt",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_providers",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lastError",
+          "lastEtag",
+          "lastModified",
+          "lastPayloadHash",
+          "lastRunAt",
+          "lastSuccessAt",
+          "officialLinkRegistryId",
+          "providerKey",
+          "scheduleMinutes",
+          "status",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_rules",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "autoSend",
+          "createdAt",
+          "createdBy",
+          "enabled",
+          "eventType",
+          "id",
+          "maxRecipients",
+          "membersOnly",
+          "priority",
+          "providerKey",
+          "region",
+          "role",
+          "ruleId",
+          "severity",
+          "traceId",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "emergency_snapshots",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "etag",
+          "fetchedAt",
+          "lastModified",
+          "payloadHash",
+          "payloadPath",
+          "payloadSummary",
+          "providerKey",
+          "rawPayload",
+          "runId",
+          "statusCode",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_unmapped_events",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "eventKey",
+          "providerKey",
+          "rawMeta",
+          "reason",
+          "runId",
+          "snapshotId",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "events",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lineUserId",
+          "ref",
+          "type"
+        ]
       },
       {
         "collection": "faq_answer_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedReason",
+          "createdAt",
+          "locale",
+          "matchedArticleIds",
+          "questionHash",
+          "traceId"
+        ]
       },
       {
         "collection": "faq_articles",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowedIntents",
+          "body",
+          "createdAt",
+          "disclaimerVersion",
+          "keywords",
+          "linkRegistryIds",
+          "locale",
+          "riskLevel",
+          "sourceType",
+          "status",
+          "synonyms",
+          "tags",
+          "title",
+          "updatedAt",
+          "updatedBy",
+          "validUntil",
+          "version",
+          "versionSemver"
+        ]
       },
       {
         "collection": "journey_kpi_daily",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "churnReasonRatio",
+          "dateKey",
+          "dependencyBlockRate",
+          "generatedAt",
+          "lookbackDays",
+          "metadata",
+          "nextActionCompletedCount",
+          "nextActionExecutionRate",
+          "nextActionShownCount",
+          "phaseCompletionRate",
+          "proActiveCount",
+          "proActiveRatio",
+          "proConversionRate",
+          "proConvertedCount",
+          "proPromptedCount",
+          "retention",
+          "scanLimit",
+          "taskCompletionRate",
+          "totalUsers",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "journey_param_change_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "after",
+          "before",
+          "createdAt",
+          "id",
+          "requestId",
+          "summary",
+          "traceId",
+          "updatedAt",
+          "versionId"
+        ]
       },
       {
         "collection": "journey_param_versions",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "appliedMeta",
+          "createdAt",
+          "createdBy",
+          "dryRun",
+          "effectiveAt",
+          "note",
+          "parameters",
+          "previousAppliedVersionId",
+          "schemaVersion",
+          "state",
+          "updatedAt",
+          "updatedBy",
+          "validation",
+          "versionId"
+        ]
       },
       {
         "collection": "journey_reminder_runs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actor",
+          "dryRun",
+          "errorSample",
+          "failedCount",
+          "finishedAt",
+          "requestId",
+          "runId",
+          "scannedCount",
+          "sentCount",
+          "skippedCount",
+          "startedAt",
+          "traceId"
+        ]
       },
       {
         "collection": "journey_todo_items",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "dueAt",
+          "dueDate",
+          "graphStatus",
+          "journeyState",
+          "lineUserId",
+          "progressState",
+          "remindedOffsetsDays",
+          "reminderOffsetsDays",
+          "source",
+          "status",
+          "title",
+          "todoKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "journey_todo_stats",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actionableCount",
+          "completedCount",
+          "completionRate",
+          "dependencyBlockRate",
+          "dummyUser",
+          "dummyUserRunId",
+          "lineUserId",
+          "lockedCount",
+          "nextDueAt",
+          "openCount",
+          "overdueCount",
+          "totalCount",
+          "updatedAt"
+        ]
       },
       {
         "collection": "link_registry",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt"
+        ]
       },
       {
         "collection": "llm_action_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "banditEnabled",
+          "blockedReasons",
+          "chosenAction",
+          "citationRanks",
+          "contextConfidence",
+          "contextSignature",
+          "contextualBanditEnabled",
+          "contextualFeatures",
+          "contextVersion",
+          "conversationMove",
+          "conversationState",
+          "counterfactualEval",
+          "counterfactualSelectedArmId",
+          "counterfactualSelectedRank",
+          "counterfactualTopArms",
+          "createdAt",
+          "epsilon",
+          "evidenceNeed",
+          "evidenceOutcome",
+          "featureHash",
+          "injectionFindings",
+          "intentConfidence",
+          "lineUserId",
+          "mode",
+          "plan",
+          "postRenderLint",
+          "requestId",
+          "reward",
+          "rewardPending",
+          "rewardSignals",
+          "rewardVersion",
+          "rewardWindowHours",
+          "score",
+          "scoreBreakdown",
+          "segmentKey",
+          "selectionSource",
+          "styleId",
+          "topic",
+          "traceId",
+          "updatedAt",
+          "urlCount",
+          "userTier"
+        ]
       },
       {
         "collection": "llm_policy_change_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actor",
+          "canonicalization",
+          "createdAt",
+          "id",
+          "planHash",
+          "policy",
+          "requestId",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "llm_quality_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedReason",
+          "citationCount",
+          "createdAt",
+          "decision",
+          "intent",
+          "model",
+          "retryCount",
+          "top1Score",
+          "top2Score",
+          "userId"
+        ]
       },
       {
         "collection": "llm_usage_logs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "assistantQuality",
+          "blockedReason",
+          "blockedReasonCategory",
+          "costEstimate",
+          "createdAt",
+          "decision",
+          "intent",
+          "model",
+          "plan",
+          "subscriptionStatus",
+          "tokensIn",
+          "tokensOut",
+          "tokenUsed",
+          "userId"
+        ]
       },
       {
         "collection": "llm_usage_stats",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedCount",
+          "blockedHistory",
+          "dailyBlockedCount",
+          "dailyDate",
+          "dailyTokenUsed",
+          "dailyUsageCount",
+          "lastUsedAt",
+          "lineUserId",
+          "totalTokensIn",
+          "totalTokensOut",
+          "totalTokenUsed",
+          "updatedAt",
+          "usageCount"
+        ]
       },
       {
         "collection": "notification_deliveries",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "delivered",
+          "lineUserId",
+          "notificationId",
+          "sentAt"
+        ]
       },
       {
         "collection": "notification_templates",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "body",
+          "createdAt",
+          "key",
+          "notificationCategory",
+          "status",
+          "text",
+          "title"
+        ]
       },
       {
         "collection": "notifications",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "body",
+          "createdAt",
+          "ctaText",
+          "linkRegistryId",
+          "scenarioKey",
+          "stepKey",
+          "title"
+        ]
       },
       {
         "collection": "opsConfig",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "auto_downgrade_message_enabled",
+          "auto_upgrade_message_enabled",
+          "enabled",
+          "paid_only_reminders",
+          "reminder_max_per_run",
+          "reminder_offsets_days",
+          "rich_menu_enabled",
+          "rich_menu_map",
+          "schedule_required_for_reminders",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "ops_read_model_snapshots",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "asOf",
+          "createdAt",
+          "data",
+          "freshnessMinutes",
+          "snapshotKey",
+          "snapshotType",
+          "sourceTraceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "phase18_cta_stats",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "clickCount",
+          "createdAt",
+          "ctaText",
+          "linkRegistryId",
+          "notificationId",
+          "sentCount",
+          "updatedAt"
+        ]
       },
       {
         "collection": "rich_menu_rollout_runs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "lineUserIds",
+          "mode",
+          "requestId",
+          "results",
+          "runId",
+          "summary",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "ridac_membership_links",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "lineUserId",
+          "linkedAt",
+          "linkedBy",
+          "ridacMembershipIdHash",
+          "ridacMembershipIdLast4"
+        ]
       },
       {
         "collection": "seed_runs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "completedAt",
+          "createdAt",
+          "envName",
+          "seed",
+          "seedKind",
+          "seedRunId",
+          "status",
+          "summary",
+          "targets",
+          "writeFallbackReason",
+          "writeMode"
+        ]
       },
       {
         "collection": "send_retry_queue",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "giveUpReason",
+          "lastError",
+          "lineUserId",
+          "payloadSnapshot",
+          "reason",
+          "resolvedAt",
+          "resolvedBy",
+          "status",
+          "templateKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "source_audit_runs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "confidenceSummary",
+          "endedAt",
+          "failed",
+          "failureTop3",
+          "mode",
+          "packClass",
+          "processed",
+          "runId",
+          "stage",
+          "startedAt",
+          "succeeded",
+          "targetSourceRefIds",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "source_refs",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "authorityLevel",
+          "confidenceScore",
+          "contentHash",
+          "createdAt",
+          "evidenceLatestId",
+          "lastAuditStage",
+          "lastCheckAt",
+          "lastResult",
+          "requiredLevel",
+          "riskLevel",
+          "seed",
+          "seedOrder",
+          "sourceType",
+          "status",
+          "updatedAt",
+          "url",
+          "usedByCityPackIds",
+          "validFrom",
+          "validUntil"
+        ]
       },
       {
         "collection": "step_rules",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "constraints",
+          "createdAt",
+          "createdBy",
+          "dependsOn",
+          "enabled",
+          "id",
+          "leadTime",
+          "nudgeTemplate",
+          "priority",
+          "riskLevel",
+          "ruleId",
+          "scenarioKey",
+          "stepKey",
+          "trigger",
+          "updatedAt",
+          "updatedBy",
+          "validFrom",
+          "validUntil"
+        ]
       },
       {
         "collection": "stripe_webhook_dead_letters",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "errorCode",
+          "errorMessage",
+          "eventId",
+          "payloadHash",
+          "requestId"
+        ]
       },
       {
         "collection": "stripe_webhook_events",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "errorCode",
+          "eventType",
+          "processedAt",
+          "receivedAt",
+          "requestId",
+          "status",
+          "stripeEventCreated",
+          "userId"
+        ]
       },
       {
         "collection": "system_flags",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "deliveryCountLegacyFallback",
+          "killSwitch",
+          "llmEnabled",
+          "llmPolicy",
+          "notificationCaps",
+          "notificationPreset",
+          "servicePhase"
+        ]
       },
       {
         "collection": "task_contents",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actionLinkId",
+          "checklistItems",
+          "createdAt",
+          "createdBy",
+          "failureText",
+          "manualText",
+          "taskKey",
+          "timeMax",
+          "timeMin",
+          "title",
+          "updatedAt",
+          "updatedBy",
+          "videoLinkId"
+        ]
       },
       {
         "collection": "tasks",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lineUserId",
+          "meaning",
+          "ruleId",
+          "source",
+          "status",
+          "stepKey",
+          "taskId",
+          "updatedAt",
+          "userId"
+        ]
       },
       {
         "collection": "user_journey_profiles",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "dummyUser",
+          "dummyUserRunId",
+          "householdType",
+          "lineUserId",
+          "scenarioKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "user_journey_schedules",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "assignmentDate",
+          "departureDate",
+          "dummyUser",
+          "dummyUserRunId",
+          "lineUserId",
+          "scenarioKey",
+          "stage",
+          "stepKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "user_subscriptions",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "currentPeriodEnd",
+          "currentPeriodEndUnix",
+          "lastEventCreatedAt",
+          "lastEventId",
+          "lineUserId",
+          "plan",
+          "status",
+          "updatedAt"
+        ]
       },
       {
         "collection": "users",
         "observed": true,
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "dummyUser",
+          "dummyUserClass",
+          "dummyUserExempt",
+          "dummyUserMarkedAt",
+          "dummyUserRunId",
+          "memberCardAsset",
+          "memberNumber",
+          "opsReviewLastReviewedAt",
+          "opsReviewLastReviewedBy",
+          "regionCity",
+          "regionDeclaredAt",
+          "regionDeclaredBy",
+          "regionKey",
+          "regionState",
+          "scenarioKey",
+          "stepKey"
+        ]
       }
     ],
     "collectionSummaries": [
@@ -454,309 +1157,1012 @@
         "collection": "audit_logs",
         "fieldCount": 8,
         "sampleDoc": "0041Fy0EkdqASghk5k46",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "entityId",
+          "entityType",
+          "payloadSummary",
+          "requestId",
+          "traceId"
+        ]
       },
       {
         "collection": "automation_config",
         "fieldCount": 7,
         "sampleDoc": "0FT60TbDar4khOerRMWa",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowNextActions",
+          "allowScenarios",
+          "allowSteps",
+          "createdAt",
+          "enabled",
+          "mode",
+          "updatedBy"
+        ]
       },
       {
         "collection": "automation_runs",
         "fieldCount": 14,
         "sampleDoc": "1xkB4IyUoGU5mVy30xl3",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "confirmTokenId",
+          "counters",
+          "createdAt",
+          "cursor",
+          "evidence",
+          "kind",
+          "lastError",
+          "limits",
+          "planHash",
+          "segmentKey",
+          "status",
+          "templateKey",
+          "templateVersion",
+          "updatedAt"
+        ]
       },
       {
         "collection": "checklists",
         "fieldCount": 8,
         "sampleDoc": "seed_chk_seed_users200_mix_20260304130143_001",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "items",
+          "scenario",
+          "scenarioKey",
+          "seed",
+          "step",
+          "stepKey",
+          "title"
+        ]
       },
       {
         "collection": "city_pack_requests",
         "fieldCount": 20,
         "sampleDoc": "cpr_c6c311a2-646b-454f-821c-0137ebf836be",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "draftCityPackIds",
+          "draftLinkRegistryIds",
+          "draftSourceCandidates",
+          "draftSourceRefIds",
+          "draftTemplateIds",
+          "error",
+          "experienceStage",
+          "lastJobRunId",
+          "lastReviewAt",
+          "lineUserId",
+          "regionCity",
+          "regionKey",
+          "regionState",
+          "requestClass",
+          "requestedAt",
+          "requestedLanguage",
+          "status",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "city_packs",
         "fieldCount": 21,
         "sampleDoc": "cp_4a5520f8-d76d-442d-afe6-1dabef4b0673",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowedIntents",
+          "basePackId",
+          "createdAt",
+          "description",
+          "language",
+          "metadata",
+          "name",
+          "nationwidePolicy",
+          "overrides",
+          "packClass",
+          "requestId",
+          "rules",
+          "slotContents",
+          "slots",
+          "slotSchemaVersion",
+          "sourceRefs",
+          "status",
+          "targetingRules",
+          "templateRefs",
+          "updatedAt",
+          "validUntil"
+        ]
       },
       {
         "collection": "decision_logs",
         "fieldCount": 10,
         "sampleDoc": "19QzyrD754lQib14XOM9",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "audit",
+          "createdAt",
+          "decidedAt",
+          "decidedBy",
+          "decision",
+          "reason",
+          "requestId",
+          "subjectId",
+          "subjectType",
+          "traceId"
+        ]
       },
       {
         "collection": "decision_timeline",
         "fieldCount": 10,
         "sampleDoc": "02N7ItbyR89mCUBtYGZx",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "lineUserId",
+          "notificationId",
+          "refId",
+          "requestId",
+          "snapshot",
+          "source",
+          "traceId"
+        ]
       },
       {
         "collection": "emergency_diffs",
         "fieldCount": 14,
         "sampleDoc": "edf_00dc7e60aa4cf874a480aba5",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "category",
+          "changedKeys",
+          "createdAt",
+          "diffType",
+          "eventDocId",
+          "eventKey",
+          "providerKey",
+          "regionKey",
+          "runId",
+          "severity",
+          "snapshotId",
+          "summaryDraft",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_events_normalized",
         "fieldCount": 18,
         "sampleDoc": "eme_001897279a520104f0e8a917",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "category",
+          "createdAt",
+          "endsAt",
+          "eventHash",
+          "eventKey",
+          "headline",
+          "isActive",
+          "officialLinkRegistryId",
+          "providerKey",
+          "rawMeta",
+          "regionKey",
+          "resolvedAt",
+          "runId",
+          "severity",
+          "snapshotId",
+          "startsAt",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_providers",
         "fieldCount": 13,
         "sampleDoc": "airnow_aqi",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lastError",
+          "lastEtag",
+          "lastModified",
+          "lastPayloadHash",
+          "lastRunAt",
+          "lastSuccessAt",
+          "officialLinkRegistryId",
+          "providerKey",
+          "scheduleMinutes",
+          "status",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_rules",
         "fieldCount": 17,
         "sampleDoc": "stg_preview_test_rule",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "autoSend",
+          "createdAt",
+          "createdBy",
+          "enabled",
+          "eventType",
+          "id",
+          "maxRecipients",
+          "membersOnly",
+          "priority",
+          "providerKey",
+          "region",
+          "role",
+          "ruleId",
+          "severity",
+          "traceId",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "emergency_snapshots",
         "fieldCount": 13,
         "sampleDoc": "nws_alerts__stg_dryrun_1772668054111__nws_alerts",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "etag",
+          "fetchedAt",
+          "lastModified",
+          "payloadHash",
+          "payloadPath",
+          "payloadSummary",
+          "providerKey",
+          "rawPayload",
+          "runId",
+          "statusCode",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "emergency_unmapped_events",
         "fieldCount": 9,
         "sampleDoc": "emu_008e6589371b121be6a5ee9e",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "eventKey",
+          "providerKey",
+          "rawMeta",
+          "reason",
+          "runId",
+          "snapshotId",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "events",
         "fieldCount": 4,
         "sampleDoc": "1GGJZSi8FMyGaD6tG9sc",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lineUserId",
+          "ref",
+          "type"
+        ]
       },
       {
         "collection": "faq_answer_logs",
         "fieldCount": 6,
         "sampleDoc": "00T0sWMjIs8ys9LVcSSi",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedReason",
+          "createdAt",
+          "locale",
+          "matchedArticleIds",
+          "questionHash",
+          "traceId"
+        ]
       },
       {
         "collection": "faq_articles",
         "fieldCount": 18,
         "sampleDoc": "9EPiW2ItqfKbIAk4Cvkf",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "allowedIntents",
+          "body",
+          "createdAt",
+          "disclaimerVersion",
+          "keywords",
+          "linkRegistryIds",
+          "locale",
+          "riskLevel",
+          "sourceType",
+          "status",
+          "synonyms",
+          "tags",
+          "title",
+          "updatedAt",
+          "updatedBy",
+          "validUntil",
+          "version",
+          "versionSemver"
+        ]
       },
       {
         "collection": "journey_kpi_daily",
         "fieldCount": 21,
         "sampleDoc": "2026-02-25",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "churnReasonRatio",
+          "dateKey",
+          "dependencyBlockRate",
+          "generatedAt",
+          "lookbackDays",
+          "metadata",
+          "nextActionCompletedCount",
+          "nextActionExecutionRate",
+          "nextActionShownCount",
+          "phaseCompletionRate",
+          "proActiveCount",
+          "proActiveRatio",
+          "proConversionRate",
+          "proConvertedCount",
+          "proPromptedCount",
+          "retention",
+          "scanLimit",
+          "taskCompletionRate",
+          "totalUsers",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "journey_param_change_logs",
         "fieldCount": 11,
         "sampleDoc": "journey_param_1772067533494_c6b7e653b94e",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "after",
+          "before",
+          "createdAt",
+          "id",
+          "requestId",
+          "summary",
+          "traceId",
+          "updatedAt",
+          "versionId"
+        ]
       },
       {
         "collection": "journey_param_versions",
         "fieldCount": 14,
         "sampleDoc": "jpv_1772067533370_8c5bad77436d",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "appliedMeta",
+          "createdAt",
+          "createdBy",
+          "dryRun",
+          "effectiveAt",
+          "note",
+          "parameters",
+          "previousAppliedVersionId",
+          "schemaVersion",
+          "state",
+          "updatedAt",
+          "updatedBy",
+          "validation",
+          "versionId"
+        ]
       },
       {
         "collection": "journey_reminder_runs",
         "fieldCount": 12,
         "sampleDoc": "jrr_1771961990117_f0f832f8230b",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actor",
+          "dryRun",
+          "errorSample",
+          "failedCount",
+          "finishedAt",
+          "requestId",
+          "runId",
+          "scannedCount",
+          "sentCount",
+          "skippedCount",
+          "startedAt",
+          "traceId"
+        ]
       },
       {
         "collection": "journey_todo_items",
         "fieldCount": 14,
         "sampleDoc": "U730STG000000000000000000000001__t730_case_a",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "dueAt",
+          "dueDate",
+          "graphStatus",
+          "journeyState",
+          "lineUserId",
+          "progressState",
+          "remindedOffsetsDays",
+          "reminderOffsetsDays",
+          "source",
+          "status",
+          "title",
+          "todoKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "journey_todo_stats",
         "fieldCount": 13,
         "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actionableCount",
+          "completedCount",
+          "completionRate",
+          "dependencyBlockRate",
+          "dummyUser",
+          "dummyUserRunId",
+          "lineUserId",
+          "lockedCount",
+          "nextDueAt",
+          "openCount",
+          "overdueCount",
+          "totalCount",
+          "updatedAt"
+        ]
       },
       {
         "collection": "link_registry",
         "fieldCount": 1,
         "sampleDoc": "TMdxdoNYN1Tcxz2vyOkp",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt"
+        ]
       },
       {
         "collection": "llm_action_logs",
         "fieldCount": 42,
         "sampleDoc": "0BrQnyQT0kSjaMsyGpci",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "banditEnabled",
+          "blockedReasons",
+          "chosenAction",
+          "citationRanks",
+          "contextConfidence",
+          "contextSignature",
+          "contextualBanditEnabled",
+          "contextualFeatures",
+          "contextVersion",
+          "conversationMove",
+          "conversationState",
+          "counterfactualEval",
+          "counterfactualSelectedArmId",
+          "counterfactualSelectedRank",
+          "counterfactualTopArms",
+          "createdAt",
+          "epsilon",
+          "evidenceNeed",
+          "evidenceOutcome",
+          "featureHash",
+          "injectionFindings",
+          "intentConfidence",
+          "lineUserId",
+          "mode",
+          "plan",
+          "postRenderLint",
+          "requestId",
+          "reward",
+          "rewardPending",
+          "rewardSignals",
+          "rewardVersion",
+          "rewardWindowHours",
+          "score",
+          "scoreBreakdown",
+          "segmentKey",
+          "selectionSource",
+          "styleId",
+          "topic",
+          "traceId",
+          "updatedAt",
+          "urlCount",
+          "userTier"
+        ]
       },
       {
         "collection": "llm_policy_change_logs",
         "fieldCount": 9,
         "sampleDoc": "llm_policy_1772559024239_c28c6a9892c1",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actor",
+          "canonicalization",
+          "createdAt",
+          "id",
+          "planHash",
+          "policy",
+          "requestId",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "llm_quality_logs",
         "fieldCount": 10,
         "sampleDoc": "0Q8ApDAgEc4BdPp3yxWy",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedReason",
+          "citationCount",
+          "createdAt",
+          "decision",
+          "intent",
+          "model",
+          "retryCount",
+          "top1Score",
+          "top2Score",
+          "userId"
+        ]
       },
       {
         "collection": "llm_usage_logs",
         "fieldCount": 14,
         "sampleDoc": "2MFiqShlwgYfsG52sSf0",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "assistantQuality",
+          "blockedReason",
+          "blockedReasonCategory",
+          "costEstimate",
+          "createdAt",
+          "decision",
+          "intent",
+          "model",
+          "plan",
+          "subscriptionStatus",
+          "tokensIn",
+          "tokensOut",
+          "tokenUsed",
+          "userId"
+        ]
       },
       {
         "collection": "llm_usage_stats",
         "fieldCount": 13,
         "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "blockedCount",
+          "blockedHistory",
+          "dailyBlockedCount",
+          "dailyDate",
+          "dailyTokenUsed",
+          "dailyUsageCount",
+          "lastUsedAt",
+          "lineUserId",
+          "totalTokensIn",
+          "totalTokensOut",
+          "totalTokenUsed",
+          "updatedAt",
+          "usageCount"
+        ]
       },
       {
         "collection": "notification_deliveries",
         "fieldCount": 4,
         "sampleDoc": "I6mgmgKsEuVAaiO4IjXL",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "delivered",
+          "lineUserId",
+          "notificationId",
+          "sentAt"
+        ]
       },
       {
         "collection": "notification_templates",
         "fieldCount": 7,
         "sampleDoc": "3z37d1AaRgHeHp1BUD2B",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "body",
+          "createdAt",
+          "key",
+          "notificationCategory",
+          "status",
+          "text",
+          "title"
+        ]
       },
       {
         "collection": "notifications",
         "fieldCount": 7,
         "sampleDoc": "2ZMslooV6DWjzd0b5k1h",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "body",
+          "createdAt",
+          "ctaText",
+          "linkRegistryId",
+          "scenarioKey",
+          "stepKey",
+          "title"
+        ]
       },
       {
         "collection": "ops_read_model_snapshots",
         "fieldCount": 8,
         "sampleDoc": "dashboard_kpi__1",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "asOf",
+          "createdAt",
+          "data",
+          "freshnessMinutes",
+          "snapshotKey",
+          "snapshotType",
+          "sourceTraceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "opsConfig",
         "fieldCount": 11,
         "sampleDoc": "journeyPolicy",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "auto_downgrade_message_enabled",
+          "auto_upgrade_message_enabled",
+          "enabled",
+          "paid_only_reminders",
+          "reminder_max_per_run",
+          "reminder_offsets_days",
+          "rich_menu_enabled",
+          "rich_menu_map",
+          "schedule_required_for_reminders",
+          "updatedAt",
+          "updatedBy"
+        ]
       },
       {
         "collection": "phase18_cta_stats",
         "fieldCount": 7,
         "sampleDoc": "01URraLE2w4Fvwkd3kFm",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "clickCount",
+          "createdAt",
+          "ctaText",
+          "linkRegistryId",
+          "notificationId",
+          "sentCount",
+          "updatedAt"
+        ]
       },
       {
         "collection": "rich_menu_rollout_runs",
         "fieldCount": 11,
         "sampleDoc": "richmenu_apply_1772392074733_f9589a6d",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "action",
+          "actor",
+          "createdAt",
+          "lineUserIds",
+          "mode",
+          "requestId",
+          "results",
+          "runId",
+          "summary",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "ridac_membership_links",
         "fieldCount": 5,
         "sampleDoc": "571918a9d2f35adc96c63994b29d9d6261dc612ef3d4858856d10c5db839c943",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "lineUserId",
+          "linkedAt",
+          "linkedBy",
+          "ridacMembershipIdHash",
+          "ridacMembershipIdLast4"
+        ]
       },
       {
         "collection": "seed_runs",
         "fieldCount": 11,
         "sampleDoc": "seed_users200_mix_20260304130143",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "completedAt",
+          "createdAt",
+          "envName",
+          "seed",
+          "seedKind",
+          "seedRunId",
+          "status",
+          "summary",
+          "targets",
+          "writeFallbackReason",
+          "writeMode"
+        ]
       },
       {
         "collection": "send_retry_queue",
         "fieldCount": 11,
         "sampleDoc": "0s2DIuSHQb87okG5fCQm",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "giveUpReason",
+          "lastError",
+          "lineUserId",
+          "payloadSnapshot",
+          "reason",
+          "resolvedAt",
+          "resolvedBy",
+          "status",
+          "templateKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "source_audit_runs",
         "fieldCount": 14,
         "sampleDoc": "cp_run_1771907204462",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "confidenceSummary",
+          "endedAt",
+          "failed",
+          "failureTop3",
+          "mode",
+          "packClass",
+          "processed",
+          "runId",
+          "stage",
+          "startedAt",
+          "succeeded",
+          "targetSourceRefIds",
+          "traceId",
+          "updatedAt"
+        ]
       },
       {
         "collection": "source_refs",
         "fieldCount": 19,
         "sampleDoc": "seed_sr_seed_users200_mix_20260304130143_boston",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "authorityLevel",
+          "confidenceScore",
+          "contentHash",
+          "createdAt",
+          "evidenceLatestId",
+          "lastAuditStage",
+          "lastCheckAt",
+          "lastResult",
+          "requiredLevel",
+          "riskLevel",
+          "seed",
+          "seedOrder",
+          "sourceType",
+          "status",
+          "updatedAt",
+          "url",
+          "usedByCityPackIds",
+          "validFrom",
+          "validUntil"
+        ]
       },
       {
         "collection": "step_rules",
         "fieldCount": 18,
         "sampleDoc": "mig_v1_A_arrival_registration",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "constraints",
+          "createdAt",
+          "createdBy",
+          "dependsOn",
+          "enabled",
+          "id",
+          "leadTime",
+          "nudgeTemplate",
+          "priority",
+          "riskLevel",
+          "ruleId",
+          "scenarioKey",
+          "stepKey",
+          "trigger",
+          "updatedAt",
+          "updatedBy",
+          "validFrom",
+          "validUntil"
+        ]
       },
       {
         "collection": "stripe_webhook_dead_letters",
         "fieldCount": 6,
         "sampleDoc": "CIa43abT6VT6qRDt12la",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "errorCode",
+          "errorMessage",
+          "eventId",
+          "payloadHash",
+          "requestId"
+        ]
       },
       {
         "collection": "stripe_webhook_events",
         "fieldCount": 8,
         "sampleDoc": "evt_codex_e2e_1771954619",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "errorCode",
+          "eventType",
+          "processedAt",
+          "receivedAt",
+          "requestId",
+          "status",
+          "stripeEventCreated",
+          "userId"
+        ]
       },
       {
         "collection": "system_flags",
         "fieldCount": 7,
         "sampleDoc": "phase0",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "deliveryCountLegacyFallback",
+          "killSwitch",
+          "llmEnabled",
+          "llmPolicy",
+          "notificationCaps",
+          "notificationPreset",
+          "servicePhase"
+        ]
       },
       {
         "collection": "task_contents",
         "fieldCount": 13,
         "sampleDoc": "t730_case_a",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "actionLinkId",
+          "checklistItems",
+          "createdAt",
+          "createdBy",
+          "failureText",
+          "manualText",
+          "taskKey",
+          "timeMax",
+          "timeMin",
+          "title",
+          "updatedAt",
+          "updatedBy",
+          "videoLinkId"
+        ]
       },
       {
         "collection": "tasks",
         "fieldCount": 10,
         "sampleDoc": "U730STG000000000000000000000001__t730_case_a",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "lineUserId",
+          "meaning",
+          "ruleId",
+          "source",
+          "status",
+          "stepKey",
+          "taskId",
+          "updatedAt",
+          "userId"
+        ]
       },
       {
         "collection": "user_journey_profiles",
         "fieldCount": 6,
         "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "dummyUser",
+          "dummyUserRunId",
+          "householdType",
+          "lineUserId",
+          "scenarioKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "user_journey_schedules",
         "fieldCount": 9,
         "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "assignmentDate",
+          "departureDate",
+          "dummyUser",
+          "dummyUserRunId",
+          "lineUserId",
+          "scenarioKey",
+          "stage",
+          "stepKey",
+          "updatedAt"
+        ]
       },
       {
         "collection": "user_subscriptions",
         "fieldCount": 8,
         "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "currentPeriodEnd",
+          "currentPeriodEndUnix",
+          "lastEventCreatedAt",
+          "lastEventId",
+          "lineUserId",
+          "plan",
+          "status",
+          "updatedAt"
+        ]
       },
       {
         "collection": "users",
         "fieldCount": 17,
         "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
-        "sampleDocExists": true
+        "sampleDocExists": true,
+        "fields": [
+          "createdAt",
+          "dummyUser",
+          "dummyUserClass",
+          "dummyUserExempt",
+          "dummyUserMarkedAt",
+          "dummyUserRunId",
+          "memberCardAsset",
+          "memberNumber",
+          "opsReviewLastReviewedAt",
+          "opsReviewLastReviewedBy",
+          "regionCity",
+          "regionDeclaredAt",
+          "regionDeclaredBy",
+          "regionKey",
+          "regionState",
+          "scenarioKey",
+          "stepKey"
+        ]
       }
     ],
-    "evidence": "runtime:firebase-admin firestore listCollections@2026-03-08T02:47:49.454Z"
+    "evidence": "runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z"
   }
 }

@@ -1,9 +1,9 @@
 # PROJECT_SCOPE
 
-- generatedAt: 2026-03-08T02:42:23.550Z
-- gitCommit: 746298fa07a773f7a9e066c29481c8c44c9ca081
-- branch: main
-- sourceDigest: c397ec60bcaa3c38e83a8a1a404a0c1861bcdcf50abe8ff0ff9cf730041f2d71
+- generatedAt: 2026-03-08T03:08:07.132Z
+- gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
+- branch: codex/knowledge-graph-v2-finalize
+- sourceDigest: abc077ebe50af3043a56474579a2842968ebd435af568f87aadc09d56fba3eb4
 - runtime.cloudRun: OBSERVED_RUNTIME
 - runtime.secretManager: OBSERVED_RUNTIME
 - runtime.firestore: OBSERVED_RUNTIME
@@ -18,4 +18,4 @@
 | Jobs | Schedulers and internal jobs (15 workflows) | .github/workflows/*.yml, src/routes/internal/*, src/usecases/**/run*Job.js | .github/workflows/journey-todo-reminder.yml:1<br>src/routes/internal/journeyTodoReminderJob.js:1<br>src/usecases/journey/runJourneyTodoReminderJob.js:1 |
 | LLM | Input boundary and adapter pipeline | src/usecases/llm/*, src/infra/llmClient.js, docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json | src/infra/llmClient.js:1<br>docs/REPO_AUDIT_INPUTS/llm_input_boundaries.json:2 |
 | Evidence | Audit and trace reconstruction surface | src/repos/firestore/auditLogsRepo.js, src/repos/firestore/decisionTimelineRepo.js, docs/REPO_AUDIT_INPUTS/* | src/repos/firestore/auditLogsRepo.js:1<br>src/repos/firestore/decisionTimelineRepo.js:1<br>docs/REPO_AUDIT_INPUTS/audit_inputs_manifest.json:5 |
-| Infra | Cloud Run/Secrets/Firestore runtime probe (OBSERVED_RUNTIME) | runtime:gcloud run services list, runtime:gcloud secrets list, runtime:firebase-admin firestore listCollections | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z<br>runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z<br>runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
+| Infra | Cloud Run/Secrets/Firestore runtime probe (OBSERVED_RUNTIME) | runtime:gcloud run services list, runtime:gcloud secrets list, runtime:firebase-admin firestore listCollections | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z<br>runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z<br>runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |

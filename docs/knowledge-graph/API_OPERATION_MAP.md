@@ -1,9 +1,9 @@
 # API_OPERATION_MAP
 
-- generatedAt: 2026-03-08T02:47:49.572Z
-- source.generatedAt: 2026-03-08T02:42:23.550Z
-- source.gitCommit: 746298fa07a773f7a9e066c29481c8c44c9ca081
-- source.branch: main
+- generatedAt: 2026-03-08T03:08:08.582Z
+- source.generatedAt: 2026-03-08T03:08:07.132Z
+- source.gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
+- source.branch: codex/knowledge-graph-v2-finalize
 - note: derived from ENTITY_RELATIONS + ENTITY_API_MAP + ENTITY_SCHEMA
 
 | Operation | API | Method | Entity | WriteFields | Evidence |

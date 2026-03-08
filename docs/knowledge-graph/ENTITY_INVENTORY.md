@@ -1,9 +1,9 @@
 # ENTITY_INVENTORY
 
-- generatedAt: 2026-03-08T02:42:23.550Z
-- gitCommit: 746298fa07a773f7a9e066c29481c8c44c9ca081
-- branch: main
-- sourceDigest: c397ec60bcaa3c38e83a8a1a404a0c1861bcdcf50abe8ff0ff9cf730041f2d71
+- generatedAt: 2026-03-08T03:08:07.132Z
+- gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
+- branch: codex/knowledge-graph-v2-finalize
+- sourceDigest: abc077ebe50af3043a56474579a2842968ebd435af568f87aadc09d56fba3eb4
 - runtime.cloudRun: OBSERVED_RUNTIME
 - runtime.secretManager: OBSERVED_RUNTIME
 - runtime.firestore: OBSERVED_RUNTIME
@@ -99,19 +99,19 @@
 | UserJourneySchedules | Firestore:user_journey_schedules | src/repos/firestore/userJourneySchedulesRepo.js | config (cityPackReviewInbox, journeyTodoReminderJob, opsOverview) | src/repos/firestore/userJourneySchedulesRepo.js:5<br>src/domain/retention/retentionPolicy.js:83<br>src/repos/firestore/userJourneySchedulesRepo.js:1<br>docs/REPO_AUDIT_INPUTS/data_model_map.json:1398 |
 | UserSubscriptions | Firestore:user_subscriptions | src/repos/firestore/userSubscriptionsRepo.js | config (journeyKpiBuildJob, opsOverview, osDeliveryRecovery) | src/repos/firestore/userSubscriptionsRepo.js:6<br>src/repos/firestore/userSubscriptionsRepo.js:90<br>src/repos/firestore/userSubscriptionsRepo.js:99<br>src/repos/firestore/userSubscriptionsRepo.js:1<br>docs/REPO_AUDIT_INPUTS/data_model_map.json:1414 |
 | Users | Firestore:users | src/repos/firestore/analyticsReadRepo.js | config (cityPackBulletins, cityPackReviewInbox, journeyKpiBuildJob) | src/repos/firestore/phase2ReadRepo.js:27<br>src/repos/firestore/analyticsReadRepo.js:27<br>src/repos/firestore/usersPhase1Repo.js:10<br>src/repos/firestore/analyticsReadRepo.js:1<br>docs/REPO_AUDIT_INPUTS/data_model_map.json:1430 |
-| CloudRunServiceMember | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| CloudRunServiceMemberTrack | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| CloudRunServiceMemberWebhook | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefADMINBASICPASS | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefADMINBASICUSER | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefADMINOSTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefCITYPACKJOBTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefJOURNEYJOBTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefLINECHANNELACCESSTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefLINECHANNELSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefOPENAIAPIKEY | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefOPSCONFIRMTOKENSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefREDACMEMBERSHIPIDHMACSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefSTRIPESECRETKEY | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefSTRIPEWEBHOOKSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
-| SecretRefTRACKTOKENSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z |
+| CloudRunServiceMember | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| CloudRunServiceMemberTrack | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| CloudRunServiceMemberWebhook | CloudRunService | runtime:gcloud run services list | runtime_service region=us-east1 | runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefADMINBASICPASS | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefADMINBASICUSER | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefADMINOSTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefCITYPACKJOBTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefJOURNEYJOBTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefLINECHANNELACCESSTOKEN | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefLINECHANNELSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefOPENAIAPIKEY | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefOPSCONFIRMTOKENSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefREDACMEMBERSHIPIDHMACSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefSTRIPESECRETKEY | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefSTRIPEWEBHOOKSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |
+| SecretRefTRACKTOKENSECRET | SecretManager | runtime:gcloud secrets list | runtime_secret_name_only | runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z |

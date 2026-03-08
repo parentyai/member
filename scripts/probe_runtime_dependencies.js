@@ -89,17 +89,22 @@ async function probeFirestore(projectId, atIso) {
         const fieldCount = firstData && typeof firstData === 'object'
           ? Object.keys(firstData).length
           : 0;
+        const fields = firstData && typeof firstData === 'object'
+          ? Object.keys(firstData).sort((a, b) => a.localeCompare(b))
+          : [];
 
         sample.push({
           collection: colRef.id,
           observed: true,
-          sampleDocExists: !snapshot.empty
+          sampleDocExists: !snapshot.empty,
+          fields
         });
         collectionSummaries.push({
           collection: colRef.id,
           fieldCount,
           sampleDoc: firstDoc ? firstDoc.id : null,
-          sampleDocExists: !snapshot.empty
+          sampleDocExists: !snapshot.empty,
+          fields
         });
       } catch (err) {
         sample.push({
@@ -112,6 +117,7 @@ async function probeFirestore(projectId, atIso) {
           fieldCount: 'UNOBSERVED_RUNTIME',
           sampleDoc: 'UNOBSERVED_RUNTIME',
           sampleDocExists: false,
+          fields: ['UNOBSERVED_RUNTIME'],
           reason: String((err && err.message) || err || 'UNKNOWN_ERROR').slice(0, 240)
         });
       }
