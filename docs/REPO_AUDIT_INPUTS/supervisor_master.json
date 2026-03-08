@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:11:35-05:00",
-  "gitCommit": "5c3d27acd170d652cbb9fbac88fa1d6a66380975",
-  "branch": "codex/llm-v3-pr2-faq-sink-clean",
-  "sourceDigest": "c73df0bd0567758322f958b807c89ae4233307e61e242d9fd71943bfba33cbf9",
+  "generatedAt": "2026-03-07T19:18:17-05:00",
+  "gitCommit": "b5973ed39d0fdd44a8233a979230add197963bd7",
+  "branch": "codex/llm-v3-pr3a-risk-tier",
+  "sourceDigest": "3f9b3861dab0668b1bf2ecacb04702e6914c6cd3edf9e046a3122c859340974d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
