@@ -368,6 +368,7 @@ function buildConversationQualitySummary(actionRows) {
   const retrievalQualities = new Map();
   const verificationOutcomes = new Map();
   const judgeWinners = new Map();
+  const sourceReadinessDecisions = new Map();
   const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
@@ -378,6 +379,11 @@ function buildConversationQualitySummary(actionRows) {
   let candidateCountTotal = 0;
   let retrieveNeededCount = 0;
   let contradictionRowCount = 0;
+  let sourceAuthorityScoreTotal = 0;
+  let sourceAuthorityScoreCount = 0;
+  let sourceFreshnessScoreTotal = 0;
+  let sourceFreshnessScoreCount = 0;
+  let officialOnlySatisfiedCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -388,6 +394,7 @@ function buildConversationQualitySummary(actionRows) {
     const retrievalQuality = normalizeReason(row && row.retrievalQuality ? row.retrievalQuality : 'none');
     const verificationOutcome = normalizeReason(row && row.verificationOutcome ? row.verificationOutcome : 'none');
     const judgeWinner = normalizeReason(row && row.judgeWinner ? row.judgeWinner : 'none');
+    const sourceReadinessDecision = normalizeReason(row && row.sourceReadinessDecision ? row.sourceReadinessDecision : 'none');
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
     const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
     const retrieveNeeded = row && row.retrieveNeeded === true;
@@ -403,12 +410,22 @@ function buildConversationQualitySummary(actionRows) {
     retrievalQualities.set(retrievalQuality, (retrievalQualities.get(retrievalQuality) || 0) + 1);
     verificationOutcomes.set(verificationOutcome, (verificationOutcomes.get(verificationOutcome) || 0) + 1);
     judgeWinners.set(judgeWinner, (judgeWinners.get(judgeWinner) || 0) + 1);
+    sourceReadinessDecisions.set(sourceReadinessDecision, (sourceReadinessDecisions.get(sourceReadinessDecision) || 0) + 1);
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
     if (retrieveNeeded) retrieveNeededCount += 1;
     if (legacyTemplateHit) legacyTemplateHitCount += 1;
     if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
     if (pitfallIncluded) pitfallIncludedCount += 1;
+    if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
+    if (Number.isFinite(Number(row && row.sourceAuthorityScore))) {
+      sourceAuthorityScoreTotal += Number(row.sourceAuthorityScore);
+      sourceAuthorityScoreCount += 1;
+    }
+    if (Number.isFinite(Number(row && row.sourceFreshnessScore))) {
+      sourceFreshnessScoreTotal += Number(row.sourceFreshnessScore);
+      sourceFreshnessScoreCount += 1;
+    }
     if (rowContradictionFlags.length > 0) contradictionRowCount += 1;
     rowContradictionFlags.forEach((flag) => {
       const normalizedFlag = normalizeReason(flag);
@@ -438,6 +455,16 @@ function buildConversationQualitySummary(actionRows) {
     retrievalQualities: sortCountEntries(retrievalQualities, 'retrievalQuality', 10),
     verificationOutcomes: sortCountEntries(verificationOutcomes, 'verificationOutcome', 10),
     judgeWinners: sortCountEntries(judgeWinners, 'judgeWinner', 10),
+    sourceReadinessDecisions: sortCountEntries(sourceReadinessDecisions, 'sourceReadinessDecision', 10),
+    avgSourceAuthorityScore: sourceAuthorityScoreCount > 0
+      ? Math.round((sourceAuthorityScoreTotal / sourceAuthorityScoreCount) * 10000) / 10000
+      : 0,
+    avgSourceFreshnessScore: sourceFreshnessScoreCount > 0
+      ? Math.round((sourceFreshnessScoreTotal / sourceFreshnessScoreCount) * 10000) / 10000
+      : 0,
+    officialOnlySatisfiedRate: sampleCount > 0
+      ? Math.round((officialOnlySatisfiedCount / sampleCount) * 10000) / 10000
+      : 0,
     contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),
     fallbackTypes: sortCountEntries(fallbackTypes, 'fallbackType', 10)

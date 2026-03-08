@@ -11,6 +11,8 @@ const { judgeCandidates } = require('./judgeCandidates');
 const { verifyCandidate } = require('./verifyCandidate');
 const { finalizeCandidate } = require('./finalizeCandidate');
 const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPolicySnapshot');
+const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
+const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -194,14 +196,34 @@ async function runPaidConversationOrchestrator(params) {
   }));
   const strategyPlan = buildStrategyPlan(packet);
   strategyPlan.retrieveNeeded = judgeNeedRetrieval(packet, strategyPlan);
+  const riskSnapshot = resolveIntentRiskTier({
+    domainIntent: packet.normalizedConversationIntent
+  });
 
   const candidateSet = await buildCandidateSet(packet, strategyPlan, deps);
+  const groundedResult = candidateSet.groundedResult && typeof candidateSet.groundedResult === 'object'
+    ? candidateSet.groundedResult
+    : null;
+  const sourceReadiness = computeSourceReadiness({
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    candidates: groundedResult && Array.isArray(groundedResult.citations)
+      ? groundedResult.citations.map((sourceId) => ({ sourceId }))
+      : [],
+    retrievalQuality: candidateSet.retrievalQuality,
+    retrieveNeeded: strategyPlan.retrieveNeeded === true,
+    evidenceCoverage: groundedResult && groundedResult.assistantQuality
+      ? groundedResult.assistantQuality.evidenceCoverage
+      : 0
+  });
   const evidenceSufficiency = judgeEvidenceSufficiency({
     strategy: strategyPlan.strategy,
     retrieveNeeded: strategyPlan.retrieveNeeded,
     retrievalQuality: candidateSet.retrievalQuality,
     blockedReason: candidateSet.groundedResult && candidateSet.groundedResult.blockedReason
   });
+  const effectiveEvidenceSufficiency = sourceReadiness.sourceReadinessDecision === 'refuse'
+    ? 'refuse'
+    : (sourceReadiness.sourceReadinessDecision === 'clarify' ? 'clarify' : evidenceSufficiency);
   const judged = judgeCandidates({
     packet,
     strategy: strategyPlan.strategy,
@@ -210,7 +232,7 @@ async function runPaidConversationOrchestrator(params) {
   const verified = verifyCandidate({
     packet,
     selected: judged.selected,
-    evidenceSufficiency
+    evidenceSufficiency: effectiveEvidenceSufficiency
   });
   const finalized = finalizeCandidate({
     selected: verified.selected,
@@ -220,9 +242,6 @@ async function runPaidConversationOrchestrator(params) {
   });
 
   const selected = verified.selected && typeof verified.selected === 'object' ? verified.selected : {};
-  const groundedResult = candidateSet.groundedResult && typeof candidateSet.groundedResult === 'object'
-    ? candidateSet.groundedResult
-    : null;
   const assistantQuality = groundedResult && groundedResult.assistantQuality
     ? groundedResult.assistantQuality
     : {
@@ -256,6 +275,11 @@ async function runPaidConversationOrchestrator(params) {
       strategy: strategyPlan.strategy,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
+      sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+      sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+      sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+      sourceReadinessReasons: sourceReadiness.reasonCodes,
+      officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
       judgeWinner: judged.judgeWinner,
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,

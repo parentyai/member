@@ -15,6 +15,8 @@ const { buildLlmInputView } = require('../llm/buildLlmInputView');
 const { guardLlmOutput } = require('../llm/guardLlmOutput');
 const { sanitizeRetrievalCandidates } = require('../assistant/retrieval/sanitizeRetrievalCandidates');
 const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
+const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
+const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -285,6 +287,9 @@ function isConsentMissingByPolicy(policy) {
 
 function buildAuditSummaryBase(params) {
   const payload = params || {};
+  const sourceReadiness = payload.sourceReadiness && typeof payload.sourceReadiness === 'object'
+    ? payload.sourceReadiness
+    : {};
   return {
     purpose: 'faq',
     llmEnabled: payload.llmEnabled,
@@ -310,6 +315,17 @@ function buildAuditSummaryBase(params) {
       : 0,
     sanitizeBlockedReasons: Array.isArray(payload.sanitizeBlockedReasons) ? payload.sanitizeBlockedReasons : [],
     injectionFindings: payload.injectionFindings === true,
+    intentRiskTier: payload.intentRiskTier || 'low',
+    riskReasonCodes: Array.isArray(payload.riskReasonCodes) ? payload.riskReasonCodes : [],
+    sourceAuthorityScore: Number.isFinite(Number(sourceReadiness.sourceAuthorityScore))
+      ? Number(sourceReadiness.sourceAuthorityScore)
+      : null,
+    sourceFreshnessScore: Number.isFinite(Number(sourceReadiness.sourceFreshnessScore))
+      ? Number(sourceReadiness.sourceFreshnessScore)
+      : null,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision || null,
+    sourceReadinessReasons: Array.isArray(sourceReadiness.reasonCodes) ? sourceReadiness.reasonCodes : [],
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -466,6 +482,24 @@ async function answerFaqFromKb(params, deps) {
   const suggestedFaqs = buildSuggestedFaqs(candidates);
   const confidence = evaluateConfidence(candidates);
   const kbMeta = buildKbMeta(candidates, confidence);
+  const riskSnapshot = resolveIntentRiskTier({ domainIntent: intent || 'general' });
+  const sourceReadiness = computeSourceReadiness({
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    candidates: candidates.map((item) => ({
+      sourceType: item && item.sourceType
+        ? item.sourceType
+        : (Array.isArray(item && item.linkRegistryIds) && item.linkRegistryIds.length ? 'semi_official' : 'other'),
+      authorityLevel: item && item.authorityLevel ? item.authorityLevel : 'other',
+      validUntil: item && item.validUntil ? item.validUntil : null,
+      status: item && item.status ? item.status : 'active',
+      requiredLevel: String(item && item.riskLevel || '').toLowerCase() === 'high' ? 'required' : 'optional'
+    })),
+    retrievalQuality: confidence.confident ? 'good' : 'bad',
+    retrieveNeeded: true,
+    evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined
+      ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
+      : 0
+  });
   const normalizedPersonalization = personalizationCheck.isAllowed
     ? {
       locale: personalizationCheck.keys.includes('locale') && personalization ? personalization.locale : undefined,
@@ -600,6 +634,21 @@ async function answerFaqFromKb(params, deps) {
       llmStatus: confidence.blockedReason || 'low_confidence',
       serverTime
     });
+  } else if (sourceReadiness.sourceReadinessDecision === 'refuse' || sourceReadiness.sourceReadinessDecision === 'clarify') {
+    const blockedReason = sourceReadiness.sourceReadinessDecision === 'refuse'
+      ? 'source_readiness_refuse'
+      : 'source_readiness_clarify';
+    blocked = buildBlocked({
+      blockedReason,
+      blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+      fallbackActions,
+      suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
+      traceId,
+      llmStatus: blockedReason,
+      serverTime
+    });
   } else if (candidates.some((item) => String(item.riskLevel || '').toLowerCase() === 'high') && requiredContactSourceIds.length === 0) {
     blocked = buildBlocked({
       blockedReason: 'contact_source_required',
@@ -640,6 +689,9 @@ async function answerFaqFromKb(params, deps) {
           llmPolicy,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
+          intentRiskTier: riskSnapshot.intentRiskTier,
+          riskReasonCodes: riskSnapshot.riskReasonCodes,
+          sourceReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -761,6 +813,9 @@ async function answerFaqFromKb(params, deps) {
           llmPolicy,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
+          intentRiskTier: riskSnapshot.intentRiskTier,
+          riskReasonCodes: riskSnapshot.riskReasonCodes,
+          sourceReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -847,6 +902,9 @@ async function answerFaqFromKb(params, deps) {
           llmPolicy,
           legalDecision: legalSnapshot.legalDecision,
           legalReasonCodes: legalSnapshot.legalReasonCodes,
+          intentRiskTier: riskSnapshot.intentRiskTier,
+          riskReasonCodes: riskSnapshot.riskReasonCodes,
+          sourceReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -911,6 +969,9 @@ async function answerFaqFromKb(params, deps) {
         llmPolicy,
         legalDecision: legalSnapshot.legalDecision,
         legalReasonCodes: legalSnapshot.legalReasonCodes,
+        intentRiskTier: riskSnapshot.intentRiskTier,
+        riskReasonCodes: riskSnapshot.riskReasonCodes,
+        sourceReadiness,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
         confidence,

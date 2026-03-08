@@ -26,6 +26,8 @@ const { buildContextualFeatures } = require('../../../domain/llm/bandit/contextu
 const { buildCounterfactualSnapshot } = require('../../../domain/llm/bandit/counterfactualSnapshot');
 const { buildContextSignature } = require('../../../domain/llm/bandit/contextualSignature');
 const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/counterfactualEvaluator');
+const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveIntentRiskTier');
+const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -278,7 +280,14 @@ function buildAuditMeta(input) {
       ? Math.max(1, Math.floor(Number(payload.counterfactualSelectedRank)))
       : null,
     counterfactualTopArms: normalizeCounterfactualTopArms(payload.counterfactualTopArms),
-    counterfactualEval: normalizeCounterfactualEval(payload.counterfactualEval)
+    counterfactualEval: normalizeCounterfactualEval(payload.counterfactualEval),
+    sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore)) ? Number(payload.sourceAuthorityScore) : null,
+    sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore)) ? Number(payload.sourceFreshnessScore) : null,
+    sourceReadinessDecision: normalizeText(payload.sourceReadinessDecision) || null,
+    sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
+      ? payload.sourceReadinessReasons.filter(Boolean).slice(0, 8)
+      : [],
+    officialOnlySatisfied: payload.officialOnlySatisfied === true
   };
 }
 
@@ -332,6 +341,17 @@ async function composeConciergeReply(params) {
   });
 
   const evidenceNeed = resolveEvidenceNeed(policy.mode);
+  const riskSnapshot = resolveIntentRiskTier({
+    domainIntent: payload.domainIntent || policy.topic || 'general',
+    reasonCodes: payload.riskReasonCodes
+  });
+  const sourceReadiness = computeSourceReadiness({
+    intentRiskTier: payload.intentRiskTier || riskSnapshot.intentRiskTier,
+    candidates: ranked.selected,
+    retrievalQuality: ranked.selected.length > 0 ? 'good' : 'none',
+    retrieveNeeded: evidenceNeed !== 'none',
+    evidenceCoverage: ranked.selected.length > 0 ? 1 : 0
+  });
   const evidenceDecision = resolveEvidenceOutcome({
     mode: policy.mode,
     evidenceNeed,
@@ -339,6 +359,13 @@ async function composeConciergeReply(params) {
     blockedReasons,
     injectionFindings: sanitized.injectionFindings
   });
+  if (sourceReadiness.sourceReadinessDecision === 'clarify' && evidenceDecision.evidenceOutcome === 'SUPPORTED') {
+    evidenceDecision.evidenceOutcome = 'INSUFFICIENT';
+  }
+  if (sourceReadiness.sourceReadinessDecision === 'refuse') {
+    evidenceDecision.evidenceOutcome = 'BLOCKED';
+    blockedReasons.push('source_readiness_refuse');
+  }
 
   const baseReplyText = normalizeText(payload.baseReplyText);
   const opportunityHints = payload.opportunityHints && typeof payload.opportunityHints === 'object'
@@ -611,7 +638,12 @@ async function composeConciergeReply(params) {
     counterfactualSelectedRank: counterfactual.selectedRank,
     counterfactualTopArms: counterfactual.topArms,
     counterfactualEval,
-    banditEnabled
+    banditEnabled,
+    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    sourceReadinessReasons: sourceReadiness.reasonCodes,
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true
   });
 
   return {

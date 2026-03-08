@@ -9,6 +9,7 @@ const STRATEGIES = new Set(['casual', 'domain_concierge', 'concierge', 'recommen
 const RETRIEVAL_QUALITIES = new Set(['none', 'good', 'mixed', 'bad']);
 const VERIFICATION_OUTCOMES = new Set(['passed', 'hedged', 'clarify', 'refuse']);
 const INTENT_RISK_TIERS = new Set(['low', 'medium', 'high']);
+const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -142,6 +143,12 @@ function normalizeVerificationOutcome(value) {
   return VERIFICATION_OUTCOMES.has(normalized) ? normalized : null;
 }
 
+function normalizeSourceReadinessDecision(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return SOURCE_READINESS_DECISIONS.has(normalized) ? normalized : null;
+}
+
 function normalizeJudgeScores(value) {
   const rows = Array.isArray(value) ? value : [];
   return rows.slice(0, 5).map((item, index) => {
@@ -270,6 +277,11 @@ async function appendLlmActionLog(params) {
     riskReasonCodes: normalizeStringList(payload.riskReasonCodes, 8),
     fallbackType: normalizeString(payload.fallbackType, null),
     interventionSuppressedBy: normalizeString(payload.interventionSuppressedBy, null),
+    sourceAuthorityScore: Math.max(0, Math.min(1, normalizeNumber(payload.sourceAuthorityScore, 0))),
+    sourceFreshnessScore: Math.max(0, Math.min(1, normalizeNumber(payload.sourceFreshnessScore, 0))),
+    sourceReadinessDecision: normalizeSourceReadinessDecision(payload.sourceReadinessDecision),
+    sourceReadinessReasons: normalizeStringList(payload.sourceReadinessReasons, 8),
+    officialOnlySatisfied: payload.officialOnlySatisfied === true,
     strategy: normalizeStrategy(payload.strategy),
     retrieveNeeded: payload.retrieveNeeded === true,
     retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),
