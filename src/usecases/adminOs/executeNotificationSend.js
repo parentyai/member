@@ -310,6 +310,7 @@ async function executeNotificationSend(params, deps) {
       sentAt: now.toISOString(),
       killSwitch,
       lineUserIds: capEligibleLineUserIds,
+      continueOnError: true,
       pushFn,
       traceId: traceId || undefined,
       requestId: requestId || undefined,
@@ -337,6 +338,44 @@ async function executeNotificationSend(params, deps) {
     }
     await appendExecuteAudit({ reason: 'send_failed', errorClass: err && err.name ? String(err.name) : 'Error' });
     throw err;
+  }
+
+  if (result && result.partialFailure === true) {
+    await appendExecuteAudit({
+      reason: 'send_partial_failure',
+      deliveredCount: result.deliveredCount,
+      skippedCount: result.skippedCount || 0,
+      failedCount: result.failedCount || 0,
+      failureSample: Array.isArray(result.failureSample) ? result.failureSample.slice(0, 20) : [],
+      capBlockedCount,
+      capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
+      notificationCategory: notification.notificationCategory || null,
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+      ctaLabelHashes: ctaSummary.ctaLabelHashes,
+      ctaLabelLengths: ctaSummary.ctaLabelLengths,
+      lineMessageType: result.lineMessageType || 'text'
+    });
+    return Object.assign({
+      ok: false,
+      partial: true,
+      reason: 'send_partial_failure',
+      traceId,
+      requestId,
+      capBlockedCount,
+      capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+      ctaLabelHashes: ctaSummary.ctaLabelHashes,
+      ctaLabelLengths: ctaSummary.ctaLabelLengths,
+      lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text'
+    }, result);
   }
 
     await audit({

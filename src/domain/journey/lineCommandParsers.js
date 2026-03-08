@@ -48,10 +48,11 @@ function normalizeDateText(value) {
   const day = Number(matched[3]);
   if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  const iso = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const parsed = Date.parse(`${iso}T00:00:00Z`);
-  if (!Number.isFinite(parsed)) return null;
-  return iso;
+  const strictDate = new Date(Date.UTC(year, month - 1, day));
+  if (strictDate.getUTCFullYear() !== year) return null;
+  if (strictDate.getUTCMonth() !== month - 1) return null;
+  if (strictDate.getUTCDate() !== day) return null;
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function normalizeHouseholdLabel(value) {

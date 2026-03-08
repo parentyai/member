@@ -266,6 +266,9 @@ async function sendNotification(params) {
   let lineMessageType = 'text';
   let fatigueWarningCount = 0;
   const fatigueWarnings = [];
+  let failedCount = 0;
+  const failureSample = [];
+  const continueOnError = payload.continueOnError === true;
 
   for (const user of effectiveUsers) {
     if (applyAttentionBudget) {
@@ -346,6 +349,41 @@ async function sendNotification(params) {
           budgetRemainingByUser.set(user.id, remaining - 1);
         }
       }
+    } catch (err) {
+      failedCount += 1;
+      const message = err && err.message ? String(err.message) : 'send failed';
+      if (failureSample.length < 20) {
+        failureSample.push({
+          lineUserId: user.id,
+          deliveryId,
+          stage: 'push_failed',
+          error: message
+        });
+      }
+      try {
+        await deliveriesRepo.createDeliveryWithId(deliveryId, {
+          notificationId,
+          lineUserId: user.id,
+          notificationCategory: notification.notificationCategory || null,
+          taskId: deliveryTaskMeta.taskId,
+          ruleId: deliveryTaskMeta.ruleId,
+          decision: deliveryTaskMeta.decision,
+          checkedAt: deliveryTaskMeta.checkedAt,
+          blockedReason: deliveryTaskMeta.blockedReason,
+          sentAt: null,
+          delivered: false,
+          state: 'failed',
+          lastError: message,
+          lastErrorAt: sentAt
+        });
+      } catch (_ignored) {
+        // best-effort only
+      }
+      if (!continueOnError) throw err;
+      continue;
+    }
+
+    try {
       await deliveriesRepo.createDeliveryWithId(deliveryId, {
         notificationId,
         lineUserId: user.id,
@@ -362,71 +400,77 @@ async function sendNotification(params) {
         lastError: null,
         lastErrorAt: null
       });
-      try {
-        await appendUxEventFn({
-          eventType: 'notification_sent',
-          deliveryId,
-          notificationId,
-          lineUserId: user.id,
-          notificationCategory: effectiveNotification.notificationCategory || null,
-          traceId,
-          requestId,
-          actor: actor || 'send_notification',
-          sentAt
-        });
-      } catch (_err) {
-        // best-effort only
-      }
-      if (fatigueWarnEnabled) {
-        try {
-          const warning = await computeFatigueWarningFn({
-            lineUserId: user.id,
-            sentAt,
-            notificationCategory: effectiveNotification.notificationCategory || null
-          }, {
-            deliveriesRepo
-          });
-          if (warning && warning.warn === true) {
-            fatigueWarningCount += 1;
-            if (fatigueWarnings.length < 20) {
-              fatigueWarnings.push({
-                lineUserId: warning.lineUserId || user.id,
-                notificationCategory: warning.notificationCategory || null,
-                sinceAt: warning.sinceAt || null,
-                deliveredToday: Number.isFinite(Number(warning.deliveredToday)) ? Number(warning.deliveredToday) : 0,
-                projectedDeliveredToday: Number.isFinite(Number(warning.projectedDeliveredToday))
-                  ? Number(warning.projectedDeliveredToday)
-                  : 0,
-                threshold: Number.isFinite(Number(warning.threshold)) ? Number(warning.threshold) : 0,
-                reason: warning.reason || 'daily_notification_volume_high'
-              });
-            }
-          }
-        } catch (_err) {
-          // best-effort only
-        }
-      }
     } catch (err) {
+      failedCount += 1;
+      const message = err && err.message ? String(err.message) : 'delivery persistence failed';
+      if (failureSample.length < 20) {
+        failureSample.push({
+          lineUserId: user.id,
+          deliveryId,
+          stage: 'delivery_persist_failed_after_push',
+          error: message
+        });
+      }
+      // Keep delivery in a non-failed state to avoid duplicate resend after push succeeded.
       try {
         await deliveriesRepo.createDeliveryWithId(deliveryId, {
           notificationId,
           lineUserId: user.id,
-          notificationCategory: notification.notificationCategory || null,
-          taskId: deliveryTaskMeta.taskId,
-          ruleId: deliveryTaskMeta.ruleId,
-          decision: deliveryTaskMeta.decision,
-          checkedAt: deliveryTaskMeta.checkedAt,
-          blockedReason: deliveryTaskMeta.blockedReason,
-          sentAt: null,
-          delivered: false,
-          state: 'failed',
-          lastError: err && err.message ? String(err.message) : 'send failed',
-          lastErrorAt: sentAt
+          state: 'delivery_persist_failed_after_push',
+          deliveryPersistError: message,
+          deliveryPersistErrorAt: sentAt,
+          sentAt
         });
       } catch (_ignored) {
         // best-effort only
       }
-      throw err;
+      if (!continueOnError) throw err;
+      continue;
+    }
+
+    try {
+      await appendUxEventFn({
+        eventType: 'notification_sent',
+        deliveryId,
+        notificationId,
+        lineUserId: user.id,
+        notificationCategory: effectiveNotification.notificationCategory || null,
+        traceId,
+        requestId,
+        actor: actor || 'send_notification',
+        sentAt
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+    if (fatigueWarnEnabled) {
+      try {
+        const warning = await computeFatigueWarningFn({
+          lineUserId: user.id,
+          sentAt,
+          notificationCategory: effectiveNotification.notificationCategory || null
+        }, {
+          deliveriesRepo
+        });
+        if (warning && warning.warn === true) {
+          fatigueWarningCount += 1;
+          if (fatigueWarnings.length < 20) {
+            fatigueWarnings.push({
+              lineUserId: warning.lineUserId || user.id,
+              notificationCategory: warning.notificationCategory || null,
+              sinceAt: warning.sinceAt || null,
+              deliveredToday: Number.isFinite(Number(warning.deliveredToday)) ? Number(warning.deliveredToday) : 0,
+              projectedDeliveredToday: Number.isFinite(Number(warning.projectedDeliveredToday))
+                ? Number(warning.projectedDeliveredToday)
+                : 0,
+              threshold: Number.isFinite(Number(warning.threshold)) ? Number(warning.threshold) : 0,
+              reason: warning.reason || 'daily_notification_volume_high'
+            });
+          }
+        }
+      } catch (_err) {
+        // best-effort only
+      }
     }
     try {
       await decisionTimelineRepo.appendTimelineEntry({
@@ -463,7 +507,9 @@ async function sendNotification(params) {
     }
   }
 
-  if (!skipStatusUpdate) {
+  const partialFailure = failedCount > 0;
+
+  if (!skipStatusUpdate && !partialFailure) {
     await notificationsRepo.updateNotificationStatus(notificationId, {
       status: 'sent',
       sentAt: sentAt || null
@@ -471,9 +517,14 @@ async function sendNotification(params) {
   }
 
   return {
+    ok: !partialFailure,
+    status: partialFailure ? 'completed_with_failures' : 'completed',
     notificationId,
     deliveredCount,
     skippedCount,
+    failedCount,
+    partialFailure,
+    failureSample,
     fallbackUsed: useFallback,
     optionalSourceFailureCount: optionalSourceFailures.length,
     ctaCount: ctaSlots.length,

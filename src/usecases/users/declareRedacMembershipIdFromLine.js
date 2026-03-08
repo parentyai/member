@@ -33,6 +33,11 @@ function parseCommand(text) {
   return { kind: 'cmd', value };
 }
 
+function logRedacBestEffortFailure(stage, requestId, lineUserId, err) {
+  const message = err && err.message ? String(err.message) : 'error';
+  console.warn(`[redac_membership] stage=${stage} requestId=${requestId || 'unknown'} lineUserId=${lineUserId || 'unknown'} message=${message}`);
+}
+
 async function ensureUserExistsInTx(tx, lineUserId) {
   const db = getDb();
   const userRef = db.collection('users').doc(lineUserId);
@@ -74,7 +79,9 @@ async function declareRedacMembershipIdFromLine(params) {
         requestId,
         payloadSummary: { ok: false, reason: 'usage' }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacBestEffortFailure('declare_usage_audit', requestId, lineUserId, err);
+    }
     return { ok: false, status: 'usage' };
   }
 
@@ -90,7 +97,9 @@ async function declareRedacMembershipIdFromLine(params) {
         requestId,
         payloadSummary: { ok: false, reason: 'invalid_format' }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacBestEffortFailure('declare_invalid_audit', requestId, lineUserId, err);
+    }
     return { ok: false, status: 'invalid_format' };
   }
 
@@ -107,7 +116,9 @@ async function declareRedacMembershipIdFromLine(params) {
         requestId,
         payloadSummary: { ok: false, reason: 'server_misconfigured' }
       });
-    } catch (_err) {}
+    } catch (err) {
+      logRedacBestEffortFailure('declare_misconfigured_audit', requestId, lineUserId, err);
+    }
     return { ok: false, status: 'server_misconfigured' };
   }
 
@@ -179,7 +190,7 @@ async function declareRedacMembershipIdFromLine(params) {
       }
     });
   } catch (_err) {
-    // best-effort only
+    logRedacBestEffortFailure('declare_result_audit', requestId, lineUserId, _err);
   }
 
   try {
@@ -189,7 +200,7 @@ async function declareRedacMembershipIdFromLine(params) {
       ref: { requestId, redacMembershipIdLast4: last4 }
     });
   } catch (_err) {
-    // best-effort only
+    logRedacBestEffortFailure('declare_event_append', requestId, lineUserId, _err);
   }
 
   if (!ok && status === 'duplicate') {
