@@ -1,6 +1,6 @@
 # ADMIN_UI_DATA_RELATION_MAP
 
-- generatedAt: 2026-03-08T02:47:49.715Z
+- generatedAt: 2026-03-08T03:08:08.731Z
 - source: docs/knowledge-graph/*.md + docs/knowledge-graph/runtime_probe.json
 
 ```mermaid

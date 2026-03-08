@@ -184,15 +184,20 @@ function buildFirestoreRuntimeMap(metadata, runtimeProbe) {
   const rows = [];
   if (firestore.status === 'OBSERVED_RUNTIME' && Array.isArray(firestore.collectionSummaries) && firestore.collectionSummaries.length > 0) {
     for (const row of firestore.collectionSummaries) {
+      const fields = Array.isArray(row.fields) && row.fields.length > 0
+        ? row.fields.join(', ')
+        : 'UNOBSERVED_RUNTIME';
       rows.push([
         row.collection,
         row.fieldCount,
+        fields,
         row.sampleDoc || 'NONE',
         firestore.evidence || 'runtime:firebase-admin firestore listCollections@UNOBSERVED_RUNTIME'
       ]);
     }
   } else {
     rows.push([
+      'UNOBSERVED_RUNTIME',
       'UNOBSERVED_RUNTIME',
       'UNOBSERVED_RUNTIME',
       firestore.reason || 'reauth_required',
@@ -209,7 +214,7 @@ function buildFirestoreRuntimeMap(metadata, runtimeProbe) {
   lines.push('');
   lines.push('`gcloud auth login --update-adc` and `gcloud auth application-default login` are required for Firestore runtime sampling.');
   lines.push('');
-  lines.push(toTable(['Collection', 'FieldCount', 'SampleDoc', 'Evidence'], rows));
+  lines.push(toTable(['Collection', 'FieldCount', 'Fields', 'SampleDoc', 'Evidence'], rows));
   lines.push('');
   return lines.join('\n');
 }

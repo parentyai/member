@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T02:42:23.550Z",
-  "gitCommit": "746298fa07a773f7a9e066c29481c8c44c9ca081",
-  "branch": "main",
-  "sourceDigest": "c397ec60bcaa3c38e83a8a1a404a0c1861bcdcf50abe8ff0ff9cf730041f2d71",
+  "generatedAt": "2026-03-08T03:08:07.132Z",
+  "gitCommit": "8bae8342b36e44b086956dc2e1ec93d72398e0a5",
+  "branch": "codex/knowledge-graph-v2-finalize",
+  "sourceDigest": "abc077ebe50af3043a56474579a2842968ebd435af568f87aadc09d56fba3eb4",
   "runtimeStatus": {
     "cloudRun": "OBSERVED_RUNTIME",
     "secretManager": "OBSERVED_RUNTIME",
@@ -90,9 +90,9 @@
         "component": "Cloud Run/Secrets/Firestore runtime probe (OBSERVED_RUNTIME)",
         "location": "runtime:gcloud run services list, runtime:gcloud secrets list, runtime:firebase-admin firestore listCollections",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z",
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z",
-          "runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z",
+          "runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z"
         ]
       }
     ],
@@ -1220,7 +1220,7 @@
         "repoFile": "runtime:gcloud run services list",
         "purpose": "runtime_service region=us-east1",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1229,7 +1229,7 @@
         "repoFile": "runtime:gcloud run services list",
         "purpose": "runtime_service region=us-east1",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1238,7 +1238,7 @@
         "repoFile": "runtime:gcloud run services list",
         "purpose": "runtime_service region=us-east1",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1247,7 +1247,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1256,7 +1256,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1265,7 +1265,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1274,7 +1274,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1283,7 +1283,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1292,7 +1292,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1301,7 +1301,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1310,7 +1310,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1319,7 +1319,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1328,7 +1328,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1337,7 +1337,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1346,7 +1346,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
@@ -1355,7 +1355,7 @@
         "repoFile": "runtime:gcloud secrets list",
         "purpose": "runtime_secret_name_only",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       }
     ],
@@ -31674,114 +31674,114 @@
     "PROJECT_INFRA_MAP": [
       {
         "component": "CloudRun:member",
-        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "CloudRun:member-track",
-        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "CloudRun:member-webhook",
-        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "dependency": "region=us-east1, serviceAccount=member-runtime@member-485303.iam.gserviceaccount.com, image=us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:b1599d21dd36a956d0516dd2190dc16ba772b408",
         "evidence": [
-          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:ADMIN_BASIC_PASS",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:ADMIN_BASIC_USER",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:ADMIN_OS_TOKEN",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:CITY_PACK_JOB_TOKEN",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:JOURNEY_JOB_TOKEN",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:LINE_CHANNEL_ACCESS_TOKEN",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:LINE_CHANNEL_SECRET",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:OPENAI_API_KEY",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:OPS_CONFIRM_TOKEN_SECRET",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:REDAC_MEMBERSHIP_ID_HMAC_SECRET",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:STRIPE_SECRET_KEY",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:STRIPE_WEBHOOK_SECRET",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {
         "component": "SecretManager:TRACK_TOKEN_SECRET",
         "dependency": "name_only_no_secret_value",
         "evidence": [
-          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:42:17.403Z"
+          "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T03:08:01.041Z"
         ]
       },
       {

@@ -1,9 +1,9 @@
 # DATA_FLOW
 
-- generatedAt: 2026-03-08T02:42:23.550Z
-- gitCommit: 746298fa07a773f7a9e066c29481c8c44c9ca081
-- branch: main
-- sourceDigest: c397ec60bcaa3c38e83a8a1a404a0c1861bcdcf50abe8ff0ff9cf730041f2d71
+- generatedAt: 2026-03-08T03:08:07.132Z
+- gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
+- branch: codex/knowledge-graph-v2-finalize
+- sourceDigest: abc077ebe50af3043a56474579a2842968ebd435af568f87aadc09d56fba3eb4
 - runtime.cloudRun: OBSERVED_RUNTIME
 - runtime.secretManager: OBSERVED_RUNTIME
 - runtime.firestore: OBSERVED_RUNTIME

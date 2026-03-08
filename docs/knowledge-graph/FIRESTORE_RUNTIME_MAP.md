@@ -1,61 +1,61 @@
 # FIRESTORE_RUNTIME_MAP
 
-- generatedAt: 2026-03-08T02:47:49.524Z
-- source.generatedAt: 2026-03-08T02:42:23.550Z
+- generatedAt: 2026-03-08T03:08:08.549Z
+- source.generatedAt: 2026-03-08T03:08:07.132Z
 - runtime.firestore: OBSERVED_RUNTIME
 
 `gcloud auth login --update-adc` and `gcloud auth application-default login` are required for Firestore runtime sampling.
 
-| Collection | FieldCount | SampleDoc | Evidence |
-| --- | --- | --- | --- |
-| audit_logs | 8 | 0041Fy0EkdqASghk5k46 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| automation_config | 7 | 0FT60TbDar4khOerRMWa | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| automation_runs | 14 | 1xkB4IyUoGU5mVy30xl3 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| checklists | 8 | seed_chk_seed_users200_mix_20260304130143_001 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| city_pack_requests | 20 | cpr_c6c311a2-646b-454f-821c-0137ebf836be | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| city_packs | 21 | cp_4a5520f8-d76d-442d-afe6-1dabef4b0673 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| decision_logs | 10 | 19QzyrD754lQib14XOM9 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| decision_timeline | 10 | 02N7ItbyR89mCUBtYGZx | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_diffs | 14 | edf_00dc7e60aa4cf874a480aba5 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_events_normalized | 18 | eme_001897279a520104f0e8a917 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_providers | 13 | airnow_aqi | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_rules | 17 | stg_preview_test_rule | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_snapshots | 13 | nws_alerts__stg_dryrun_1772668054111__nws_alerts | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| emergency_unmapped_events | 9 | emu_008e6589371b121be6a5ee9e | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| events | 4 | 1GGJZSi8FMyGaD6tG9sc | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| faq_answer_logs | 6 | 00T0sWMjIs8ys9LVcSSi | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| faq_articles | 18 | 9EPiW2ItqfKbIAk4Cvkf | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_kpi_daily | 21 | 2026-02-25 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_param_change_logs | 11 | journey_param_1772067533494_c6b7e653b94e | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_param_versions | 14 | jpv_1772067533370_8c5bad77436d | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_reminder_runs | 12 | jrr_1771961990117_f0f832f8230b | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_todo_items | 14 | U730STG000000000000000000000001__t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| journey_todo_stats | 13 | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| link_registry | 1 | TMdxdoNYN1Tcxz2vyOkp | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| llm_action_logs | 42 | 0BrQnyQT0kSjaMsyGpci | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| llm_policy_change_logs | 9 | llm_policy_1772559024239_c28c6a9892c1 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| llm_quality_logs | 10 | 0Q8ApDAgEc4BdPp3yxWy | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| llm_usage_logs | 14 | 2MFiqShlwgYfsG52sSf0 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| llm_usage_stats | 13 | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| notification_deliveries | 4 | I6mgmgKsEuVAaiO4IjXL | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| notification_templates | 7 | 3z37d1AaRgHeHp1BUD2B | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| notifications | 7 | 2ZMslooV6DWjzd0b5k1h | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| ops_read_model_snapshots | 8 | dashboard_kpi__1 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| opsConfig | 11 | journeyPolicy | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| phase18_cta_stats | 7 | 01URraLE2w4Fvwkd3kFm | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| rich_menu_rollout_runs | 11 | richmenu_apply_1772392074733_f9589a6d | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| ridac_membership_links | 5 | 571918a9d2f35adc96c63994b29d9d6261dc612ef3d4858856d10c5db839c943 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| seed_runs | 11 | seed_users200_mix_20260304130143 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| send_retry_queue | 11 | 0s2DIuSHQb87okG5fCQm | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| source_audit_runs | 14 | cp_run_1771907204462 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| source_refs | 19 | seed_sr_seed_users200_mix_20260304130143_boston | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| step_rules | 18 | mig_v1_A_arrival_registration | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| stripe_webhook_dead_letters | 6 | CIa43abT6VT6qRDt12la | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| stripe_webhook_events | 8 | evt_codex_e2e_1771954619 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| system_flags | 7 | phase0 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| task_contents | 13 | t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| tasks | 10 | U730STG000000000000000000000001__t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| user_journey_profiles | 6 | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| user_journey_schedules | 9 | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| user_subscriptions | 8 | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
-| users | 17 | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T02:42:17.403Z |
+| Collection | FieldCount | Fields | SampleDoc | Evidence |
+| --- | --- | --- | --- | --- |
+| audit_logs | 8 | action, actor, createdAt, entityId, entityType, payloadSummary, requestId, traceId | 0041Fy0EkdqASghk5k46 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| automation_config | 7 | allowNextActions, allowScenarios, allowSteps, createdAt, enabled, mode, updatedBy | 0FT60TbDar4khOerRMWa | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| automation_runs | 14 | confirmTokenId, counters, createdAt, cursor, evidence, kind, lastError, limits, planHash, segmentKey, status, templateKey, templateVersion, updatedAt | 1xkB4IyUoGU5mVy30xl3 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| checklists | 8 | createdAt, items, scenario, scenarioKey, seed, step, stepKey, title | seed_chk_seed_users200_mix_20260304130143_001 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| city_pack_requests | 20 | createdAt, draftCityPackIds, draftLinkRegistryIds, draftSourceCandidates, draftSourceRefIds, draftTemplateIds, error, experienceStage, lastJobRunId, lastReviewAt, lineUserId, regionCity, regionKey, regionState, requestClass, requestedAt, requestedLanguage, status, traceId, updatedAt | cpr_c6c311a2-646b-454f-821c-0137ebf836be | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| city_packs | 21 | allowedIntents, basePackId, createdAt, description, language, metadata, name, nationwidePolicy, overrides, packClass, requestId, rules, slotContents, slots, slotSchemaVersion, sourceRefs, status, targetingRules, templateRefs, updatedAt, validUntil | cp_4a5520f8-d76d-442d-afe6-1dabef4b0673 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| decision_logs | 10 | audit, createdAt, decidedAt, decidedBy, decision, reason, requestId, subjectId, subjectType, traceId | 19QzyrD754lQib14XOM9 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| decision_timeline | 10 | action, actor, createdAt, lineUserId, notificationId, refId, requestId, snapshot, source, traceId | 02N7ItbyR89mCUBtYGZx | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_diffs | 14 | category, changedKeys, createdAt, diffType, eventDocId, eventKey, providerKey, regionKey, runId, severity, snapshotId, summaryDraft, traceId, updatedAt | edf_00dc7e60aa4cf874a480aba5 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_events_normalized | 18 | category, createdAt, endsAt, eventHash, eventKey, headline, isActive, officialLinkRegistryId, providerKey, rawMeta, regionKey, resolvedAt, runId, severity, snapshotId, startsAt, traceId, updatedAt | eme_001897279a520104f0e8a917 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_providers | 13 | createdAt, lastError, lastEtag, lastModified, lastPayloadHash, lastRunAt, lastSuccessAt, officialLinkRegistryId, providerKey, scheduleMinutes, status, traceId, updatedAt | airnow_aqi | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_rules | 17 | autoSend, createdAt, createdBy, enabled, eventType, id, maxRecipients, membersOnly, priority, providerKey, region, role, ruleId, severity, traceId, updatedAt, updatedBy | stg_preview_test_rule | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_snapshots | 13 | createdAt, etag, fetchedAt, lastModified, payloadHash, payloadPath, payloadSummary, providerKey, rawPayload, runId, statusCode, traceId, updatedAt | nws_alerts__stg_dryrun_1772668054111__nws_alerts | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| emergency_unmapped_events | 9 | createdAt, eventKey, providerKey, rawMeta, reason, runId, snapshotId, traceId, updatedAt | emu_008e6589371b121be6a5ee9e | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| events | 4 | createdAt, lineUserId, ref, type | 1GGJZSi8FMyGaD6tG9sc | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| faq_answer_logs | 6 | blockedReason, createdAt, locale, matchedArticleIds, questionHash, traceId | 00T0sWMjIs8ys9LVcSSi | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| faq_articles | 18 | allowedIntents, body, createdAt, disclaimerVersion, keywords, linkRegistryIds, locale, riskLevel, sourceType, status, synonyms, tags, title, updatedAt, updatedBy, validUntil, version, versionSemver | 9EPiW2ItqfKbIAk4Cvkf | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_kpi_daily | 21 | churnReasonRatio, dateKey, dependencyBlockRate, generatedAt, lookbackDays, metadata, nextActionCompletedCount, nextActionExecutionRate, nextActionShownCount, phaseCompletionRate, proActiveCount, proActiveRatio, proConversionRate, proConvertedCount, proPromptedCount, retention, scanLimit, taskCompletionRate, totalUsers, updatedAt, updatedBy | 2026-02-25 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_param_change_logs | 11 | action, actor, after, before, createdAt, id, requestId, summary, traceId, updatedAt, versionId | journey_param_1772067533494_c6b7e653b94e | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_param_versions | 14 | appliedMeta, createdAt, createdBy, dryRun, effectiveAt, note, parameters, previousAppliedVersionId, schemaVersion, state, updatedAt, updatedBy, validation, versionId | jpv_1772067533370_8c5bad77436d | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_reminder_runs | 12 | actor, dryRun, errorSample, failedCount, finishedAt, requestId, runId, scannedCount, sentCount, skippedCount, startedAt, traceId | jrr_1771961990117_f0f832f8230b | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_todo_items | 14 | createdAt, dueAt, dueDate, graphStatus, journeyState, lineUserId, progressState, remindedOffsetsDays, reminderOffsetsDays, source, status, title, todoKey, updatedAt | U730STG000000000000000000000001__t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| journey_todo_stats | 13 | actionableCount, completedCount, completionRate, dependencyBlockRate, dummyUser, dummyUserRunId, lineUserId, lockedCount, nextDueAt, openCount, overdueCount, totalCount, updatedAt | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| link_registry | 1 | createdAt | TMdxdoNYN1Tcxz2vyOkp | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| llm_action_logs | 42 | banditEnabled, blockedReasons, chosenAction, citationRanks, contextConfidence, contextSignature, contextualBanditEnabled, contextualFeatures, contextVersion, conversationMove, conversationState, counterfactualEval, counterfactualSelectedArmId, counterfactualSelectedRank, counterfactualTopArms, createdAt, epsilon, evidenceNeed, evidenceOutcome, featureHash, injectionFindings, intentConfidence, lineUserId, mode, plan, postRenderLint, requestId, reward, rewardPending, rewardSignals, rewardVersion, rewardWindowHours, score, scoreBreakdown, segmentKey, selectionSource, styleId, topic, traceId, updatedAt, urlCount, userTier | 0BrQnyQT0kSjaMsyGpci | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| llm_policy_change_logs | 9 | actor, canonicalization, createdAt, id, planHash, policy, requestId, traceId, updatedAt | llm_policy_1772559024239_c28c6a9892c1 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| llm_quality_logs | 10 | blockedReason, citationCount, createdAt, decision, intent, model, retryCount, top1Score, top2Score, userId | 0Q8ApDAgEc4BdPp3yxWy | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| llm_usage_logs | 14 | assistantQuality, blockedReason, blockedReasonCategory, costEstimate, createdAt, decision, intent, model, plan, subscriptionStatus, tokensIn, tokensOut, tokenUsed, userId | 2MFiqShlwgYfsG52sSf0 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| llm_usage_stats | 13 | blockedCount, blockedHistory, dailyBlockedCount, dailyDate, dailyTokenUsed, dailyUsageCount, lastUsedAt, lineUserId, totalTokensIn, totalTokensOut, totalTokenUsed, updatedAt, usageCount | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| notification_deliveries | 4 | delivered, lineUserId, notificationId, sentAt | I6mgmgKsEuVAaiO4IjXL | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| notification_templates | 7 | body, createdAt, key, notificationCategory, status, text, title | 3z37d1AaRgHeHp1BUD2B | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| notifications | 7 | body, createdAt, ctaText, linkRegistryId, scenarioKey, stepKey, title | 2ZMslooV6DWjzd0b5k1h | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| ops_read_model_snapshots | 8 | asOf, createdAt, data, freshnessMinutes, snapshotKey, snapshotType, sourceTraceId, updatedAt | dashboard_kpi__1 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| opsConfig | 11 | auto_downgrade_message_enabled, auto_upgrade_message_enabled, enabled, paid_only_reminders, reminder_max_per_run, reminder_offsets_days, rich_menu_enabled, rich_menu_map, schedule_required_for_reminders, updatedAt, updatedBy | journeyPolicy | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| phase18_cta_stats | 7 | clickCount, createdAt, ctaText, linkRegistryId, notificationId, sentCount, updatedAt | 01URraLE2w4Fvwkd3kFm | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| rich_menu_rollout_runs | 11 | action, actor, createdAt, lineUserIds, mode, requestId, results, runId, summary, traceId, updatedAt | richmenu_apply_1772392074733_f9589a6d | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| ridac_membership_links | 5 | lineUserId, linkedAt, linkedBy, ridacMembershipIdHash, ridacMembershipIdLast4 | 571918a9d2f35adc96c63994b29d9d6261dc612ef3d4858856d10c5db839c943 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| seed_runs | 11 | completedAt, createdAt, envName, seed, seedKind, seedRunId, status, summary, targets, writeFallbackReason, writeMode | seed_users200_mix_20260304130143 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| send_retry_queue | 11 | createdAt, giveUpReason, lastError, lineUserId, payloadSnapshot, reason, resolvedAt, resolvedBy, status, templateKey, updatedAt | 0s2DIuSHQb87okG5fCQm | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| source_audit_runs | 14 | confidenceSummary, endedAt, failed, failureTop3, mode, packClass, processed, runId, stage, startedAt, succeeded, targetSourceRefIds, traceId, updatedAt | cp_run_1771907204462 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| source_refs | 19 | authorityLevel, confidenceScore, contentHash, createdAt, evidenceLatestId, lastAuditStage, lastCheckAt, lastResult, requiredLevel, riskLevel, seed, seedOrder, sourceType, status, updatedAt, url, usedByCityPackIds, validFrom, validUntil | seed_sr_seed_users200_mix_20260304130143_boston | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| step_rules | 18 | constraints, createdAt, createdBy, dependsOn, enabled, id, leadTime, nudgeTemplate, priority, riskLevel, ruleId, scenarioKey, stepKey, trigger, updatedAt, updatedBy, validFrom, validUntil | mig_v1_A_arrival_registration | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| stripe_webhook_dead_letters | 6 | createdAt, errorCode, errorMessage, eventId, payloadHash, requestId | CIa43abT6VT6qRDt12la | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| stripe_webhook_events | 8 | errorCode, eventType, processedAt, receivedAt, requestId, status, stripeEventCreated, userId | evt_codex_e2e_1771954619 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| system_flags | 7 | deliveryCountLegacyFallback, killSwitch, llmEnabled, llmPolicy, notificationCaps, notificationPreset, servicePhase | phase0 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| task_contents | 13 | actionLinkId, checklistItems, createdAt, createdBy, failureText, manualText, taskKey, timeMax, timeMin, title, updatedAt, updatedBy, videoLinkId | t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| tasks | 10 | createdAt, lineUserId, meaning, ruleId, source, status, stepKey, taskId, updatedAt, userId | U730STG000000000000000000000001__t730_case_a | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| user_journey_profiles | 6 | dummyUser, dummyUserRunId, householdType, lineUserId, scenarioKey, updatedAt | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| user_journey_schedules | 9 | assignmentDate, departureDate, dummyUser, dummyUserRunId, lineUserId, scenarioKey, stage, stepKey, updatedAt | U_TEST_RIDAC_A_20260210092935 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| user_subscriptions | 8 | currentPeriodEnd, currentPeriodEndUnix, lastEventCreatedAt, lastEventId, lineUserId, plan, status, updatedAt | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
+| users | 17 | createdAt, dummyUser, dummyUserClass, dummyUserExempt, dummyUserMarkedAt, dummyUserRunId, memberCardAsset, memberNumber, opsReviewLastReviewedAt, opsReviewLastReviewedBy, regionCity, regionDeclaredAt, regionDeclaredBy, regionKey, regionState, scenarioKey, stepKey | U3037952f2f6531a3d8b24fd13ca3c680 | runtime:firebase-admin firestore listCollections@2026-03-08T03:08:01.041Z |
