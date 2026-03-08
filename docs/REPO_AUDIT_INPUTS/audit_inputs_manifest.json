@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T20:30:38-05:00",
-  "gitCommit": "292403dcf4fc0d7cc0ec5248e627eaedc782aa56",
-  "branch": "codex/llm-v3-pr35-readiness-enforce",
-  "sourceDigest": "1683d2801458f82d13b23b1c405dfdd71e21a5459970c8b6120d7e29f1192207",
+  "generatedAt": "2026-03-07T20:56:42-05:00",
+  "gitCommit": "35b6dae0a476860f93ebdf0f8d12ff9c9c9fc0ba",
+  "branch": "HEAD",
+  "sourceDigest": "53340f31546b789319aed64ef29d75873bc29b9602bbc587feea44cd95474d55",
   "counts": {
     "endpoints": 289,
     "routes": 128,
@@ -71,7 +71,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "a178f00acd5a43232a58575909074c937cc0c645889132a769bce1d7e14e4bd5",
+      "sha256": "f5396bf6639891bff9af053a44579afd829141334d1850ed4ce98b1b78867b3c",
       "bytes": 76672
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "8fced4ebe589ef38d4efd1d8e27656592ad0c8ef01dc0df4f75814543398086a",
+      "sha256": "3fe601f910ef28484073c92097bb6463f25b3e1766469d2966ef3773b4dfeebc",
       "bytes": 443850
     },
     {

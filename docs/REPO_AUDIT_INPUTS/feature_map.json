@@ -836,7 +836,7 @@
       "killSwitch_dependent": false,
       "trace_linked": true,
       "audit_linked": false,
-      "tests_count": 10,
+      "tests_count": 11,
       "ssot_refs": [],
       "completion": "completed"
     },
