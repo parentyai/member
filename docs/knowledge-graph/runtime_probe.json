@@ -1,0 +1,762 @@
+{
+  "generatedAt": "2026-03-08T02:47:49.454Z",
+  "gitCommit": "746298fa07a773f7a9e066c29481c8c44c9ca081",
+  "branch": "codex/knowledge-graph-v2-finalize",
+  "projectId": "member-485303",
+  "activeAccount": "nshimamura@parentyai.com",
+  "commands": [
+    {
+      "name": "gcloud_project",
+      "command": "gcloud config get-value project",
+      "status": 0,
+      "evidence": "runtime:gcloud config get-value project@2026-03-08T02:47:49.454Z",
+      "stderr": null
+    },
+    {
+      "name": "gcloud_auth_list",
+      "command": "gcloud auth list --filter=status:ACTIVE --format=json",
+      "status": 0,
+      "evidence": "runtime:gcloud auth list --filter=status:ACTIVE --format=json@2026-03-08T02:47:49.454Z",
+      "stderr": null
+    },
+    {
+      "name": "cloud_run_services",
+      "command": "gcloud run services list --format=json --project member-485303",
+      "status": 0,
+      "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+      "stderr": null
+    },
+    {
+      "name": "secret_manager_list",
+      "command": "gcloud secrets list --format=json --project member-485303",
+      "status": 0,
+      "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+      "stderr": null
+    }
+  ],
+  "cloudRun": {
+    "observed": true,
+    "status": "OBSERVED_RUNTIME",
+    "serviceCount": 3,
+    "services": [
+      {
+        "name": "member",
+        "region": "us-east1",
+        "url": "https://member-pvxgenwkba-ue.a.run.app",
+        "ingress": null,
+        "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "envVars": [
+          "ADMIN_OS_TOKEN",
+          "ENABLE_PAID_ORCHESTRATOR_V2",
+          "ENV_NAME",
+          "FIRESTORE_PROJECT_ID",
+          "JOURNEY_JOB_TOKEN",
+          "LINE_CHANNEL_ACCESS_TOKEN",
+          "LINE_CHANNEL_SECRET",
+          "LLM_FEATURE_FLAG",
+          "OPENAI_API_KEY",
+          "OPENAI_MODEL",
+          "OPS_CONFIRM_TOKEN_SECRET",
+          "PUBLIC_BASE_URL",
+          "REDAC_MEMBERSHIP_ID_HMAC_SECRET",
+          "STORAGE_BUCKET",
+          "TRACK_TOKEN_SECRET"
+        ],
+        "secretRefs": [],
+        "maxScale": "20",
+        "minScale": null
+      },
+      {
+        "name": "member-track",
+        "region": "us-east1",
+        "url": "https://member-track-pvxgenwkba-ue.a.run.app",
+        "ingress": null,
+        "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-track:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "envVars": [
+          "ENV_NAME",
+          "FIRESTORE_PROJECT_ID",
+          "SERVICE_MODE",
+          "TRACK_TOKEN_SECRET"
+        ],
+        "secretRefs": [],
+        "maxScale": "20",
+        "minScale": null
+      },
+      {
+        "name": "member-webhook",
+        "region": "us-east1",
+        "url": "https://member-webhook-pvxgenwkba-ue.a.run.app",
+        "ingress": null,
+        "serviceAccount": "member-runtime@member-485303.iam.gserviceaccount.com",
+        "image": "us-east1-docker.pkg.dev/member-485303/cloud-run-source-deploy/member-webhook:746298fa07a773f7a9e066c29481c8c44c9ca081",
+        "envVars": [
+          "ENABLE_STRIPE_WEBHOOK",
+          "ENV_NAME",
+          "FIRESTORE_PROJECT_ID",
+          "LINE_CHANNEL_ACCESS_TOKEN",
+          "LINE_CHANNEL_SECRET",
+          "LLM_FEATURE_FLAG",
+          "OPENAI_API_KEY",
+          "OPENAI_MODEL",
+          "REDAC_MEMBERSHIP_ID_HMAC_SECRET",
+          "SERVICE_MODE",
+          "STRIPE_WEBHOOK_SECRET"
+        ],
+        "secretRefs": [],
+        "maxScale": "20",
+        "minScale": null
+      }
+    ],
+    "evidence": "runtime:gcloud run services list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+    "reason": null
+  },
+  "secretManager": {
+    "observed": true,
+    "status": "OBSERVED_RUNTIME",
+    "secretCount": 13,
+    "secretNames": [
+      "ADMIN_BASIC_PASS",
+      "ADMIN_BASIC_USER",
+      "ADMIN_OS_TOKEN",
+      "CITY_PACK_JOB_TOKEN",
+      "JOURNEY_JOB_TOKEN",
+      "LINE_CHANNEL_ACCESS_TOKEN",
+      "LINE_CHANNEL_SECRET",
+      "OPENAI_API_KEY",
+      "OPS_CONFIRM_TOKEN_SECRET",
+      "REDAC_MEMBERSHIP_ID_HMAC_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "TRACK_TOKEN_SECRET"
+    ],
+    "evidence": "runtime:gcloud secrets list --format=json --project member-485303@2026-03-08T02:47:49.454Z",
+    "reason": null
+  },
+  "firestore": {
+    "observed": true,
+    "status": "OBSERVED_RUNTIME",
+    "reason": null,
+    "collectionCount": 51,
+    "collections": [
+      "audit_logs",
+      "automation_config",
+      "automation_runs",
+      "checklists",
+      "city_pack_requests",
+      "city_packs",
+      "decision_logs",
+      "decision_timeline",
+      "emergency_diffs",
+      "emergency_events_normalized",
+      "emergency_providers",
+      "emergency_rules",
+      "emergency_snapshots",
+      "emergency_unmapped_events",
+      "events",
+      "faq_answer_logs",
+      "faq_articles",
+      "journey_kpi_daily",
+      "journey_param_change_logs",
+      "journey_param_versions",
+      "journey_reminder_runs",
+      "journey_todo_items",
+      "journey_todo_stats",
+      "link_registry",
+      "llm_action_logs",
+      "llm_policy_change_logs",
+      "llm_quality_logs",
+      "llm_usage_logs",
+      "llm_usage_stats",
+      "notification_deliveries",
+      "notification_templates",
+      "notifications",
+      "ops_read_model_snapshots",
+      "opsConfig",
+      "phase18_cta_stats",
+      "rich_menu_rollout_runs",
+      "ridac_membership_links",
+      "seed_runs",
+      "send_retry_queue",
+      "source_audit_runs",
+      "source_refs",
+      "step_rules",
+      "stripe_webhook_dead_letters",
+      "stripe_webhook_events",
+      "system_flags",
+      "task_contents",
+      "tasks",
+      "user_journey_profiles",
+      "user_journey_schedules",
+      "user_subscriptions",
+      "users"
+    ],
+    "samples": [
+      {
+        "collection": "audit_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "automation_config",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "automation_runs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "checklists",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "city_pack_requests",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "city_packs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "decision_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "decision_timeline",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_diffs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_events_normalized",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_providers",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_rules",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_snapshots",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_unmapped_events",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "events",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "faq_answer_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "faq_articles",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_kpi_daily",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_param_change_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_param_versions",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_reminder_runs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_todo_items",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_todo_stats",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "link_registry",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_action_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_policy_change_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_quality_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_usage_logs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_usage_stats",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notification_deliveries",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notification_templates",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notifications",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "opsConfig",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "ops_read_model_snapshots",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "phase18_cta_stats",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "rich_menu_rollout_runs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "ridac_membership_links",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "seed_runs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "send_retry_queue",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "source_audit_runs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "source_refs",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "step_rules",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "stripe_webhook_dead_letters",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "stripe_webhook_events",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "system_flags",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "task_contents",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "tasks",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_journey_profiles",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_journey_schedules",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_subscriptions",
+        "observed": true,
+        "sampleDocExists": true
+      },
+      {
+        "collection": "users",
+        "observed": true,
+        "sampleDocExists": true
+      }
+    ],
+    "collectionSummaries": [
+      {
+        "collection": "audit_logs",
+        "fieldCount": 8,
+        "sampleDoc": "0041Fy0EkdqASghk5k46",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "automation_config",
+        "fieldCount": 7,
+        "sampleDoc": "0FT60TbDar4khOerRMWa",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "automation_runs",
+        "fieldCount": 14,
+        "sampleDoc": "1xkB4IyUoGU5mVy30xl3",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "checklists",
+        "fieldCount": 8,
+        "sampleDoc": "seed_chk_seed_users200_mix_20260304130143_001",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "city_pack_requests",
+        "fieldCount": 20,
+        "sampleDoc": "cpr_c6c311a2-646b-454f-821c-0137ebf836be",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "city_packs",
+        "fieldCount": 21,
+        "sampleDoc": "cp_4a5520f8-d76d-442d-afe6-1dabef4b0673",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "decision_logs",
+        "fieldCount": 10,
+        "sampleDoc": "19QzyrD754lQib14XOM9",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "decision_timeline",
+        "fieldCount": 10,
+        "sampleDoc": "02N7ItbyR89mCUBtYGZx",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_diffs",
+        "fieldCount": 14,
+        "sampleDoc": "edf_00dc7e60aa4cf874a480aba5",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_events_normalized",
+        "fieldCount": 18,
+        "sampleDoc": "eme_001897279a520104f0e8a917",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_providers",
+        "fieldCount": 13,
+        "sampleDoc": "airnow_aqi",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_rules",
+        "fieldCount": 17,
+        "sampleDoc": "stg_preview_test_rule",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_snapshots",
+        "fieldCount": 13,
+        "sampleDoc": "nws_alerts__stg_dryrun_1772668054111__nws_alerts",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "emergency_unmapped_events",
+        "fieldCount": 9,
+        "sampleDoc": "emu_008e6589371b121be6a5ee9e",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "events",
+        "fieldCount": 4,
+        "sampleDoc": "1GGJZSi8FMyGaD6tG9sc",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "faq_answer_logs",
+        "fieldCount": 6,
+        "sampleDoc": "00T0sWMjIs8ys9LVcSSi",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "faq_articles",
+        "fieldCount": 18,
+        "sampleDoc": "9EPiW2ItqfKbIAk4Cvkf",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_kpi_daily",
+        "fieldCount": 21,
+        "sampleDoc": "2026-02-25",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_param_change_logs",
+        "fieldCount": 11,
+        "sampleDoc": "journey_param_1772067533494_c6b7e653b94e",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_param_versions",
+        "fieldCount": 14,
+        "sampleDoc": "jpv_1772067533370_8c5bad77436d",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_reminder_runs",
+        "fieldCount": 12,
+        "sampleDoc": "jrr_1771961990117_f0f832f8230b",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_todo_items",
+        "fieldCount": 14,
+        "sampleDoc": "U730STG000000000000000000000001__t730_case_a",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "journey_todo_stats",
+        "fieldCount": 13,
+        "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "link_registry",
+        "fieldCount": 1,
+        "sampleDoc": "TMdxdoNYN1Tcxz2vyOkp",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_action_logs",
+        "fieldCount": 42,
+        "sampleDoc": "0BrQnyQT0kSjaMsyGpci",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_policy_change_logs",
+        "fieldCount": 9,
+        "sampleDoc": "llm_policy_1772559024239_c28c6a9892c1",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_quality_logs",
+        "fieldCount": 10,
+        "sampleDoc": "0Q8ApDAgEc4BdPp3yxWy",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_usage_logs",
+        "fieldCount": 14,
+        "sampleDoc": "2MFiqShlwgYfsG52sSf0",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "llm_usage_stats",
+        "fieldCount": 13,
+        "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notification_deliveries",
+        "fieldCount": 4,
+        "sampleDoc": "I6mgmgKsEuVAaiO4IjXL",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notification_templates",
+        "fieldCount": 7,
+        "sampleDoc": "3z37d1AaRgHeHp1BUD2B",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "notifications",
+        "fieldCount": 7,
+        "sampleDoc": "2ZMslooV6DWjzd0b5k1h",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "ops_read_model_snapshots",
+        "fieldCount": 8,
+        "sampleDoc": "dashboard_kpi__1",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "opsConfig",
+        "fieldCount": 11,
+        "sampleDoc": "journeyPolicy",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "phase18_cta_stats",
+        "fieldCount": 7,
+        "sampleDoc": "01URraLE2w4Fvwkd3kFm",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "rich_menu_rollout_runs",
+        "fieldCount": 11,
+        "sampleDoc": "richmenu_apply_1772392074733_f9589a6d",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "ridac_membership_links",
+        "fieldCount": 5,
+        "sampleDoc": "571918a9d2f35adc96c63994b29d9d6261dc612ef3d4858856d10c5db839c943",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "seed_runs",
+        "fieldCount": 11,
+        "sampleDoc": "seed_users200_mix_20260304130143",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "send_retry_queue",
+        "fieldCount": 11,
+        "sampleDoc": "0s2DIuSHQb87okG5fCQm",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "source_audit_runs",
+        "fieldCount": 14,
+        "sampleDoc": "cp_run_1771907204462",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "source_refs",
+        "fieldCount": 19,
+        "sampleDoc": "seed_sr_seed_users200_mix_20260304130143_boston",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "step_rules",
+        "fieldCount": 18,
+        "sampleDoc": "mig_v1_A_arrival_registration",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "stripe_webhook_dead_letters",
+        "fieldCount": 6,
+        "sampleDoc": "CIa43abT6VT6qRDt12la",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "stripe_webhook_events",
+        "fieldCount": 8,
+        "sampleDoc": "evt_codex_e2e_1771954619",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "system_flags",
+        "fieldCount": 7,
+        "sampleDoc": "phase0",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "task_contents",
+        "fieldCount": 13,
+        "sampleDoc": "t730_case_a",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "tasks",
+        "fieldCount": 10,
+        "sampleDoc": "U730STG000000000000000000000001__t730_case_a",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_journey_profiles",
+        "fieldCount": 6,
+        "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_journey_schedules",
+        "fieldCount": 9,
+        "sampleDoc": "U_TEST_RIDAC_A_20260210092935",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "user_subscriptions",
+        "fieldCount": 8,
+        "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
+        "sampleDocExists": true
+      },
+      {
+        "collection": "users",
+        "fieldCount": 17,
+        "sampleDoc": "U3037952f2f6531a3d8b24fd13ca3c680",
+        "sampleDocExists": true
+      }
+    ],
+    "evidence": "runtime:firebase-admin firestore listCollections@2026-03-08T02:47:49.454Z"
+  }
+}
