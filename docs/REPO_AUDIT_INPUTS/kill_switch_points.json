@@ -7,57 +7,52 @@
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 19,
+      "line": 21,
       "symbol": "getKillSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 142,
+      "line": 144,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 143,
+      "line": 145,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 156,
+      "line": 162,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 157,
+      "line": 163,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 172,
+      "line": 182,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 173,
+      "line": 183,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 192,
+      "line": 202,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 193,
+      "line": 203,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 204,
-      "symbol": "killSwitch"
-    },
-    {
-      "file": "src/infra/lineClient.js",
-      "line": 205,
+      "line": 214,
       "symbol": "killSwitch"
     },
     {
@@ -67,7 +62,7 @@
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 216,
+      "line": 225,
       "symbol": "killSwitch"
     },
     {
@@ -77,47 +72,52 @@
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 227,
+      "line": 236,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 239,
+      "line": 237,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 240,
+      "line": 249,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 265,
+      "line": 250,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 266,
+      "line": 275,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 279,
+      "line": 276,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 280,
+      "line": 289,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 301,
+      "line": 290,
       "symbol": "killSwitch"
     },
     {
       "file": "src/infra/lineClient.js",
-      "line": 302,
+      "line": 311,
+      "symbol": "killSwitch"
+    },
+    {
+      "file": "src/infra/lineClient.js",
+      "line": 312,
       "symbol": "killSwitch"
     },
     {

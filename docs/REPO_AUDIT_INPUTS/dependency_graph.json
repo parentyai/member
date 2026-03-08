@@ -1289,6 +1289,9 @@
     "src/routes/internal/userContextSnapshotRecompressJob.js": [
       "buildUserContextSnapshot"
     ],
+    "src/routes/liffSyntheticEvent.js": [
+      "appendAuditLog"
+    ],
     "src/routes/phase105OpsAssistAdopt.js": [
       "appendLlmAdoptAudit"
     ],

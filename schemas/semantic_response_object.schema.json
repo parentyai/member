@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://member.app/schemas/semantic_response_object.schema.json",
+  "title": "semantic_response_object",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "response_contract"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "response_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["style", "intent", "summary", "next_steps"],
+      "properties": {
+        "style": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "intent": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "next_steps": {
+          "type": "array",
+          "maxItems": 3,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "pitfall": { "type": ["string", "null"], "maxLength": 240 },
+        "followup_question": { "type": ["string", "null"], "maxLength": 240 },
+        "evidence_footer": { "type": ["string", "null"], "maxLength": 600 },
+        "safety_notes": {
+          "type": "array",
+          "maxItems": 3,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    },
+    "tool_calls": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "call_id", "arguments"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "call_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "arguments": { "type": "object" }
+        }
+      }
+    },
+    "response_markdown": { "type": "string", "maxLength": 2000 }
+  }
+}

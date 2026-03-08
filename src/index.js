@@ -12,6 +12,8 @@ const {
   buildAdminAppPaneLocation,
   resolveLegacyHtmlForAdminRoute
 } = require('./shared/adminUiRoutesV2');
+// V1 module registry import keeps new boundaries in runtime dependency graph.
+const v1Registry = require('./v1');
 
 const PORT = Number(process.env.PORT || 8080);
 const ENV_NAME = process.env.ENV_NAME || 'local';
@@ -146,6 +148,10 @@ function resolveUxOsPolicyReadonlyFlag() {
 
 function resolveUxOsFatigueWarnFlag() {
   return resolveBooleanEnvFlag('ENABLE_UXOS_FATIGUE_WARN_V1', false);
+}
+
+function resolveV1LiffSyntheticEventsFlag() {
+  return resolveBooleanEnvFlag('ENABLE_V1_LIFF_SYNTHETIC_EVENTS', false);
 }
 
 function resolveAdminUiCompatConfirmToken() {
@@ -556,6 +562,54 @@ function handleWebhook(req, res) {
   });
 }
 
+function handleLiffSyntheticRoute(req, res) {
+  if (!resolveV1LiffSyntheticEventsFlag()) {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('not found');
+    return;
+  }
+  const expectedToken = typeof process.env.LIFF_SYNTHETIC_EVENT_TOKEN === 'string'
+    ? process.env.LIFF_SYNTHETIC_EVENT_TOKEN.trim()
+    : '';
+  if (expectedToken) {
+    const provided = typeof req.headers['x-liff-synthetic-token'] === 'string'
+      ? req.headers['x-liff-synthetic-token'].trim()
+      : '';
+    if (!provided || !timingSafeEqualString(provided, expectedToken)) {
+      res.writeHead(401, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, reason: 'unauthorized' }));
+      return;
+    }
+  }
+
+  let bytes = 0;
+  const chunks = [];
+  let tooLarge = false;
+  req.on('data', (chunk) => {
+    if (tooLarge) return;
+    bytes += chunk.length;
+    if (bytes > MAX_BODY_BYTES) {
+      tooLarge = true;
+      res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('payload too large');
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+  req.on('end', async () => {
+    if (tooLarge) return;
+    const body = Buffer.concat(chunks).toString('utf8');
+    try {
+      const { handleLiffSyntheticEvent } = require('./routes/liffSyntheticEvent');
+      await handleLiffSyntheticEvent(req, res, body);
+    } catch (_err) {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, reason: 'server_error' }));
+    }
+  });
+}
+
 function handleStripeWebhookRoute(req, res) {
   const requestId = getRequestId(req);
   const traceId = getTraceId(req, requestId);
@@ -665,6 +719,10 @@ function createServer() {
       handleWebhook(req, res);
       return;
     }
+    if (req.method === 'POST' && (pathname === '/api/line/liff/synthetic-event' || pathname === '/api/line/liff/synthetic-event/')) {
+      handleLiffSyntheticRoute(req, res);
+      return;
+    }
     if (req.method === 'POST' && (pathname === '/webhook/stripe' || pathname === '/webhook/stripe/')) {
       handleStripeWebhookRoute(req, res);
       return;
@@ -722,6 +780,11 @@ function createServer() {
 
   if (req.method === 'POST' && (pathname === '/webhook/line' || pathname === '/webhook/line/')) {
     handleWebhook(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && (pathname === '/api/line/liff/synthetic-event' || pathname === '/api/line/liff/synthetic-event/')) {
+    handleLiffSyntheticRoute(req, res);
     return;
   }
 

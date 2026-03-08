@@ -168,6 +168,30 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /memory_task/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /memory_session/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /memory_profile/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /memory_compliance/{lineUserId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /delivery_records/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
+    match /liff_synthetic_events/{docId} {
+      allow read, write: if isAdmin() || isServiceAccount();
+    }
+
     match /user_journey_profiles/{lineUserId} {
       allow read, write: if isAdmin() || isServiceAccount();
     }

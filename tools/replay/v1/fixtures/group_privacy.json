@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev_group_1","timestamp":1000,"type":"message","source":{"type":"group","groupId":"g1","userId":"u5"},"message":{"type":"text","id":"m5","text":"グループ相談"}}]}

@@ -68,6 +68,10 @@ const { humanizeConversationMessage } = require('../domain/llm/conversation/styl
 const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domain/llm/conversation/paidReplyGuard');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
+const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeStore');
+const { filterWebhookEvents } = require('../v1/channel_edge/line/receiver');
+const { classifyDispatchMode } = require('../v1/channel_edge/line/dispatcher');
+const { buildServiceAckMessage } = require('../v1/line_renderer/fallbackRenderer');
 const taskNodesRepo = require('../repos/firestore/taskNodesRepo');
 const {
   regionPrompt,
@@ -91,6 +95,7 @@ const {
 } = require('../domain/redacLineMessages');
 const ROUTE_KEY = 'webhook_line';
 const PAID_CONCIERGE_DOMAIN_INTENTS = new Set(['housing', 'school', 'ssn', 'banking']);
+const WEBHOOK_DEDUPE_STORE = new InMemoryWebhookDedupeStore(24 * 60 * 60 * 1000);
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -385,6 +390,14 @@ function resolveConversationRouterEnabled() {
 
 function resolvePaidOrchestratorEnabled() {
   return resolveBooleanEnvFlag('ENABLE_PAID_ORCHESTRATOR_V2', false);
+}
+
+function resolveV1ChannelEdgeEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_V1_CHANNEL_EDGE', false);
+}
+
+function resolveV1FastSlowDispatchEnabled() {
+  return resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_DISPATCH', false);
 }
 
 function resolvePaidInterventionCooldownTurns() {
@@ -3043,6 +3056,9 @@ async function handleLineWebhook(options) {
     resolveLlmBanditEnabledBestEffort()
   ]);
 
+  const channelEdgeEnabled = resolveV1ChannelEdgeEnabled();
+  const fastSlowDispatchEnabled = resolveV1FastSlowDispatchEnabled();
+
   const userIds = extractUserIds(payload);
   const firstUserId = userIds[0] || '';
   const welcomeFn = (options && options.sendWelcomeFn) || sendWelcomeMessage;
@@ -3050,7 +3066,29 @@ async function handleLineWebhook(options) {
   const pushFn = (options && options.pushFn) || pushMessage || (async () => ({ status: 200 }));
 
   // Ensure users and run interactive commands (best-effort).
-  const events = Array.isArray(payload && payload.events) ? payload.events : [];
+  const rawEvents = Array.isArray(payload && payload.events) ? payload.events : [];
+  const filteredEvents = channelEdgeEnabled
+    ? filterWebhookEvents(rawEvents, {
+      dedupeStore: WEBHOOK_DEDUPE_STORE,
+      skewToleranceMs: 20000
+    })
+    : { accepted: rawEvents, dropped: [] };
+  const events = Array.isArray(filteredEvents.accepted) ? filteredEvents.accepted : [];
+  if (channelEdgeEnabled && Array.isArray(filteredEvents.dropped) && filteredEvents.dropped.length > 0) {
+    await appendAuditLog({
+      actor: 'system',
+      action: 'line_webhook.events.filtered',
+      entityType: 'line_webhook',
+      entityId: requestId,
+      traceId,
+      requestId,
+      payloadSummary: {
+        droppedCount: filteredEvents.dropped.length,
+        reasons: Array.from(new Set(filteredEvents.dropped.map((row) => row && row.reason).filter(Boolean))).slice(0, 5)
+      }
+    }).catch(() => null);
+    logger(`[webhook] requestId=${requestId} events_filtered dropped=${filteredEvents.dropped.length}`);
+  }
   const ensured = new Set();
   for (const event of events) {
     const userId = extractLineUserId(event);
@@ -3101,6 +3139,25 @@ async function handleLineWebhook(options) {
       const replyToken = extractReplyToken(event);
       if (text && replyToken) {
         try {
+          if (fastSlowDispatchEnabled) {
+            const dispatch = classifyDispatchMode(event);
+            await appendAuditLog({
+              actor: userId,
+              action: 'line_webhook.dispatch.classified',
+              entityType: 'line_webhook',
+              entityId: requestId,
+              traceId,
+              requestId,
+              payloadSummary: {
+                mode: dispatch.mode,
+                reason: dispatch.reason
+              }
+            }).catch(() => null);
+            if (dispatch.mode === 'slow' && resolveBooleanEnvFlag('ENABLE_V1_FAST_SLOW_ACK', false)) {
+              await replyFn(replyToken, buildServiceAckMessage());
+            }
+          }
+
           const journey = await handleJourneyLineCommand({
             lineUserId: userId,
             text,

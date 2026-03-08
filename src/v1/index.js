@@ -1,0 +1,33 @@
+'use strict';
+
+module.exports = {
+  actionGateway: require('./action_gateway/actionGateway'),
+  counterexampleRunner: require('./audit_eval_update/counterexampleRunner'),
+  decisionTraceWriter: require('./audit_eval_update/decisionTraceWriter'),
+  driftDetector: require('./audit_eval_update/driftDetector'),
+  releaseGateEvaluator: require('./audit_eval_update/releaseGateEvaluator'),
+  conversationStateManager: require('./conversation_core/conversationStateManager'),
+  conversationCore: require('./conversation_core/runConversationCore'),
+  cultureHabitEngine: require('./culture_habit_engine/cultureHabitEngine'),
+  toneGovernor: require('./culture_habit_engine/toneGovernor'),
+  deliveryRecordsRepo: require('./evidence_ledger/deliveryRecordsRepo'),
+  deliveryStateMachine: require('./evidence_ledger/deliveryStateMachine'),
+  evidenceLedgerManager: require('./evidence_ledger/evidenceLedgerManager'),
+  humanHandoffManager: require('./human_handoff/handoffManager'),
+  lineInteractionPolicy: require('./line_surface_policy/lineInteractionPolicy'),
+  complianceMemoryRepo: require('./memory_fabric/complianceMemoryRepo'),
+  profileMemoryRepo: require('./memory_fabric/profileMemoryRepo'),
+  readPolicy: require('./memory_fabric/readPolicy'),
+  sessionMemoryRepo: require('./memory_fabric/sessionMemoryRepo'),
+  taskMemoryRepo: require('./memory_fabric/taskMemoryRepo'),
+  writebackPolicy: require('./memory_fabric/writebackPolicy'),
+  capabilityProbe: require('./openai_adapter/capabilityProbe'),
+  groupPrivacyGate: require('./policy_graph/groupPrivacyGate'),
+  resolveActionClass: require('./policy_graph/resolveActionClass'),
+  resolveLegalPolicy: require('./policy_graph/resolveLegalPolicy'),
+  contradictionChecker: require('./retrieval_and_verification/contradictionChecker'),
+  retrievalController: require('./retrieval_and_verification/retrievalController'),
+  sourceReadinessMonitor: require('./retrieval_and_verification/sourceReadinessMonitor'),
+  unsupportedClaimChecker: require('./retrieval_and_verification/unsupportedClaimChecker'),
+  featureMatrix: require('./shared/featureMatrix')
+};

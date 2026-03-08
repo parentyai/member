@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev_liff_1","timestamp":1000,"type":"message","source":{"type":"user","userId":"u2"},"message":{"type":"text","id":"m2","text":"LIFFから送信"},"_synthetic":true}]}

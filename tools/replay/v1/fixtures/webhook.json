@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev1","timestamp":1000,"type":"message","source":{"type":"user","userId":"u1"},"message":{"type":"text","id":"m1","text":"こんにちは"}}]}

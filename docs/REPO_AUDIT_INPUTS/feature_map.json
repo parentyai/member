@@ -664,6 +664,26 @@
       "completion": "completed"
     },
     {
+      "feature": "liffSyntheticEvent",
+      "entrypoints": [],
+      "usecases": [
+        "appendAuditLog"
+      ],
+      "repos": [
+        "auditLogsRepo"
+      ],
+      "collections": [
+        "audit_logs"
+      ],
+      "auth": "public",
+      "killSwitch_dependent": false,
+      "trace_linked": true,
+      "audit_linked": true,
+      "tests_count": 44,
+      "ssot_refs": [],
+      "completion": "completed"
+    },
+    {
       "feature": "linkRegistry",
       "entrypoints": [],
       "usecases": [

@@ -1,9 +1,9 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-08T06:22:04.376Z
-- gitCommit: 2d817f08245419ce00bc5a992f282ffabecf495c
-- branch: codex/member-next5-pr5-flag-governance
-- flagCount: 80
+- generatedAt: 2026-03-08T21:47:40.148Z
+- gitCommit: 36a0fc4e697eb20cdd74f92cfc9643addc0a98b6
+- branch: codex/feat/spec-v1-line-openai-full-cutover
+- flagCount: 85
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
 
@@ -87,6 +87,11 @@
 | ENABLE_UXOS_FATIGUE_WARN_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_fatigue_warn_v1 | src/domain/tasks/featureFlags.js:186<br>src/index.js:148 |
 | ENABLE_UXOS_NBA_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_nba_v1 | src/domain/tasks/featureFlags.js:182 |
 | ENABLE_UXOS_POLICY_READONLY_V1 | ux-os | false | 2026-09-30 | user_facing | Runtime gate for enable_uxos_policy_readonly_v1 | src/domain/tasks/featureFlags.js:190<br>src/index.js:144 |
+| ENABLE_V1_CHANNEL_EDGE | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_channel_edge | src/routes/webhookLine.js:396 |
+| ENABLE_V1_FAST_SLOW_ACK | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_fast_slow_ack | src/routes/webhookLine.js:3156 |
+| ENABLE_V1_FAST_SLOW_DISPATCH | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_fast_slow_dispatch | src/routes/webhookLine.js:400 |
+| ENABLE_V1_LIFF_SYNTHETIC_EVENTS | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_liff_synthetic_events | src/index.js:152 |
+| ENABLE_V1_LINE_RENDERER | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_line_renderer | src/infra/lineClient.js:149<br>src/infra/lineClient.js:167 |
 | ENABLE_VENDOR_RELEVANCE_SHADOW_V1 | vendor-ranking | true | 2026-09-30 | cross_module | Runtime gate for enable_vendor_relevance_shadow_v1 | src/domain/tasks/featureFlags.js:194 |
 | ENABLE_VENDOR_RELEVANCE_SORT_V1 | vendor-ranking | false | 2026-09-30 | cross_module | Runtime gate for enable_vendor_relevance_sort_v1 | src/domain/tasks/featureFlags.js:198 |
 

@@ -1,8 +1,7 @@
 'use strict';
 
-// LLM API adapter — flag gating is handled in the usecase layer (answerFaqFromKb, etc.).
-// This module is purely responsible for HTTP transport to the OpenAI-compatible API.
-// OPENAI_API_KEY must be set in the environment / Secret Manager. Never hardcode.
+const { callResponsesApi } = require('../v1/openai_adapter/responsesClient');
+const { resolveBooleanEnvFlag } = require('../v1/shared/flags');
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
@@ -44,7 +43,7 @@ function buildMessages(system, input) {
   ];
 }
 
-async function callOpenAi(payload, env) {
+async function callChatCompletions(payload, env) {
   const apiKey = resolveApiKey(env);
   const model = resolveRequestModel(payload, env);
   const temperature = resolveNumberParam(payload && payload.temperature, null, 0, 2);
@@ -58,9 +57,6 @@ async function callOpenAi(payload, env) {
   if (temperature !== null) requestPayload.temperature = temperature;
   if (topP !== null) requestPayload.top_p = topP;
   if (maxOutputTokens !== null) requestPayload.max_tokens = Math.floor(maxOutputTokens);
-  const body = JSON.stringify({
-    ...requestPayload
-  });
 
   const fetchFn = (env && env._fetchFn) || fetch;
   const response = await fetchFn('https://api.openai.com/v1/chat/completions', {
@@ -69,7 +65,7 @@ async function callOpenAi(payload, env) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`
     },
-    body
+    body: JSON.stringify(requestPayload)
   });
 
   if (!response.ok) {
@@ -93,7 +89,38 @@ async function callOpenAi(payload, env) {
   return {
     answer,
     model: (data && data.model) || model,
-    usage: data && data.usage ? data.usage : null
+    usage: data && data.usage ? data.usage : null,
+    provider: 'chat_completions'
+  };
+}
+
+async function callOpenAi(payload, env) {
+  const source = env && typeof env === 'object' ? env : process.env;
+  const useResponsesApi = resolveBooleanEnvFlag('ENABLE_V1_OPENAI_RESPONSES', false, source);
+  if (!useResponsesApi) {
+    return callChatCompletions(payload, source);
+  }
+
+  const adapterResult = await callResponsesApi({
+    system: payload && payload.system,
+    input: payload && payload.input,
+    model: resolveRequestModel(payload || {}, source),
+    temperature: payload && payload.temperature,
+    top_p: payload && payload.top_p,
+    max_output_tokens: payload && payload.max_output_tokens,
+    response_format: payload && payload.response_format,
+    strictSemanticObject: resolveBooleanEnvFlag('ENABLE_V1_SEMANTIC_OBJECT_STRICT', false, source)
+  }, source);
+
+  const answer = adapterResult.semanticResponseObject || adapterResult.output;
+  return {
+    answer,
+    model: adapterResult.model || resolveRequestModel(payload || {}, source),
+    usage: adapterResult.usage || null,
+    provider: 'responses_api',
+    fallbackApplied: adapterResult.fallbackApplied === true,
+    responseId: adapterResult.responseId || null,
+    errors: Array.isArray(adapterResult.errors) ? adapterResult.errors : []
   };
 }
 
@@ -109,9 +136,6 @@ async function callNextActionCandidates(payload, env) {
   return callOpenAi(payload, env);
 }
 
-// Adapter interface methods — used when llmClient is injected as deps.llmAdapter.
-// These match the method names the usecases expect and return the envelope format
-// the usecases unpack (adapterResult.explanation / adapterResult.nextActionCandidates).
 async function explainOps(payload) {
   const result = await callOpenAi(payload, process.env);
   return { explanation: result.answer, model: result.model };
@@ -127,5 +151,6 @@ module.exports = {
   callOpsExplain,
   callNextActionCandidates,
   explainOps,
-  suggestNextActionCandidates
+  suggestNextActionCandidates,
+  callOpenAi
 };

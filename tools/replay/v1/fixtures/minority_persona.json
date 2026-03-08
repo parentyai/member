@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev_minor_1","timestamp":1000,"type":"message","source":{"type":"user","userId":"u6"},"message":{"type":"text","id":"m6","text":"英語が苦手です"}}]}

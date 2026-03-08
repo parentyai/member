@@ -2,6 +2,8 @@
 
 const https = require('https');
 const systemFlagsRepo = require('../repos/firestore/systemFlagsRepo');
+const { prepareLineMessages } = require('../v1/line_renderer/lineChannelRenderer');
+const { resolveBooleanEnvFlag } = require('../v1/shared/flags');
 
 const LINE_API_HOST = 'api.line.me';
 
@@ -144,9 +146,13 @@ async function pushMessage(lineUserId, message, options) {
     throw new Error('kill switch is ON');
   }
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const rendererEnabled = resolveBooleanEnvFlag('ENABLE_V1_LINE_RENDERER', false);
+  const messages = rendererEnabled
+    ? prepareLineMessages(message, { env: process.env })
+    : [message];
   const payload = {
     to: lineUserId,
-    messages: [message]
+    messages
   };
   return requestJson('/v2/bot/message/push', 'POST', token, payload, options);
 }
@@ -158,9 +164,13 @@ async function replyMessage(replyToken, message, options) {
     throw new Error('kill switch is ON');
   }
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const rendererEnabled = resolveBooleanEnvFlag('ENABLE_V1_LINE_RENDERER', false);
+  const messages = rendererEnabled
+    ? prepareLineMessages(message, { env: process.env })
+    : [message];
   const payload = {
     replyToken,
-    messages: [message]
+    messages
   };
   return requestJson('/v2/bot/message/reply', 'POST', token, payload, options);
 }

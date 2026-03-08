@@ -10,9 +10,9 @@
 | kind | count |
 | --- | --- |
 | aggregate | 13 |
-| config | 49 |
-| event | 7 |
-| evidence | 15 |
+| config | 52 |
+| event | 9 |
+| evidence | 16 |
 | transient | 3 |
 
 ## Collection方針
@@ -34,6 +34,7 @@
 | `decision_drifts` | config | INDEFINITE | false | false |
 | `decision_logs` | evidence | 365d | false | false |
 | `decision_timeline` | evidence | 365d | false | false |
+| `delivery_records` | evidence | 365d | false | false |
 | `emergency_bulletins` | config | INDEFINITE | false | false |
 | `emergency_diffs` | evidence | 365d | false | false |
 | `emergency_events_normalized` | evidence | 365d | false | false |
@@ -53,6 +54,7 @@
 | `journey_templates` | config | INDEFINITE | false | false |
 | `journey_todo_items` | config | INDEFINITE | false | false |
 | `journey_todo_stats` | aggregate | 90d | false | false |
+| `liff_synthetic_events` | event | 180d | CONDITIONAL | true |
 | `link_registry` | config | INDEFINITE | false | false |
 | `llm_action_logs` | event | 180d | CONDITIONAL | true |
 | `llm_bandit_state` | aggregate | INDEFINITE | false | false |
@@ -60,6 +62,10 @@
 | `llm_quality_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_logs` | event | 180d | CONDITIONAL | true |
 | `llm_usage_stats` | aggregate | INDEFINITE | false | false |
+| `memory_compliance` | config | 365d | CONDITIONAL | true |
+| `memory_profile` | config | 365d | CONDITIONAL | true |
+| `memory_session` | event | 90d | CONDITIONAL | true |
+| `memory_task` | config | 180d | CONDITIONAL | true |
 | `municipality_schools` | config | INDEFINITE | false | false |
 | `notices` | config | INDEFINITE | false | false |
 | `notification_deliveries` | event | 180d | CONDITIONAL | true |
