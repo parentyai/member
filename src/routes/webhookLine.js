@@ -895,26 +895,34 @@ function buildConversationQualityMeta(params) {
 
 function resolveAnswerReadinessTelemetry(params) {
   const payload = params && typeof params === 'object' ? params : {};
+  const hasMetric = (value) => value !== null && value !== undefined && Number.isFinite(Number(value));
   const contradictionFlags = Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [];
   const contradictionDetected = payload.contradictionDetected === true || contradictionFlags.length > 0;
   const unsupportedClaimCount = Number.isFinite(Number(payload.unsupportedClaimCount))
     ? Math.max(0, Math.floor(Number(payload.unsupportedClaimCount)))
     : contradictionFlags.filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported')).length;
+  const evidenceCoverage = payload.assistantQuality && Number.isFinite(Number(payload.assistantQuality.evidenceCoverage))
+    ? Number(payload.assistantQuality.evidenceCoverage)
+    : 0;
+  const sourceAuthorityScore = hasMetric(payload.sourceAuthorityScore)
+    ? Number(payload.sourceAuthorityScore)
+    : evidenceCoverage;
+  const sourceFreshnessScore = hasMetric(payload.sourceFreshnessScore)
+    ? Number(payload.sourceFreshnessScore)
+    : evidenceCoverage;
   const computedReadiness = evaluateAnswerReadiness({
     lawfulBasis: payload.legalSnapshot && payload.legalSnapshot.lawfulBasis,
     consentVerified: payload.legalSnapshot && payload.legalSnapshot.consentVerified === true,
     crossBorder: payload.legalSnapshot && payload.legalSnapshot.crossBorder === true,
     legalDecision: payload.legalSnapshot && payload.legalSnapshot.legalDecision,
     intentRiskTier: payload.riskSnapshot && payload.riskSnapshot.intentRiskTier,
-    sourceAuthorityScore: payload.sourceAuthorityScore,
-    sourceFreshnessScore: payload.sourceFreshnessScore,
+    sourceAuthorityScore,
+    sourceFreshnessScore,
     sourceReadinessDecision: payload.sourceReadinessDecision,
     officialOnlySatisfied: payload.officialOnlySatisfied,
     unsupportedClaimCount,
     contradictionDetected,
-    evidenceCoverage: payload.assistantQuality && Number.isFinite(Number(payload.assistantQuality.evidenceCoverage))
-      ? Number(payload.assistantQuality.evidenceCoverage)
-      : 0,
+    evidenceCoverage,
     fallbackType: payload.fallbackType || null
   });
   const explicitDecision = normalizeReplyText(payload.readinessDecision).toLowerCase();
@@ -936,6 +944,20 @@ function resolveAnswerReadinessTelemetry(params) {
       safeResponseMode: explicitSafeResponseMode || computedReadiness.safeResponseMode
     })
     : computedReadiness;
+  if (!hasExplicitDecision) {
+    const legalBlocked = payload.legalSnapshot && payload.legalSnapshot.legalDecision === 'blocked';
+    const sourceSignalPresent = hasMetric(payload.sourceAuthorityScore)
+      || hasMetric(payload.sourceFreshnessScore)
+      || normalizeReplyText(payload.sourceReadinessDecision).length > 0;
+    const riskTier = payload.riskSnapshot && typeof payload.riskSnapshot.intentRiskTier === 'string'
+      ? payload.riskSnapshot.intentRiskTier.toLowerCase()
+      : 'low';
+    if (!legalBlocked && !sourceSignalPresent && !contradictionDetected && unsupportedClaimCount === 0 && riskTier !== 'high') {
+      readiness.decision = 'allow';
+      readiness.safeResponseMode = 'answer';
+      readiness.reasonCodes = ['readiness_signal_missing_allow'];
+    }
+  }
   return {
     readiness,
     unsupportedClaimCount,
@@ -2697,6 +2719,15 @@ async function handleAssistantMessage(params) {
     pitfall: paid && paid.output && Array.isArray(paid.output.risks) ? paid.output.risks[0] : '',
     followupQuestion: paid && paid.output && Array.isArray(paid.output.gaps) ? paid.output.gaps[0] : ''
   });
+  const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
+    intentResolved: paidIntent,
+    kbTopScore: paid.top1Score || 0,
+    evidenceCoverage: Array.isArray(paid && paid.output && paid.output.evidenceKeys) && paid.output.evidenceKeys.length > 0
+      ? 1
+      : 0,
+    blockedStage: null,
+    fallbackReason: null
+  });
   const legalSnapshot = resolveLlmLegalPolicySnapshot({ policy: budget.policy || null });
   const riskSnapshot = resolveIntentRiskTier({ domainIntent: normalizedConversationIntent });
   const readinessTelemetry = resolveAnswerReadinessTelemetry({
@@ -2715,7 +2746,7 @@ async function handleAssistantMessage(params) {
       ? conciergeMeta.sourceReadinessReasons
       : [],
     officialOnlySatisfied: conciergeMeta ? conciergeMeta.officialOnlySatisfied === true : false,
-    assistantQuality: paid && paid.assistantQuality ? paid.assistantQuality : null,
+    assistantQuality,
     fallbackType: null,
     contradictionFlags: [],
     unsupportedClaimCount: 0,
@@ -2729,16 +2760,6 @@ async function handleAssistantMessage(params) {
   });
   replyText = readinessApplied.replyText;
   await payload.replyFn(payload.replyToken, { type: 'text', text: replyText });
-
-  const assistantQuality = normalizeAssistantQuality(paid.assistantQuality, {
-    intentResolved: paidIntent,
-    kbTopScore: paid.top1Score || 0,
-    evidenceCoverage: Array.isArray(paid && paid.output && paid.output.evidenceKeys) && paid.output.evidenceKeys.length > 0
-      ? 1
-      : 0,
-    blockedStage: null,
-    fallbackReason: null
-  });
   const tokenUsed = (paid.tokensIn || 0) + (paid.tokensOut || 0);
   const conversationMode = (opportunityEngineEnabled || greetingOrSmalltalkCasual || runRouterOpportunityPath)
     ? opportunityDecision.conversationMode
