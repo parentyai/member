@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { sanitizeFaqAuditPayload } = require('../../domain/audit/faqAuditPayloadGuard');
 
 const COLLECTION = 'faq_answer_logs';
 
@@ -11,7 +12,8 @@ function resolveTimestamp(at) {
 async function appendFaqAnswerLog(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
-  const payload = Object.assign({}, data || {}, { createdAt: resolveTimestamp(data && data.createdAt) });
+  const sanitized = sanitizeFaqAuditPayload(data);
+  const payload = Object.assign({}, sanitized, { createdAt: resolveTimestamp(sanitized && sanitized.createdAt) });
   await docRef.set(payload, { merge: false });
   return { id: docRef.id };
 }
