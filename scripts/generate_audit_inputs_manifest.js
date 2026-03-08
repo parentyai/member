@@ -69,9 +69,26 @@ function resolveBranchName() {
   return readGitValue('git rev-parse --abbrev-ref HEAD', 'NOT_AVAILABLE');
 }
 
+function resolveGitCommit(sourceDigest) {
+  const envHeadSha = process.env.GITHUB_EVENT_PULL_REQUEST_HEAD_SHA || process.env.GITHUB_HEAD_SHA;
+  if (typeof envHeadSha === 'string' && /^[0-9a-f]{40}$/i.test(envHeadSha.trim())) {
+    return envHeadSha.trim().toLowerCase();
+  }
+
+  const isGithubPr = process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'pull_request';
+  if (isGithubPr) {
+    const headParent = readGitValue('git rev-parse --verify HEAD^2', '');
+    if (typeof headParent === 'string' && /^[0-9a-f]{40}$/i.test(headParent.trim())) {
+      return headParent.trim().toLowerCase();
+    }
+  }
+
+  return readGitValue('git rev-parse HEAD', sourceDigest.slice(0, 40));
+}
+
 function resolveGitMetadata(files) {
   const sourceDigest = buildSourceDigest(files);
-  const gitCommit = readGitValue('git rev-parse HEAD', sourceDigest.slice(0, 40));
+  const gitCommit = resolveGitCommit(sourceDigest);
   const generatedAt = new Date().toISOString();
   const branch = resolveBranchName();
   return { sourceDigest, gitCommit, generatedAt, branch };

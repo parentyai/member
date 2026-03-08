@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T22:12:41-05:00",
-  "gitCommit": "690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f",
-  "branch": "codex/member-integrated-remediation-v1",
-  "sourceDigest": "d2689a629edb32d1c104a7e83d237940f39e52ec1db21ab0d0b53cc15383f70b",
+  "generatedAt": "2026-03-07T23:38:54-05:00",
+  "gitCommit": "0e801716cce338eb0572b020b9887a66b7e56793",
+  "branch": "codex/member-integrated-remediation-v1-clean",
+  "sourceDigest": "5443fb5dca10057f483c58d8740f40cc66d75ea1e5404fe4438696f92f08640e",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
