@@ -1,9 +1,9 @@
 # PROJECT_SCOPE
 
-- generatedAt: 2026-03-08T03:08:07.132Z
-- gitCommit: 8bae8342b36e44b086956dc2e1ec93d72398e0a5
-- branch: codex/knowledge-graph-v2-finalize
-- sourceDigest: abc077ebe50af3043a56474579a2842968ebd435af568f87aadc09d56fba3eb4
+- generatedAt: 2026-03-08T04:34:11.724Z
+- gitCommit: 690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f
+- branch: codex/member-integrated-remediation-v1
+- sourceDigest: ff4e927a1bcdeab1716540ca6dc05844deac4ac0788ef6be90eccf827bf53653
 - runtime.cloudRun: OBSERVED_RUNTIME
 - runtime.secretManager: OBSERVED_RUNTIME
 - runtime.firestore: OBSERVED_RUNTIME

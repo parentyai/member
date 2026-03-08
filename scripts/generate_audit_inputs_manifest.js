@@ -72,7 +72,7 @@ function resolveBranchName() {
 function resolveGitMetadata(files) {
   const sourceDigest = buildSourceDigest(files);
   const gitCommit = readGitValue('git rev-parse HEAD', sourceDigest.slice(0, 40));
-  const generatedAt = readGitValue('git log -1 --format=%cI', 'NOT_AVAILABLE');
+  const generatedAt = new Date().toISOString();
   const branch = resolveBranchName();
   return { sourceDigest, gitCommit, generatedAt, branch };
 }
@@ -164,11 +164,7 @@ function run() {
     const comparableCurrent = Object.assign({}, currentJson);
     const comparableNext = Object.assign({}, manifest);
     delete comparableCurrent.generatedAt;
-    delete comparableCurrent.gitCommit;
-    delete comparableCurrent.branch;
     delete comparableNext.generatedAt;
-    delete comparableNext.gitCommit;
-    delete comparableNext.branch;
     if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableNext)) {
       process.stderr.write('audit_inputs_manifest.json is stale. run: npm run audit-inputs:generate\n');
       process.exit(1);

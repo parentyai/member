@@ -1,8 +1,11 @@
 # FIRESTORE_RUNTIME_MAP
 
-- generatedAt: 2026-03-08T03:08:08.549Z
-- source.generatedAt: 2026-03-08T03:08:07.132Z
+- generatedAt: 2026-03-08T04:34:19.274Z
+- source.generatedAt: 2026-03-08T04:34:11.724Z
 - runtime.firestore: OBSERVED_RUNTIME
+- staticVsRuntimeCoverage: 51/89
+- staticOnlyCollections: billing_lifecycle_automation_logs, city_pack_bulletins, city_pack_feedback, city_pack_metrics_daily, city_pack_template_library, city_pack_update_proposals, decision_drifts, emergency_bulletins, journey_branch_queue, journey_graph_change_logs, journey_templates, llm_bandit_state, llm_contextual_bandit_state, municipality_schools, notices, notification_test_run_items, notification_test_runs, ops_assist_cache, ops_segments, ops_state, ops_states, phase2_reports_checklist_pending, phase2_reports_daily_events, phase2_reports_weekly_events, phase2_runs, phase22_kpi_snapshots, redac_membership_links, rich_menu_assignment_rules, rich_menu_bindings, rich_menu_phase_profiles, rich_menu_rate_buckets, rich_menu_templates, school_calendar_links, source_evidence, step_rule_change_logs, task_events, templates_v, user_checklists, user_city_pack_preferences, user_consents
+- runtimeOnlyCollections: llm_policy_change_logs, ridac_membership_links, seed_runs
 
 `gcloud auth login --update-adc` and `gcloud auth application-default login` are required for Firestore runtime sampling.
 

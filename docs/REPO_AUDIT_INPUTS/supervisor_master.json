@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T21:48:33-05:00",
-  "gitCommit": "8bae8342b36e44b086956dc2e1ec93d72398e0a5",
-  "branch": "codex/knowledge-graph-v2-finalize",
-  "sourceDigest": "6f56e91e2341dcf37c789a1431ebef288c0ec6849b5d1fe48dc8137d0a80502a",
+  "generatedAt": "2026-03-07T22:12:41-05:00",
+  "gitCommit": "690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f",
+  "branch": "codex/member-integrated-remediation-v1",
+  "sourceDigest": "d2689a629edb32d1c104a7e83d237940f39e52ec1db21ab0d0b53cc15383f70b",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
