@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T20:56:42-05:00",
-  "gitCommit": "35b6dae0a476860f93ebdf0f8d12ff9c9c9fc0ba",
-  "branch": "HEAD",
-  "sourceDigest": "53340f31546b789319aed64ef29d75873bc29b9602bbc587feea44cd95474d55",
+  "generatedAt": "2026-03-07T20:56:54-05:00",
+  "gitCommit": "162cce77dbdf8b2e2136e09c4f19344413b7580b",
+  "branch": "codex/admin-ui-fix-adc-recovery",
+  "sourceDigest": "a0bccdbb39cf7d03f25e22cd8ea1bb5591a54abc2dbd36ddadcfeb0810374997",
   "counts": {
     "endpoints": 289,
     "routes": 128,
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "3fe601f910ef28484073c92097bb6463f25b3e1766469d2966ef3773b4dfeebc",
+      "sha256": "213c2d376aded83f8599daa1a1461fff53926f73a71057591ac358b3b0cedfd9",
       "bytes": 443850
     },
     {
