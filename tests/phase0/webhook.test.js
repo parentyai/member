@@ -43,6 +43,7 @@ test('webhook: valid signature creates user', async () => {
     sendWelcomeFn: async () => ({ skipped: false })
   });
   assert.strictEqual(result.status, 200);
+  assert.strictEqual(result.outcome && result.outcome.state, 'success');
 
   const user = await usersRepo.getUser('U999');
   assert.ok(user);
@@ -53,6 +54,7 @@ test('webhook: invalid signature rejected', async () => {
   const body = JSON.stringify({ events: [{ source: { userId: 'U888' } }] });
   const result = await handleLineWebhook({ signature: 'invalid', body, requestId: 'req2', logger: () => {} });
   assert.strictEqual(result.status, 401);
+  assert.strictEqual(result.outcome && result.outcome.state, 'blocked');
   const user = await usersRepo.getUser('U888');
   assert.strictEqual(user, null);
 });

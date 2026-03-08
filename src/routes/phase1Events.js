@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { logEventBestEffort } = require('../usecases/events/logEvent');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { getPublicWriteSafetySnapshot } = require('../repos/firestore/systemFlagsRepo');
+const { attachOutcome, buildOutcome, applyOutcomeHeaders } = require('../domain/routeOutcomeContract');
 const ROUTE_KEY = 'phase1_events';
 
 function isLegacyRouteFreezeEnabled() {
@@ -13,12 +14,24 @@ function isLegacyRouteFreezeEnabled() {
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
 
-function parseJson(body, res) {
+function parseJson(body, res, context) {
   try {
     return JSON.parse(body || '{}');
   } catch (err) {
+    const outcome = buildOutcome({ ok: false }, Object.assign({
+      state: 'error',
+      reason: 'invalid_json',
+      routeType: 'public_write',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    }, context || {}));
+    applyOutcomeHeaders(res, outcome);
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'invalid json' }));
+    res.end(JSON.stringify(attachOutcome({ ok: false, error: 'invalid json' }, {
+      state: outcome.state,
+      reason: outcome.reason,
+      routeType: outcome.routeType,
+      guard: outcome.guard
+    })));
     return null;
   }
 }
@@ -65,6 +78,7 @@ async function appendPhase1EventAuditBestEffort(payload) {
 async function handlePhase1Event(req, res, body) {
   const requestId = resolveRequestId(req);
   const traceId = resolveTraceId(req, requestId);
+  const baseGuard = { routeKey: ROUTE_KEY };
   if (isLegacyRouteFreezeEnabled()) {
     await appendPhase1EventAuditBestEffort({
       action: 'phase1.events.blocked',
@@ -73,11 +87,25 @@ async function handlePhase1Event(req, res, body) {
       traceId,
       requestId
     });
+    const outcome = buildOutcome({ ok: false }, {
+      state: 'blocked',
+      reason: 'legacy_route_frozen',
+      routeType: 'public_write',
+      guard: Object.assign({}, baseGuard, { decision: 'block' })
+    });
+    applyOutcomeHeaders(res, outcome);
     res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'legacy route frozen' }));
+    res.end(JSON.stringify(attachOutcome({ ok: false, error: 'legacy route frozen' }, {
+      state: outcome.state,
+      reason: outcome.reason,
+      routeType: outcome.routeType,
+      guard: outcome.guard
+    })));
     return;
   }
-  const payload = parseJson(body, res);
+  const payload = parseJson(body, res, {
+    guard: Object.assign({}, baseGuard, { decision: 'block' })
+  });
   if (!payload) {
     await appendPhase1EventAuditBestEffort({
       action: 'phase1.events.reject',
@@ -90,6 +118,13 @@ async function handlePhase1Event(req, res, body) {
   }
 
   const safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
+  const guardState = {
+    routeKey: ROUTE_KEY,
+    failCloseMode: safety.failCloseMode || null,
+    readError: safety.readError === true,
+    killSwitchOn: safety.killSwitchOn === true,
+    decision: 'allow'
+  };
   if (safety.readError) {
     if (safety.failCloseMode === 'enforce') {
       await appendPhase1EventAuditBestEffort({
@@ -103,11 +138,24 @@ async function handlePhase1Event(req, res, body) {
         notificationId: payload.ref && payload.ref.notificationId,
         failCloseMode: safety.failCloseMode
       });
+      const outcome = buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_read_failed_fail_closed',
+        routeType: 'public_write',
+        guard: Object.assign({}, guardState, { decision: 'block' })
+      });
+      applyOutcomeHeaders(res, outcome);
       res.writeHead(503, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'temporarily unavailable' }));
+      res.end(JSON.stringify(attachOutcome({ ok: false, error: 'temporarily unavailable' }, {
+        state: outcome.state,
+        reason: outcome.reason,
+        routeType: outcome.routeType,
+        guard: outcome.guard
+      })));
       return;
     }
     if (safety.failCloseMode === 'warn') {
+      guardState.decision = 'warn';
       await appendPhase1EventAuditBestEffort({
         action: 'phase1.events.guard_warn',
         result: 'warn',
@@ -133,8 +181,20 @@ async function handlePhase1Event(req, res, body) {
       lineUserId: payload.lineUserId,
       notificationId: payload.ref && payload.ref.notificationId
     });
+    const outcome = buildOutcome({ ok: false }, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      routeType: 'public_write',
+      guard: Object.assign({}, guardState, { decision: 'block' })
+    });
+    applyOutcomeHeaders(res, outcome);
     res.writeHead(403, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'kill switch on' }));
+    res.end(JSON.stringify(attachOutcome({ ok: false, error: 'kill switch on' }, {
+      state: outcome.state,
+      reason: outcome.reason,
+      routeType: outcome.routeType,
+      guard: outcome.guard
+    })));
     return;
   }
   const result = await logEventBestEffort({
@@ -153,8 +213,20 @@ async function handlePhase1Event(req, res, body) {
       lineUserId: payload.lineUserId,
       notificationId: payload.ref && payload.ref.notificationId
     });
+    const outcome = buildOutcome({ ok: false }, {
+      state: 'error',
+      reason: result.error || 'event_rejected',
+      routeType: 'public_write',
+      guard: guardState
+    });
+    applyOutcomeHeaders(res, outcome);
     res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: result.error }));
+    res.end(JSON.stringify(attachOutcome({ ok: false, error: result.error }, {
+      state: outcome.state,
+      reason: outcome.reason,
+      routeType: outcome.routeType,
+      guard: outcome.guard
+    })));
     return;
   }
   await appendPhase1EventAuditBestEffort({
@@ -167,8 +239,21 @@ async function handlePhase1Event(req, res, body) {
     lineUserId: payload.lineUserId,
     notificationId: payload.ref && payload.ref.notificationId
   });
+  const successState = guardState.decision === 'warn' ? 'degraded' : 'success';
+  const outcome = buildOutcome({ ok: true }, {
+    state: successState,
+    reason: guardState.decision === 'warn' ? 'kill_switch_read_failed_fail_open' : 'ok',
+    routeType: 'public_write',
+    guard: guardState
+  });
+  applyOutcomeHeaders(res, outcome);
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, id: result.id }));
+  res.end(JSON.stringify(attachOutcome({ ok: true, id: result.id }, {
+    state: outcome.state,
+    reason: outcome.reason,
+    routeType: outcome.routeType,
+    guard: outcome.guard
+  })));
 }
 
 module.exports = {

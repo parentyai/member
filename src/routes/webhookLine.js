@@ -47,6 +47,7 @@ const {
   getLlmStyleEngineEnabled,
   getLlmBanditEnabled
 } = require('../repos/firestore/systemFlagsRepo');
+const { buildOutcome } = require('../domain/routeOutcomeContract');
 const llmActionLogsRepo = require('../repos/firestore/llmActionLogsRepo');
 const llmBanditStateRepo = require('../repos/firestore/llmBanditStateRepo');
 const llmContextualBanditStateRepo = require('../repos/firestore/llmContextualBanditStateRepo');
@@ -2892,15 +2893,42 @@ async function handleLineWebhook(options) {
 
   if (!secret) {
     logger(`[webhook] requestId=${requestId} reject=missing-secret`);
-    return { status: 500, body: 'server misconfigured' };
+    return {
+      status: 500,
+      body: 'server misconfigured',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'error',
+        reason: 'missing_secret',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
   if (typeof signature !== 'string' || signature.length === 0) {
     logger(`[webhook] requestId=${requestId} reject=missing-signature`);
-    return { status: 401, body: 'unauthorized' };
+    return {
+      status: 401,
+      body: 'unauthorized',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'missing_signature',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
   if (!verifyLineSignature(secret, body, signature)) {
     logger(`[webhook] requestId=${requestId} reject=invalid-signature`);
-    return { status: 401, body: 'unauthorized' };
+    return {
+      status: 401,
+      body: 'unauthorized',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'invalid_signature',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
 
   let payload;
@@ -2908,7 +2936,16 @@ async function handleLineWebhook(options) {
     payload = JSON.parse(body || '{}');
   } catch (err) {
     logger(`[webhook] requestId=${requestId} reject=invalid-json`);
-    return { status: 400, body: 'invalid json' };
+    return {
+      status: 400,
+      body: 'invalid json',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'error',
+        reason: 'invalid_json',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
 
   const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'
@@ -2946,7 +2983,21 @@ async function handleLineWebhook(options) {
         eventCount: Array.isArray(payload && payload.events) ? payload.events.length : 0
       });
       logger(`[webhook] requestId=${requestId} reject=kill_switch_read_failed_fail_closed`);
-      return { status: 503, body: 'temporarily unavailable' };
+      return {
+        status: 503,
+        body: 'temporarily unavailable',
+        outcome: buildOutcome({ ok: false }, {
+          state: 'blocked',
+          reason: 'kill_switch_read_failed_fail_closed',
+          routeType: 'webhook',
+          guard: {
+            routeKey: ROUTE_KEY,
+            failCloseMode: safety.failCloseMode || null,
+            readError: true,
+            decision: 'block'
+          }
+        })
+      };
     }
     if (safety.failCloseMode === 'warn') {
       await appendWebhookBlockedAuditBestEffort({
@@ -2967,7 +3018,21 @@ async function handleLineWebhook(options) {
       eventCount: Array.isArray(payload && payload.events) ? payload.events.length : 0
     });
     logger(`[webhook] requestId=${requestId} reject=kill_switch_on`);
-    return { status: 409, body: 'kill switch on' };
+    return {
+      status: 409,
+      body: 'kill switch on',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'webhook',
+        guard: {
+          routeKey: ROUTE_KEY,
+          failCloseMode: safety.failCloseMode || null,
+          killSwitchOn: true,
+          decision: 'block'
+        }
+      })
+    };
   }
 
   await logLineWebhookEventsBestEffort({ payload, requestId });
@@ -3198,7 +3263,26 @@ async function handleLineWebhook(options) {
   }
 
   logger(`[webhook] requestId=${requestId} accept`);
-  return { status: 200, body: 'ok', userCount: userIds.length, firstUserId };
+  return {
+    status: 200,
+    body: 'ok',
+    userCount: userIds.length,
+    firstUserId,
+    outcome: buildOutcome({ ok: true }, {
+      state: safety && safety.readError === true && safety.failCloseMode === 'warn' ? 'degraded' : 'success',
+      reason: safety && safety.readError === true && safety.failCloseMode === 'warn'
+        ? 'kill_switch_read_failed_fail_open'
+        : 'ok',
+      routeType: 'webhook',
+      guard: {
+        routeKey: ROUTE_KEY,
+        failCloseMode: safety && safety.failCloseMode ? safety.failCloseMode : null,
+        readError: Boolean(safety && safety.readError === true),
+        killSwitchOn: false,
+        decision: safety && safety.readError === true && safety.failCloseMode === 'warn' ? 'warn' : 'allow'
+      }
+    })
+  };
 }
 
 module.exports = {

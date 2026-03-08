@@ -295,6 +295,10 @@ STOP の方針:
   - `failedCount`
   - `failureSample`
   - `reason=send_partial_failure`
+4. outcome contract:
+  - JSON route は `outcome.state` を併せて確認する（`success|degraded|partial|error|blocked`）。
+  - プレーン/redirect route は `x-member-outcome-state` ヘッダを確認する。
+  - `ok=true` だけで成功判定しない。`degraded/partial` は別扱いで運用判断する。
 
 ### Journey policy quietHours 契約（Phase746）
 1. canonical:

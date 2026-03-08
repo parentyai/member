@@ -5,6 +5,7 @@ const { decodeTrackToken } = require('../domain/trackToken');
 const { recordClickAndRedirect } = require('../usecases/track/recordClickAndRedirect');
 const auditLogUsecase = require('../usecases/audit/appendAuditLog');
 const { getPublicWriteSafetySnapshot } = require('../repos/firestore/systemFlagsRepo');
+const { buildOutcome, applyOutcomeHeaders } = require('../domain/routeOutcomeContract');
 const ROUTE_KEY = 'track_click_get';
 
 function decodePathToken(raw) {
@@ -19,9 +20,24 @@ function decodePathToken(raw) {
   }
 }
 
-function writeError(res, status, body) {
+function writeTrackOutcome(res, status, body, context) {
+  applyOutcomeHeaders(res, buildOutcome({ ok: status < 400 }, Object.assign({
+    routeType: 'public_write',
+    guard: { routeKey: ROUTE_KEY }
+  }, context || {})));
   res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
   res.end(body);
+}
+
+function writeRedirect(res, location, context) {
+  applyOutcomeHeaders(res, buildOutcome({ ok: true }, Object.assign({
+    state: 'success',
+    reason: 'ok',
+    routeType: 'public_write',
+    guard: { routeKey: ROUTE_KEY }
+  }, context || {})));
+  res.writeHead(302, { location });
+  res.end();
 }
 
 function isTrackClickAuditEnabled() {
@@ -79,6 +95,9 @@ async function appendTrackClickAuditWithPolicy(payload, options) {
       payloadSummary: {
         result: data.result || 'unknown',
         errorCode: data.errorCode || null,
+        outcomeState: data.outcomeState || null,
+        outcomeReason: data.outcomeReason || null,
+        guardDecision: data.guardDecision || null,
         deliveryId: data.deliveryId || null,
         linkRegistryId: data.linkRegistryId || null,
         ctaSlot: data.ctaSlot || null,
@@ -107,15 +126,32 @@ async function handleTrackClickGet(req, res, token) {
   const traceId = resolveTraceId(req, requestId);
   const safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
   const auditWriteMode = safety.trackAuditWriteMode;
+  const guardDecision = safety.readError && safety.failCloseMode === 'warn' ? 'warn' : 'allow';
+  const guardContext = {
+    guard: {
+      routeKey: ROUTE_KEY,
+      failCloseMode: safety.failCloseMode || null,
+      readError: safety.readError === true,
+      killSwitchOn: safety.killSwitchOn === true,
+      decision: guardDecision
+    }
+  };
   if (safety.readError) {
     if (safety.failCloseMode === 'enforce') {
-      writeError(res, 503, 'temporarily unavailable');
+      writeTrackOutcome(res, 503, 'temporarily unavailable', Object.assign({
+        state: 'blocked',
+        reason: 'kill_switch_read_failed_fail_closed',
+        guard: Object.assign({}, guardContext.guard, { decision: 'block' })
+      }, guardContext));
       await appendTrackClickAuditWithPolicy({
         traceId,
         requestId,
         result: 'reject',
         errorCode: 'kill_switch_read_failed_fail_closed',
-        failCloseMode: safety.failCloseMode
+        failCloseMode: safety.failCloseMode,
+        outcomeState: 'blocked',
+        outcomeReason: 'kill_switch_read_failed_fail_closed',
+        guardDecision: 'block'
       }, { auditWriteMode });
       return;
     }
@@ -126,29 +162,45 @@ async function handleTrackClickGet(req, res, token) {
         result: 'warn',
         errorCode: 'kill_switch_read_failed_fail_open',
         failCloseMode: safety.failCloseMode,
-        action: 'track.click.get.guard_warn'
+        action: 'track.click.get.guard_warn',
+        outcomeState: 'degraded',
+        outcomeReason: 'kill_switch_read_failed_fail_open',
+        guardDecision: 'warn'
       }, { auditWriteMode });
     }
   }
   if (safety.killSwitchOn) {
-    writeError(res, 403, 'forbidden');
+    writeTrackOutcome(res, 403, 'forbidden', Object.assign({
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: Object.assign({}, guardContext.guard, { decision: 'block', killSwitchOn: true })
+    }, guardContext));
     await appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       result: 'reject',
-      errorCode: 'kill_switch_on'
+      errorCode: 'kill_switch_on',
+      outcomeState: 'blocked',
+      outcomeReason: 'kill_switch_on',
+      guardDecision: 'block'
     }, { auditWriteMode });
     return;
   }
 
   const decoded = decodePathToken(token);
   if (!decoded) {
-    writeError(res, 400, 'token required');
+    writeTrackOutcome(res, 400, 'token required', Object.assign({
+      state: 'error',
+      reason: 'token_required'
+    }, guardContext));
     await appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       result: 'reject',
-      errorCode: 'token_required'
+      errorCode: 'token_required',
+      outcomeState: 'error',
+      outcomeReason: 'token_required',
+      guardDecision
     }, { auditWriteMode });
     return;
   }
@@ -159,21 +211,33 @@ async function handleTrackClickGet(req, res, token) {
   } catch (err) {
     const msg = err && err.message ? err.message : 'invalid token';
     if (msg.includes('expired') || msg.includes('invalid')) {
-      writeError(res, 403, 'forbidden');
+      writeTrackOutcome(res, 403, 'forbidden', Object.assign({
+        state: 'blocked',
+        reason: msg.includes('expired') ? 'token_expired' : 'token_invalid'
+      }, guardContext));
       await appendTrackClickAuditWithPolicy({
         traceId,
         requestId,
         result: 'reject',
-        errorCode: msg.includes('expired') ? 'token_expired' : 'token_invalid'
+        errorCode: msg.includes('expired') ? 'token_expired' : 'token_invalid',
+        outcomeState: 'blocked',
+        outcomeReason: msg.includes('expired') ? 'token_expired' : 'token_invalid',
+        guardDecision
       }, { auditWriteMode });
       return;
     }
-    writeError(res, 500, 'error');
+    writeTrackOutcome(res, 500, 'error', Object.assign({
+      state: 'error',
+      reason: 'decode_error'
+    }, guardContext));
     await appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
       result: 'error',
-      errorCode: 'decode_error'
+      errorCode: 'decode_error',
+      outcomeState: 'error',
+      outcomeReason: 'decode_error',
+      guardDecision
     }, { auditWriteMode });
     return;
   }
@@ -190,14 +254,22 @@ async function handleTrackClickGet(req, res, token) {
       deliveryId: payload.deliveryId,
       linkRegistryId: payload.linkRegistryId,
       ctaSlot: payload.ctaSlot || null,
-      result: 'ok'
+      result: 'ok',
+      outcomeState: guardDecision === 'warn' ? 'degraded' : 'success',
+      outcomeReason: guardDecision === 'warn' ? 'kill_switch_read_failed_fail_open' : 'ok',
+      guardDecision
     }, { auditWriteMode, nonBlocking: true });
-    res.writeHead(302, { location: result.url });
-    res.end();
+    writeRedirect(res, result.url, Object.assign({
+      state: guardDecision === 'warn' ? 'degraded' : 'success',
+      reason: guardDecision === 'warn' ? 'kill_switch_read_failed_fail_open' : 'ok'
+    }, guardContext));
   } catch (err) {
     const message = err && err.message ? err.message : 'error';
     if (message.includes('required') || message.includes('not found') || message.includes('WARN')) {
-      writeError(res, 400, message.includes('WARN') ? 'link health WARN' : message);
+      writeTrackOutcome(res, 400, message.includes('WARN') ? 'link health WARN' : message, Object.assign({
+        state: 'error',
+        reason: message.includes('WARN') ? 'warn_link' : 'required_or_not_found'
+      }, guardContext));
       await appendTrackClickAuditWithPolicy({
         traceId,
         requestId,
@@ -205,11 +277,17 @@ async function handleTrackClickGet(req, res, token) {
         linkRegistryId: payload.linkRegistryId,
         ctaSlot: payload.ctaSlot || null,
         result: 'reject',
-        errorCode: message.includes('WARN') ? 'warn_link' : 'required_or_not_found'
+        errorCode: message.includes('WARN') ? 'warn_link' : 'required_or_not_found',
+        outcomeState: 'error',
+        outcomeReason: message.includes('WARN') ? 'warn_link' : 'required_or_not_found',
+        guardDecision
       }, { auditWriteMode });
       return;
     }
-    writeError(res, 500, 'error');
+    writeTrackOutcome(res, 500, 'error', Object.assign({
+      state: 'error',
+      reason: 'unexpected'
+    }, guardContext));
     await appendTrackClickAuditWithPolicy({
       traceId,
       requestId,
@@ -217,7 +295,10 @@ async function handleTrackClickGet(req, res, token) {
       linkRegistryId: payload.linkRegistryId,
       ctaSlot: payload.ctaSlot || null,
       result: 'error',
-      errorCode: 'unexpected'
+      errorCode: 'unexpected',
+      outcomeState: 'error',
+      outcomeReason: 'unexpected',
+      guardDecision
     }, { auditWriteMode });
   }
 }

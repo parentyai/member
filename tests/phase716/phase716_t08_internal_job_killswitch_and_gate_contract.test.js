@@ -69,6 +69,8 @@ test('phase716: internal llm reward finalize job blocks on kill-switch and write
   assert.equal(response.status, 409);
   const body = JSON.parse(response.body);
   assert.equal(body.error, 'kill switch on');
+  assert.equal(body.outcome && body.outcome.state, 'blocked');
+  assert.equal(body.outcome && body.outcome.reason, 'kill_switch_on');
 
   const gateLog = listAuditRows(db).find((row) => row && row.action === 'llm_gate.decision' && row.payloadSummary && row.payloadSummary.entryType === 'job');
   assert.ok(gateLog);

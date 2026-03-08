@@ -85,6 +85,7 @@ test('phase652: handleStripeWebhook validates signature and records ignored even
       logger: () => {}
     });
     assert.equal(invalid.status, 401);
+    assert.equal(invalid.outcome && invalid.outcome.state, 'blocked');
 
     const accepted = await handleStripeWebhook({
       signature: `t=${ts},v1=${sig}`,
@@ -94,6 +95,7 @@ test('phase652: handleStripeWebhook validates signature and records ignored even
     });
     assert.equal(accepted.status, 200);
     assert.equal(accepted.body, 'ok');
+    assert.equal(accepted.outcome && accepted.outcome.state, 'success');
 
     const events = db._state.collections.stripe_webhook_events;
     assert.ok(events && events.docs && events.docs.evt_ignore_1);

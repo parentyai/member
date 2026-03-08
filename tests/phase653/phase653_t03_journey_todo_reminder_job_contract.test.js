@@ -14,15 +14,24 @@ const { handleJourneyTodoReminderJob } = require('../../src/routes/internal/jour
 const { runJourneyTodoReminderJob } = require('../../src/usecases/journey/runJourneyTodoReminderJob');
 
 function createResCapture() {
+  const stagedHeaders = {};
   const out = {
     statusCode: null,
     headers: null,
     body: ''
   };
   return {
+    setHeader(name, value) {
+      if (!name) return;
+      stagedHeaders[String(name).toLowerCase()] = value;
+    },
     writeHead(statusCode, headers) {
       out.statusCode = statusCode;
-      out.headers = headers || null;
+      const normalized = {};
+      Object.keys(headers || {}).forEach((key) => {
+        normalized[String(key).toLowerCase()] = headers[key];
+      });
+      out.headers = Object.assign({}, stagedHeaders, normalized);
     },
     end(chunk) {
       if (chunk) out.body += String(chunk);
@@ -208,6 +217,9 @@ test('phase653: reminder route returns partial status when push fails', async ()
     assert.equal(body.partialFailure, true);
     assert.equal(body.status, 'completed_with_failures');
     assert.equal(body.failedCount, 1);
+    assert.equal(body.outcome && body.outcome.state, 'partial');
+    assert.equal(body.outcome && body.outcome.reason, 'completed_with_failures');
+    assert.equal(res.result.headers['x-member-outcome-state'], 'partial');
   } finally {
     restoreEnv();
     clearDbForTest();
