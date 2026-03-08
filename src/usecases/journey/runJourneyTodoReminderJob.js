@@ -17,6 +17,7 @@ const {
   getJourneyPrimaryNotificationDailyMax
 } = require('../../domain/tasks/featureFlags');
 const { buildNotificationSendSummary } = require('../../domain/notificationSendSummary');
+const { reportSuppressedError } = require('../../shared/suppressedErrorReporter');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NARROWING_LOOKBACK_HOURS = 72;
@@ -229,7 +230,7 @@ function buildReminderMessage(item, reminderMeta) {
   };
 }
 
-async function appendJourneyReminderEventBestEffort(payload, deps) {
+async function appendJourneyReminderEventBestEffort(payload, deps, context) {
   const item = payload && typeof payload === 'object' ? payload : {};
   const lineUserId = typeof item.lineUserId === 'string' ? item.lineUserId.trim() : '';
   const type = typeof item.type === 'string' ? item.type.trim() : '';
@@ -238,11 +239,26 @@ async function appendJourneyReminderEventBestEffort(payload, deps) {
   const repository = resolvedDeps.eventsRepo || eventsRepo;
   if (!repository || typeof repository.createEvent !== 'function') return;
   const ref = item.ref && typeof item.ref === 'object' ? item.ref : {};
-  await repository.createEvent({
-    lineUserId,
-    type,
-    ref
-  }).catch(() => null);
+  const suppressReporter = context && typeof context.reportSuppressedErrorFn === 'function'
+    ? context.reportSuppressedErrorFn
+    : reportSuppressedError;
+  try {
+    await repository.createEvent({
+      lineUserId,
+      type,
+      ref
+    });
+  } catch (err) {
+    suppressReporter({
+      scope: 'journey.runJourneyTodoReminderJob',
+      stage: 'append_journey_reminder_event_failed',
+      err,
+      traceId: context && context.traceId ? context.traceId : null,
+      requestId: context && context.requestId ? context.requestId : null,
+      actor: context && context.actor ? context.actor : 'journey_todo_reminder_job',
+      lineUserId
+    });
+  }
 }
 
 function shouldSkipByRuleSet(item, plan, nowIso, ruleSet, perUserState) {
@@ -298,6 +314,9 @@ async function runJourneyTodoReminderJob(params, deps) {
   const pushFn = resolvedDeps.pushMessage || pushMessage;
   const planResolver = resolvedDeps.resolvePlan || resolvePlan;
   const catalogRepo = resolvedDeps.journeyGraphCatalogRepo || journeyGraphCatalogRepo;
+  const reportSuppressedErrorFn = typeof payload.reportSuppressedErrorFn === 'function'
+    ? payload.reportSuppressedErrorFn
+    : (typeof resolvedDeps.reportSuppressedErrorFn === 'function' ? resolvedDeps.reportSuppressedErrorFn : reportSuppressedError);
 
   const dryRun = normalizeBoolean(payload.dryRun, false);
   const nowIso = payload.now || new Date().toISOString();
@@ -389,6 +408,12 @@ async function runJourneyTodoReminderJob(params, deps) {
     limit
   });
   const eventDeps = Object.assign({}, resolvedDeps, { eventsRepo: eventRepo });
+  const suppressContext = {
+    traceId: payload.traceId || null,
+    requestId: payload.requestId || null,
+    actor: payload.actor || 'journey_todo_reminder_job',
+    reportSuppressedErrorFn
+  };
 
   for (const item of items) {
     scannedCount += 1;
@@ -445,7 +470,18 @@ async function runJourneyTodoReminderJob(params, deps) {
 
       if (narrowingEnabled && !userState.recentEventsLoaded) {
         const recentEvents = eventRepo && typeof eventRepo.listEventsByUser === 'function'
-          ? await eventRepo.listEventsByUser(lineUserId, 80).catch(() => [])
+          ? await eventRepo.listEventsByUser(lineUserId, 80).catch((err) => {
+            reportSuppressedErrorFn({
+              scope: 'journey.runJourneyTodoReminderJob',
+              stage: 'list_recent_events_failed',
+              err,
+              traceId: payload.traceId || null,
+              requestId: payload.requestId || null,
+              actor: payload.actor || 'journey_todo_reminder_job',
+              lineUserId
+            });
+            return [];
+          })
           : [];
         userState.recentEventTypes = resolveRecentEventTypes(recentEvents, nowMs);
         userState.recentEventsLoaded = true;
@@ -465,7 +501,7 @@ async function runJourneyTodoReminderJob(params, deps) {
             todoKey: item && item.todoKey ? item.todoKey : null,
             reason: reminderTrigger.triggerType || 'narrowing_not_matched'
           }
-        }, eventDeps);
+        }, eventDeps, suppressContext);
         perUserRuntime.set(lineUserId, userState);
         continue;
       }
@@ -480,7 +516,7 @@ async function runJourneyTodoReminderJob(params, deps) {
             todoKey: item && item.todoKey ? item.todoKey : null,
             triggerType: reminderTrigger.triggerType
           }
-        }, eventDeps);
+        }, eventDeps, suppressContext);
         perUserRuntime.set(lineUserId, userState);
         continue;
       }
@@ -488,7 +524,18 @@ async function runJourneyTodoReminderJob(params, deps) {
       if (narrowingEnabled) {
         if (!userState.primaryBaselineLoaded) {
           const deliveredToday = deliveryRepo && typeof deliveryRepo.countDeliveredByUserSince === 'function'
-            ? await deliveryRepo.countDeliveredByUserSince(lineUserId, utcDayStartIso).catch(() => 0)
+            ? await deliveryRepo.countDeliveredByUserSince(lineUserId, utcDayStartIso).catch((err) => {
+              reportSuppressedErrorFn({
+                scope: 'journey.runJourneyTodoReminderJob',
+                stage: 'count_delivered_today_failed',
+                err,
+                traceId: payload.traceId || null,
+                requestId: payload.requestId || null,
+                actor: payload.actor || 'journey_todo_reminder_job',
+                lineUserId
+              });
+              return 0;
+            })
             : 0;
           userState.primarySentToday = Number.isFinite(Number(deliveredToday)) ? Number(deliveredToday) : 0;
           userState.primaryBaselineLoaded = true;
@@ -504,10 +551,10 @@ async function runJourneyTodoReminderJob(params, deps) {
               sentToday: userState.primarySentToday,
               primaryDailyMax
             }
-          }, eventDeps);
-          perUserRuntime.set(lineUserId, userState);
-          continue;
-        }
+        }, eventDeps, suppressContext);
+        perUserRuntime.set(lineUserId, userState);
+        continue;
+      }
       }
 
       if (!dryRun) {
@@ -543,7 +590,7 @@ async function runJourneyTodoReminderJob(params, deps) {
             ctaAction: reminderTrigger.ctaAction,
             triggeredOffset
           }
-        }, eventDeps);
+        }, eventDeps, suppressContext);
       }
 
       sentCount += 1;
@@ -553,6 +600,15 @@ async function runJourneyTodoReminderJob(params, deps) {
       perUserRuntime.set(lineUserId, userState);
     } catch (err) {
       failedCount += 1;
+      reportSuppressedErrorFn({
+        scope: 'journey.runJourneyTodoReminderJob',
+        stage: 'reminder_iteration_failed',
+        err,
+        traceId: payload.traceId || null,
+        requestId: payload.requestId || null,
+        actor: payload.actor || 'journey_todo_reminder_job',
+        lineUserId: item && item.lineUserId ? item.lineUserId : null
+      });
       if (errorSample.length < 20) {
         errorSample.push({
           lineUserId: item && item.lineUserId ? item.lineUserId : null,

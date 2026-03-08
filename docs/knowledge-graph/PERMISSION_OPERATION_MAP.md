@@ -1,6 +1,6 @@
 # PERMISSION_OPERATION_MAP
 
-- generatedAt: 2026-03-08T04:34:19.324Z
+- generatedAt: 2026-03-08T06:11:42.757Z
 - source.generatedAt: 2026-03-08T04:34:11.724Z
 - source.gitCommit: 690e9ec95691e2bb60ab84db1dc2c33a9fcfff4f
 - source.branch: codex/member-integrated-remediation-v1

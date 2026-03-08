@@ -31,6 +31,7 @@ const { buildLineNotificationMessage } = require('./buildLineNotificationMessage
 const { resolveLinkIntent } = require('../linkRegistry/resolveLinkIntent');
 const { appendUxEvent } = require('../observability/appendUxEvent');
 const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
+const { reportSuppressedError } = require('../../shared/suppressedErrorReporter');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -231,6 +232,9 @@ async function sendNotification(params) {
   const actor = typeof payload.actor === 'string' && payload.actor.trim().length > 0
     ? payload.actor.trim()
     : null;
+  const reportSuppressedErrorFn = typeof payload.reportSuppressedErrorFn === 'function'
+    ? payload.reportSuppressedErrorFn
+    : reportSuppressedError;
   const auditContext = payload.auditContext && typeof payload.auditContext === 'object'
     ? payload.auditContext
     : {};
@@ -323,6 +327,17 @@ async function sendNotification(params) {
           if (url) trackedUrl = url;
         } catch (_err) {
           trackedUrl = originalUrl;
+          reportSuppressedErrorFn({
+            scope: 'notifications.sendNotification',
+            stage: 'build_track_url_failed',
+            err: _err,
+            traceId,
+            requestId,
+            actor: actor || 'send_notification',
+            lineUserId: user.id,
+            notificationId,
+            deliveryId
+          });
         }
       }
       return {
@@ -378,7 +393,17 @@ async function sendNotification(params) {
           lastErrorAt: sentAt
         });
       } catch (_ignored) {
-        // best-effort only
+        reportSuppressedErrorFn({
+          scope: 'notifications.sendNotification',
+          stage: 'persist_failed_delivery_record_after_push_error',
+          err: _ignored,
+          traceId,
+          requestId,
+          actor: actor || 'send_notification',
+          lineUserId: user.id,
+          notificationId,
+          deliveryId
+        });
       }
       if (!continueOnError) throw err;
       continue;
@@ -423,7 +448,17 @@ async function sendNotification(params) {
           sentAt
         });
       } catch (_ignored) {
-        // best-effort only
+        reportSuppressedErrorFn({
+          scope: 'notifications.sendNotification',
+          stage: 'persist_delivery_persist_failed_after_push_state',
+          err: _ignored,
+          traceId,
+          requestId,
+          actor: actor || 'send_notification',
+          lineUserId: user.id,
+          notificationId,
+          deliveryId
+        });
       }
       if (!continueOnError) throw err;
       continue;
@@ -442,7 +477,17 @@ async function sendNotification(params) {
         sentAt
       });
     } catch (_err) {
-      // best-effort only
+      reportSuppressedErrorFn({
+        scope: 'notifications.sendNotification',
+        stage: 'append_ux_event_failed',
+        err: _err,
+        traceId,
+        requestId,
+        actor: actor || 'send_notification',
+        lineUserId: user.id,
+        notificationId,
+        deliveryId
+      });
     }
     if (fatigueWarnEnabled) {
       try {
@@ -470,7 +515,17 @@ async function sendNotification(params) {
           }
         }
       } catch (_err) {
-        // best-effort only
+        reportSuppressedErrorFn({
+          scope: 'notifications.sendNotification',
+          stage: 'fatigue_warning_compute_failed',
+          err: _err,
+          traceId,
+          requestId,
+          actor: actor || 'send_notification',
+          lineUserId: user.id,
+          notificationId,
+          deliveryId
+        });
       }
     }
     try {
@@ -494,7 +549,17 @@ async function sendNotification(params) {
         }
       });
     } catch (err) {
-      // best-effort only
+      reportSuppressedErrorFn({
+        scope: 'notifications.sendNotification',
+        stage: 'append_decision_timeline_failed',
+        err,
+        traceId,
+        requestId,
+        actor: actor || 'send_notification',
+        lineUserId: user.id,
+        notificationId,
+        deliveryId
+      });
     }
     try {
       await recordSent({
@@ -504,7 +569,18 @@ async function sendNotification(params) {
         ctaSlots: ctaSlots.map((slot) => slot.slot)
       });
     } catch (err) {
-      // CTA stats failure must not block delivery — best-effort only.
+      // CTA stats failure must not block delivery.
+      reportSuppressedErrorFn({
+        scope: 'notifications.sendNotification',
+        stage: 'record_sent_stats_failed',
+        err,
+        traceId,
+        requestId,
+        actor: actor || 'send_notification',
+        lineUserId: user.id,
+        notificationId,
+        deliveryId
+      });
     }
   }
 

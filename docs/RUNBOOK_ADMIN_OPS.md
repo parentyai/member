@@ -7,6 +7,18 @@
 - kill switch は「送信副作用の最終停止装置」
 - traceId は監査の主キー（Trace Search で追えること）
 
+## Feature Flag Governance（Phase PR5）
+- canonical registry:
+  - `docs/REPO_AUDIT_INPUTS/feature_flag_registry.json`
+- operator-facing map:
+  - `docs/FEATURE_FLAG_GOVERNANCE.md`
+- drift check:
+  - `npm run feature-flags:check`
+- update flow:
+  1. `ENABLE_*` を追加/変更したら `npm run feature-flags:generate`
+  2. 生成差分をレビューし owner/purpose/reviewBy/blastRadius を補正
+  3. `npm run feature-flags:check` を通してからPR化
+
 ## /admin/app ナビ表示ポリシー（Phase637）
 左ナビの表示は Role に応じて固定される。運用変更で逸脱しないことを優先し、契約テストで維持する。
 この節は Phase637 の履歴であり、最新運用は後述の「Phase638–647 更新」を優先する。

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T00:49:11-05:00",
-  "gitCommit": "1d0270f2f68c18f28ac25386c6d8959fb7a59b26",
-  "branch": "codex/member-next5-pr3-canonical-authority",
-  "sourceDigest": "d74a995274b005b11ce114bf0aa1d103da4d02ee73173d781cb95ec938d4430c",
+  "generatedAt": "2026-03-08T01:13:36-05:00",
+  "gitCommit": "2d817f08245419ce00bc5a992f282ffabecf495c",
+  "branch": "codex/member-next5-pr4-observability-hygiene",
+  "sourceDigest": "a5ccafb5432e817e6607ee352b1fd345a42fa32a42d7f371c81efd0e83779d19",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

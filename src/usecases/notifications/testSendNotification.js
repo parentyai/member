@@ -7,6 +7,7 @@ const { pushMessage } = require('../../infra/lineClient');
 const { computeLineRetryKey } = require('../../domain/deliveryId');
 const { validateKillSwitch } = require('../../domain/validators');
 const { recordSent } = require('../phase18/recordCtaStats');
+const { reportSuppressedError } = require('../../shared/suppressedErrorReporter');
 
 function buildTextMessage(text) {
   return { type: 'text', text: text || '' };
@@ -51,6 +52,9 @@ async function testSendNotification(params) {
   const timelineRefId = typeof payload.timelineRefId === 'string' && payload.timelineRefId.trim().length > 0
     ? payload.timelineRefId.trim()
     : notificationId;
+  const reportSuppressedErrorFn = typeof payload.reportSuppressedErrorFn === 'function'
+    ? payload.reportSuppressedErrorFn
+    : reportSuppressedError;
 
   async function appendTimelineEntry(snapshot) {
     if (!traceId) return;
@@ -67,7 +71,17 @@ async function testSendNotification(params) {
         snapshot
       });
     } catch (_err) {
-      // best-effort only
+      reportSuppressedErrorFn({
+        scope: 'notifications.testSendNotification',
+        stage: 'append_timeline_entry_failed',
+        err: _err,
+        traceId,
+        requestId,
+        actor: actor || 'test_send_notification',
+        lineUserId,
+        notificationId,
+        deliveryId
+      });
     }
   }
 
@@ -111,7 +125,17 @@ async function testSendNotification(params) {
           lastErrorAt: sentAt
         });
       } catch (_ignored) {
-        // best-effort only
+        reportSuppressedErrorFn({
+          scope: 'notifications.testSendNotification',
+          stage: 'persist_failed_delivery_record_after_push_error',
+          err: _ignored,
+          traceId,
+          requestId,
+          actor: actor || 'test_send_notification',
+          lineUserId,
+          notificationId,
+          deliveryId
+        });
       }
     }
     await appendTimelineEntry({
@@ -156,6 +180,17 @@ async function testSendNotification(params) {
     await recordSent({ notificationId, ctaText, linkRegistryId });
   } catch (_err) {
     logSentWriteError({ notificationId, lineUserId });
+    reportSuppressedErrorFn({
+      scope: 'notifications.testSendNotification',
+      stage: 'record_sent_stats_failed',
+      err: _err,
+      traceId,
+      requestId,
+      actor: actor || 'test_send_notification',
+      lineUserId,
+      notificationId,
+      deliveryId
+    });
   }
 
   return { id: result.id };

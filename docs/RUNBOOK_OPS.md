@@ -308,6 +308,18 @@ STOP の方針:
   - プレーン/redirect route は `x-member-outcome-state` ヘッダを確認する。
   - `ok=true` だけで成功判定しない。`degraded/partial` は別扱いで運用判断する。
 
+### Suppressed Error 監査契約（Phase PR4）
+1. best-effort catch は握りつぶさず `"[suppressed_error]"` で構造化ログを残す。
+2. 監視キー:
+  - `scope`（例: `notifications.sendNotification`）
+  - `stage`（例: `append_ux_event_failed`）
+  - `traceId` / `requestId` / `lineUserId`（存在時）
+3. Notification/Journey の運用確認:
+  - `gcloud logging read 'textPayload:\"[suppressed_error]\"' --limit 100 --format='value(textPayload)'`
+  - 連続発生する `stage` は route/job の degraded 予兆として扱う。
+4. read-only 実行ルール:
+  - `npm run test:trace-smoke` は `TRACE_SMOKE_WRITE_EVIDENCE=0` を固定し tracked docs を更新しない。
+
 ### Journey policy quietHours 契約（Phase746）
 1. canonical:
   - `opsConfig/journeyPolicy.notificationCaps.quietHours`

@@ -229,3 +229,56 @@ test('phase653: reminder route returns partial status when push fails', async ()
     clearServerTimestampForTest();
   }
 });
+
+test('phase653: reminder job reports suppressed iteration errors with stage tag', async () => {
+  const restoreEnv = withEnv({ ENABLE_JOURNEY_REMINDER_JOB: '1', ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1: '0' });
+  const db = createDbStub();
+  setDbForTest(db);
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  try {
+    const now = new Date('2026-02-24T00:00:00.000Z');
+    const dueAt = new Date('2026-02-25T00:00:00.000Z');
+    const beforeReminder = new Date('2026-02-23T23:59:00.000Z');
+    await db.collection('journey_todo_items').doc('U_REM_SUP__visa_documents').set({
+      lineUserId: 'U_REM_SUP',
+      todoKey: 'visa_documents',
+      title: '必要書類確認',
+      status: 'open',
+      dueDate: '2026-02-25',
+      dueAt: dueAt.toISOString(),
+      reminderOffsetsDays: [1],
+      remindedOffsetsDays: [],
+      nextReminderAt: beforeReminder.toISOString(),
+      reminderCount: 0,
+      updatedAt: beforeReminder.toISOString()
+    }, { merge: true });
+
+    const suppressed = [];
+    const result = await runJourneyTodoReminderJob({
+      now: now.toISOString(),
+      journeyPolicy: {
+        enabled: true,
+        reminder_offsets_days: [1],
+        reminder_max_per_run: 100,
+        paid_only_reminders: false,
+        schedule_required_for_reminders: false
+      },
+      dryRun: false,
+      traceId: 'trace-653',
+      requestId: 'req-653',
+      reportSuppressedErrorFn: (payload) => suppressed.push(payload)
+    }, {
+      pushMessage: async () => {
+        throw new Error('line push failed');
+      }
+    });
+
+    assert.equal(result.partialFailure, true);
+    assert.ok(suppressed.some((row) => row && row.stage === 'reminder_iteration_failed'));
+  } finally {
+    restoreEnv();
+    clearDbForTest();
+    clearServerTimestampForTest();
+  }
+});

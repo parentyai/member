@@ -787,7 +787,7 @@
     },
     {
       "file": "src/usecases/notifications/sendNotification.js",
-      "line": 141,
+      "line": 142,
       "symbol": "killSwitch"
     },
     {
@@ -797,7 +797,7 @@
     },
     {
       "file": "src/usecases/notifications/testSendNotification.js",
-      "line": 78,
+      "line": 92,
       "symbol": "killSwitch"
     },
     {
