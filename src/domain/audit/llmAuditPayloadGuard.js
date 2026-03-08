@@ -75,7 +75,9 @@ const LLM_GATE_KEYS = new Set([
   'consentVerified',
   'crossBorder',
   'legalDecision',
-  'legalReasonCodes'
+  'legalReasonCodes',
+  'intentRiskTier',
+  'riskReasonCodes'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

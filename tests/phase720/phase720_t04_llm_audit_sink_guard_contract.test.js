@@ -16,6 +16,8 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
       entryType: 'webhook',
       conversationMode: 'casual',
       routerReason: 'greeting_detected',
+      intentRiskTier: 'low',
+      riskReasonCodes: ['intent_general', 'risk_low'],
       fullReplyText: 'should_not_be_saved',
       rawPrompt: 'should_not_be_saved',
       rawKbBodies: ['drop'],
@@ -30,6 +32,8 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
   assert.equal(sanitized.payloadSummary.entryType, 'webhook');
   assert.equal(sanitized.payloadSummary.conversationMode, 'casual');
   assert.equal(sanitized.payloadSummary.routerReason, 'greeting_detected');
+  assert.equal(sanitized.payloadSummary.intentRiskTier, 'low');
+  assert.deepEqual(sanitized.payloadSummary.riskReasonCodes, ['intent_general', 'risk_low']);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'fullReplyText'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawPrompt'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawKbBodies'), false);

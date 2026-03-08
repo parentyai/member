@@ -57,7 +57,9 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'consentVerified',
   'crossBorder',
   'legalDecision',
-  'legalReasonCodes'
+  'legalReasonCodes',
+  'intentRiskTier',
+  'riskReasonCodes'
 ]);
 
 function resolveAppendAuditLog() {

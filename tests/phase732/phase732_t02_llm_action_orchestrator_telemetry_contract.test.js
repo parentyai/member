@@ -73,6 +73,8 @@ test('phase732: llm action log schema includes orchestrator telemetry fields', (
     'verificationOutcome',
     'contradictionFlags',
     'candidateCount',
+    'intentRiskTier',
+    'riskReasonCodes',
     'committedNextActions',
     'committedFollowupQuestion'
   ].forEach((token) => {
