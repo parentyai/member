@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:59:55-05:00",
-  "gitCommit": "3314ef09aff895516052d7d51c20909381dd58a6",
-  "branch": "codex/llm-v3-pr35-readiness-logonly",
-  "sourceDigest": "c504898a98a1ddbe9d96e60b8276828babbd2b4bcc00703590882d2902c295c6",
+  "generatedAt": "2026-03-07T20:30:38-05:00",
+  "gitCommit": "292403dcf4fc0d7cc0ec5248e627eaedc782aa56",
+  "branch": "codex/llm-v3-pr35-readiness-enforce",
+  "sourceDigest": "ca7eb5fe21d4d26a3105cdb396cbf4f52f07abea73f0c871f8ae82ba02c7349d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
