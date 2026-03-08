@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev_stale_1","timestamp":1000,"type":"message","source":{"type":"user","userId":"u3"},"message":{"type":"text","id":"m3","text":"税金は？"}}]}

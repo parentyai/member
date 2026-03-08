@@ -177,6 +177,16 @@
     ]
   },
   {
+    "collection": "delivery_records",
+    "kind": "evidence",
+    "recomputable": false,
+    "retention": "365d",
+    "deletable": false,
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:21"
+    ]
+  },
+  {
     "collection": "emergency_bulletins",
     "kind": "config",
     "recomputable": false,
@@ -392,6 +402,16 @@
     ]
   },
   {
+    "collection": "liff_synthetic_events",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:48"
+    ]
+  },
+  {
     "collection": "link_registry",
     "kind": "config",
     "recomputable": false,
@@ -472,6 +492,46 @@
       "src/repos/firestore/llmUsageStatsRepo.js:5",
       "src/repos/firestore/llmUsageStatsRepo.js:81",
       "src/repos/firestore/llmUsageStatsRepo.js:100"
+    ]
+  },
+  {
+    "collection": "memory_compliance",
+    "kind": "config",
+    "recomputable": true,
+    "retention": "365d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:49"
+    ]
+  },
+  {
+    "collection": "memory_profile",
+    "kind": "config",
+    "recomputable": true,
+    "retention": "365d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:50"
+    ]
+  },
+  {
+    "collection": "memory_session",
+    "kind": "event",
+    "recomputable": true,
+    "retention": "90d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:51"
+    ]
+  },
+  {
+    "collection": "memory_task",
+    "kind": "config",
+    "recomputable": true,
+    "retention": "180d",
+    "deletable": "CONDITIONAL",
+    "evidence": [
+      "src/domain/retention/retentionPolicy.js:52"
     ]
   },
   {

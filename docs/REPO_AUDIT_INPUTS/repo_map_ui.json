@@ -3,11 +3,11 @@
     "generatedAt": "NOT AVAILABLE",
     "version": "0.0.0",
     "lastCommit": {
-      "hash": "3d35e88498981de7f425f0b793b7f4d044be6a36",
+      "hash": "1eb7547f25da80cd10c713c2decef0701d139146",
       "date": "NOT AVAILABLE",
       "subject": "repo_map_input_digest"
     },
-    "testCount": 1213
+    "testCount": 1226
   },
   "systemOverview": {
     "what": [
@@ -16,7 +16,7 @@
       "操作履歴は追跡IDでたどれ、監査ログで確認できます。"
     ],
     "statusSummary": {
-      "implemented": 123,
+      "implemented": 124,
       "legacy": 5
     }
   },
@@ -2321,6 +2321,38 @@
         {
           "id": "legacyStatus",
           "nameJa": "共通基盤機能（legacyStatus）",
+          "status": "実装済み",
+          "canDo": [
+            "運用で利用できます（管理画面/API）。",
+            "追跡IDで操作の流れを確認できます。",
+            "監査ログで変更履歴を確認できます。"
+          ],
+          "cannotDo": [
+            "この機能を説明するSSOT参照が不足しています。"
+          ],
+          "risks": [],
+          "nextActions": [
+            "SSOT_INDEXに説明ドキュメントを追記する。"
+          ],
+          "relatedFiles": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEvidence.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackFeedback.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackRequests.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackReviewInbox.js",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackTemplateLibrary.js"
+          ],
+          "evidence": [
+            "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackBulletins.js:1",
+            "/Users/parentyai.com/Projects/Member/src/routes/admin/cityPackEducationLinks.js:1"
+          ]
+        },
+        {
+          "id": "liffSyntheticEvent",
+          "nameJa": "共通基盤機能（liffSyntheticEvent）",
           "status": "実装済み",
           "canDo": [
             "運用で利用できます（管理画面/API）。",
@@ -7506,6 +7538,48 @@
               ]
             },
             {
+              "id": "liffSyntheticEvent",
+              "nameJa": "共通基盤機能（liffSyntheticEvent）",
+              "categoryJa": "共通基盤",
+              "status": "completed",
+              "version": "0.0.0",
+              "lastChanged": "NOT AVAILABLE",
+              "testsCount": 44,
+              "killSwitchDependent": false,
+              "auditDependent": true,
+              "canDo": [
+                "運用で利用できます（管理画面/API）。",
+                "追跡IDで操作の流れを確認できます。",
+                "監査ログで変更履歴を確認できます。"
+              ],
+              "cannotDo": [
+                "この機能を説明するSSOT参照が不足しています。"
+              ],
+              "risks": [],
+              "nextActions": [
+                "SSOT_INDEXに説明ドキュメントを追記する。"
+              ],
+              "relatedRepos": [
+                "auditLogsRepo"
+              ],
+              "relatedCollections": [
+                "audit_logs"
+              ],
+              "entrypoints": [
+                "src/routes/admin/cityPackBulletins.js",
+                "src/routes/admin/cityPackEducationLinks.js",
+                "src/routes/admin/cityPackEvidence.js",
+                "src/routes/admin/cityPackFeedback.js",
+                "src/routes/admin/cityPackRequests.js",
+                "src/routes/admin/cityPackReviewInbox.js",
+                "src/routes/admin/cityPacks.js",
+                "src/routes/admin/cityPackTemplateLibrary.js"
+              ],
+              "evidence": [
+                "/Users/parentyai.com/Projects/Member/src/repos/firestore/auditLogsRepo.js:1"
+              ]
+            },
+            {
               "id": "llmActionRewardFinalizeJob",
               "nameJa": "共通基盤機能（llmActionRewardFinalizeJob）",
               "categoryJa": "共通基盤",
@@ -9942,7 +10016,7 @@
           "作成（通知作成）: `/admin/composer`"
         ],
         "roadmap": [
-          "実装済み機能は 123 件です。",
+          "実装済み機能は 124 件です。",
           "非推奨機能は 5 件で、正本導線への集約対象です。",
           "構造監査入力JSONを基準に運用改善を継続します。"
         ],

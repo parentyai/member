@@ -17,15 +17,20 @@ function extractLineUserId(event) {
 function extractRef(event, requestId) {
   const source = event && event.source && typeof event.source === 'object' ? event.source : {};
   const message = event && event.message && typeof event.message === 'object' ? event.message : {};
+  const deliveryContext = event && event.deliveryContext && typeof event.deliveryContext === 'object'
+    ? event.deliveryContext
+    : {};
   const ref = {
     requestId: requestId || null,
     webhookEventId: typeof event.webhookEventId === 'string' ? event.webhookEventId : null,
     timestampMs: typeof event.timestamp === 'number' ? event.timestamp : null,
+    isRedelivery: deliveryContext.isRedelivery === true,
     sourceType: typeof source.type === 'string' ? source.type : null,
     groupId: typeof source.groupId === 'string' ? source.groupId : null,
     roomId: typeof source.roomId === 'string' ? source.roomId : null,
     messageId: typeof message.id === 'string' ? message.id : null,
-    messageType: typeof message.type === 'string' ? message.type : null
+    messageType: typeof message.type === 'string' ? message.type : null,
+    synthetic: event && event._synthetic === true
   };
   return ref;
 }
@@ -67,4 +72,3 @@ module.exports = {
   logLineWebhookEvents,
   logLineWebhookEventsBestEffort
 };
-

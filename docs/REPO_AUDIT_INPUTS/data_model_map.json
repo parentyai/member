@@ -241,6 +241,16 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "delivery_records",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "emergency_bulletins",
       "repos": [
         "emergencyBulletinsRepo"
@@ -548,6 +558,16 @@
       "fullscan_risk": "LOW"
     },
     {
+      "collection": "liff_synthetic_events",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
       "collection": "link_registry",
       "repos": [
         "linkRegistryRepo"
@@ -657,6 +677,46 @@
       "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
       "required_fields": "UNRESOLVED_STATIC_ONLY",
       "index_dependency": "POSSIBLE_MISSING_INDEX_FALLBACK",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "memory_compliance",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "memory_profile",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "memory_session",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
+      "fullscan_risk": "LOW"
+    },
+    {
+      "collection": "memory_task",
+      "repos": [],
+      "write_paths": [],
+      "read_paths": [],
+      "doc_id_patterns": "UNRESOLVED_STATIC_ONLY",
+      "required_fields": "UNRESOLVED_STATIC_ONLY",
+      "index_dependency": "NOT_DETECTED",
       "fullscan_risk": "LOW"
     },
     {

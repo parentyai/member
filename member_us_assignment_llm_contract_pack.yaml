@@ -1,0 +1,311 @@
+version: "1.0"
+document_id: "MEMBER-US-AZ-LLM-CONTRACT-001"
+updated_at: "2026-03-08"
+product:
+  name: "Member 米国赴任AtoZ支援Bot"
+  mission: "ユーザーの状況を case facts に落とし込み、公式ソースと rule_set に基づいて次の一手を返す"
+  non_goals:
+    - "法律・税務・医療の最終助言"
+    - "申請の代理提出"
+    - "口コミを根拠とする断定"
+source_of_truth_order:
+  - TIER0_LAW_FORM
+  - TIER1_OFFICIAL_OPERATION
+  - TIER2_PUBLIC_DATA
+  - TIER3_VENDOR
+  - TIER4_COMMUNITY
+
+enums:
+  lifecycle_stage:
+    - PRE_ASSIGNMENT
+    - PRE_DEPARTURE
+    - ENTRY_TRAVEL
+    - ARRIVAL_0_7
+    - ARRIVAL_0_30
+    - SETTLEMENT_30_90
+    - STEADY_STATE
+    - RENEWAL_CHANGE
+    - RETURN_REPAT
+  intent_type:
+    - NEXT_STEP
+    - HOW_TO
+    - DOCUMENTS_REQUIRED
+    - ELIGIBILITY_CHECK
+    - DEADLINE_CHECK
+    - STATUS_EXPLANATION
+    - STATE_RULE_DIFF
+    - TIMELINE_PLAN
+    - BLOCKER_HELP
+    - EXCEPTION_ESCALATION
+    - COST_ESTIMATE
+    - RETURN_PLAN
+    - GENERAL_OVERVIEW
+  answer_mode:
+    - ACTION_PLAN
+    - CHECKLIST
+    - EXPLANATION
+    - COMPARISON
+    - WARNING_ONLY
+    - ESCALATION_NOTICE
+    - TIMELINE
+    - REVERSE_LOOKUP
+  risk_level:
+    - LOW
+    - MEDIUM
+    - HIGH
+    - CRITICAL
+  freshness_status:
+    - FRESH
+    - NEAR_STALE
+    - STALE
+    - UNKNOWN
+  authority_tier:
+    - TIER0_LAW_FORM
+    - TIER1_OFFICIAL_OPERATION
+    - TIER2_PUBLIC_DATA
+    - TIER3_VENDOR
+    - TIER4_COMMUNITY
+
+routing:
+  chapters:
+    A: "Assignment Blueprint"
+    B: "Before Departure"
+    C: "Crossing the Border"
+    D: "Day 0-7"
+    E: "Essentials 0-30"
+    F: "Family"
+    G: "Getting Settled"
+    H: "Health & Insurance"
+    I: "Immigration Lifecycle"
+    J: "Job & Workplace"
+    K: "Kids & Education"
+    L: "Lease & Housing"
+    M: "Money & Credit"
+    N: "Numbers & IDs"
+    O: "Ongoing Ops"
+    P: "Protection & Emergencies"
+    Q: "Quality of Life"
+    R: "Return / Reassignment"
+    S: "State & City Overlays"
+    T: "Tax"
+    U: "Utilities & Connectivity"
+    V: "Vehicles & Driving"
+    W: "Work Authorization of Family"
+    X: "Exceptions & Escalations"
+    Y: "Your Docs Vault"
+    Z: "Zero-day Troubleshooting"
+  domain_to_chapter:
+    immigration: I
+    entry: C
+    arrival: D
+    ssn_payroll: E
+    housing: L
+    family: F
+    school: K
+    health: H
+    tax: T
+    dmv_id: N
+    driving_vehicle: V
+    safety: P
+    reverse_lookup: Z
+
+case_fact_priority:
+  - document_verified
+  - operator
+  - intake_form
+  - user_message
+  - system_inferred
+
+required_core_facts:
+  - assignment_type
+  - planned_entry_date
+  - assignment_start_date
+  - destination_state
+  - destination_city
+  - primary_visa_class
+  - dependents_present
+  - housing_stage
+  - school_needed_flag
+  - spouse_work_intent
+
+units:
+  - id: U-01
+    name: Message Normalizer
+    owner: llm
+    outputs:
+      - normalized_message
+      - detected_language
+      - resolved_date_candidates
+  - id: U-02
+    name: Intent Classifier
+    owner: llm
+    outputs:
+      - primary_intent
+      - secondary_intents
+      - answer_mode
+      - urgency
+      - confidence
+  - id: U-03
+    name: Fact Extractor
+    owner: llm
+    outputs:
+      - fact_updates
+      - conflicts
+      - assumptions_detected
+  - id: U-04
+    name: Missing Fact Prioritizer
+    owner: llm
+    outputs:
+      - missing_critical_facts
+      - missing_useful_facts
+  - id: U-05
+    name: Lifecycle Resolver
+    owner: deterministic
+    outputs:
+      - current_stage
+      - stage_confidence
+  - id: U-06
+    name: Domain Router
+    owner: deterministic
+    outputs:
+      - primary_domain
+      - secondary_domains
+      - primary_chapter
+      - secondary_chapters
+  - id: U-07
+    name: Source Filter Builder
+    owner: deterministic
+    outputs:
+      - authority_floor
+      - jurisdiction_filters
+      - source_codes
+  - id: U-08
+    name: Query Builder
+    owner: llm
+    outputs:
+      - queries
+      - query_rationale
+  - id: U-09
+    name: Evidence Retriever
+    owner: deterministic
+    outputs:
+      - candidate_nodes
+      - candidate_sources
+      - candidate_snapshots
+  - id: U-10
+    name: Evidence Ranker
+    owner: deterministic
+    outputs:
+      - selected_nodes
+      - selected_snapshots
+  - id: U-11
+    name: Freshness & Authority Gate
+    owner: deterministic
+    outputs:
+      - approved_snapshots
+      - freshness_status
+      - authority_status
+      - requires_human_review
+  - id: U-12
+    name: Rule Evaluator
+    owner: deterministic
+    outputs:
+      - applicable_tasks
+      - due_dates
+      - state_overrides
+  - id: U-13
+    name: Task Planner
+    owner: deterministic
+    outputs:
+      - ready_tasks
+      - blocked_tasks
+      - recommended_order
+  - id: U-14
+    name: Exception Detector
+    owner: deterministic
+    outputs:
+      - detected_exceptions
+      - severity
+      - needs_playbook
+  - id: U-15
+    name: Safety Gate
+    owner: deterministic
+    outputs:
+      - safety_mode
+      - must_include_disclaimer
+      - must_escalate
+  - id: U-16
+    name: Citation Assembler
+    owner: deterministic
+    outputs:
+      - citations
+  - id: U-17
+    name: Response Renderer
+    owner: llm
+    outputs:
+      - user_response_markdown
+      - follow_up_questions
+      - confidence_note
+  - id: U-18
+    name: Audit Logger
+    owner: deterministic
+    outputs:
+      - audit_event_id
+      - decision_trace
+
+response_contract:
+  required:
+    - intent
+    - stage
+    - answer_mode
+    - tasks
+    - warnings
+    - citations
+    - response_markdown
+  task_fields:
+    - task_id
+    - title
+    - status
+    - priority
+    - due_at
+    - required_docs
+    - blockers
+
+runbook:
+  severity:
+    P0:
+      scope:
+        - visa
+        - entry
+        - I-94
+        - SSN
+        - tax
+        - health
+        - school_rights
+      publish_sla_hours: 24
+    P1:
+      scope:
+        - housing
+        - DMV
+        - bank
+        - utilities
+        - childcare
+      publish_sla_business_days: 3
+    P2:
+      scope:
+        - cost_of_living
+        - locality_guides
+        - vendor_compare
+      publish_sla_business_days: 14
+
+golden_personas:
+  - code: GP-01
+    summary: "L-1 + L-2S + 子2人 + CA + 到着10日目"
+  - code: GP-02
+    summary: "E-2 + spouse + TX + 渡航前"
+  - code: GP-03
+    summary: "H-1B + H-4 + NY + 到着25日目"
+  - code: GP-04
+    summary: "J-1 + J-2 + MA + school search"
+  - code: GP-05
+    summary: "帰任直前 + lease termination + school withdrawal"

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-08T06:22:04.376Z",
-  "gitCommit": "2d817f08245419ce00bc5a992f282ffabecf495c",
-  "branch": "codex/member-next5-pr5-flag-governance",
+  "generatedAt": "2026-03-08T21:47:40.148Z",
+  "gitCommit": "36a0fc4e697eb20cdd74f92cfc9643addc0a98b6",
+  "branch": "codex/feat/spec-v1-line-openai-full-cutover",
   "flags": [
     {
       "name": "ENABLE_ADMIN_BUILD_META",
@@ -1035,6 +1035,72 @@
       "sourceRefs": [
         "src/domain/tasks/featureFlags.js:190",
         "src/index.js:144"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_V1_CHANNEL_EDGE",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_v1_channel_edge",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:396"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_V1_FAST_SLOW_ACK",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_v1_fast_slow_ack",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:3156"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_V1_FAST_SLOW_DISPATCH",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_v1_fast_slow_dispatch",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:400"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_V1_LIFF_SYNTHETIC_EVENTS",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_v1_liff_synthetic_events",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/index.js:152"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_V1_LINE_RENDERER",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_v1_line_renderer",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/infra/lineClient.js:149",
+        "src/infra/lineClient.js:167"
       ],
       "status": "active"
     },

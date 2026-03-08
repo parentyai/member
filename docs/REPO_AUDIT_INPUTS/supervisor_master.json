@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T09:28:12-04:00",
-  "gitCommit": "05b5ae4e4fafedd8b8b94f3050ad1188dfcce5bc",
-  "branch": "codex/member-nextfix-prA-stopship-guard",
-  "sourceDigest": "83cd9bfb1717736844d966f16aff05f607633de1c89528f13f5045137ffc01c2",
+  "generatedAt": "2026-03-08T17:05:18-04:00",
+  "gitCommit": "36a0fc4e697eb20cdd74f92cfc9643addc0a98b6",
+  "branch": "codex/feat/spec-v1-line-openai-full-cutover",
+  "sourceDigest": "dc4978ea149e8a0d0a2783171c5b366eae28b76588d7ed9492c5ee0bc5109e8a",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

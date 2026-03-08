@@ -1,0 +1,1 @@
+{"events":[{"webhookEventId":"ev_contra_1","timestamp":1000,"type":"message","source":{"type":"user","userId":"u4"},"message":{"type":"text","id":"m4","text":"どれが正しい？"}}]}
