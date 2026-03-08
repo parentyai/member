@@ -175,8 +175,10 @@ function formatNextTasksList(nextTasksResult) {
   );
   const primaryTitle = normalizeText(primary.title, primaryKey || '-');
   const primaryDueDate = primary.dueAt ? toDateLabel(primary.dueAt) : '-';
+  const primaryBlockedReason = resolveBlockedReason(primary);
+  const primaryBlockedLabel = primaryBlockedReason ? ` / ブロッカー:${primaryBlockedReason}` : '';
   const lines = [
-    `今やる: [${primaryKey}] ${primaryTitle}（期限:${primaryDueDate}）`,
+    `今やる: [${primaryKey}] ${primaryTitle}（期限:${primaryDueDate}${primaryBlockedLabel}）`,
     '続けて今日の3つ:'
   ];
   top.forEach((task, index) => {
@@ -185,10 +187,12 @@ function formatNextTasksList(nextTasksResult) {
     const title = normalizeText(row.title, key || '-');
     const dueDate = row.dueAt ? toDateLabel(row.dueAt) : '-';
     const category = normalizeTaskCategory(row.category, 'LIFE_SETUP') || 'LIFE_SETUP';
-    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate} / カテゴリ:${category}）`);
+    const blockedReason = resolveBlockedReason(row);
+    const blockedLabel = blockedReason ? ` / ブロッカー:${blockedReason}` : '';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate} / カテゴリ:${category}${blockedLabel}）`);
   });
   lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
-  lines.push('今週の期限は「今週の期限」、地域差がある手続きは「地域手続き」で確認できます。');
+  lines.push('期限確認は「今週の期限」（7日以内/期限超過）、地域差がある手続きは「地域手続き」で確認できます。');
   lines.push('カテゴリで絞る場合は「カテゴリ:IMMIGRATION」の形式で送信してください。');
   return lines.join('\n');
 }
@@ -224,30 +228,58 @@ function resolveTaskTitle(task, fallbackKey) {
   return normalizeText(meaningTitle, normalizeText(row.title, resolveTaskKey(row, fallbackKey)));
 }
 
+function resolveBlockedReason(task) {
+  const row = task && typeof task === 'object' ? task : {};
+  return normalizeText(row.blockedReason, normalizeText(row.blockerReason, ''));
+}
+
 function formatDueSoonTasksList(tasks, nowMs) {
   const rows = Array.isArray(tasks) ? tasks : [];
   if (!rows.length) {
-    return '今週の期限（7日以内）の未完了タスクはありません。';
+    return '期限（7日以内）/期限超過の未完了タスクはありません。';
   }
   const horizonMs = nowMs + (7 * DAY_MS);
-  const dueSoon = rows
+  const openWithDue = rows
     .filter((row) => isOpenTask(row))
     .filter((row) => {
       const dueMs = resolveTaskDueMillis(row);
-      return Number.isFinite(dueMs) && dueMs >= nowMs && dueMs <= horizonMs;
+      return Number.isFinite(dueMs);
     })
     .sort((left, right) => toSortDueMillis(left && left.dueAt) - toSortDueMillis(right && right.dueAt));
+  const dueSoon = openWithDue.filter((row) => {
+    const dueMs = resolveTaskDueMillis(row);
+    return Number.isFinite(dueMs) && dueMs >= nowMs && dueMs <= horizonMs;
+  });
+  const overdue = openWithDue.filter((row) => {
+    const dueMs = resolveTaskDueMillis(row);
+    return Number.isFinite(dueMs) && dueMs < nowMs;
+  });
 
-  if (!dueSoon.length) {
-    return '今週の期限（7日以内）の未完了タスクはありません。';
+  if (!dueSoon.length && !overdue.length) {
+    return '期限（7日以内）/期限超過の未完了タスクはありません。';
   }
-  const lines = ['今週の期限（7日以内）:'];
+  const lines = ['期限のある未完了タスク:', '【期限（7日以内）】'];
+  if (!dueSoon.length) {
+    lines.push('- 該当なし');
+  }
   dueSoon.slice(0, 5).forEach((task, index) => {
     const key = resolveTaskKey(task, `task_${index + 1}`);
     const title = resolveTaskTitle(task, key);
     const dueDate = task && task.dueAt ? toDateLabel(task.dueAt) : '-';
     lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
   });
+  if (dueSoon.length > 5) lines.push(`...ほか ${dueSoon.length - 5} 件`);
+  lines.push('【期限超過】');
+  if (!overdue.length) {
+    lines.push('- 該当なし');
+  }
+  overdue.slice(0, 5).forEach((task, index) => {
+    const key = resolveTaskKey(task, `overdue_${index + 1}`);
+    const title = resolveTaskTitle(task, key);
+    const dueDate = task && task.dueAt ? toDateLabel(task.dueAt) : '-';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
+  });
+  if (overdue.length > 5) lines.push(`...ほか ${overdue.length - 5} 件`);
   lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   lines.push('次に着手する項目は「今やる」で確認できます。');
   return lines.join('\n');
@@ -322,13 +354,19 @@ async function buildCategoryViewReply(params, deps) {
 
   if (!categoryFilter) {
     const counts = new Map();
+    const blockedCounts = new Map();
     openTasks.forEach((task) => {
       const category = resolveTaskCategoryForView(task, ruleById);
       counts.set(category, (counts.get(category) || 0) + 1);
+      if (resolveBlockedReason(task)) {
+        blockedCounts.set(category, (blockedCounts.get(category) || 0) + 1);
+      }
     });
     const lines = ['カテゴリ別TODO件数:'];
     TASK_CATEGORIES.forEach((category) => {
-      lines.push(`- ${category}: ${counts.get(category) || 0}件`);
+      const total = counts.get(category) || 0;
+      const blocked = blockedCounts.get(category) || 0;
+      lines.push(`- ${category}: ${total}件（ブロック:${blocked}件）`);
     });
     lines.push('絞り込み例: カテゴリ:IMMIGRATION');
     return lines.join('\n');
@@ -349,7 +387,9 @@ async function buildCategoryViewReply(params, deps) {
     const key = normalizeText(task && task.ruleId, normalizeText(task && task.taskId, `task_${index + 1}`));
     const title = normalizeText(task && task.meaning && task.meaning.title, key);
     const dueDate = task && task.dueAt ? toDateLabel(task.dueAt) : '-';
-    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}）`);
+    const blockedReason = resolveBlockedReason(task);
+    const blockedLabel = blockedReason ? ` / ブロッカー:${blockedReason}` : '';
+    lines.push(`${index + 1}. [${key}] ${title}（期限:${dueDate}${blockedLabel}）`);
   });
   lines.push('詳細を見る場合は「TODO詳細:todoKey」を送信してください。');
   return lines.join('\n');
@@ -1338,7 +1378,7 @@ async function handleJourneyLineCommand(params, deps) {
     }, resolvedDeps);
     return {
       handled: true,
-      replyText: '相談内容を受け付けます（このコマンド時点ではチケット作成は行いません）。\n困っている内容を1メッセージで送ってください。\n例: 口座開設の必要書類が分からない'
+      replyText: '相談導線を開きました。\nこの操作は「案内表示 + 利用イベント記録」のみで、チケット作成は行いません。\n困っている内容を1メッセージで送ってください。\n例: 口座開設の必要書類が分からない'
     };
   }
 

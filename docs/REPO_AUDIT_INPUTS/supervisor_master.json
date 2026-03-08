@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:10:07-05:00",
-  "gitCommit": "332ec713a2018583e57e25807fca31bcb44b25c2",
-  "branch": "codex/llm-v3-pr2-faq-sink-clean",
-  "sourceDigest": "e7a1769ea449d665f111de24f9dd636f7c4dc1496c9551c23e9c9676898221a1",
+  "generatedAt": "2026-03-07T16:51:25-05:00",
+  "gitCommit": "5f6afc6abe9c542fe3e30f20a36db6e4334f71bd",
+  "branch": "codex/journey-pr3-due-overdue",
+  "sourceDigest": "ec478a24342946d3ae12d3751a40c537bc9ab7cb4b48f948dcb944d87b6d43b4",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

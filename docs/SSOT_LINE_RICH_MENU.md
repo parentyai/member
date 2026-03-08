@@ -256,7 +256,7 @@ Phase resolution:
 
 ### Template Action Mapping（message）
 - `今やる` -> Journey command `next_tasks`
-- `今週の期限` -> Journey command `due_soon_tasks`
+- `今週の期限` -> Journey command `due_soon_tasks`（表示は `期限（7日以内）` / `期限超過`）
 - `地域手続き` -> Journey command `regional_procedures`
 - `TODO一覧` -> Journey command `todo_list`（secondary surface）
 - `通知履歴` -> Journey command `delivery_history`
