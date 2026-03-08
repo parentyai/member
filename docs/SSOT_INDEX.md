@@ -12,6 +12,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/RUNBOOK_TRACE_AUDIT.md`（traceId 監査 runbook）
 - `docs/RUNBOOK_OPS.md`（Ops判断/停止/復旧の runbook）
 - `docs/RUNBOOK_ADMIN_OPS.md`（管理UI運用OSの日次/事故対応 runbook）
+- `docs/FEATURE_FLAG_GOVERNANCE.md`（`ENABLE_*` owner/default/reviewBy/blast radius registry）
 - `docs/RUNBOOK_DEPLOY_ENVIRONMENTS.md`（stg/prod 分離デプロイ runbook）
 - `docs/RUNBOOK_STG_NOTIFICATION_E2E_CHECKLIST.md`（stg 通知実測チェックリスト）
 - `docs/CATCHUP_4W_EXECUTION_OS.md`（4週間キャッチアップの実行OS）
