@@ -15,6 +15,7 @@ const { evaluateNotificationPolicy } = require('../../domain/notificationPolicy'
 const { normalizeNotificationCaps } = require('../../domain/notificationCaps');
 const { checkNotificationCap } = require('../notifications/checkNotificationCap');
 const { resolveNotificationCtaAuditSummary } = require('../../domain/notificationCtaAudit');
+const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
 const FIELD_SCK = String.fromCharCode(115, 99, 101, 110, 97, 114, 105, 111, 75, 101, 121);
 
@@ -316,6 +317,9 @@ async function executeNotificationSend(params, deps) {
       requestId: requestId || undefined,
       actor
     });
+    result = attachNotificationSendSummary(result, {
+      totalRecipients: capEligibleLineUserIds.length
+    });
   } catch (err) {
     const blockedReasonCategory = err && typeof err.blockedReasonCategory === 'string'
       ? err.blockedReasonCategory
@@ -357,7 +361,8 @@ async function executeNotificationSend(params, deps) {
       ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
       ctaLabelHashes: ctaSummary.ctaLabelHashes,
       ctaLabelLengths: ctaSummary.ctaLabelLengths,
-      lineMessageType: result.lineMessageType || 'text'
+      lineMessageType: result.lineMessageType || 'text',
+      sendSummary: result.sendSummary || null
     });
     return Object.assign({
       ok: false,
@@ -374,67 +379,70 @@ async function executeNotificationSend(params, deps) {
       ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
       ctaLabelHashes: ctaSummary.ctaLabelHashes,
       ctaLabelLengths: ctaSummary.ctaLabelLengths,
-      lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text'
+      lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text',
+      sendSummary: result && result.sendSummary ? result.sendSummary : null
     }, result);
   }
 
-    await audit({
-      actor,
-      action: 'notifications.send.execute',
-      entityType: 'notification',
-      entityId: notificationId,
-      traceId,
-      requestId,
-      templateKey,
-      payloadSummary: {
-        ok: true,
-        checkedAt: new Date().toISOString(),
-        deliveredCount: result.deliveredCount,
-        skippedCount: result.skippedCount || 0,
-        capBlockedCount,
-        capBlockedSummary,
-        capCountMode,
-        capCountSource,
-        capCountStrategy,
-        notificationCategory: notification.notificationCategory || null,
-        ctaCount: ctaSummary.ctaCount,
-        ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
-        ctaLabelHashes: ctaSummary.ctaLabelHashes,
-        ctaLabelLengths: ctaSummary.ctaLabelLengths,
-        lineMessageType: result.lineMessageType || 'text'
-      }
-    });
-    if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
-      try {
-        await decisionsRepo.appendDecision({
-          subjectType: 'notification_send',
-          subjectId: notificationId,
-          decision: 'EXECUTE',
-          decidedBy: actor,
-          reason: 'ok',
-          traceId: traceId || undefined,
-          requestId: requestId || undefined,
-          audit: {
-            notificationId,
-            deliveredCount: result.deliveredCount,
-            skippedCount: result.skippedCount || 0,
-            capBlockedCount,
-            capBlockedSummary,
-            capCountMode,
-            capCountSource,
-            capCountStrategy,
-            notificationCategory: notification.notificationCategory || null,
-            ctaCount: ctaSummary.ctaCount,
-            ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
-            ctaLabelHashes: ctaSummary.ctaLabelHashes,
-            ctaLabelLengths: ctaSummary.ctaLabelLengths,
-            lineMessageType: result.lineMessageType || 'text'
-          }
-        });
-      } catch (_err) {
-        // best-effort only
-      }
+  await audit({
+    actor,
+    action: 'notifications.send.execute',
+    entityType: 'notification',
+    entityId: notificationId,
+    traceId,
+    requestId,
+    templateKey,
+    payloadSummary: {
+      ok: true,
+      checkedAt: new Date().toISOString(),
+      deliveredCount: result.deliveredCount,
+      skippedCount: result.skippedCount || 0,
+      capBlockedCount,
+      capBlockedSummary,
+      capCountMode,
+      capCountSource,
+      capCountStrategy,
+      notificationCategory: notification.notificationCategory || null,
+      ctaCount: ctaSummary.ctaCount,
+      ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+      ctaLabelHashes: ctaSummary.ctaLabelHashes,
+      ctaLabelLengths: ctaSummary.ctaLabelLengths,
+      lineMessageType: result.lineMessageType || 'text',
+      sendSummary: result.sendSummary || null
     }
+  });
+  if (decisionsRepo && typeof decisionsRepo.appendDecision === 'function') {
+    try {
+      await decisionsRepo.appendDecision({
+        subjectType: 'notification_send',
+        subjectId: notificationId,
+        decision: 'EXECUTE',
+        decidedBy: actor,
+        reason: 'ok',
+        traceId: traceId || undefined,
+        requestId: requestId || undefined,
+        audit: {
+          notificationId,
+          deliveredCount: result.deliveredCount,
+          skippedCount: result.skippedCount || 0,
+          capBlockedCount,
+          capBlockedSummary,
+          capCountMode,
+          capCountSource,
+          capCountStrategy,
+          notificationCategory: notification.notificationCategory || null,
+          ctaCount: ctaSummary.ctaCount,
+          ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
+          ctaLabelHashes: ctaSummary.ctaLabelHashes,
+          ctaLabelLengths: ctaSummary.ctaLabelLengths,
+          lineMessageType: result.lineMessageType || 'text',
+          sendSummary: result.sendSummary || null
+        }
+      });
+    } catch (_err) {
+      // best-effort only
+    }
+  }
 
   return Object.assign({
     ok: true,
@@ -449,7 +457,8 @@ async function executeNotificationSend(params, deps) {
     ctaLinkRegistryIds: ctaSummary.ctaLinkRegistryIds,
     ctaLabelHashes: ctaSummary.ctaLabelHashes,
     ctaLabelLengths: ctaSummary.ctaLabelLengths,
-    lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text'
+    lineMessageType: result && result.lineMessageType ? result.lineMessageType : 'text',
+    sendSummary: result && result.sendSummary ? result.sendSummary : null
   }, result);
 }
 

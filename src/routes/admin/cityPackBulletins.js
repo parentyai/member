@@ -7,6 +7,7 @@ const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { enforceManagedFlowGuard } = require('./managedFlowGuard');
 const { resolveActor, resolveRequestId, resolveTraceId, parseJson, logRouteError } = require('./osContext');
+const { attachNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
 function writeJson(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -224,9 +225,10 @@ async function handleSendBulletin(req, res, context, bulletinId) {
   }
   const killSwitch = await getKillSwitch();
   try {
-    const result = await sendNotification({
+    const rawResult = await sendNotification({
       notificationId: bulletin.notificationId,
       killSwitch,
+      continueOnError: true,
       applyAttentionBudget: true,
       cityPackId: bulletin.cityPackId || null,
       cityPackModulesUpdated: Array.isArray(bulletin.modulesUpdated) ? bulletin.modulesUpdated : [],
@@ -234,11 +236,28 @@ async function handleSendBulletin(req, res, context, bulletinId) {
       requestId: context.requestId,
       actor: context.actor
     });
-    await cityPackBulletinsRepo.updateBulletin(bulletinId, {
-      status: 'sent',
-      sentAt: new Date().toISOString(),
-      deliveredCount: Number(result.deliveredCount) || 0
-    });
+    const result = attachNotificationSendSummary(rawResult);
+    const partialFailure = result.sendSummary && result.sendSummary.partialFailure === true;
+    await cityPackBulletinsRepo.updateBulletin(bulletinId, partialFailure
+      ? {
+        status: 'approved',
+        sendResult: {
+          ok: false,
+          reason: 'send_partial_failure',
+          sendSummary: result.sendSummary || null,
+          failureSample: Array.isArray(result.failureSample) ? result.failureSample.slice(0, 20) : []
+        },
+        deliveredCount: Number(result.deliveredCount) || 0
+      }
+      : {
+        status: 'sent',
+        sentAt: new Date().toISOString(),
+        deliveredCount: Number(result.deliveredCount) || 0,
+        sendResult: {
+          ok: true,
+          sendSummary: result.sendSummary || null
+        }
+      });
     await appendAuditLog({
       actor: context.actor,
       action: 'city_pack.bulletin.send',
@@ -250,14 +269,23 @@ async function handleSendBulletin(req, res, context, bulletinId) {
         cityPackId: bulletin.cityPackId || null,
         notificationId: bulletin.notificationId || null,
         deliveredCount: Number(result.deliveredCount) || 0,
+        skippedCount: Number(result.skippedCount) || 0,
+        failedCount: Number(result.failedCount) || 0,
+        partialFailure,
+        sendSummary: result.sendSummary || null,
         modulesUpdatedCount: Array.isArray(bulletin.modulesUpdated) ? bulletin.modulesUpdated.length : 0
       }
     });
-    writeJson(res, 200, {
-      ok: true,
+    writeJson(res, partialFailure ? 207 : 200, {
+      ok: partialFailure ? false : true,
+      partial: partialFailure,
+      reason: partialFailure ? 'send_partial_failure' : null,
       traceId: context.traceId,
       bulletinId,
-      deliveredCount: Number(result.deliveredCount) || 0
+      deliveredCount: Number(result.deliveredCount) || 0,
+      skippedCount: Number(result.skippedCount) || 0,
+      failedCount: Number(result.failedCount) || 0,
+      sendSummary: result.sendSummary || null
     });
   } catch (err) {
     if (isKillSwitchError(err)) {

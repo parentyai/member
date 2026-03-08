@@ -52,6 +52,19 @@ Task と Notification の連携契約（add-only）。
   - `checkedAt`
   - `blockedReason`
 
+## Send Plane Summary (add-only)
+- 送信結果は `sendSummary` を追加で保持し、以下を最低限返す:
+  - `status` (`completed|completed_with_failures`)
+  - `partialFailure` (`true|false`)
+  - `totalRecipients`
+  - `attemptedRecipients`
+  - `deliveredCount`
+  - `skippedCount`
+  - `failedCount`
+- `partialFailure=true` の場合:
+  - route は `207` を返す
+  - 再実行は `deliveryId` 冪等制御で duplicate send を防止する
+
 ## planHash
 - task nudge の planHash:
   - `sha256(taskId + ruleId + dueAtBucket + templateVersion)`

@@ -288,14 +288,22 @@ STOP の方針:
 1. `POST /internal/jobs/journey-todo-reminder`
   - 全件成功: `200`, `ok=true`, `status=completed`
   - 部分失敗: `207`, `ok=false`, `status=completed_with_failures`, `partialFailure=true`
+  - `sendSummary` を確認: `totalRecipients/attemptedRecipients/deliveredCount/skippedCount/failedCount`
 2. `POST /api/admin/os/notifications/send/execute`
   - 全件成功: `200`, `ok=true`
   - 部分失敗: `207`, `ok=false`, `partial=true`, `reason=send_partial_failure`
-3. 監視:
+  - `sendSummary.partialFailure=true` の場合は execute 再試行時に `deliveryId` 冪等制御で重複送信を防ぐ
+3. `POST /api/admin/city-pack-bulletins/:id/send`
+  - 全件成功: `200`, bulletin `status=sent`
+  - 部分失敗: `207`, `ok=false`, `partial=true`, bulletin `status=approved` のまま再送待ち
+4. `POST /api/admin/emergency/bulletins/:id/approve`
+  - 全件成功: `200`, bulletin `status=sent`
+  - 部分失敗: `207`, `ok=false`, `partial=true`, bulletin `status=approved` のまま再送待ち
+5. 監視:
   - `failedCount`
   - `failureSample`
   - `reason=send_partial_failure`
-4. outcome contract:
+6. outcome contract:
   - JSON route は `outcome.state` を併せて確認する（`success|degraded|partial|error|blocked`）。
   - プレーン/redirect route は `x-member-outcome-state` ヘッダを確認する。
   - `ok=true` だけで成功判定しない。`degraded/partial` は別扱いで運用判断する。

@@ -321,6 +321,7 @@ async function handleRejectBulletin(req, res, context, bulletinId) {
 
 function resolveStatusCodeFromApproveResult(result) {
   if (!result || result.ok === true) return 200;
+  if (result.partial === true || result.reason === 'send_partial_failure') return 207;
   if (result.blocked) return 409;
   if (result.reason === 'GUARD_BLOCK_WARN_LINK') return 409;
   if (result.reason === 'MISSING_LINK_REGISTRY_ID') return 409;

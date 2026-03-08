@@ -28,6 +28,14 @@ function request({ port, method, path, headers, body }) {
   });
 }
 
+function createFreshServer() {
+  const indexPath = require.resolve('../../src/index');
+  const routePath = require.resolve('../../src/routes/admin/cityPackBulletins');
+  delete require.cache[indexPath];
+  delete require.cache[routePath];
+  return require('../../src/index').createServer();
+}
+
 test('phase250: bulletins approve/reject/send keep state transitions with traceable audit logs', async (t) => {
   const prevMode = process.env.SERVICE_MODE;
   const prevAdminToken = process.env.ADMIN_OS_TOKEN;
@@ -67,8 +75,7 @@ test('phase250: bulletins approve/reject/send keep state transitions with tracea
     traceId: 'trace_phase250_bulletin_seed'
   });
 
-  const { createServer } = require('../../src/index');
-  const server = createServer();
+  const server = createFreshServer();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
 
@@ -135,4 +142,83 @@ test('phase250: bulletins approve/reject/send keep state transitions with tracea
   assert.ok(sendAudits.some((row) => row.action === 'city_pack.bulletin.send'));
   const rejectAudits = await auditLogsRepo.listAuditLogsByTraceId('trace_phase250_bulletin_reject', 50);
   assert.ok(rejectAudits.some((row) => row.action === 'city_pack.bulletin.reject'));
+});
+
+test('phase250: bulletin send returns 207 and keeps approved status on partial send', async (t) => {
+  const prevMode = process.env.SERVICE_MODE;
+  const prevAdminToken = process.env.ADMIN_OS_TOKEN;
+  if (prevMode !== undefined) delete process.env.SERVICE_MODE;
+  process.env.ADMIN_OS_TOKEN = 'phase250_admin_token';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const sendNotificationModule = require('../../src/usecases/notifications/sendNotification');
+  const originalSendNotification = sendNotificationModule.sendNotification;
+  sendNotificationModule.sendNotification = async () => ({
+    deliveredCount: 1,
+    skippedCount: 0,
+    failedCount: 1,
+    partialFailure: true,
+    status: 'completed_with_failures',
+    failureSample: [{ lineUserId: 'U1', stage: 'push_failed', error: 'line api error' }]
+  });
+
+  const notification = await notificationsRepo.createNotification({
+    title: 'phase250 bulletin partial',
+    body: 'body',
+    ctaText: 'CTA',
+    linkRegistryId: 'link_phase250_bulletin_partial',
+    scenarioKey: 'A',
+    stepKey: 'week',
+    target: { limit: 1 },
+    status: 'active'
+  });
+
+  await cityPackBulletinsRepo.createBulletin({
+    id: 'cpb_phase250_partial',
+    cityPackId: 'cp_phase250',
+    notificationId: notification.id,
+    summary: 'partial send',
+    traceId: 'trace_phase250_bulletin_partial',
+    status: 'approved'
+  });
+
+  const server = createFreshServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    sendNotificationModule.sendNotification = originalSendNotification;
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevMode === undefined) delete process.env.SERVICE_MODE;
+    else process.env.SERVICE_MODE = prevMode;
+    if (prevAdminToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevAdminToken;
+  });
+
+  const sendRes = await request({
+    port,
+    method: 'POST',
+    path: '/api/admin/city-pack-bulletins/cpb_phase250_partial/send',
+    headers: {
+      'content-type': 'application/json',
+      'x-admin-token': 'phase250_admin_token',
+      'x-actor': 'phase250_bulletin_test',
+      'x-trace-id': 'trace_phase250_bulletin_partial'
+    },
+    body: JSON.stringify({})
+  });
+  assert.strictEqual(sendRes.status, 207);
+  const sendBody = JSON.parse(sendRes.body);
+  assert.strictEqual(sendBody.ok, false);
+  assert.strictEqual(sendBody.partial, true);
+  assert.strictEqual(sendBody.reason, 'send_partial_failure');
+
+  const bulletin = await cityPackBulletinsRepo.getBulletin('cpb_phase250_partial');
+  assert.strictEqual(bulletin.status, 'approved');
+  assert.strictEqual(Number(bulletin.deliveredCount) || 0, 1);
+  assert.strictEqual(bulletin.sendResult && bulletin.sendResult.reason, 'send_partial_failure');
 });

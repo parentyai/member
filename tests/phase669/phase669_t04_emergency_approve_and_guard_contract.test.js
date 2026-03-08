@@ -198,3 +198,56 @@ test('phase669: validators enforce CTA=1, link_registry required, WARN and kill 
   });
 });
 
+test('phase669: approve reports partial when scenario send returns partialFailure', async (t) => {
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  t.after(() => {
+    clearDbForTest();
+    clearServerTimestampForTest();
+  });
+
+  const link = await linkRegistryRepo.createLink({
+    title: 'Emergency partial',
+    url: 'https://example.gov/partial',
+    domainClass: 'gov'
+  });
+
+  await emergencyBulletinsRepo.createBulletin({
+    id: 'emb_phase669_partial',
+    status: 'draft',
+    providerKey: 'nws_alerts',
+    regionKey: 'CA::statewide',
+    category: 'weather',
+    severity: 'CRITICAL',
+    headline: 'Partial alert',
+    linkRegistryId: link.id,
+    messageDraft: 'message',
+    evidenceRefs: { snapshotId: 'snap_partial', diffId: 'diff_partial' },
+    traceId: 'trace_phase669_partial'
+  });
+
+  const result = await approveEmergencyBulletin({
+    bulletinId: 'emb_phase669_partial',
+    actor: 'phase669_admin',
+    traceId: 'trace_phase669_partial'
+  }, {
+    getKillSwitch: async () => false,
+    createNotification: async (payload) => ({ id: `n_${payload.scenarioKey}_${payload.stepKey}` }),
+    sendNotification: async () => ({
+      deliveredCount: 1,
+      skippedCount: 0,
+      failedCount: 1,
+      partialFailure: true,
+      status: 'completed_with_failures'
+    })
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.partial, true);
+  assert.equal(result.reason, 'send_partial_failure');
+
+  const bulletin = await emergencyBulletinsRepo.getBulletin('emb_phase669_partial');
+  assert.equal(bulletin.status, 'approved');
+  assert.equal(bulletin.sendResult && bulletin.sendResult.reason, 'send_partial_failure');
+});

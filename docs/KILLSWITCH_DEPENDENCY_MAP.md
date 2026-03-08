@@ -10,7 +10,7 @@
 | `src/domain/validators.js` | 192 | `validateKillSwitch,` |
 | `src/infra/lineClient.js` | 19 | `const value = await systemFlagsRepo.getKillSwitch();` |
 | `src/routes/admin/cityPackBulletins.js` | 6 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/cityPackBulletins.js` | 225 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/cityPackBulletins.js` | 226 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackFeedback.js` | 4 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackFeedback.js` | 115 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/cityPackRequests.js` | 5 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
@@ -18,8 +18,8 @@
 | `src/routes/admin/cityPackReviewInbox.js` | 8 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
 | `src/routes/admin/cityPackReviewInbox.js` | 146 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/notifications.js` | 7 | `const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');` |
-| `src/routes/admin/notifications.js` | 127 | `const killSwitch = await getKillSwitch();` |
-| `src/routes/admin/notifications.js` | 179 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 128 | `const killSwitch = await getKillSwitch();` |
+| `src/routes/admin/notifications.js` | 180 | `const killSwitch = await getKillSwitch();` |
 | `src/routes/admin/osAlerts.js` | 102 | `systemFlagsRepo.getKillSwitch(),` |
 | `src/routes/admin/osDashboardKpi.js` | 212 | `systemFlagsRepo.getKillSwitch()` |
 | `src/routes/admin/osKillSwitch.js` | 5 | `const { getKillSwitch, setKillSwitch } = require('../../usecases/killSwitch/setKillSwitch');` |
@@ -53,15 +53,15 @@
 | `src/routes/webhookLine.js` | 2951 | `const customKillSwitchFn = options && typeof options.getKillSwitchFn === 'function'` |
 | `src/routes/webhookLine.js` | 2952 | `? options.getKillSwitchFn` |
 | `src/usecases/admin/opsSnapshot/computeOpsSystemSnapshot.js` | 374 | `safeQuery('killSwitch', () => systemFlagsRepo.getKillSwitch()),` |
-| `src/usecases/adminOs/executeNotificationSend.js` | 219 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 168 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 169 | `? deps.getKillSwitch` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 170 | `: systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 171 | `const killSwitchOn = await getKillSwitch();` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 333 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 334 | `? deps.getKillSwitch` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 335 | `: systemFlagsRepo.getKillSwitch;` |
-| `src/usecases/emergency/approveEmergencyBulletin.js` | 344 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/adminOs/executeNotificationSend.js` | 220 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 169 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 170 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 171 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 172 | `const killSwitchOn = await getKillSwitch();` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 334 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 335 | `? deps.getKillSwitch` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 336 | `: systemFlagsRepo.getKillSwitch;` |
+| `src/usecases/emergency/approveEmergencyBulletin.js` | 345 | `const killSwitchOn = await getKillSwitch();` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 86 | `const getKillSwitch = deps && typeof deps.getKillSwitch === 'function'` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 87 | `? deps.getKillSwitch` |
 | `src/usecases/emergency/fetchProviderSnapshot.js` | 88 | `: systemFlagsRepo.getKillSwitch;` |
@@ -86,7 +86,7 @@
 | `src/usecases/notifications/runNotificationTest.js` | 94 | `const killSwitch = await getKillSwitch();` |
 | `src/usecases/notifications/runNotificationTest.js` | 132 | `validateKillSwitch(killSwitch);` |
 | `src/usecases/notifications/sendNotification.js` | 12 | `validateKillSwitch,` |
-| `src/usecases/notifications/sendNotification.js` | 140 | `validateKillSwitch(payload.killSwitch);` |
+| `src/usecases/notifications/sendNotification.js` | 141 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/notifications/testSendNotification.js` | 8 | `const { validateKillSwitch } = require('../../domain/validators');` |
 | `src/usecases/notifications/testSendNotification.js` | 78 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/phase121/sendOpsNotice.js` | 47 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |

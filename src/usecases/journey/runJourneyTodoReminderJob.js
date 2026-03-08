@@ -16,6 +16,7 @@ const {
   isJourneyNotificationNarrowingEnabled,
   getJourneyPrimaryNotificationDailyMax
 } = require('../../domain/tasks/featureFlags');
+const { buildNotificationSendSummary } = require('../../domain/notificationSendSummary');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NARROWING_LOOKBACK_HOURS = 72;
@@ -563,10 +564,19 @@ async function runJourneyTodoReminderJob(params, deps) {
   }
 
   const partialFailure = failedCount > 0;
+  const sendSummary = buildNotificationSendSummary({
+    deliveredCount: sentCount,
+    skippedCount,
+    failedCount,
+    partialFailure
+  }, {
+    totalRecipients: scannedCount
+  });
   const result = {
     ok: !partialFailure,
     status: partialFailure ? 'completed_with_failures' : 'completed',
     partialFailure,
+    sendSummary,
     runId: run.runId,
     policyVersionId,
     notificationNarrowingEnabled: narrowingEnabled,
