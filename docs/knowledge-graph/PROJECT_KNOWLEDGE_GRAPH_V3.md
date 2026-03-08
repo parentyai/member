@@ -1,9 +1,12 @@
 # PROJECT_KNOWLEDGE_GRAPH_V3
 
-- generatedAt: 2026-03-08T04:34:19.327Z
+- generatedAt: 2026-03-08T06:11:42.759Z
 - source: docs/knowledge-graph/*.md (existing artifacts only) + runtime_probe.json
 - firestoreRuntime: OBSERVED_RUNTIME
 - firestoreCollectionsObserved: 51
+- firestoreStaticCoverage: 51/89
+- firestoreStaticOnlyCollections: billing_lifecycle_automation_logs, city_pack_bulletins, city_pack_feedback, city_pack_metrics_daily, city_pack_template_library, city_pack_update_proposals, decision_drifts, emergency_bulletins, journey_branch_queue, journey_graph_change_logs, journey_templates, llm_bandit_state, llm_contextual_bandit_state, municipality_schools, notices, notification_test_run_items, notification_test_runs, ops_assist_cache, ops_segments, ops_state, ops_states, phase2_reports_checklist_pending, phase2_reports_daily_events, phase2_reports_weekly_events, phase2_runs, phase22_kpi_snapshots, redac_membership_links, rich_menu_assignment_rules, rich_menu_bindings, rich_menu_phase_profiles, rich_menu_rate_buckets, rich_menu_templates, school_calendar_links, source_evidence, step_rule_change_logs, task_events, templates_v, user_checklists, user_city_pack_preferences, user_consents
+- firestoreRuntimeOnlyCollections: llm_policy_change_logs, ridac_membership_links, seed_runs
 - joinCardinalityExtension: PRESENT
 - ownershipExtension: PRESENT
 

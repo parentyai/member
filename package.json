@@ -16,7 +16,7 @@
     "seed:setup": "node tools/seed_templates_and_citypacks.js",
     "seed:trial": "node tools/seed_trial_setup.js",
     "seed:purge": "node tools/seed_trial_purge.js --seedRunId \"$SEED_RUN_ID\" --confirm SEED_DELETE",
-    "test:trace-smoke": "node tools/run_trace_smoke.js",
+    "test:trace-smoke": "TRACE_SMOKE_WRITE_EVIDENCE=0 TRACE_SMOKE_EVIDENCE_PATH=/tmp/trace_smoke_evidence.md node tools/run_trace_smoke.js",
     "test:ops-smoke": "node tools/run_ops_smoke.js",
     "ops:stg-e2e": "node tools/run_stg_notification_e2e_checklist.js",
     "ops:track-click-latency": "node tools/track_click_latency_probe.js",

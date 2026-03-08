@@ -11,6 +11,7 @@ const {
 
 const PATHS = Object.freeze({
   scope: path.join(KG_DIR, 'PROJECT_SCOPE.md'),
+  firestoreRuntime: path.join(KG_DIR, 'FIRESTORE_RUNTIME_MAP.md'),
   apiOperation: path.join(KG_DIR, 'API_OPERATION_MAP.md'),
   permissionMatrix: path.join(KG_DIR, 'PROJECT_PERMISSION_MATRIX.md'),
   relations: path.join(KG_DIR, 'ENTITY_RELATIONS.md'),
@@ -239,8 +240,17 @@ function writePermissionOperationMap(metadata, permissionRows) {
   writeText(OUTPUTS.permissionOperation, lines.join('\n'));
 }
 
-function buildMasterV3Doc(runtimeProbe, counts, status) {
+function buildMasterV3Doc(runtimeProbe, counts, status, firestoreMeta) {
   const firestore = runtimeProbe && runtimeProbe.firestore ? runtimeProbe.firestore : {};
+  const staticCoverage = firestoreMeta && firestoreMeta.staticVsRuntimeCoverage
+    ? firestoreMeta.staticVsRuntimeCoverage
+    : 'UNOBSERVED_RUNTIME';
+  const staticOnlyCollections = firestoreMeta && firestoreMeta.staticOnlyCollections
+    ? firestoreMeta.staticOnlyCollections
+    : 'UNOBSERVED_RUNTIME';
+  const runtimeOnlyCollections = firestoreMeta && firestoreMeta.runtimeOnlyCollections
+    ? firestoreMeta.runtimeOnlyCollections
+    : 'UNOBSERVED_RUNTIME';
   const lines = [];
   lines.push('# PROJECT_KNOWLEDGE_GRAPH_V3');
   lines.push('');
@@ -248,6 +258,9 @@ function buildMasterV3Doc(runtimeProbe, counts, status) {
   lines.push('- source: docs/knowledge-graph/*.md (existing artifacts only) + runtime_probe.json');
   lines.push(`- firestoreRuntime: ${firestore.status || 'UNOBSERVED_RUNTIME'}`);
   lines.push(`- firestoreCollectionsObserved: ${typeof firestore.collectionCount === 'number' ? firestore.collectionCount : 'UNOBSERVED_RUNTIME'}`);
+  lines.push(`- firestoreStaticCoverage: ${staticCoverage}`);
+  lines.push(`- firestoreStaticOnlyCollections: ${staticOnlyCollections}`);
+  lines.push(`- firestoreRuntimeOnlyCollections: ${runtimeOnlyCollections}`);
   lines.push(`- joinCardinalityExtension: ${status.relationsJoin}`);
   lines.push(`- ownershipExtension: ${status.ssotOwnership}`);
   lines.push('');
@@ -284,6 +297,7 @@ function buildMasterV3Doc(runtimeProbe, counts, status) {
 
 function run() {
   const scopeDoc = readDoc(PATHS.scope);
+  const firestoreRuntimeDoc = readDoc(PATHS.firestoreRuntime);
   const operationDoc = readDoc(PATHS.apiOperation);
   const permissionDoc = readDoc(PATHS.permissionMatrix);
   const relationsDoc = readDoc(PATHS.relations);
@@ -291,6 +305,7 @@ function run() {
   const runtimeProbe = readJson(PATHS.runtimeProbe, {});
 
   const metadata = parseMetadata(scopeDoc.lines);
+  const firestoreMeta = parseMetadata(firestoreRuntimeDoc.lines);
   const operationTable = findTableByHeaders(
     parseTablesWithLine(operationDoc.lines, 0),
     ['Operation', 'API', 'Method', 'Entity', 'WriteFields', 'Evidence']
@@ -326,7 +341,8 @@ function run() {
       {
         relationsJoin: relationHasJoin ? 'PRESENT' : 'MISSING',
         ssotOwnership: ssotHasOwnership ? 'PRESENT' : 'MISSING'
-      }
+      },
+      firestoreMeta
     )
   );
 
