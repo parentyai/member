@@ -178,13 +178,15 @@
 - 既定動作:
   - `ADMIN_OS_TOKEN` を `env` -> `token file` -> Secret Manager（`ADMIN_OS_TOKEN`）の順で解決
   - `FIRESTORE_PROJECT_ID` を env / gcloud config から解決
+  - Firestore read-only probe が `ADC_REAUTH_REQUIRED` の場合は `gcloud auth application-default login` を自動起動して再認証を促す
   - `http://127.0.0.1:18080/admin/login` を開く
   - token をクリップボードへコピー（対応OSのみ）
-  - local preflight バナーは既定で `off`（`ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=0`）
+  - local preflight バナーは既定で `on`（`ENABLE_ADMIN_LOCAL_PREFLIGHT_V1=1`）
 - 主なオプション:
   - `npm run admin:open -- --preflight=on`
   - `npm run admin:open -- --port=8080 --project-id=<your-project-id>`
   - `npm run admin:open -- --no-open --no-copy`
+  - `npm run admin:open -- --no-adc-repair`
 
 ### 判定
 - `ready=true`: 実装/データ条件を確認する

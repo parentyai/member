@@ -5,6 +5,7 @@ const http = require('http');
 const { spawn, spawnSync } = require('child_process');
 const { createHash } = require('crypto');
 const { resolveFirestoreProjectId } = require('../src/infra/firestore');
+const { runLocalPreflight } = require('./admin_local_preflight');
 
 const DEFAULT_PORT = 18080;
 const DEFAULT_ENV_NAME = 'stg';
@@ -20,10 +21,11 @@ function parseArgs(argv) {
     host: DEFAULT_HOST,
     noOpen: false,
     noCopy: false,
+    noAdcRepair: false,
     projectId: '',
     token: '',
     tokenFile: '',
-    preflight: 'off'
+    preflight: 'on'
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -32,6 +34,7 @@ function parseArgs(argv) {
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--no-open') out.noOpen = true;
     else if (arg === '--no-copy') out.noCopy = true;
+    else if (arg === '--no-adc-repair') out.noAdcRepair = true;
     else if (arg === '--preflight=on') out.preflight = 'on';
     else if (arg === '--preflight=off') out.preflight = 'off';
     else if (arg.startsWith('--port=')) out.port = Number(arg.slice('--port='.length)) || DEFAULT_PORT;
@@ -56,7 +59,8 @@ function printHelp() {
       '  --project-id=<id>        Firestore/GCP project id override',
       '  --token=<value>          ADMIN_OS_TOKEN override',
       '  --token-file=<path>      Read ADMIN_OS_TOKEN from file',
-      '  --preflight=on|off       Enable/disable local preflight banner (default: off)',
+      '  --preflight=on|off       Enable/disable local preflight banner (default: on)',
+      '  --no-adc-repair          Skip automatic ADC reauth when expired',
       '  --no-open                Do not open browser automatically',
       '  --no-copy                Do not copy token to clipboard',
       '  -h, --help               Show this help',
@@ -241,6 +245,64 @@ function applyLocalAccessActions(loginUrl, token, opts) {
   }
 }
 
+function resolveProbeClassification(preflightResult) {
+  const checks = preflightResult && typeof preflightResult === 'object'
+    ? preflightResult.checks
+    : null;
+  const probe = checks && typeof checks.firestoreProbe === 'object'
+    ? checks.firestoreProbe
+    : null;
+  const raw = probe && (probe.classification || probe.code)
+    ? (probe.classification || probe.code)
+    : '';
+  return String(raw || '').trim().toUpperCase();
+}
+
+async function maybeRepairAdcForLocalReadPath(opts, projectId) {
+  if (opts.noAdcRepair) return { attempted: false, skipped: 'disabled' };
+  if (!projectId) return { attempted: false, skipped: 'project_id_unavailable' };
+
+  const probeEnv = Object.assign({}, process.env, {
+    FIRESTORE_PROJECT_ID: projectId
+  });
+  const before = await runLocalPreflight({
+    env: probeEnv,
+    allowGcloudProjectIdDetect: true
+  });
+  const beforeClassification = resolveProbeClassification(before);
+  if (beforeClassification !== 'ADC_REAUTH_REQUIRED') {
+    return { attempted: false, skipped: 'not_required', beforeClassification };
+  }
+
+  process.stdout.write('[admin:open] ADC expired; launching browser for gcloud application-default login\n');
+  const loginRes = runCommand('gcloud', ['auth', 'application-default', 'login'], {
+    stdio: 'inherit'
+  });
+  if (loginRes.status !== 0) {
+    throw new Error('ADC再認証に失敗しました。gcloud auth application-default login を手動実行してください。');
+  }
+  const tokenRes = runCommand('gcloud', ['auth', 'application-default', 'print-access-token']);
+  if (tokenRes.status !== 0 || !String(tokenRes.stdout || '').trim()) {
+    throw new Error('ADC再認証後のアクセストークン確認に失敗しました。gcloud auth application-default print-access-token を確認してください。');
+  }
+
+  const after = await runLocalPreflight({
+    env: probeEnv,
+    allowGcloudProjectIdDetect: true
+  });
+  const afterClassification = resolveProbeClassification(after);
+  if (afterClassification === 'ADC_REAUTH_REQUIRED') {
+    throw new Error('ADC再認証後も Firestore read-only probe が失敗しています。service account 鍵または権限設定を確認してください。');
+  }
+
+  return {
+    attempted: true,
+    repaired: true,
+    beforeClassification,
+    afterClassification
+  };
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
@@ -252,6 +314,8 @@ async function main() {
   if (!project.projectId) {
     throw new Error('project id を解決できませんでした。--project-id か FIRESTORE_PROJECT_ID を指定してください。');
   }
+
+  const adcRepair = await maybeRepairAdcForLocalReadPath(opts, project.projectId);
 
   const tokenResolved = resolveAdminToken(opts);
   if (!tokenResolved.token) {
@@ -280,6 +344,7 @@ async function main() {
       `[admin:open] projectId=${project.projectId} (${project.source || 'unknown'})`,
       `[admin:open] tokenSource=${tokenResolved.source} sha256=${digestPrefix(tokenResolved.token)}...`,
       `[admin:open] url=${loginUrl}`,
+      `[admin:open] adc=${adcRepair.attempted ? 'repaired' : 'ok'}`,
       `[admin:open] preflight=${serverEnv.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1 === '0' ? 'off' : 'on'}`,
       ''
     ].join('\n')
@@ -335,5 +400,7 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   resolveProjectId,
-  resolveAdminToken
+  resolveAdminToken,
+  maybeRepairAdcForLocalReadPath,
+  resolveProbeClassification
 };
