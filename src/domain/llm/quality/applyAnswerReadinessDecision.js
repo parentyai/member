@@ -1,0 +1,68 @@
+'use strict';
+
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function normalizeDecision(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (normalized === 'hedged' || normalized === 'clarify' || normalized === 'refuse') return normalized;
+  return 'allow';
+}
+
+function trimForLineMessage(value) {
+  const text = normalizeText(value);
+  if (!text) return '';
+  return text.length > 420 ? `${text.slice(0, 420)}…` : text;
+}
+
+function applyAnswerReadinessDecision(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const decision = normalizeDecision(payload.decision);
+  const replyText = normalizeText(payload.replyText);
+  const clarifyText = normalizeText(payload.clarifyText)
+    || 'まず対象手続きと期限を1つずつ教えてください。そこから案内を具体化します。';
+  const refuseText = normalizeText(payload.refuseText)
+    || 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを一緒に整理します。';
+  const hedgeSuffix = normalizeText(payload.hedgeSuffix)
+    || '補足: 情報は更新されるため、最終確認をお願いします。';
+
+  if (decision === 'clarify') {
+    return {
+      decision,
+      replyText: trimForLineMessage(clarifyText),
+      enforced: true
+    };
+  }
+
+  if (decision === 'refuse') {
+    return {
+      decision,
+      replyText: trimForLineMessage(refuseText),
+      enforced: true
+    };
+  }
+
+  if (decision === 'hedged') {
+    const base = replyText || clarifyText;
+    const withHedge = base.includes('最終確認')
+      ? base
+      : `${base}\n\n${hedgeSuffix}`;
+    return {
+      decision,
+      replyText: trimForLineMessage(withHedge),
+      enforced: true
+    };
+  }
+
+  return {
+    decision,
+    replyText: trimForLineMessage(replyText || clarifyText),
+    enforced: false
+  };
+}
+
+module.exports = {
+  applyAnswerReadinessDecision
+};

@@ -1,6 +1,7 @@
 'use strict';
 
 const { sanitizePaidMainReply } = require('../conversation/paidReplyGuard');
+const { applyAnswerReadinessDecision } = require('../quality/applyAnswerReadinessDecision');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -33,6 +34,8 @@ function finalizeCandidate(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const selected = payload.selected && typeof payload.selected === 'object' ? payload.selected : {};
   const verificationOutcome = normalizeText(payload.verificationOutcome) || 'passed';
+  const readinessDecision = normalizeText(payload.readinessDecision) || 'allow';
+  const readinessSafeResponseMode = normalizeText(payload.readinessSafeResponseMode) || 'answer';
   const contradictionFlags = Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [];
   const fallbackText = normalizeText(payload.fallbackText)
     || '状況を整理しながら進めます。優先手続きを1つ決めて進めましょう。';
@@ -48,7 +51,14 @@ function finalizeCandidate(params) {
       ? 'まず対象手続きと期限を1つずつ教えてください。'
       : ''
   });
-  const replyText = trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText;
+  const guardedReplyText = trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText;
+  const readinessApplied = applyAnswerReadinessDecision({
+    decision: readinessDecision,
+    replyText: guardedReplyText,
+    clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。',
+    refuseText: 'この内容は安全に断定できないため、公式窓口での最終確認をお願いします。必要なら確認ポイントを整理します。'
+  });
+  const replyText = trimForPaidLineMessage(readinessApplied.replyText) || fallbackText;
 
   return {
     replyText,
@@ -62,7 +72,10 @@ function finalizeCandidate(params) {
       verificationOutcome,
       contradictionFlags: contradictionFlags.slice(0, 8),
       candidateId: selected.id || selected.kind || null,
-      candidateKind: selected.kind || null
+      candidateKind: selected.kind || null,
+      readinessDecision: readinessApplied.decision,
+      readinessSafeResponseMode,
+      readinessEnforced: readinessApplied.enforced === true
     }
   };
 }

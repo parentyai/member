@@ -29,6 +29,7 @@ const { evaluateCounterfactualChoice } = require('../../../domain/llm/bandit/cou
 const { resolveIntentRiskTier } = require('../../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../../domain/llm/knowledge/computeSourceReadiness');
 const { evaluateAnswerReadiness } = require('../../../domain/llm/quality/evaluateAnswerReadiness');
+const { applyAnswerReadinessDecision } = require('../../../domain/llm/quality/applyAnswerReadinessDecision');
 
 const CONTEXT_VERSION = 'concierge_ctx_v1';
 
@@ -627,7 +628,14 @@ async function composeConciergeReply(params) {
     maxUrls: policy.maxUrls
   });
 
-  const replyText = trimForLineMessage(lintResult.text || mergedReply);
+  const lintedReplyText = trimForLineMessage(lintResult.text || mergedReply);
+  const readinessApplied = applyAnswerReadinessDecision({
+    decision: readinessResult.decision,
+    replyText: lintedReplyText,
+    clarifyText: 'まず対象手続きと期限を1つずつ教えてください。そこから次の一手を具体化します。',
+    refuseText: 'この内容は安全に断定できないため、公式窓口で最終確認してください。必要なら確認ポイントを整理します。'
+  });
+  const replyText = trimForLineMessage(readinessApplied.replyText || lintedReplyText);
   const featureHash = buildFeatureHash({
     contextVersion: CONTEXT_VERSION,
     phase: contextSnapshot && contextSnapshot.phase,
@@ -681,7 +689,7 @@ async function composeConciergeReply(params) {
     readinessSafeResponseMode: readinessResult.safeResponseMode,
     unsupportedClaimCount: readinessResult.qualitySnapshot.unsupportedClaimCount,
     contradictionDetected: readinessResult.qualitySnapshot.contradictionDetected === true,
-    answerReadinessLogOnly: true
+    answerReadinessLogOnly: false
   });
 
   return {

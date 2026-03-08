@@ -5,7 +5,7 @@ const { test } = require('node:test');
 
 const { answerFaqFromKb } = require('../../src/usecases/faq/answerFaqFromKb');
 
-test('phase749: FAQ blocked audit includes answer readiness log-only fields', async () => {
+test('phase749: FAQ blocked audit includes enforced answer readiness fields', async () => {
   const audits = [];
   const result = await answerFaqFromKb({
     question: '学校手続きについて教えてください',
@@ -47,7 +47,7 @@ test('phase749: FAQ blocked audit includes answer readiness log-only fields', as
   const blockedAudit = audits.find((entry) => entry && entry.action === 'llm_faq_answer_blocked');
   assert.ok(blockedAudit, 'blocked audit should exist');
   const summary = blockedAudit.payloadSummary || {};
-  assert.equal(summary.answerReadinessLogOnly, true);
+  assert.equal(summary.answerReadinessLogOnly, false);
   assert.equal(typeof summary.readinessDecision, 'string');
   assert.ok(Array.isArray(summary.readinessReasonCodes));
   assert.equal(typeof summary.readinessSafeResponseMode, 'string');

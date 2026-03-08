@@ -262,6 +262,8 @@ async function runPaidConversationOrchestrator(params) {
     selected: verified.selected,
     verificationOutcome: verified.verificationOutcome,
     contradictionFlags: verified.contradictionFlags,
+    readinessDecision: readinessResult.decision,
+    readinessSafeResponseMode: readinessResult.safeResponseMode,
     fallbackText: '状況を整理しながら進めます。優先する手続きを1つ決めましょう。'
   });
 
@@ -309,7 +311,7 @@ async function runPaidConversationOrchestrator(params) {
       readinessSafeResponseMode: readinessResult.safeResponseMode,
       unsupportedClaimCount,
       contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
-      answerReadinessLogOnly: true,
+      answerReadinessLogOnly: false,
       judgeWinner: judged.judgeWinner,
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,

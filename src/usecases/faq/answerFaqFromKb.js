@@ -339,7 +339,7 @@ function buildAuditSummaryBase(params) {
     contradictionDetected: answerReadiness.qualitySnapshot
       ? answerReadiness.qualitySnapshot.contradictionDetected === true
       : false,
-    answerReadinessLogOnly: true,
+    answerReadinessLogOnly: payload.answerReadinessLogOnly === true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -669,6 +669,21 @@ async function answerFaqFromKb(params, deps) {
     const blockedReason = sourceReadiness.sourceReadinessDecision === 'refuse'
       ? 'source_readiness_refuse'
       : 'source_readiness_clarify';
+    blocked = buildBlocked({
+      blockedReason,
+      blockedReasonCategory: toBlockedReasonCategory(blockedReason),
+      fallbackActions,
+      suggestedFaqs,
+      kbMeta,
+      policySnapshotVersion: POLICY_SNAPSHOT_VERSION,
+      traceId,
+      llmStatus: blockedReason,
+      serverTime
+    });
+  } else if (answerReadiness.decision === 'refuse' || answerReadiness.decision === 'clarify') {
+    const blockedReason = answerReadiness.decision === 'refuse'
+      ? 'answer_readiness_refuse'
+      : 'answer_readiness_clarify';
     blocked = buildBlocked({
       blockedReason,
       blockedReasonCategory: toBlockedReasonCategory(blockedReason),
