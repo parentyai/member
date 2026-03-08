@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T20:30:38-05:00",
-  "gitCommit": "292403dcf4fc0d7cc0ec5248e627eaedc782aa56",
-  "branch": "codex/llm-v3-pr35-readiness-enforce",
-  "sourceDigest": "1683d2801458f82d13b23b1c405dfdd71e21a5459970c8b6120d7e29f1192207",
+  "generatedAt": "2026-03-07T20:56:54-05:00",
+  "gitCommit": "162cce77dbdf8b2e2136e09c4f19344413b7580b",
+  "branch": "codex/admin-ui-fix-adc-recovery",
+  "sourceDigest": "a0bccdbb39cf7d03f25e22cd8ea1bb5591a54abc2dbd36ddadcfeb0810374997",
   "counts": {
     "endpoints": 289,
     "routes": 128,
@@ -71,7 +71,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/feature_map.json",
-      "sha256": "a178f00acd5a43232a58575909074c937cc0c645889132a769bce1d7e14e4bd5",
+      "sha256": "f5396bf6639891bff9af053a44579afd829141334d1850ed4ce98b1b78867b3c",
       "bytes": 76672
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "8fced4ebe589ef38d4efd1d8e27656592ad0c8ef01dc0df4f75814543398086a",
+      "sha256": "213c2d376aded83f8599daa1a1461fff53926f73a71057591ac358b3b0cedfd9",
       "bytes": 443850
     },
     {
