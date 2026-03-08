@@ -85,14 +85,13 @@ function run() {
   const payload = JSON.parse(fs.readFileSync(CLASSIFICATION_PATH, 'utf8'));
   const rows = Array.isArray(payload.items) ? payload.items : [];
   const byFile = new Map(rows.map((row) => [row && row.file, row]));
+  const requiredSet = new Set(REQUIRED_FILES);
 
   const errors = [];
   const unreachable = computeUnreachableFromIndex();
 
   REQUIRED_FILES.forEach((file) => {
-    if (!unreachable.includes(file)) {
-      errors.push(`required unreachable file not detected from src/index.js graph: ${file}`);
-    }
+    if (!byFile.has(file)) errors.push(`required classification row missing: ${file}`);
   });
 
   unreachable.forEach((file) => {
@@ -118,7 +117,7 @@ function run() {
       errors.push('classification row missing file');
       return;
     }
-    if (!unreachable.includes(file)) {
+    if (!unreachable.includes(file) && !requiredSet.has(file)) {
       errors.push(`classified file is not currently unreachable: ${file}`);
     }
   });

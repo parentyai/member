@@ -1,6 +1,7 @@
 'use strict';
 
 const linkRegistryRepo = require('../../repos/firestore/linkRegistryRepo');
+const eventsRepo = require('../../repos/firestore/eventsRepo');
 const { updateLink } = require('../../usecases/linkRegistry/updateLink');
 const { checkLinkHealth } = require('../../usecases/linkRegistry/checkLinkHealth');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
@@ -16,6 +17,12 @@ function normalizeLimit(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return 50;
   return Math.min(Math.floor(num), 200);
+}
+
+function normalizeShadowLimit(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 20;
+  return Math.min(Math.floor(num), 100);
 }
 
 function resolveHost(value) {
@@ -74,6 +81,77 @@ async function handleList(req, res, actor, traceId, requestId) {
   res.end(JSON.stringify({ ok: true, traceId, items }));
 }
 
+function normalizeShadowItem(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const ref = row.ref && typeof row.ref === 'object' ? row.ref : {};
+  const shadow = row.shadow && typeof row.shadow === 'object' ? row.shadow : {};
+  const scored = Array.isArray(shadow.items) ? shadow.items : [];
+  return {
+    eventId: row.id || null,
+    createdAt: row.createdAt || null,
+    traceId: row.traceId || shadow.traceId || null,
+    requestId: row.requestId || null,
+    lineUserId: row.lineUserId || null,
+    todoKey: ref.todoKey || null,
+    sortApplied: ref.sortApplied === true,
+    currentOrderLinkIds: Array.isArray(shadow.currentOrderLinkIds) ? shadow.currentOrderLinkIds : [],
+    rankedLinkIds: Array.isArray(shadow.rankedLinkIds) ? shadow.rankedLinkIds : [],
+    scores: scored.map((scoreRow) => {
+      const score = scoreRow && typeof scoreRow === 'object' ? scoreRow : {};
+      return {
+        linkId: score.linkId || null,
+        relevanceScore: Number.isFinite(Number(score.relevanceScore)) ? Number(score.relevanceScore) : null,
+        scoreBreakdown: score.scoreBreakdown && typeof score.scoreBreakdown === 'object' ? score.scoreBreakdown : {},
+        explanationCodes: Array.isArray(score.explanationCodes) ? score.explanationCodes : [],
+        legacyHealthy: score.legacyHealthy === true,
+        healthState: typeof score.healthState === 'string' && score.healthState.trim()
+          ? score.healthState.trim()
+          : 'UNKNOWN'
+      };
+    }),
+    raw: row
+  };
+}
+
+async function handleShadowRelevanceList(req, res, actor, traceId, requestId) {
+  const url = new URL(req.url, 'http://localhost');
+  const lineUserId = typeof url.searchParams.get('lineUserId') === 'string'
+    ? url.searchParams.get('lineUserId').trim()
+    : '';
+  const todoKey = typeof url.searchParams.get('todoKey') === 'string'
+    ? url.searchParams.get('todoKey').trim()
+    : '';
+  const limit = normalizeShadowLimit(url.searchParams.get('limit'));
+  if (!lineUserId) {
+    res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'lineUserId required' }));
+    return;
+  }
+  const rows = await eventsRepo.listEventsByType({
+    type: 'todo_vendor_shadow_scored',
+    lineUserId,
+    todoKey: todoKey || null,
+    limit,
+    scanLimit: Math.min(limit * 10, 1000)
+  });
+  const items = rows.map(normalizeShadowItem);
+  await writeVendorAudit({
+    actor,
+    action: 'vendors.shadow_relevance.list',
+    entityId: lineUserId,
+    traceId,
+    requestId,
+    payloadSummary: {
+      lineUserId,
+      todoKey: todoKey || null,
+      limit,
+      count: items.length
+    }
+  });
+  res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({ ok: true, traceId, items }));
+}
+
 async function handleEdit(req, res, actor, traceId, requestId, linkId, bodyText) {
   const body = parseJson(bodyText, res);
   if (!body) return;
@@ -127,6 +205,10 @@ async function handleVendors(req, res, bodyText) {
   const pathname = url.pathname;
   if (req.method === 'GET' && pathname === '/api/admin/vendors') {
     await handleList(req, res, actor, traceId, requestId);
+    return;
+  }
+  if (req.method === 'GET' && pathname === '/api/admin/vendors/shadow-relevance') {
+    await handleShadowRelevanceList(req, res, actor, traceId, requestId);
     return;
   }
   const actionMatch = pathname.match(/^\/api\/admin\/vendors\/([^/]+)\/(edit|activate|disable)$/);

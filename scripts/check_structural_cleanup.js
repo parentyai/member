@@ -46,7 +46,6 @@ const DELETED_FROZEN_FILES = Object.freeze([
 ]);
 
 const STATIC_UNREACHABLE_ALLOWLIST = Object.freeze([
-  'src/repos/firestore/indexFallbackPolicy.js',
   'src/shared/phaseDocPathResolver.js'
 ]);
 

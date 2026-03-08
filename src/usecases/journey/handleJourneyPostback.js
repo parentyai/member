@@ -199,6 +199,7 @@ async function handleJourneyPostback(params, deps) {
       text: `TODO詳細:${action.todoKey || ''}`,
       traceId: payload.traceId || null,
       requestId: payload.requestId || null,
+      actor: normalizeText(payload.actor) || lineUserId,
       attribution: buildTaskDetailAttribution(Object.assign({}, action || {}, payload || {}))
     }, deps);
   }
@@ -209,7 +210,8 @@ async function handleJourneyPostback(params, deps) {
     lineUserId,
     text,
     traceId: payload.traceId || null,
-    requestId: payload.requestId || null
+    requestId: payload.requestId || null,
+    actor: normalizeText(payload.actor) || lineUserId
   }, deps);
 }
 

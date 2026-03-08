@@ -3723,6 +3723,50 @@
                 </div>
               </div>
             </div>
+            <div class="panel section">
+              <div class="panel-title">Vendor Shadow Relevance (Current order vs Shadow score)</div>
+              <div class="panel-body">
+                <div class="note">表示順への即時反映は行わず、shadow算出結果のみを比較表示します。</div>
+                <div class="row">
+                  <div class="flex-1">
+                    <label for="vendor-shadow-line-user-id">LINEユーザーID</label>
+                    <input id="vendor-shadow-line-user-id" type="text" />
+                  </div>
+                  <div class="flex-1">
+                    <label for="vendor-shadow-todo-key">todoKey（任意）</label>
+                    <input id="vendor-shadow-todo-key" type="text" />
+                  </div>
+                  <div class="flex-1">
+                    <label for="vendor-shadow-limit">件数</label>
+                    <input id="vendor-shadow-limit" type="number" min="1" max="100" value="20" class="input-inline input-sm" />
+                  </div>
+                </div>
+                <div class="row row-top">
+                  <button id="vendor-shadow-reload" type="button">Shadow比較を更新</button>
+                </div>
+                <div class="table-scroll">
+                  <table class="table-compact">
+                    <thead>
+                      <tr>
+                        <th>作成時刻</th>
+                        <th>todoKey</th>
+                        <th>sort適用</th>
+                        <th>current order</th>
+                        <th>shadow rank</th>
+                        <th>top score</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vendor-shadow-rows"></tbody>
+                  </table>
+                </div>
+                <div class="note">Summary</div>
+                <pre id="vendor-shadow-summary">-</pre>
+                <details>
+                  <summary>RAW JSON</summary>
+                  <pre id="vendor-shadow-raw">-</pre>
+                </details>
+              </div>
+            </div>
             <div class="pane-grid vendors-legacy-block">
               <div class="pane-main">
 		                <details class="table-section section" open>

@@ -38,6 +38,7 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/SSOT_NOTIFICATION_PATTERN_REGISTRY.json`（通知テスト pattern registry SSOT）
 - `docs/SSOT_CITY_PACK_SECURITY_RULES.md`（City PackコレクションのSecurity Rules設計）
 - `docs/SSOT_CITY_PACK_EXTENSIONS_1_12.md`（City Pack拡張1〜12の依存順/安全契約）
+- `docs/SSOT_VENDOR_RELEVANCE_SHADOW_V1.md`（Vendor relevance shadow算出 / evidence契約）
 - `docs/SSOT_EMERGENCY_LAYER.md`（Emergency Layer のprovider/guard/job/UI契約）
 - `docs/CLEANUP_PLAN.md`（Struct Cleanup実施計画）
 - `docs/CLEANUP_DIFF_SUMMARY.md`（Struct Cleanup差分要約）
@@ -82,6 +83,8 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `scripts/check_firestore_indexes.js`（Firestore index 差分検知 / 作成plan出力）
 - `docs/REPO_AUDIT_INPUTS/state_transitions.json`（状態遷移SSOT / audit-core生成整合）
 - `tests/phase250/phase250_t07_city_pack_request_state_transitions_contract.test.js`（City Pack request lifecycleの契約検証）
+- `tests/phase250/phase250_t15_vendor_shadow_relevance_contract.test.js`（Vendor relevance shadow/flag契約）
+- `tests/phase250/phase250_t16_vendor_shadow_admin_api_contract.test.js`（Vendor shadow admin read model契約）
 - `docs/SSOT_RETENTION.md`（Retention方針 / dry-run削除ジョブ契約）
 - `docs/RETENTION_BUDGETS.md`（Retention未定義件数の増悪停止予算）
 - `docs/STRUCTURE_BUDGETS.md`（構造ドリフト件数の増悪停止予算）

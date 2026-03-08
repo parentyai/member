@@ -52,6 +52,14 @@ Purpose: operations decisions, readiness, and state tracking.
 ### `events/{id}` / `notifications/{id}` / `checklists/*` / `user_checklists/*`
 Purpose: product events, notification metadata, and checklist progress.
 
+Typical fields for `events/{id}` (vendor shadow add-only):
+- `lineUserId`, `type`, `ref`
+- `traceId`, `requestId`
+- `shadow.currentOrderLinkIds[]`
+- `shadow.rankedLinkIds[]`
+- `shadow.items[]` (`linkId`, `relevanceScore`, `scoreBreakdown`, `explanationCodes`)
+- `createdAt`
+
 Typical fields for `notifications/{id}` (add-only excerpts):
 - `title`, `body`, `ctaText`, `linkRegistryId`
 - `scenarioKey`, `stepKey`, `notificationCategory`
@@ -196,6 +204,9 @@ Typical fields:
 - `packClass` (`regional`/`nationwide`)
 - `language`（既定 `ja`）
 - `nationwidePolicy`（`packClass=nationwide` のとき `federal_only`）
+- Responsibility boundary（add-only）:
+- `packClass=regional`: 地域固有手続き（city/state/municipality）を担当
+- `packClass=nationwide` + `nationwidePolicy=federal_only`: 連邦レベル共通手続きのみを担当
 
 ### `city_pack_requests/{requestId}`
 Purpose: City Pack 生成リクエストの状態機械（LINE申告→草案→承認→有効化）。
@@ -219,6 +230,12 @@ Typical fields:
 - `errorCode`（fatal fail時）
 - `errorMessage`（fatal fail時）
 - `failedAt`（fatal fail時）
+
+Assignment-triggered recompute audit (add-only):
+- `audit_logs.action=journey.assignment_recompute.enqueued`
+- `audit_logs.action=journey.assignment_recompute.completed`
+- `audit_logs.action=journey.assignment_recompute.failed`
+- `payloadSummary.assignmentDate/departureDate/stage/error`
 
 ### `city_pack_feedback/{id}`
 Purpose: City Packの誤り報告（LINE→admin review）。

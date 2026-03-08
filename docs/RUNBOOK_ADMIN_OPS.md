@@ -114,6 +114,32 @@
 2. docs-only追記を分離している場合は `git revert <docs-commit-sha>` を追加実行。
 3. `npm run test:docs && npm test` を再実行して復旧を確認。
 
+### Vendor Relevance Shadow（Phase250 addendum）運用
+観測専用（既定）:
+1. `ENABLE_VENDOR_RELEVANCE_SHADOW_V1=1`
+2. `ENABLE_VENDOR_RELEVANCE_SORT_V1=0`
+3. `GET /api/admin/vendors/shadow-relevance?lineUserId=<LINE_USER_ID>&limit=20` で `currentOrderLinkIds` と `rankedLinkIds` を比較。
+4. `traceId` で `todo_vendor_shadow_scored` と `journey.todo_vendor.shadow_scored` を監査検索する。
+
+順位反映の段階導入:
+1. 対象環境のみ `ENABLE_VENDOR_RELEVANCE_SORT_V1=1` を設定。
+2. `journey.todo_vendor.shadow_scored.sort_applied` の監査件数を確認。
+3. 問題があれば即時 `ENABLE_VENDOR_RELEVANCE_SORT_V1=0` へ戻す。
+
+即時停止:
+1. `ENABLE_VENDOR_RELEVANCE_SHADOW_V1=0`
+2. `ENABLE_VENDOR_RELEVANCE_SORT_V1=0`
+
+### Auth Contract Hardening rollback
+1. まず test-only 変更で運用を止めずに差分可視化する（fail warning に留める）。
+2. 本番影響がある tightening を入れた場合は、route単位で revert する。
+3. 緊急時は `git revert <auth-contract-commit-sha>` を優先し、`npm run test:docs && npm test` で確認する。
+
+### SSOT Drift Gate を一時 non-blocking 化する手順
+1. CIで drift を検知したが運用を優先する場合、該当テストを warning モードに切替するコミットを分離する。
+2. non-blocking 期間中も `npm run test:docs` の出力を evidence として保存する。
+3. 一時措置解除時に、`feature_map` / `dependency_graph` / `DATA_MAP` の差分を同一PRで収束させる。
+
 ### High-risk Read Path 観測ログ（P0）
 - 対象クラスタ:
   - `city_pack_review_inbox`
