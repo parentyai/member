@@ -249,6 +249,22 @@ async function appendFallbackAudit(req, action, meta, extra) {
   }
 }
 
+async function appendLegacyAuthorityAudit(req, entityType, payloadSummary) {
+  try {
+    await appendAuditLog({
+      actor: resolveAuditActor(req),
+      action: 'canonical_authority.legacy_read_detected',
+      entityType,
+      entityId: 'global',
+      traceId: resolveHeader(req, 'x-trace-id') || undefined,
+      requestId: resolveHeader(req, 'x-request-id') || undefined,
+      payloadSummary: payloadSummary || {}
+    });
+  } catch (_err) {
+    // best effort only
+  }
+}
+
 async function handleUsersSummaryFiltered(req, res) {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -360,9 +376,18 @@ async function handleUsersSummaryFiltered(req, res) {
     const review = opsState
       ? {
           lastReviewedAt: formatTimestamp(opsState.lastReviewedAt),
-          lastReviewedBy: opsState.lastReviewedBy || null
+          lastReviewedBy: opsState.lastReviewedBy || null,
+          authoritySource: typeof opsState.authoritySource === 'string' ? opsState.authoritySource : null,
+          legacyReadUsed: Boolean(opsState.legacyReadUsed)
         }
       : null;
+    if (opsState && opsState.legacyReadUsed) {
+      await appendLegacyAuthorityAudit(req, 'ops_state', {
+        canonicalCollection: opsState.canonicalCollection || 'ops_states',
+        legacyCollection: opsState.legacyCollection || 'ops_state',
+        readCollection: opsState.collection || 'ops_state'
+      });
+    }
     await appendFallbackAudit(req, 'read_path.fallback.users_summary', meta, {
       scope: 'phase5_users_summary',
       snapshotMode: snapshotMode || null,

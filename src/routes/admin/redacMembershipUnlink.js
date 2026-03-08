@@ -8,8 +8,35 @@ const {
   extractLast4,
   computeRedacMembershipIdHash
 } = require('../../domain/redacMembershipId');
+const {
+  REDAC_CANONICAL_LINK_COLLECTION,
+  REDAC_LEGACY_LINK_COLLECTION,
+  logCanonicalAuthorityLegacyRead
+} = require('../../domain/canonicalAuthority');
 
-const LINKS_COLLECTION = 'redac_membership_links';
+async function readLinkByHashInTx(db, tx, hash) {
+  const canonicalRef = db.collection(REDAC_CANONICAL_LINK_COLLECTION).doc(hash);
+  const canonicalSnap = await tx.get(canonicalRef);
+  if (canonicalSnap.exists) {
+    return {
+      ref: canonicalRef,
+      collection: REDAC_CANONICAL_LINK_COLLECTION,
+      data: canonicalSnap.data() || {},
+      legacyReadUsed: false
+    };
+  }
+  const legacyRef = db.collection(REDAC_LEGACY_LINK_COLLECTION).doc(hash);
+  const legacySnap = await tx.get(legacyRef);
+  if (legacySnap.exists) {
+    return {
+      ref: legacyRef,
+      collection: REDAC_LEGACY_LINK_COLLECTION,
+      data: legacySnap.data() || {},
+      legacyReadUsed: true
+    };
+  }
+  return null;
+}
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -104,27 +131,32 @@ async function handleRedacMembershipUnlink(req, res, body) {
   }
 
   const db = getDb();
-  const linkRef = db.collection(LINKS_COLLECTION).doc(hash);
-
   const txResult = await db.runTransaction(async (tx) => {
-    const snap = await tx.get(linkRef);
-    if (!snap.exists) return { status: 'not_found' };
-    const data = snap.data() || {};
+    const link = await readLinkByHashInTx(db, tx, hash);
+    if (!link) return { status: 'not_found', legacyReadUsed: false };
+    const data = link.data || {};
     const lineUserId = typeof data.lineUserId === 'string' ? data.lineUserId : null;
 
-    tx.delete(linkRef);
+    tx.delete(link.ref);
 
     if (lineUserId) {
       const userRef = db.collection('users').doc(lineUserId);
       tx.set(userRef, {
         redacMembershipIdHash: null,
         redacMembershipIdLast4: null,
+        ridacMembershipIdHash: null,
+        ridacMembershipIdLast4: null,
         redacMembershipUnlinkedAt: serverTimestamp(),
         redacMembershipUnlinkedBy: 'ops'
       }, { merge: true });
     }
 
-    return { status: 'ok', lineUserId };
+    return {
+      status: 'ok',
+      lineUserId,
+      legacyReadUsed: Boolean(link.legacyReadUsed),
+      linkCollectionRead: link.collection
+    };
   });
 
   if (!txResult || txResult.status === 'not_found') {
@@ -147,6 +179,16 @@ async function handleRedacMembershipUnlink(req, res, body) {
   }
 
   const lineUserId = txResult.lineUserId || null;
+  const legacyReadUsed = Boolean(txResult.legacyReadUsed);
+  const linkCollectionRead = typeof txResult.linkCollectionRead === 'string'
+    ? txResult.linkCollectionRead
+    : REDAC_CANONICAL_LINK_COLLECTION;
+  if (legacyReadUsed) {
+    logCanonicalAuthorityLegacyRead('redac_membership.unlink', {
+      requestId,
+      legacyCollection: REDAC_LEGACY_LINK_COLLECTION
+    });
+  }
 
   try {
     await appendAuditLog({
@@ -156,7 +198,17 @@ async function handleRedacMembershipUnlink(req, res, body) {
       entityId: hash,
       traceId: requestId,
       requestId,
-      payloadSummary: { ok: true, redacMembershipIdLast4: last4, lineUserId }
+      payloadSummary: {
+        ok: true,
+        redacMembershipIdLast4: last4,
+        lineUserId,
+        authority: {
+          canonicalCollection: REDAC_CANONICAL_LINK_COLLECTION,
+          legacyCollection: REDAC_LEGACY_LINK_COLLECTION,
+          legacyReadUsed,
+          linkCollectionRead
+        }
+      }
     });
   } catch (err) {
     logRedacAdminBestEffortFailure('unlink_ok_audit', requestId, err);
@@ -175,7 +227,13 @@ async function handleRedacMembershipUnlink(req, res, body) {
   }
 
   res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ ok: true, lineUserId, redacMembershipIdLast4: last4 }));
+  res.end(JSON.stringify({
+    ok: true,
+    lineUserId,
+    redacMembershipIdLast4: last4,
+    legacyReadUsed,
+    linkCollectionRead
+  }));
 }
 
 module.exports = {

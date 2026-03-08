@@ -2,6 +2,10 @@
 
 const usersRepo = require('../../repos/firestore/usersRepo');
 const { appendAuditLog } = require('../audit/appendAuditLog');
+const {
+  resolveRedacMembershipFromRecord,
+  logCanonicalAuthorityLegacyRead
+} = require('../../domain/canonicalAuthority');
 
 function resolveTimestamp(value) {
   if (!value) return null;
@@ -15,12 +19,13 @@ function resolveTimestamp(value) {
 }
 
 function deriveStatus(user) {
-  const last4 = typeof user.redacMembershipIdLast4 === 'string' ? user.redacMembershipIdLast4 : null;
+  const resolved = resolveRedacMembershipFromRecord(user);
+  const last4 = resolved.last4;
   const has = Boolean(last4);
   const unlinkedAt = resolveTimestamp(user.redacMembershipUnlinkedAt);
-  if (has && last4) return { status: 'DECLARED', last4 };
-  if (!has && unlinkedAt) return { status: 'UNLINKED', last4: null };
-  return { status: 'NONE', last4: null };
+  if (has && last4) return { status: 'DECLARED', last4, authoritySource: resolved.source, legacyReadUsed: resolved.legacyReadUsed };
+  if (!has && unlinkedAt) return { status: 'UNLINKED', last4: null, authoritySource: resolved.source, legacyReadUsed: resolved.legacyReadUsed };
+  return { status: 'NONE', last4: null, authoritySource: resolved.source, legacyReadUsed: resolved.legacyReadUsed };
 }
 
 async function getRedacMembershipStatusForLine(params) {
@@ -38,6 +43,12 @@ async function getRedacMembershipStatusForLine(params) {
   }
 
   const derived = deriveStatus(user);
+  if (derived.legacyReadUsed) {
+    logCanonicalAuthorityLegacyRead('redac_membership.status_view.line', {
+      lineUserId,
+      requestId
+    });
+  }
 
   try {
     await appendAuditLog({
@@ -50,17 +61,24 @@ async function getRedacMembershipStatusForLine(params) {
       payloadSummary: {
         ok: true,
         status: derived.status,
-        redacMembershipIdLast4: derived.last4
+        redacMembershipIdLast4: derived.last4,
+        authoritySource: derived.authoritySource,
+        legacyReadUsed: derived.legacyReadUsed
       }
     });
   } catch (_err) {
     // best-effort only
   }
 
-  return { ok: true, status: derived.status, last4: derived.last4 };
+  return {
+    ok: true,
+    status: derived.status,
+    last4: derived.last4,
+    authoritySource: derived.authoritySource,
+    legacyReadUsed: derived.legacyReadUsed
+  };
 }
 
 module.exports = {
   getRedacMembershipStatusForLine
 };
-

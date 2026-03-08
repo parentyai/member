@@ -14,6 +14,7 @@ This document describes what data the Member system stores, where it is stored, 
 ## Canonical Naming Authority
 - canonical prefix is `redac_*` (legacy `ridac_*` は互換readのみ、new write禁止)
 - canonical collection is `ops_states` (legacy `ops_state` は互換readのみ、new write禁止)
+- legacy alias を read した場合は `canonical_authority` warning と audit payload (`legacyReadUsed`, `authoritySource`) を残す
 
 ## Stored Data (Firestore)
 ### `users/{lineUserId}`
@@ -40,6 +41,10 @@ Fields:
 - `redacMembershipIdLast4`: last 4 digits only
 - `lineUserId`: linked LINE user
 - `linkedAt`, `linkedBy`: link timestamp + actor (`user`/`ops`)
+
+Compatibility:
+- legacy collection `ridac_membership_links` は read fallback のみ。
+- write/unlink 実行時は canonical collection (`redac_membership_links`) を authority とし、legacy read 使用時は監査証跡を残す。
 
 ### `audit_logs/{id}`
 Purpose: append-only audit trail for sensitive operations and decision traces.

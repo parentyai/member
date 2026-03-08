@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T00:18:03-05:00",
-  "gitCommit": "e0e20b0e650977483bd7b2fb49821549a083b9e5",
-  "branch": "codex/member-next5-pr2-notification-plane",
-  "sourceDigest": "1a8608646892d1d8c559501078cbded2f41dafe23586d1ae901bf74533e5d3c3",
+  "generatedAt": "2026-03-08T00:49:11-05:00",
+  "gitCommit": "1d0270f2f68c18f28ac25386c6d8959fb7a59b26",
+  "branch": "codex/member-next5-pr3-canonical-authority",
+  "sourceDigest": "d74a995274b005b11ce114bf0aa1d103da4d02ee73173d781cb95ec938d4430c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

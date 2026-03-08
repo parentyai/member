@@ -20,6 +20,7 @@ const {
   resolveFallbackModeDefault,
   resolveFallbackMode
 } = require('../../domain/readModel/fallbackPolicy');
+const { resolveRedacMembershipFromRecord } = require('../../domain/canonicalAuthority');
 const { requireActor, resolveRequestId, resolveTraceId, logRouteError } = require('./osContext');
 
 const MONTHS_ALLOWED = new Set([1, 3, 6, 12, 36]);
@@ -280,12 +281,13 @@ async function computeDashboardKpis(windowMonths, scanLimit, options) {
       const createdAt = toMillis(row && row.createdAt);
       if (!Number.isFinite(createdAt) || createdAt < bucket.start || createdAt >= bucket.end) return;
       total += 1;
-      if (row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()) matched += 1;
+      const resolved = resolveRedacMembershipFromRecord(row);
+      if (resolved.hash) matched += 1;
     });
     if (!total) return 0;
     return Math.round((matched / total) * 1000) / 10;
   });
-  const membershipMatched = normalizedUsers.filter((row) => row && typeof row.redacMembershipIdHash === 'string' && row.redacMembershipIdHash.trim()).length;
+  const membershipMatched = normalizedUsers.filter((row) => resolveRedacMembershipFromRecord(row).hash).length;
 
   const notificationSeries = countByBuckets(normalizedNotifications, (row) => toMillis(row && row.createdAt), buckets);
   const notificationTotal = notificationSeries.reduce((sum, value) => sum + value, 0);

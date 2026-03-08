@@ -7,6 +7,7 @@ const { evaluateOpsStateCompleteness } = require('../phase24/opsStateCompletenes
 const { evaluateOpsDecisionCompleteness } = require('../phase24/opsDecisionCompleteness');
 const { evaluateOverallDecisionReadiness } = require('../phase24/overallDecisionReadiness');
 const opsStatesRepo = require('../../repos/firestore/opsStatesRepo');
+const { resolveRedacMembershipFromRecord } = require('../../domain/canonicalAuthority');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STALE_DAYS = 14;
@@ -59,7 +60,8 @@ async function getMemberSummary(params) {
   const nowMs = typeof payload.nowMs === 'number' ? payload.nowMs : Date.now();
   const hasNumber = hasMemberNumber(user);
   const stale = isMemberNumberStale(user, nowMs);
-  const redacLast4 = typeof user.redacMembershipIdLast4 === 'string' ? user.redacMembershipIdLast4 : null;
+  const redacResolved = resolveRedacMembershipFromRecord(user);
+  const redacLast4 = redacResolved.last4;
   const redacDeclaredAt = resolveTimestamp(user.redacMembershipDeclaredAt);
   const redacDeclaredBy = user.redacMembershipDeclaredBy === 'ops' ? 'ops' : (user.redacMembershipDeclaredBy === 'user' ? 'user' : null);
   const redacUnlinkedAt = resolveTimestamp(user.redacMembershipUnlinkedAt);
@@ -75,6 +77,8 @@ async function getMemberSummary(params) {
       redac: {
         hasRedacMembership: Boolean(redacLast4),
         redacMembershipIdLast4: redacLast4,
+        authoritySource: redacResolved.source,
+        legacyReadUsed: redacResolved.legacyReadUsed,
         redacMembershipDeclaredAt: redacDeclaredAt,
         redacMembershipDeclaredBy: redacDeclaredBy,
         redacMembershipUnlinkedAt: redacUnlinkedAt,

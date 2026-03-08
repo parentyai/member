@@ -114,6 +114,8 @@ test('phase177: redac status route returns sampled consistency summary', async (
   assert.strictEqual(body.ok, true);
   assert.strictEqual(body.secretConfigured, true);
   assert.strictEqual(body.sampleLimit, 50);
+  assert.strictEqual(body.authority.canonicalCollection, 'redac_membership_links');
+  assert.strictEqual(body.authority.legacyCollection, 'ridac_membership_links');
   assert.strictEqual(body.summary.status, 'WARN');
   assert.strictEqual(body.summary.usersSampled, 3);
   assert.strictEqual(body.summary.linksSampled, 2);
@@ -125,6 +127,61 @@ test('phase177: redac status route returns sampled consistency summary', async (
 
   const audits = await auditLogsRepo.listAuditLogsByTraceId('TRACE_REDAC_STATUS', 20);
   assert.ok(audits.some((item) => item.action === 'redac_membership.status.view'));
+});
+
+test('phase177: redac status route reports legacy authority reads when ridac aliases are sampled', async (t) => {
+  const prevToken = process.env.ADMIN_OS_TOKEN;
+  const prevSecret = process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET;
+  process.env.ADMIN_OS_TOKEN = 'test_admin_token';
+  process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET = 'test_redac_hmac_secret';
+
+  setDbForTest(createDbStub());
+  setServerTimestampForTest('SERVER_TIMESTAMP');
+
+  const db = getDb();
+  await db.collection('users').doc('U1').set({
+    createdAt: '2026-02-12T00:00:00.000Z',
+    ridacMembershipIdHash: 'RIDAC_HASH_1',
+    ridacMembershipIdLast4: '1001'
+  });
+  await db.collection('ridac_membership_links').doc('RIDAC_HASH_1').set({
+    lineUserId: 'U1',
+    ridacMembershipIdHash: 'RIDAC_HASH_1',
+    ridacMembershipIdLast4: '1001'
+  });
+
+  const { createServer } = require('../../src/index.js');
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  t.after(async () => {
+    await closeServer(server);
+    clearDbForTest();
+    clearServerTimestampForTest();
+    if (prevToken === undefined) delete process.env.ADMIN_OS_TOKEN;
+    else process.env.ADMIN_OS_TOKEN = prevToken;
+    if (prevSecret === undefined) delete process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET;
+    else process.env.REDAC_MEMBERSHIP_ID_HMAC_SECRET = prevSecret;
+  });
+
+  const res = await httpRequest({
+    port,
+    method: 'GET',
+    path: '/api/admin/os/redac/status?limit=50',
+    headers: {
+      'x-admin-token': 'test_admin_token',
+      'x-actor': 'admin_master',
+      'x-trace-id': 'TRACE_REDAC_STATUS_LEGACY'
+    }
+  });
+  assert.strictEqual(res.status, 200);
+  const body = JSON.parse(res.body);
+  assert.strictEqual(body.ok, true);
+  assert.strictEqual(body.authority.legacyReadUsed, true);
+  assert.strictEqual(body.summary.usersLegacyReadSampled, 1);
+  assert.strictEqual(body.summary.linksLegacyReadSampled, 1);
+  assert.ok(body.summary.issues.includes('legacy_authority_read_detected'));
 });
 
 test('phase177: master ui includes redac health section and status endpoint call', () => {

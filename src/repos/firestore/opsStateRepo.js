@@ -2,12 +2,16 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { normalizeOpsStateRecord, resolveOpsStateReadOrder } = require('../../domain/normalizers/opsStateNormalizer');
+const {
+  OPS_STATE_LEGACY_COLLECTION,
+  isLegacyOpsStateCollection,
+  logCanonicalAuthorityLegacyRead
+} = require('../../domain/canonicalAuthority');
 
 // DEPRECATED:
 // - legacy collection: ops_state
 // - canonical collection: ops_states
 // This repo is kept only as a compatibility bridge.
-const LEGACY_COLLECTION = 'ops_state';
 const CANONICAL_COLLECTION = 'ops_states';
 const DOC_ID = 'global';
 
@@ -30,7 +34,21 @@ async function getOpsState() {
     const snap = await docRef.get();
     if (!snap.exists) continue;
     const normalized = normalizeOpsStateRecord(snap.data());
-    return Object.assign({ id: snap.id, collection }, normalized);
+    const legacyReadUsed = isLegacyOpsStateCollection(collection);
+    if (legacyReadUsed) {
+      logCanonicalAuthorityLegacyRead('ops_state_repo.get_ops_state', {
+        collection,
+        docId: DOC_ID
+      });
+    }
+    return Object.assign({
+      id: snap.id,
+      collection,
+      authoritySource: collection,
+      legacyReadUsed,
+      canonicalCollection: CANONICAL_COLLECTION,
+      legacyCollection: OPS_STATE_LEGACY_COLLECTION
+    }, normalized);
   }
   return null;
 }
