@@ -182,6 +182,12 @@ function run() {
     const comparableNext = Object.assign({}, manifest);
     delete comparableCurrent.generatedAt;
     delete comparableNext.generatedAt;
+    // gitCommit/branch are observational metadata.
+    // In PR CI (merge refs), these can differ even when inputs are unchanged.
+    delete comparableCurrent.gitCommit;
+    delete comparableNext.gitCommit;
+    delete comparableCurrent.branch;
+    delete comparableNext.branch;
     if (JSON.stringify(comparableCurrent) !== JSON.stringify(comparableNext)) {
       process.stderr.write('audit_inputs_manifest.json is stale. run: npm run audit-inputs:generate\n');
       process.exit(1);
