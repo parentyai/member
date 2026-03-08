@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { getPublicWriteSafetySnapshot } = require('../../repos/firestore/systemFlagsRepo');
+const { attachOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 function resolveActor(req) {
   const actor = req && req.headers && req.headers['x-actor'];
@@ -79,8 +80,13 @@ function logRouteError(routeId, err, context) {
 }
 
 function writeJson(res, status, payload) {
+  const body = attachOutcome(payload || {}, {
+    routeType: 'admin_route',
+    guard: { routeKey: 'admin_os_context' }
+  });
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload || {}));
+  res.end(JSON.stringify(body));
 }
 
 function normalizeRouteKey(value) {
@@ -140,7 +146,19 @@ async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
       error: 'temporarily unavailable',
       reason: 'kill_switch_read_failed_fail_closed',
       traceId,
-      requestId
+      requestId,
+      outcome: {
+        state: 'blocked',
+        reason: 'kill_switch_read_failed_fail_closed',
+        routeType: 'admin_route',
+        guard: {
+          routeKey,
+          failCloseMode: snapshot.failCloseMode || null,
+          readError: true,
+          killSwitchOn: false,
+          decision: 'block'
+        }
+      }
     });
     if (onDecision) {
       onDecision({
@@ -180,7 +198,24 @@ async function enforceLlmGenerationKillSwitch(req, res, options, deps) {
       reason: 'kill_switch_on',
       failCloseMode: snapshot.failCloseMode || null
     }, deps);
-    writeJson(res, 409, { ok: false, error: 'kill switch on', traceId, requestId });
+    writeJson(res, 409, {
+      ok: false,
+      error: 'kill switch on',
+      traceId,
+      requestId,
+      outcome: {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'admin_route',
+        guard: {
+          routeKey,
+          failCloseMode: snapshot.failCloseMode || null,
+          readError: snapshot.readError === true,
+          killSwitchOn: true,
+          decision: 'block'
+        }
+      }
+    });
     if (onDecision) {
       onDecision({
         allowed: false,

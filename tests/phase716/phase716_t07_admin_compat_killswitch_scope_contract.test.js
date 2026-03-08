@@ -71,7 +71,9 @@ test('phase716: admin/compat generation routes are kill-switch scoped while conf
     body: JSON.stringify({ question: 'visa update', lineUserId: 'U_PHASE716' })
   });
   assert.equal(adminFaqRes.status, 409);
-  assert.equal(JSON.parse(adminFaqRes.body).error, 'kill switch on');
+  const adminFaqBody = JSON.parse(adminFaqRes.body);
+  assert.equal(adminFaqBody.error, 'kill switch on');
+  assert.equal(adminFaqBody.outcome && adminFaqBody.outcome.state, 'blocked');
 
   const adminOpsRes = await request({
     port,
@@ -80,7 +82,9 @@ test('phase716: admin/compat generation routes are kill-switch scoped while conf
     headers: commonHeaders
   });
   assert.equal(adminOpsRes.status, 409);
-  assert.equal(JSON.parse(adminOpsRes.body).error, 'kill switch on');
+  const adminOpsBody = JSON.parse(adminOpsRes.body);
+  assert.equal(adminOpsBody.error, 'kill switch on');
+  assert.equal(adminOpsBody.outcome && adminOpsBody.outcome.state, 'blocked');
 
   const adminNextRes = await request({
     port,
@@ -89,7 +93,9 @@ test('phase716: admin/compat generation routes are kill-switch scoped while conf
     headers: commonHeaders
   });
   assert.equal(adminNextRes.status, 409);
-  assert.equal(JSON.parse(adminNextRes.body).error, 'kill switch on');
+  const adminNextBody = JSON.parse(adminNextRes.body);
+  assert.equal(adminNextBody.error, 'kill switch on');
+  assert.equal(adminNextBody.outcome && adminNextBody.outcome.state, 'blocked');
 
   const compatOpsRes = await request({
     port,

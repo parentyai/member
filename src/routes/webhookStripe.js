@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { processStripeWebhookEvent } = require('../usecases/billing/processStripeWebhookEvent');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { getPublicWriteSafetySnapshot } = require('../repos/firestore/systemFlagsRepo');
+const { buildOutcome } = require('../domain/routeOutcomeContract');
 
 const DEFAULT_TOLERANCE_SEC = 300;
 const ROUTE_KEY = 'webhook_stripe';
@@ -105,7 +106,16 @@ async function handleStripeWebhook(options) {
   const traceId = resolveTraceId(payload, requestId);
 
   if (!resolveStripeWebhookEnabled()) {
-    return { status: 404, body: 'not found' };
+    return {
+      status: 404,
+      body: 'not found',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'stripe_webhook_disabled',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
 
   const secret = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -116,10 +126,28 @@ async function handleStripeWebhook(options) {
   if (!verify.ok) {
     if (verify.reason === 'missing_secret') {
       logger(`[stripe_webhook] requestId=${requestId} reject=missing_secret`);
-      return { status: 500, body: 'server misconfigured' };
+      return {
+        status: 500,
+        body: 'server misconfigured',
+        outcome: buildOutcome({ ok: false }, {
+          state: 'error',
+          reason: 'missing_secret',
+          routeType: 'webhook',
+          guard: { routeKey: ROUTE_KEY, decision: 'block' }
+        })
+      };
     }
     logger(`[stripe_webhook] requestId=${requestId} reject=${verify.reason}`);
-    return { status: 401, body: 'unauthorized' };
+    return {
+      status: 401,
+      body: 'unauthorized',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: verify.reason || 'unauthorized',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
 
   let event;
@@ -127,7 +155,16 @@ async function handleStripeWebhook(options) {
     event = JSON.parse(rawBody || '{}');
   } catch (_err) {
     logger(`[stripe_webhook] requestId=${requestId} reject=invalid_json`);
-    return { status: 400, body: 'invalid json' };
+    return {
+      status: 400,
+      body: 'invalid json',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'error',
+        reason: 'invalid_json',
+        routeType: 'webhook',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      })
+    };
   }
 
   const safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
@@ -144,7 +181,21 @@ async function handleStripeWebhook(options) {
         failCloseMode: safety.failCloseMode
       });
       logger(`[stripe_webhook] requestId=${requestId} reject=kill_switch_read_failed_fail_closed`);
-      return { status: 503, body: 'temporarily unavailable' };
+      return {
+        status: 503,
+        body: 'temporarily unavailable',
+        outcome: buildOutcome({ ok: false }, {
+          state: 'blocked',
+          reason: 'kill_switch_read_failed_fail_closed',
+          routeType: 'webhook',
+          guard: {
+            routeKey: ROUTE_KEY,
+            failCloseMode: safety.failCloseMode || null,
+            readError: true,
+            decision: 'block'
+          }
+        })
+      };
     }
     if (safety.failCloseMode === 'warn') {
       await appendStripeRouteAuditBestEffort({
@@ -171,7 +222,21 @@ async function handleStripeWebhook(options) {
       eventType: event && event.type ? event.type : null
     });
     logger(`[stripe_webhook] requestId=${requestId} reject=kill_switch_on`);
-    return { status: 409, body: 'kill switch on' };
+    return {
+      status: 409,
+      body: 'kill switch on',
+      outcome: buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'webhook',
+        guard: {
+          routeKey: ROUTE_KEY,
+          failCloseMode: safety.failCloseMode || null,
+          killSwitchOn: true,
+          decision: 'block'
+        }
+      })
+    };
   }
 
   const result = await processStripeWebhookEvent({
@@ -182,7 +247,24 @@ async function handleStripeWebhook(options) {
   });
 
   logger(`[stripe_webhook] requestId=${requestId} status=${result.status || 'unknown'} eventId=${result.eventId || '-'}`);
-  return { status: 200, body: 'ok' };
+  return {
+    status: 200,
+    body: 'ok',
+    outcome: buildOutcome({ ok: true }, {
+      state: safety.readError && safety.failCloseMode === 'warn' ? 'degraded' : 'success',
+      reason: safety.readError && safety.failCloseMode === 'warn'
+        ? 'kill_switch_read_failed_fail_open'
+        : 'ok',
+      routeType: 'webhook',
+      guard: {
+        routeKey: ROUTE_KEY,
+        failCloseMode: safety.failCloseMode || null,
+        readError: safety.readError === true,
+        killSwitchOn: false,
+        decision: safety.readError && safety.failCloseMode === 'warn' ? 'warn' : 'allow'
+      }
+    })
+  };
 }
 
 module.exports = {

@@ -5,6 +5,7 @@ const { createNotificationPhase1 } = require('../../usecases/notifications/creat
 const { sendNotificationPhase1 } = require('../../usecases/notifications/sendNotificationPhase1');
 const { appendAuditLog } = require('../../usecases/audit/appendAuditLog');
 const { getPublicWriteSafetySnapshot } = require('../../repos/firestore/systemFlagsRepo');
+const { buildOutcome, applyOutcomeHeaders } = require('../../domain/routeOutcomeContract');
 
 const LEGACY_SUNSET = 'Wed, 30 Sep 2026 00:00:00 GMT';
 const LEGACY_SUCCESSOR = '/api/admin/os/notifications/list';
@@ -29,6 +30,12 @@ function parseJson(body, res) {
   try {
     return JSON.parse(body || '{}');
   } catch (err) {
+    applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+      state: 'error',
+      reason: 'invalid_json',
+      routeType: 'admin_route',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    }));
     applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('invalid json');
@@ -75,6 +82,15 @@ function isKillSwitchError(err) {
 
 function handleError(res, err) {
   const message = err && err.message ? err.message : 'error';
+  const reason = message.includes('required') || message.includes('invalid') || message.includes('no recipients')
+    ? 'invalid_request'
+    : (message.includes('not found') ? 'not_found' : 'error');
+  applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+    state: 'error',
+    reason,
+    routeType: 'admin_route',
+    guard: { routeKey: ROUTE_KEY, decision: 'block' }
+  }));
   applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
   if (message.includes('not found')) {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
@@ -101,6 +117,12 @@ async function handleCreatePhase1(req, res, body) {
       requestId,
       payloadSummary: { reason: 'legacy_route_frozen' }
     });
+    applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+      state: 'blocked',
+      reason: 'legacy_route_frozen',
+      routeType: 'admin_route',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    }));
     applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'legacy route frozen', replacement: LEGACY_SUCCESSOR }));
@@ -119,6 +141,13 @@ async function handleCreatePhase1(req, res, body) {
   }
   try {
     const safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
+    const guardState = {
+      routeKey: ROUTE_KEY,
+      failCloseMode: safety.failCloseMode || null,
+      readError: safety.readError === true,
+      killSwitchOn: safety.killSwitchOn === true,
+      decision: 'allow'
+    };
     if (safety.readError) {
       if (safety.failCloseMode === 'enforce') {
         await appendPhase1NotificationAuditBestEffort({
@@ -131,12 +160,19 @@ async function handleCreatePhase1(req, res, body) {
             failCloseMode: safety.failCloseMode
           }
         });
+        applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+          state: 'blocked',
+          reason: 'kill_switch_read_failed_fail_closed',
+          routeType: 'admin_route',
+          guard: Object.assign({}, guardState, { decision: 'block' })
+        }));
         applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
         res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
         res.end('temporarily unavailable');
         return;
       }
       if (safety.failCloseMode === 'warn') {
+        guardState.decision = 'warn';
         await appendPhase1NotificationAuditBestEffort({
           action: 'phase1.notifications.create.guard_warn',
           entityId: 'legacy_phase1_notifications',
@@ -157,6 +193,12 @@ async function handleCreatePhase1(req, res, body) {
         requestId,
         payloadSummary: { reason: 'kill_switch_on' }
       });
+      applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'admin_route',
+        guard: Object.assign({}, guardState, { decision: 'block' })
+      }));
       applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('kill switch on');
@@ -170,6 +212,12 @@ async function handleCreatePhase1(req, res, body) {
       requestId,
       payloadSummary: { ok: true }
     });
+    applyOutcomeHeaders(res, buildOutcome({ ok: true }, {
+      state: guardState.decision === 'warn' ? 'degraded' : 'success',
+      reason: guardState.decision === 'warn' ? 'kill_switch_read_failed_fail_open' : 'ok',
+      routeType: 'admin_route',
+      guard: guardState
+    }));
     applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, id: result.id }));
@@ -199,6 +247,12 @@ async function handleSendPhase1(req, res, body, notificationId) {
       requestId,
       payloadSummary: { reason: 'legacy_route_frozen' }
     });
+    applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+      state: 'blocked',
+      reason: 'legacy_route_frozen',
+      routeType: 'admin_route',
+      guard: { routeKey: ROUTE_KEY, decision: 'block' }
+    }));
     applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(410, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: false, error: 'legacy route frozen', replacement: LEGACY_SUCCESSOR }));
@@ -217,6 +271,13 @@ async function handleSendPhase1(req, res, body, notificationId) {
   }
   try {
     const safety = await getPublicWriteSafetySnapshot(ROUTE_KEY);
+    const guardState = {
+      routeKey: ROUTE_KEY,
+      failCloseMode: safety.failCloseMode || null,
+      readError: safety.readError === true,
+      killSwitchOn: safety.killSwitchOn === true,
+      decision: 'allow'
+    };
     if (safety.readError) {
       if (safety.failCloseMode === 'enforce') {
         await appendPhase1NotificationAuditBestEffort({
@@ -229,12 +290,19 @@ async function handleSendPhase1(req, res, body, notificationId) {
             failCloseMode: safety.failCloseMode
           }
         });
+        applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+          state: 'blocked',
+          reason: 'kill_switch_read_failed_fail_closed',
+          routeType: 'admin_route',
+          guard: Object.assign({}, guardState, { decision: 'block' })
+        }));
         applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
         res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
         res.end('temporarily unavailable');
         return;
       }
       if (safety.failCloseMode === 'warn') {
+        guardState.decision = 'warn';
         await appendPhase1NotificationAuditBestEffort({
           action: 'phase1.notifications.send.guard_warn',
           entityId: notificationId || 'legacy_phase1_notifications',
@@ -255,6 +323,12 @@ async function handleSendPhase1(req, res, body, notificationId) {
         requestId,
         payloadSummary: { reason: 'kill_switch_on' }
       });
+      applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'admin_route',
+        guard: Object.assign({}, guardState, { decision: 'block' })
+      }));
       applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('kill switch on');
@@ -275,6 +349,12 @@ async function handleSendPhase1(req, res, body, notificationId) {
         deliveredCount: Number.isFinite(Number(result.deliveredCount)) ? Number(result.deliveredCount) : null
       }
     });
+    applyOutcomeHeaders(res, buildOutcome({ ok: true }, {
+      state: guardState.decision === 'warn' ? 'degraded' : 'success',
+      reason: guardState.decision === 'warn' ? 'kill_switch_read_failed_fail_open' : 'ok',
+      routeType: 'admin_route',
+      guard: guardState
+    }));
     applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true, deliveredCount: result.deliveredCount }));
@@ -287,6 +367,12 @@ async function handleSendPhase1(req, res, body, notificationId) {
         requestId,
         payloadSummary: { reason: 'kill_switch_on' }
       });
+      applyOutcomeHeaders(res, buildOutcome({ ok: false }, {
+        state: 'blocked',
+        reason: 'kill_switch_on',
+        routeType: 'admin_route',
+        guard: { routeKey: ROUTE_KEY, decision: 'block' }
+      }));
       applyDeprecationHeaders(res, LEGACY_SUCCESSOR);
       res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('kill switch on');

@@ -2,10 +2,16 @@
 
 const { getKillSwitch } = require('../../repos/firestore/systemFlagsRepo');
 const { runJourneyTodoReminderJob } = require('../../usecases/journey/runJourneyTodoReminderJob');
+const { attachOutcome, applyOutcomeHeaders, inferOutcomeState } = require('../../domain/routeOutcomeContract');
 
-function writeJson(res, status, payload) {
+function writeJson(res, status, payload, outcomeOptions) {
+  const body = attachOutcome(payload || {}, Object.assign({
+    routeType: 'internal_job',
+    guard: { routeKey: 'internal_journey_todo_reminder_job' }
+  }, outcomeOptions || {}));
+  applyOutcomeHeaders(res, body.outcome);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(payload));
+  res.end(JSON.stringify(body));
 }
 
 function parseJson(bodyText) {
@@ -29,12 +35,20 @@ function resolveToken(req) {
 function requireJourneyJobToken(req, res) {
   const expected = process.env.JOURNEY_JOB_TOKEN || '';
   if (!expected) {
-    writeJson(res, 503, { ok: false, error: 'JOURNEY_JOB_TOKEN not configured' });
+    writeJson(res, 503, { ok: false, error: 'JOURNEY_JOB_TOKEN not configured' }, {
+      state: 'error',
+      reason: 'job_token_not_configured',
+      guard: { routeKey: 'internal_journey_todo_reminder_job', decision: 'block' }
+    });
     return false;
   }
   const actual = resolveToken(req);
   if (!actual || actual !== expected) {
-    writeJson(res, 401, { ok: false, error: 'unauthorized' });
+    writeJson(res, 401, { ok: false, error: 'unauthorized' }, {
+      state: 'blocked',
+      reason: 'unauthorized',
+      guard: { routeKey: 'internal_journey_todo_reminder_job', decision: 'block' }
+    });
     return false;
   }
   return true;
@@ -42,20 +56,36 @@ function requireJourneyJobToken(req, res) {
 
 async function handleJourneyTodoReminderJob(req, res, bodyText) {
   if (req.method !== 'POST') {
-    writeJson(res, 404, { ok: false, error: 'not found' });
+    writeJson(res, 404, { ok: false, error: 'not found' }, {
+      state: 'error',
+      reason: 'not_found',
+      guard: { routeKey: 'internal_journey_todo_reminder_job', decision: 'block' }
+    });
     return;
   }
   if (!requireJourneyJobToken(req, res)) return;
 
   const killSwitch = await getKillSwitch();
   if (killSwitch) {
-    writeJson(res, 409, { ok: false, error: 'kill switch on' });
+    writeJson(res, 409, { ok: false, error: 'kill switch on' }, {
+      state: 'blocked',
+      reason: 'kill_switch_on',
+      guard: {
+        routeKey: 'internal_journey_todo_reminder_job',
+        decision: 'block',
+        killSwitchOn: true
+      }
+    });
     return;
   }
 
   const payload = parseJson(bodyText);
   if (!payload) {
-    writeJson(res, 400, { ok: false, error: 'invalid json' });
+    writeJson(res, 400, { ok: false, error: 'invalid json' }, {
+      state: 'error',
+      reason: 'invalid_json',
+      guard: { routeKey: 'internal_journey_todo_reminder_job', decision: 'block' }
+    });
     return;
   }
 
@@ -74,7 +104,14 @@ async function handleJourneyTodoReminderJob(req, res, bodyText) {
   });
 
   const statusCode = result && result.partialFailure === true ? 207 : 200;
-  writeJson(res, statusCode, result);
+  const state = inferOutcomeState(result, {
+    state: result && result.partialFailure === true ? 'partial' : 'success'
+  });
+  writeJson(res, statusCode, result, {
+    state,
+    reason: result && result.status ? result.status : (state === 'partial' ? 'completed_with_failures' : 'completed'),
+    guard: { routeKey: 'internal_journey_todo_reminder_job', decision: 'allow' }
+  });
 }
 
 module.exports = {

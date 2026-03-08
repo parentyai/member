@@ -156,7 +156,11 @@ test('phase675: phase1Events blocks writes on kill switch and records trace/audi
   });
 
   assert.equal(response.status, 403);
-  assert.equal(JSON.parse(response.body).error, 'kill switch on');
+  const blockedJson = JSON.parse(response.body);
+  assert.equal(blockedJson.error, 'kill switch on');
+  assert.equal(blockedJson.outcome && blockedJson.outcome.state, 'blocked');
+  assert.equal(blockedJson.outcome && blockedJson.outcome.reason, 'kill_switch_on');
+  assert.equal(response.headers['x-member-outcome-state'], 'blocked');
   assert.ok(!db._state.collections.events, 'events write should be blocked by kill switch');
 
   const blockedAudit = listAuditRows(db).find((row) => row.action === 'phase1.events.blocked');
@@ -212,6 +216,8 @@ test('phase675: track click GET/POST block on kill switch and keep trace in audi
     path: `/t/${encodeURIComponent(token)}`
   });
   assert.equal(getRes.status, 403);
+  assert.equal(getRes.headers['x-member-outcome-state'], 'blocked');
+  assert.equal(getRes.headers['x-member-outcome-reason'], 'kill_switch_on');
 
   const postRes = await httpRequest({
     port: boot.port,
@@ -221,6 +227,8 @@ test('phase675: track click GET/POST block on kill switch and keep trace in audi
     body: JSON.stringify({ deliveryId: delivery.id, linkRegistryId: 'l1' })
   });
   assert.equal(postRes.status, 403);
+  assert.equal(postRes.headers['x-member-outcome-state'], 'blocked');
+  assert.equal(postRes.headers['x-member-outcome-reason'], 'kill_switch_on');
 
   const deliveryDoc = db._state.collections.notification_deliveries.docs[delivery.id];
   assert.ok(deliveryDoc);
@@ -426,6 +434,9 @@ test('phase675: WARN mode allows phase1Events when killSwitch read fails and app
   const parsed = JSON.parse(response.body);
   assert.equal(parsed.ok, true);
   assert.ok(typeof parsed.id === 'string' && parsed.id.length > 0);
+  assert.equal(parsed.outcome && parsed.outcome.state, 'degraded');
+  assert.equal(parsed.outcome && parsed.outcome.reason, 'kill_switch_read_failed_fail_open');
+  assert.equal(response.headers['x-member-outcome-state'], 'degraded');
 
   const guardWarn = listAuditRows(db).find((row) => row.action === 'phase1.events.guard_warn');
   assert.ok(guardWarn);
@@ -471,6 +482,9 @@ test('phase675: default mode fail-closes phase1Events when killSwitch read fails
   const parsed = JSON.parse(response.body);
   assert.equal(parsed.ok, false);
   assert.equal(parsed.error, 'temporarily unavailable');
+  assert.equal(parsed.outcome && parsed.outcome.state, 'blocked');
+  assert.equal(parsed.outcome && parsed.outcome.reason, 'kill_switch_read_failed_fail_closed');
+  assert.equal(response.headers['x-member-outcome-state'], 'blocked');
 
   const blocked = listAuditRows(db).find((row) => row.action === 'phase1.events.blocked');
   assert.ok(blocked);
@@ -523,6 +537,8 @@ test('phase675: ENFORCE mode fail-closes track click when killSwitch read fails'
   });
   assert.equal(postRes.status, 503);
   assert.equal(postRes.body, 'temporarily unavailable');
+  assert.equal(postRes.headers['x-member-outcome-state'], 'blocked');
+  assert.equal(postRes.headers['x-member-outcome-reason'], 'kill_switch_read_failed_fail_closed');
   const deliveryDoc = db._state.collections.notification_deliveries.docs[delivery.id];
   assert.ok(deliveryDoc);
   assert.equal(deliveryDoc.data.clickAt, undefined);
@@ -594,6 +610,7 @@ test('phase675: track click success redirect stays non-blocking even when audit 
   });
   assert.equal(postRes.status, 302);
   assert.equal(postRes.headers.location, 'https://example.com');
+  assert.equal(postRes.headers['x-member-outcome-state'], 'success');
 
   const getRes = await httpRequest({
     port: boot.port,
@@ -603,6 +620,7 @@ test('phase675: track click success redirect stays non-blocking even when audit 
   });
   assert.equal(getRes.status, 302);
   assert.equal(getRes.headers.location, 'https://example.com');
+  assert.equal(getRes.headers['x-member-outcome-state'], 'success');
 });
 
 test('phase675: track audit enqueue failure emits observable detection log', async (t) => {
