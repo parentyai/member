@@ -12,6 +12,7 @@ const DEFAULT_ENV_NAME = 'stg';
 const DEFAULT_HOST = '127.0.0.1';
 const STARTUP_TIMEOUT_MS = 45_000;
 const HEALTHCHECK_INTERVAL_MS = 400;
+const PORT_RELEASE_TIMEOUT_MS = 5_000;
 
 function parseArgs(argv) {
   const args = Array.isArray(argv) ? argv.slice() : [];
@@ -22,6 +23,7 @@ function parseArgs(argv) {
     noOpen: false,
     noCopy: false,
     noAdcRepair: false,
+    freshServer: false,
     projectId: '',
     token: '',
     tokenFile: '',
@@ -35,6 +37,7 @@ function parseArgs(argv) {
     else if (arg === '--no-open') out.noOpen = true;
     else if (arg === '--no-copy') out.noCopy = true;
     else if (arg === '--no-adc-repair') out.noAdcRepair = true;
+    else if (arg === '--fresh-server') out.freshServer = true;
     else if (arg === '--preflight=on') out.preflight = 'on';
     else if (arg === '--preflight=off') out.preflight = 'off';
     else if (arg.startsWith('--port=')) out.port = Number(arg.slice('--port='.length)) || DEFAULT_PORT;
@@ -61,6 +64,7 @@ function printHelp() {
       '  --token-file=<path>      Read ADMIN_OS_TOKEN from file',
       '  --preflight=on|off       Enable/disable local preflight banner (default: on)',
       '  --no-adc-repair          Skip automatic ADC reauth when expired',
+      '  --fresh-server           Force restart even when a server already exists on the port',
       '  --no-open                Do not open browser automatically',
       '  --no-copy                Do not copy token to clipboard',
       '  -h, --help               Show this help',
@@ -169,6 +173,32 @@ function requestStatus(url) {
   });
 }
 
+function requestJson(url, headers) {
+  const requestHeaders = headers && typeof headers === 'object' ? headers : {};
+  return new Promise((resolve) => {
+    const req = http.get(url, { headers: requestHeaders }, (res) => {
+      const status = Number(res.statusCode || 0);
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        let json = null;
+        try {
+          json = text ? JSON.parse(text) : null;
+        } catch (_err) {
+          json = null;
+        }
+        resolve({ status, json, text });
+      });
+    });
+    req.on('error', (err) => resolve({ status: 0, json: null, text: '', error: err && err.message ? err.message : String(err) }));
+    req.setTimeout(4_000, () => {
+      req.destroy();
+      resolve({ status: 0, json: null, text: '', error: 'timeout' });
+    });
+  });
+}
+
 async function isServerReady(url) {
   const status = await requestStatus(url);
   return status === 200 || status === 302;
@@ -182,6 +212,112 @@ async function waitUntilReady(url, timeoutMs) {
     await new Promise((r) => setTimeout(r, HEALTHCHECK_INTERVAL_MS));
   }
   return false;
+}
+
+function evaluateDashboardHealthPayload(payload) {
+  if (!payload || payload.ok !== true) {
+    return { ok: false, code: 'dashboard_not_ok' };
+  }
+  if (payload.fallbackBlocked === true || payload.dataSource === 'not_available') {
+    return { ok: false, code: 'dashboard_not_available' };
+  }
+  const registrations = payload.kpis && payload.kpis.registrations;
+  if (!registrations || registrations.available !== true) {
+    return { ok: false, code: 'dashboard_registrations_unavailable' };
+  }
+  return { ok: true, code: 'ok' };
+}
+
+function evaluateFeatureCatalogHealthPayload(payload) {
+  if (!payload || payload.ok !== true) {
+    return { ok: false, code: 'feature_catalog_not_ok' };
+  }
+  if (payload.available === false) {
+    return { ok: false, code: 'feature_catalog_unavailable' };
+  }
+  return { ok: true, code: 'ok' };
+}
+
+async function checkExistingServerDataHealth(baseUrl, token) {
+  const headers = {
+    'x-admin-token': String(token || ''),
+    'x-actor': 'admin_open_healthcheck',
+    'x-trace-id': `admin_open_health_${Date.now()}`
+  };
+  const dashboardUrl = `${baseUrl}/api/admin/os/dashboard/kpi?windowMonths=1&fallbackMode=allow&fallbackOnEmpty=true&snapshotRefresh=true`;
+  const dashboardRes = await requestJson(dashboardUrl, headers);
+  if (dashboardRes.status !== 200) {
+    return { ok: false, code: 'dashboard_http_error', status: dashboardRes.status, error: dashboardRes.error || null };
+  }
+  const dashboardEval = evaluateDashboardHealthPayload(dashboardRes.json);
+  if (!dashboardEval.ok) {
+    return { ok: false, code: dashboardEval.code, status: dashboardRes.status };
+  }
+  const featureUrl = `${baseUrl}/api/admin/ops-feature-catalog-status`;
+  const featureRes = await requestJson(featureUrl, headers);
+  if (featureRes.status !== 200) {
+    return { ok: false, code: 'feature_catalog_http_error', status: featureRes.status, error: featureRes.error || null };
+  }
+  const featureEval = evaluateFeatureCatalogHealthPayload(featureRes.json);
+  if (!featureEval.ok) {
+    return { ok: false, code: featureEval.code, status: featureRes.status };
+  }
+  return { ok: true, code: 'ok' };
+}
+
+function isLoopbackHost(host) {
+  const normalized = String(host || '').trim().toLowerCase();
+  return normalized === '127.0.0.1'
+    || normalized === 'localhost'
+    || normalized === '::1'
+    || normalized === '[::1]'
+    || normalized === '0.0.0.0';
+}
+
+function listListeningPidsByPort(port) {
+  const res = runCommand('lsof', ['-nP', '-t', `-iTCP:${port}`, '-sTCP:LISTEN']);
+  if (res.status !== 0) return [];
+  const pids = String(res.stdout || '')
+    .split(/\r?\n/)
+    .map((line) => Number(line.trim()))
+    .filter((value) => Number.isInteger(value) && value > 0 && value !== process.pid);
+  return Array.from(new Set(pids));
+}
+
+function killPid(pid, signal) {
+  const sig = signal || 'TERM';
+  if (process.platform === 'win32') {
+    runCommand('taskkill', ['/PID', String(pid), '/F']);
+    return;
+  }
+  runCommand('kill', [`-${sig}`, String(pid)]);
+}
+
+async function waitUntilPortReleased(loginUrl, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ready = await isServerReady(loginUrl);
+    if (!ready) return true;
+    await new Promise((resolve) => setTimeout(resolve, HEALTHCHECK_INTERVAL_MS));
+  }
+  return false;
+}
+
+async function stopExistingServerForFreshStart({ port, host, loginUrl }) {
+  if (!isLoopbackHost(host)) {
+    return { ok: false, code: 'non_loopback_host' };
+  }
+  const pids = listListeningPidsByPort(port);
+  if (!pids.length) {
+    const released = await waitUntilPortReleased(loginUrl, PORT_RELEASE_TIMEOUT_MS);
+    return released ? { ok: true, code: 'already_released' } : { ok: false, code: 'port_still_busy' };
+  }
+  pids.forEach((pid) => killPid(pid, 'TERM'));
+  let released = await waitUntilPortReleased(loginUrl, PORT_RELEASE_TIMEOUT_MS);
+  if (released) return { ok: true, code: 'terminated', pids };
+  pids.forEach((pid) => killPid(pid, 'KILL'));
+  released = await waitUntilPortReleased(loginUrl, PORT_RELEASE_TIMEOUT_MS);
+  return released ? { ok: true, code: 'force_terminated', pids } : { ok: false, code: 'port_still_busy', pids };
 }
 
 function openUrl(url) {
@@ -346,16 +482,30 @@ async function main() {
       `[admin:open] url=${loginUrl}`,
       `[admin:open] adc=${adcRepair.attempted ? 'repaired' : 'ok'}`,
       `[admin:open] preflight=${serverEnv.ENABLE_ADMIN_LOCAL_PREFLIGHT_V1 === '0' ? 'off' : 'on'}`,
+      `[admin:open] mode=${opts.freshServer ? 'fresh-server' : 'auto'}`,
       ''
     ].join('\n')
   );
 
   const alreadyRunning = await isServerReady(loginUrl);
   if (alreadyRunning) {
-    process.stdout.write('[admin:open] existing server detected, reuse current process\n');
-    applyLocalAccessActions(loginUrl, tokenResolved.token, opts);
-    process.stdout.write('[admin:open] ready\n');
-    return;
+    if (!opts.freshServer) {
+      const health = await checkExistingServerDataHealth(baseUrl, tokenResolved.token);
+      if (health.ok) {
+        process.stdout.write('[admin:open] existing server detected, reuse current process\n');
+        process.stdout.write('[admin:open] mode=reuse-server\n');
+        applyLocalAccessActions(loginUrl, tokenResolved.token, opts);
+        process.stdout.write('[admin:open] ready\n');
+        return;
+      }
+      process.stdout.write(`[admin:open] existing server health check failed (${health.code}), restarting on same port\n`);
+    } else {
+      process.stdout.write('[admin:open] existing server detected, fresh-server requested\n');
+    }
+    const stopped = await stopExistingServerForFreshStart({ port, host, loginUrl });
+    if (!stopped.ok) {
+      throw new Error(`既存サーバの停止に失敗しました (${stopped.code})。別ポートで実行するか、手動で停止してください。`);
+    }
   }
 
   const server = startServer(serverEnv);
@@ -377,6 +527,7 @@ async function main() {
   }
 
   applyLocalAccessActions(loginUrl, tokenResolved.token, opts);
+  process.stdout.write('[admin:open] mode=fresh-server\n');
   process.stdout.write('[admin:open] ready (Ctrl+C to stop)\n');
 
   await new Promise((resolve, reject) => {
@@ -402,5 +553,7 @@ module.exports = {
   resolveProjectId,
   resolveAdminToken,
   maybeRepairAdcForLocalReadPath,
-  resolveProbeClassification
+  resolveProbeClassification,
+  evaluateDashboardHealthPayload,
+  evaluateFeatureCatalogHealthPayload
 };
