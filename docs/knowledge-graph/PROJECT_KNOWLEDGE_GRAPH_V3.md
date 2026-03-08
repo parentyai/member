@@ -1,6 +1,6 @@
 # PROJECT_KNOWLEDGE_GRAPH_V3
 
-- generatedAt: 2026-03-08T03:08:08.942Z
+- generatedAt: 2026-03-08T04:34:19.327Z
 - source: docs/knowledge-graph/*.md (existing artifacts only) + runtime_probe.json
 - firestoreRuntime: OBSERVED_RUNTIME
 - firestoreCollectionsObserved: 51
@@ -8,9 +8,9 @@
 - ownershipExtension: PRESENT
 
 ## Coverage
-- operationRows: 9292
-- permissionOperationRows: 27876
-- uiParameterRows: 93
+- operationRows: 159
+- permissionOperationRows: 477
+- uiParameterRows: 58
 - failurePropagationRows: 6
 
 ## Key Paths

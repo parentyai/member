@@ -42,12 +42,39 @@ function parseMetadata(lines) {
   return out;
 }
 
+function splitMarkdownCells(rowBody) {
+  const cells = [];
+  let buffer = '';
+  let escaped = false;
+  for (let idx = 0; idx < rowBody.length; idx += 1) {
+    const ch = rowBody[idx];
+    if (escaped) {
+      buffer += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      buffer += ch;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(buffer.trim().replace(/\\\|/g, '|'));
+      buffer = '';
+      continue;
+    }
+    buffer += ch;
+  }
+  cells.push(buffer.trim().replace(/\\\|/g, '|'));
+  return cells;
+}
+
 function parseCells(line) {
   const trimmed = String(line || '').trim();
   if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
   const body = trimmed.slice(1, -1).trim();
   if (!body) return [];
-  return body.split(/\s\|\s/).map((cell) => cell.trim());
+  return splitMarkdownCells(body);
 }
 
 function parseTablesWithLine(lines, lineOffset) {
@@ -154,6 +181,9 @@ function buildPermissionRowsFromBase(permissionBaseTable, operationTable) {
       continue;
     }
     const current = dedup.get(key);
+    if (current.allowed !== row.allowed) {
+      current.allowed = current.allowed === 'YES' || row.allowed === 'YES' ? 'YES' : 'NO';
+    }
     current.evidence = unique(splitEvidence(current.evidence).concat(splitEvidence(row.evidence))).join('<br>');
     dedup.set(key, current);
   }
