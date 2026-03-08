@@ -150,6 +150,12 @@ function validateMermaid(errors, fileName, text) {
   }
 }
 
+function validateMetadataLine(errors, fileName, text, prefix) {
+  if (!String(text || '').includes(prefix)) {
+    errors.push(`${fileName}: metadata line missing (${prefix.trim()})`);
+  }
+}
+
 function run() {
   const errors = [];
 
@@ -167,6 +173,17 @@ function run() {
     }
     if (!tables.some((table) => tableHasHeaders(table, spec.headers))) {
       errors.push(`${spec.file}: required headers missing (${spec.headers.join(', ')})`);
+    }
+    if (spec.file === 'FIRESTORE_RUNTIME_MAP.md') {
+      validateMetadataLine(errors, spec.file, text, '- staticVsRuntimeCoverage:');
+      validateMetadataLine(errors, spec.file, text, '- staticOnlyCollections:');
+      validateMetadataLine(errors, spec.file, text, '- runtimeOnlyCollections:');
+    }
+    if (spec.file === 'PROJECT_KNOWLEDGE_GRAPH_V3.md') {
+      validateMetadataLine(errors, spec.file, text, '- firestoreRuntime:');
+      validateMetadataLine(errors, spec.file, text, '- firestoreStaticCoverage:');
+      validateMetadataLine(errors, spec.file, text, '- firestoreStaticOnlyCollections:');
+      validateMetadataLine(errors, spec.file, text, '- firestoreRuntimeOnlyCollections:');
     }
     if (spec.file === 'API_OPERATION_MAP.md') {
       const opTable = tables.find((table) => tableHasHeaders(table, ['Operation', 'API', 'Method', 'Entity']));

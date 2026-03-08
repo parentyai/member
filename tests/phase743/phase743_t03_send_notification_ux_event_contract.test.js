@@ -83,6 +83,7 @@ test('phase743: sendNotification keeps main flow when appendUxEvent fails (best-
       target: { all: true }
     });
     await usersRepo.createUser('U743_SN_2', { scenarioKey: 'A', stepKey: '3mo' });
+    const suppressed = [];
 
     const result = await sendNotification({
       notificationId: created.id,
@@ -91,11 +92,13 @@ test('phase743: sendNotification keeps main flow when appendUxEvent fails (best-
       pushFn: async () => ({ status: 200 }),
       appendUxEventFn: async () => {
         throw new Error('ux event unavailable');
-      }
+      },
+      reportSuppressedErrorFn: (payload) => suppressed.push(payload)
     });
 
     assert.equal(result.deliveredCount, 1);
     assert.equal(result.notificationId, created.id);
+    assert.ok(suppressed.some((row) => row && row.stage === 'append_ux_event_failed'));
   } finally {
     if (previous === undefined) delete process.env.ENABLE_UXOS_EVENTS_V1;
     else process.env.ENABLE_UXOS_EVENTS_V1 = previous;

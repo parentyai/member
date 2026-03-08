@@ -86,9 +86,9 @@
 | `src/usecases/notifications/runNotificationTest.js` | 94 | `const killSwitch = await getKillSwitch();` |
 | `src/usecases/notifications/runNotificationTest.js` | 132 | `validateKillSwitch(killSwitch);` |
 | `src/usecases/notifications/sendNotification.js` | 12 | `validateKillSwitch,` |
-| `src/usecases/notifications/sendNotification.js` | 141 | `validateKillSwitch(payload.killSwitch);` |
+| `src/usecases/notifications/sendNotification.js` | 142 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/notifications/testSendNotification.js` | 8 | `const { validateKillSwitch } = require('../../domain/validators');` |
-| `src/usecases/notifications/testSendNotification.js` | 78 | `validateKillSwitch(payload.killSwitch);` |
+| `src/usecases/notifications/testSendNotification.js` | 92 | `validateKillSwitch(payload.killSwitch);` |
 | `src/usecases/phase121/sendOpsNotice.js` | 47 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase33/executeOpsNextAction.js` | 177 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
 | `src/usecases/phase40/getOpsAssistSuggestion.js` | 121 | `const killSwitchFn = deps && deps.getKillSwitch ? deps.getKillSwitch : systemFlagsRepo.getKillSwitch;` |
