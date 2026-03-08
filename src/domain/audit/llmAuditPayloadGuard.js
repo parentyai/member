@@ -77,7 +77,12 @@ const LLM_GATE_KEYS = new Set([
   'legalDecision',
   'legalReasonCodes',
   'intentRiskTier',
-  'riskReasonCodes'
+  'riskReasonCodes',
+  'sourceAuthorityScore',
+  'sourceFreshnessScore',
+  'sourceReadinessDecision',
+  'sourceReadinessReasons',
+  'officialOnlySatisfied'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

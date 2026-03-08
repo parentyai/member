@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:30:06-05:00",
-  "gitCommit": "c4d04c7ee9be1551fa4b238dd0134ff6ef9e2dcd",
-  "branch": "codex/city-pack-vendor-pr-pure",
-  "sourceDigest": "322ecace373539dab75fa9f8a9a9f987e0548d4fca5f59ebed43ab096c7c10bf",
+  "generatedAt": "2026-03-07T19:48:43-05:00",
+  "gitCommit": "39b9ec47006eeba00b817ac0299d875b2ca2cfd8",
+  "branch": "codex/llm-v3-pr3-source-readiness-v2",
+  "sourceDigest": "b210ff678296debf933b22b39dc8afd46190f490ffaed73998adbbc6295bdf19",
   "counts": {
     "endpoints": 289,
     "routes": 128,
@@ -101,7 +101,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "d8b3ab9ff53d6f90c56972399f89d0eb7000c4eaccef136ef9fd06d881812421",
+      "sha256": "0f193e5a1f8a979ad93f9ef53d698f185e1aa1614bf1ee1556dc15760a3d504f",
       "bytes": 828
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "0b7bf4225b44c434ab8422f533bed230a2e0fe7ca793b5674f15d08ff0b75c8c",
+      "sha256": "e26a219de489e0111d1036272e56b72705e5ba12a807658cef61c67d50a4a793",
       "bytes": 487
     },
     {
@@ -141,7 +141,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "b01419b456194d9d088b004b9c53f3db8ef2c299c2dcd4a3dea5e6cc483f9d5a",
+      "sha256": "93bddcd7db81eae49594c70f63f81852ec534e07c6265c6b0e26da511451a08e",
       "bytes": 443850
     },
     {
@@ -166,8 +166,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "b336386a8b3fbfca38f95782e8717c509d0553c5b879f31ce0cee97375ae094d",
-      "bytes": 2416
+      "sha256": "85e0117e6029c207996f9adfd0d202022def8d37bb9b757a0f86fb0f99eb4478",
+      "bytes": 2422
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",

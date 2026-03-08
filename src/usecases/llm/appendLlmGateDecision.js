@@ -59,7 +59,12 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'legalDecision',
   'legalReasonCodes',
   'intentRiskTier',
-  'riskReasonCodes'
+  'riskReasonCodes',
+  'sourceAuthorityScore',
+  'sourceFreshnessScore',
+  'sourceReadinessDecision',
+  'sourceReadinessReasons',
+  'officialOnlySatisfied'
 ]);
 
 function resolveAppendAuditLog() {

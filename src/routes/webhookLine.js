@@ -1021,6 +1021,20 @@ async function appendLlmGateDecisionBestEffort(data) {
         legalReasonCodes: Array.isArray(legalSnapshot.legalReasonCodes) ? legalSnapshot.legalReasonCodes : [],
         intentRiskTier: riskSnapshot.intentRiskTier,
         riskReasonCodes: riskSnapshot.riskReasonCodes,
+        sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore))
+          ? Number(payload.sourceAuthorityScore)
+          : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null),
+        sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore))
+          ? Number(payload.sourceFreshnessScore)
+          : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null),
+        sourceReadinessDecision: typeof payload.sourceReadinessDecision === 'string'
+          ? payload.sourceReadinessDecision
+          : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null),
+        sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
+          ? payload.sourceReadinessReasons
+          : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []),
+        officialOnlySatisfied: payload.officialOnlySatisfied === true
+          || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true),
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1170,6 +1184,20 @@ async function appendLlmActionLogBestEffort(data) {
       domainIntent: qualityMeta.domainIntent || 'general',
       intentRiskTier: riskSnapshot.intentRiskTier,
       riskReasonCodes: riskSnapshot.riskReasonCodes,
+      sourceAuthorityScore: Number.isFinite(Number(payload.sourceAuthorityScore))
+        ? Number(payload.sourceAuthorityScore)
+        : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceAuthorityScore)) ? Number(conciergeMeta.sourceAuthorityScore) : null),
+      sourceFreshnessScore: Number.isFinite(Number(payload.sourceFreshnessScore))
+        ? Number(payload.sourceFreshnessScore)
+        : (conciergeMeta && Number.isFinite(Number(conciergeMeta.sourceFreshnessScore)) ? Number(conciergeMeta.sourceFreshnessScore) : null),
+      sourceReadinessDecision: typeof payload.sourceReadinessDecision === 'string'
+        ? payload.sourceReadinessDecision
+        : (conciergeMeta && typeof conciergeMeta.sourceReadinessDecision === 'string' ? conciergeMeta.sourceReadinessDecision : null),
+      sourceReadinessReasons: Array.isArray(payload.sourceReadinessReasons)
+        ? payload.sourceReadinessReasons
+        : (conciergeMeta && Array.isArray(conciergeMeta.sourceReadinessReasons) ? conciergeMeta.sourceReadinessReasons : []),
+      officialOnlySatisfied: payload.officialOnlySatisfied === true
+        || (conciergeMeta && conciergeMeta.officialOnlySatisfied === true),
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
@@ -1249,6 +1277,10 @@ async function tryHandlePaidOrchestratorV2(params) {
     return composeConciergeReply({
       question: packet.messageText,
       baseReplyText: groundedResult.replyText,
+      domainIntent: packet.normalizedConversationIntent || 'general',
+      intentRiskTier: resolveIntentRiskTier({
+        domainIntent: packet.normalizedConversationIntent || 'general'
+      }).intentRiskTier,
       opportunityHints: packet.opportunityDecision && packet.opportunityDecision.opportunityType !== 'none'
         ? {
           summary: groundedResult && groundedResult.output && typeof groundedResult.output.situation === 'string'
@@ -1375,6 +1407,11 @@ async function tryHandlePaidOrchestratorV2(params) {
     interventionBudget: orchestrated.opportunityDecision ? orchestrated.opportunityDecision.interventionBudget : 0,
     domainIntent: orchestrated.domainIntent,
     conversationQuality,
+    sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,
+    sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
+    sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
+    sourceReadinessReasons: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessReasons : [],
+    officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1399,6 +1436,11 @@ async function tryHandlePaidOrchestratorV2(params) {
     verificationOutcome: orchestrated.telemetry ? orchestrated.telemetry.verificationOutcome : null,
     contradictionFlags: orchestrated.telemetry ? orchestrated.telemetry.contradictionFlags : [],
     candidateCount: orchestrated.telemetry ? orchestrated.telemetry.candidateCount : 0,
+    sourceAuthorityScore: orchestrated.telemetry ? orchestrated.telemetry.sourceAuthorityScore : null,
+    sourceFreshnessScore: orchestrated.telemetry ? orchestrated.telemetry.sourceFreshnessScore : null,
+    sourceReadinessDecision: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessDecision : null,
+    sourceReadinessReasons: orchestrated.telemetry ? orchestrated.telemetry.sourceReadinessReasons : [],
+    officialOnlySatisfied: orchestrated.telemetry ? orchestrated.telemetry.officialOnlySatisfied === true : false,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)
@@ -1518,6 +1560,8 @@ async function replyWithFreeRetrieval(params) {
       const concierge = await composeConciergeReply({
         question: payload.text,
         baseReplyText: replyText,
+        domainIntent,
+        intentRiskTier: resolveIntentRiskTier({ domainIntent }).intentRiskTier,
         userTier: payload.plan === 'pro' ? 'paid' : 'free',
         plan: payload.plan || 'free',
         locale: 'ja',
@@ -2452,6 +2496,10 @@ async function handleAssistantMessage(params) {
       const concierge = await composeConciergeReply({
         question: text,
         baseReplyText: replyText,
+        domainIntent: normalizedConversationIntent,
+        intentRiskTier: resolveIntentRiskTier({
+          domainIntent: normalizedConversationIntent
+        }).intentRiskTier,
         opportunityHints: opportunityDecision && opportunityDecision.opportunityType !== 'none'
           ? {
             summary: paid && paid.output && typeof paid.output.situation === 'string'

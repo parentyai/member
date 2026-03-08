@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-07T19:30:06-05:00",
-  "gitCommit": "c4d04c7ee9be1551fa4b238dd0134ff6ef9e2dcd",
-  "branch": "codex/city-pack-vendor-pr-pure",
-  "sourceDigest": "9e369906bd0c9847126e9ee7b2bf865385cb8bee9a6da43c914ec3e936756992",
+  "generatedAt": "2026-03-07T19:48:43-05:00",
+  "gitCommit": "39b9ec47006eeba00b817ac0299d875b2ca2cfd8",
+  "branch": "codex/llm-v3-pr3-source-readiness-v2",
+  "sourceDigest": "05cb015c479b7b2381ae0da628b31c9feb9301b1a42639e0153d5fffcdb97181",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
