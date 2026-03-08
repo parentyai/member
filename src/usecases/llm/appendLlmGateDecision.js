@@ -64,7 +64,13 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'sourceFreshnessScore',
   'sourceReadinessDecision',
   'sourceReadinessReasons',
-  'officialOnlySatisfied'
+  'officialOnlySatisfied',
+  'readinessDecision',
+  'readinessReasonCodes',
+  'readinessSafeResponseMode',
+  'unsupportedClaimCount',
+  'contradictionDetected',
+  'answerReadinessLogOnly'
 ]);
 
 function resolveAppendAuditLog() {

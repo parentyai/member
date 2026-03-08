@@ -13,6 +13,7 @@ const { finalizeCandidate } = require('./finalizeCandidate');
 const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
+const { evaluateAnswerReadiness } = require('../quality/evaluateAnswerReadiness');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -234,6 +235,29 @@ async function runPaidConversationOrchestrator(params) {
     selected: judged.selected,
     evidenceSufficiency: effectiveEvidenceSufficiency
   });
+  const evidenceCoverage = groundedResult && groundedResult.assistantQuality
+    ? Number(groundedResult.assistantQuality.evidenceCoverage) || 0
+    : 0;
+  const unsupportedClaimCount = (Array.isArray(verified.contradictionFlags) ? verified.contradictionFlags : [])
+    .filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported'))
+    .length;
+  const readinessResult = evaluateAnswerReadiness({
+    lawfulBasis: legalSnapshot.lawfulBasis,
+    consentVerified: legalSnapshot.consentVerified,
+    crossBorder: legalSnapshot.crossBorder,
+    legalDecision: legalSnapshot.legalDecision,
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    unsupportedClaimCount,
+    contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
+    evidenceCoverage,
+    fallbackType: groundedResult && groundedResult.ok !== true && groundedResult.blockedReason
+      ? groundedResult.blockedReason
+      : null
+  });
   const finalized = finalizeCandidate({
     selected: verified.selected,
     verificationOutcome: verified.verificationOutcome,
@@ -280,6 +304,12 @@ async function runPaidConversationOrchestrator(params) {
       sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
       sourceReadinessReasons: sourceReadiness.reasonCodes,
       officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+      readinessDecision: readinessResult.decision,
+      readinessReasonCodes: readinessResult.reasonCodes,
+      readinessSafeResponseMode: readinessResult.safeResponseMode,
+      unsupportedClaimCount,
+      contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
+      answerReadinessLogOnly: true,
       judgeWinner: judged.judgeWinner,
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,

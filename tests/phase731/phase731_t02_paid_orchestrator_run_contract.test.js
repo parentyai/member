@@ -43,6 +43,8 @@ test('phase731: orchestrator clarifies broad paid questions without retrieval', 
   assert.equal(result.telemetry.strategy, 'clarify');
   assert.equal(result.telemetry.retrieveNeeded, false);
   assert.equal(result.telemetry.verificationOutcome, 'passed');
+  assert.equal(typeof result.telemetry.readinessDecision, 'string');
+  assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.replyText.includes('対象を絞って案内したい'), true);
 });
 
@@ -107,6 +109,8 @@ test('phase731: orchestrator rejects legacy grounded candidate and prefers compo
   assert.equal(result.telemetry.retrieveNeeded, true);
   assert.equal(result.telemetry.judgeWinner, 'composed_concierge_candidate');
   assert.equal(result.telemetry.retrievalQuality, 'good');
+  assert.equal(typeof result.telemetry.readinessDecision, 'string');
+  assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.replyText.includes('FAQ候補'), false);
   assert.equal(result.replyText.includes('根拠キー'), false);
   assert.equal(result.finalMeta.legacyTemplateHit, false);

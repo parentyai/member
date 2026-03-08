@@ -82,7 +82,13 @@ const LLM_GATE_KEYS = new Set([
   'sourceFreshnessScore',
   'sourceReadinessDecision',
   'sourceReadinessReasons',
-  'officialOnlySatisfied'
+  'officialOnlySatisfied',
+  'readinessDecision',
+  'readinessReasonCodes',
+  'readinessSafeResponseMode',
+  'unsupportedClaimCount',
+  'contradictionDetected',
+  'answerReadinessLogOnly'
 ]);
 
 const LLM_USAGE_KEYS = new Set([

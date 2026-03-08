@@ -42,6 +42,12 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     legalReasonCodes: ['consent_missing'],
     intentRiskTier: 'high',
     riskReasonCodes: ['intent_ssn', 'risk_high'],
+    readinessDecision: 'clarify',
+    readinessReasonCodes: ['source_readiness_clarify'],
+    readinessSafeResponseMode: 'clarify',
+    unsupportedClaimCount: 1,
+    contradictionDetected: true,
+    answerReadinessLogOnly: true,
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -60,6 +66,12 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.deepEqual(sanitized.legalReasonCodes, ['consent_missing']);
   assert.equal(sanitized.intentRiskTier, 'high');
   assert.deepEqual(sanitized.riskReasonCodes, ['intent_ssn', 'risk_high']);
+  assert.equal(sanitized.readinessDecision, 'clarify');
+  assert.deepEqual(sanitized.readinessReasonCodes, ['source_readiness_clarify']);
+  assert.equal(sanitized.readinessSafeResponseMode, 'clarify');
+  assert.equal(sanitized.unsupportedClaimCount, 1);
+  assert.equal(sanitized.contradictionDetected, true);
+  assert.equal(sanitized.answerReadinessLogOnly, true);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 

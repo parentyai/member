@@ -369,6 +369,8 @@ function buildConversationQualitySummary(actionRows) {
   const verificationOutcomes = new Map();
   const judgeWinners = new Map();
   const sourceReadinessDecisions = new Map();
+  const readinessDecisions = new Map();
+  const readinessSafeResponseModes = new Map();
   const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
@@ -384,6 +386,8 @@ function buildConversationQualitySummary(actionRows) {
   let sourceFreshnessScoreTotal = 0;
   let sourceFreshnessScoreCount = 0;
   let officialOnlySatisfiedCount = 0;
+  let unsupportedClaimCountTotal = 0;
+  let contradictionDetectedCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -395,6 +399,8 @@ function buildConversationQualitySummary(actionRows) {
     const verificationOutcome = normalizeReason(row && row.verificationOutcome ? row.verificationOutcome : 'none');
     const judgeWinner = normalizeReason(row && row.judgeWinner ? row.judgeWinner : 'none');
     const sourceReadinessDecision = normalizeReason(row && row.sourceReadinessDecision ? row.sourceReadinessDecision : 'none');
+    const readinessDecision = normalizeReason(row && row.readinessDecision ? row.readinessDecision : 'none');
+    const readinessSafeResponseMode = normalizeReason(row && row.readinessSafeResponseMode ? row.readinessSafeResponseMode : 'none');
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
     const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
     const retrieveNeeded = row && row.retrieveNeeded === true;
@@ -411,6 +417,11 @@ function buildConversationQualitySummary(actionRows) {
     verificationOutcomes.set(verificationOutcome, (verificationOutcomes.get(verificationOutcome) || 0) + 1);
     judgeWinners.set(judgeWinner, (judgeWinners.get(judgeWinner) || 0) + 1);
     sourceReadinessDecisions.set(sourceReadinessDecision, (sourceReadinessDecisions.get(sourceReadinessDecision) || 0) + 1);
+    readinessDecisions.set(readinessDecision, (readinessDecisions.get(readinessDecision) || 0) + 1);
+    readinessSafeResponseModes.set(
+      readinessSafeResponseMode,
+      (readinessSafeResponseModes.get(readinessSafeResponseMode) || 0) + 1
+    );
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
     if (retrieveNeeded) retrieveNeededCount += 1;
@@ -418,6 +429,10 @@ function buildConversationQualitySummary(actionRows) {
     if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
     if (pitfallIncluded) pitfallIncludedCount += 1;
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
+    if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
+      unsupportedClaimCountTotal += Math.max(0, Number(row.unsupportedClaimCount));
+    }
+    if (row && row.contradictionDetected === true) contradictionDetectedCount += 1;
     if (Number.isFinite(Number(row && row.sourceAuthorityScore))) {
       sourceAuthorityScoreTotal += Number(row.sourceAuthorityScore);
       sourceAuthorityScoreCount += 1;
@@ -464,6 +479,14 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     officialOnlySatisfiedRate: sampleCount > 0
       ? Math.round((officialOnlySatisfiedCount / sampleCount) * 10000) / 10000
+      : 0,
+    readinessDecisions: sortCountEntries(readinessDecisions, 'readinessDecision', 10),
+    readinessSafeResponseModes: sortCountEntries(readinessSafeResponseModes, 'readinessSafeResponseMode', 10),
+    avgUnsupportedClaimCount: sampleCount > 0
+      ? Math.round((unsupportedClaimCountTotal / sampleCount) * 10000) / 10000
+      : 0,
+    contradictionDetectedRate: sampleCount > 0
+      ? Math.round((contradictionDetectedCount / sampleCount) * 10000) / 10000
       : 0,
     contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),

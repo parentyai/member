@@ -25,6 +25,10 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
       verificationOutcome: 'clarify',
       judgeWinner: 'clarify_candidate',
       contradictionFlags: ['insufficient_evidence'],
+      contradictionDetected: true,
+      unsupportedClaimCount: 1,
+      readinessDecision: 'clarify',
+      readinessSafeResponseMode: 'clarify',
       domainIntent: 'general',
       conversationMode: 'casual',
       fallbackType: 'low_specificity_clarify'
@@ -42,6 +46,10 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
       verificationOutcome: 'passed',
       judgeWinner: 'domain_concierge_candidate',
       contradictionFlags: [],
+      contradictionDetected: false,
+      unsupportedClaimCount: 0,
+      readinessDecision: 'allow',
+      readinessSafeResponseMode: 'answer',
       domainIntent: 'housing',
       conversationMode: 'concierge',
       fallbackType: 'domain_concierge'
@@ -59,6 +67,10 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
   assert.ok(Array.isArray(summary.retrievalQualities));
   assert.ok(Array.isArray(summary.verificationOutcomes));
   assert.ok(Array.isArray(summary.judgeWinners));
+  assert.ok(Array.isArray(summary.readinessDecisions));
+  assert.ok(Array.isArray(summary.readinessSafeResponseModes));
+  assert.equal(summary.contradictionDetectedRate, 0.5);
+  assert.equal(summary.avgUnsupportedClaimCount, 0.5);
   assert.ok(Array.isArray(summary.contradictionFlags));
 });
 
@@ -73,6 +85,12 @@ test('phase732: llm action log schema includes orchestrator telemetry fields', (
     'verificationOutcome',
     'contradictionFlags',
     'candidateCount',
+    'readinessDecision',
+    'readinessReasonCodes',
+    'readinessSafeResponseMode',
+    'unsupportedClaimCount',
+    'contradictionDetected',
+    'answerReadinessLogOnly',
     'intentRiskTier',
     'riskReasonCodes',
     'committedNextActions',

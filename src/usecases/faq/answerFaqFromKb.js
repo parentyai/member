@@ -17,6 +17,7 @@ const { sanitizeRetrievalCandidates } = require('../assistant/retrieval/sanitize
 const { resolveLlmLegalPolicySnapshot } = require('../../domain/llm/policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../../domain/llm/policy/resolveIntentRiskTier');
 const { computeSourceReadiness } = require('../../domain/llm/knowledge/computeSourceReadiness');
+const { evaluateAnswerReadiness } = require('../../domain/llm/quality/evaluateAnswerReadiness');
 
 const DEFAULT_TIMEOUT_MS = 2500;
 const PROMPT_VERSION = 'faq_answer_v2_kb_only';
@@ -290,6 +291,9 @@ function buildAuditSummaryBase(params) {
   const sourceReadiness = payload.sourceReadiness && typeof payload.sourceReadiness === 'object'
     ? payload.sourceReadiness
     : {};
+  const answerReadiness = payload.answerReadiness && typeof payload.answerReadiness === 'object'
+    ? payload.answerReadiness
+    : {};
   return {
     purpose: 'faq',
     llmEnabled: payload.llmEnabled,
@@ -326,6 +330,16 @@ function buildAuditSummaryBase(params) {
     sourceReadinessDecision: sourceReadiness.sourceReadinessDecision || null,
     sourceReadinessReasons: Array.isArray(sourceReadiness.reasonCodes) ? sourceReadiness.reasonCodes : [],
     officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    readinessDecision: answerReadiness.decision || null,
+    readinessReasonCodes: Array.isArray(answerReadiness.reasonCodes) ? answerReadiness.reasonCodes : [],
+    readinessSafeResponseMode: answerReadiness.safeResponseMode || null,
+    unsupportedClaimCount: answerReadiness.qualitySnapshot && Number.isFinite(Number(answerReadiness.qualitySnapshot.unsupportedClaimCount))
+      ? Number(answerReadiness.qualitySnapshot.unsupportedClaimCount)
+      : 0,
+    contradictionDetected: answerReadiness.qualitySnapshot
+      ? answerReadiness.qualitySnapshot.contradictionDetected === true
+      : false,
+    answerReadinessLogOnly: true,
     inputFieldCategoriesUsed: payload.inputFieldCategoriesUsed,
     fieldCategoriesUsed: payload.inputFieldCategoriesUsed
   };
@@ -499,6 +513,23 @@ async function answerFaqFromKb(params, deps) {
     evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined
       ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
       : 0
+  });
+  const answerReadiness = evaluateAnswerReadiness({
+    lawfulBasis: legalSnapshot.lawfulBasis,
+    consentVerified: legalSnapshot.consentVerified,
+    crossBorder: legalSnapshot.crossBorder,
+    legalDecision: legalSnapshot.legalDecision,
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    sourceAuthorityScore: sourceReadiness.sourceAuthorityScore,
+    sourceFreshnessScore: sourceReadiness.sourceFreshnessScore,
+    sourceReadinessDecision: sourceReadiness.sourceReadinessDecision,
+    officialOnlySatisfied: sourceReadiness.officialOnlySatisfied === true,
+    unsupportedClaimCount: 0,
+    contradictionDetected: false,
+    evidenceCoverage: confidence.top1Score !== null && confidence.top1Score !== undefined
+      ? Math.max(0, Math.min(1, Number(confidence.top1Score)))
+      : 0,
+    fallbackType: null
   });
   const normalizedPersonalization = personalizationCheck.isAllowed
     ? {
@@ -692,6 +723,7 @@ async function answerFaqFromKb(params, deps) {
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
+          answerReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -816,6 +848,7 @@ async function answerFaqFromKb(params, deps) {
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
+          answerReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -905,6 +938,7 @@ async function answerFaqFromKb(params, deps) {
           intentRiskTier: riskSnapshot.intentRiskTier,
           riskReasonCodes: riskSnapshot.riskReasonCodes,
           sourceReadiness,
+          answerReadiness,
           disclaimerVersion: disclaimer.version,
           matchedArticleIds,
           confidence,
@@ -972,6 +1006,7 @@ async function answerFaqFromKb(params, deps) {
         intentRiskTier: riskSnapshot.intentRiskTier,
         riskReasonCodes: riskSnapshot.riskReasonCodes,
         sourceReadiness,
+        answerReadiness,
         disclaimerVersion: disclaimer.version,
         matchedArticleIds,
         confidence,
