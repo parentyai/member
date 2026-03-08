@@ -1,0 +1,1068 @@
+{
+  "generatedAt": "2026-03-08T06:22:04.376Z",
+  "gitCommit": "2d817f08245419ce00bc5a992f282ffabecf495c",
+  "branch": "codex/member-next5-pr5-flag-governance",
+  "flags": [
+    {
+      "name": "ENABLE_ADMIN_BUILD_META",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_build_meta",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:64"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_DEVELOPER_SURFACE_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_developer_surface_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:120"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_HISTORY_SYNC",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_history_sync",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:80"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_HOME_CLEAN_SURFACE_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_home_clean_surface_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:100"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_LEGACY_STATUS_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_legacy_status_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:124"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_LOCAL_PREFLIGHT_BLOCKING_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_local_preflight_blocking_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:88"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_LOCAL_PREFLIGHT_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_local_preflight_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:84"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_NAV_ALL_ACCESSIBLE_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_nav_all_accessible_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:72"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_NAV_ROLLOUT_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_nav_rollout_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:68"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_NO_COLLAPSE_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_no_collapse_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:92"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_OPS_ONLY_NAV_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_ops_only_nav_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:116"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_ROLE_PERSIST",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_role_persist",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:76"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_TOP_SUMMARY_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_top_summary_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:96"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_TREND_UI",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_trend_ui",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:176",
+        "src/index.js:184"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_UI_FOUNDATION_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_ui_foundation_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:47"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_ADMIN_USERS_STRIPE_LAYOUT_V1",
+      "owner": "admin-ops",
+      "purpose": "Runtime gate for enable_admin_users_stripe_layout_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:104"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_BILLING_LIFECYCLE_AUTOMATION",
+      "owner": "billing",
+      "purpose": "Runtime gate for enable_billing_lifecycle_automation",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/usecases/billing/handleBillingLifecycleAutomation.js:22"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_AUDIT_RUNS_ORDERBY_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_audit_runs_orderby_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/repos/firestore/sourceAuditRunsRepo.js:18"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_CONTENT_MANAGE_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_content_manage_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/index.js:108"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_METRICS_BOUNDED_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_metrics_bounded_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/cityPack/computeCityPackMetrics.js:46"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_METRICS_DAILY_PREFERRED_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_metrics_daily_preferred_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/cityPack/computeCityPackMetrics.js:50"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_MODULE_SUBSCRIPTION_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_module_subscription_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:118"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_RECOMMENDED_TASKS_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_recommended_tasks_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:150"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_REVIEW_INBOX_BATCH_READ_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_review_inbox_batch_read_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/cityPackReviewInbox.js:81"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_SOURCE_REFS_BUFFERED_LIMIT_V1",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_source_refs_buffered_limit_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/repos/firestore/sourceRefsRepo.js:39"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CITY_PACK_UI_V2",
+      "owner": "city-pack",
+      "purpose": "Runtime gate for enable_city_pack_ui_v2",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/index.js:112"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_COMPOSER_AB_OPTION_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_composer_ab_option_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/index.js:140"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_COMPOSER_CATEGORY_WIZARD_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_composer_category_wizard_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/index.js:136"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CONTEXT_SNAPSHOT_V2",
+      "owner": "context-platform",
+      "purpose": "Runtime gate for enable_context_snapshot_v2",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/internal/userContextSnapshotRecompressJob.js:22"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_CONVERSATION_ROUTER",
+      "owner": "assistant-paid",
+      "purpose": "Runtime gate for enable_conversation_router",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:383"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_EMERGENCY",
+      "owner": "emergency-layer",
+      "purpose": "Runtime gate for enable_emergency",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/usecases/emergency/runEmergencySync.js:280"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_INTENT_ALIAS_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_intent_alias_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/repos/firestore/opsConfigRepo.js:80"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_ATTENTION_BUDGET_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_attention_budget_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:122"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_BRANCH_QUEUE_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_branch_queue_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/journey/applyJourneyReactionBranch.js:9",
+        "src/usecases/journey/runJourneyBranchDispatchJob.js:17"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_DAG_CATALOG_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_dag_catalog_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/journeyGraphCatalogConfig.js:47",
+        "src/usecases/journey/syncJourneyDagCatalogToTodos.js:30"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_DAG_UI_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_dag_ui_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/journeyGraphCatalogConfig.js:48"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_KPI",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_kpi",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/osJourneyKpi.js:9",
+        "src/routes/internal/journeyKpiBuildJob.js:21"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_NOTIFICATION_NARROWING_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_notification_narrowing_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:130"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_PARAM_CANARY_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_param_canary_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/journey/resolveEffectiveJourneyParams.js:36"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_PARAM_VERSIONING_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_param_versioning_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/journey/resolveEffectiveJourneyParams.js:110",
+        "src/usecases/journey/runJourneyTodoReminderJob.js:57",
+        "src/usecases/journey/syncJourneyDagCatalogToTodos.js:34"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_REGIONAL_PROCEDURES_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_regional_procedures_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:138"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_REMINDER_JOB",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_reminder_job",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/journeyPolicyConfig.js:66",
+        "src/usecases/journey/runJourneyTodoReminderJob.js:43"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_RULE_ENGINE_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_rule_engine_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/journeyGraphCatalogConfig.js:49",
+        "src/usecases/journey/runJourneyTodoReminderJob.js:50"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_TEMPLATE_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_template_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:78"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_JOURNEY_UNIFIED_VIEW_V1",
+      "owner": "journey-platform",
+      "purpose": "Runtime gate for enable_journey_unified_view_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:82"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_LEGACY_TODO_DERIVE_FROM_TEMPLATES_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_legacy_todo_derive_from_templates_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:86"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_LEGACY_TODO_EMIT_DISABLED_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_legacy_todo_emit_disabled_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:90"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_LINE_CTA_BUTTONS_V1",
+      "owner": "notification-platform",
+      "purpose": "Runtime gate for enable_line_cta_buttons_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/usecases/adminOs/previewNotification.js:65",
+        "src/usecases/notifications/sendNotification.js:144"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_LINK_REGISTRY_IMPACT_MAP_V1",
+      "owner": "link-registry",
+      "purpose": "Runtime gate for enable_link_registry_impact_map_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:166"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_LINK_REGISTRY_INTENT_V2",
+      "owner": "link-registry",
+      "purpose": "Runtime gate for enable_link_registry_intent_v2",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:110"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_NEXT_TASK_ENGINE_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_next_task_engine_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:146"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_NOTIFICATION_CTA_MULTI_V1",
+      "owner": "notification-platform",
+      "purpose": "Runtime gate for enable_notification_cta_multi_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/osNotifications.js:88",
+        "src/usecases/adminOs/previewNotification.js:40",
+        "src/usecases/notifications/createNotification.js:173",
+        "src/usecases/notifications/runNotificationTest.js:133",
+        "src/usecases/notifications/sendNotification.js:143"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_OPS_REALTIME_DASHBOARD_V1",
+      "owner": "ops-platform",
+      "purpose": "Runtime gate for enable_ops_realtime_dashboard_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:128"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_OPS_SYSTEM_SNAPSHOT_V1",
+      "owner": "ops-platform",
+      "purpose": "Runtime gate for enable_ops_system_snapshot_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "ops_facing",
+      "sourceRefs": [
+        "src/index.js:132",
+        "src/routes/admin/opsFeatureCatalogStatus.js:22",
+        "src/routes/admin/opsSystemSnapshot.js:24",
+        "src/usecases/admin/buildOpsSnapshots.js:77"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_PAID_FAQ_QUALITY_V2",
+      "owner": "assistant-paid",
+      "purpose": "Runtime gate for enable_paid_faq_quality_v2",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/admin/journeyPolicyConfig.js:68",
+        "src/routes/webhookLine.js:363"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_PAID_OPPORTUNITY_ENGINE_V1",
+      "owner": "assistant-paid",
+      "purpose": "Runtime gate for enable_paid_opportunity_engine_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:379"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_PAID_ORCHESTRATOR_V2",
+      "owner": "assistant-paid",
+      "purpose": "Runtime gate for enable_paid_orchestrator_v2",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:387"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_PRO_PREDICTIVE_ACTIONS_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_pro_predictive_actions_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:375"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_REACTION_RESPONSE_TEXT_STORE_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_reaction_response_text_store_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/usecases/phase37/sanitizeReactionResponseText.js:13"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_RETRY_QUEUE_GIVEUP_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_retry_queue_giveup_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/phase73RetryQueue.js:43"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_RICH_MENU_DYNAMIC",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_rich_menu_dynamic",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/admin/journeyPolicyConfig.js:67",
+        "src/usecases/journey/applyPersonalizedRichMenu.js:23",
+        "src/usecases/journey/applyRichMenuAssignment.js:20"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_RICH_MENU_TASK_OS_ENTRY_V1",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_rich_menu_task_os_entry_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:154"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_SNAPSHOT_ONLY_CONTEXT_V1",
+      "owner": "context-platform",
+      "purpose": "Runtime gate for enable_snapshot_only_context_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:367"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_STRIPE_WEBHOOK",
+      "owner": "billing",
+      "purpose": "Runtime gate for enable_stripe_webhook",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/webhookStripe.js:13"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_CATEGORY_SYSTEM_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_category_system_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:142"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_CONTENT_ADMIN_EDITOR_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_content_admin_editor_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:98"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_DETAIL_LINE_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_detail_line_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:94"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_DETAIL_SECTION_SAFETY_VALVE_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_detail_section_safety_valve_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:102"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_ENGINE_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_engine_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:66"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_EVENTS_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_events_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:74"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_GRAPH_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_graph_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/routes/webhookLine.js:371"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_MICRO_LEARNING_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_micro_learning_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:114"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_TASK_NUDGE_V1",
+      "owner": "task-platform",
+      "purpose": "Runtime gate for enable_task_nudge_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:70"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_USER_CONTEXT_SNAPSHOT",
+      "owner": "platform-core",
+      "purpose": "Runtime gate for enable_user_context_snapshot",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/routes/internal/userContextSnapshotJob.js:22"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_UXOS_EVENTS_V1",
+      "owner": "ux-os",
+      "purpose": "Runtime gate for enable_uxos_events_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:178"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_UXOS_FATIGUE_WARN_V1",
+      "owner": "ux-os",
+      "purpose": "Runtime gate for enable_uxos_fatigue_warn_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:186",
+        "src/index.js:148"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_UXOS_NBA_V1",
+      "owner": "ux-os",
+      "purpose": "Runtime gate for enable_uxos_nba_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:182"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_UXOS_POLICY_READONLY_V1",
+      "owner": "ux-os",
+      "purpose": "Runtime gate for enable_uxos_policy_readonly_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "user_facing",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:190",
+        "src/index.js:144"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_VENDOR_RELEVANCE_SHADOW_V1",
+      "owner": "vendor-ranking",
+      "purpose": "Runtime gate for enable_vendor_relevance_shadow_v1",
+      "defaultValue": true,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:194"
+      ],
+      "status": "active"
+    },
+    {
+      "name": "ENABLE_VENDOR_RELEVANCE_SORT_V1",
+      "owner": "vendor-ranking",
+      "purpose": "Runtime gate for enable_vendor_relevance_sort_v1",
+      "defaultValue": false,
+      "defaultRationale": "env unset fallback follows code default",
+      "reviewBy": "2026-09-30",
+      "blastRadius": "cross_module",
+      "sourceRefs": [
+        "src/domain/tasks/featureFlags.js:198"
+      ],
+      "status": "active"
+    }
+  ]
+}

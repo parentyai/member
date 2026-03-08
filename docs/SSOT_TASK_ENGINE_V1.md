@@ -79,7 +79,8 @@ Task Engine v1 の add-only SSOT。
 
 ## Feature Flag Governance（Task Domain）
 - canonical registry:
-  - `src/domain/tasks/featureFlags.js` の `getTaskFeatureFlagRegistry()` を authority とする
+  - Task domain authority: `src/domain/tasks/featureFlags.js` の `getTaskFeatureFlagRegistry()`
+  - Global authority: `docs/REPO_AUDIT_INPUTS/feature_flag_registry.json`
 - registry必須項目:
   - `owner`
   - `defaultValue`
@@ -88,6 +89,7 @@ Task Engine v1 の add-only SSOT。
   - `type`
 - drift check:
   - `npm run feature-flags:task:check`
+  - `npm run feature-flags:check`
 - 運用原則:
   - flag追加時は parser追加と同時に registry へ追記する
   - owner/reviewBy 未設定の flag は rollout 対象にしない

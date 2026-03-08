@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T01:03:47-05:00",
-  "gitCommit": "383162142f9020dd84d22023477c7c7301800170",
+  "generatedAt": "2026-03-08T01:13:36-05:00",
+  "gitCommit": "2d817f08245419ce00bc5a992f282ffabecf495c",
   "branch": "codex/member-next5-pr4-observability-hygiene",
-  "sourceDigest": "3f430577157daa22442ac3fd9d99f222c83a9dc3d84ba64806b58152d2641593",
+  "sourceDigest": "a5ccafb5432e817e6607ee352b1fd345a42fa32a42d7f371c81efd0e83779d19",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
