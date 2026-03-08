@@ -77,6 +77,21 @@ Task Engine v1 の add-only SSOT。
   - `strict`（default）: linkRegistryId 不足時は suppress
   - `lenient`: link不足時に `task_todo_list` fallback を試行
 
+## Feature Flag Governance（Task Domain）
+- canonical registry:
+  - `src/domain/tasks/featureFlags.js` の `getTaskFeatureFlagRegistry()` を authority とする
+- registry必須項目:
+  - `owner`
+  - `defaultValue`
+  - `reviewBy`（`YYYY-MM-DD`）
+  - `rationale`
+  - `type`
+- drift check:
+  - `npm run feature-flags:task:check`
+- 運用原則:
+  - flag追加時は parser追加と同時に registry へ追記する
+  - owner/reviewBy 未設定の flag は rollout 対象にしない
+
 ## API Contract (Public Signed)
 - `GET /api/tasks?userId=...&ts=...&sig=...`
 - `PATCH /api/tasks/{taskId}?userId=...&ts=...&sig=...`
