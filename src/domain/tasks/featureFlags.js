@@ -148,6 +148,14 @@ function isUxOsPolicyReadonlyEnabled() {
   return parseFlag('ENABLE_UXOS_POLICY_READONLY_V1', false);
 }
 
+function isVendorRelevanceShadowEnabled() {
+  return parseFlag('ENABLE_VENDOR_RELEVANCE_SHADOW_V1', true);
+}
+
+function isVendorRelevanceSortEnabled() {
+  return parseFlag('ENABLE_VENDOR_RELEVANCE_SORT_V1', false);
+}
+
 module.exports = {
   isTaskEngineEnabled,
   isTaskNudgeEnabled,
@@ -179,5 +187,7 @@ module.exports = {
   isUxOsEventsEnabled,
   isUxOsNbaEnabled,
   isUxOsFatigueWarnEnabled,
-  isUxOsPolicyReadonlyEnabled
+  isUxOsPolicyReadonlyEnabled,
+  isVendorRelevanceShadowEnabled,
+  isVendorRelevanceSortEnabled
 };

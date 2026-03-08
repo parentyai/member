@@ -2750,7 +2750,8 @@ async function handleLineWebhook(options) {
             lineUserId: userId,
             data: postbackData,
             traceId,
-            requestId
+            requestId,
+            actor: userId
           });
           if (await sendJourneyResponse({
             journey,
@@ -2780,7 +2781,8 @@ async function handleLineWebhook(options) {
             lineUserId: userId,
             text,
             traceId,
-            requestId
+            requestId,
+            actor: userId
           });
           if (await sendJourneyResponse({
             journey,

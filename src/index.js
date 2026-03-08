@@ -1038,7 +1038,9 @@ function createServer() {
     return;
   }
 
-  if (pathname === '/api/admin/vendors' || /^\/api\/admin\/vendors\/[^/]+\/(edit|activate|disable)$/.test(pathname)) {
+  if (pathname === '/api/admin/vendors'
+    || pathname === '/api/admin/vendors/shadow-relevance'
+    || /^\/api\/admin\/vendors\/[^/]+\/(edit|activate|disable)$/.test(pathname)) {
     const collectBody = () => new Promise((resolve) => {
       if (req.method !== 'POST') {
         resolve('');

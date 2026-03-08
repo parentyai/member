@@ -171,8 +171,10 @@ const state = {
   taskRulesLinkRegistryItems: [],
   taskRulesLinkImpact: null,
   vendorItems: [],
+  vendorShadowItems: [],
   selectedVendorLinkId: null,
   selectedVendorRowIndex: null,
+  selectedVendorShadowEventId: null,
   readModelItems: [],
   errorsSummary: null,
   cityPackRequestItems: [],
@@ -6905,6 +6907,91 @@ function setupVendorTableKeyboardNavigation() {
   });
 }
 
+function formatVendorOrderSummary(item) {
+  const row = item && typeof item === 'object' ? item : {};
+  const current = Array.isArray(row.currentOrderLinkIds) ? row.currentOrderLinkIds : [];
+  const ranked = Array.isArray(row.rankedLinkIds) ? row.rankedLinkIds : [];
+  return `current: ${current.join(', ') || '-'}\nshadow: ${ranked.join(', ') || '-'}`;
+}
+
+function selectVendorShadowRow(tbody, rowEl, item) {
+  if (!tbody || !rowEl || !item) return;
+  tbody.querySelectorAll('tr').forEach((node) => {
+    node.classList.remove('row-active');
+    node.removeAttribute('aria-selected');
+  });
+  rowEl.classList.add('row-active');
+  rowEl.setAttribute('aria-selected', 'true');
+  state.selectedVendorShadowEventId = item.eventId || null;
+
+  const summaryEl = document.getElementById('vendor-shadow-summary');
+  if (summaryEl) summaryEl.textContent = formatVendorOrderSummary(item);
+  const rawEl = document.getElementById('vendor-shadow-raw');
+  if (rawEl) rawEl.textContent = JSON.stringify(item.raw || item, null, 2);
+}
+
+function renderVendorShadowRows(items) {
+  const tbody = document.getElementById('vendor-shadow-rows');
+  if (!tbody) return;
+  const rows = Array.isArray(items) ? items : [];
+  tbody.innerHTML = '';
+  if (!rows.length) {
+    state.selectedVendorShadowEventId = null;
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.textContent = t('ui.label.common.empty', 'データなし');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    const summaryEl = document.getElementById('vendor-shadow-summary');
+    if (summaryEl) summaryEl.textContent = '-';
+    const rawEl = document.getElementById('vendor-shadow-raw');
+    if (rawEl) rawEl.textContent = '-';
+    return;
+  }
+  rows.forEach((item) => {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    tr.tabIndex = 0;
+    tr.dataset.vendorShadowEventId = item.eventId || '';
+    const topScore = Array.isArray(item.scores) && item.scores[0] ? item.scores[0] : null;
+    const cols = [
+      formatDateLabel(item.createdAt),
+      item.todoKey || '-',
+      item.sortApplied ? 'yes' : 'no',
+      Array.isArray(item.currentOrderLinkIds) ? item.currentOrderLinkIds.join(', ') || '-' : '-',
+      Array.isArray(item.rankedLinkIds) ? item.rankedLinkIds.join(', ') || '-' : '-',
+      topScore && Number.isFinite(Number(topScore.relevanceScore))
+        ? `${topScore.linkId || '-'} (${Math.round(Number(topScore.relevanceScore))})`
+        : '-'
+    ];
+    cols.forEach((value, idx) => {
+      const td = document.createElement('td');
+      if (idx === 5) td.classList.add('cell-num');
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => selectVendorShadowRow(tbody, tr, item));
+    tr.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      selectVendorShadowRow(tbody, tr, item);
+    });
+    tbody.appendChild(tr);
+  });
+  if (state.selectedVendorShadowEventId) {
+    const selected = rows.find((item) => item && item.eventId === state.selectedVendorShadowEventId);
+    if (selected) {
+      const rowEl = Array.from(tbody.querySelectorAll('tr[data-vendor-shadow-event-id]'))
+        .find((node) => String(node.getAttribute('data-vendor-shadow-event-id') || '') === String(state.selectedVendorShadowEventId));
+      if (rowEl) selectVendorShadowRow(tbody, rowEl, selected);
+      return;
+    }
+  }
+  const firstRow = tbody.querySelector('tr[data-vendor-shadow-event-id]');
+  if (firstRow) selectVendorShadowRow(tbody, firstRow, rows[0]);
+}
+
 function formatRatio(value) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   return `${Math.round(value * 1000) / 10}%`;
@@ -11910,6 +11997,43 @@ async function loadMonitorInsights(options) {
   }
 }
 
+async function loadVendorShadowRelevance(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const notify = opts.notify === true;
+  const lineUserId = (document.getElementById('vendor-shadow-line-user-id')?.value || '').trim();
+  const todoKey = (document.getElementById('vendor-shadow-todo-key')?.value || '').trim();
+  const rawLimit = Number(document.getElementById('vendor-shadow-limit')?.value || '20');
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0
+    ? Math.min(Math.max(Math.floor(rawLimit), 1), 100)
+    : 20;
+  if (!lineUserId) {
+    state.vendorShadowItems = [];
+    renderVendorShadowRows([]);
+    if (notify) showToast('LINEユーザーIDを入力してください', 'warn');
+    return;
+  }
+  const traceId = ensureTraceInput('vendor-trace') || ensureTraceInput('monitor-trace');
+  const params = new URLSearchParams({
+    lineUserId,
+    limit: String(limit)
+  });
+  if (todoKey) params.set('todoKey', todoKey);
+  try {
+    const res = await fetch(`/api/admin/vendors/shadow-relevance?${params.toString()}`, {
+      headers: buildHeaders({}, traceId)
+    });
+    const data = await res.json();
+    const items = Array.isArray(data && data.items) ? data.items : [];
+    state.vendorShadowItems = items;
+    renderVendorShadowRows(items);
+    if (notify) showToast('Vendor Shadow Relevanceを更新しました', 'ok');
+  } catch (_err) {
+    state.vendorShadowItems = [];
+    renderVendorShadowRows([]);
+    if (notify) showToast('Vendor Shadow Relevanceの取得に失敗しました', 'danger');
+  }
+}
+
 async function loadVendors(options) {
   const notify = options && options.notify;
   const traceId = ensureTraceInput('vendor-trace') || ensureTraceInput('monitor-trace');
@@ -11928,6 +12052,10 @@ async function loadVendors(options) {
     state.vendorItems = items;
     renderVendorRows(items);
     renderVendorUnifiedRows();
+    const shadowLineUserId = (document.getElementById('vendor-shadow-line-user-id')?.value || '').trim();
+    if (shadowLineUserId) {
+      await loadVendorShadowRelevance({ notify: false });
+    }
     setPaneUpdatedAt('vendors');
     renderAllDecisionCards();
     if (notify) showToast(t('ui.toast.vendors.loaded', 'Vendor一覧を更新しました'), 'ok');
@@ -16374,6 +16502,16 @@ function setupVendorControls() {
   });
   document.getElementById('vendor-reload')?.addEventListener('click', () => {
     void loadVendors({ notify: true });
+  });
+  document.getElementById('vendor-shadow-reload')?.addEventListener('click', () => {
+    void loadVendorShadowRelevance({ notify: true });
+  });
+  ['vendor-shadow-line-user-id', 'vendor-shadow-todo-key', 'vendor-shadow-limit'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+      void loadVendorShadowRelevance({ notify: false });
+    });
   });
   bindWorkbenchAction({
     actionKey: 'vendors.edit',

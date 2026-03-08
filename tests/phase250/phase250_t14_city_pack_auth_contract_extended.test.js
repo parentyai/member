@@ -67,7 +67,8 @@ test('phase250: extended city-pack auth contracts keep admin/internal token boun
     '/api/admin/city-pack-metrics?windowDays=7&limit=10',
     '/api/admin/city-pack-feedback?limit=5',
     '/api/admin/city-pack-bulletins?limit=5',
-    '/api/admin/city-pack-source-audit/runs?limit=5'
+    '/api/admin/city-pack-source-audit/runs?limit=5',
+    '/api/admin/vendors/shadow-relevance?lineUserId=U_phase250_auth&limit=5'
   ];
   for (const path of adminRoutes) {
     const unauthorized = await request({ port, method: 'GET', path });
@@ -85,47 +86,74 @@ test('phase250: extended city-pack auth contracts keep admin/internal token boun
     assert.notStrictEqual(authorized.status, 401, `expected non-401 for ${path}`);
   }
 
-  const internalUnauthorizedAudit = await request({
-    port,
-    method: 'POST',
-    path: '/internal/jobs/city-pack-source-audit',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ runId: 'run_phase250_auth_001' })
-  });
-  assert.strictEqual(internalUnauthorizedAudit.status, 401);
+  const internalRoutes = [
+    '/internal/jobs/city-pack-source-audit',
+    '/internal/jobs/city-pack-audit-light',
+    '/internal/jobs/city-pack-audit-heavy',
+    '/internal/jobs/city-pack-draft-generator',
+    '/internal/jobs/emergency-sync',
+    '/internal/jobs/emergency-provider-fetch',
+    '/internal/jobs/emergency-provider-normalize',
+    '/internal/jobs/emergency-provider-summarize',
+    '/internal/jobs/municipality-schools-import',
+    '/internal/jobs/school-calendar-audit',
+    '/internal/jobs/struct-drift-backfill',
+    '/internal/jobs/retention-dry-run',
+    '/internal/jobs/retention-apply',
+    '/internal/jobs/ops-snapshot-build',
+    '/internal/jobs/journey-todo-reminder',
+    '/internal/jobs/task-nudge',
+    '/internal/jobs/journey-branch-dispatch',
+    '/internal/jobs/user-context-snapshot-build',
+    '/internal/jobs/user-context-snapshot-recompress',
+    '/internal/jobs/journey-kpi-build',
+    '/internal/jobs/llm-action-reward-finalize'
+  ];
 
-  const internalAuthorizedAudit = await request({
-    port,
-    method: 'POST',
-    path: '/internal/jobs/city-pack-source-audit',
-    headers: {
-      'content-type': 'application/json',
-      'x-city-pack-job-token': 'phase250_job_token',
-      'x-trace-id': 'trace_phase250_auth_internal_audit'
-    },
-    body: JSON.stringify({ runId: 'run_phase250_auth_001', targetSourceRefIds: [] })
-  });
-  assert.notStrictEqual(internalAuthorizedAudit.status, 401);
+  for (const path of internalRoutes) {
+    const unauthorized = await request({
+      port,
+      method: 'POST',
+      path,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    assert.ok(
+      unauthorized.status === 401 || unauthorized.status === 503,
+      `expected internal auth/config rejection without token for ${path}, got ${unauthorized.status}`
+    );
 
-  const internalUnauthorizedDraft = await request({
-    port,
-    method: 'POST',
-    path: '/internal/jobs/city-pack-draft-generator',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ requestId: 'cpr_phase250_auth_001', sourceUrls: ['https://example.com/source-auth-001'] })
-  });
-  assert.strictEqual(internalUnauthorizedDraft.status, 401);
+    const adminTokenOnly = await request({
+      port,
+      method: 'POST',
+      path,
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-token': 'phase250_admin_token'
+      },
+      body: JSON.stringify({})
+    });
+    assert.ok(
+      adminTokenOnly.status === 401 || adminTokenOnly.status === 503,
+      `expected internal auth/config rejection with admin token only for ${path}, got ${adminTokenOnly.status}`
+    );
 
-  const internalAuthorizedDraft = await request({
-    port,
-    method: 'POST',
-    path: '/internal/jobs/city-pack-draft-generator',
-    headers: {
-      'content-type': 'application/json',
-      'x-city-pack-job-token': 'phase250_job_token',
-      'x-trace-id': 'trace_phase250_auth_internal_draft'
-    },
-    body: JSON.stringify({ requestId: 'cpr_phase250_auth_001', sourceUrls: ['https://example.com/source-auth-001'] })
-  });
-  assert.notStrictEqual(internalAuthorizedDraft.status, 401);
+    const internalToken = await request({
+      port,
+      method: 'POST',
+      path,
+      headers: {
+        'content-type': 'application/json',
+        'x-city-pack-job-token': 'phase250_job_token',
+        'x-trace-id': `trace_phase250_auth_internal_${encodeURIComponent(path)}`
+      },
+      body: JSON.stringify({
+        requestId: 'cpr_phase250_auth_001',
+        runId: 'run_phase250_auth_001',
+        sourceUrls: ['https://example.com/source-auth-001'],
+        targetSourceRefIds: []
+      })
+    });
+    assert.notStrictEqual(internalToken.status, 401, `expected non-401 for internal token ${path}`);
+  }
 });

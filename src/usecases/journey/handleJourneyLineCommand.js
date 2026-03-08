@@ -18,6 +18,7 @@ const { resolvePlan } = require('../billing/planGate');
 const { syncJourneyTodoPlan, refreshJourneyTodoStats } = require('./syncJourneyTodoPlan');
 const { applyPersonalizedRichMenu } = require('./applyPersonalizedRichMenu');
 const { recomputeJourneyTaskGraph } = require('./recomputeJourneyTaskGraph');
+const { computeVendorRelevanceScore } = require('./computeVendorRelevanceScore');
 const { composeCityAndNationwidePacks } = require('../nationwidePack/composeCityAndNationwidePacks');
 const { listUserTasks } = require('../tasks/listUserTasks');
 const { computeNextTasks } = require('../tasks/computeNextTasks');
@@ -40,7 +41,9 @@ const {
   isCityPackModuleSubscriptionEnabled,
   isRichMenuTaskOsEntryEnabled,
   isCityPackRecommendedTasksEnabled,
-  isJourneyRegionalProceduresEnabled
+  isJourneyRegionalProceduresEnabled,
+  isVendorRelevanceShadowEnabled,
+  isVendorRelevanceSortEnabled
 } = require('../../domain/tasks/featureFlags');
 const { normalizeTaskCategory, TASK_CATEGORIES } = require('../../domain/tasks/taskCategories');
 
@@ -437,11 +440,67 @@ async function appendJourneyEventBestEffort(event, deps) {
   const repository = resolvedDeps.eventsRepo || eventsRepo;
   if (!repository || typeof repository.createEvent !== 'function') return;
   const extraFields = payload.fields && typeof payload.fields === 'object' ? payload.fields : {};
-  await repository.createEvent(Object.assign({
+  const traceId = normalizeOptionalToken(payload.traceId);
+  const requestId = normalizeOptionalToken(payload.requestId);
+  const base = Object.assign({
     lineUserId,
     type,
     ref: payload.ref && typeof payload.ref === 'object' ? payload.ref : {}
-  }, extraFields)).catch(() => null);
+  }, extraFields);
+  if (traceId) base.traceId = traceId;
+  if (requestId) base.requestId = requestId;
+  await repository.createEvent(base).catch(() => null);
+}
+
+async function appendJourneyAuditBestEffort(entry, deps) {
+  const payload = entry && typeof entry === 'object' ? entry : {};
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const writer = typeof resolvedDeps.appendAuditLog === 'function' ? resolvedDeps.appendAuditLog : appendAuditLog;
+  if (typeof writer !== 'function') return;
+  await writer(payload).catch(() => null);
+}
+
+async function runSyncJourneyTodoPlan(params, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const fn = typeof resolvedDeps.syncJourneyTodoPlan === 'function'
+    ? resolvedDeps.syncJourneyTodoPlan
+    : syncJourneyTodoPlan;
+  return fn(params, resolvedDeps);
+}
+
+async function runSyncUserTasksProjection(params, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const fn = typeof resolvedDeps.syncUserTasksProjection === 'function'
+    ? resolvedDeps.syncUserTasksProjection
+    : syncUserTasksProjection;
+  return fn(params, resolvedDeps);
+}
+
+function resolveTodoVendorTaskCategory(task, taskContent, stepRule) {
+  const fromTaskContent = normalizeTaskCategory(taskContent && taskContent.category, null);
+  if (fromTaskContent) return fromTaskContent;
+  const fromStepRule = normalizeTaskCategory(stepRule && stepRule.category, null);
+  if (fromStepRule) return fromStepRule;
+  return normalizeTaskCategory(task && task.category, null);
+}
+
+async function resolveTodoVendorAssignmentContext(lineUserId, deps) {
+  const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
+  const profileRepository = resolvedDeps.userJourneyProfilesRepo || userJourneyProfilesRepo;
+  const scheduleRepository = resolvedDeps.userJourneySchedulesRepo || userJourneySchedulesRepo;
+  const [profile, schedule] = await Promise.all([
+    profileRepository && typeof profileRepository.getUserJourneyProfile === 'function'
+      ? profileRepository.getUserJourneyProfile(lineUserId).catch(() => null)
+      : Promise.resolve(null),
+    scheduleRepository && typeof scheduleRepository.getUserJourneySchedule === 'function'
+      ? scheduleRepository.getUserJourneySchedule(lineUserId).catch(() => null)
+      : Promise.resolve(null)
+  ]);
+  return {
+    householdType: normalizeText(profile && profile.householdType) || null,
+    departureDate: normalizeText(schedule && schedule.departureDate) || null,
+    assignmentDate: normalizeText(schedule && schedule.assignmentDate) || null
+  };
 }
 
 async function buildRegionalProceduresReply(params, deps) {
@@ -460,7 +519,16 @@ async function buildRegionalProceduresReply(params, deps) {
     await appendJourneyEventBestEffort({
       lineUserId,
       type: 'local_task_surface_prompted',
-      ref: { reason: 'region_missing' }
+      ref: { reason: 'region_missing' },
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
+    }, resolvedDeps);
+    await appendJourneyEventBestEffort({
+      lineUserId,
+      type: 'local_task_surface_region_setup_shortcut',
+      ref: { source: 'line_command_regional_procedures', reason: 'region_missing' },
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
     }, resolvedDeps);
     return `地域手続きは地域設定後に有効になります。\n${regionPrompt()}`;
   }
@@ -573,6 +641,9 @@ async function buildTodoVendorReply(params, deps) {
   const resolvedDeps = deps && typeof deps === 'object' ? deps : {};
   const lineUserId = normalizeText(payload.lineUserId);
   const todoKey = normalizeText(payload.todoKey);
+  const traceId = normalizeOptionalToken(payload.traceId);
+  const requestId = normalizeOptionalToken(payload.requestId);
+  const actor = normalizeText(payload.actor, lineUserId || 'line_user');
   if (!todoKey) {
     return {
       handled: true,
@@ -615,11 +686,151 @@ async function buildTodoVendorReply(params, deps) {
     };
   }
 
+  const linkMap = new Map();
+  await Promise.all(linkIds.map(async (linkId) => {
+    const link = await registryRepository.getLink(linkId).catch(() => null);
+    linkMap.set(linkId, link);
+  }));
+
+  const usersRepository = resolvedDeps.usersRepo || usersRepo;
+  const preferenceRepository = resolvedDeps.userCityPackPreferencesRepo || userCityPackPreferencesRepo;
+  const [user, preference, assignmentContext] = await Promise.all([
+    usersRepository && typeof usersRepository.getUser === 'function'
+      ? usersRepository.getUser(lineUserId).catch(() => null)
+      : Promise.resolve(null),
+    preferenceRepository && typeof preferenceRepository.getUserCityPackPreference === 'function'
+      ? preferenceRepository.getUserCityPackPreference(lineUserId).catch(() => null)
+      : Promise.resolve(null),
+    resolveTodoVendorAssignmentContext(lineUserId, resolvedDeps)
+  ]);
+  const regionKey = normalizeText(user && user.regionKey).toLowerCase() || null;
+  const modulesSubscribed = normalizeCityPackModules(preference && preference.modulesSubscribed);
+  const taskCategory = resolveTodoVendorTaskCategory(task, taskContent, stepRule);
+
+  const shadowEnabled = isVendorRelevanceShadowEnabled();
+  const sortEnabled = shadowEnabled && isVendorRelevanceSortEnabled();
+  let shadow = null;
+  let sortApplied = false;
+
+  if (shadowEnabled) {
+    try {
+      shadow = await computeVendorRelevanceScore({
+        traceId,
+        regionKey,
+        modulesSubscribed,
+        taskCategory,
+        recommendedVendorLinkIds: linkIds.slice(),
+        assignmentContext,
+        candidates: linkIds.map((linkId, index) => {
+          const link = linkMap.get(linkId);
+          const tags = Array.isArray(link && link.tags) ? link.tags : [];
+          return {
+            linkId,
+            position: index,
+            regionKey: link && link.regionKey ? link.regionKey : null,
+            regionScope: link && link.regionScope ? link.regionScope : null,
+            intentTag: link && link.intentTag ? link.intentTag : null,
+            audienceTag: link && link.audienceTag ? link.audienceTag : null,
+            tags,
+            healthState: link && link.lastHealth && link.lastHealth.state ? link.lastHealth.state : null,
+            legacyHealthy: isHealthyLink(link)
+          };
+        })
+      });
+      sortApplied = sortEnabled && Array.isArray(shadow && shadow.rankedLinkIds) && shadow.rankedLinkIds.length > 0;
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'todo_vendor_shadow_scored',
+        traceId,
+        requestId,
+        ref: {
+          source: 'line_command_todo_vendor',
+          todoKey,
+          sortApplied
+        },
+        fields: {
+          traceId,
+          requestId,
+          taskCategory,
+          regionKey,
+          modulesSubscribed,
+          assignmentContext,
+          shadow: {
+            traceId: shadow && shadow.traceId ? shadow.traceId : traceId,
+            currentOrderLinkIds: Array.isArray(shadow && shadow.currentOrderLinkIds) ? shadow.currentOrderLinkIds : [],
+            rankedLinkIds: Array.isArray(shadow && shadow.rankedLinkIds) ? shadow.rankedLinkIds : [],
+            items: Array.isArray(shadow && shadow.items)
+              ? shadow.items.map((item) => ({
+                linkId: item && item.linkId ? item.linkId : null,
+                relevanceScore: Number.isFinite(Number(item && item.relevanceScore)) ? Number(item.relevanceScore) : null,
+                scoreBreakdown: item && item.scoreBreakdown && typeof item.scoreBreakdown === 'object' ? item.scoreBreakdown : {},
+                explanationCodes: Array.isArray(item && item.explanationCodes) ? item.explanationCodes : [],
+                legacyHealthy: item && item.legacyHealthy === true,
+                healthState: item && item.healthState ? item.healthState : 'UNKNOWN'
+              }))
+              : []
+          }
+        }
+      }, resolvedDeps);
+      await appendJourneyAuditBestEffort({
+        actor,
+        action: sortApplied ? 'journey.todo_vendor.shadow_scored.sort_applied' : 'journey.todo_vendor.shadow_scored',
+        entityType: 'journey_todo_vendor',
+        entityId: `${lineUserId}:${todoKey}`,
+        traceId,
+        requestId,
+        payloadSummary: {
+          todoKey,
+          taskCategory,
+          regionKey,
+          modulesSubscribed,
+          candidateCount: linkIds.length,
+          sortApplied,
+          currentOrderLinkIds: Array.isArray(shadow && shadow.currentOrderLinkIds) ? shadow.currentOrderLinkIds : [],
+          rankedLinkIds: Array.isArray(shadow && shadow.rankedLinkIds) ? shadow.rankedLinkIds : [],
+          topCandidates: Array.isArray(shadow && shadow.items)
+            ? shadow.items.slice(0, 5).map((item) => ({
+              linkId: item.linkId,
+              relevanceScore: item.relevanceScore,
+              explanationCodes: item.explanationCodes
+            }))
+            : []
+        }
+      }, resolvedDeps);
+    } catch (err) {
+      sortApplied = false;
+      await appendJourneyEventBestEffort({
+        lineUserId,
+        type: 'todo_vendor_shadow_failed',
+        traceId,
+        requestId,
+        ref: { source: 'line_command_todo_vendor', todoKey },
+        fields: {
+          error: normalizeText(err && err.message, 'shadow_compute_failed') || 'shadow_compute_failed'
+        }
+      }, resolvedDeps);
+      await appendJourneyAuditBestEffort({
+        actor,
+        action: 'journey.todo_vendor.shadow_failed',
+        entityType: 'journey_todo_vendor',
+        entityId: `${lineUserId}:${todoKey}`,
+        traceId,
+        requestId,
+        payloadSummary: {
+          todoKey,
+          error: normalizeText(err && err.message, 'shadow_compute_failed') || 'shadow_compute_failed'
+        }
+      }, resolvedDeps);
+    }
+  }
+
   const items = [];
   const warnings = [];
-  for (const linkId of linkIds.slice(0, 3)) {
-    // eslint-disable-next-line no-await-in-loop
-    const link = await registryRepository.getLink(linkId).catch(() => null);
+  const displayLinkIds = sortApplied && shadow && Array.isArray(shadow.rankedLinkIds) && shadow.rankedLinkIds.length
+    ? shadow.rankedLinkIds
+    : linkIds.slice(0, 3);
+  for (const linkId of displayLinkIds) {
+    const link = linkMap.get(linkId) || null;
     if (!link) {
       warnings.push(`${linkId}:not_found`);
       continue;
@@ -633,6 +844,7 @@ async function buildTodoVendorReply(params, deps) {
       label: normalizeText(link.title, normalizeText(link.label, linkId)),
       url: normalizeText(link.url, '')
     });
+    if (sortApplied && items.length >= 3) break;
   }
 
   if (!items.length) {
@@ -1142,12 +1354,12 @@ async function handleJourneyLineCommand(params, deps) {
       [JOURNEY_SCENARIO_MIRROR_FIELD]: command ? command[JOURNEY_SCENARIO_MIRROR_FIELD] : null,
       source: 'line_command'
     }, lineUserId);
-    const syncResult = await syncJourneyTodoPlan({
+    const syncResult = await runSyncJourneyTodoPlan({
       lineUserId,
       profile: saved,
       source: 'line_command_household'
     }, resolvedDeps);
-    await syncUserTasksProjection({
+    await runSyncUserTasksProjection({
       userId: lineUserId,
       lineUserId,
       actor: 'line_command_household'
@@ -1172,6 +1384,7 @@ async function handleJourneyLineCommand(params, deps) {
   }
 
   if (command.action === 'set_departure_date' || command.action === 'set_assignment_date') {
+    const isAssignmentUpdate = command.action === 'set_assignment_date';
     const existing = await scheduleRepo.getUserJourneySchedule(lineUserId);
     const patch = {
       departureDate: command.action === 'set_departure_date' ? command.departureDate : (existing && existing.departureDate) || null,
@@ -1180,16 +1393,68 @@ async function handleJourneyLineCommand(params, deps) {
     };
     patch.stage = resolveScheduleStage(patch);
     const savedSchedule = await scheduleRepo.upsertUserJourneySchedule(lineUserId, patch, lineUserId);
-    const syncResult = await syncJourneyTodoPlan({
-      lineUserId,
-      schedule: savedSchedule,
-      source: 'line_command_schedule'
-    }, resolvedDeps);
-    await syncUserTasksProjection({
-      userId: lineUserId,
-      lineUserId,
-      actor: 'line_command_schedule'
-    }, resolvedDeps).catch(() => null);
+    let syncResult = { syncedCount: 0 };
+    try {
+      if (isAssignmentUpdate) {
+        await appendJourneyAuditBestEffort({
+          actor: payload.actor || lineUserId,
+          action: 'journey.assignment_recompute.enqueued',
+          entityType: 'journey_schedule',
+          entityId: lineUserId,
+          traceId: payload.traceId || null,
+          requestId: payload.requestId || null,
+          payloadSummary: {
+            assignmentDate: patch.assignmentDate,
+            departureDate: patch.departureDate,
+            stage: patch.stage
+          }
+        }, resolvedDeps);
+      }
+      syncResult = await runSyncJourneyTodoPlan({
+        lineUserId,
+        schedule: savedSchedule,
+        source: 'line_command_schedule'
+      }, resolvedDeps);
+      await runSyncUserTasksProjection({
+        userId: lineUserId,
+        lineUserId,
+        actor: 'line_command_schedule'
+      }, resolvedDeps).catch(() => null);
+      if (isAssignmentUpdate) {
+        await appendJourneyAuditBestEffort({
+          actor: payload.actor || lineUserId,
+          action: 'journey.assignment_recompute.completed',
+          entityType: 'journey_schedule',
+          entityId: lineUserId,
+          traceId: payload.traceId || null,
+          requestId: payload.requestId || null,
+          payloadSummary: {
+            assignmentDate: patch.assignmentDate,
+            departureDate: patch.departureDate,
+            stage: patch.stage,
+            syncedCount: Number(syncResult && syncResult.syncedCount) || 0
+          }
+        }, resolvedDeps);
+      }
+    } catch (err) {
+      if (isAssignmentUpdate) {
+        await appendJourneyAuditBestEffort({
+          actor: payload.actor || lineUserId,
+          action: 'journey.assignment_recompute.failed',
+          entityType: 'journey_schedule',
+          entityId: lineUserId,
+          traceId: payload.traceId || null,
+          requestId: payload.requestId || null,
+          payloadSummary: {
+            assignmentDate: patch.assignmentDate,
+            departureDate: patch.departureDate,
+            stage: patch.stage,
+            error: normalizeText(err && err.message, 'recompute_failed') || 'recompute_failed'
+          }
+        }, resolvedDeps);
+      }
+      throw err;
+    }
 
     const dateLabel = command.action === 'set_departure_date' ? '渡航日' : '着任日';
     const dateValue = command.action === 'set_departure_date' ? command.departureDate : command.assignmentDate;
@@ -1310,7 +1575,9 @@ async function handleJourneyLineCommand(params, deps) {
     }
     const textReply = await buildRegionalProceduresReply({
       lineUserId,
-      now: payload.now || null
+      now: payload.now || null,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null
     }, resolvedDeps).catch(() => '地域手続きの取得に失敗しました。時間をおいて再度お試しください。');
     return {
       handled: true,
@@ -1398,7 +1665,10 @@ async function handleJourneyLineCommand(params, deps) {
     }
     return buildTodoVendorReply({
       lineUserId,
-      todoKey: command.todoKey
+      todoKey: command.todoKey,
+      traceId: payload.traceId || null,
+      requestId: payload.requestId || null,
+      actor: payload.actor || lineUserId
     }, resolvedDeps);
   }
 
