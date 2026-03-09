@@ -963,6 +963,14 @@ function buildConversationQualityMeta(params) {
   const followupIntent = normalizeFollowupIntent(payload.followupIntent);
   const conciseModeApplied = payload.conciseModeApplied === true;
   const repetitionPrevented = payload.repetitionPrevented === true;
+  const directAnswerApplied = payload.directAnswerApplied === true;
+  const clarifySuppressed = payload.clarifySuppressed === true;
+  const contextCarryScore = Number.isFinite(Number(payload.contextCarryScore))
+    ? Math.max(0, Math.min(1, Number(payload.contextCarryScore)))
+    : 0;
+  const repeatRiskScore = Number.isFinite(Number(payload.repeatRiskScore))
+    ? Math.max(0, Math.min(1, Number(payload.repeatRiskScore)))
+    : 0;
   return {
     conversationNaturalnessVersion,
     legacyTemplateHit,
@@ -974,7 +982,11 @@ function buildConversationQualityMeta(params) {
     interventionSuppressedBy: resolveInterventionSuppressedBy(payload.opportunityReasonKeys),
     followupIntent,
     conciseModeApplied,
-    repetitionPrevented
+    repetitionPrevented,
+    directAnswerApplied,
+    clarifySuppressed,
+    contextCarryScore,
+    repeatRiskScore
   };
 }
 
@@ -1238,6 +1250,14 @@ async function appendLlmGateDecisionBestEffort(data) {
           : (qualityMeta.followupIntent || null),
         conciseModeApplied: payload.conciseModeApplied === true || qualityMeta.conciseModeApplied === true,
         repetitionPrevented: payload.repetitionPrevented === true || qualityMeta.repetitionPrevented === true,
+        directAnswerApplied: payload.directAnswerApplied === true || qualityMeta.directAnswerApplied === true,
+        clarifySuppressed: payload.clarifySuppressed === true || qualityMeta.clarifySuppressed === true,
+        contextCarryScore: Number.isFinite(Number(payload.contextCarryScore))
+          ? Number(payload.contextCarryScore)
+          : Number(qualityMeta.contextCarryScore || 0),
+        repeatRiskScore: Number.isFinite(Number(payload.repeatRiskScore))
+          ? Number(payload.repeatRiskScore)
+          : Number(qualityMeta.repeatRiskScore || 0),
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1446,6 +1466,14 @@ async function appendLlmActionLogBestEffort(data) {
         : (qualityMeta.followupIntent || null),
       conciseModeApplied: payload.conciseModeApplied === true || qualityMeta.conciseModeApplied === true,
       repetitionPrevented: payload.repetitionPrevented === true || qualityMeta.repetitionPrevented === true,
+      directAnswerApplied: payload.directAnswerApplied === true || qualityMeta.directAnswerApplied === true,
+      clarifySuppressed: payload.clarifySuppressed === true || qualityMeta.clarifySuppressed === true,
+      contextCarryScore: Number.isFinite(Number(payload.contextCarryScore))
+        ? Number(payload.contextCarryScore)
+        : Number(qualityMeta.contextCarryScore || 0),
+      repeatRiskScore: Number.isFinite(Number(payload.repeatRiskScore))
+        ? Number(payload.repeatRiskScore)
+        : Number(qualityMeta.repeatRiskScore || 0),
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
@@ -1658,7 +1686,11 @@ async function tryHandlePaidOrchestratorV2(params) {
     conversationNaturalnessVersion: 'v2',
     followupIntent: orchestrated.telemetry ? orchestrated.telemetry.followupIntent : null,
     conciseModeApplied: orchestrated.telemetry ? orchestrated.telemetry.conciseModeApplied === true : false,
-    repetitionPrevented: orchestrated.telemetry ? orchestrated.telemetry.repetitionPrevented === true : false
+    repetitionPrevented: orchestrated.telemetry ? orchestrated.telemetry.repetitionPrevented === true : false,
+    directAnswerApplied: orchestrated.telemetry ? orchestrated.telemetry.directAnswerApplied === true : false,
+    clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
+    contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
+    repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0
   });
   const assistantQuality = normalizeAssistantQuality(orchestrated.assistantQuality, {
     intentResolved: payload.paidIntent,
@@ -1720,6 +1752,10 @@ async function tryHandlePaidOrchestratorV2(params) {
     followupIntent: orchestrated.telemetry ? orchestrated.telemetry.followupIntent : null,
     conciseModeApplied: orchestrated.telemetry ? orchestrated.telemetry.conciseModeApplied === true : false,
     repetitionPrevented: orchestrated.telemetry ? orchestrated.telemetry.repetitionPrevented === true : false,
+    directAnswerApplied: orchestrated.telemetry ? orchestrated.telemetry.directAnswerApplied === true : false,
+    clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
+    contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
+    repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
     legalSnapshot
   });
   await appendLlmActionLogBestEffort({
@@ -1762,6 +1798,10 @@ async function tryHandlePaidOrchestratorV2(params) {
     followupIntent: orchestrated.telemetry ? orchestrated.telemetry.followupIntent : null,
     conciseModeApplied: orchestrated.telemetry ? orchestrated.telemetry.conciseModeApplied === true : false,
     repetitionPrevented: orchestrated.telemetry ? orchestrated.telemetry.repetitionPrevented === true : false,
+    directAnswerApplied: orchestrated.telemetry ? orchestrated.telemetry.directAnswerApplied === true : false,
+    clarifySuppressed: orchestrated.telemetry ? orchestrated.telemetry.clarifySuppressed === true : false,
+    contextCarryScore: orchestrated.telemetry ? orchestrated.telemetry.contextCarryScore : 0,
+    repeatRiskScore: orchestrated.telemetry ? orchestrated.telemetry.repeatRiskScore : 0,
     committedNextActions: orchestrated.telemetry ? orchestrated.telemetry.committedNextActions : [],
     committedFollowupQuestion: orchestrated.telemetry ? orchestrated.telemetry.committedFollowupQuestion : null,
     recentUserGoal: Array.isArray(orchestrated.packet && orchestrated.packet.recentUserGoals)

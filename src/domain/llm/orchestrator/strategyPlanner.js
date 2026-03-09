@@ -16,6 +16,9 @@ function buildStrategyPlan(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const routerMode = normalizeText(payload.routerMode || 'casual').toLowerCase();
   const normalizedIntent = normalizeText(payload.normalizedConversationIntent || 'general').toLowerCase();
+  const followupIntent = normalizeText(payload.followupIntent || '').toLowerCase();
+  const hasFollowupIntent = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
+  const directAnswerHint = hasFollowupIntent || payload.contextResume === true || payload.lowInformationMessage === true;
   const intentReason = payload.intentDecision && typeof payload.intentDecision === 'object'
     ? normalizeText(payload.intentDecision.reason).toLowerCase()
     : '';
@@ -26,6 +29,18 @@ function buildStrategyPlan(params) {
   const messageText = normalizeText(payload.messageText);
 
   if (routerMode === 'greeting' || routerMode === 'casual') {
+    if (hasFollowupIntent && normalizedIntent !== 'general') {
+      return {
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'followup_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      };
+    }
     if (payload.contextResume === true && normalizedIntent !== 'general') {
       return {
         strategy: 'domain_concierge',
@@ -33,7 +48,9 @@ function buildStrategyPlan(params) {
         retrieveNeeded: false,
         verifyNeeded: false,
         candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
-        fallbackType: 'contextual_domain_resume'
+        fallbackType: 'contextual_domain_resume',
+        directAnswerFirst: true,
+        clarifySuppressed: true
       };
     }
     const isGreetingOrSmalltalk = intentReason === 'greeting_detected' || intentReason === 'smalltalk_detected';
@@ -44,7 +61,9 @@ function buildStrategyPlan(params) {
         retrieveNeeded: false,
         verifyNeeded: false,
         candidateSet: ['clarify_candidate', 'conversation_candidate'],
-        fallbackType: 'low_information_clarify'
+        fallbackType: 'low_information_clarify',
+        directAnswerFirst: false,
+        clarifySuppressed: false
       };
     }
     return {
@@ -53,7 +72,9 @@ function buildStrategyPlan(params) {
       retrieveNeeded: false,
       verifyNeeded: false,
       candidateSet: ['conversation_candidate'],
-      fallbackType: null
+      fallbackType: null,
+      directAnswerFirst: false,
+      clarifySuppressed: false
     };
   }
 
@@ -64,7 +85,9 @@ function buildStrategyPlan(params) {
       retrieveNeeded: false,
       verifyNeeded: false,
       candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
-      fallbackType: null
+      fallbackType: null,
+      directAnswerFirst: directAnswerHint,
+      clarifySuppressed: directAnswerHint
     };
   }
 
@@ -75,7 +98,9 @@ function buildStrategyPlan(params) {
       retrieveNeeded: false,
       verifyNeeded: false,
       candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
-      fallbackType: null
+      fallbackType: null,
+      directAnswerFirst: false,
+      clarifySuppressed: false
     };
   }
 
@@ -86,11 +111,25 @@ function buildStrategyPlan(params) {
       retrieveNeeded: true,
       verifyNeeded: true,
       candidateSet: ['grounded_candidate', 'conversation_candidate', 'clarify_candidate'],
-      fallbackType: null
+      fallbackType: null,
+      directAnswerFirst: false,
+      clarifySuppressed: false
     };
   }
 
   if (routerMode === 'question') {
+    if (hasFollowupIntent && normalizedIntent !== 'general') {
+      return {
+        strategy: 'domain_concierge',
+        conversationMode: 'concierge',
+        retrieveNeeded: false,
+        verifyNeeded: false,
+        candidateSet: ['domain_concierge_candidate', 'clarify_candidate'],
+        fallbackType: 'followup_direct_answer',
+        directAnswerFirst: true,
+        clarifySuppressed: true
+      };
+    }
     const clarifyFirst = isBroadQuestion(messageText)
       && (!opportunityDecision || opportunityDecision.conversationMode !== 'concierge');
     return {
@@ -101,7 +140,9 @@ function buildStrategyPlan(params) {
       candidateSet: clarifyFirst
         ? ['clarify_candidate', 'conversation_candidate']
         : ['grounded_candidate', 'composed_concierge_candidate', 'clarify_candidate'],
-      fallbackType: clarifyFirst ? 'low_specificity_clarify' : null
+      fallbackType: clarifyFirst ? 'low_specificity_clarify' : null,
+      directAnswerFirst: !clarifyFirst,
+      clarifySuppressed: false
     };
   }
 
@@ -111,7 +152,9 @@ function buildStrategyPlan(params) {
     retrieveNeeded: true,
     verifyNeeded: true,
     candidateSet: ['grounded_candidate', 'clarify_candidate'],
-    fallbackType: null
+    fallbackType: null,
+    directAnswerFirst: false,
+    clarifySuppressed: false
   };
 }
 

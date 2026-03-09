@@ -3,8 +3,10 @@
 const path = require('node:path');
 const { parseArgs, readJson, writeJson } = require('./lib');
 
-function evaluateSliceGate(scorecard) {
+function evaluateSliceGate(scorecard, options) {
   const payload = scorecard && typeof scorecard === 'object' ? scorecard : {};
+  const opts = options && typeof options === 'object' ? options : {};
+  const requireAllSlicesPass = opts.requireAllSlicesPass === true;
   const slices = Array.isArray(payload.slices) ? payload.slices : [];
   const failures = [];
   const warnings = [];
@@ -16,6 +18,7 @@ function evaluateSliceGate(scorecard) {
     if (status === 'fail') failures.push(`slice_fail:${key}`);
     if (critical && status !== 'pass') failures.push(`critical_slice_regression:${key}`);
     if (status === 'warning') warnings.push(`slice_warning:${key}`);
+    if (requireAllSlicesPass && status !== 'pass') failures.push(`slice_not_pass:${key}`);
   });
 
   return {
@@ -27,6 +30,7 @@ function evaluateSliceGate(scorecard) {
 
 function main(argv) {
   const args = parseArgs(argv);
+  const requireAllSlicesPass = String(args.requireAllSlicesPass || '').toLowerCase() === 'true';
   const inputPath = args.input
     ? path.resolve(process.cwd(), args.input)
     : path.join(process.cwd(), 'tmp', 'llm_quality_candidate_scorecard.json');
@@ -34,7 +38,7 @@ function main(argv) {
     ? path.resolve(process.cwd(), args.output)
     : path.join(process.cwd(), 'tmp', 'llm_quality_slice_gate.json');
   const scorecard = readJson(inputPath);
-  const result = evaluateSliceGate(scorecard);
+  const result = evaluateSliceGate(scorecard, { requireAllSlicesPass });
   writeJson(outPath, result);
   process.stdout.write(`${JSON.stringify({ ok: result.pass, outPath, result }, null, 2)}\n`);
   return result.pass ? 0 : 1;

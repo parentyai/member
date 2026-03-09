@@ -603,11 +603,14 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1. `npm run llm:quality:baseline`
 2. `npm run llm:quality:candidate`
 3. `npm run llm:quality:diff`
-4. `npm run llm:quality:gate`
-5. `npm run llm:quality:arena`
-6. `npm run llm:quality:must-pass`
-7. `npm run llm:quality:release-policy`
-8. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合）
+4. `npm run llm:quality:runtime-scorecard`（`tmp/llm_usage_summary.json` がある場合）
+5. `npm run llm:quality:gate`（runtime-first。`tmp/llm_usage_summary.json` が無い場合は frozen summary fallback を使用）
+6. `npm run llm:quality:gate:strict`（Week3 以降: all slices pass を必須化）
+7. `npm run llm:quality:arena`
+8. `npm run llm:quality:must-pass`
+9. `npm run llm:quality:release-policy`
+10. `npm run llm:quality:release-policy:strict`（Week3 以降: strict runtime signals を必須化）
+11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合）
 
 ### Merge Block 条件
 - `llm:quality:gate` が non-zero
@@ -624,6 +627,12 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - replay/perturbation critical failure > 0
 - contamination risk `high` benchmark を hard gate に使用
 - release policy fail（overall非改善 / key dimension regression / must-pass fixture fail）
+- strict運用時:
+  - all slices が `pass` 以外
+  - runtime signals:
+    - `defaultCasualRate > 0.02`
+    - `directAnswerMissRate > 0.08`
+    - `avgRepeatRiskScore > 0.5`
 
 ### Warning 条件
 - quality delta < +2 かつ latency p95 regression > 25%

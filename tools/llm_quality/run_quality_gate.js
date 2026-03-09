@@ -8,6 +8,80 @@ const { summarize } = require('./judge_calibration');
 const { evaluateSliceGate } = require('./slice_gate');
 const { evaluateFrontier } = require('./frontier_eval');
 
+function toCandidateMetricsFromQualitySummary(payload) {
+  const quality = payload && typeof payload === 'object'
+    ? (payload.summary && typeof payload.summary === 'object'
+      ? payload.summary.qualityFramework
+      : payload.qualityFramework)
+    : null;
+  if (!quality || typeof quality !== 'object') return null;
+  const dimensions = {};
+  (Array.isArray(quality.dimensions) ? quality.dimensions : []).forEach((row) => {
+    if (!row || typeof row !== 'object' || typeof row.key !== 'string') return;
+    dimensions[row.key] = Number.isFinite(Number(row.score)) ? Number(row.score) : 0;
+  });
+  const slices = {};
+  (Array.isArray(quality.slices) ? quality.slices : []).forEach((row) => {
+    if (!row || typeof row !== 'object' || typeof row.sliceKey !== 'string') return;
+    slices[row.sliceKey] = {
+      score: Number.isFinite(Number(row.score)) ? Number(row.score) : 0,
+      sampleCount: Number.isFinite(Number(row.sampleCount)) ? Number(row.sampleCount) : 0
+    };
+  });
+  const hardGate = quality.hardGate && typeof quality.hardGate === 'object' ? quality.hardGate : {};
+  const hardFailures = Array.isArray(hardGate.failures) ? hardGate.failures.map((item) => String(item || '').toLowerCase()) : [];
+  const hasFailure = (keyword) => hardFailures.some((item) => item.includes(keyword));
+  return {
+    dimensions,
+    slices,
+    hard: {
+      safetyPass: !hasFailure('safety'),
+      privacyPass: !hasFailure('privacy'),
+      actionPolicyPass: !hasFailure('action_policy'),
+      factualityPass: !hasFailure('factuality')
+    },
+    judge: quality.judgeCalibration && typeof quality.judgeCalibration === 'object'
+      ? quality.judgeCalibration
+      : {},
+    benchmark: quality.benchmark && typeof quality.benchmark === 'object'
+      ? quality.benchmark
+      : {},
+    replay: quality.replay && typeof quality.replay === 'object'
+      ? quality.replay
+      : {},
+    frontier: quality.frontier && typeof quality.frontier === 'object'
+      ? quality.frontier
+      : {}
+  };
+}
+
+function resolveCandidateMetrics(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const summaryPath = payload.summaryPath;
+  const summaryFallbackPath = payload.summaryFallbackPath;
+  const candidateMetricsPath = payload.candidateMetricsPath;
+
+  const trySummaryPath = [summaryPath, summaryFallbackPath].filter(Boolean);
+  for (const pathValue of trySummaryPath) {
+    try {
+      const summary = readJson(pathValue);
+      const converted = toCandidateMetricsFromQualitySummary(summary);
+      if (converted) {
+        return {
+          metrics: converted,
+          source: pathValue
+        };
+      }
+    } catch (_err) {
+      // summary missing or malformed -> fallback to next source
+    }
+  }
+  return {
+    metrics: readJson(candidateMetricsPath),
+    source: candidateMetricsPath
+  };
+}
+
 function toBool(value, fallback) {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -26,6 +100,12 @@ function main(argv) {
   const candidateMetricsPath = args.candidate
     ? path.resolve(process.cwd(), args.candidate)
     : path.join(__dirname, 'fixtures', 'candidate_metrics.v1.json');
+  const summaryPath = args.summary
+    ? path.resolve(process.cwd(), args.summary)
+    : path.join(process.cwd(), 'tmp', 'llm_usage_summary.json');
+  const summaryFallbackPath = args.summaryFallback
+    ? path.resolve(process.cwd(), args.summaryFallback)
+    : path.join(__dirname, 'fixtures', 'usage_summary_candidate.v1.json');
   const adjudicationPath = args.adjudication
     ? path.resolve(process.cwd(), args.adjudication)
     : path.join(__dirname, 'fixtures', 'human_adjudication_set.v1.json');
@@ -35,9 +115,19 @@ function main(argv) {
   const outPath = args.output
     ? path.resolve(process.cwd(), args.output)
     : path.join(process.cwd(), 'tmp', 'llm_quality_gate_result.json');
+  const requireAllSlicesPass = toBool(
+    args.requireAllSlicesPass,
+    toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
+  );
 
   const baselineMetrics = readJson(baselineMetricsPath);
-  const candidateMetrics = readJson(candidateMetricsPath);
+  const candidateResolved = resolveCandidateMetrics({
+    summaryPath,
+    summaryFallbackPath,
+    candidateMetricsPath
+  });
+  const candidateMetrics = candidateResolved.metrics;
+  const candidateSourcePath = candidateResolved.source;
   const adjudicationRows = readJson(adjudicationPath);
   const manifest = readJson(manifestPath);
 
@@ -61,9 +151,9 @@ function main(argv) {
   });
 
   const baselineScorecard = buildScorecard(baselineMetrics, { source: baselineMetricsPath });
-  const candidateScorecard = buildScorecard(candidateMetrics, { source: candidateMetricsPath });
+  const candidateScorecard = buildScorecard(candidateMetrics, { source: candidateSourcePath });
 
-  const sliceGate = evaluateSliceGate(candidateScorecard);
+  const sliceGate = evaluateSliceGate(candidateScorecard, { requireAllSlicesPass });
   const frontier = evaluateFrontier(baselineScorecard, candidateScorecard);
 
   const replay = candidateMetrics.replay && typeof candidateMetrics.replay === 'object'
@@ -94,6 +184,10 @@ function main(argv) {
     generatedAt: new Date().toISOString(),
     baselineMetricsPath,
     candidateMetricsPath,
+    candidateSourcePath,
+    summaryPath,
+    summaryFallbackPath,
+    requireAllSlicesPass,
     adjudicationPath,
     manifestPath,
     benchmarkRegistry,

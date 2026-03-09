@@ -121,6 +121,34 @@ function isLowInformationMessage(text) {
   return false;
 }
 
+function countUnresolvedTasks(snapshot) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  let count = 0;
+  if (Array.isArray(source.topTasks)) count += source.topTasks.length;
+  if (Array.isArray(source.topOpenTasks)) count += source.topOpenTasks.length;
+  if (source.blockedTask && typeof source.blockedTask === 'object') count += 1;
+  if (source.dueSoonTask && typeof source.dueSoonTask === 'object') count += 1;
+  return Math.max(0, Math.min(20, count));
+}
+
+function computeContextCarryScore(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  let score = 0;
+  if (payload.contextResume === true) score += 0.5;
+  if (payload.lowInformationMessage === true) score += 0.15;
+  if (typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim()) score += 0.2;
+  if (typeof payload.followupIntent === 'string' && payload.followupIntent.trim()) score += 0.1;
+  if (Number.isFinite(Number(payload.unresolvedTaskCount)) && Number(payload.unresolvedTaskCount) > 0) score += 0.05;
+  if (Number.isFinite(Number(payload.recentAssistantCommitmentCount)) && Number(payload.recentAssistantCommitmentCount) > 0) {
+    score += 0.05;
+  }
+  if (Number.isFinite(Number(payload.recentFollowupIntentCount)) && Number(payload.recentFollowupIntentCount) > 0) {
+    score += 0.05;
+  }
+  if (score > 1) return 1;
+  return Math.round(score * 10000) / 10000;
+}
+
 function buildConversationPacket(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
@@ -131,11 +159,14 @@ function buildConversationPacket(params) {
   const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null;
   const contextSnapshotDomain = inferDomainFromContextSnapshot(contextSnapshot);
   const recentDomain = recentHistory.recentDomains[0] || contextSnapshotDomain || null;
-  const contextResume = detectedConversationIntent === 'general'
-    && lowInformationMessage
+  const contextResume = lowInformationMessage
     && Boolean(recentDomain)
     && intentDecision.mode !== 'greeting'
-    && intentDecision.reason !== 'smalltalk_detected';
+    && intentDecision.reason !== 'smalltalk_detected'
+    && (
+      detectedConversationIntent === 'general'
+      || detectedConversationIntent === recentDomain
+    );
   const normalizedConversationIntent = contextResume ? recentDomain : detectedConversationIntent;
   const followupIntentDecision = resolveFollowupIntent({
     messageText,
@@ -147,6 +178,21 @@ function buildConversationPacket(params) {
     ? 'contextual_domain_resume'
     : (providedRouterReason || normalizeText(intentDecision.reason) || 'default_casual');
   const llmFlags = payload.llmFlags && typeof payload.llmFlags === 'object' ? payload.llmFlags : {};
+  const unresolvedTaskCount = countUnresolvedTasks(contextSnapshot);
+  const detectedFollowupIntent = followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
+    ? followupIntentDecision.followupIntent
+    : null;
+  const followupIntent = detectedFollowupIntent
+    || ((contextResume && normalizedConversationIntent !== 'general') ? 'next_step' : null);
+  const contextCarryScore = computeContextCarryScore({
+    contextResume,
+    lowInformationMessage,
+    contextResumeDomain: contextResume ? recentDomain : null,
+    followupIntent,
+    unresolvedTaskCount,
+    recentAssistantCommitmentCount: recentHistory.assistantCommitments.length,
+    recentFollowupIntentCount: recentHistory.recentFollowupIntents.length
+  });
 
   return {
     lineUserId: normalizeText(payload.lineUserId),
@@ -164,10 +210,10 @@ function buildConversationPacket(params) {
     contextSnapshot,
     contextResume,
     contextResumeDomain: contextResume ? recentDomain : null,
-    followupIntent: followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
-      ? followupIntentDecision.followupIntent
-      : null,
+    followupIntent,
     lowInformationMessage,
+    unresolvedTaskCount,
+    contextCarryScore,
     llmFlags: {
       llmConciergeEnabled: llmFlags.llmConciergeEnabled === true,
       llmWebSearchEnabled: llmFlags.llmWebSearchEnabled !== false,
