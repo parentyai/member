@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T04:39:10.482Z",
-  "gitCommit": "65ed27a7afa7c9efb44734a3d4e9d8355aec4557",
-  "branch": "codex/quality-framework-full-compliance",
-  "sourceDigest": "72736ec27680449566e71fcac692631dbbbb8d3f485dce7cc542d4e3f91fe629",
+  "generatedAt": "2026-03-09T10:45:15.352Z",
+  "gitCommit": "4705ba069048d6a1aed6b10598ca4827df64446e",
+  "branch": "codex/paid-quality-major-followup-v1",
+  "sourceDigest": "5dbbb7c22e36f1e4630a466cf0567256249913b6268d639c457066f748b14b0a",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "54ddf8af90d7af9cb87e115e513e8a44b3f004434a90aff691ab1c4a0a460245",
+      "sha256": "4c56413c67e3377c55a289042cc2cdbf2ab7c29dbe022960c9274beec3f69de3",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "10c4037f7922b3d3593e5e5571fa596423fd64489c22f22d21df133767bcc771",
+      "sha256": "2f678f374382e72cf3dd78947a448335c17b980371d4313843fdd86747699dd9",
       "bytes": 487
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "aa9b8ef3d4583d4aec9e231ec06b578aa7cf161df822cd1482a58ad864fced25",
-      "bytes": 2425
+      "sha256": "6725e94cdae7f322a568add2fa44db924d5586cb1a255e06d9330b7015d4b4eb",
+      "bytes": 2422
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
