@@ -13,6 +13,27 @@ const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refus
 const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_SAFE_RESPONSE_MODES = new Set(['answer', 'answer_with_hedge', 'clarify', 'refuse']);
 const FOLLOWUP_INTENTS = new Set(['docs_required', 'appointment_needed', 'next_step']);
+const QUALITY_SLICE_KEYS = new Set([
+  'paid',
+  'free',
+  'admin',
+  'compat',
+  'short_followup',
+  'domain_continuation',
+  'group_chat',
+  'japanese_service_quality',
+  'minority_personas',
+  'cultural_slices'
+]);
+const CONTAMINATION_RISKS = new Set(['low', 'medium', 'high']);
+const REPLAY_FAILURE_TYPES = new Set([
+  'none',
+  'stale_source',
+  'contradictory_source',
+  'evidence_swap',
+  'quote_unsend',
+  'redelivery'
+]);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -177,6 +198,24 @@ function normalizeFollowupIntent(value) {
   return FOLLOWUP_INTENTS.has(normalized) ? normalized : null;
 }
 
+function normalizeQualitySliceKey(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return QUALITY_SLICE_KEYS.has(normalized) ? normalized : null;
+}
+
+function normalizeContaminationRisk(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return CONTAMINATION_RISKS.has(normalized) ? normalized : null;
+}
+
+function normalizeReplayFailureType(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return 'none';
+  return REPLAY_FAILURE_TYPES.has(normalized) ? normalized : 'none';
+}
+
 function normalizeJudgeScores(value) {
   const rows = Array.isArray(value) ? value : [];
   return rows.slice(0, 5).map((item, index) => {
@@ -322,6 +361,14 @@ async function appendLlmActionLog(params) {
     followupIntent: normalizeFollowupIntent(payload.followupIntent),
     conciseModeApplied: payload.conciseModeApplied === true,
     repetitionPrevented: payload.repetitionPrevented === true,
+    sliceKey: normalizeQualitySliceKey(payload.sliceKey),
+    judgeConfidence: Math.max(0, Math.min(1, normalizeNumber(payload.judgeConfidence, 0))),
+    judgeDisagreement: Math.max(0, Math.min(1, normalizeNumber(payload.judgeDisagreement, 0))),
+    benchmarkVersion: normalizeString(payload.benchmarkVersion, null),
+    contaminationRisk: normalizeContaminationRisk(payload.contaminationRisk),
+    replayFailureType: normalizeReplayFailureType(payload.replayFailureType),
+    latencyMs: Math.max(0, Math.floor(normalizeNumber(payload.latencyMs, 0))),
+    costUsd: Math.max(0, normalizeNumber(payload.costUsd, 0)),
     strategy: normalizeStrategy(payload.strategy),
     retrieveNeeded: payload.retrieveNeeded === true,
     retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),

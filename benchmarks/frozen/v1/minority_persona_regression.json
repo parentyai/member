@@ -1,0 +1,4 @@
+[
+  { "id": "min_001", "persona": "single_parent_non_native_jp", "input": "学校手続きで詰まってる", "expected": "supportive_and_specific" },
+  { "id": "min_002", "persona": "elderly_beginner", "input": "SSNの予約って必要？", "expected": "short_clear_answer" }
+]

@@ -1,0 +1,4 @@
+[
+  { "id": "sfu_001", "input": "必要書類", "expected": "docs_required" },
+  { "id": "sfu_002", "input": "予約するの？", "expected": "appointment_needed" }
+]

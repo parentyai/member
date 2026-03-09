@@ -32,6 +32,50 @@ const DEFAULT_RELEASE_READINESS_THRESHOLDS = Object.freeze({
 });
 const DASHBOARD_ENTRY_TYPES = Object.freeze(['webhook', 'admin', 'compat', 'job']);
 const DASHBOARD_GATES = Object.freeze(['kill_switch', 'url_guard', 'injection', 'snapshot']);
+const QUALITY_DIMENSIONS = Object.freeze([
+  { key: 'factuality_grounding', hardGate: true, weight: 0.12 },
+  { key: 'source_authority_freshness', hardGate: true, weight: 0.08 },
+  { key: 'procedural_utility', hardGate: false, weight: 0.06 },
+  { key: 'next_step_clarity', hardGate: false, weight: 0.05 },
+  { key: 'conversation_continuity', hardGate: false, weight: 0.06 },
+  { key: 'short_followup_understanding', hardGate: true, weight: 0.06 },
+  { key: 'clarification_quality', hardGate: false, weight: 0.04 },
+  { key: 'repetition_loop_avoidance', hardGate: true, weight: 0.08 },
+  { key: 'direct_answer_first', hardGate: false, weight: 0.04 },
+  { key: 'japanese_naturalness', hardGate: false, weight: 0.04 },
+  { key: 'japanese_service_quality', hardGate: true, weight: 0.05 },
+  { key: 'keigo_distance', hardGate: false, weight: 0.02 },
+  { key: 'empathy', hardGate: false, weight: 0.03 },
+  { key: 'cultural_habit_fit', hardGate: true, weight: 0.03 },
+  { key: 'line_native_fit', hardGate: true, weight: 0.04 },
+  { key: 'action_policy_compliance', hardGate: true, weight: 0.04 },
+  { key: 'safety_compliance_privacy', hardGate: true, weight: 0.08 },
+  { key: 'memory_integrity', hardGate: true, weight: 0.03 },
+  { key: 'group_chat_privacy', hardGate: true, weight: 0.03 },
+  { key: 'minority_persona_robustness', hardGate: true, weight: 0.03 },
+  { key: 'misunderstanding_recovery', hardGate: false, weight: 0.02 },
+  { key: 'escalation_appropriateness', hardGate: true, weight: 0.02 },
+  { key: 'operational_reliability', hardGate: true, weight: 0.03 },
+  { key: 'latency_surface_efficiency', hardGate: false, weight: 0.04 }
+]);
+const QUALITY_SLICES = Object.freeze([
+  { sliceKey: 'paid', critical: false },
+  { sliceKey: 'free', critical: false },
+  { sliceKey: 'admin', critical: false },
+  { sliceKey: 'compat', critical: false },
+  { sliceKey: 'short_followup', critical: true },
+  { sliceKey: 'domain_continuation', critical: true },
+  { sliceKey: 'group_chat', critical: true },
+  { sliceKey: 'japanese_service_quality', critical: true },
+  { sliceKey: 'minority_personas', critical: true },
+  { sliceKey: 'cultural_slices', critical: true }
+]);
+const QUALITY_FRONTIER_THRESHOLDS = Object.freeze({
+  qualityDeltaWarningBelow: 2,
+  latencyRegressionWarnRate: 0.25,
+  costRegressionBlockRate: 0.2,
+  ackSlaViolationBlockRate: 0.01
+});
 
 function toMillis(value) {
   if (!value) return null;
@@ -625,6 +669,243 @@ function buildReleaseReadiness(payload, thresholdsInput) {
   };
 }
 
+function clamp01(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  if (num < 0) return 0;
+  if (num > 1) return 1;
+  return Math.round(num * 10000) / 10000;
+}
+
+function percentile(values, pct) {
+  const rows = Array.isArray(values)
+    ? values.map((value) => Number(value)).filter((value) => Number.isFinite(value)).sort((a, b) => a - b)
+    : [];
+  if (!rows.length) return 0;
+  const rank = Math.max(0, Math.min(rows.length - 1, Math.ceil((pct / 100) * rows.length) - 1));
+  return rows[rank];
+}
+
+function pickMaxContaminationRisk(rows) {
+  const priorities = { low: 1, medium: 2, high: 3 };
+  let selected = 'low';
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const risk = normalizeReason(row && row.contaminationRisk).toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(priorities, risk)) return;
+    if (priorities[risk] > priorities[selected]) selected = risk;
+  });
+  return selected;
+}
+
+function averageFromRows(rows, selector) {
+  const values = [];
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const value = Number(selector(row));
+    if (!Number.isFinite(value)) return;
+    values.push(value);
+  });
+  if (!values.length) return 0;
+  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10000) / 10000;
+}
+
+function buildQualityFrameworkSummary(payload) {
+  const data = payload && typeof payload === 'object' ? payload : {};
+  const conversation = data.conversationQuality && typeof data.conversationQuality === 'object' ? data.conversationQuality : {};
+  const gate = data.gateAuditBaseline && typeof data.gateAuditBaseline === 'object' ? data.gateAuditBaseline : {};
+  const byPlan = data.byPlan && typeof data.byPlan === 'object' ? data.byPlan : {};
+  const releaseReadiness = data.releaseReadiness && typeof data.releaseReadiness === 'object' ? data.releaseReadiness : {};
+  const actionRows = Array.isArray(data.actionRows) ? data.actionRows : [];
+  const baselineOverall = Number.isFinite(Number(data.baselineOverallScore)) ? Number(data.baselineOverallScore) : 54.9;
+
+  const directUrlRate = 0;
+  const legacyTemplateHitRate = clamp01(conversation.legacyTemplateHitRate);
+  const defaultCasualRate = clamp01(conversation.defaultCasualRate);
+  const contradictionRate = clamp01(conversation.contradictionRate);
+  const acceptedRate = clamp01(gate.acceptedRate);
+  const sourceAuthority = clamp01(conversation.avgSourceAuthorityScore);
+  const sourceFreshness = clamp01(conversation.avgSourceFreshnessScore);
+  const evidenceCoverage = clamp01((releaseReadiness.metrics && releaseReadiness.metrics.avgEvidenceCoverage) || 0);
+  const conciseRate = clamp01(conversation.conciseModeAppliedRate);
+  const repetitionPreventedRate = clamp01(conversation.repetitionPreventedRate);
+  const followupRate = clamp01(conversation.followupQuestionIncludedRate);
+  const domainConciergeRate = clamp01(conversation.domainIntentConciergeRate);
+  const unsupportedClaims = clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount || 0)));
+  const officialOnlyRate = clamp01(conversation.officialOnlySatisfiedRate);
+  const retrieveNeededRate = clamp01(conversation.retrieveNeededRate);
+  const verifyClarifyCount = Array.isArray(conversation.verificationOutcomes)
+    ? Number((conversation.verificationOutcomes.find((row) => row.verificationOutcome === 'clarify') || {}).count || 0)
+    : 0;
+  const verifyClarifyRate = clamp01(verifyClarifyCount / Math.max(1, Number(conversation.sampleCount || 0)));
+  const safetyScore = clamp01(1 - contradictionRate);
+
+  const dimensionMap = {
+    factuality_grounding: clamp01((acceptedRate + (1 - contradictionRate)) / 2),
+    source_authority_freshness: clamp01((sourceAuthority + sourceFreshness) / 2),
+    procedural_utility: clamp01((domainConciergeRate + conciseRate) / 2),
+    next_step_clarity: clamp01((conciseRate + followupRate + repetitionPreventedRate) / 3),
+    conversation_continuity: clamp01((1 - defaultCasualRate + domainConciergeRate) / 2),
+    short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate) / 2),
+    clarification_quality: clamp01(1 - Math.max(0, verifyClarifyRate - 0.35)),
+    repetition_loop_avoidance: clamp01((1 - legacyTemplateHitRate + repetitionPreventedRate) / 2),
+    direct_answer_first: clamp01(conciseRate),
+    japanese_naturalness: clamp01(conciseRate),
+    japanese_service_quality: clamp01((conciseRate + followupRate + (1 - legacyTemplateHitRate)) / 3),
+    keigo_distance: clamp01(conciseRate),
+    empathy: clamp01((followupRate + conciseRate) / 2),
+    cultural_habit_fit: clamp01((followupRate + domainConciergeRate) / 2),
+    line_native_fit: clamp01((conciseRate + (1 - retrieveNeededRate)) / 2),
+    action_policy_compliance: clamp01(acceptedRate),
+    safety_compliance_privacy: safetyScore,
+    memory_integrity: clamp01((domainConciergeRate + (1 - defaultCasualRate)) / 2),
+    group_chat_privacy: clamp01(1 - directUrlRate),
+    minority_persona_robustness: clamp01((followupRate + unsupportedClaims) / 2),
+    misunderstanding_recovery: clamp01(repetitionPreventedRate),
+    escalation_appropriateness: clamp01((officialOnlyRate + sourceAuthority) / 2),
+    operational_reliability: clamp01(acceptedRate),
+    latency_surface_efficiency: clamp01((conciseRate + (1 - retrieveNeededRate)) / 2)
+  };
+
+  const dimensions = QUALITY_DIMENSIONS.map((dim) => {
+    const score = clamp01(dimensionMap[dim.key]);
+    const threshold = dim.hardGate ? 0.82 : 0.7;
+    const status = score >= threshold ? 'pass' : (dim.hardGate ? 'fail' : 'warning');
+    return {
+      key: dim.key,
+      score,
+      weight: dim.weight,
+      hardGate: dim.hardGate,
+      status
+    };
+  });
+
+  const slices = QUALITY_SLICES.map((slice) => {
+    let score = 0;
+    if (slice.sliceKey === 'paid') score = clamp01((Number(byPlan.pro && byPlan.pro.blockedRate ? 1 - Number(byPlan.pro.blockedRate) : acceptedRate) + conciseRate) / 2);
+    else if (slice.sliceKey === 'free') score = clamp01(Number(byPlan.free && byPlan.free.blockedRate ? 1 - Number(byPlan.free.blockedRate) : acceptedRate));
+    else if (slice.sliceKey === 'admin') score = clamp01(acceptedRate);
+    else if (slice.sliceKey === 'compat') score = clamp01(1 - Number((data.optimization && data.optimization.compatShareWindow) || 0));
+    else if (slice.sliceKey === 'short_followup') score = clamp01((1 - defaultCasualRate + followupRate) / 2);
+    else if (slice.sliceKey === 'domain_continuation') score = clamp01(domainConciergeRate);
+    else if (slice.sliceKey === 'group_chat') score = clamp01(1 - directUrlRate);
+    else if (slice.sliceKey === 'japanese_service_quality') score = clamp01((conciseRate + (1 - legacyTemplateHitRate)) / 2);
+    else if (slice.sliceKey === 'minority_personas') score = clamp01((unsupportedClaims + followupRate) / 2);
+    else if (slice.sliceKey === 'cultural_slices') score = clamp01((followupRate + domainConciergeRate) / 2);
+    const status = score >= 0.75 ? 'pass' : (score >= 0.6 ? 'warning' : 'fail');
+    return {
+      sliceKey: slice.sliceKey,
+      critical: slice.critical,
+      score,
+      status,
+      sampleCount: Number(conversation.sampleCount || 0)
+    };
+  });
+
+  const weighted = dimensions.reduce((sum, row) => sum + (row.score * row.weight), 0);
+  const overallScore = Math.round(weighted * 10000) / 100;
+
+  const hardFailures = [];
+  dimensions.forEach((row) => {
+    if (row.hardGate === true && row.status === 'fail') hardFailures.push(`dimension_fail:${row.key}`);
+  });
+  slices.forEach((row) => {
+    if (row.status === 'fail') hardFailures.push(`slice_fail:${row.sliceKey}`);
+    if (row.critical === true && row.status !== 'pass') hardFailures.push(`critical_slice_regression:${row.sliceKey}`);
+  });
+  if (Number(releaseReadiness.ready) !== 1 && releaseReadiness.ready !== true) hardFailures.push('release_readiness_blocked');
+
+  const judgeConfidence = averageFromRows(actionRows, (row) => row && row.judgeConfidence);
+  const judgeDisagreement = averageFromRows(actionRows, (row) => row && row.judgeDisagreement);
+  const multilingualStability = clamp01(1 - (judgeDisagreement / 2));
+  const promptSensitivityDrift = clamp01(judgeDisagreement);
+  const humanReviewRequired = judgeDisagreement > 0.15 || promptSensitivityDrift > 0.1;
+  if (humanReviewRequired) hardFailures.push('judge_human_review_required');
+
+  const benchmarkVersionMap = new Map();
+  actionRows.forEach((row) => {
+    const key = normalizeReason(row && row.benchmarkVersion);
+    if (key === 'none') return;
+    benchmarkVersionMap.set(key, (benchmarkVersionMap.get(key) || 0) + 1);
+  });
+  const benchmarkVersionRows = Array.from(benchmarkVersionMap.entries()).sort((a, b) => b[1] - a[1]);
+  const benchmarkVersion = benchmarkVersionRows.length > 0 ? benchmarkVersionRows[0][0] : 'bench-v1.0.0';
+  const contaminationRisk = pickMaxContaminationRisk(actionRows);
+  if (contaminationRisk === 'high') hardFailures.push('contamination_risk_high');
+
+  const replayFailureRows = actionRows.filter((row) => normalizeReason(row && row.replayFailureType) !== 'none');
+  const replayCriticalFailures = replayFailureRows.filter((row) => {
+    const type = normalizeReason(row && row.replayFailureType);
+    return ['stale_source', 'contradictory_source', 'evidence_swap'].includes(type);
+  }).length;
+  const replayWarningFailures = Math.max(0, replayFailureRows.length - replayCriticalFailures);
+  if (replayCriticalFailures > 0) hardFailures.push('replay_critical_failures');
+
+  const latencyValues = actionRows.map((row) => Number(row && row.latencyMs)).filter((value) => Number.isFinite(value) && value >= 0);
+  const costValues = actionRows.map((row) => Number(row && row.costUsd)).filter((value) => Number.isFinite(value) && value >= 0);
+  const latencyP50Ms = percentile(latencyValues, 50);
+  const latencyP95Ms = percentile(latencyValues, 95);
+  const costPerTurnUsd = costValues.length > 0
+    ? Math.round((costValues.reduce((sum, value) => sum + value, 0) / costValues.length) * 1000000) / 1000000
+    : 0;
+  const ackSlaViolationRate = clamp01(averageFromRows(actionRows, (row) => row && row.latencyMs > 2000 ? 1 : 0));
+  const qualityDelta = Math.round((overallScore - baselineOverall) * 10000) / 10000;
+  const latencyRegressionRate = baselineOverall > 0 ? Math.max(0, (latencyP95Ms - 1840) / 1840) : 0;
+  const costRegressionRate = Math.max(0, (costPerTurnUsd - 0.031) / 0.031);
+  const frontierWarnings = [];
+  const frontierFailures = [];
+  if (qualityDelta < QUALITY_FRONTIER_THRESHOLDS.qualityDeltaWarningBelow && latencyRegressionRate > QUALITY_FRONTIER_THRESHOLDS.latencyRegressionWarnRate) {
+    frontierWarnings.push('quality_delta_small_with_latency_regression');
+  }
+  if (qualityDelta <= 0 && costRegressionRate > QUALITY_FRONTIER_THRESHOLDS.costRegressionBlockRate) {
+    frontierFailures.push('quality_non_improving_with_cost_regression');
+  }
+  if (ackSlaViolationRate > QUALITY_FRONTIER_THRESHOLDS.ackSlaViolationBlockRate) {
+    frontierFailures.push('ack_sla_violation_rate_exceeded');
+  }
+  frontierFailures.forEach((item) => hardFailures.push(`frontier:${item}`));
+
+  return {
+    frameworkVersion: 'v1',
+    generatedAt: new Date().toISOString(),
+    overallScore,
+    baselineScore: baselineOverall,
+    qualityDelta,
+    dimensions,
+    slices,
+    hardGate: {
+      pass: hardFailures.length === 0,
+      failures: Array.from(new Set(hardFailures)),
+      warnings: Array.from(new Set(frontierWarnings))
+    },
+    judgeCalibration: {
+      confidence: judgeConfidence,
+      disagreementRate: judgeDisagreement,
+      multilingualStability,
+      promptSensitivityDrift,
+      humanReviewRequired
+    },
+    benchmark: {
+      version: benchmarkVersion,
+      frozen: true,
+      contaminationRisk
+    },
+    replay: {
+      totalCases: Number(conversation.sampleCount || 0),
+      criticalFailures: replayCriticalFailures,
+      warningFailures: replayWarningFailures
+    },
+    frontier: {
+      qualityScore: overallScore,
+      latencyP50Ms: Math.round(latencyP50Ms),
+      latencyP95Ms: Math.round(latencyP95Ms),
+      costPerTurnUsd,
+      ackSlaViolationRate,
+      latencyRegressionRate: Math.round(latencyRegressionRate * 10000) / 10000,
+      costRegressionRate: Math.round(costRegressionRate * 10000) / 10000,
+      status: frontierFailures.length > 0 ? 'fail' : (frontierWarnings.length > 0 ? 'warning' : 'pass')
+    }
+  };
+}
+
 function buildMaskedTopUsers(rows, limit) {
   return buildTopUsers(rows, limit).map((row) => Object.assign({}, row, {
     userIdMasked: maskLineUserId(row.userId)
@@ -738,6 +1019,15 @@ async function handleLlmUsageSummary(req, res) {
       maxFallbackRate: rolloutMaxFallbackRate,
       minEvidenceCoverage: rolloutMinEvidenceCoverage
     });
+    const qualityFrameworkSummary = buildQualityFrameworkSummary({
+      conversationQuality: conversationQualitySummary,
+      gateAuditBaseline: gateAuditBaselineSummary,
+      optimization: optimizationSummary,
+      releaseReadiness,
+      byPlan: buildPlanBreakdown(rows),
+      actionRows,
+      baselineOverallScore: Number(process.env.LLM_QUALITY_BASELINE_SCORE || 54.9)
+    });
 
     const summary = {
       windowDays,
@@ -756,7 +1046,8 @@ async function handleLlmUsageSummary(req, res) {
       gateAuditBaseline: gateAuditBaselineSummary,
       optimization: optimizationSummary,
       conversationQuality: conversationQualitySummary,
-      releaseReadiness
+      releaseReadiness,
+      qualityFramework: qualityFrameworkSummary
     };
 
     await appendAuditLog({
@@ -774,6 +1065,8 @@ async function handleLlmUsageSummary(req, res) {
         releaseBlockedBy: releaseReadiness.blockedBy.slice(0, 6),
         optimizationVersion: optimizationSummary.optimizationVersion,
         compatShareWindow: optimizationSummary.compatShareWindow,
+        qualityOverallScore: qualityFrameworkSummary.overallScore,
+        qualityHardGatePass: qualityFrameworkSummary.hardGate && qualityFrameworkSummary.hardGate.pass === true,
         scanLimit,
         topUserCount: summary.topUsers.length
       }
@@ -812,5 +1105,6 @@ module.exports = {
   buildOptimizationSummary,
   buildConversationQualitySummary,
   buildReleaseReadiness,
+  buildQualityFrameworkSummary,
   maskLineUserId
 };

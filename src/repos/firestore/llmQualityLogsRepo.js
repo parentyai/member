@@ -3,6 +3,27 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 
 const COLLECTION = 'llm_quality_logs';
+const QUALITY_SLICE_KEYS = new Set([
+  'paid',
+  'free',
+  'admin',
+  'compat',
+  'short_followup',
+  'domain_continuation',
+  'group_chat',
+  'japanese_service_quality',
+  'minority_personas',
+  'cultural_slices'
+]);
+const CONTAMINATION_RISKS = new Set(['low', 'medium', 'high']);
+const REPLAY_FAILURE_TYPES = new Set([
+  'none',
+  'stale_source',
+  'contradictory_source',
+  'evidence_swap',
+  'quote_unsend',
+  'redelivery'
+]);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -15,6 +36,24 @@ function normalizeString(value, fallback) {
 function normalizeNumber(value, fallback) {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
+}
+
+function normalizeSliceKey(value) {
+  const text = normalizeString(value, '').toLowerCase();
+  if (!text) return null;
+  return QUALITY_SLICE_KEYS.has(text) ? text : null;
+}
+
+function normalizeContaminationRisk(value) {
+  const text = normalizeString(value, '').toLowerCase();
+  if (!text) return null;
+  return CONTAMINATION_RISKS.has(text) ? text : null;
+}
+
+function normalizeReplayFailureType(value) {
+  const text = normalizeString(value, '').toLowerCase();
+  if (!text) return 'none';
+  return REPLAY_FAILURE_TYPES.has(text) ? text : 'none';
 }
 
 function toDate(value) {
@@ -48,6 +87,14 @@ async function appendLlmQualityLog(params) {
     citationCount: Math.max(0, Math.floor(normalizeNumber(payload.citationCount, 0))),
     retryCount: Math.max(0, Math.floor(normalizeNumber(payload.retryCount, 0))),
     model: normalizeString(payload.model, null),
+    sliceKey: normalizeSliceKey(payload.sliceKey),
+    judgeConfidence: Math.max(0, Math.min(1, normalizeNumber(payload.judgeConfidence, 0))),
+    judgeDisagreement: Math.max(0, Math.min(1, normalizeNumber(payload.judgeDisagreement, 0))),
+    benchmarkVersion: normalizeString(payload.benchmarkVersion, null),
+    contaminationRisk: normalizeContaminationRisk(payload.contaminationRisk),
+    replayFailureType: normalizeReplayFailureType(payload.replayFailureType),
+    latencyMs: Math.max(0, Math.floor(normalizeNumber(payload.latencyMs, 0))),
+    costUsd: Math.max(0, normalizeNumber(payload.costUsd, 0)),
     createdAt: payload.createdAt || serverTimestamp()
   };
   await docRef.set(data, { merge: false });

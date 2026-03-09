@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T22:24:40-04:00",
-  "gitCommit": "8c81a105b30fb638363e45d7b05ad9756035277b",
-  "branch": "codex/paid-orchestrator-loopfix-R734",
-  "sourceDigest": "3a44a583bee9af4ddcb275e6e5d583b89f9f6a6bfd027517d497b5cd3860b646",
+  "generatedAt": "2026-03-08T22:34:16-04:00",
+  "gitCommit": "a8a5baac2b45cd7f5a46127201f8106b4cb991e9",
+  "branch": "main",
+  "sourceDigest": "c66f496e906d17fb5f1a6f46a5f31b243b36bc39c3b15b47d8f582c2703cc1a7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

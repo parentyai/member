@@ -17004,6 +17004,75 @@ function renderLlmEntryControlDashboard(summary) {
   }
 }
 
+function renderLlmQualityFrameworkDashboard(summary) {
+  const quality = summary && summary.qualityFramework && typeof summary.qualityFramework === 'object'
+    ? summary.qualityFramework
+    : null;
+  if (!quality) {
+    renderLlmResult('llm-quality-scorecard', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-slices', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-judge', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-benchmark', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-replay', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-frontier', { ok: false, error: 'no_quality_framework' });
+    return;
+  }
+
+  const dimensions = Array.isArray(quality.dimensions) ? quality.dimensions : [];
+  const slices = Array.isArray(quality.slices) ? quality.slices : [];
+  const hardGate = quality.hardGate && typeof quality.hardGate === 'object' ? quality.hardGate : { pass: false, failures: [] };
+  const judge = quality.judgeCalibration && typeof quality.judgeCalibration === 'object' ? quality.judgeCalibration : {};
+  const benchmark = quality.benchmark && typeof quality.benchmark === 'object' ? quality.benchmark : {};
+  const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
+  const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
+
+  renderLlmResult('llm-quality-scorecard', {
+    ok: true,
+    frameworkVersion: quality.frameworkVersion || 'v1',
+    generatedAt: quality.generatedAt || null,
+    overallScore: Number.isFinite(Number(quality.overallScore)) ? Number(quality.overallScore) : 0,
+    baselineScore: Number.isFinite(Number(quality.baselineScore)) ? Number(quality.baselineScore) : 0,
+    qualityDelta: Number.isFinite(Number(quality.qualityDelta)) ? Number(quality.qualityDelta) : 0,
+    hardGatePass: hardGate.pass === true,
+    hardGateFailures: Array.isArray(hardGate.failures) ? hardGate.failures : [],
+    hardGateWarnings: Array.isArray(hardGate.warnings) ? hardGate.warnings : [],
+    dimensions: dimensions.slice(0, 24)
+  });
+  renderLlmResult('llm-quality-slices', {
+    ok: true,
+    slices: slices.slice(0, 16)
+  });
+  renderLlmResult('llm-quality-judge', {
+    ok: true,
+    confidence: Number.isFinite(Number(judge.confidence)) ? Number(judge.confidence) : 0,
+    disagreementRate: Number.isFinite(Number(judge.disagreementRate)) ? Number(judge.disagreementRate) : 0,
+    multilingualStability: Number.isFinite(Number(judge.multilingualStability)) ? Number(judge.multilingualStability) : 0,
+    promptSensitivityDrift: Number.isFinite(Number(judge.promptSensitivityDrift)) ? Number(judge.promptSensitivityDrift) : 0,
+    humanReviewRequired: judge.humanReviewRequired === true
+  });
+  renderLlmResult('llm-quality-benchmark', {
+    ok: true,
+    version: benchmark.version || '-',
+    frozen: benchmark.frozen === true,
+    contaminationRisk: benchmark.contaminationRisk || '-'
+  });
+  renderLlmResult('llm-quality-replay', {
+    ok: true,
+    totalCases: Number.isFinite(Number(replay.totalCases)) ? Number(replay.totalCases) : 0,
+    criticalFailures: Number.isFinite(Number(replay.criticalFailures)) ? Number(replay.criticalFailures) : 0,
+    warningFailures: Number.isFinite(Number(replay.warningFailures)) ? Number(replay.warningFailures) : 0
+  });
+  renderLlmResult('llm-quality-frontier', {
+    ok: true,
+    qualityScore: Number.isFinite(Number(frontier.qualityScore)) ? Number(frontier.qualityScore) : 0,
+    latencyP50Ms: Number.isFinite(Number(frontier.latencyP50Ms)) ? Number(frontier.latencyP50Ms) : 0,
+    latencyP95Ms: Number.isFinite(Number(frontier.latencyP95Ms)) ? Number(frontier.latencyP95Ms) : 0,
+    costPerTurnUsd: Number.isFinite(Number(frontier.costPerTurnUsd)) ? Number(frontier.costPerTurnUsd) : 0,
+    ackSlaViolationRate: Number.isFinite(Number(frontier.ackSlaViolationRate)) ? Number(frontier.ackSlaViolationRate) : 0,
+    status: frontier.status || 'unknown'
+  });
+}
+
 function llmBlockedReasonCategoryLabel(category) {
   const key = String(category || 'UNKNOWN');
   if (key === 'NO_KB_MATCH') return t('ui.label.llm.block.reason.NO_KB_MATCH', 'KB一致なし');
@@ -17588,10 +17657,12 @@ async function loadLlmUsageSummary(options) {
     const data = await readJsonResponse(res);
     renderLlmResult('llm-usage-summary-result', data);
     renderLlmEntryControlDashboard(data && data.summary ? data.summary : null);
+    renderLlmQualityFrameworkDashboard(data && data.summary ? data.summary : null);
     if (!data || data.ok !== true) throw new Error((data && data.error) || 'failed');
     if (notify) showToast('LLM usage集計を取得しました', 'ok');
   } catch (_err) {
     renderLlmEntryControlDashboard(null);
+    renderLlmQualityFrameworkDashboard(null);
     if (notify) showToast('LLM usage集計の取得に失敗しました', 'danger');
   }
 }
