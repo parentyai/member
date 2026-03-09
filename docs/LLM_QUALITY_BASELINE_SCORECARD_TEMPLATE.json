@@ -1,0 +1,55 @@
+{
+  "frameworkVersion": "v1",
+  "overallScore": 0,
+  "dimensions": [
+    {
+      "key": "factuality_grounding",
+      "score": 0,
+      "weight": 0.12,
+      "hardGate": true,
+      "status": "pass|warning|fail"
+    }
+  ],
+  "slices": [
+    {
+      "sliceKey": "paid",
+      "critical": false,
+      "score": 0,
+      "status": "pass|warning|fail",
+      "sampleCount": 0
+    }
+  ],
+  "hardGate": {
+    "pass": false,
+    "failures": [],
+    "warnings": []
+  },
+  "judgeCalibration": {
+    "confidence": 0,
+    "disagreementRate": 0,
+    "multilingualStability": 0,
+    "promptSensitivityDrift": 0,
+    "humanReviewRequired": false
+  },
+  "benchmark": {
+    "version": "bench-v1.0.0",
+    "frozen": true,
+    "contaminationRisk": "low|medium|high",
+    "artifactHash": null
+  },
+  "replay": {
+    "totalCases": 0,
+    "criticalFailures": 0,
+    "warningFailures": 0
+  },
+  "frontier": {
+    "qualityScore": 0,
+    "latencyP50Ms": 0,
+    "latencyP95Ms": 0,
+    "costPerTurnUsd": 0,
+    "ackSlaViolationRate": 0,
+    "status": "pass|warning|fail"
+  },
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "source": "metrics_input"
+}

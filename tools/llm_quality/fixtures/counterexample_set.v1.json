@@ -1,0 +1,20 @@
+[
+  {
+    "counterexampleId": "CE-01",
+    "title": "memory_overreach",
+    "sliceKey": "domain_continuation",
+    "expectedGuard": "current_turn_override"
+  },
+  {
+    "counterexampleId": "CE-04",
+    "title": "culture_blind_output",
+    "sliceKey": "cultural_slices",
+    "expectedGuard": "cultural_adherence_check"
+  },
+  {
+    "counterexampleId": "CE-06",
+    "title": "over_clarification",
+    "sliceKey": "short_followup",
+    "expectedGuard": "clarification_burden_budget"
+  }
+]

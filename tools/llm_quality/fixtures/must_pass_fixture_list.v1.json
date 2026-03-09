@@ -1,0 +1,13 @@
+{
+  "version": "must-pass-v1.0.0",
+  "required": [
+    "paid_golden_eval",
+    "replay_arena",
+    "slice:short_followup",
+    "slice:domain_continuation",
+    "slice:group_chat",
+    "slice:japanese_service_quality",
+    "slice:minority_personas",
+    "slice:cultural_slices"
+  ]
+}

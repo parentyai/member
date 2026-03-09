@@ -1,0 +1,20 @@
+[
+  {
+    "personaId": "mp_single_parent_limited_english",
+    "sliceKey": "minority_personas",
+    "languageMode": "jp_with_en_terms",
+    "mustPass": true
+  },
+  {
+    "personaId": "mp_disability_support_needs",
+    "sliceKey": "minority_personas",
+    "languageMode": "jp_only",
+    "mustPass": true
+  },
+  {
+    "personaId": "mp_low_digital_literacy",
+    "sliceKey": "minority_personas",
+    "languageMode": "jp_only",
+    "mustPass": true
+  }
+]

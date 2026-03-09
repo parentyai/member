@@ -1,0 +1,30 @@
+[
+  {
+    "fixtureId": "line_short_followup_ssn_docs",
+    "sliceKey": "short_followup",
+    "turns": [
+      "SSNは？",
+      "必要書類",
+      "予約するの？"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_domain_continuation_school",
+    "sliceKey": "domain_continuation",
+    "turns": [
+      "学校",
+      "それで？",
+      "後は何？"
+    ],
+    "mustPass": true
+  },
+  {
+    "fixtureId": "line_group_privacy_generic",
+    "sliceKey": "group_chat",
+    "turns": [
+      "家族の学校手続きどうする？"
+    ],
+    "mustPass": true
+  }
+]

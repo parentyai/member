@@ -4,6 +4,13 @@
 # Changes
 - TODO
 
+# Quality Scorecard (Required)
+- Current Baseline Scorecard: `TODO` (artifact path / URL)
+- Expected Post-change Scorecard: `TODO` (artifact path / URL)
+- Hard Gate Impact: `TODO` (failures/warnings delta)
+- Quality Risks: `TODO` (top 3)
+- What Improves / What Might Regress: `TODO`
+
 # Scope / Impact
 - TODO
 
@@ -13,6 +20,9 @@
 - [ ] `npm run catchup:drift-check` 実行済み（repo-map / docs-artifacts / cleanup / retention / structure / load-risk / missing-index / collection-drift / phase-origin / unreachable / scenariokey-drift）
 - [ ] `npm run test:admin-nav-contract` 実行済み（Admin UI導線変更あり）
 - [ ] `npm run firestore-indexes:check -- --contracts-only` 実行済み（admin/read path変更あり）
+- [ ] `npm run llm:quality:gate` 実行済み
+- [ ] `npm run llm:quality:must-pass` 実行済み
+- [ ] `npm run llm:quality:release-policy` 実行済み
 
 # UI / Docs
 - [ ] UI表示は ADMIN_UI_DICTIONARY_JA.md に準拠
