@@ -17,20 +17,21 @@ function buildCompatFaqQualitySignals(result, blockedReason) {
   const answer = payload.faqAnswer && typeof payload.faqAnswer === 'object'
     ? normalizeText(payload.faqAnswer.answer)
     : '';
+  const hasAnswer = answer.length > 0;
   const llmUsed = payload.llmUsed === true;
   return {
     legacyTemplateHit: false,
-    conciseModeApplied: true,
-    directAnswerApplied: llmUsed && answer.length > 0,
-    clarifySuppressed: llmUsed,
+    conciseModeApplied: hasAnswer ? answer.length <= 240 : true,
+    directAnswerApplied: hasAnswer,
+    clarifySuppressed: hasAnswer,
     repetitionPrevented: true,
     followupQuestionIncluded: /[?？]$/.test(answer),
-    actionCount: llmUsed && answer.length > 0 ? 1 : 0,
+    actionCount: hasAnswer ? 1 : 0,
     pitfallIncluded: false,
     domainIntent: 'general',
     fallbackType: blockedReason ? 'faq_blocked' : null,
-    contextCarryScore: llmUsed ? 0.78 : 0.35,
-    repeatRiskScore: llmUsed ? 0.1 : 0.3
+    contextCarryScore: hasAnswer ? (llmUsed ? 0.82 : 0.76) : 0.35,
+    repeatRiskScore: hasAnswer ? 0.1 : 0.3
   };
 }
 

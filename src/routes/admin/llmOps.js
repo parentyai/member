@@ -22,19 +22,20 @@ function buildOpsQualitySignals(result, mode) {
       ? 1
       : 0
     );
+  const hasActionPayload = nextActionCount > 0;
   return {
     legacyTemplateHit: false,
     conciseModeApplied: true,
-    directAnswerApplied: llmUsed,
-    clarifySuppressed: llmUsed,
+    directAnswerApplied: hasActionPayload,
+    clarifySuppressed: hasActionPayload,
     repetitionPrevented: true,
     followupQuestionIncluded: false,
     actionCount: nextActionCount,
     pitfallIncluded: false,
     domainIntent: 'general',
-    fallbackType: llmUsed ? null : 'ops_blocked',
-    contextCarryScore: llmUsed ? 0.8 : 0.35,
-    repeatRiskScore: llmUsed ? 0.1 : 0.3
+    fallbackType: hasActionPayload ? null : 'ops_blocked',
+    contextCarryScore: hasActionPayload ? (llmUsed ? 0.84 : 0.76) : 0.35,
+    repeatRiskScore: hasActionPayload ? 0.1 : 0.3
   };
 }
 

@@ -70,6 +70,7 @@ const { selectConversationStyle } = require('../domain/llm/conversation/styleRou
 const { composeConversationDraftFromSignals } = require('../domain/llm/conversation/conversationComposer');
 const { humanizeConversationMessage } = require('../domain/llm/conversation/styleHumanizer');
 const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domain/llm/conversation/paidReplyGuard');
+const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/freeContextualFollowup');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
 const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeStore');
@@ -1884,6 +1885,13 @@ async function replyWithFreeRetrieval(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const sanitizeLegacyTemplateForPaid = payload.sanitizeLegacyTemplateForPaid === true;
   const domainIntent = normalizeDomainIntent(payload.domainIntent);
+  const contextualFollowup = payload.enableContextualFollowup === true
+    ? resolveFreeContextualFollowup({
+      messageText: payload.text,
+      messageDomainIntent: payload.normalizedConversationIntent || payload.domainIntent,
+      recentActionRows: payload.recentActionRows
+    })
+    : null;
   const retrieval = await generateFreeRetrievalReply({
     lineUserId: payload.lineUserId,
     question: payload.text,
@@ -1898,6 +1906,11 @@ async function replyWithFreeRetrieval(params) {
   const extra = normalizeReplyText(mergedExtra);
   const base = trimForLineMessage(retrieval.replyText) || '関連情報を取得できませんでした。';
   let replyText = extra ? trimForLineMessage(`${base}\n\n${extra}`) : base;
+  if (contextualFollowup && contextualFollowup.replyText) {
+    replyText = extra
+      ? trimForLineMessage(`${contextualFollowup.replyText}\n\n${extra}`)
+      : trimForLineMessage(contextualFollowup.replyText);
+  }
   const retrievalBlockedReasons = Array.isArray(retrieval.blockedReasons) ? retrieval.blockedReasons : [];
   const retrievalInjectionFindings = retrieval.injectionFindings === true;
   let conciergeMeta = {
@@ -2001,11 +2014,22 @@ async function replyWithFreeRetrieval(params) {
   const conversationQuality = buildConversationQualityMeta({
     replyText,
     domainIntent,
-    fallbackType: sanitizeLegacyTemplateForPaid ? 'free_retrieval_sanitized' : 'free_retrieval',
-    opportunityReasonKeys: []
+    fallbackType: sanitizeLegacyTemplateForPaid
+      ? 'free_retrieval_sanitized'
+      : (contextualFollowup ? 'free_contextual_followup' : 'free_retrieval'),
+    opportunityReasonKeys: [],
+    followupIntent: contextualFollowup ? contextualFollowup.followupIntent : null,
+    conciseModeApplied: contextualFollowup ? contextualFollowup.qualityMeta.conciseModeApplied === true : false,
+    directAnswerApplied: contextualFollowup ? contextualFollowup.qualityMeta.directAnswerApplied === true : false,
+    clarifySuppressed: contextualFollowup ? contextualFollowup.qualityMeta.clarifySuppressed === true : false,
+    repetitionPrevented: contextualFollowup ? contextualFollowup.qualityMeta.repetitionPrevented === true : false,
+    contextCarryScore: contextualFollowup ? contextualFollowup.qualityMeta.contextCarryScore : 0,
+    repeatRiskScore: contextualFollowup ? contextualFollowup.qualityMeta.repeatRiskScore : 0
   });
   return Object.assign({}, retrieval, {
     replyText,
+    followupIntent: contextualFollowup ? contextualFollowup.followupIntent : null,
+    contextualFollowupUsed: Boolean(contextualFollowup),
     conciergeMeta,
     conversationQuality
   });
@@ -2056,14 +2080,19 @@ async function handleAssistantMessage(params) {
     const dependencyHint = isDependencyHintIntent(text)
       ? buildFreeDependencyHint(await loadTaskGraphSummary(lineUserId))
       : '';
+    const recentActionRows = await loadRecentActionRowsBestEffort(lineUserId, 5);
     const fallback = await replyWithFreeRetrieval(Object.assign({}, payload, {
       extraText: dependencyHint,
       blockedReason,
       plan: planInfo.plan,
+      domainIntent: normalizedConversationIntent,
       llmConciergeEnabled,
       llmWebSearchEnabled,
       llmStyleEngineEnabled,
-      llmBanditEnabled
+      llmBanditEnabled,
+      normalizedConversationIntent,
+      recentActionRows,
+      enableContextualFollowup: true
     }));
     if (explicitPaidIntent) {
       await appendJourneyEventBestEffort({
@@ -2099,10 +2128,10 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       assistantQuality,
-      domainIntent: 'general',
+      domainIntent: normalizedConversationIntent,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: 'general',
+        domainIntent: normalizedConversationIntent,
         fallbackType: blockedReason || 'free_retrieval_only',
         opportunityReasonKeys: []
       })
@@ -2114,10 +2143,10 @@ async function handleAssistantMessage(params) {
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
       llmBanditEnabled,
-      domainIntent: 'general',
+      domainIntent: normalizedConversationIntent,
       conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
         replyText: fallback && fallback.replyText ? fallback.replyText : '',
-        domainIntent: 'general',
+        domainIntent: normalizedConversationIntent,
         fallbackType: blockedReason || 'free_retrieval_only',
         opportunityReasonKeys: []
       })
