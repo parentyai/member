@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-08T17:05:18-04:00",
-  "gitCommit": "36a0fc4e697eb20cdd74f92cfc9643addc0a98b6",
-  "branch": "codex/feat/spec-v1-line-openai-full-cutover",
-  "sourceDigest": "dc4978ea149e8a0d0a2783171c5b366eae28b76588d7ed9492c5ee0bc5109e8a",
+  "generatedAt": "2026-03-08T22:24:40-04:00",
+  "gitCommit": "8c81a105b30fb638363e45d7b05ad9756035277b",
+  "branch": "codex/paid-orchestrator-loopfix-R734",
+  "sourceDigest": "3a44a583bee9af4ddcb275e6e5d583b89f9f6a6bfd027517d497b5cd3860b646",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
