@@ -31,7 +31,42 @@ test('phase754: free/admin/compat slices use balanced quality signals and reach 
       retrieveNeededRate: 0.25,
       verificationOutcomes: [{ verificationOutcome: 'clarify', count: 24 }]
     },
-    gateAuditBaseline: { acceptedRate: 0.9 },
+    gateAuditBaseline: {
+      acceptedRate: 0.9,
+      entryTypes: [
+        { entryType: 'webhook', count: 120, allowCount: 95, acceptedRate: 0.7917 },
+        { entryType: 'admin', count: 40, allowCount: 36, acceptedRate: 0.9 },
+        { entryType: 'compat', count: 20, allowCount: 18, acceptedRate: 0.9 }
+      ],
+      entryQualitySignals: [
+        {
+          entryType: 'admin',
+          sampleCount: 40,
+          legacyTemplateHitRate: 0,
+          conciseModeAppliedRate: 1,
+          directAnswerAppliedRate: 0.92,
+          repetitionPreventedRate: 1,
+          clarifySuppressedRate: 0.92,
+          defaultCasualRate: 0,
+          followupQuestionIncludedRate: 0.1,
+          avgContextCarryScore: 0.8,
+          avgRepeatRiskScore: 0.1
+        },
+        {
+          entryType: 'compat',
+          sampleCount: 20,
+          legacyTemplateHitRate: 0.02,
+          conciseModeAppliedRate: 0.95,
+          directAnswerAppliedRate: 0.9,
+          repetitionPreventedRate: 1,
+          clarifySuppressedRate: 0.9,
+          defaultCasualRate: 0,
+          followupQuestionIncludedRate: 0.05,
+          avgContextCarryScore: 0.78,
+          avgRepeatRiskScore: 0.12
+        }
+      ]
+    },
     optimization: { compatShareWindow: 0.12 },
     releaseReadiness: { ready: true, metrics: { avgEvidenceCoverage: 0.83 } },
     byPlan: {

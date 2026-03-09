@@ -51,6 +51,17 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     followupIntent: 'docs_required',
     conciseModeApplied: true,
     repetitionPrevented: true,
+    directAnswerApplied: true,
+    clarifySuppressed: true,
+    contextCarryScore: 0.82,
+    repeatRiskScore: 0.11,
+    legacyTemplateHit: false,
+    followupQuestionIncluded: true,
+    actionCount: 1,
+    pitfallIncluded: false,
+    domainIntent: 'school',
+    fallbackType: 'none',
+    interventionSuppressedBy: 'cooldown',
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -78,14 +89,50 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.followupIntent, 'docs_required');
   assert.equal(sanitized.conciseModeApplied, true);
   assert.equal(sanitized.repetitionPrevented, true);
+  assert.equal(sanitized.directAnswerApplied, true);
+  assert.equal(sanitized.clarifySuppressed, true);
+  assert.equal(sanitized.contextCarryScore, 0.82);
+  assert.equal(sanitized.repeatRiskScore, 0.11);
+  assert.equal(sanitized.legacyTemplateHit, false);
+  assert.equal(sanitized.followupQuestionIncluded, true);
+  assert.equal(sanitized.actionCount, 1);
+  assert.equal(sanitized.pitfallIncluded, false);
+  assert.equal(sanitized.domainIntent, 'school');
+  assert.equal(sanitized.fallbackType, 'none');
+  assert.equal(sanitized.interventionSuppressedBy, 'cooldown');
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 
-test('phase717: gate baseline aggregates entryType and gates coverage', () => {
+test('phase717: gate baseline aggregates entryType, gates coverage, and entry quality signals', () => {
   const baseline = buildGateAuditBaseline([
-    { payloadSummary: { decision: 'allow', entryType: 'webhook', gatesApplied: ['kill_switch', 'url_guard'] } },
-    { payloadSummary: { decision: 'blocked', blockedReason: 'citation_missing', entryType: 'admin', gatesApplied: ['kill_switch'] } },
-    { payloadSummary: { decision: 'blocked', blockedReason: 'template_violation', entryType: 'compat', gatesApplied: ['kill_switch', 'injection'] } }
+    {
+      payloadSummary: {
+        decision: 'allow',
+        entryType: 'webhook',
+        gatesApplied: ['kill_switch', 'url_guard'],
+        directAnswerApplied: true,
+        conciseModeApplied: true,
+        contextCarryScore: 0.8
+      }
+    },
+    {
+      payloadSummary: {
+        decision: 'blocked',
+        blockedReason: 'citation_missing',
+        entryType: 'admin',
+        gatesApplied: ['kill_switch'],
+        repetitionPrevented: true
+      }
+    },
+    {
+      payloadSummary: {
+        decision: 'blocked',
+        blockedReason: 'template_violation',
+        entryType: 'compat',
+        gatesApplied: ['kill_switch', 'injection'],
+        legacyTemplateHit: true
+      }
+    }
   ]);
 
   assert.equal(baseline.callsTotal, 3);
@@ -99,6 +146,11 @@ test('phase717: gate baseline aggregates entryType and gates coverage', () => {
   assert.equal(gatesCoverage.url_guard, 1);
   assert.equal(gatesCoverage.injection, 1);
   assert.equal(gatesCoverage.snapshot, 0);
+  const entrySignals = Object.fromEntries((baseline.entryQualitySignals || []).map((row) => [row.entryType, row]));
+  assert.equal(entrySignals.webhook.directAnswerAppliedRate, 1);
+  assert.equal(entrySignals.webhook.conciseModeAppliedRate, 1);
+  assert.equal(entrySignals.admin.repetitionPreventedRate, 1);
+  assert.equal(entrySignals.compat.legacyTemplateHitRate, 1);
 });
 
 test('phase717: webhook/admin/compat routes set entryType and gatesApplied for llm_gate.decision', () => {

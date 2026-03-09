@@ -76,7 +76,18 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'loopBreakApplied',
   'followupIntent',
   'conciseModeApplied',
-  'repetitionPrevented'
+  'repetitionPrevented',
+  'directAnswerApplied',
+  'clarifySuppressed',
+  'contextCarryScore',
+  'repeatRiskScore',
+  'legacyTemplateHit',
+  'followupQuestionIncluded',
+  'actionCount',
+  'pitfallIncluded',
+  'domainIntent',
+  'fallbackType',
+  'interventionSuppressedBy'
 ]);
 
 function resolveAppendAuditLog() {
