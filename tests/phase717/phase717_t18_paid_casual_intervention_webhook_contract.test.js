@@ -609,13 +609,13 @@ test('phase717: free path keeps retrieval-first behavior', { concurrency: false 
     || gateSummaries[0];
   if (summary) {
     assert.equal(summary.decision, 'blocked');
-    assert.equal(summary.domainIntent, 'general');
+    assert.equal(summary.domainIntent, 'school');
     assert.equal(summary.fallbackType, 'free_retrieval');
     assert.equal(typeof summary.directAnswerApplied, 'boolean');
     assert.equal(typeof summary.repeatRiskScore, 'number');
   }
   if (loaded.actionLogWrites.length > 0) {
-    assert.equal(loaded.actionLogWrites[0].domainIntent, 'general');
+    assert.equal(loaded.actionLogWrites[0].domainIntent, 'school');
     assert.equal(loaded.actionLogWrites[0].fallbackType, 'free_retrieval');
   }
 });

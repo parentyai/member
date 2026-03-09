@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T19:14:49-04:00",
-  "gitCommit": "3f5f3c6951c2562238887e259eb3c31745bfc357",
-  "branch": "codex/runtime-first-quality-gate-r759",
-  "sourceDigest": "70da754a1d35e734af4d80639ff9dd8d12ded5aa27b9de45b80841d04c958b32",
+  "generatedAt": "2026-03-09T19:27:35-04:00",
+  "gitCommit": "b6fcf179e165238e8b2d99a379a1a55dfe7dc9d3",
+  "branch": "codex/slice-uplift-r760",
+  "sourceDigest": "50d75c2ec454d046b7ad1b3ff643dfad0bb245c85345470e0a82bce79cce3aab",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
