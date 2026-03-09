@@ -164,6 +164,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       contextSnapshot: packet.contextSnapshot,
       opportunityDecision: packet.opportunityDecision,
       followupIntent: packet.followupIntent,
+      recentFollowupIntents: packet.recentFollowupIntents,
       blockedReason: null
     });
     const domainCandidate = buildDomainCandidate(domainResult, packet);
@@ -213,6 +214,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       contextSnapshot: packet.contextSnapshot,
       opportunityDecision: packet.opportunityDecision,
       followupIntent: packet.followupIntent,
+      recentFollowupIntents: packet.recentFollowupIntents,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
     const fallbackCandidate = buildDomainCandidate(fallbackDomain, packet);

@@ -39,6 +39,34 @@ function normalizeStringList(value, limit) {
   return out;
 }
 
+function resolveDomainIntentFromTaskKey(value) {
+  const key = normalizeText(value).toLowerCase();
+  if (!key) return null;
+  if (key.includes('school')) return 'school';
+  if (key.includes('ssn') || key.includes('social_security')) return 'ssn';
+  if (key.includes('housing') || key.includes('lease') || key.includes('apartment')) return 'housing';
+  if (key.includes('bank') || key.includes('wire') || key.includes('checking') || key.includes('debit')) return 'banking';
+  return null;
+}
+
+function inferDomainFromContextSnapshot(snapshot) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const keys = [];
+  const pushTaskKey = (task) => {
+    if (!task || typeof task !== 'object') return;
+    keys.push(task.key || task.todoKey || task.id || task.title || '');
+  };
+  if (Array.isArray(source.topTasks)) source.topTasks.forEach(pushTaskKey);
+  if (Array.isArray(source.topOpenTasks)) source.topOpenTasks.forEach(pushTaskKey);
+  pushTaskKey(source.blockedTask);
+  pushTaskKey(source.dueSoonTask);
+  for (const taskKey of keys) {
+    const domain = resolveDomainIntentFromTaskKey(taskKey);
+    if (domain) return domain;
+  }
+  return null;
+}
+
 function summarizeRecentActionRows(rows) {
   const list = Array.isArray(rows) ? rows : [];
   const ordered = list
@@ -48,6 +76,7 @@ function summarizeRecentActionRows(rows) {
   const recentUserGoals = [];
   const recentDomains = [];
   const recentResponseHints = [];
+  const recentFollowupIntents = [];
 
   ordered.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -68,21 +97,27 @@ function summarizeRecentActionRows(rows) {
     if (responseHint && !recentResponseHints.includes(responseHint)) {
       recentResponseHints.push(responseHint);
     }
+    const followupIntent = normalizeText(row.followupIntent).toLowerCase();
+    if (followupIntent && !recentFollowupIntents.includes(followupIntent)) {
+      recentFollowupIntents.push(followupIntent);
+    }
   });
 
   return {
     assistantCommitments: assistantCommitments.slice(0, 6),
     recentUserGoals: recentUserGoals.slice(0, 6),
     recentDomains: recentDomains.slice(0, 4),
-    recentResponseHints: recentResponseHints.slice(0, 6)
+    recentResponseHints: recentResponseHints.slice(0, 6),
+    recentFollowupIntents: recentFollowupIntents.slice(0, 6)
   };
 }
 
 function isLowInformationMessage(text) {
   const normalized = normalizeText(text);
   if (!normalized) return true;
-  if (normalized.length <= 8) return true;
-  if (/^(それで|それは|そうなんだ|なるほど|うん|はい|了解|後は何[?？]?|次は[?？]?|つぎは[?？]?)$/i.test(normalized)) return true;
+  if (normalized.length <= 8 && /^(ヒザ|ひざ|ビザ|びざ)/i.test(normalized)) return true;
+  if (/^(ヒザ|ひざ|ビザ|びざ|それで|それは|それって|そうなんだ|なるほど|うん|はい|了解|ok|後は何[?？]?|次は[?？]?|つぎは[?？]?|必要書類|書類|予約|予約するの|予約要る|予約いる|どうする|何から)$/i.test(normalized)) return true;
+  if (normalized.length <= 3 && /^(はい|うん|了解|ok|おけ|おっけー|thanks|ありがとう|ありがと)$/i.test(normalized)) return true;
   return false;
 }
 
@@ -93,7 +128,9 @@ function buildConversationPacket(params) {
   const detectedConversationIntent = normalizeConversationIntent(messageText);
   const recentHistory = summarizeRecentActionRows(payload.recentActionRows);
   const lowInformationMessage = isLowInformationMessage(messageText);
-  const recentDomain = recentHistory.recentDomains[0] || null;
+  const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null;
+  const contextSnapshotDomain = inferDomainFromContextSnapshot(contextSnapshot);
+  const recentDomain = recentHistory.recentDomains[0] || contextSnapshotDomain || null;
   const contextResume = detectedConversationIntent === 'general'
     && lowInformationMessage
     && Boolean(recentDomain)
@@ -124,7 +161,7 @@ function buildConversationPacket(params) {
     intentDecision,
     routerMode: normalizeText(payload.routerMode || intentDecision.mode) || 'casual',
     routerReason,
-    contextSnapshot: payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null,
+    contextSnapshot,
     contextResume,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent: followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
@@ -147,6 +184,7 @@ function buildConversationPacket(params) {
     recentUserGoals: recentHistory.recentUserGoals,
     recentDomains: recentHistory.recentDomains,
     recentResponseHints: recentHistory.recentResponseHints,
+    recentFollowupIntents: recentHistory.recentFollowupIntents,
     opportunityDecision: payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
       ? payload.opportunityDecision
       : null

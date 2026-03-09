@@ -35,6 +35,10 @@ const { applyAnswerReadinessDecision } = require('../domain/llm/quality/applyAns
 const { generatePaidDomainConciergeReply, FORBIDDEN_REPLY_PATTERN } = require('../usecases/assistant/generatePaidDomainConciergeReply');
 const { generatePaidHousingConciergeReply } = require('../usecases/assistant/generatePaidHousingConciergeReply');
 const { runPaidConversationOrchestrator } = require('../domain/llm/orchestrator/runPaidConversationOrchestrator');
+const {
+  upsertRecentTurn,
+  listRecentTurns
+} = require('../domain/llm/orchestrator/recentTurnCache');
 const { createEvent } = require('../repos/firestore/eventsRepo');
 const { appendAuditLog } = require('../usecases/audit/appendAuditLog');
 const { appendLlmGateDecision } = require('../usecases/llm/appendLlmGateDecision');
@@ -639,6 +643,15 @@ async function buildPaidDomainConciergeResult(params) {
       interventionBudget: 1
     });
   }
+  const derivedRecentFollowupIntents = Array.isArray(payload.recentFollowupIntents) && payload.recentFollowupIntents.length
+    ? payload.recentFollowupIntents
+      .map((item) => normalizeReplyText(item).toLowerCase())
+      .filter(Boolean)
+      .slice(0, 6)
+    : listRecentTurns(lineUserId, recentTurns)
+      .map((row) => normalizeReplyText(row && row.followupIntent).toLowerCase())
+      .filter(Boolean)
+      .slice(0, 6);
   const domainReply = domainIntent === 'housing'
     ? generatePaidHousingConciergeReply({
       lineUserId,
@@ -646,6 +659,7 @@ async function buildPaidDomainConciergeResult(params) {
       contextSnapshot,
       opportunityDecision,
       followupIntent: payload.followupIntent || null,
+      recentFollowupIntents: derivedRecentFollowupIntents,
       blockedReason: payload.blockedReason || null
     })
     : generatePaidDomainConciergeReply({
@@ -655,6 +669,7 @@ async function buildPaidDomainConciergeResult(params) {
       contextSnapshot,
       opportunityDecision,
       followupIntent: payload.followupIntent || null,
+      recentFollowupIntents: derivedRecentFollowupIntents,
       blockedReason: payload.blockedReason || null
     });
   const domainAtoms = domainReply && domainReply.atoms && typeof domainReply.atoms === 'object'
@@ -1451,6 +1466,26 @@ async function appendLlmActionLogBestEffort(data) {
   } catch (_err) {
     // best effort only
   }
+  try {
+    const followupIntent = typeof payload.followupIntent === 'string' && payload.followupIntent.trim()
+      ? payload.followupIntent.trim().toLowerCase()
+      : (qualityMeta.followupIntent || null);
+    upsertRecentTurn(lineUserId, {
+      createdAt: new Date().toISOString(),
+      requestId: payload.requestId || null,
+      traceId: payload.traceId || null,
+      domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
+      followupIntent,
+      replyText: normalizeReplyText(payload.replyText || payload.finalReplyText || ''),
+      committedNextActions: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+      committedFollowupQuestion: typeof payload.committedFollowupQuestion === 'string'
+        ? payload.committedFollowupQuestion
+        : null,
+      recentUserGoal: typeof payload.recentUserGoal === 'string' ? payload.recentUserGoal : null
+    });
+  } catch (_err) {
+    // best effort only
+  }
 }
 
 async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
@@ -1459,13 +1494,35 @@ async function loadRecentActionRowsBestEffort(lineUserId, recentTurns) {
   const limit = Number.isFinite(Number(recentTurns))
     ? Math.max(5, Math.min(20, Math.floor(Number(recentTurns)) * 2))
     : 10;
+  const cachedRows = listRecentTurns(normalizedUserId, limit);
   try {
-    return await llmActionLogsRepo.listLlmActionLogsByLineUserId({
+    const storedRows = await llmActionLogsRepo.listLlmActionLogsByLineUserId({
       lineUserId: normalizedUserId,
       limit
     });
+    const deduped = [];
+    const seenKeys = new Set();
+    const toKey = (row) => {
+      const requestId = normalizeReplyText(row && row.requestId);
+      if (requestId) return `req:${requestId}`;
+      const createdAt = normalizeReplyText(row && row.createdAt);
+      const domainIntent = normalizeDomainIntent(row && row.domainIntent);
+      const replyText = normalizeReplyText(row && row.replyText);
+      return `row:${createdAt}:${domainIntent}:${replyText}`;
+    };
+    const pushRow = (row) => {
+      if (!row || typeof row !== 'object') return;
+      const key = toKey(row);
+      if (!key || seenKeys.has(key)) return;
+      seenKeys.add(key);
+      deduped.push(row);
+    };
+    (Array.isArray(storedRows) ? storedRows : []).forEach(pushRow);
+    (Array.isArray(cachedRows) ? cachedRows : []).forEach(pushRow);
+    deduped.sort((left, right) => toMillis(right && right.createdAt) - toMillis(left && left.createdAt));
+    return deduped.slice(0, limit);
   } catch (_err) {
-    return [];
+    return Array.isArray(cachedRows) ? cachedRows : [];
   }
 }
 
@@ -1500,6 +1557,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     contextSnapshot: options && options.contextSnapshot ? options.contextSnapshot : payload.contextSnapshot,
     opportunityDecision: options && options.opportunityDecision ? options.opportunityDecision : payload.opportunityDecision,
     followupIntent: options && typeof options.followupIntent === 'string' ? options.followupIntent : null,
+    recentFollowupIntents: options && Array.isArray(options.recentFollowupIntents) ? options.recentFollowupIntents : [],
     recentEngagement: payload.recentEngagement,
     blockedReason: options && Object.prototype.hasOwnProperty.call(options, 'blockedReason') ? options.blockedReason : null,
     forceConcierge: true,
@@ -1669,6 +1727,7 @@ async function tryHandlePaidOrchestratorV2(params) {
     plan: payload.planInfo.plan,
     traceId: payload.traceId,
     requestId: payload.requestId,
+    replyText: orchestrated.replyText,
     conciergeMeta: orchestrated.conciergeMeta,
     llmBanditEnabled: payload.llmBanditEnabled,
     conversationMode: orchestrated.conversationMode,

@@ -58,10 +58,10 @@ const DOMAIN_SPECS = Object.freeze({
     }
   },
   general: {
-    situationLine: 'いまの状況を短く整理します。',
-    defaultAction: '優先したい手続きを1つ決める',
+    situationLine: 'いまの状況を整理します。',
+    defaultAction: '今すぐ進める手続きを1つ決める',
     pitfall: '優先順位が曖昧だと手続きが分散しやすくなります。',
-    question: 'まず最優先の手続きを1つ教えてください。',
+    question: 'いま一番困っている手続きを1つだけ教えてください。',
     directAnswers: {
       docs_required: '必要書類は、まず最優先の手続きに必要なものだけ先に整理すると進めやすいです。',
       appointment_needed: '予約要否は手続きごとに違うので、最優先手続きの窓口だけ先に確認しましょう。',
@@ -169,6 +169,19 @@ function buildActionLine(action) {
   return ensureSentence(`次は${normalized}`);
 }
 
+function detectRepeatedFollowupIntent(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
+  const rows = Array.isArray(payload.recentFollowupIntents) ? payload.recentFollowupIntents : [];
+  if (!followupIntent) return false;
+  let streak = 0;
+  rows.slice(0, 3).forEach((item) => {
+    const normalized = normalizeText(item).toLowerCase();
+    if (normalized && normalized === followupIntent) streak += 1;
+  });
+  return streak >= 1;
+}
+
 function resolveFollowupIntentForDomain(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const explicit = normalizeText(payload.followupIntent).toLowerCase();
@@ -186,12 +199,21 @@ function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
   const spec = DOMAIN_SPECS[payload.domainIntent] || DOMAIN_SPECS.general;
   const followupIntent = payload.followupIntent || null;
+  const repeatedFollowupIntent = payload.repeatedFollowupIntent === true;
   const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
-  const primaryLine = ensureSentence(
-    followupIntent && directAnswers[followupIntent]
-      ? directAnswers[followupIntent]
+  const repeatedAnswerByIntent = {
+    docs_required: '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。',
+    appointment_needed: '予約の確認を続けるなら、最寄り窓口を1つ決めて予約可否を確定しましょう。',
+    next_step: '同じ話題を進めるなら、期限が近い手続きを1つに固定すると進みます。'
+  };
+  const resolvedPrimaryLine = (
+    followupIntent
+      ? (repeatedFollowupIntent
+        ? repeatedAnswerByIntent[followupIntent] || directAnswers[followupIntent]
+        : directAnswers[followupIntent])
       : (payload.situationLine || spec.situationLine)
   );
+  const primaryLine = ensureSentence(resolvedPrimaryLine);
   const actions = normalizeActions(payload.nextActions, 3);
   const actionLine = buildActionLine(actions[0] || spec.defaultAction);
   const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
@@ -265,6 +287,10 @@ function generatePaidDomainConciergeReply(params) {
     messageText: payload.messageText,
     domainIntent
   });
+  const repeatedFollowupIntent = detectRepeatedFollowupIntent({
+    followupIntent,
+    recentFollowupIntents: payload.recentFollowupIntents
+  });
 
   const suggestedAtoms = decision && decision.suggestedAtoms && typeof decision.suggestedAtoms === 'object'
     ? decision.suggestedAtoms
@@ -284,7 +310,8 @@ function generatePaidDomainConciergeReply(params) {
     nextActions: mergedActions,
     pitfall: suggestedAtoms.pitfall || spec.pitfall,
     followupQuestion: suggestedAtoms.question || buildFollowupQuestion(domainIntent, conciergeContext),
-    followupIntent
+    followupIntent,
+    repeatedFollowupIntent
   });
 
   return {
