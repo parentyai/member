@@ -371,6 +371,8 @@ function buildConversationQualitySummary(actionRows) {
   const sourceReadinessDecisions = new Map();
   const readinessDecisions = new Map();
   const readinessSafeResponseModes = new Map();
+  const followupIntents = new Map();
+  const routerReasons = new Map();
   const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
@@ -388,6 +390,9 @@ function buildConversationQualitySummary(actionRows) {
   let officialOnlySatisfiedCount = 0;
   let unsupportedClaimCountTotal = 0;
   let contradictionDetectedCount = 0;
+  let conciseModeAppliedCount = 0;
+  let repetitionPreventedCount = 0;
+  let defaultCasualCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -401,6 +406,8 @@ function buildConversationQualitySummary(actionRows) {
     const sourceReadinessDecision = normalizeReason(row && row.sourceReadinessDecision ? row.sourceReadinessDecision : 'none');
     const readinessDecision = normalizeReason(row && row.readinessDecision ? row.readinessDecision : 'none');
     const readinessSafeResponseMode = normalizeReason(row && row.readinessSafeResponseMode ? row.readinessSafeResponseMode : 'none');
+    const followupIntent = normalizeReason(row && row.followupIntent ? row.followupIntent : 'none');
+    const routerReason = normalizeReason(row && row.routerReason ? row.routerReason : 'none');
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
     const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
     const retrieveNeeded = row && row.retrieveNeeded === true;
@@ -408,6 +415,8 @@ function buildConversationQualitySummary(actionRows) {
     const legacyTemplateHit = row && row.legacyTemplateHit === true;
     const followupQuestionIncluded = row && row.followupQuestionIncluded === true;
     const pitfallIncluded = row && row.pitfallIncluded === true;
+    const conciseModeApplied = row && row.conciseModeApplied === true;
+    const repetitionPrevented = row && row.repetitionPrevented === true;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
@@ -422,12 +431,17 @@ function buildConversationQualitySummary(actionRows) {
       readinessSafeResponseMode,
       (readinessSafeResponseModes.get(readinessSafeResponseMode) || 0) + 1
     );
+    followupIntents.set(followupIntent, (followupIntents.get(followupIntent) || 0) + 1);
+    routerReasons.set(routerReason, (routerReasons.get(routerReason) || 0) + 1);
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
     if (retrieveNeeded) retrieveNeededCount += 1;
     if (legacyTemplateHit) legacyTemplateHitCount += 1;
     if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
     if (pitfallIncluded) pitfallIncludedCount += 1;
+    if (conciseModeApplied) conciseModeAppliedCount += 1;
+    if (repetitionPrevented) repetitionPreventedCount += 1;
+    if (routerReason === 'default_casual') defaultCasualCount += 1;
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
     if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
       unsupportedClaimCountTotal += Math.max(0, Number(row.unsupportedClaimCount));
@@ -482,11 +496,22 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     readinessDecisions: sortCountEntries(readinessDecisions, 'readinessDecision', 10),
     readinessSafeResponseModes: sortCountEntries(readinessSafeResponseModes, 'readinessSafeResponseMode', 10),
+    followupIntents: sortCountEntries(followupIntents, 'followupIntent', 10),
+    routerReasons: sortCountEntries(routerReasons, 'routerReason', 12),
     avgUnsupportedClaimCount: sampleCount > 0
       ? Math.round((unsupportedClaimCountTotal / sampleCount) * 10000) / 10000
       : 0,
     contradictionDetectedRate: sampleCount > 0
       ? Math.round((contradictionDetectedCount / sampleCount) * 10000) / 10000
+      : 0,
+    conciseModeAppliedRate: sampleCount > 0
+      ? Math.round((conciseModeAppliedCount / sampleCount) * 10000) / 10000
+      : 0,
+    repetitionPreventedRate: sampleCount > 0
+      ? Math.round((repetitionPreventedCount / sampleCount) * 10000) / 10000
+      : 0,
+    defaultCasualRate: sampleCount > 0
+      ? Math.round((defaultCasualCount / sampleCount) * 10000) / 10000
       : 0,
     contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),

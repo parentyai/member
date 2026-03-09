@@ -49,6 +49,20 @@ function stripActionPrefix(line) {
   return sanitizeLine(line.replace(/^[\-・*\d０-９0-9.\)\(]+\s*/, ''));
 }
 
+function ensureSentence(line) {
+  const normalized = sanitizeLine(line);
+  if (!normalized) return '';
+  if (/[。！？!?]$/.test(normalized)) return normalized;
+  return `${normalized}。`;
+}
+
+function toConciseActionLine(action) {
+  const normalized = sanitizeLine(action);
+  if (!normalized) return '';
+  if (/^(次|まず|先に)/.test(normalized)) return ensureSentence(normalized);
+  return ensureSentence(`次は${normalized}`);
+}
+
 function looksLikeActionLine(line) {
   if (!line) return false;
   if (/^[\-・*\d０-９0-9.\)\(]/.test(line)) return true;
@@ -110,22 +124,43 @@ function sanitizePaidMainReply(text, options) {
     followupQuestion = sanitizeLine(payload.defaultQuestion || DEFAULT_QUESTION_LINE);
   }
 
+  const conciseMode = payload.conciseMode === true;
+  const normalizedSituationLine = sanitizeLine(situationLine) || DEFAULT_SITUATION_LINE;
+  const dedupedActions = nextActions.filter((action) => {
+    const normalizedAction = sanitizeLine(action);
+    if (!normalizedAction) return false;
+    if (normalizedAction === normalizedSituationLine) return false;
+    if (normalizedSituationLine.includes(normalizedAction) || normalizedAction.includes(normalizedSituationLine)) return false;
+    return true;
+  });
   const outputLines = [sanitizeLine(situationLine) || DEFAULT_SITUATION_LINE];
-  if (nextActions.length) {
-    outputLines.push('まずは次の一手です。');
-    nextActions.slice(0, 3).forEach((action) => {
-      outputLines.push(`・${sanitizeLine(action)}`);
-    });
-  }
-  if (pitfallLine) {
-    outputLines.push(pitfallLine);
-  }
-  if (followupQuestion) {
-    outputLines.push(followupQuestion);
+  if (conciseMode) {
+    if (dedupedActions.length) {
+      outputLines.push(toConciseActionLine(dedupedActions[0]));
+    }
+    if (followupQuestion) {
+      outputLines.push(followupQuestion);
+    } else if (pitfallLine) {
+      outputLines.push(pitfallLine);
+    }
+  } else {
+    if (nextActions.length) {
+      outputLines.push('まずは次の一手です。');
+      nextActions.slice(0, 3).forEach((action) => {
+        outputLines.push(`・${sanitizeLine(action)}`);
+      });
+    }
+    if (pitfallLine) {
+      outputLines.push(pitfallLine);
+    }
+    if (followupQuestion) {
+      outputLines.push(followupQuestion);
+    }
   }
 
   const sanitizedText = outputLines
     .filter(Boolean)
+    .slice(0, conciseMode ? 3 : 6)
     .join('\n')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
@@ -134,7 +169,7 @@ function sanitizePaidMainReply(text, options) {
   return {
     text: sanitizedText || DEFAULT_SITUATION_LINE,
     legacyTemplateHit: containsLegacyTemplateTerms(raw),
-    actionCount: nextActions.length,
+    actionCount: dedupedActions.length,
     pitfallIncluded: Boolean(pitfallLine),
     followupQuestionIncluded: Boolean(followupQuestion)
   };

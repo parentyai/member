@@ -217,7 +217,8 @@ test('phase656: webhook pro path switches between paid FAQ and paid assistant by
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: '0',
-    ENABLE_PAID_FAQ_QUALITY_V2: '1'
+    ENABLE_PAID_FAQ_QUALITY_V2: '1',
+    ENABLE_PAID_ORCHESTRATOR_V2: '0'
   });
   const loaded = loadWebhookWithStubs({
     snapshotResult: { ok: true, stale: false, snapshot: { phase: 'pre' } }
@@ -284,7 +285,8 @@ test('phase656: snapshot strict mode blocks paid generation and falls back to pa
   const restoreEnv = withEnv({
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_SNAPSHOT_ONLY_CONTEXT_V1: '1',
-    ENABLE_PAID_FAQ_QUALITY_V2: '1'
+    ENABLE_PAID_FAQ_QUALITY_V2: '1',
+    ENABLE_PAID_ORCHESTRATOR_V2: '0'
   });
   const loaded = loadWebhookWithStubs({
     snapshotResult: { ok: true, stale: true, snapshot: { phase: 'pre' } }
@@ -310,7 +312,8 @@ test('phase656: snapshot strict mode blocks paid generation and falls back to pa
 
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
-  assert.ok(replies[0].text.includes('まずは次の一手'));
+  assert.equal(replies[0].text.includes('まずは次の一手'), false);
+  assert.equal(replies[0].text.split('\n').filter((line) => line.trim()).length <= 3, true);
   assert.ok(!replies[0].text.includes('FAQ候補'));
   assert.ok(!replies[0].text.includes('CityPack候補'));
   assert.equal(loaded.counters.faq, 0);

@@ -1,39 +1,72 @@
 'use strict';
 
 const { buildConciergeContextSnapshot } = require('./concierge/composeConciergeReply');
+const { resolveFollowupIntent } = require('../../domain/llm/orchestrator/followupIntentResolver');
 
 const FORBIDDEN_REPLY_PATTERN = /(FAQ候補|CityPack候補|根拠キー|score=|-\s*\[\]|関連情報です)/g;
+const TASK_LABEL_MAP = Object.freeze({
+  school_registration: '学校登録手続き',
+  school_enrollment: '入学手続き',
+  ssn_application: 'SSN申請手続き',
+  housing_search: '住まい探し',
+  bank_account_opening: '口座開設手続き'
+});
 
 const DOMAIN_SPECS = Object.freeze({
   housing: {
-    situationLine: '住まい探しの相談ですね。',
-    defaultActions: ['希望条件を3つに絞る', '予算と入居時期を決める', '審査に必要な書類を確認する'],
+    situationLine: '住まい探しですね。',
+    defaultAction: '希望条件を3つに絞る',
     pitfall: '審査に必要な書類が不足すると契約手続きが止まりやすくなります。',
-    question: '希望エリアや入居時期が分かれば、次の一手を具体化できます。'
+    question: '希望エリアと入居時期を教えてもらえますか？',
+    directAnswers: {
+      docs_required: '住居契約では、本人確認と収入確認に使う書類を先にそろえるのが近道です。',
+      appointment_needed: '内見は予約が必要な物件が多いので、候補を絞って先に空き枠を確認しましょう。',
+      next_step: '次は、条件を1つ減らして候補物件を3件まで絞ると進みやすいです。'
+    }
   },
   school: {
-    situationLine: '学校手続きの相談ですね。',
-    defaultActions: ['学区と対象校の条件を確認する', '必要書類を先に揃える', '申請期限と面談日程を確定する'],
+    situationLine: '学校手続きですね。',
+    defaultAction: '学区と対象校の条件を確認する',
     pitfall: '提出書類の不足や期限超過で入学手続きが止まりやすくなります。',
-    question: 'お子さんの学年と希望エリアが分かれば、優先順を具体化できます。'
+    question: '学年と希望エリアを教えてもらえますか？',
+    directAnswers: {
+      docs_required: '学校手続きは、住所証明と予防接種記録を先にそろえると止まりにくいです。',
+      appointment_needed: '面談や学校登録は予約制のことが多いので、対象校が決まったら先に空き枠を確認しましょう。',
+      next_step: '学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
+    }
   },
   ssn: {
-    situationLine: 'SSN手続きの相談ですね。',
-    defaultActions: ['申請条件と本人確認書類を確認する', '申請窓口の予約可否を確認する', '受領までの待機期間を見積もる'],
+    situationLine: 'SSN手続きですね。',
+    defaultAction: '申請条件と本人確認書類を確認する',
     pitfall: '本人確認書類の不備があると再訪が必要になりやすくなります。',
-    question: '現在の在留ステータスが分かれば、手順を具体化できます。'
+    question: 'いまの在留ステータスを教えてもらえますか？',
+    directAnswers: {
+      docs_required: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。',
+      appointment_needed: '窓口は予約が必要な地域もあるので、最寄り窓口の予約要否を先に確認しましょう。',
+      next_step: '次は、必要書類を1つの一覧にまとめてから窓口の予約要否を確認するのが確実です。'
+    }
   },
   banking: {
-    situationLine: '銀行口座まわりの相談ですね。',
-    defaultActions: ['口座種別を1つ決める', '必要書類と住所証明の条件を確認する', '初回入金と利用開始日を決める'],
+    situationLine: '銀行口座まわりですね。',
+    defaultAction: '口座種別を1つ決める',
     pitfall: '住所証明の条件が合わないと口座開設が遅れやすくなります。',
-    question: '利用したい銀行や用途が分かれば、次の一手を絞れます。'
+    question: '使いたい銀行か用途を教えてもらえますか？',
+    directAnswers: {
+      docs_required: '口座開設は本人確認と住所証明の2点を先にそろえると早いです。',
+      appointment_needed: '支店手続きは予約制のことがあるので、来店前に予約可否を確認してください。',
+      next_step: '次は、口座種別を1つ決めて必要書類を先に確定するのが最短です。'
+    }
   },
   general: {
     situationLine: 'いまの状況を短く整理します。',
-    defaultActions: ['優先したい手続きを1つ決める', '期限を1つ確認する', '不足情報を1つだけ埋める'],
+    defaultAction: '優先したい手続きを1つ決める',
     pitfall: '優先順位が曖昧だと手続きが分散しやすくなります。',
-    question: 'まず最優先の手続きを1つ教えてください。'
+    question: 'まず最優先の手続きを1つ教えてください。',
+    directAnswers: {
+      docs_required: '必要書類は、まず最優先の手続きに必要なものだけ先に整理すると進めやすいです。',
+      appointment_needed: '予約要否は手続きごとに違うので、最優先手続きの窓口だけ先に確認しましょう。',
+      next_step: '次は、最優先手続きを1つ決めて期限を確認するのが最短です。'
+    }
   }
 });
 
@@ -68,6 +101,8 @@ function formatTaskLabel(task) {
   if (!task || typeof task !== 'object') return '';
   const key = normalizeText(task.key || task.title || task.id);
   if (!key) return '';
+  const mapped = TASK_LABEL_MAP[key.toLowerCase()];
+  if (mapped) return mapped;
   return key.replace(/_/g, ' ');
 }
 
@@ -102,7 +137,7 @@ function buildFollowupQuestion(domainIntent, context) {
   const spec = DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general;
   const phase = normalizeText(context && context.phase).toLowerCase();
   if (domainIntent === 'housing' && phase === 'return') {
-    return '帰任時期が分かれば、住居関連の優先順位を具体化できます。';
+    return '帰任時期を教えてもらえますか？';
   }
   return spec.question;
 }
@@ -120,22 +155,68 @@ function normalizeReasonKeys(value, domainIntent) {
   return out.slice(0, 8);
 }
 
-function buildNaturalReply(parts) {
+function ensureSentence(value) {
+  const line = sanitizeReplyLine(value);
+  if (!line) return '';
+  if (/[。！？!?]$/.test(line)) return line;
+  return `${line}。`;
+}
+
+function buildActionLine(action) {
+  const normalized = sanitizeReplyLine(action);
+  if (!normalized) return '';
+  if (/^(次|まず|先に)/.test(normalized)) return ensureSentence(normalized);
+  return ensureSentence(`次は${normalized}`);
+}
+
+function resolveFollowupIntentForDomain(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const explicit = normalizeText(payload.followupIntent).toLowerCase();
+  if (explicit === 'docs_required' || explicit === 'appointment_needed' || explicit === 'next_step') {
+    return explicit;
+  }
+  const decision = resolveFollowupIntent({
+    messageText: payload.messageText,
+    domainIntent: payload.domainIntent
+  });
+  return decision && typeof decision.followupIntent === 'string' ? decision.followupIntent : null;
+}
+
+function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
   const spec = DOMAIN_SPECS[payload.domainIntent] || DOMAIN_SPECS.general;
-  const lines = [sanitizeReplyLine(payload.situationLine) || spec.situationLine];
+  const followupIntent = payload.followupIntent || null;
+  const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
+  const primaryLine = ensureSentence(
+    followupIntent && directAnswers[followupIntent]
+      ? directAnswers[followupIntent]
+      : (payload.situationLine || spec.situationLine)
+  );
   const actions = normalizeActions(payload.nextActions, 3);
-  if (actions.length) {
-    lines.push('まずは次の一手から進めましょう。');
-    actions.forEach((action) => {
-      lines.push(`・${action}`);
-    });
-  }
-  const pitfall = sanitizeReplyLine(payload.pitfall) || spec.pitfall;
-  if (pitfall) lines.push(`多くの人が詰まりやすいのは ${pitfall}`);
+  const actionLine = buildActionLine(actions[0] || spec.defaultAction);
+  const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
   const question = sanitizeReplyLine(payload.followupQuestion);
-  if (question) lines.push(question);
-  return trimForLineMessage(lines.filter(Boolean).join('\n'));
+  const questionLine = question
+    ? (/[?？]$/.test(question) ? question : `${question}？`)
+    : '';
+
+  const lines = [primaryLine];
+  if (actionLine && actionLine !== primaryLine) lines.push(actionLine);
+  if (questionLine) {
+    lines.push(questionLine);
+  } else if (pitfall) {
+    lines.push(pitfall);
+  }
+  const replyText = trimForLineMessage(lines.filter(Boolean).slice(0, 3).join('\n'));
+  return {
+    replyText,
+    atoms: {
+      situationLine: primaryLine,
+      nextActions: actionLine && actionLine !== primaryLine ? [actionLine] : [],
+      pitfall: questionLine ? '' : pitfall,
+      followupQuestion: questionLine || ''
+    }
+  };
 }
 
 function buildDomainAuditMeta(params) {
@@ -179,6 +260,11 @@ function generatePaidDomainConciergeReply(params) {
   const decision = payload.opportunityDecision && typeof payload.opportunityDecision === 'object'
     ? payload.opportunityDecision
     : null;
+  const followupIntent = resolveFollowupIntentForDomain({
+    followupIntent: payload.followupIntent,
+    messageText: payload.messageText,
+    domainIntent
+  });
 
   const suggestedAtoms = decision && decision.suggestedAtoms && typeof decision.suggestedAtoms === 'object'
     ? decision.suggestedAtoms
@@ -186,11 +272,20 @@ function generatePaidDomainConciergeReply(params) {
   const mergedActions = normalizeActions([]
     .concat(Array.isArray(suggestedAtoms.nextActions) ? suggestedAtoms.nextActions : [])
     .concat(buildContextActions(conciergeContext))
-    .concat(spec.defaultActions), 3);
+    .concat(spec.defaultAction), 3);
   const reasonKeys = normalizeReasonKeys(
     decision && Array.isArray(decision.opportunityReasonKeys) ? decision.opportunityReasonKeys : [],
     domainIntent
   );
+
+  const concise = buildConciseReply({
+    domainIntent,
+    situationLine: spec.situationLine,
+    nextActions: mergedActions,
+    pitfall: suggestedAtoms.pitfall || spec.pitfall,
+    followupQuestion: suggestedAtoms.question || buildFollowupQuestion(domainIntent, conciergeContext),
+    followupIntent
+  });
 
   return {
     ok: true,
@@ -201,13 +296,10 @@ function generatePaidDomainConciergeReply(params) {
       : 'action',
     opportunityReasonKeys: reasonKeys,
     interventionBudget: 1,
-    replyText: buildNaturalReply({
-      domainIntent,
-      situationLine: spec.situationLine,
-      nextActions: mergedActions,
-      pitfall: suggestedAtoms.pitfall || spec.pitfall,
-      followupQuestion: suggestedAtoms.question || buildFollowupQuestion(domainIntent, conciergeContext)
-    }),
+    followupIntent,
+    conciseModeApplied: true,
+    replyText: concise.replyText,
+    atoms: concise.atoms,
     auditMeta: buildDomainAuditMeta({
       domainIntent,
       blockedReason: payload.blockedReason || null

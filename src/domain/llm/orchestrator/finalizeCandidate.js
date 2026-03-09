@@ -49,7 +49,8 @@ function finalizeCandidate(params) {
     followupQuestion: atoms.followupQuestion || '',
     defaultQuestion: verificationOutcome === 'clarify'
       ? 'まず対象手続きと期限を1つずつ教えてください。'
-      : ''
+      : '',
+    conciseMode: selected.conciseModeApplied === true
   });
   const guardedReplyText = trimForPaidLineMessage(normalizeText(guardResult && guardResult.text) || fallbackText) || fallbackText;
   const readinessApplied = applyAnswerReadinessDecision({

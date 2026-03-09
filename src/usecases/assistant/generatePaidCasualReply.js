@@ -7,6 +7,17 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeContextHintLabel(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (!normalized) return '';
+  if (normalized === 'school') return '学校手続き';
+  if (normalized === 'housing') return '住まい探し';
+  if (normalized === 'ssn') return 'SSN手続き';
+  if (normalized === 'banking') return '銀行手続き';
+  if (normalized === 'general') return '';
+  return normalizeText(value);
+}
+
 function trimForPaidLineMessage(value) {
   const text = normalizeText(value);
   if (!text) return '';
@@ -41,10 +52,11 @@ function pickVariant(list, seedSource) {
 
 function buildGeneralCasualReply(question, atoms, contextHint) {
   const message = normalizeText(question);
+  const contextLabel = normalizeContextHintLabel(contextHint);
   const prompt = atoms && typeof atoms.question === 'string' && atoms.question.trim()
     ? atoms.question.trim()
-    : (contextHint
-      ? `${contextHint}の話として進めます。いま一番詰まっている点を1つだけ教えてください。`
+    : (contextLabel
+      ? `${contextLabel}の話として進めます。いま一番詰まっている点を1つだけ教えてください。`
       : '対象を絞って進めたいので、いま優先したい手続きを1つだけ教えてください。');
 
   if (!message) return prompt;

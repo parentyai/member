@@ -2,6 +2,7 @@
 
 const { detectIntent } = require('../router/detectIntent');
 const { normalizeConversationIntent } = require('../router/normalizeConversationIntent');
+const { resolveFollowupIntent } = require('./followupIntentResolver');
 
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
@@ -99,6 +100,11 @@ function buildConversationPacket(params) {
     && intentDecision.mode !== 'greeting'
     && intentDecision.reason !== 'smalltalk_detected';
   const normalizedConversationIntent = contextResume ? recentDomain : detectedConversationIntent;
+  const followupIntentDecision = resolveFollowupIntent({
+    messageText,
+    domainIntent: normalizedConversationIntent,
+    contextResumeDomain: contextResume ? recentDomain : null
+  });
   const providedRouterReason = normalizeText(payload.routerReason);
   const routerReason = contextResume
     ? 'contextual_domain_resume'
@@ -121,6 +127,9 @@ function buildConversationPacket(params) {
     contextSnapshot: payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null,
     contextResume,
     contextResumeDomain: contextResume ? recentDomain : null,
+    followupIntent: followupIntentDecision && typeof followupIntentDecision.followupIntent === 'string'
+      ? followupIntentDecision.followupIntent
+      : null,
     lowInformationMessage,
     llmFlags: {
       llmConciergeEnabled: llmFlags.llmConciergeEnabled === true,

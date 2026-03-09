@@ -522,9 +522,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 ## Phase733 Addendum（Paid Orchestrator Foundation / Judge / Golden Eval）
 
 ### Feature Flags
-- `ENABLE_PAID_ORCHESTRATOR_V2`（default: false）
+- `ENABLE_PAID_ORCHESTRATOR_V2`（default: true）
   - paid webhook 本流のみを新しい orchestrator 経路へ切り替える。
-  - `false` の場合は既存 paid pipeline を維持する。
+  - 緊急時は `false` で旧 paid pipeline へ即時復帰する。
 
 ### 運用対象
 - 対象経路:
@@ -558,6 +558,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `candidateCount`
   - `committedNextActions`
   - `committedFollowupQuestion`
+  - `followupIntent`
+  - `conciseModeApplied`
+  - `repetitionPrevented`
 - `GET /api/admin/os/llm-usage/summary?windowDays=7` 追加確認項目:
   - `assistantQuality.conversationQuality.strategies`
   - `assistantQuality.conversationQuality.retrievalQualities`
@@ -566,6 +569,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `assistantQuality.conversationQuality.avgCandidateCount`
   - `assistantQuality.conversationQuality.retrieveNeededRate`
   - `assistantQuality.conversationQuality.contradictionRate`
+  - `assistantQuality.conversationQuality.defaultCasualRate`
+  - `assistantQuality.conversationQuality.repetitionPreventedRate`
+  - `assistantQuality.conversationQuality.followupIntents`
 
 ### Golden Eval
 - 実行コマンド:

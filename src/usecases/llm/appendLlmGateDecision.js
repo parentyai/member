@@ -73,7 +73,10 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'answerReadinessLogOnly',
   'orchestratorPathUsed',
   'contextResumeDomain',
-  'loopBreakApplied'
+  'loopBreakApplied',
+  'followupIntent',
+  'conciseModeApplied',
+  'repetitionPrevented'
 ]);
 
 function resolveAppendAuditLog() {

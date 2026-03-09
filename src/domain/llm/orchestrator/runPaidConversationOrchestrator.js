@@ -132,7 +132,9 @@ function buildDomainCandidate(result, packet) {
       opportunityReasonKeys: Array.isArray(result.opportunityReasonKeys) ? result.opportunityReasonKeys : [],
       interventionBudget: Number.isFinite(Number(result.interventionBudget)) ? Number(result.interventionBudget) : 1
     },
-    atoms: {}
+    followupIntent: typeof result.followupIntent === 'string' ? result.followupIntent : null,
+    conciseModeApplied: result.conciseModeApplied === true,
+    atoms: result.atoms && typeof result.atoms === 'object' ? result.atoms : {}
   };
 }
 
@@ -161,6 +163,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       messageText: packet.messageText,
       contextSnapshot: packet.contextSnapshot,
       opportunityDecision: packet.opportunityDecision,
+      followupIntent: packet.followupIntent,
       blockedReason: null
     });
     const domainCandidate = buildDomainCandidate(domainResult, packet);
@@ -209,6 +212,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       messageText: packet.messageText,
       contextSnapshot: packet.contextSnapshot,
       opportunityDecision: packet.opportunityDecision,
+      followupIntent: packet.followupIntent,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
     const fallbackCandidate = buildDomainCandidate(fallbackDomain, packet);
@@ -235,20 +239,14 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
       loopBreakApplied: false
     };
   }
-  if (current.kind !== 'casual_candidate') {
-    return {
-      selected: current,
-      loopBreakApplied: false
-    };
-  }
-
   const clarifyCandidate = Array.isArray(candidates)
     ? candidates.find((item) => item && item.kind === 'clarify_candidate')
     : null;
   if (!clarifyCandidate) {
     return {
       selected: current,
-      loopBreakApplied: false
+      loopBreakApplied: false,
+      repetitionPrevented: false
     };
   }
 
@@ -258,25 +256,43 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
     .concat(Array.isArray(packet.recentAssistantCommitments) ? packet.recentAssistantCommitments : [])
     .concat(Array.isArray(packet.recentResponseHints) ? packet.recentResponseHints : [])
     .filter((item) => typeof item === 'string' && item.trim());
+  const recentTwoResponseHints = responseHints.slice(0, 2);
   const maxHintSimilarity = responseHints.reduce((max, item) => {
     const score = similarityScore(normalizedReply, item);
     return Math.max(max, score);
   }, 0);
+  const maxRecentTwoSimilarity = recentTwoResponseHints.reduce((max, item) => {
+    const score = similarityScore(normalizedReply, item);
+    return Math.max(max, score);
+  }, 0);
   const defaultPhraseSimilarity = similarityScore(normalizedReply, fallbackPhrase);
-  const shouldBreak = packet.lowInformationMessage === true
-    || packet.contextResume === true
-    || defaultPhraseSimilarity >= 0.85
-    || maxHintSimilarity >= 0.85;
+  const isCasualCandidate = current.kind === 'casual_candidate';
+  const shouldBreak = (
+    isCasualCandidate
+      && (
+        packet.lowInformationMessage === true
+        || packet.contextResume === true
+        || defaultPhraseSimilarity >= 0.85
+        || maxHintSimilarity >= 0.85
+      )
+  ) || maxRecentTwoSimilarity >= 0.9;
 
   if (!shouldBreak) {
     return {
       selected: current,
-      loopBreakApplied: false
+      loopBreakApplied: false,
+      repetitionPrevented: false
     };
   }
+
+  const fallbackCandidate = current.kind === 'domain_concierge_candidate' && Array.isArray(candidates)
+    ? candidates.find((item) => item && item.kind === 'domain_concierge_candidate' && item.id !== current.id)
+    : null;
+  const switchedCandidate = clarifyCandidate || fallbackCandidate || current;
   return {
-    selected: clarifyCandidate,
-    loopBreakApplied: true
+    selected: switchedCandidate,
+    loopBreakApplied: switchedCandidate !== current,
+    repetitionPrevented: true
   };
 }
 
@@ -417,6 +433,9 @@ async function runPaidConversationOrchestrator(params) {
       orchestratorPathUsed: true,
       contextResumeDomain: packet.contextResumeDomain || null,
       loopBreakApplied: loopResolved.loopBreakApplied === true,
+      followupIntent: packet.followupIntent || null,
+      conciseModeApplied: selected && selected.conciseModeApplied === true,
+      repetitionPrevented: loopResolved.repetitionPrevented === true,
       sourceAuthorityScore: readinessSourceAuthorityScore,
       sourceFreshnessScore: readinessSourceFreshnessScore,
       sourceReadinessDecision: readinessSourceDecision,

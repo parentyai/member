@@ -440,7 +440,10 @@ test('phase719: ambiguous short utterance resumes recent school context via orch
   assert.equal(result.status, 200);
   assert.equal(replies.length, 1);
   assert.equal(loaded.counters.retrievalCalled, 0);
-  assert.ok(replies[0].text.includes('学校') || replies[0].text.includes('手続き'));
+  assert.ok(
+    replies[0].text.includes('学校') || replies[0].text.includes('手続き'),
+    `unexpected reply: ${replies[0].text}`
+  );
 
   const summary = findGateSummary(loaded.auditCalls);
   assert.ok(summary);

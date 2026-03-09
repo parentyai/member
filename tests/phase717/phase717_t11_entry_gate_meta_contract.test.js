@@ -48,6 +48,9 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     unsupportedClaimCount: 1,
     contradictionDetected: true,
     answerReadinessLogOnly: true,
+    followupIntent: 'docs_required',
+    conciseModeApplied: true,
+    repetitionPrevented: true,
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -72,6 +75,9 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.unsupportedClaimCount, 1);
   assert.equal(sanitized.contradictionDetected, true);
   assert.equal(sanitized.answerReadinessLogOnly, true);
+  assert.equal(sanitized.followupIntent, 'docs_required');
+  assert.equal(sanitized.conciseModeApplied, true);
+  assert.equal(sanitized.repetitionPrevented, true);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 

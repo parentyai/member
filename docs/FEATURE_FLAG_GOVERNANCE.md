@@ -65,7 +65,7 @@
 | ENABLE_OPS_SYSTEM_SNAPSHOT_V1 | ops-platform | true | 2026-09-30 | ops_facing | Runtime gate for enable_ops_system_snapshot_v1 | src/index.js:132<br>src/routes/admin/opsFeatureCatalogStatus.js:22 |
 | ENABLE_PAID_FAQ_QUALITY_V2 | assistant-paid | true | 2026-09-30 | user_facing | Runtime gate for enable_paid_faq_quality_v2 | src/routes/admin/journeyPolicyConfig.js:68<br>src/routes/webhookLine.js:363 |
 | ENABLE_PAID_OPPORTUNITY_ENGINE_V1 | assistant-paid | false | 2026-09-30 | user_facing | Runtime gate for enable_paid_opportunity_engine_v1 | src/routes/webhookLine.js:379 |
-| ENABLE_PAID_ORCHESTRATOR_V2 | assistant-paid | false | 2026-09-30 | user_facing | Runtime gate for enable_paid_orchestrator_v2 | src/routes/webhookLine.js:387 |
+| ENABLE_PAID_ORCHESTRATOR_V2 | assistant-paid | true | 2026-09-30 | user_facing | Runtime gate for enable_paid_orchestrator_v2 | src/routes/webhookLine.js:391 |
 | ENABLE_PRO_PREDICTIVE_ACTIONS_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_pro_predictive_actions_v1 | src/routes/webhookLine.js:375 |
 | ENABLE_REACTION_RESPONSE_TEXT_STORE_V1 | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_reaction_response_text_store_v1 | src/usecases/phase37/sanitizeReactionResponseText.js:13 |
 | ENABLE_RETRY_QUEUE_GIVEUP_V1 | platform-core | true | 2026-09-30 | cross_module | Runtime gate for enable_retry_queue_giveup_v1 | src/routes/phase73RetryQueue.js:43 |
@@ -94,4 +94,3 @@
 | ENABLE_V1_LINE_RENDERER | platform-core | false | 2026-09-30 | cross_module | Runtime gate for enable_v1_line_renderer | src/infra/lineClient.js:149<br>src/infra/lineClient.js:167 |
 | ENABLE_VENDOR_RELEVANCE_SHADOW_V1 | vendor-ranking | true | 2026-09-30 | cross_module | Runtime gate for enable_vendor_relevance_shadow_v1 | src/domain/tasks/featureFlags.js:194 |
 | ENABLE_VENDOR_RELEVANCE_SORT_V1 | vendor-ranking | false | 2026-09-30 | cross_module | Runtime gate for enable_vendor_relevance_sort_v1 | src/domain/tasks/featureFlags.js:198 |
-

@@ -91,7 +91,10 @@ const LLM_GATE_KEYS = new Set([
   'answerReadinessLogOnly',
   'orchestratorPathUsed',
   'contextResumeDomain',
-  'loopBreakApplied'
+  'loopBreakApplied',
+  'followupIntent',
+  'conciseModeApplied',
+  'repetitionPrevented'
 ]);
 
 const LLM_USAGE_KEYS = new Set([
