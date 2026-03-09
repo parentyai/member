@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-03-08T21:47:40.148Z",
-  "gitCommit": "36a0fc4e697eb20cdd74f92cfc9643addc0a98b6",
-  "branch": "codex/feat/spec-v1-line-openai-full-cutover",
+  "generatedAt": "2026-03-09T03:57:33.548Z",
+  "gitCommit": "a8a5baac2b45cd7f5a46127201f8106b4cb991e9",
+  "branch": "main",
   "flags": [
     {
       "name": "ENABLE_ADMIN_BUILD_META",

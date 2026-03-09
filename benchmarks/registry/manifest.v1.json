@@ -1,0 +1,37 @@
+{
+  "version": "bench-v1.0.0",
+  "frozen": true,
+  "reviewerApprovalRequired": true,
+  "artifactHash": "sha256:benchv100",
+  "fixtures": [
+    {
+      "id": "paid_short_followup_core",
+      "path": "benchmarks/frozen/v1/paid_short_followup_core.json",
+      "version": "1.0.0",
+      "contaminationRisk": "low"
+    },
+    {
+      "id": "minority_persona_regression",
+      "path": "benchmarks/frozen/v1/minority_persona_regression.json",
+      "version": "1.0.0",
+      "contaminationRisk": "medium"
+    },
+    {
+      "id": "open_web_scrape_probe",
+      "path": "benchmarks/frozen/v1/open_web_scrape_probe.json",
+      "version": "1.0.0",
+      "contaminationRisk": "high"
+    }
+  ],
+  "sourceSnapshots": [
+    {
+      "snapshotId": "srcsnap-2026-03-08",
+      "source": "source_refs",
+      "pinnedAt": "2026-03-08T00:00:00.000Z"
+    }
+  ],
+  "baseline": {
+    "artifactPath": "tools/llm_quality/fixtures/baseline_metrics.v1.json",
+    "artifactHash": "sha256:baselinev1"
+  }
+}

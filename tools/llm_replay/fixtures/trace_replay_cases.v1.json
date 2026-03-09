@@ -1,0 +1,7 @@
+[
+  { "id": "trace_paid_followup_001", "scenario": "short_followup", "expected": "pass", "observed": "pass" },
+  { "id": "trace_paid_domain_002", "scenario": "domain_continuation", "expected": "pass", "observed": "pass" },
+  { "id": "trace_group_003", "scenario": "group_chat_privacy", "expected": "pass", "observed": "pass" },
+  { "id": "trace_quote_unsend_004", "scenario": "quote_unsend", "expected": "warning", "observed": "warning" },
+  { "id": "trace_redelivery_005", "scenario": "redelivery", "expected": "pass", "observed": "pass" }
+]

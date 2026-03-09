@@ -592,3 +592,50 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1. `ENABLE_PAID_ORCHESTRATOR_V2=false`
 2. 必要時 `ENABLE_CONVERSATION_ROUTER=false`
 3. 重大時は `llmEnabled=false`
+
+## Phase750 Addendum（LLM Quality Framework v1 / Slice-first Release Gate）
+
+### 目的
+- LLM改善の都度、品質改善を scorecard で証明する。
+- overall 単独判定を禁止し、slice-first で回帰を検知する。
+
+### 必須実行コマンド
+1. `npm run llm:quality:baseline`
+2. `npm run llm:quality:candidate`
+3. `npm run llm:quality:diff`
+4. `npm run llm:quality:gate`
+5. `npm run llm:quality:arena`
+
+### Merge Block 条件
+- `llm:quality:gate` が non-zero
+- critical slice regression:
+  - `short_followup`
+  - `domain_continuation`
+  - `group_chat`
+  - `japanese_service_quality`
+  - `minority_personas`
+  - `cultural_slices`
+- judge calibration:
+  - disagreementRate > 0.15
+  - promptSensitivityDrift > 0.10
+- replay/perturbation critical failure > 0
+- contamination risk `high` benchmark を hard gate に使用
+
+### Warning 条件
+- quality delta < +2 かつ latency p95 regression > 25%
+- quality 非改善かつ cost regression > 20%
+- ACK SLA violation rate > 1%
+
+### 管理UI確認ポイント
+- LLM pane の usage summary で以下を確認:
+  - `Quality Scorecard`
+  - `Slice-first Board`
+  - `Judge Calibration Board`
+  - `Benchmark Registry`
+  - `Replay / Perturbation`
+  - `Quality-Latency-Cost Frontier`
+
+### ロールバック
+1. `catchup:gate:pr` から `llm:quality:gate` を外す（緊急時）。
+2. quality section UIを非表示化（必要時）。
+3. telemetry は add-only のため保持し、既存クエリ互換は維持する。

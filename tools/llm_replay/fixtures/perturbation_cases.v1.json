@@ -1,0 +1,8 @@
+[
+  { "id": "perturb_stale_001", "type": "stale_source", "expected": "clarify", "observed": "clarify" },
+  { "id": "perturb_contra_002", "type": "contradictory_source", "expected": "hedged", "observed": "hedged" },
+  { "id": "perturb_swap_003", "type": "evidence_swap", "expected": "refuse", "observed": "refuse" },
+  { "id": "perturb_quote_004", "type": "quote_noise", "expected": "pass", "observed": "pass" },
+  { "id": "perturb_unsend_005", "type": "unsend", "expected": "pass", "observed": "pass" },
+  { "id": "perturb_redelivery_006", "type": "redelivery", "expected": "pass", "observed": "pass" }
+]

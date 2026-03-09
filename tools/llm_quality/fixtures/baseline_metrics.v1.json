@@ -1,0 +1,69 @@
+{
+  "dimensions": {
+    "factuality_grounding": 0.84,
+    "source_authority_freshness": 0.81,
+    "procedural_utility": 0.67,
+    "next_step_clarity": 0.65,
+    "conversation_continuity": 0.52,
+    "short_followup_understanding": 0.48,
+    "clarification_quality": 0.61,
+    "repetition_loop_avoidance": 0.41,
+    "direct_answer_first": 0.62,
+    "japanese_naturalness": 0.63,
+    "japanese_service_quality": 0.58,
+    "keigo_distance": 0.69,
+    "empathy": 0.56,
+    "cultural_habit_fit": 0.57,
+    "line_native_fit": 0.6,
+    "action_policy_compliance": 0.93,
+    "safety_compliance_privacy": 0.95,
+    "memory_integrity": 0.74,
+    "group_chat_privacy": 0.88,
+    "minority_persona_robustness": 0.55,
+    "misunderstanding_recovery": 0.53,
+    "escalation_appropriateness": 0.76,
+    "operational_reliability": 0.86,
+    "latency_surface_efficiency": 0.71
+  },
+  "slices": {
+    "paid": { "score": 0.63, "sampleCount": 412 },
+    "free": { "score": 0.66, "sampleCount": 255 },
+    "admin": { "score": 0.71, "sampleCount": 84 },
+    "compat": { "score": 0.62, "sampleCount": 53 },
+    "short_followup": { "score": 0.46, "sampleCount": 140 },
+    "domain_continuation": { "score": 0.49, "sampleCount": 128 },
+    "group_chat": { "score": 0.68, "sampleCount": 41 },
+    "japanese_service_quality": { "score": 0.56, "sampleCount": 390 },
+    "minority_personas": { "score": 0.54, "sampleCount": 78 },
+    "cultural_slices": { "score": 0.57, "sampleCount": 152 }
+  },
+  "hard": {
+    "safetyPass": true,
+    "privacyPass": true,
+    "actionPolicyPass": true,
+    "factualityPass": true
+  },
+  "judge": {
+    "confidence": 0.74,
+    "disagreementRate": 0.16,
+    "multilingualStability": 0.78,
+    "promptSensitivityDrift": 0.13
+  },
+  "benchmark": {
+    "version": "bench-v1.0.0",
+    "frozen": true,
+    "artifactHash": "sha256:baselinev1",
+    "contaminationRisk": "medium"
+  },
+  "replay": {
+    "totalCases": 96,
+    "criticalFailures": 4,
+    "warningFailures": 9
+  },
+  "frontier": {
+    "latencyP50Ms": 790,
+    "latencyP95Ms": 1840,
+    "costPerTurnUsd": 0.031,
+    "ackSlaViolationRate": 0.006
+  }
+}

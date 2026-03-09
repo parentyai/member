@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://member.example/schemas/llm_quality_scorecard.schema.json",
+  "title": "Member LLM Quality Scorecard v1",
+  "type": "object",
+  "required": [
+    "frameworkVersion",
+    "overallScore",
+    "dimensions",
+    "slices",
+    "hardGate",
+    "judgeCalibration",
+    "benchmark",
+    "replay",
+    "frontier",
+    "generatedAt"
+  ],
+  "properties": {
+    "frameworkVersion": { "type": "string", "pattern": "^v[0-9]+$" },
+    "overallScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "score", "weight", "hardGate"],
+        "properties": {
+          "key": { "type": "string" },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+          "hardGate": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["pass", "warning", "fail"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "slices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sliceKey", "score", "status", "critical"],
+        "properties": {
+          "sliceKey": { "type": "string" },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "status": { "type": "string", "enum": ["pass", "warning", "fail"] },
+          "critical": { "type": "boolean" },
+          "sampleCount": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hardGate": {
+      "type": "object",
+      "required": ["pass", "failures", "warnings"],
+      "properties": {
+        "pass": { "type": "boolean" },
+        "failures": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "judgeCalibration": {
+      "type": "object",
+      "required": ["confidence", "disagreementRate", "promptSensitivityDrift", "humanReviewRequired"],
+      "properties": {
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "disagreementRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "promptSensitivityDrift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "humanReviewRequired": { "type": "boolean" },
+        "multilingualStability": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["version", "frozen", "contaminationRisk"],
+      "properties": {
+        "version": { "type": "string" },
+        "frozen": { "type": "boolean" },
+        "contaminationRisk": { "type": "string", "enum": ["low", "medium", "high"] },
+        "artifactHash": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "replay": {
+      "type": "object",
+      "required": ["totalCases", "criticalFailures", "warningFailures"],
+      "properties": {
+        "totalCases": { "type": "integer", "minimum": 0 },
+        "criticalFailures": { "type": "integer", "minimum": 0 },
+        "warningFailures": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "frontier": {
+      "type": "object",
+      "required": ["qualityScore", "latencyP50Ms", "latencyP95Ms", "costPerTurnUsd"],
+      "properties": {
+        "qualityScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "latencyP50Ms": { "type": "number", "minimum": 0 },
+        "latencyP95Ms": { "type": "number", "minimum": 0 },
+        "costPerTurnUsd": { "type": "number", "minimum": 0 },
+        "status": { "type": "string", "enum": ["pass", "warning", "fail"] }
+      },
+      "additionalProperties": true
+    },
+    "generatedAt": { "type": "string" }
+  },
+  "additionalProperties": false
+}
