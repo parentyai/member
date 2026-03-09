@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T18:00:08-04:00",
-  "gitCommit": "5fc0af566db15934e1f10b2c971d5f8b330b6892",
-  "branch": "codex/quality-slice-telemetry-r758",
-  "sourceDigest": "1960a5fc3c1382dac7fb21a24065a25e0c7ab5d5a013f9721520b83a411fd539",
+  "generatedAt": "2026-03-09T19:14:49-04:00",
+  "gitCommit": "3f5f3c6951c2562238887e259eb3c31745bfc357",
+  "branch": "codex/runtime-first-quality-gate-r759",
+  "sourceDigest": "70da754a1d35e734af4d80639ff9dd8d12ded5aa27b9de45b80841d04c958b32",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

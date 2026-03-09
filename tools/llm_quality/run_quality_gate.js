@@ -60,25 +60,39 @@ function resolveCandidateMetrics(params) {
   const summaryPath = payload.summaryPath;
   const summaryFallbackPath = payload.summaryFallbackPath;
   const candidateMetricsPath = payload.candidateMetricsPath;
+  let runtimeSummaryReadable = false;
+  let runtimeSummaryConverted = false;
 
-  const trySummaryPath = [summaryPath, summaryFallbackPath].filter(Boolean);
-  for (const pathValue of trySummaryPath) {
+  const trySummaryPath = [
+    { pathValue: summaryPath, sourceType: 'runtime_summary' },
+    { pathValue: summaryFallbackPath, sourceType: 'frozen_summary_fallback' }
+  ].filter((item) => Boolean(item.pathValue));
+  for (const source of trySummaryPath) {
     try {
-      const summary = readJson(pathValue);
+      const summary = readJson(source.pathValue);
+      if (source.sourceType === 'runtime_summary') runtimeSummaryReadable = true;
       const converted = toCandidateMetricsFromQualitySummary(summary);
       if (converted) {
+        if (source.sourceType === 'runtime_summary') runtimeSummaryConverted = true;
         return {
           metrics: converted,
-          source: pathValue
+          source: source.pathValue,
+          sourceType: source.sourceType,
+          runtimeSummaryReadable,
+          runtimeSummaryConverted
         };
       }
+      if (source.sourceType === 'runtime_summary') runtimeSummaryConverted = false;
     } catch (_err) {
       // summary missing or malformed -> fallback to next source
     }
   }
   return {
     metrics: readJson(candidateMetricsPath),
-    source: candidateMetricsPath
+    source: candidateMetricsPath,
+    sourceType: 'candidate_metrics_fallback',
+    runtimeSummaryReadable,
+    runtimeSummaryConverted
   };
 }
 
@@ -119,6 +133,10 @@ function main(argv) {
     args.requireAllSlicesPass,
     toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
   );
+  const requireRuntimeSummary = toBool(
+    args.requireRuntimeSummary,
+    toBool(process.env.LLM_QUALITY_REQUIRE_RUNTIME_SUMMARY, false)
+  );
 
   const baselineMetrics = readJson(baselineMetricsPath);
   const candidateResolved = resolveCandidateMetrics({
@@ -128,6 +146,9 @@ function main(argv) {
   });
   const candidateMetrics = candidateResolved.metrics;
   const candidateSourcePath = candidateResolved.source;
+  const candidateSourceType = candidateResolved.sourceType || 'candidate_metrics_fallback';
+  const runtimeSummaryReadable = candidateResolved.runtimeSummaryReadable === true;
+  const runtimeSummaryConverted = candidateResolved.runtimeSummaryConverted === true;
   const adjudicationRows = readJson(adjudicationPath);
   const manifest = readJson(manifestPath);
 
@@ -174,6 +195,10 @@ function main(argv) {
   if (candidateScorecard.hardGate.pass !== true) failures.push('quality_hard_gate_failed');
   if (judgeCalibration.reliabilityPolicy.humanReviewRequired === true) failures.push('judge_human_review_required');
   if (Number(replay.criticalFailures || 0) > 0) failures.push('replay_critical_failures');
+  if (candidateSourceType !== 'runtime_summary') warnings.push('runtime_summary_not_used');
+  if (requireRuntimeSummary === true && candidateSourceType !== 'runtime_summary') {
+    failures.push('runtime_summary_required_but_missing');
+  }
 
   warnings.push(...candidateScorecard.hardGate.warnings);
   warnings.push(...sliceGate.warnings);
@@ -187,9 +212,13 @@ function main(argv) {
     candidateSourcePath,
     summaryPath,
     summaryFallbackPath,
+    requireRuntimeSummary,
+    runtimeSummaryReadable,
+    runtimeSummaryConverted,
     requireAllSlicesPass,
     adjudicationPath,
     manifestPath,
+    candidateSourceType,
     benchmarkRegistry,
     contamination,
     judgeCalibration,
