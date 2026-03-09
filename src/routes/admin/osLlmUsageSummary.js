@@ -708,6 +708,64 @@ function averageFromRows(rows, selector) {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10000) / 10000;
 }
 
+function incrementCount(map, key) {
+  const normalized = normalizeReason(key);
+  map.set(normalized, (map.get(normalized) || 0) + 1);
+}
+
+function toTopSignals(map, limit) {
+  return Array.from(map.entries())
+    .map(([signal, count]) => ({ signal, count }))
+    .sort((a, b) => b.count - a.count || a.signal.localeCompare(b.signal, 'ja'))
+    .slice(0, limit);
+}
+
+function buildTopQualityBoards(actionRows, hardFailures) {
+  const rows = Array.isArray(actionRows) ? actionRows : [];
+  const qualityFailures = (Array.isArray(hardFailures) ? hardFailures : []).slice(0, 10).map((failure, index) => ({
+    rank: index + 1,
+    failure
+  }));
+
+  const loopMap = new Map();
+  const contextLossMap = new Map();
+  const jpServiceMap = new Map();
+  const lineFitMap = new Map();
+
+  rows.forEach((row) => {
+    const routerReason = normalizeReason(row && row.routerReason);
+    const conversationMode = normalizeReason(row && row.conversationMode);
+    const domainIntent = normalizeReason(row && row.domainIntent);
+    const followupIntent = normalizeReason(row && row.followupIntent);
+    const strategy = normalizeReason(row && row.strategy);
+    const retrievalQuality = normalizeReason(row && row.retrievalQuality);
+
+    if (row && row.legacyTemplateHit === true) incrementCount(loopMap, 'legacy_template_hit');
+    if (row && row.repetitionPrevented !== true) incrementCount(loopMap, 'repetition_not_prevented');
+    if (routerReason === 'default_casual') incrementCount(loopMap, 'router_default_casual');
+
+    if (domainIntent !== 'general' && conversationMode === 'casual') incrementCount(contextLossMap, 'domain_to_casual_reset');
+    if (followupIntent === 'none' && domainIntent !== 'general') incrementCount(contextLossMap, 'missing_followup_intent_on_domain');
+    if (strategy === 'casual' && domainIntent !== 'general') incrementCount(contextLossMap, 'casual_strategy_under_domain');
+
+    if (row && row.conciseModeApplied !== true) incrementCount(jpServiceMap, 'concise_mode_not_applied');
+    if (row && row.followupQuestionIncluded !== true) incrementCount(jpServiceMap, 'followup_question_missing');
+    if (row && row.pitfallIncluded !== true) incrementCount(jpServiceMap, 'pitfall_missing');
+
+    if (row && row.retrieveNeeded === true && conversationMode === 'casual') incrementCount(lineFitMap, 'retrieval_used_in_casual');
+    if (row && Number.isFinite(Number(row.actionCount)) && Number(row.actionCount) > 3) incrementCount(lineFitMap, 'action_count_over_budget');
+    if (retrievalQuality === 'bad') incrementCount(lineFitMap, 'bad_retrieval_quality');
+  });
+
+  return {
+    topQualityFailures: qualityFailures,
+    topLoopCases: toTopSignals(loopMap, 10),
+    topContextLossCases: toTopSignals(contextLossMap, 10),
+    topJapaneseServiceFailures: toTopSignals(jpServiceMap, 10),
+    topLineFitFailures: toTopSignals(lineFitMap, 10)
+  };
+}
+
 function buildQualityFrameworkSummary(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
   const conversation = data.conversationQuality && typeof data.conversationQuality === 'object' ? data.conversationQuality : {};
@@ -863,6 +921,8 @@ function buildQualityFrameworkSummary(payload) {
   }
   frontierFailures.forEach((item) => hardFailures.push(`frontier:${item}`));
 
+  const boards = buildTopQualityBoards(actionRows, hardFailures);
+
   return {
     frameworkVersion: 'v1',
     generatedAt: new Date().toISOString(),
@@ -876,6 +936,16 @@ function buildQualityFrameworkSummary(payload) {
       failures: Array.from(new Set(hardFailures)),
       warnings: Array.from(new Set(frontierWarnings))
     },
+    top_10_quality_failures: boards.topQualityFailures,
+    top_10_loop_cases: boards.topLoopCases,
+    top_10_context_loss_cases: boards.topContextLossCases,
+    top_10_japanese_service_failures: boards.topJapaneseServiceFailures,
+    top_10_line_fit_failures: boards.topLineFitFailures,
+    topQualityFailures: boards.topQualityFailures,
+    topLoopCases: boards.topLoopCases,
+    topContextLossCases: boards.topContextLossCases,
+    topJapaneseServiceFailures: boards.topJapaneseServiceFailures,
+    topLineFitFailures: boards.topLineFitFailures,
     judgeCalibration: {
       confidence: judgeConfidence,
       disagreementRate: judgeDisagreement,

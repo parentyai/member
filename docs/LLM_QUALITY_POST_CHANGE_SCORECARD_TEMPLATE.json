@@ -1,0 +1,24 @@
+{
+  "currentBaselineScorecard": "tmp/llm_quality_baseline_scorecard.json",
+  "candidateScorecard": "tmp/llm_quality_candidate_scorecard.json",
+  "hardGateImpact": {
+    "baselinePass": false,
+    "candidatePass": false,
+    "candidateFailures": []
+  },
+  "qualityRisks": [
+    {
+      "risk": "example",
+      "severity": "high|medium|low",
+      "mitigation": "text"
+    }
+  ],
+  "improves": [
+    "dimension_or_slice"
+  ],
+  "mightRegress": [
+    "dimension_or_slice"
+  ],
+  "releaseGatePolicy": "tmp/llm_quality_release_policy_result.json",
+  "mustPassFixtures": "tmp/llm_quality_must_pass_result.json"
+}

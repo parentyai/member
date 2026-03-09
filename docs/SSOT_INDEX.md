@@ -61,6 +61,11 @@ UI表示SSOTは `docs/ADMIN_UI_DICTIONARY_JA.md` のみ。
 - `docs/LLM_RUNBOOK.md`（LLM運用手順）
 - `docs/LLM_RUNBOOK.md`（Phase720 addendum: Paid Assistant品質運用 / assistantQuality監査）
 - `docs/SSOT_LLM_QUALITY_FRAMEWORK_V1.md`（LLM品質評価基軸 / slice-first gate / judge calibration / benchmark freeze）
+- `docs/LLM_QUALITY_REPO_AUDIT_V1.md`（品質監査マップ / path inventory / top_10 failure boards）
+- `docs/LLM_QUALITY_HUMAN_EVAL_RUBRIC_V1.md`（人手評価ルーブリック）
+- `docs/LLM_QUALITY_AUTO_EVAL_RUBRIC_V1.md`（自動評価ルーブリック）
+- `docs/LLM_QUALITY_BASELINE_SCORECARD_TEMPLATE.json`（Baseline scorecard template）
+- `docs/LLM_QUALITY_POST_CHANGE_SCORECARD_TEMPLATE.json`（Post-change scorecard template）
 - `docs/SSOT_LLM_CONCIERGE_POLICY_V1.md`（LLMコンシェルジュのモード/無料有料境界/表示契約）
 - `docs/SSOT_LLM_CONCIERGE_OPPORTUNITY_ENGINE_V1.md`（Paid casual/concierge切替と介入予算契約）
 - `docs/SSOT_URL_RANKING_AND_ALLOWLIST_V1.md`（URLランク/allowlist/denylistの採用契約）

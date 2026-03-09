@@ -12,3 +12,11 @@
 
 ## Replay
 - `node tools/replay/v1/run_replay.js`
+
+## LLM Quality Framework
+- `npm run llm:quality:baseline`
+- `npm run llm:quality:candidate`
+- `npm run llm:quality:diff`
+- `npm run llm:quality:gate`
+- `npm run llm:quality:must-pass`
+- `npm run llm:quality:release-policy`

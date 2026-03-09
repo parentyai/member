@@ -605,6 +605,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3. `npm run llm:quality:diff`
 4. `npm run llm:quality:gate`
 5. `npm run llm:quality:arena`
+6. `npm run llm:quality:must-pass`
+7. `npm run llm:quality:release-policy`
+8. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合）
 
 ### Merge Block 条件
 - `llm:quality:gate` が non-zero
@@ -620,6 +623,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - promptSensitivityDrift > 0.10
 - replay/perturbation critical failure > 0
 - contamination risk `high` benchmark を hard gate に使用
+- release policy fail（overall非改善 / key dimension regression / must-pass fixture fail）
 
 ### Warning 条件
 - quality delta < +2 かつ latency p95 regression > 25%
@@ -639,3 +643,10 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 1. `catchup:gate:pr` から `llm:quality:gate` を外す（緊急時）。
 2. quality section UIを非表示化（必要時）。
 3. telemetry は add-only のため保持し、既存クエリ互換は維持する。
+
+### PR必須記載（品質）
+- Current Baseline Scorecard
+- Expected Post-change Scorecard
+- Hard Gate Impact
+- Quality Risks
+- What Improves / What Might Regress

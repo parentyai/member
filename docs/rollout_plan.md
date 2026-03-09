@@ -10,6 +10,8 @@
 7. quality framework gate pass (`npm run llm:quality:gate`)
 8. slice-first gate pass（critical slice regression = 0）
 9. frontier warning review（quality-latency-cost）
+10. must-pass fixtures pass (`npm run llm:quality:must-pass`)
+11. release policy pass (`npm run llm:quality:release-policy`)
 
 ## No-Go
 - duplicate_event drop anomaly

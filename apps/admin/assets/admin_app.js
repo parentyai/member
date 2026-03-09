@@ -17015,6 +17015,8 @@ function renderLlmQualityFrameworkDashboard(summary) {
     renderLlmResult('llm-quality-benchmark', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-replay', { ok: false, error: 'no_quality_framework' });
     renderLlmResult('llm-quality-frontier', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-top-failures', { ok: false, error: 'no_quality_framework' });
+    renderLlmResult('llm-quality-top-patterns', { ok: false, error: 'no_quality_framework' });
     return;
   }
 
@@ -17025,6 +17027,11 @@ function renderLlmQualityFrameworkDashboard(summary) {
   const benchmark = quality.benchmark && typeof quality.benchmark === 'object' ? quality.benchmark : {};
   const replay = quality.replay && typeof quality.replay === 'object' ? quality.replay : {};
   const frontier = quality.frontier && typeof quality.frontier === 'object' ? quality.frontier : {};
+  const topQualityFailures = Array.isArray(quality.top_10_quality_failures) ? quality.top_10_quality_failures : [];
+  const topLoopCases = Array.isArray(quality.top_10_loop_cases) ? quality.top_10_loop_cases : [];
+  const topContextLossCases = Array.isArray(quality.top_10_context_loss_cases) ? quality.top_10_context_loss_cases : [];
+  const topJapaneseServiceFailures = Array.isArray(quality.top_10_japanese_service_failures) ? quality.top_10_japanese_service_failures : [];
+  const topLineFitFailures = Array.isArray(quality.top_10_line_fit_failures) ? quality.top_10_line_fit_failures : [];
 
   renderLlmResult('llm-quality-scorecard', {
     ok: true,
@@ -17070,6 +17077,17 @@ function renderLlmQualityFrameworkDashboard(summary) {
     costPerTurnUsd: Number.isFinite(Number(frontier.costPerTurnUsd)) ? Number(frontier.costPerTurnUsd) : 0,
     ackSlaViolationRate: Number.isFinite(Number(frontier.ackSlaViolationRate)) ? Number(frontier.ackSlaViolationRate) : 0,
     status: frontier.status || 'unknown'
+  });
+  renderLlmResult('llm-quality-top-failures', {
+    ok: true,
+    top_10_quality_failures: topQualityFailures
+  });
+  renderLlmResult('llm-quality-top-patterns', {
+    ok: true,
+    top_10_loop_cases: topLoopCases,
+    top_10_context_loss_cases: topContextLossCases,
+    top_10_japanese_service_failures: topJapaneseServiceFailures,
+    top_10_line_fit_failures: topLineFitFailures
   });
 }
 

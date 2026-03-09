@@ -15,6 +15,9 @@
   - `npm run llm:quality:candidate`
   - `npm run llm:quality:diff`
   - `npm run llm:quality:gate`
+  - `npm run llm:quality:must-pass`
+  - `npm run llm:quality:release-policy`
+  - `npm run llm:quality:report`
 
 ## 24 Dimension Weights
 | key | weight | hardGate |
@@ -108,13 +111,40 @@
   - baseline scorecard
   - candidate scorecard
   - diff
+  - quality report (`top_10_*` を含む)
   - benchmark version/hash
   - replay/perturbation report
+  - must-pass fixture result
+  - release-policy verdict
 - hard block:
   - hard gate regression
   - critical slice regression
   - contamination high used for hard gate
   - replay critical failure
+  - release-policy fail
+
+## Required Audit Outputs
+- `current_quality_risk_map`
+- `response_path_inventory`
+- `response_generation_entrypoints`
+- `line_surface_usage_map`
+- `memory_usage_map`
+- `routing_failure_map`
+- `repetition_loop_risk_map`
+- `context_loss_risk_map`
+- `citation_and_grounding_risk_map`
+- `japanese_service_quality_risk_map`
+- `top_10_quality_failures`
+- `top_10_loop_cases`
+- `top_10_context_loss_cases`
+- `top_10_japanese_service_failures`
+- `top_10_line_fit_failures`
+
+## Rubric Assets
+- human eval rubric: `docs/LLM_QUALITY_HUMAN_EVAL_RUBRIC_V1.md`
+- auto eval rubric: `docs/LLM_QUALITY_AUTO_EVAL_RUBRIC_V1.md`
+- baseline template: `docs/LLM_QUALITY_BASELINE_SCORECARD_TEMPLATE.json`
+- post-change template: `docs/LLM_QUALITY_POST_CHANGE_SCORECARD_TEMPLATE.json`
 
 ## Rollback
 - immediate:
