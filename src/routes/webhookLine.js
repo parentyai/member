@@ -2086,15 +2086,6 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       assistantQuality
     });
-    const conversationQuality = buildConversationQualityMeta({
-      replyText,
-      domainIntent: normalizedConversationIntent,
-      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
-      fallbackType: null,
-      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
-      pitfallIncluded: guardedReply.pitfallIncluded === true,
-      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
-    });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
       plan: planInfo.plan,

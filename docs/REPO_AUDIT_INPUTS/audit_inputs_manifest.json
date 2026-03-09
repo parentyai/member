@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T21:59:40.861Z",
-  "gitCommit": "e29ed718413cdff7b3b56478a6207ca97875f4fd",
-  "branch": "main",
-  "sourceDigest": "b9d99975384fc1de8035b6f5aaa69c7c098d91176496810d8f1c7af7b1e0808e",
+  "generatedAt": "2026-03-09T22:08:58.269Z",
+  "gitCommit": "5fc0af566db15934e1f10b2c971d5f8b330b6892",
+  "branch": "codex/quality-slice-telemetry-r758",
+  "sourceDigest": "176666d156bce9ca905c95799ae56480790a28f99eb909ec0067e99365ed1414",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -106,7 +106,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/load_risk.json",
-      "sha256": "dce414436d5204703700fd9e5b3b41f8e072582cb5ec20e445aca1dc3715b20f",
+      "sha256": "3b708c25c6bf18032e32409cde006b1c4e2fa6f02a8729451c7ea782b1c346d1",
       "bytes": 828
     },
     {
@@ -116,7 +116,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/missing_index_surface.json",
-      "sha256": "5ec7cb091e0bc7caf9b8cb98dd1cca69c983886e3e4dcf41b818ef1e308d0837",
+      "sha256": "36e4ba3d4e7c6a10adb32b8dc033e80a9c9d15d3bf465893a305b938ea62906d",
       "bytes": 487
     },
     {
@@ -151,7 +151,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/retention_risk.json",
-      "sha256": "1bab79ab9172fbd9524bcb88dabf700ac4aae0ecd6beccfa393526d4abf09651",
+      "sha256": "be350414ce91e04941ccda73c96500f212abed66df5bad4faa8fc53f53b8b725",
       "bytes": 740
     },
     {
@@ -166,13 +166,13 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/structure_risk.json",
-      "sha256": "f80cd86f38a10930f5b0bd3b688ee9b001b64d52d9f65381bfa39e0ddd96ce53",
+      "sha256": "57ec2bde93fdc3cb32543e86fc26d192820fdf8634b5fe28f4b75c005293ddac",
       "bytes": 3517
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/supervisor_master.json",
-      "sha256": "80dafb3e614acc1493d0d9d2c3d3bf355872d50053ebe331f606b6dd12ee70b1",
-      "bytes": 2390
+      "sha256": "8b96dfe95bb50f4989efc3e752d4b2baec9f1d0f1db4460f0b4b63b2673742ed",
+      "bytes": 2420
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/unreachable_classification.json",
