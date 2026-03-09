@@ -65,7 +65,8 @@ function verifyCandidate(params) {
     }
   }
 
-  if (Array.isArray(packet.recentAssistantCommitments) && packet.recentAssistantCommitments.length > 0) {
+  const skipCommitmentCheck = selected.kind === 'domain_concierge_candidate' && selected.conciseModeApplied === true;
+  if (!skipCommitmentCheck && Array.isArray(packet.recentAssistantCommitments) && packet.recentAssistantCommitments.length > 0) {
     const mentionsPriorFocus = packet.recentAssistantCommitments.some((item) => {
       const token = normalizeText(item).replace(/[_.]/g, ' ');
       return token && replyText.includes(token.slice(0, 4));

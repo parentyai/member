@@ -12,6 +12,7 @@ const INTENT_RISK_TIERS = new Set(['low', 'medium', 'high']);
 const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_SAFE_RESPONSE_MODES = new Set(['answer', 'answer_with_hedge', 'clarify', 'refuse']);
+const FOLLOWUP_INTENTS = new Set(['docs_required', 'appointment_needed', 'next_step']);
 
 function normalizeString(value, fallback) {
   if (value === null || value === undefined) return fallback;
@@ -121,6 +122,13 @@ function normalizeDomainIntent(value) {
   return 'general';
 }
 
+function normalizeContextResumeDomain(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  if (['housing', 'school', 'ssn', 'banking'].includes(normalized)) return normalized;
+  return null;
+}
+
 function normalizeIntentRiskTier(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return 'low';
@@ -161,6 +169,12 @@ function normalizeReadinessSafeResponseMode(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
   return READINESS_SAFE_RESPONSE_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeFollowupIntent(value) {
+  const normalized = normalizeString(value, '').toLowerCase();
+  if (!normalized) return null;
+  return FOLLOWUP_INTENTS.has(normalized) ? normalized : null;
 }
 
 function normalizeJudgeScores(value) {
@@ -302,6 +316,12 @@ async function appendLlmActionLog(params) {
     unsupportedClaimCount: Math.max(0, Math.floor(normalizeNumber(payload.unsupportedClaimCount, 0))),
     contradictionDetected: payload.contradictionDetected === true,
     answerReadinessLogOnly: payload.answerReadinessLogOnly !== false,
+    orchestratorPathUsed: payload.orchestratorPathUsed === true,
+    contextResumeDomain: normalizeContextResumeDomain(payload.contextResumeDomain),
+    loopBreakApplied: payload.loopBreakApplied === true,
+    followupIntent: normalizeFollowupIntent(payload.followupIntent),
+    conciseModeApplied: payload.conciseModeApplied === true,
+    repetitionPrevented: payload.repetitionPrevented === true,
     strategy: normalizeStrategy(payload.strategy),
     retrieveNeeded: payload.retrieveNeeded === true,
     retrievalQuality: normalizeRetrievalQuality(payload.retrievalQuality),

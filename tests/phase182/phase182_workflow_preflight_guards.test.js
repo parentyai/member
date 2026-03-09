@@ -26,6 +26,7 @@ test('phase182: deploy workflow preflight validates required vars and secrets', 
   assert.match(contents, /OPENAI_API_KEY/, 'deploy.yml: OPENAI_API_KEY secret check missing');
   assert.match(contents, /LLM_FEATURE_FLAG/, 'deploy.yml: LLM_FEATURE_FLAG env wiring missing');
   assert.match(contents, /OPENAI_MODEL/, 'deploy.yml: OPENAI_MODEL env wiring missing');
+  assert.match(contents, /ENABLE_PAID_ORCHESTRATOR_V2/, 'deploy.yml: ENABLE_PAID_ORCHESTRATOR_V2 env wiring missing');
 });
 
 test('phase182: deploy-webhook workflow preflight validates required vars and secrets', () => {
@@ -34,6 +35,7 @@ test('phase182: deploy-webhook workflow preflight validates required vars and se
   assert.match(contents, /FIRESTORE_PROJECT_ID/, 'deploy-webhook.yml: FIRESTORE_PROJECT_ID required var check missing');
   assert.match(contents, /LLM_FEATURE_FLAG/, 'deploy-webhook.yml: LLM_FEATURE_FLAG required var check missing');
   assert.match(contents, /OPENAI_MODEL/, 'deploy-webhook.yml: OPENAI_MODEL required var check missing');
+  assert.match(contents, /ENABLE_PAID_ORCHESTRATOR_V2/, 'deploy-webhook.yml: ENABLE_PAID_ORCHESTRATOR_V2 required var check missing');
   assert.match(contents, /REDAC_MEMBERSHIP_ID_HMAC_SECRET/, 'deploy-webhook.yml: REDAC_MEMBERSHIP_ID_HMAC_SECRET secret check missing');
   assert.match(contents, /OPENAI_API_KEY/, 'deploy-webhook.yml: OPENAI_API_KEY secret check missing');
   assert.match(contents, /Verify webhook runtime contract/, 'deploy-webhook.yml: runtime contract verify step missing');

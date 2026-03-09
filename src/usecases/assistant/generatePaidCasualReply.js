@@ -7,6 +7,17 @@ function normalizeText(value) {
   return value.trim();
 }
 
+function normalizeContextHintLabel(value) {
+  const normalized = normalizeText(value).toLowerCase();
+  if (!normalized) return '';
+  if (normalized === 'school') return '学校手続き';
+  if (normalized === 'housing') return '住まい探し';
+  if (normalized === 'ssn') return 'SSN手続き';
+  if (normalized === 'banking') return '銀行手続き';
+  if (normalized === 'general') return '';
+  return normalizeText(value);
+}
+
 function trimForPaidLineMessage(value) {
   const text = normalizeText(value);
   if (!text) return '';
@@ -21,16 +32,43 @@ function buildSmalltalkReply() {
   return 'ありがとうございます。必要なら、今いちばん気になっている手続きを1つだけ教えてください。';
 }
 
-function buildGeneralCasualReply(question, atoms) {
+function hashForVariantSeed(value) {
+  const text = normalizeText(value);
+  if (!text) return 0;
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function pickVariant(list, seedSource) {
+  const rows = Array.isArray(list) ? list.filter(Boolean) : [];
+  if (!rows.length) return '';
+  const seed = hashForVariantSeed(seedSource);
+  return rows[seed % rows.length];
+}
+
+function buildGeneralCasualReply(question, atoms, contextHint) {
   const message = normalizeText(question);
+  const contextLabel = normalizeContextHintLabel(contextHint);
   const prompt = atoms && typeof atoms.question === 'string' && atoms.question.trim()
     ? atoms.question.trim()
-    : '優先したい手続きがあれば1つだけ教えてください。';
+    : (contextLabel
+      ? `${contextLabel}の話として進めます。いま一番詰まっている点を1つだけ教えてください。`
+      : '対象を絞って進めたいので、いま優先したい手続きを1つだけ教えてください。');
 
   if (!message) return prompt;
 
-  return [
+  const intro = pickVariant([
     '了解です。状況を短く整理しながら進めます。',
+    'ありがとうございます。いまの状況を一緒に整えて進めます。',
+    '把握しました。まずは迷いを減らすところから進めます。'
+  ], message);
+
+  return [
+    intro,
     prompt
   ].join('\n');
 }
@@ -38,6 +76,7 @@ function buildGeneralCasualReply(question, atoms) {
 function generatePaidCasualReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
+  const contextHint = typeof payload.contextHint === 'string' ? normalizeText(payload.contextHint) : '';
   const suggestedAtoms = payload.suggestedAtoms && typeof payload.suggestedAtoms === 'object'
     ? payload.suggestedAtoms
     : { nextActions: [], pitfall: null, question: null };
@@ -61,7 +100,7 @@ function generatePaidCasualReply(params) {
   return {
     ok: true,
     mode: 'casual',
-    replyText: trimForPaidLineMessage(buildGeneralCasualReply(messageText, suggestedAtoms))
+    replyText: trimForPaidLineMessage(buildGeneralCasualReply(messageText, suggestedAtoms, contextHint))
   };
 }
 

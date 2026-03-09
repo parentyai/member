@@ -50,7 +50,13 @@ function scoreCandidate(packet, candidate, options) {
   const safety = rejectedReasons.length ? 0 : 1;
   const naturalness = Math.max(0, 1 - ((legacyTemplateHit ? 0.5 : 0) + (questionCount > 1 ? 0.2 : 0) + (bulletCount > 3 ? 0.2 : 0)));
   const contextConsistency = hasDomainAlignment(packet, payload) ? 1 : 0.2;
-  const taskProgress = bulletCount > 0 && bulletCount <= 3 ? 1 : (strategy === 'clarify' && questionCount === 1 ? 0.8 : 0.3);
+  let taskProgress = bulletCount > 0 && bulletCount <= 3 ? 1 : (strategy === 'clarify' && questionCount === 1 ? 0.8 : 0.3);
+  if (strategy === 'casual' && payload.kind === 'casual_candidate') {
+    taskProgress = Math.min(1, taskProgress + 0.55);
+  }
+  if (strategy === 'clarify' && payload.kind === 'clarify_candidate') {
+    taskProgress = Math.min(1, taskProgress + 0.2);
+  }
   const groundedness = payload.retrievalQuality === 'good'
     ? 1
     : (payload.retrievalQuality === 'mixed' ? 0.6 : (payload.kind === 'clarify_candidate' || payload.kind === 'domain_concierge_candidate' ? 0.7 : 0.2));

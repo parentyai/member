@@ -46,7 +46,7 @@ test('phase731: orchestrator clarifies broad paid questions without retrieval', 
   assert.equal(typeof result.telemetry.readinessDecision, 'string');
   assert.ok(Array.isArray(result.telemetry.readinessReasonCodes));
   assert.equal(result.telemetry.answerReadinessLogOnly, false);
-  assert.equal(result.replyText.includes('まず対象手続きと期限'), true);
+  assert.equal(result.replyText.includes('対象を絞って案内したい'), true);
 });
 
 test('phase731: orchestrator rejects legacy grounded candidate and prefers composed concierge candidate', async () => {
@@ -116,4 +116,51 @@ test('phase731: orchestrator rejects legacy grounded candidate and prefers compo
   assert.equal(result.replyText.includes('FAQ候補'), false);
   assert.equal(result.replyText.includes('根拠キー'), false);
   assert.equal(result.finalMeta.legacyTemplateHit, false);
+});
+
+test('phase731: orchestrator applies loop-break when repetitive casual candidate repeats', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE731_LOOP',
+    messageText: '今日は忙しいですね',
+    paidIntent: 'situation_analysis',
+    planInfo: { plan: 'pro', status: 'active' },
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false
+    },
+    recentActionRows: [
+      {
+        createdAt: '2026-03-08T20:00:00.000Z',
+        domainIntent: 'general',
+        committedFollowupQuestion: '優先したい手続きがあれば1つだけ教えてください。'
+      }
+    ],
+    deps: {
+      generatePaidCasualReply: () => ({
+        replyText: '了解です。状況を短く整理しながら進めます。\n優先したい手続きがあれば1つだけ教えてください。'
+      }),
+      generateGroundedReply: async () => ({ ok: false, blockedReason: 'not_used' }),
+      generateDomainConciergeCandidate: async () => ({
+        ok: true,
+        replyText: '状況を整理しながら進めます。まずは優先する手続きを1つ決めましょう。',
+        domainIntent: 'general',
+        conversationMode: 'concierge',
+        opportunityType: 'action',
+        opportunityReasonKeys: ['general_fallback'],
+        interventionBudget: 1,
+        auditMeta: null
+      })
+    }
+  });
+
+  assert.equal(result.telemetry.strategy, 'casual');
+  assert.equal(result.telemetry.judgeWinner, 'conversation_candidate');
+  assert.equal(result.telemetry.loopBreakApplied, true);
+  assert.equal(result.telemetry.orchestratorPathUsed, true);
+  assert.ok(result.replyText.includes('対象を絞って案内したい'));
+  assert.equal(result.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
 });

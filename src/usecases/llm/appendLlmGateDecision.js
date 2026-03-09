@@ -70,7 +70,13 @@ const ALLOWED_SUMMARY_KEYS = new Set([
   'readinessSafeResponseMode',
   'unsupportedClaimCount',
   'contradictionDetected',
-  'answerReadinessLogOnly'
+  'answerReadinessLogOnly',
+  'orchestratorPathUsed',
+  'contextResumeDomain',
+  'loopBreakApplied',
+  'followupIntent',
+  'conciseModeApplied',
+  'repetitionPrevented'
 ]);
 
 function resolveAppendAuditLog() {

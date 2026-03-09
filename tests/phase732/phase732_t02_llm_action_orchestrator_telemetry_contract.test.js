@@ -32,6 +32,11 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
       domainIntent: 'general',
       conversationMode: 'casual',
       fallbackType: 'low_specificity_clarify'
+      ,
+      followupIntent: 'next_step',
+      conciseModeApplied: false,
+      repetitionPrevented: true,
+      routerReason: 'default_casual'
     },
     {
       conversationNaturalnessVersion: 'v2',
@@ -53,6 +58,11 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
       domainIntent: 'housing',
       conversationMode: 'concierge',
       fallbackType: 'domain_concierge'
+      ,
+      followupIntent: 'docs_required',
+      conciseModeApplied: true,
+      repetitionPrevented: false,
+      routerReason: 'contextual_domain_resume'
     }
   ]);
 
@@ -71,6 +81,11 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
   assert.ok(Array.isArray(summary.readinessSafeResponseModes));
   assert.equal(summary.contradictionDetectedRate, 0.5);
   assert.equal(summary.avgUnsupportedClaimCount, 0.5);
+  assert.equal(summary.conciseModeAppliedRate, 0.5);
+  assert.equal(summary.repetitionPreventedRate, 0.5);
+  assert.equal(summary.defaultCasualRate, 0.5);
+  assert.ok(Array.isArray(summary.followupIntents));
+  assert.ok(Array.isArray(summary.routerReasons));
   assert.ok(Array.isArray(summary.contradictionFlags));
 });
 
@@ -91,6 +106,12 @@ test('phase732: llm action log schema includes orchestrator telemetry fields', (
     'unsupportedClaimCount',
     'contradictionDetected',
     'answerReadinessLogOnly',
+    'orchestratorPathUsed',
+    'contextResumeDomain',
+    'loopBreakApplied',
+    'followupIntent',
+    'conciseModeApplied',
+    'repetitionPrevented',
     'intentRiskTier',
     'riskReasonCodes',
     'committedNextActions',

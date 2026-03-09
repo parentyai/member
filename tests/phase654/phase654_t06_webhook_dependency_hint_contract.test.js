@@ -236,7 +236,8 @@ test('phase654: pro plan keeps paid natural reply contract when predictive actio
     LINE_CHANNEL_SECRET: SECRET,
     ENABLE_TASK_GRAPH_V1: '1',
     ENABLE_PRO_PREDICTIVE_ACTIONS_V1: '1',
-    ENABLE_PAID_FAQ_QUALITY_V2: '1'
+    ENABLE_PAID_FAQ_QUALITY_V2: '1',
+    ENABLE_PAID_ORCHESTRATOR_V2: 'false'
   });
   const loaded = loadWebhookWithStubs({
     planInfo: { plan: 'pro', status: 'active' },

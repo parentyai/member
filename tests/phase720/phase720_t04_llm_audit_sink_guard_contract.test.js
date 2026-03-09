@@ -24,6 +24,9 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
       unsupportedClaimCount: 0,
       contradictionDetected: false,
       answerReadinessLogOnly: true,
+      followupIntent: 'next_step',
+      conciseModeApplied: true,
+      repetitionPrevented: true,
       fullReplyText: 'should_not_be_saved',
       rawPrompt: 'should_not_be_saved',
       rawKbBodies: ['drop'],
@@ -46,6 +49,9 @@ test('phase720: llm audit sink guard drops non-allowlisted payloadSummary keys',
   assert.equal(sanitized.payloadSummary.unsupportedClaimCount, 0);
   assert.equal(sanitized.payloadSummary.contradictionDetected, false);
   assert.equal(sanitized.payloadSummary.answerReadinessLogOnly, true);
+  assert.equal(sanitized.payloadSummary.followupIntent, 'next_step');
+  assert.equal(sanitized.payloadSummary.conciseModeApplied, true);
+  assert.equal(sanitized.payloadSummary.repetitionPrevented, true);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'fullReplyText'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawPrompt'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized.payloadSummary, 'rawKbBodies'), false);

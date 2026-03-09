@@ -28,7 +28,7 @@ on:
       enable_paid_orchestrator_v2:
         description: "Set true to enable paid webhook orchestrator v2 on this deploy"
         required: false
-        default: "false"
+        default: "true"
         type: choice
         options:
           - "false"
@@ -144,6 +144,7 @@ jobs:
             STORAGE_BUCKET
             LLM_FEATURE_FLAG
             OPENAI_MODEL
+            ENABLE_PAID_ORCHESTRATOR_V2
           )
           MISSING=0
           for VAR_NAME in "${REQUIRED_VARS[@]}"; do
@@ -270,7 +271,7 @@ jobs:
       - name: Deploy image to Cloud Run
         run: |
           IMAGE="us-east1-docker.pkg.dev/${GCP_PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}:${GITHUB_SHA}"
-          ORCHESTRATOR_FLAG="${ENABLE_PAID_ORCHESTRATOR_V2:-false}"
+          ORCHESTRATOR_FLAG="${ENABLE_PAID_ORCHESTRATOR_V2:-true}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.enable_paid_orchestrator_v2 }}" ]; then
             ORCHESTRATOR_FLAG="${{ github.event.inputs.enable_paid_orchestrator_v2 }}"
           fi

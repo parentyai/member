@@ -13,6 +13,14 @@ function countActionBullets(text) {
     .length;
 }
 
+function countLines(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .length;
+}
+
 test('phase719: paid housing fallback keeps natural format without retrieval template markers', () => {
   const result = generatePaidHousingConciergeReply({
     messageText: '部屋探ししたい',
@@ -48,7 +56,9 @@ test('phase719: paid housing fallback keeps natural format without retrieval tem
   assert.equal(result.replyText.includes('根拠キー'), false);
   assert.equal(result.replyText.includes('score='), false);
   assert.equal(result.replyText.includes('- [ ]'), false);
+  assert.equal(result.replyText.includes('まずは次の一手'), false);
   assert.equal(countActionBullets(result.replyText) <= 3, true);
+  assert.equal(countLines(result.replyText) <= 3, true);
   assert.equal(result.auditMeta.evidenceOutcome, 'BLOCKED');
 });
 
@@ -64,7 +74,9 @@ test('phase719: paid housing fallback returns deterministic concierge reply with
   assert.equal(result.opportunityType, 'action');
   assert.equal(result.interventionBudget, 1);
   assert.equal(result.replyText.length > 0, true);
+  assert.equal(result.replyText.includes('まずは次の一手'), false);
   assert.equal(countActionBullets(result.replyText) <= 3, true);
+  assert.equal(countLines(result.replyText) <= 3, true);
   assert.equal(result.auditMeta.evidenceOutcome, 'SUPPORTED');
 });
 
@@ -100,7 +112,9 @@ test('phase719: paid domain fallback keeps natural format for school/ssn/banking
     assert.equal(result.replyText.includes('根拠キー'), false);
     assert.equal(result.replyText.includes('score='), false);
     assert.equal(result.replyText.includes('- [ ]'), false);
+    assert.equal(result.replyText.includes('まずは次の一手'), false);
     assert.equal(countActionBullets(result.replyText) <= 3, true);
+    assert.equal(countLines(result.replyText) <= 3, true);
     assert.ok(result.opportunityReasonKeys.includes(sample.reason));
   });
 });

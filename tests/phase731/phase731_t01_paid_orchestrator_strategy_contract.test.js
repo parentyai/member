@@ -60,3 +60,48 @@ test('phase731: orchestrator strategy keeps recommendation path retrieval-aware'
   assert.equal(activity.retrieveNeeded, true);
   assert.equal(activity.verifyNeeded, true);
 });
+
+test('phase731: orchestrator resumes recent domain context for ambiguous short utterance', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE731',
+    messageText: 'ヒザ',
+    planInfo: { plan: 'pro', status: 'active' },
+    paidIntent: 'situation_analysis',
+    llmFlags: {
+      llmConciergeEnabled: true
+    },
+    recentActionRows: [
+      {
+        createdAt: '2026-03-08T00:00:00.000Z',
+        domainIntent: 'school',
+        committedFollowupQuestion: '優先したい手続きを1つ教えてください。'
+      }
+    ]
+  });
+  const plan = buildStrategyPlan(packet);
+  assert.equal(packet.contextResume, true);
+  assert.equal(packet.contextResumeDomain, 'school');
+  assert.equal(packet.routerReason, 'contextual_domain_resume');
+  assert.equal(packet.normalizedConversationIntent, 'school');
+  assert.equal(plan.strategy, 'domain_concierge');
+  assert.equal(plan.conversationMode, 'concierge');
+});
+
+test('phase731: low-information casual without recent domain prefers clarify', () => {
+  const packet = buildConversationPacket({
+    lineUserId: 'U_PHASE731',
+    messageText: 'ヒザ',
+    planInfo: { plan: 'pro', status: 'active' },
+    paidIntent: 'situation_analysis',
+    llmFlags: {
+      llmConciergeEnabled: true
+    },
+    recentActionRows: []
+  });
+  const plan = buildStrategyPlan(packet);
+  assert.equal(packet.contextResume, false);
+  assert.equal(packet.normalizedConversationIntent, 'general');
+  assert.equal(plan.strategy, 'clarify');
+  assert.equal(plan.fallbackType, 'low_information_clarify');
+  assert.deepEqual(plan.candidateSet, ['clarify_candidate', 'conversation_candidate']);
+});
