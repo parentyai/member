@@ -602,4 +602,20 @@ test('phase717: free path keeps retrieval-first behavior', { concurrency: false 
   assert.equal(result.status, 200);
   assert.equal(loaded.counters.retrievalCalled, 1);
   assert.equal(loaded.counters.paidFaqCalled, 0);
+  const gateSummaries = loaded.auditCalls
+    .map((entry) => (entry && entry.action === 'llm_gate.decision' ? entry.payloadSummary : null))
+    .filter(Boolean);
+  const summary = gateSummaries.find((payloadSummary) => payloadSummary.blockedReason === 'free_retrieval_only')
+    || gateSummaries[0];
+  if (summary) {
+    assert.equal(summary.decision, 'blocked');
+    assert.equal(summary.domainIntent, 'general');
+    assert.equal(summary.fallbackType, 'free_retrieval');
+    assert.equal(typeof summary.directAnswerApplied, 'boolean');
+    assert.equal(typeof summary.repeatRiskScore, 'number');
+  }
+  if (loaded.actionLogWrites.length > 0) {
+    assert.equal(loaded.actionLogWrites[0].domainIntent, 'general');
+    assert.equal(loaded.actionLogWrites[0].fallbackType, 'free_retrieval');
+  }
 });

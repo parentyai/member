@@ -1258,6 +1258,19 @@ async function appendLlmGateDecisionBestEffort(data) {
         repeatRiskScore: Number.isFinite(Number(payload.repeatRiskScore))
           ? Number(payload.repeatRiskScore)
           : Number(qualityMeta.repeatRiskScore || 0),
+        legacyTemplateHit: payload.legacyTemplateHit === true || qualityMeta.legacyTemplateHit === true,
+        followupQuestionIncluded: payload.followupQuestionIncluded === true || qualityMeta.followupQuestionIncluded === true,
+        actionCount: Number.isFinite(Number(payload.actionCount))
+          ? Number(payload.actionCount)
+          : Number(qualityMeta.actionCount || 0),
+        pitfallIncluded: payload.pitfallIncluded === true || qualityMeta.pitfallIncluded === true,
+        domainIntent: normalizeDomainIntent(payload.domainIntent || qualityMeta.domainIntent || 'general'),
+        fallbackType: typeof payload.fallbackType === 'string' && payload.fallbackType.trim()
+          ? payload.fallbackType.trim().toLowerCase()
+          : (qualityMeta.fallbackType || null),
+        interventionSuppressedBy: typeof payload.interventionSuppressedBy === 'string' && payload.interventionSuppressedBy.trim()
+          ? payload.interventionSuppressedBy.trim().toLowerCase()
+          : (qualityMeta.interventionSuppressedBy || null),
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -2073,6 +2086,15 @@ async function handleAssistantMessage(params) {
       tokenUsed: 0,
       assistantQuality
     });
+    const conversationQuality = buildConversationQualityMeta({
+      replyText,
+      domainIntent: normalizedConversationIntent,
+      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
+      fallbackType: null,
+      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
+      pitfallIncluded: guardedReply.pitfallIncluded === true,
+      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
+    });
     await appendLlmGateDecisionBestEffort({
       lineUserId,
       plan: planInfo.plan,
@@ -2085,7 +2107,14 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      assistantQuality
+      assistantQuality,
+      domainIntent: 'general',
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: 'general',
+        fallbackType: blockedReason || 'free_retrieval_only',
+        opportunityReasonKeys: []
+      })
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2093,7 +2122,14 @@ async function handleAssistantMessage(params) {
       traceId,
       requestId,
       conciergeMeta: fallback && fallback.conciergeMeta ? fallback.conciergeMeta : null,
-      llmBanditEnabled
+      llmBanditEnabled,
+      domainIntent: 'general',
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: 'general',
+        fallbackType: blockedReason || 'free_retrieval_only',
+        opportunityReasonKeys: []
+      })
     });
     return {
       handled: true,
@@ -2298,7 +2334,14 @@ async function handleAssistantMessage(params) {
       interventionBudget: 1,
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'budget_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2382,7 +2425,14 @@ async function handleAssistantMessage(params) {
       interventionBudget: 1,
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'availability_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2472,7 +2522,14 @@ async function handleAssistantMessage(params) {
       interventionBudget: 1,
       followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
       conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+        replyText: fallback && fallback.replyText ? fallback.replyText : '',
+        domainIntent: normalizedConversationIntent,
+        fallbackType: 'snapshot_blocked_fallback',
+        opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+      })
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2671,16 +2728,9 @@ async function handleAssistantMessage(params) {
       routerReason,
       opportunityType: opportunityDecision.opportunityType,
       opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
-      interventionBudget: opportunityDecision.interventionBudget
-    });
-    const conversationQuality = buildConversationQualityMeta({
-      replyText,
+      interventionBudget: opportunityDecision.interventionBudget,
       domainIntent: normalizedConversationIntent,
-      opportunityReasonKeys: opportunityDecision.opportunityReasonKeys,
-      fallbackType: null,
-      legacyTemplateHit: guardedReply.legacyTemplateHit === true,
-      pitfallIncluded: guardedReply.pitfallIncluded === true,
-      followupQuestionIncluded: guardedReply.followupQuestionIncluded === true
+      conversationQuality
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2754,7 +2804,16 @@ async function handleAssistantMessage(params) {
       interventionBudget: 1,
       followupIntent: domainConcierge && typeof domainConcierge.followupIntent === 'string' ? domainConcierge.followupIntent : null,
       conciseModeApplied: domainConcierge ? domainConcierge.conciseModeApplied === true : false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      domainIntent: normalizedConversationIntent,
+      conversationQuality: domainConcierge && domainConcierge.conversationQuality
+        ? domainConcierge.conversationQuality
+        : buildConversationQualityMeta({
+          replyText: domainConcierge && domainConcierge.replyText ? domainConcierge.replyText : '',
+          domainIntent: normalizedConversationIntent,
+          opportunityReasonKeys: domainDecision ? domainDecision.opportunityReasonKeys : [],
+          fallbackType: null
+        })
     });
     await appendLlmActionLogBestEffort({
       lineUserId,
@@ -2867,7 +2926,14 @@ async function handleAssistantMessage(params) {
         interventionBudget: 1,
         followupIntent: fallback && typeof fallback.followupIntent === 'string' ? fallback.followupIntent : null,
         conciseModeApplied: fallback ? fallback.conciseModeApplied === true : false,
-        repetitionPrevented: false
+        repetitionPrevented: false,
+        domainIntent: normalizedConversationIntent,
+        conversationQuality: fallback && fallback.conversationQuality ? fallback.conversationQuality : buildConversationQualityMeta({
+          replyText: fallback && fallback.replyText ? fallback.replyText : '',
+          domainIntent: normalizedConversationIntent,
+          fallbackType: 'paid_generation_fallback',
+          opportunityReasonKeys: fallbackDecision ? fallbackDecision.opportunityReasonKeys : []
+        })
       });
       await appendLlmActionLogBestEffort({
         lineUserId,

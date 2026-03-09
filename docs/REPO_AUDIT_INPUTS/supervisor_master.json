@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T13:59:10-04:00",
-  "gitCommit": "dc7dc7dad3c44c8bcab1ad4ce1164742106e6e57",
-  "branch": "codex/quality-slice-signals-r757",
-  "sourceDigest": "bd5ee3dbccace22e3046b3b5123fb8b7a948be5e63f9ef7b58b91423f27637b2",
+  "generatedAt": "2026-03-09T17:41:19-04:00",
+  "gitCommit": "e29ed718413cdff7b3b56478a6207ca97875f4fd",
+  "branch": "main",
+  "sourceDigest": "cc4c533655b73bdcf670a60c1bdb686c563c841e044ac68df24605ca086fdcd7",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
