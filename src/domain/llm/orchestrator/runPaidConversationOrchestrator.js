@@ -41,8 +41,38 @@ function similarityScore(left, right) {
   return denominator > 0 ? overlap / denominator : 0;
 }
 
+function isConciseReplyText(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+  const lines = normalized.split('\n').map((line) => line.trim()).filter(Boolean);
+  if (!lines.length || lines.length > 3) return false;
+  return normalized.length <= 180;
+}
+
 function buildClarifyCandidate(packet, strategy) {
   const domainIntent = normalizeText(packet.normalizedConversationIntent).toLowerCase();
+  const followupIntent = normalizeText(packet.followupIntent).toLowerCase();
+  const hasFollowupIntent = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
+  if (hasFollowupIntent && domainIntent !== 'general') {
+    const followupReply = followupIntent === 'docs_required'
+      ? '必要書類の対象を確定したいので、対象者と現在の在留ステータスを教えてください。'
+      : (followupIntent === 'appointment_needed'
+        ? '予約要否を確定するため、手続き先の窓口名か地域を教えてください。'
+        : '次の一手を絞るため、期限が近い手続きを1つだけ教えてください。');
+    return {
+      id: 'clarify_candidate',
+      kind: 'clarify_candidate',
+      replyText: followupReply,
+      domainIntent,
+      retrievalQuality: 'none',
+      atoms: {
+        situationLine: '状況を把握しました。',
+        nextActions: [],
+        pitfall: '',
+        followupQuestion: followupReply
+      }
+    };
+  }
   const replyText = strategy === 'recommendation'
     ? 'おすすめ先を絞りたいので、希望エリアと優先条件を1つずつ教えてください。'
     : (domainIntent && domainIntent !== 'general'
@@ -229,7 +259,8 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
   if (!current) {
     return {
       selected: current,
-      loopBreakApplied: false
+      loopBreakApplied: false,
+      repeatRiskScore: 0
     };
   }
   const intentReason = packet && packet.intentDecision && typeof packet.intentDecision.reason === 'string'
@@ -238,7 +269,8 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
   if (intentReason === 'greeting_detected' || intentReason === 'smalltalk_detected') {
     return {
       selected: current,
-      loopBreakApplied: false
+      loopBreakApplied: false,
+      repeatRiskScore: 0
     };
   }
   const clarifyCandidate = Array.isArray(candidates)
@@ -248,7 +280,8 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
     return {
       selected: current,
       loopBreakApplied: false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      repeatRiskScore: 0
     };
   }
 
@@ -269,6 +302,7 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
   }, 0);
   const defaultPhraseSimilarity = similarityScore(normalizedReply, fallbackPhrase);
   const isCasualCandidate = current.kind === 'casual_candidate';
+  const repeatRiskScore = Math.max(defaultPhraseSimilarity, maxHintSimilarity, maxRecentTwoSimilarity);
   const shouldBreak = (
     isCasualCandidate
       && (
@@ -283,7 +317,8 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
     return {
       selected: current,
       loopBreakApplied: false,
-      repetitionPrevented: false
+      repetitionPrevented: false,
+      repeatRiskScore
     };
   }
 
@@ -294,7 +329,8 @@ function resolveLoopSafeCandidate(packet, selected, candidates) {
   return {
     selected: switchedCandidate,
     loopBreakApplied: switchedCandidate !== current,
-    repetitionPrevented: true
+    repetitionPrevented: true,
+    repeatRiskScore
   };
 }
 
@@ -359,7 +395,14 @@ async function runPaidConversationOrchestrator(params) {
     strategy: strategyPlan.strategy,
     candidates: candidateSet.candidates
   });
-  const loopResolved = resolveLoopSafeCandidate(packet, judged.selected, candidateSet.candidates);
+  let selectedCandidate = judged.selected;
+  if (strategyPlan.directAnswerFirst === true) {
+    const directAnswerCandidate = Array.isArray(candidateSet.candidates)
+      ? candidateSet.candidates.find((item) => item && item.kind === 'domain_concierge_candidate')
+      : null;
+    if (directAnswerCandidate) selectedCandidate = directAnswerCandidate;
+  }
+  const loopResolved = resolveLoopSafeCandidate(packet, selectedCandidate, candidateSet.candidates);
   const verified = verifyCandidate({
     packet,
     selected: loopResolved.selected,
@@ -412,6 +455,12 @@ async function runPaidConversationOrchestrator(params) {
     ? groundedResult.blockedReason
     : null;
 
+  const directAnswerApplied = strategyPlan.directAnswerFirst === true
+    && String(finalized.finalMeta && finalized.finalMeta.candidateKind ? finalized.finalMeta.candidateKind : '').toLowerCase() !== 'clarify_candidate';
+  const conciseModeApplied = selected && selected.conciseModeApplied === true
+    ? true
+    : isConciseReplyText(finalized.replyText);
+
   return {
     ok: true,
     handled: true,
@@ -430,13 +479,17 @@ async function runPaidConversationOrchestrator(params) {
     tokensOut: groundedResult ? groundedResult.tokensOut || 0 : 0,
     telemetry: {
       strategy: strategyPlan.strategy,
+      directAnswerApplied,
+      clarifySuppressed: strategyPlan.clarifySuppressed === true,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
       orchestratorPathUsed: true,
       contextResumeDomain: packet.contextResumeDomain || null,
+      contextCarryScore: Number.isFinite(Number(packet.contextCarryScore)) ? Number(packet.contextCarryScore) : 0,
       loopBreakApplied: loopResolved.loopBreakApplied === true,
+      repeatRiskScore: Number.isFinite(Number(loopResolved.repeatRiskScore)) ? Number(loopResolved.repeatRiskScore) : 0,
       followupIntent: packet.followupIntent || null,
-      conciseModeApplied: selected && selected.conciseModeApplied === true,
+      conciseModeApplied,
       repetitionPrevented: loopResolved.repetitionPrevented === true,
       sourceAuthorityScore: readinessSourceAuthorityScore,
       sourceFreshnessScore: readinessSourceFreshnessScore,

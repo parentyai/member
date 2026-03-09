@@ -40,6 +40,16 @@ function metricImproved(before, after) {
   return Number(after || 0) >= Number(before || 0);
 }
 
+function toBool(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  }
+  return fallback;
+}
+
 function checkDimensionNoRegression(baselineMap, candidateMap, key) {
   const before = baselineMap.get(key) || {};
   const after = candidateMap.get(key) || {};
@@ -64,6 +74,33 @@ function checkSliceNoCriticalRegression(baselineMap, candidateMap, sliceKey) {
   };
 }
 
+function checkSlicePassAndNoRegression(baselineMap, candidateMap, sliceKey) {
+  const before = baselineMap.get(sliceKey) || {};
+  const after = candidateMap.get(sliceKey) || {};
+  const beforeScore = Number(before.score || 0);
+  const afterScore = Number(after.score || 0);
+  const pass = after.status === 'pass' && afterScore >= beforeScore;
+  return {
+    sliceKey,
+    baseline: beforeScore,
+    candidate: afterScore,
+    pass
+  };
+}
+
+function readSummaryData(summaryPath) {
+  if (!summaryPath) return null;
+  try {
+    const payload = readJson(summaryPath);
+    if (payload && typeof payload === 'object' && payload.summary && typeof payload.summary === 'object') {
+      return payload.summary;
+    }
+    return payload && typeof payload === 'object' ? payload : null;
+  } catch (_err) {
+    return null;
+  }
+}
+
 function main(argv) {
   const args = parseArgs(argv);
   const root = process.cwd();
@@ -79,10 +116,22 @@ function main(argv) {
   const outPath = args.output
     ? path.resolve(root, args.output)
     : path.join(root, 'tmp', 'llm_quality_release_policy_result.json');
+  const summaryPath = args.summary
+    ? path.resolve(root, args.summary)
+    : path.join(root, 'tmp', 'llm_usage_summary.json');
+  const requireAllSlicesPass = toBool(
+    args.requireAllSlicesPass,
+    toBool(process.env.LLM_QUALITY_REQUIRE_ALL_SLICES_PASS, false)
+  );
+  const requireStrictRuntimeSignals = toBool(
+    args.requireStrictRuntimeSignals,
+    toBool(process.env.LLM_QUALITY_REQUIRE_STRICT_RUNTIME_SIGNALS, false)
+  );
 
   const baseline = readJson(baselinePath);
   const candidate = readJson(candidatePath);
   const mustPass = readJson(mustPassPath);
+  const summary = readSummaryData(summaryPath);
 
   const baselineDimensionMap = toMap(baseline.dimensions, 'key');
   const candidateDimensionMap = toMap(candidate.dimensions, 'key');
@@ -101,7 +150,9 @@ function main(argv) {
     japaneseServiceImprovementRequired: true,
     lineNativeImprovementRequired: true,
     minorityCriticalRegressionForbidden: true,
-    mustPassFixturesRequired: true
+    mustPassFixturesRequired: true,
+    allSlicesPassRequired: requireAllSlicesPass === true,
+    strictRuntimeSignalsRequired: requireStrictRuntimeSignals === true
   };
 
   if (!metricImproved(baseline.overallScore, candidate.overallScore)
@@ -140,6 +191,31 @@ function main(argv) {
     if (row.pass !== true) failures.push(`critical_slice_failed:${row.sliceKey}`);
   });
 
+  const allSliceChecks = Array.from(candidateSliceMap.keys()).map((sliceKey) => (
+    checkSlicePassAndNoRegression(baselineSliceMap, candidateSliceMap, sliceKey)
+  ));
+  if (requireAllSlicesPass === true) {
+    allSliceChecks.forEach((row) => {
+      if (row.pass !== true) failures.push(`slice_failed_or_not_improved:${row.sliceKey}`);
+    });
+  }
+
+  const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
+    ? summary.conversationQuality
+    : null;
+  const runtimeSignals = conversation
+    ? {
+      defaultCasualRate: Number(conversation.defaultCasualRate || 0),
+      directAnswerMissRate: Math.max(0, 1 - Number(conversation.directAnswerAppliedRate || 0)),
+      avgRepeatRiskScore: Number(conversation.avgRepeatRiskScore || 0)
+    }
+    : null;
+  if (requireStrictRuntimeSignals === true && runtimeSignals) {
+    if (runtimeSignals.defaultCasualRate > 0.02) failures.push('runtime_signal_default_casual_rate_too_high');
+    if (runtimeSignals.directAnswerMissRate > 0.08) failures.push('runtime_signal_direct_answer_miss_rate_too_high');
+    if (runtimeSignals.avgRepeatRiskScore > 0.5) failures.push('runtime_signal_repeat_risk_too_high');
+  }
+
   if (!mustPass || mustPass.ok !== true) failures.push('must_pass_fixtures_failed');
 
   const candidateWarnings = Array.isArray(candidate.hardGate && candidate.hardGate.warnings)
@@ -172,6 +248,9 @@ function main(argv) {
     candidateOverallScore: Number(candidate.overallScore || 0),
     keyDimensions,
     criticalSlices,
+    allSlices: allSliceChecks,
+    summaryPath,
+    runtimeSignals,
     mustPassSummary: {
       ok: mustPass && mustPass.ok === true,
       failureCount: Number(mustPass && mustPass.failureCount ? mustPass.failureCount : 0),

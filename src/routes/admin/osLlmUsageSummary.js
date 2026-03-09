@@ -437,6 +437,12 @@ function buildConversationQualitySummary(actionRows) {
   let conciseModeAppliedCount = 0;
   let repetitionPreventedCount = 0;
   let defaultCasualCount = 0;
+  let directAnswerAppliedCount = 0;
+  let clarifySuppressedCount = 0;
+  let contextCarryScoreTotal = 0;
+  let contextCarryScoreCount = 0;
+  let repeatRiskScoreTotal = 0;
+  let repeatRiskScoreCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -461,6 +467,8 @@ function buildConversationQualitySummary(actionRows) {
     const pitfallIncluded = row && row.pitfallIncluded === true;
     const conciseModeApplied = row && row.conciseModeApplied === true;
     const repetitionPrevented = row && row.repetitionPrevented === true;
+    const directAnswerApplied = row && row.directAnswerApplied === true;
+    const clarifySuppressed = row && row.clarifySuppressed === true;
 
     naturalnessVersions.set(naturalnessVersion, (naturalnessVersions.get(naturalnessVersion) || 0) + 1);
     domainCounts.set(domainIntent, (domainCounts.get(domainIntent) || 0) + 1);
@@ -485,6 +493,8 @@ function buildConversationQualitySummary(actionRows) {
     if (pitfallIncluded) pitfallIncludedCount += 1;
     if (conciseModeApplied) conciseModeAppliedCount += 1;
     if (repetitionPrevented) repetitionPreventedCount += 1;
+    if (directAnswerApplied) directAnswerAppliedCount += 1;
+    if (clarifySuppressed) clarifySuppressedCount += 1;
     if (routerReason === 'default_casual') defaultCasualCount += 1;
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
     if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
@@ -498,6 +508,14 @@ function buildConversationQualitySummary(actionRows) {
     if (Number.isFinite(Number(row && row.sourceFreshnessScore))) {
       sourceFreshnessScoreTotal += Number(row.sourceFreshnessScore);
       sourceFreshnessScoreCount += 1;
+    }
+    if (Number.isFinite(Number(row && row.contextCarryScore))) {
+      contextCarryScoreTotal += Number(row.contextCarryScore);
+      contextCarryScoreCount += 1;
+    }
+    if (Number.isFinite(Number(row && row.repeatRiskScore))) {
+      repeatRiskScoreTotal += Number(row.repeatRiskScore);
+      repeatRiskScoreCount += 1;
     }
     if (rowContradictionFlags.length > 0) contradictionRowCount += 1;
     rowContradictionFlags.forEach((flag) => {
@@ -553,6 +571,18 @@ function buildConversationQualitySummary(actionRows) {
       : 0,
     repetitionPreventedRate: sampleCount > 0
       ? Math.round((repetitionPreventedCount / sampleCount) * 10000) / 10000
+      : 0,
+    directAnswerAppliedRate: sampleCount > 0
+      ? Math.round((directAnswerAppliedCount / sampleCount) * 10000) / 10000
+      : 0,
+    clarifySuppressedRate: sampleCount > 0
+      ? Math.round((clarifySuppressedCount / sampleCount) * 10000) / 10000
+      : 0,
+    avgContextCarryScore: contextCarryScoreCount > 0
+      ? Math.round((contextCarryScoreTotal / contextCarryScoreCount) * 10000) / 10000
+      : 0,
+    avgRepeatRiskScore: repeatRiskScoreCount > 0
+      ? Math.round((repeatRiskScoreTotal / repeatRiskScoreCount) * 10000) / 10000
       : 0,
     defaultCasualRate: sampleCount > 0
       ? Math.round((defaultCasualCount / sampleCount) * 10000) / 10000
@@ -739,18 +769,24 @@ function buildTopQualityBoards(actionRows, hardFailures) {
     const followupIntent = normalizeReason(row && row.followupIntent);
     const strategy = normalizeReason(row && row.strategy);
     const retrievalQuality = normalizeReason(row && row.retrievalQuality);
+    const directAnswerApplied = row && row.directAnswerApplied === true;
+    const clarifySuppressed = row && row.clarifySuppressed === true;
+    const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : 0;
 
     if (row && row.legacyTemplateHit === true) incrementCount(loopMap, 'legacy_template_hit');
     if (row && row.repetitionPrevented !== true) incrementCount(loopMap, 'repetition_not_prevented');
     if (routerReason === 'default_casual') incrementCount(loopMap, 'router_default_casual');
+    if (!directAnswerApplied && followupIntent !== 'none') incrementCount(loopMap, 'followup_without_direct_answer');
 
     if (domainIntent !== 'general' && conversationMode === 'casual') incrementCount(contextLossMap, 'domain_to_casual_reset');
     if (followupIntent === 'none' && domainIntent !== 'general') incrementCount(contextLossMap, 'missing_followup_intent_on_domain');
     if (strategy === 'casual' && domainIntent !== 'general') incrementCount(contextLossMap, 'casual_strategy_under_domain');
+    if (contextCarryScore < 0.35 && domainIntent !== 'general') incrementCount(contextLossMap, 'low_context_carry_score');
 
     if (row && row.conciseModeApplied !== true) incrementCount(jpServiceMap, 'concise_mode_not_applied');
     if (row && row.followupQuestionIncluded !== true) incrementCount(jpServiceMap, 'followup_question_missing');
     if (row && row.pitfallIncluded !== true) incrementCount(jpServiceMap, 'pitfall_missing');
+    if (!clarifySuppressed && followupIntent !== 'none') incrementCount(jpServiceMap, 'clarify_not_suppressed_for_followup');
 
     if (row && row.retrieveNeeded === true && conversationMode === 'casual') incrementCount(lineFitMap, 'retrieval_used_in_casual');
     if (row && Number.isFinite(Number(row.actionCount)) && Number(row.actionCount) > 3) incrementCount(lineFitMap, 'action_count_over_budget');
@@ -785,6 +821,10 @@ function buildQualityFrameworkSummary(payload) {
   const evidenceCoverage = clamp01((releaseReadiness.metrics && releaseReadiness.metrics.avgEvidenceCoverage) || 0);
   const conciseRate = clamp01(conversation.conciseModeAppliedRate);
   const repetitionPreventedRate = clamp01(conversation.repetitionPreventedRate);
+  const directAnswerRate = clamp01(conversation.directAnswerAppliedRate);
+  const clarifySuppressedRate = clamp01(conversation.clarifySuppressedRate);
+  const contextCarryScore = clamp01(conversation.avgContextCarryScore);
+  const repeatRiskScore = clamp01(conversation.avgRepeatRiskScore);
   const followupRate = clamp01(conversation.followupQuestionIncludedRate);
   const domainConciergeRate = clamp01(conversation.domainIntentConciergeRate);
   const unsupportedClaims = clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount || 0)));
@@ -799,28 +839,28 @@ function buildQualityFrameworkSummary(payload) {
   const dimensionMap = {
     factuality_grounding: clamp01((acceptedRate + (1 - contradictionRate)) / 2),
     source_authority_freshness: clamp01((sourceAuthority + sourceFreshness) / 2),
-    procedural_utility: clamp01((domainConciergeRate + conciseRate) / 2),
-    next_step_clarity: clamp01((conciseRate + followupRate + repetitionPreventedRate) / 3),
-    conversation_continuity: clamp01((1 - defaultCasualRate + domainConciergeRate) / 2),
-    short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate) / 2),
-    clarification_quality: clamp01(1 - Math.max(0, verifyClarifyRate - 0.35)),
+    procedural_utility: clamp01((domainConciergeRate + conciseRate + directAnswerRate) / 3),
+    next_step_clarity: clamp01((conciseRate + followupRate + repetitionPreventedRate + directAnswerRate) / 4),
+    conversation_continuity: clamp01((1 - defaultCasualRate + domainConciergeRate + contextCarryScore + directAnswerRate + clarifySuppressedRate) / 5),
+    short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate + contextCarryScore + directAnswerRate) / 4),
+    clarification_quality: clamp01((1 - Math.max(0, verifyClarifyRate - 0.3) + clarifySuppressedRate + directAnswerRate + contextCarryScore) / 4),
     repetition_loop_avoidance: clamp01((1 - legacyTemplateHitRate + repetitionPreventedRate) / 2),
-    direct_answer_first: clamp01(conciseRate),
+    direct_answer_first: clamp01((directAnswerRate + conciseRate) / 2),
     japanese_naturalness: clamp01(conciseRate),
     japanese_service_quality: clamp01((conciseRate + followupRate + (1 - legacyTemplateHitRate)) / 3),
     keigo_distance: clamp01(conciseRate),
-    empathy: clamp01((followupRate + conciseRate) / 2),
+    empathy: clamp01((followupRate + conciseRate + directAnswerRate + contextCarryScore) / 4),
     cultural_habit_fit: clamp01((followupRate + domainConciergeRate) / 2),
-    line_native_fit: clamp01((conciseRate + (1 - retrieveNeededRate)) / 2),
+    line_native_fit: clamp01((conciseRate + directAnswerRate + (1 - retrieveNeededRate)) / 3),
     action_policy_compliance: clamp01(acceptedRate),
     safety_compliance_privacy: safetyScore,
     memory_integrity: clamp01((domainConciergeRate + (1 - defaultCasualRate)) / 2),
     group_chat_privacy: clamp01(1 - directUrlRate),
     minority_persona_robustness: clamp01((followupRate + unsupportedClaims) / 2),
-    misunderstanding_recovery: clamp01(repetitionPreventedRate),
+    misunderstanding_recovery: clamp01((repetitionPreventedRate + directAnswerRate + (1 - repeatRiskScore) + contextCarryScore) / 4),
     escalation_appropriateness: clamp01((officialOnlyRate + sourceAuthority) / 2),
     operational_reliability: clamp01(acceptedRate),
-    latency_surface_efficiency: clamp01((conciseRate + (1 - retrieveNeededRate)) / 2)
+    latency_surface_efficiency: clamp01((conciseRate + (1 - retrieveNeededRate) + (1 - repeatRiskScore) + directAnswerRate) / 4)
   };
 
   const dimensions = QUALITY_DIMENSIONS.map((dim) => {
@@ -835,13 +875,45 @@ function buildQualityFrameworkSummary(payload) {
       status
     };
   });
+  const passDimensions = dimensions.filter((row) => row.status === 'pass');
+  const warningDimensions = dimensions.filter((row) => row.status === 'warning');
+  const failDimensions = dimensions.filter((row) => row.status === 'fail');
+  const improvedDimensions = passDimensions
+    .slice()
+    .sort((left, right) => Number(right.score || 0) - Number(left.score || 0) || String(left.key).localeCompare(String(right.key), 'ja'))
+    .slice(0, 6)
+    .map((row) => row.key);
+  const regressedDimensions = failDimensions
+    .slice()
+    .sort((left, right) => Number(left.score || 0) - Number(right.score || 0) || String(left.key).localeCompare(String(right.key), 'ja'))
+    .slice(0, 6)
+    .map((row) => row.key);
+  const unmetCategories = dimensions
+    .filter((row) => row.status !== 'pass')
+    .map((row) => row.key);
+  const categoryImprovementRate = dimensions.length > 0
+    ? Math.round((passDimensions.length / dimensions.length) * 10000) / 10000
+    : 0;
+  const categoryRegressionRate = dimensions.length > 0
+    ? Math.round((failDimensions.length / dimensions.length) * 10000) / 10000
+    : 0;
 
   const slices = QUALITY_SLICES.map((slice) => {
+    const freeBlockedRate = Number.isFinite(Number(byPlan.free && byPlan.free.blockedRate))
+      ? Number(byPlan.free.blockedRate)
+      : null;
+    const paidBlockedRate = Number.isFinite(Number(byPlan.pro && byPlan.pro.blockedRate))
+      ? Number(byPlan.pro.blockedRate)
+      : null;
+    const freeAcceptedRate = freeBlockedRate === null ? acceptedRate : clamp01(1 - freeBlockedRate);
+    const paidAcceptedRate = paidBlockedRate === null ? acceptedRate : clamp01(1 - paidBlockedRate);
+    const compatShare = clamp01(Number((data.optimization && data.optimization.compatShareWindow) || 0));
+    const compatQualityPressure = clamp01(1 - (compatShare * 0.8));
     let score = 0;
-    if (slice.sliceKey === 'paid') score = clamp01((Number(byPlan.pro && byPlan.pro.blockedRate ? 1 - Number(byPlan.pro.blockedRate) : acceptedRate) + conciseRate) / 2);
-    else if (slice.sliceKey === 'free') score = clamp01(Number(byPlan.free && byPlan.free.blockedRate ? 1 - Number(byPlan.free.blockedRate) : acceptedRate));
-    else if (slice.sliceKey === 'admin') score = clamp01(acceptedRate);
-    else if (slice.sliceKey === 'compat') score = clamp01(1 - Number((data.optimization && data.optimization.compatShareWindow) || 0));
+    if (slice.sliceKey === 'paid') score = clamp01((paidAcceptedRate + conciseRate + directAnswerRate + contextCarryScore) / 4);
+    else if (slice.sliceKey === 'free') score = clamp01((freeAcceptedRate + conciseRate + directAnswerRate + (1 - defaultCasualRate)) / 4);
+    else if (slice.sliceKey === 'admin') score = clamp01((acceptedRate + conciseRate + directAnswerRate + (1 - legacyTemplateHitRate)) / 4);
+    else if (slice.sliceKey === 'compat') score = clamp01((compatQualityPressure + conciseRate + directAnswerRate + (1 - legacyTemplateHitRate)) / 4);
     else if (slice.sliceKey === 'short_followup') score = clamp01((1 - defaultCasualRate + followupRate) / 2);
     else if (slice.sliceKey === 'domain_continuation') score = clamp01(domainConciergeRate);
     else if (slice.sliceKey === 'group_chat') score = clamp01(1 - directUrlRate);
@@ -929,6 +1001,13 @@ function buildQualityFrameworkSummary(payload) {
     overallScore,
     baselineScore: baselineOverall,
     qualityDelta,
+    categoryImprovementRate,
+    categoryRegressionRate,
+    improvedDimensions,
+    regressedDimensions,
+    unmetCategories,
+    warningCategoryCount: warningDimensions.length,
+    failCategoryCount: failDimensions.length,
     dimensions,
     slices,
     hardGate: {
