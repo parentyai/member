@@ -9,24 +9,29 @@ const COMPAT_ROUTE_ID = 'compat_phaseLLM2_ops_explain';
 function buildCompatQualitySignals(result) {
   const payload = result && typeof result === 'object' ? result : {};
   const llmUsed = payload.llmUsed === true;
+  const explanation = typeof payload.opsExplanation === 'string' ? payload.opsExplanation.trim() : '';
+  const hasDirectAnswer = explanation.length > 0;
   const actionCount = payload.opsTemplate
     && payload.opsTemplate.proposal
     && payload.opsTemplate.proposal.recommendedNextAction
     ? 1
     : 0;
+  const followupQuestionIncluded = /\?\s*$|？\s*$/.test(explanation);
+  const conciseModeApplied = hasDirectAnswer ? explanation.length <= 240 : true;
+  const directAnswerApplied = hasDirectAnswer || actionCount > 0;
   return {
     legacyTemplateHit: false,
-    conciseModeApplied: true,
-    directAnswerApplied: llmUsed,
-    clarifySuppressed: llmUsed,
+    conciseModeApplied,
+    directAnswerApplied,
+    clarifySuppressed: directAnswerApplied,
     repetitionPrevented: true,
-    followupQuestionIncluded: false,
+    followupQuestionIncluded,
     actionCount,
     pitfallIncluded: false,
     domainIntent: 'general',
-    fallbackType: llmUsed ? null : 'compat_ops_blocked',
-    contextCarryScore: llmUsed ? 0.78 : 0.35,
-    repeatRiskScore: llmUsed ? 0.1 : 0.3
+    fallbackType: directAnswerApplied ? null : (llmUsed ? null : 'compat_ops_blocked'),
+    contextCarryScore: directAnswerApplied ? 0.82 : 0.35,
+    repeatRiskScore: directAnswerApplied ? 0.08 : 0.3
   };
 }
 
