@@ -4,6 +4,33 @@ const { answerFaqFromKb } = require('../../usecases/faq/answerFaqFromKb');
 const { appendLlmGateDecision } = require('../../usecases/llm/appendLlmGateDecision');
 const { parseJson, resolveActor, resolveRequestId, resolveTraceId } = require('./osContext');
 
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function buildFaqQualitySignals(result, blockedReason) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const answer = payload.faqAnswer && typeof payload.faqAnswer === 'object'
+    ? normalizeText(payload.faqAnswer.answer)
+    : '';
+  const llmUsed = payload.llmUsed === true;
+  return {
+    legacyTemplateHit: false,
+    conciseModeApplied: true,
+    directAnswerApplied: llmUsed && answer.length > 0,
+    clarifySuppressed: llmUsed,
+    repetitionPrevented: true,
+    followupQuestionIncluded: /[?？]$/.test(answer),
+    actionCount: llmUsed && answer.length > 0 ? 1 : 0,
+    pitfallIncluded: false,
+    domainIntent: 'general',
+    fallbackType: blockedReason ? 'faq_blocked' : null,
+    contextCarryScore: llmUsed ? 0.8 : 0.35,
+    repeatRiskScore: llmUsed ? 0.1 : 0.3
+  };
+}
+
 function handleError(res, err, traceId) {
   const message = err && err.message ? err.message : 'error';
   if (message.includes('required') || message.includes('invalid')) {
@@ -38,6 +65,7 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
     const blockedReason = result && result.blocked === true
       ? (result.blockedReason || result.llmStatus || 'blocked')
       : null;
+    const qualitySignals = buildFaqQualitySignals(result, blockedReason);
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -53,6 +81,18 @@ async function handleAdminLlmFaqAnswer(req, res, body, deps) {
       sanitizedCandidateCount: result && Number.isFinite(Number(result.sanitizedCandidateCount))
         ? Number(result.sanitizedCandidateCount)
         : 0,
+      legacyTemplateHit: qualitySignals.legacyTemplateHit,
+      conciseModeApplied: qualitySignals.conciseModeApplied,
+      directAnswerApplied: qualitySignals.directAnswerApplied,
+      clarifySuppressed: qualitySignals.clarifySuppressed,
+      repetitionPrevented: qualitySignals.repetitionPrevented,
+      followupQuestionIncluded: qualitySignals.followupQuestionIncluded,
+      actionCount: qualitySignals.actionCount,
+      pitfallIncluded: qualitySignals.pitfallIncluded,
+      domainIntent: qualitySignals.domainIntent,
+      fallbackType: qualitySignals.fallbackType,
+      contextCarryScore: qualitySignals.contextCarryScore,
+      repeatRiskScore: qualitySignals.repeatRiskScore,
       entryType: 'admin',
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);

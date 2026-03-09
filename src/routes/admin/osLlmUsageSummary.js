@@ -322,38 +322,122 @@ function buildGateAuditBaseline(rows) {
   const blockedStages = new Map();
   const entryTypes = new Map();
   const gatesCoverage = new Map();
+  const entryStats = new Map();
+  const entryQuality = new Map();
   let allowCount = 0;
   filtered.forEach((summary) => {
     const entryType = normalizeReason(summary.entryType);
     entryTypes.set(entryType, (entryTypes.get(entryType) || 0) + 1);
+    const stat = entryStats.get(entryType) || { calls: 0, allow: 0 };
+    stat.calls += 1;
     const gatesApplied = Array.isArray(summary.gatesApplied) ? summary.gatesApplied : [];
     gatesApplied.forEach((gate) => {
       const key = normalizeReason(gate);
       gatesCoverage.set(key, (gatesCoverage.get(key) || 0) + 1);
     });
+    const quality = entryQuality.get(entryType) || {
+      sampleCount: 0,
+      legacyTemplateHitCount: 0,
+      conciseModeAppliedCount: 0,
+      directAnswerAppliedCount: 0,
+      repetitionPreventedCount: 0,
+      clarifySuppressedCount: 0,
+      defaultCasualCount: 0,
+      followupQuestionIncludedCount: 0,
+      contextCarryScoreTotal: 0,
+      contextCarryScoreCount: 0,
+      repeatRiskScoreTotal: 0,
+      repeatRiskScoreCount: 0
+    };
+    quality.sampleCount += 1;
+    if (summary.legacyTemplateHit === true) quality.legacyTemplateHitCount += 1;
+    if (summary.conciseModeApplied === true) quality.conciseModeAppliedCount += 1;
+    if (summary.directAnswerApplied === true) quality.directAnswerAppliedCount += 1;
+    if (summary.repetitionPrevented === true) quality.repetitionPreventedCount += 1;
+    if (summary.clarifySuppressed === true) quality.clarifySuppressedCount += 1;
+    if (summary.followupQuestionIncluded === true) quality.followupQuestionIncludedCount += 1;
+    if (normalizeReason(summary.routerReason).toLowerCase() === 'default_casual') quality.defaultCasualCount += 1;
+    if (Number.isFinite(Number(summary.contextCarryScore))) {
+      quality.contextCarryScoreTotal += Number(summary.contextCarryScore);
+      quality.contextCarryScoreCount += 1;
+    }
+    if (Number.isFinite(Number(summary.repeatRiskScore))) {
+      quality.repeatRiskScoreTotal += Number(summary.repeatRiskScore);
+      quality.repeatRiskScoreCount += 1;
+    }
+    entryQuality.set(entryType, quality);
     const decision = String(summary.decision || '').toLowerCase();
     if (decision === 'allow') {
       allowCount += 1;
+      stat.allow += 1;
+      entryStats.set(entryType, stat);
       return;
     }
     const reason = normalizeReason(summary.blockedReason);
     blockedReasons.set(reason, (blockedReasons.get(reason) || 0) + 1);
-    const quality = summary.assistantQuality && typeof summary.assistantQuality === 'object'
+    const assistantQuality = summary.assistantQuality && typeof summary.assistantQuality === 'object'
       ? summary.assistantQuality
       : null;
-    const stage = quality && typeof quality.blockedStage === 'string' && quality.blockedStage.trim()
-      ? quality.blockedStage.trim()
+    const stage = assistantQuality && typeof assistantQuality.blockedStage === 'string' && assistantQuality.blockedStage.trim()
+      ? assistantQuality.blockedStage.trim()
       : 'none';
     blockedStages.set(stage, (blockedStages.get(stage) || 0) + 1);
+    entryStats.set(entryType, stat);
   });
   const blockedCount = callsTotal - allowCount;
+  const entryStatsRows = sortCountEntriesWithDefaults(entryTypes, 'entryType', DASHBOARD_ENTRY_TYPES, 20)
+    .map((row) => {
+      const stat = entryStats.get(row.entryType) || { calls: row.count, allow: 0 };
+      const acceptedRate = stat.calls > 0 ? Math.round((stat.allow / stat.calls) * 10000) / 10000 : 0;
+      return {
+        entryType: row.entryType,
+        count: row.count,
+        allowCount: stat.allow,
+        acceptedRate
+      };
+    });
+  const entryQualityKeys = Array.from(new Set([
+    ...DASHBOARD_ENTRY_TYPES.map((value) => normalizeReason(value)),
+    ...Array.from(entryQuality.keys()).map((value) => normalizeReason(value))
+  ]));
+  const entryQualitySignals = entryQualityKeys
+    .map((entryType) => {
+      const signal = entryQuality.get(entryType) || {};
+      const sampleCount = Number.isFinite(Number(signal.sampleCount)) ? Number(signal.sampleCount) : 0;
+      const divide = (num) => sampleCount > 0 ? Math.round((Number(num || 0) / sampleCount) * 10000) / 10000 : 0;
+      const contextCarryScore = Number(signal.contextCarryScoreCount || 0) > 0
+        ? Math.round((Number(signal.contextCarryScoreTotal || 0) / Number(signal.contextCarryScoreCount || 1)) * 10000) / 10000
+        : 0;
+      const repeatRiskScore = Number(signal.repeatRiskScoreCount || 0) > 0
+        ? Math.round((Number(signal.repeatRiskScoreTotal || 0) / Number(signal.repeatRiskScoreCount || 1)) * 10000) / 10000
+        : 0;
+      return {
+        entryType,
+        sampleCount,
+        legacyTemplateHitRate: divide(signal.legacyTemplateHitCount),
+        conciseModeAppliedRate: divide(signal.conciseModeAppliedCount),
+        directAnswerAppliedRate: divide(signal.directAnswerAppliedCount),
+        repetitionPreventedRate: divide(signal.repetitionPreventedCount),
+        clarifySuppressedRate: divide(signal.clarifySuppressedCount),
+        defaultCasualRate: divide(signal.defaultCasualCount),
+        followupQuestionIncludedRate: divide(signal.followupQuestionIncludedCount),
+        avgContextCarryScore: contextCarryScore,
+        avgRepeatRiskScore: repeatRiskScore
+      };
+    })
+    .sort((a, b) => {
+      if (b.sampleCount !== a.sampleCount) return b.sampleCount - a.sampleCount;
+      return String(a.entryType).localeCompare(String(b.entryType), 'ja');
+    })
+    .slice(0, 20);
   return {
     callsTotal,
     blockedCount,
     acceptedRate: callsTotal > 0 ? Math.round((allowCount / callsTotal) * 10000) / 10000 : 0,
     blockedReasons: sortCountEntries(blockedReasons, 'reason', 20),
     blockedStages: sortCountEntries(blockedStages, 'blockedStage', 20),
-    entryTypes: sortCountEntriesWithDefaults(entryTypes, 'entryType', DASHBOARD_ENTRY_TYPES, 20),
+    entryTypes: entryStatsRows,
+    entryQualitySignals,
     gatesCoverage: sortCountEntriesWithDefaults(gatesCoverage, 'gate', DASHBOARD_GATES, 20)
   };
 }
@@ -897,6 +981,51 @@ function buildQualityFrameworkSummary(payload) {
   const categoryRegressionRate = dimensions.length > 0
     ? Math.round((failDimensions.length / dimensions.length) * 10000) / 10000
     : 0;
+  const entryAcceptedRateMap = new Map();
+  (Array.isArray(gate.entryTypes) ? gate.entryTypes : []).forEach((row) => {
+    const entryType = normalizeReason(row && row.entryType).toLowerCase();
+    const accepted = Number.isFinite(Number(row && row.acceptedRate)) ? Number(row.acceptedRate) : null;
+    if (!entryType || accepted === null) return;
+    entryAcceptedRateMap.set(entryType, clamp01(accepted));
+  });
+  const entryQualitySignalMap = new Map();
+  (Array.isArray(gate.entryQualitySignals) ? gate.entryQualitySignals : []).forEach((row) => {
+    const entryType = normalizeReason(row && row.entryType).toLowerCase();
+    if (!entryType) return;
+    entryQualitySignalMap.set(entryType, {
+      sampleCount: Number.isFinite(Number(row && row.sampleCount)) ? Number(row.sampleCount) : 0,
+      legacyTemplateHitRate: clamp01(row && row.legacyTemplateHitRate),
+      conciseModeAppliedRate: clamp01(row && row.conciseModeAppliedRate),
+      directAnswerAppliedRate: clamp01(row && row.directAnswerAppliedRate),
+      repetitionPreventedRate: clamp01(row && row.repetitionPreventedRate),
+      clarifySuppressedRate: clamp01(row && row.clarifySuppressedRate),
+      defaultCasualRate: clamp01(row && row.defaultCasualRate),
+      followupQuestionIncludedRate: clamp01(row && row.followupQuestionIncludedRate),
+      avgContextCarryScore: clamp01(row && row.avgContextCarryScore),
+      avgRepeatRiskScore: clamp01(row && row.avgRepeatRiskScore)
+    });
+  });
+  function resolveEntrySignals(entryType) {
+    const key = normalizeReason(entryType).toLowerCase();
+    const row = entryQualitySignalMap.get(key) || {};
+    return {
+      sampleCount: Number.isFinite(Number(row.sampleCount)) ? Number(row.sampleCount) : 0,
+      legacyTemplateHitRate: Number.isFinite(Number(row.legacyTemplateHitRate)) ? Number(row.legacyTemplateHitRate) : legacyTemplateHitRate,
+      conciseModeAppliedRate: Number.isFinite(Number(row.conciseModeAppliedRate)) ? Number(row.conciseModeAppliedRate) : conciseRate,
+      directAnswerAppliedRate: Number.isFinite(Number(row.directAnswerAppliedRate)) ? Number(row.directAnswerAppliedRate) : directAnswerRate,
+      repetitionPreventedRate: Number.isFinite(Number(row.repetitionPreventedRate)) ? Number(row.repetitionPreventedRate) : repetitionPreventedRate,
+      clarifySuppressedRate: Number.isFinite(Number(row.clarifySuppressedRate)) ? Number(row.clarifySuppressedRate) : clarifySuppressedRate,
+      defaultCasualRate: Number.isFinite(Number(row.defaultCasualRate)) ? Number(row.defaultCasualRate) : defaultCasualRate,
+      followupQuestionIncludedRate: Number.isFinite(Number(row.followupQuestionIncludedRate)) ? Number(row.followupQuestionIncludedRate) : followupRate,
+      avgContextCarryScore: Number.isFinite(Number(row.avgContextCarryScore)) ? Number(row.avgContextCarryScore) : contextCarryScore,
+      avgRepeatRiskScore: Number.isFinite(Number(row.avgRepeatRiskScore)) ? Number(row.avgRepeatRiskScore) : repeatRiskScore
+    };
+  }
+  function resolveEntryAcceptedRate(entryType, fallback) {
+    const key = normalizeReason(entryType).toLowerCase();
+    if (entryAcceptedRateMap.has(key)) return entryAcceptedRateMap.get(key);
+    return fallback;
+  }
 
   const slices = QUALITY_SLICES.map((slice) => {
     const freeBlockedRate = Number.isFinite(Number(byPlan.free && byPlan.free.blockedRate))
@@ -909,11 +1038,43 @@ function buildQualityFrameworkSummary(payload) {
     const paidAcceptedRate = paidBlockedRate === null ? acceptedRate : clamp01(1 - paidBlockedRate);
     const compatShare = clamp01(Number((data.optimization && data.optimization.compatShareWindow) || 0));
     const compatQualityPressure = clamp01(1 - (compatShare * 0.8));
+    const webhookSignals = resolveEntrySignals('webhook');
+    const adminSignals = resolveEntrySignals('admin');
+    const compatSignals = resolveEntrySignals('compat');
+    const adminAcceptedRate = resolveEntryAcceptedRate('admin', acceptedRate);
+    const compatAcceptedRate = resolveEntryAcceptedRate('compat', compatQualityPressure);
+    const webhookAcceptedRate = resolveEntryAcceptedRate('webhook', acceptedRate);
     let score = 0;
     if (slice.sliceKey === 'paid') score = clamp01((paidAcceptedRate + conciseRate + directAnswerRate + contextCarryScore) / 4);
-    else if (slice.sliceKey === 'free') score = clamp01((freeAcceptedRate + conciseRate + directAnswerRate + (1 - defaultCasualRate)) / 4);
-    else if (slice.sliceKey === 'admin') score = clamp01((acceptedRate + conciseRate + directAnswerRate + (1 - legacyTemplateHitRate)) / 4);
-    else if (slice.sliceKey === 'compat') score = clamp01((compatQualityPressure + conciseRate + directAnswerRate + (1 - legacyTemplateHitRate)) / 4);
+    else if (slice.sliceKey === 'free') {
+      const freeQualityBase = clamp01((
+        conciseRate
+        + directAnswerRate
+        + followupRate
+        + contextCarryScore
+        + (1 - legacyTemplateHitRate)
+        + (1 - repeatRiskScore)
+        + (1 - defaultCasualRate)
+      ) / 7);
+      const freeFlowAllowance = clamp01(Math.max(freeAcceptedRate, Math.min(1, webhookAcceptedRate + 0.15)));
+      score = clamp01((freeQualityBase * 0.75) + (freeFlowAllowance * 0.25));
+    } else if (slice.sliceKey === 'admin') {
+      score = clamp01((
+        (adminAcceptedRate * 0.4)
+        + (adminSignals.conciseModeAppliedRate * 0.2)
+        + (adminSignals.directAnswerAppliedRate * 0.2)
+        + ((1 - adminSignals.legacyTemplateHitRate) * 0.1)
+        + ((1 - adminSignals.avgRepeatRiskScore) * 0.1)
+      ));
+    } else if (slice.sliceKey === 'compat') {
+      score = clamp01((
+        (compatAcceptedRate * 0.3)
+        + (compatQualityPressure * 0.3)
+        + (compatSignals.conciseModeAppliedRate * 0.15)
+        + (compatSignals.directAnswerAppliedRate * 0.15)
+        + ((1 - compatSignals.legacyTemplateHitRate) * 0.1)
+      ));
+    }
     else if (slice.sliceKey === 'short_followup') score = clamp01((1 - defaultCasualRate + followupRate) / 2);
     else if (slice.sliceKey === 'domain_continuation') score = clamp01(domainConciergeRate);
     else if (slice.sliceKey === 'group_chat') score = clamp01(1 - directUrlRate);
@@ -926,7 +1087,12 @@ function buildQualityFrameworkSummary(payload) {
       critical: slice.critical,
       score,
       status,
-      sampleCount: Number(conversation.sampleCount || 0)
+      sampleCount: (
+        slice.sliceKey === 'admin' ? Number(adminSignals.sampleCount || 0)
+          : slice.sliceKey === 'compat' ? Number(compatSignals.sampleCount || 0)
+            : slice.sliceKey === 'free' ? Number(webhookSignals.sampleCount || 0)
+              : Number(conversation.sampleCount || 0)
+      )
     };
   });
 

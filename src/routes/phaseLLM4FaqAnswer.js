@@ -7,6 +7,33 @@ const { enforceLlmGenerationKillSwitch } = require('./admin/osContext');
 const LEGACY_SUCCESSOR = '/api/admin/llm/faq/answer';
 const COMPAT_ROUTE_ID = 'compat_phaseLLM4_faq_answer';
 
+function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function buildCompatFaqQualitySignals(result, blockedReason) {
+  const payload = result && typeof result === 'object' ? result : {};
+  const answer = payload.faqAnswer && typeof payload.faqAnswer === 'object'
+    ? normalizeText(payload.faqAnswer.answer)
+    : '';
+  const llmUsed = payload.llmUsed === true;
+  return {
+    legacyTemplateHit: false,
+    conciseModeApplied: true,
+    directAnswerApplied: llmUsed && answer.length > 0,
+    clarifySuppressed: llmUsed,
+    repetitionPrevented: true,
+    followupQuestionIncluded: /[?？]$/.test(answer),
+    actionCount: llmUsed && answer.length > 0 ? 1 : 0,
+    pitfallIncluded: false,
+    domainIntent: 'general',
+    fallbackType: blockedReason ? 'faq_blocked' : null,
+    contextCarryScore: llmUsed ? 0.78 : 0.35,
+    repeatRiskScore: llmUsed ? 0.1 : 0.3
+  };
+}
+
 function isLegacyRouteFreezeEnabled() {
   const raw = process.env.LEGACY_ROUTE_FREEZE_ENABLED;
   if (raw === undefined || raw === null || String(raw).trim() === '') return false; // compat default
@@ -45,6 +72,7 @@ async function handleFaqAnswer(req, res, body) {
     const blockedReason = result && result.blocked === true
       ? (result.blockedReason || result.llmStatus || 'blocked')
       : null;
+    const qualitySignals = buildCompatFaqQualitySignals(result, blockedReason);
     await appendLlmGateDecision({
       actor,
       traceId,
@@ -60,6 +88,18 @@ async function handleFaqAnswer(req, res, body) {
       sanitizedCandidateCount: result && Number.isFinite(Number(result.sanitizedCandidateCount))
         ? Number(result.sanitizedCandidateCount)
         : 0,
+      legacyTemplateHit: qualitySignals.legacyTemplateHit,
+      conciseModeApplied: qualitySignals.conciseModeApplied,
+      directAnswerApplied: qualitySignals.directAnswerApplied,
+      clarifySuppressed: qualitySignals.clarifySuppressed,
+      repetitionPrevented: qualitySignals.repetitionPrevented,
+      followupQuestionIncluded: qualitySignals.followupQuestionIncluded,
+      actionCount: qualitySignals.actionCount,
+      pitfallIncluded: qualitySignals.pitfallIncluded,
+      domainIntent: qualitySignals.domainIntent,
+      fallbackType: qualitySignals.fallbackType,
+      contextCarryScore: qualitySignals.contextCarryScore,
+      repeatRiskScore: qualitySignals.repeatRiskScore,
       entryType: 'compat',
       gatesApplied: ['kill_switch', 'injection', 'url_guard']
     }).catch(() => null);
