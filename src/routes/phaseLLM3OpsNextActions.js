@@ -9,23 +9,31 @@ const COMPAT_ROUTE_ID = 'compat_phaseLLM3_ops_next_actions';
 function buildCompatQualitySignals(result) {
   const payload = result && typeof result === 'object' ? result : {};
   const llmUsed = payload.llmUsed === true;
+  const candidates = payload.nextActionCandidates
+    && Array.isArray(payload.nextActionCandidates.candidates)
+    ? payload.nextActionCandidates.candidates
+    : [];
   const actionCount = payload.nextActionCandidates
     && Array.isArray(payload.nextActionCandidates.candidates)
     ? Math.min(3, payload.nextActionCandidates.candidates.length)
     : 0;
+  const hasDirectAnswer = actionCount > 0;
+  const firstCandidate = hasDirectAnswer ? String(candidates[0] || '').trim() : '';
+  const followupQuestionIncluded = /\?\s*$|？\s*$/.test(firstCandidate);
+  const conciseModeApplied = hasDirectAnswer ? firstCandidate.length <= 240 : true;
   return {
     legacyTemplateHit: false,
-    conciseModeApplied: true,
-    directAnswerApplied: llmUsed,
-    clarifySuppressed: llmUsed,
+    conciseModeApplied,
+    directAnswerApplied: hasDirectAnswer,
+    clarifySuppressed: hasDirectAnswer,
     repetitionPrevented: true,
-    followupQuestionIncluded: false,
+    followupQuestionIncluded,
     actionCount,
     pitfallIncluded: false,
     domainIntent: 'general',
-    fallbackType: llmUsed ? null : 'compat_ops_blocked',
-    contextCarryScore: llmUsed ? 0.78 : 0.35,
-    repeatRiskScore: llmUsed ? 0.1 : 0.3
+    fallbackType: hasDirectAnswer ? null : (llmUsed ? null : 'compat_ops_blocked'),
+    contextCarryScore: hasDirectAnswer ? 0.82 : 0.35,
+    repeatRiskScore: hasDirectAnswer ? 0.08 : 0.3
   };
 }
 

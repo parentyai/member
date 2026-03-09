@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T19:27:35-04:00",
-  "gitCommit": "b6fcf179e165238e8b2d99a379a1a55dfe7dc9d3",
-  "branch": "codex/slice-uplift-r760",
-  "sourceDigest": "50d75c2ec454d046b7ad1b3ff643dfad0bb245c85345470e0a82bce79cce3aab",
+  "generatedAt": "2026-03-09T19:46:32-04:00",
+  "gitCommit": "a42a8afb25241a17db205d47eb2c7fc28f955641",
+  "branch": "codex/slice-pass-r761",
+  "sourceDigest": "ceb3481ef1a747544bd4a58cd96134ec2d780d74fb836c386bca6261652dfc8c",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

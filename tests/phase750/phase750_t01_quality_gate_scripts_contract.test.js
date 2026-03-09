@@ -11,9 +11,11 @@ const ROOT = path.resolve(__dirname, '..', '..');
 test('phase750: package scripts include quality framework gate and catchup gate wiring', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   assert.equal(typeof pkg.scripts['llm:quality:gate'], 'string');
+  assert.match(pkg.scripts['llm:quality:gate'], /LLM_QUALITY_REQUIRE_ALL_SLICES_PASS=true/);
   assert.equal(typeof pkg.scripts['llm:quality:baseline'], 'string');
   assert.equal(typeof pkg.scripts['llm:quality:candidate'], 'string');
   assert.equal(typeof pkg.scripts['llm:quality:diff'], 'string');
+  assert.match(pkg.scripts['llm:quality:release-policy'], /LLM_QUALITY_REQUIRE_ALL_SLICES_PASS=true/);
   assert.match(pkg.scripts['catchup:gate:pr'], /llm:quality:gate/);
 });
 

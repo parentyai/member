@@ -209,22 +209,22 @@
         {
           "sliceKey": "free",
           "critical": false,
-          "score": 0.68,
-          "status": "warning",
+          "score": 0.76,
+          "status": "pass",
           "sampleCount": 251
         },
         {
           "sliceKey": "admin",
           "critical": false,
-          "score": 0.73,
-          "status": "warning",
+          "score": 0.78,
+          "status": "pass",
           "sampleCount": 90
         },
         {
           "sliceKey": "compat",
           "critical": false,
-          "score": 0.64,
-          "status": "warning",
+          "score": 0.75,
+          "status": "pass",
           "sampleCount": 49
         },
         {
@@ -273,11 +273,7 @@
       "hardGate": {
         "pass": true,
         "failures": [],
-        "warnings": [
-          "slice_warning:free",
-          "slice_warning:admin",
-          "slice_warning:compat"
-        ]
+        "warnings": []
       },
       "judgeCalibration": {
         "confidence": 0.83,

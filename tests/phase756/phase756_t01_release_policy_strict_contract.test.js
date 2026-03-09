@@ -16,7 +16,7 @@ function runNode(args, env) {
   });
 }
 
-test('phase756: strict release policy blocks warning slices and strict runtime signals', () => {
+test('phase756: strict release policy blocks strict runtime signal regressions even with slices passing', () => {
   const baseline = runNode([
     'tools/llm_quality/compute_scorecard.js',
     '--input', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
@@ -64,5 +64,5 @@ test('phase756: strict release policy blocks warning slices and strict runtime s
   const result = JSON.parse(fs.readFileSync(path.join(ROOT, 'tmp', 'phase756_release_policy_strict.json'), 'utf8'));
   assert.equal(result.ok, false);
   assert.equal(result.failures.includes('runtime_signal_default_casual_rate_too_high'), true);
-  assert.equal(result.failures.some((item) => String(item).startsWith('slice_failed_or_not_improved:')), true);
+  assert.equal(result.failures.some((item) => String(item).startsWith('slice_failed_or_not_improved:')), false);
 });

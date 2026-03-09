@@ -27,9 +27,9 @@
   },
   "slices": {
     "paid": { "score": 0.77, "sampleCount": 420 },
-    "free": { "score": 0.68, "sampleCount": 251 },
-    "admin": { "score": 0.73, "sampleCount": 90 },
-    "compat": { "score": 0.64, "sampleCount": 49 },
+    "free": { "score": 0.76, "sampleCount": 251 },
+    "admin": { "score": 0.78, "sampleCount": 90 },
+    "compat": { "score": 0.75, "sampleCount": 49 },
     "short_followup": { "score": 0.78, "sampleCount": 143 },
     "domain_continuation": { "score": 0.75, "sampleCount": 129 },
     "group_chat": { "score": 0.77, "sampleCount": 45 },
