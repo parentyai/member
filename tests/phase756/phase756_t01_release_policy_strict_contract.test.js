@@ -125,3 +125,59 @@ test('phase756: strict release policy fails when extended runtime conversation s
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('retrieveNeededRate'), true);
   assert.equal(result.runtimeSignalCoverage.requiredKeys.includes('avgActionCount'), true);
 });
+
+test('phase756: strict release policy enforces compat governance threshold', () => {
+  const baseline = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--output', 'tmp/phase756_baseline_scorecard_compat_governance.json'
+  ]);
+  assert.equal(baseline.status, 0, baseline.stderr || baseline.stdout);
+
+  const candidate = runNode([
+    'tools/llm_quality/compute_scorecard.js',
+    '--input', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_candidate_scorecard_compat_governance.json'
+  ]);
+  assert.equal(candidate.status, 0, candidate.stderr || candidate.stdout);
+
+  const mustPass = runNode([
+    'tools/llm_quality/run_must_pass_fixtures.js',
+    '--baseline', 'tools/llm_quality/fixtures/baseline_metrics.v1.json',
+    '--candidate', 'tools/llm_quality/fixtures/candidate_metrics.v1.json',
+    '--output', 'tmp/phase756_must_pass_compat_governance.json'
+  ]);
+  assert.equal(mustPass.status, 0, mustPass.stderr || mustPass.stdout);
+
+  const summarySeed = JSON.parse(fs.readFileSync(path.join(ROOT, 'benchmarks/frozen/v1/runtime_summary_snapshot.v1.json'), 'utf8'));
+  summarySeed.summary = summarySeed.summary || {};
+  summarySeed.summary.optimization = Object.assign({}, summarySeed.summary.optimization, {
+    compatShareWindow: 0.21
+  });
+  summarySeed.runtimeSummarySource = 'seeded_from_frozen_runtime_snapshot';
+  fs.writeFileSync(
+    path.join(ROOT, 'tmp', 'phase756_summary_compat_governance.json'),
+    `${JSON.stringify(summarySeed, null, 2)}\n`
+  );
+
+  const strict = runNode([
+    'tools/llm_quality/enforce_release_policy.js',
+    '--baseline', 'tmp/phase756_baseline_scorecard_compat_governance.json',
+    '--candidate', 'tmp/phase756_candidate_scorecard_compat_governance.json',
+    '--mustPass', 'tmp/phase756_must_pass_compat_governance.json',
+    '--summary', 'tmp/phase756_summary_compat_governance.json',
+    '--requireAllSlicesPass', 'true',
+    '--requireStrictRuntimeSignals', 'true',
+    '--requireCompatGovernance', 'true',
+    '--maxCompatShare', '0.15',
+    '--output', 'tmp/phase756_release_policy_compat_governance.json'
+  ]);
+  assert.notEqual(strict.status, 0, strict.stderr || strict.stdout);
+  const result = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'tmp', 'phase756_release_policy_compat_governance.json'), 'utf8')
+  );
+  assert.equal(result.ok, false);
+  assert.equal(result.compatGovernance.required, true);
+  assert.equal(result.compatGovernance.compatShareWindow, 0.21);
+  assert.equal(result.failures.includes('compat_share_window_exceeded'), true);
+});

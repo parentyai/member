@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T14:44:52-04:00",
-  "gitCommit": "b8d0a2db04e0040176dc508a0607fcc392a9890b",
-  "branch": "codex/data-c02-envelope-enforce-r794",
-  "sourceDigest": "45fad103ffc34381b1a8dea0f6223b93d9f339b2852c9b6550a710b6131b6e65",
+  "generatedAt": "2026-03-10T15:28:40-04:00",
+  "gitCommit": "5c8839be82387406dc5022fd5527c791c2c235eb",
+  "branch": "main",
+  "sourceDigest": "2fd6a5fac3043d3f4e21a8fb98750d7b2459c506ccdb736ece853e567c308593",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

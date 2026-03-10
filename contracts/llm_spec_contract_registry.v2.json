@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310-yaml-corefacts-r791",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310-runtimefirst-compatgovernance",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -184,6 +184,36 @@
         "/Volumes/Arumamihs/Member/src/usecases/llm/appendLlmGateDecision.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1"
       ]
+    },
+    {
+      "requirementId": "V2-C-11",
+      "sourceSpec": "master_spec_v2",
+      "summary": "runtime-first quality gate must reject fixture-primary fallback in strict mode",
+      "status": "aligned",
+      "severity": "high",
+      "blastRadius": "merge_gate_reliability",
+      "recommendedAction": "enforce runtime summary provenance and strict frozen-runtime snapshot fallback only in gate:strict",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/tools/llm_quality/prepare_runtime_summary.js:1",
+        "/Volumes/Arumamihs/Member/tools/llm_quality/run_quality_gate.js:1",
+        "/Volumes/Arumamihs/Member/package.json:110",
+        "/Volumes/Arumamihs/Member/benchmarks/frozen/v1/runtime_summary_snapshot.v1.json:1"
+      ]
+    },
+    {
+      "requirementId": "V2-C-12",
+      "sourceSpec": "master_spec_v2",
+      "summary": "compat governance must be a strict release blocker when compat share exceeds threshold",
+      "status": "aligned",
+      "severity": "high",
+      "blastRadius": "ops_governance",
+      "recommendedAction": "require compat governance in strict quality gate and strict release policy with max compatShareWindow 0.15",
+      "evidence": [
+        "/Volumes/Arumamihs/Member/tools/llm_quality/run_quality_gate.js:1",
+        "/Volumes/Arumamihs/Member/tools/llm_quality/enforce_release_policy.js:1",
+        "/Volumes/Arumamihs/Member/package.json:110",
+        "/Volumes/Arumamihs/Member/src/routes/admin/osLlmUsageSummary.js:497"
+      ]
     }
   ],
   "conflicts": [
@@ -192,12 +222,6 @@
       "severity": "critical",
       "blocking": true,
       "summary": "Canonical Core RDB required by spec vs Firestore-centric runtime"
-    },
-    {
-      "conflictId": "CF-08",
-      "severity": "high",
-      "blocking": true,
-      "summary": "Runtime-first quality requirement vs fixture-primary fallback"
     }
   ]
 }

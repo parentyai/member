@@ -8,6 +8,7 @@ const { spawnSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SEED_PATH = path.join(ROOT, 'tools', 'llm_quality', 'fixtures', 'usage_summary_candidate.v1.json');
+const FROZEN_RUNTIME_SEED_PATH = path.join(ROOT, 'benchmarks', 'frozen', 'v1', 'runtime_summary_snapshot.v1.json');
 
 test('phase755: runtime summary prepare seeds output when missing', () => {
   const outPath = path.join(ROOT, 'tmp', 'phase755_prepared_runtime_summary.json');
@@ -117,4 +118,44 @@ test('phase755: runtime summary prepare supports forced refresh', () => {
   assert.equal(output.mode, 'forced_refresh_from_seed');
   const after = JSON.parse(fs.readFileSync(outPath, 'utf8'));
   assert.equal(after.runtimeSummarySource, 'forced_refresh_from_seed');
+});
+
+test('phase755: strict runtime summary prepare rejects fixture seed', () => {
+  const outPath = path.join(ROOT, 'tmp', 'phase755_strict_reject_fixture_seed.json');
+  try { fs.unlinkSync(outPath); } catch (_) {}
+
+  const run = spawnSync('node', [
+    'tools/llm_quality/prepare_runtime_summary.js',
+    '--strict-runtime', 'true',
+    '--output', 'tmp/phase755_strict_reject_fixture_seed.json',
+    '--seed', 'tools/llm_quality/fixtures/usage_summary_candidate.v1.json'
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+
+  assert.notEqual(run.status, 0, run.stderr || run.stdout);
+  assert.match(String(run.stderr || ''), /strict_runtime_requires_frozen_runtime_snapshot_seed/);
+});
+
+test('phase755: strict runtime summary prepare accepts frozen runtime snapshot seed', () => {
+  const outPath = path.join(ROOT, 'tmp', 'phase755_strict_frozen_seed.json');
+  try { fs.unlinkSync(outPath); } catch (_) {}
+
+  const run = spawnSync('node', [
+    'tools/llm_quality/prepare_runtime_summary.js',
+    '--strict-runtime', 'true',
+    '--output', 'tmp/phase755_strict_frozen_seed.json',
+    '--seed', 'benchmarks/frozen/v1/runtime_summary_snapshot.v1.json'
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  const payload = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  assert.equal(typeof payload.summary, 'object');
+  assert.equal(payload.runtimeSummarySource, 'seeded_from_frozen_runtime_snapshot');
+  const frozenSeed = JSON.parse(fs.readFileSync(FROZEN_RUNTIME_SEED_PATH, 'utf8'));
+  assert.equal(frozenSeed.runtimeSummarySource, 'frozen_runtime_snapshot');
 });
