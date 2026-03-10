@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:46:35-04:00",
-  "gitCommit": "d06cf6a6aefea182f93ab648bf3c17deb3e80a9f",
-  "branch": "main",
-  "sourceDigest": "32ee80f2048b770ff90e60c7e230184b21dd1f2110e67620533a8a012d4a9f78",
+  "generatedAt": "2026-03-09T23:54:09-04:00",
+  "gitCommit": "1ddb49c70556ccf537f24f108a1c161971f2d22d",
+  "branch": "codex/phase771-seed-runtime-signal-coverage",
+  "sourceDigest": "8b5f68176f83030ceb85fdefe1f1d73e71d997f8ad20397fdd0d622c6dc1d39d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

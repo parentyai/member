@@ -303,6 +303,18 @@
       },
       "generatedAt": "2026-03-09T16:58:21.329Z",
       "source": "tools/llm_quality/fixtures/candidate_metrics.v1.json"
+    },
+    "conversationQuality": {
+      "sampleCount": 420,
+      "legacyTemplateHitRate": 0.003,
+      "defaultCasualRate": 0.012,
+      "followupQuestionIncludedRate": 0.84,
+      "conciseModeAppliedRate": 0.9,
+      "retrieveNeededRate": 0.2,
+      "avgActionCount": 1.7,
+      "directAnswerAppliedRate": 0.93,
+      "avgContextCarryScore": 0.82,
+      "avgRepeatRiskScore": 0.09
     }
   }
 }
