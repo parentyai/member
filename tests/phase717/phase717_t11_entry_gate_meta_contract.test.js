@@ -62,6 +62,10 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
     domainIntent: 'school',
     fallbackType: 'none',
     interventionSuppressedBy: 'cooldown',
+    responseContractConformant: true,
+    responseContractErrorCount: 0,
+    responseContractErrors: [],
+    responseContractFallbackApplied: false,
     unknownField: 'drop_me'
   });
   assert.equal(sanitized.lineUserId, 'U1');
@@ -100,6 +104,10 @@ test('phase717: llm gate writer payloadSummary uses allowlist and drops unknown 
   assert.equal(sanitized.domainIntent, 'school');
   assert.equal(sanitized.fallbackType, 'none');
   assert.equal(sanitized.interventionSuppressedBy, 'cooldown');
+  assert.equal(sanitized.responseContractConformant, true);
+  assert.equal(sanitized.responseContractErrorCount, 0);
+  assert.deepEqual(sanitized.responseContractErrors, []);
+  assert.equal(sanitized.responseContractFallbackApplied, false);
   assert.equal(Object.prototype.hasOwnProperty.call(sanitized, 'unknownField'), false);
 });
 

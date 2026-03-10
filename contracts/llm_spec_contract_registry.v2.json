@@ -80,16 +80,17 @@
       "requirementId": "V2-C-06",
       "sourceSpec": "master_spec_v2",
       "summary": "Memory Fabric split (task/session/profile/compliance)",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "privacy_personalization",
-      "recommendedAction": "promote memory_fabric read path and deprecate legacy snapshot dependency",
+      "recommendedAction": "keep memory_fabric read path as primary and keep legacy snapshot as fallback-only compatibility",
       "evidence": [
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/taskMemoryRepo.js:1",
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/sessionMemoryRepo.js:1",
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/profileMemoryRepo.js:1",
         "/Volumes/Arumamihs/Member/src/v1/memory_fabric/complianceMemoryRepo.js:1",
         "/Volumes/Arumamihs/Member/src/usecases/context/buildUserContextSnapshot.js:1",
+        "/Volumes/Arumamihs/Member/src/usecases/context/getUserContextSnapshot.js:1",
         "/Volumes/Arumamihs/Member/src/repos/firestore/userContextSnapshotsRepo.js:1"
       ]
     },
@@ -165,12 +166,16 @@
       "requirementId": "YAML-C-03",
       "sourceSpec": "parent_contract_yaml",
       "summary": "response_contract required fields",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "api_contract",
-      "recommendedAction": "response contract conformance checker",
+      "recommendedAction": "enforce response contract conformance checks and persist telemetry on runtime reply paths",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/v1/semantic/semanticResponseObject.js:1"
+        "/Volumes/Arumamihs/Member/src/v1/semantic/semanticResponseObject.js:1",
+        "/Volumes/Arumamihs/Member/src/v1/semantic/responseContractConformance.js:1",
+        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:1100",
+        "/Volumes/Arumamihs/Member/src/usecases/llm/appendLlmGateDecision.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1"
       ]
     }
   ],

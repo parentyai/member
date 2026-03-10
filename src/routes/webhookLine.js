@@ -73,6 +73,7 @@ const { sanitizePaidMainReply, containsLegacyTemplateTerms } = require('../domai
 const { resolveFreeContextualFollowup } = require('../domain/llm/conversation/freeContextualFollowup');
 const { handleJourneyLineCommand } = require('../usecases/journey/handleJourneyLineCommand');
 const { handleJourneyPostback } = require('../usecases/journey/handleJourneyPostback');
+const { evaluateResponseContractConformance } = require('../v1/semantic/responseContractConformance');
 const { InMemoryWebhookDedupeStore } = require('../v1/channel_edge/line/dedupeStore');
 const { filterWebhookEventsAsync } = require('../v1/channel_edge/line/receiver');
 const { classifyDispatchMode } = require('../v1/channel_edge/line/dispatcher');
@@ -1149,6 +1150,17 @@ async function appendLlmGateDecisionBestEffort(data) {
     unsupportedClaimCount: payload.unsupportedClaimCount,
     contradictionDetected: payload.contradictionDetected === true
   });
+  const responseContractConformance = evaluateResponseContractConformance({
+    replyText: payload.replyText || payload.finalReplyText || '',
+    domainIntent: normalizeDomainIntent(payload.domainIntent || qualityMeta.domainIntent || 'general'),
+    conversationMode: typeof payload.conversationMode === 'string'
+      ? payload.conversationMode
+      : null,
+    nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+    followupQuestion: typeof payload.committedFollowupQuestion === 'string'
+      ? payload.committedFollowupQuestion
+      : null
+  });
   try {
     await appendLlmGateDecision({
       actor: 'line_webhook',
@@ -1298,6 +1310,14 @@ async function appendLlmGateDecisionBestEffort(data) {
         interventionSuppressedBy: typeof payload.interventionSuppressedBy === 'string' && payload.interventionSuppressedBy.trim()
           ? payload.interventionSuppressedBy.trim().toLowerCase()
           : (qualityMeta.interventionSuppressedBy || null),
+        responseContractConformant: responseContractConformance.conformant === true,
+        responseContractErrorCount: Number.isFinite(Number(responseContractConformance.errorCount))
+          ? Number(responseContractConformance.errorCount)
+          : 0,
+        responseContractErrors: Array.isArray(responseContractConformance.errors)
+          ? responseContractConformance.errors
+          : [],
+        responseContractFallbackApplied: responseContractConformance.fallbackApplied === true,
         entryType: 'webhook',
         gatesApplied: ['kill_switch', 'injection', 'url_guard']
       }
@@ -1400,6 +1420,17 @@ async function appendLlmActionLogBestEffort(data) {
     contradictionFlags: Array.isArray(payload.contradictionFlags) ? payload.contradictionFlags : [],
     unsupportedClaimCount: payload.unsupportedClaimCount,
     contradictionDetected: payload.contradictionDetected === true
+  });
+  const responseContractConformance = evaluateResponseContractConformance({
+    replyText: payload.replyText || payload.finalReplyText || '',
+    domainIntent: qualityMeta.domainIntent || payload.domainIntent || 'general',
+    conversationMode: typeof payload.conversationMode === 'string'
+      ? payload.conversationMode
+      : (conciergeMeta && conciergeMeta.conversationState ? 'concierge' : null),
+    nextSteps: Array.isArray(payload.committedNextActions) ? payload.committedNextActions : [],
+    followupQuestion: typeof payload.committedFollowupQuestion === 'string'
+      ? payload.committedFollowupQuestion
+      : null
   });
 
   try {
@@ -1529,6 +1560,14 @@ async function appendLlmActionLogBestEffort(data) {
         : Number(qualityMeta.repeatRiskScore || 0),
       fallbackType: qualityMeta.fallbackType || null,
       interventionSuppressedBy: qualityMeta.interventionSuppressedBy || null,
+      responseContractConformant: responseContractConformance.conformant === true,
+      responseContractErrorCount: Number.isFinite(Number(responseContractConformance.errorCount))
+        ? Number(responseContractConformance.errorCount)
+        : 0,
+      responseContractErrors: Array.isArray(responseContractConformance.errors)
+        ? responseContractConformance.errors
+        : [],
+      responseContractFallbackApplied: responseContractConformance.fallbackApplied === true,
       strategy: typeof payload.strategy === 'string' ? payload.strategy : null,
       retrieveNeeded: payload.retrieveNeeded === true,
       retrievalQuality: typeof payload.retrievalQuality === 'string' ? payload.retrievalQuality : null,
