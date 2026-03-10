@@ -94,6 +94,30 @@ function buildClarifyCandidate(packet, strategy, options) {
     if (variant === 'alt' && scored.length > 1) return scored[Math.min(1, scored.length - 1)].line;
     return scored[0].line;
   };
+  if (packet.recoverySignal === true) {
+    const recoveryByDomain = {
+      school: '了解です。学校手続き前提で組み直します。必要書類か予約要否のどちらから確認しますか？',
+      ssn: '了解です。SSN前提で整理し直します。必要書類か予約要否のどちらから確認しますか？',
+      housing: '了解です。住まい探し前提で整理し直します。必要書類か次の一手のどちらから確認しますか？',
+      banking: '了解です。口座手続き前提で整理し直します。必要書類か予約要否のどちらから確認しますか？',
+      general: '了解です。前提を合わせ直します。対象手続きを1つ教えてください。'
+    };
+    const recoveryReply = recoveryByDomain[domainIntent] || recoveryByDomain.general;
+    return {
+      id: candidateId,
+      kind: 'clarify_candidate',
+      replyText: recoveryReply,
+      domainIntent,
+      retrievalQuality: 'none',
+      conciergeMeta: null,
+      atoms: {
+        situationLine: recoveryReply,
+        nextActions: [],
+        pitfall: '',
+        followupQuestion: ''
+      }
+    };
+  }
   if (hasFollowupIntent && domainIntent !== 'general') {
     const byIntent = {
       docs_required: {
@@ -554,6 +578,7 @@ async function runPaidConversationOrchestrator(params) {
       strategy: strategyPlan.strategy,
       directAnswerApplied,
       clarifySuppressed: strategyPlan.clarifySuppressed === true,
+      recoverySignal: packet.recoverySignal === true,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
       orchestratorPathUsed: true,

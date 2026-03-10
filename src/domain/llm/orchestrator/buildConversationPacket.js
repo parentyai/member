@@ -121,6 +121,22 @@ function isLowInformationMessage(text) {
   return false;
 }
 
+function isContextResumeCue(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+  if (normalized.length > 18) return false;
+  if (/^(それで|それなら|それって|じゃあ|では|その場合|となると|なら|で、|で\?|で？|後は何[?？]?|あとは何[?？]?|次は[?？]?|つぎは[?？]?|予約するの[?？]?|必要書類は[?？]?|それだと)$/i.test(normalized)) {
+    return true;
+  }
+  return /^(それで|それなら|じゃあ|では|なら).*[?？]$/.test(normalized);
+}
+
+function detectRecoverySignal(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+  return /(違う|ちがう|違います|いや|そうじゃない|それじゃない|誤解|訂正|修正|じゃなくて)/i.test(normalized);
+}
+
 function countUnresolvedTasks(snapshot) {
   const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
   let count = 0;
@@ -136,6 +152,8 @@ function computeContextCarryScore(params) {
   let score = 0;
   if (payload.contextResume === true) score += 0.5;
   if (payload.lowInformationMessage === true) score += 0.15;
+  if (payload.contextResumeCue === true) score += 0.1;
+  if (payload.recoverySignal === true) score += 0.1;
   if (typeof payload.contextResumeDomain === 'string' && payload.contextResumeDomain.trim()) score += 0.2;
   if (typeof payload.followupIntent === 'string' && payload.followupIntent.trim()) score += 0.1;
   if (Number.isFinite(Number(payload.unresolvedTaskCount)) && Number(payload.unresolvedTaskCount) > 0) score += 0.05;
@@ -156,13 +174,20 @@ function buildConversationPacket(params) {
   const detectedConversationIntent = normalizeConversationIntent(messageText);
   const recentHistory = summarizeRecentActionRows(payload.recentActionRows);
   const lowInformationMessage = isLowInformationMessage(messageText);
+  const contextResumeCue = isContextResumeCue(messageText);
+  const recoverySignal = detectRecoverySignal(messageText);
   const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object' ? payload.contextSnapshot : null;
   const contextSnapshotDomain = inferDomainFromContextSnapshot(contextSnapshot);
   const recentDomain = recentHistory.recentDomains[0] || contextSnapshotDomain || null;
-  const contextResume = lowInformationMessage
+  const shouldAllowContextResume = intentDecision.mode !== 'greeting'
+    && (
+      intentDecision.reason !== 'smalltalk_detected'
+      || contextResumeCue
+      || recoverySignal
+    );
+  const contextResume = (lowInformationMessage || contextResumeCue || recoverySignal)
     && Boolean(recentDomain)
-    && intentDecision.mode !== 'greeting'
-    && intentDecision.reason !== 'smalltalk_detected'
+    && shouldAllowContextResume
     && (
       detectedConversationIntent === 'general'
       || detectedConversationIntent === recentDomain
@@ -187,6 +212,8 @@ function buildConversationPacket(params) {
   const contextCarryScore = computeContextCarryScore({
     contextResume,
     lowInformationMessage,
+    contextResumeCue,
+    recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
     unresolvedTaskCount,
@@ -209,6 +236,8 @@ function buildConversationPacket(params) {
     routerReason,
     contextSnapshot,
     contextResume,
+    contextResumeCue,
+    recoverySignal,
     contextResumeDomain: contextResume ? recentDomain : null,
     followupIntent,
     lowInformationMessage,
