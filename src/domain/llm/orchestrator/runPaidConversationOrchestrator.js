@@ -95,6 +95,49 @@ function buildClarifyCandidate(packet, strategy, options) {
     return scored[0].line;
   };
   if (packet.recoverySignal === true) {
+    const recoveryDirectByIntent = {
+      docs_required: {
+        school: '了解です。学校手続きは住所証明と予防接種記録を先にそろえると止まりにくいです。',
+        ssn: '了解です。SSNは本人確認書類と在留資格の書類を先にそろえるのが最優先です。',
+        housing: '了解です。住まい探しは本人確認と収入確認の書類を先に固めると進みます。',
+        banking: '了解です。口座手続きは本人確認と住所証明を先にそろえるのが近道です。',
+        general: '了解です。必要書類は最優先手続きに必要なものから先に整理すると進みます。'
+      },
+      appointment_needed: {
+        school: '了解です。学校手続きは対象校ごとに予約制が異なるため、対象校を1つ決めて先に確認しましょう。',
+        ssn: '了解です。SSNは地域で予約要否が異なるため、最寄り窓口の予約可否を先に確認しましょう。',
+        housing: '了解です。住まい探しは内見予約が必要な物件が多いので、候補を絞って確認しましょう。',
+        banking: '了解です。口座手続きは支店で予約要否が異なるので、来店地域を決めて確認しましょう。',
+        general: '了解です。予約要否は窓口ごとに異なるため、対象窓口を1つ決めて確認しましょう。'
+      },
+      next_step: {
+        school: '了解です。学校手続きの次は、対象校を1校に絞って必要書類を先に確定するのが最短です。',
+        ssn: '了解です。SSNの次は、必要書類を1つの一覧にまとめて窓口要件を確認するのが最短です。',
+        housing: '了解です。住まい探しの次は、候補を3件まで絞って内見順を決めるのが最短です。',
+        banking: '了解です。口座手続きの次は、口座種別を1つ決めて必要書類を先に確定するのが最短です。',
+        general: '了解です。次は、最優先手続きを1つ決めて期限を確認するのが最短です。'
+      }
+    };
+    if (hasFollowupIntent) {
+      const intentMap = recoveryDirectByIntent[followupIntent] || recoveryDirectByIntent.next_step;
+      const directReply = intentMap[domainIntent] || intentMap.general;
+      return {
+        id: candidateId,
+        kind: 'clarify_candidate',
+        replyText: directReply,
+        domainIntent,
+        followupIntent,
+        directAnswerCandidate: true,
+        retrievalQuality: 'none',
+        conciergeMeta: null,
+        atoms: {
+          situationLine: directReply,
+          nextActions: [],
+          pitfall: '',
+          followupQuestion: ''
+        }
+      };
+    }
     const recoveryByDomain = {
       school: '了解です。学校手続き前提で組み直します。必要書類か予約要否のどちらから確認しますか？',
       ssn: '了解です。SSN前提で整理し直します。必要書類か予約要否のどちらから確認しますか？',
@@ -108,6 +151,8 @@ function buildClarifyCandidate(packet, strategy, options) {
       kind: 'clarify_candidate',
       replyText: recoveryReply,
       domainIntent,
+      followupIntent: hasFollowupIntent ? followupIntent : null,
+      directAnswerCandidate: false,
       retrievalQuality: 'none',
       conciergeMeta: null,
       atoms: {
@@ -149,6 +194,8 @@ function buildClarifyCandidate(packet, strategy, options) {
       kind: 'clarify_candidate',
       replyText: followupReply,
       domainIntent,
+      followupIntent,
+      directAnswerCandidate: true,
       retrievalQuality: 'none',
       atoms: {
         situationLine: '状況を把握しました。',
@@ -170,6 +217,8 @@ function buildClarifyCandidate(packet, strategy, options) {
     kind: 'clarify_candidate',
     replyText,
     domainIntent: domainIntent || 'general',
+    followupIntent: hasFollowupIntent ? followupIntent : null,
+    directAnswerCandidate: false,
     retrievalQuality: 'none',
     atoms: {
       situationLine: '対象を絞って案内します。',
@@ -260,6 +309,7 @@ function buildDomainCandidate(result, packet) {
       interventionBudget: Number.isFinite(Number(result.interventionBudget)) ? Number(result.interventionBudget) : 1
     },
     followupIntent: typeof result.followupIntent === 'string' ? result.followupIntent : null,
+    directAnswerCandidate: typeof result.followupIntent === 'string' && result.followupIntent.trim().length > 0,
     conciseModeApplied: result.conciseModeApplied === true,
     atoms: result.atoms && typeof result.atoms === 'object' ? result.atoms : {}
   };
@@ -292,6 +342,8 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       opportunityDecision: packet.opportunityDecision,
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
+      recentResponseHints: packet.recentResponseHints,
+      recoverySignal: packet.recoverySignal === true,
       blockedReason: null
     });
     const domainCandidate = buildDomainCandidate(domainResult, packet);
@@ -342,6 +394,8 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
       opportunityDecision: packet.opportunityDecision,
       followupIntent: packet.followupIntent,
       recentFollowupIntents: packet.recentFollowupIntents,
+      recentResponseHints: packet.recentResponseHints,
+      recoverySignal: packet.recoverySignal === true,
       blockedReason: groundedResult && groundedResult.blockedReason ? groundedResult.blockedReason : null
     });
     const fallbackCandidate = buildDomainCandidate(fallbackDomain, packet);
@@ -552,8 +606,12 @@ async function runPaidConversationOrchestrator(params) {
     ? groundedResult.blockedReason
     : null;
 
-  const directAnswerApplied = strategyPlan.directAnswerFirst === true
-    && String(finalized.finalMeta && finalized.finalMeta.candidateKind ? finalized.finalMeta.candidateKind : '').toLowerCase() !== 'clarify_candidate';
+  const selectedKind = String(finalized.finalMeta && finalized.finalMeta.candidateKind ? finalized.finalMeta.candidateKind : '').toLowerCase();
+  const directAnswerApplied = selected.directAnswerCandidate === true
+    || (
+      strategyPlan.directAnswerFirst === true
+      && selectedKind !== 'clarify_candidate'
+    );
   const conciseModeApplied = selected && selected.conciseModeApplied === true
     ? true
     : isConciseReplyText(finalized.replyText);
@@ -579,6 +637,7 @@ async function runPaidConversationOrchestrator(params) {
       directAnswerApplied,
       clarifySuppressed: strategyPlan.clarifySuppressed === true,
       recoverySignal: packet.recoverySignal === true,
+      recoveryFollowupIntent: packet.recoveryFollowupIntent || null,
       retrieveNeeded: strategyPlan.retrieveNeeded === true,
       retrievalQuality: candidateSet.retrievalQuality,
       orchestratorPathUsed: true,
