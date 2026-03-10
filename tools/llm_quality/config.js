@@ -56,8 +56,8 @@ const HARD_GATES = Object.freeze({
 });
 
 const JUDGE_RELIABILITY_POLICY = Object.freeze({
-  maxDisagreementRate: 0.15,
-  maxSensitivityDrift: 0.10,
+  maxDisagreementRate: 0.12,
+  maxSensitivityDrift: 0.08,
   humanReviewRequiredNearHardGate: true
 });
 

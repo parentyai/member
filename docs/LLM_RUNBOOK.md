@@ -610,7 +610,7 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 8. `npm run llm:quality:must-pass`
 9. `npm run llm:quality:release-policy`（all slices pass を既定で必須）
 10. `npm run llm:quality:release-policy:strict`（strict runtime signals を必須化）
-11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合）
+11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` を同時生成）
 
 ### Merge Block 条件
 - `llm:quality:gate` が non-zero
@@ -622,8 +622,8 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
   - `minority_personas`
   - `cultural_slices`
 - judge calibration:
-  - disagreementRate > 0.15
-  - promptSensitivityDrift > 0.10
+  - disagreementRate > 0.12
+  - promptSensitivityDrift > 0.08
 - replay/perturbation critical failure > 0
 - contamination risk `high` benchmark を hard gate に使用
 - release policy fail（overall非改善 / key dimension regression / must-pass fixture fail）
