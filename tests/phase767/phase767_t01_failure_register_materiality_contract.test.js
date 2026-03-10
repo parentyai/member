@@ -72,4 +72,9 @@ test('phase767: quality_failure and loop/context rows are always material when n
     signal: 'followup:none',
     count: 1
   }), true);
+  assert.equal(isMaterialFailureEntry({
+    category: 'runtime_signal_gap',
+    signal: 'runtime_signal_missing:defaultCasualRate',
+    count: 1
+  }), true);
 });

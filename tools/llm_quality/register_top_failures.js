@@ -33,6 +33,9 @@ function isMaterialFailureEntry(entry) {
   if (category === 'loop_case' || category === 'context_loss_case') {
     return Math.max(0, Math.floor(toNumber(row.count, 0))) > 0;
   }
+  if (category === 'runtime_signal_gap') {
+    return Math.max(0, Math.floor(toNumber(row.count, 0))) > 0;
+  }
   if (category === 'jp_service_failure' || category === 'line_fit_failure') {
     if (row.available === false) {
       return false;
@@ -46,6 +49,9 @@ function isMaterialFailureEntry(entry) {
 function normalizeEntries(report, limit) {
   const payload = report && typeof report === 'object' ? report : {};
   const max = Math.max(1, Math.floor(toNumber(limit, DEFAULT_LIMIT)));
+  const signalCoverage = payload.signal_coverage && typeof payload.signal_coverage === 'object'
+    ? payload.signal_coverage
+    : {};
 
   const quality = toRecordList('quality_failure', payload.top_10_quality_failures, (row, index) => ({
     rank: index + 1,
@@ -84,9 +90,19 @@ function normalizeEntries(report, limit) {
     available: !(row && row.available === false),
     severity: index < 3 ? 'high' : 'medium'
   }));
+  const runtimeSignalGap = toRecordList('runtime_signal_gap', [{
+    missingSignalCount: toNumber(signalCoverage.missingSignalCount, 0),
+    missingSignals: Array.isArray(signalCoverage.missingSignals) ? signalCoverage.missingSignals : []
+  }], (row) => ({
+    rank: 1,
+    signal: `runtime_signal_missing:${(row.missingSignals || []).join(',') || 'none'}`,
+    metric: 'runtime_signal_coverage',
+    count: Math.max(0, Math.floor(toNumber(row.missingSignalCount, 0))),
+    severity: 'high'
+  }));
 
   return quality
-    .concat(loops, contextLoss, jpService, lineFit)
+    .concat(loops, contextLoss, runtimeSignalGap, jpService, lineFit)
     .filter((row) => isMaterialFailureEntry(row))
     .slice(0, max * 5);
 }
