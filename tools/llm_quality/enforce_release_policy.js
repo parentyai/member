@@ -108,6 +108,17 @@ function readFiniteNumber(obj, key) {
   return Number.isFinite(value) ? value : null;
 }
 
+const STRICT_RUNTIME_SIGNAL_KEYS = Object.freeze([
+  'legacyTemplateHitRate',
+  'defaultCasualRate',
+  'followupQuestionIncludedRate',
+  'conciseModeAppliedRate',
+  'retrieveNeededRate',
+  'avgActionCount',
+  'directAnswerAppliedRate',
+  'avgRepeatRiskScore'
+]);
+
 function main(argv) {
   const args = parseArgs(argv);
   const root = process.cwd();
@@ -210,13 +221,12 @@ function main(argv) {
   const conversation = summary && summary.conversationQuality && typeof summary.conversationQuality === 'object'
     ? summary.conversationQuality
     : null;
-  const runtimeSignalKeys = ['defaultCasualRate', 'directAnswerAppliedRate', 'avgRepeatRiskScore'];
+  const runtimeSignalKeys = STRICT_RUNTIME_SIGNAL_KEYS.slice();
   const runtimeSignalRaw = conversation
-    ? {
-      defaultCasualRate: readFiniteNumber(conversation, 'defaultCasualRate'),
-      directAnswerAppliedRate: readFiniteNumber(conversation, 'directAnswerAppliedRate'),
-      avgRepeatRiskScore: readFiniteNumber(conversation, 'avgRepeatRiskScore')
-    }
+    ? runtimeSignalKeys.reduce((acc, key) => {
+      acc[key] = readFiniteNumber(conversation, key);
+      return acc;
+    }, {})
     : null;
   const runtimeSignalCoverage = runtimeSignalRaw
     ? {
@@ -232,6 +242,11 @@ function main(argv) {
   const runtimeSignals = runtimeSignalRaw
     ? {
       defaultCasualRate: runtimeSignalRaw.defaultCasualRate,
+      legacyTemplateHitRate: runtimeSignalRaw.legacyTemplateHitRate,
+      followupQuestionIncludedRate: runtimeSignalRaw.followupQuestionIncludedRate,
+      conciseModeAppliedRate: runtimeSignalRaw.conciseModeAppliedRate,
+      retrieveNeededRate: runtimeSignalRaw.retrieveNeededRate,
+      avgActionCount: runtimeSignalRaw.avgActionCount,
       directAnswerMissRate: runtimeSignalRaw.directAnswerAppliedRate == null
         ? null
         : Math.max(0, 1 - runtimeSignalRaw.directAnswerAppliedRate),
@@ -246,6 +261,15 @@ function main(argv) {
   if (requireStrictRuntimeSignals === true && runtimeSignals) {
     if (runtimeSignals.defaultCasualRate != null && runtimeSignals.defaultCasualRate > 0.02) {
       failures.push('runtime_signal_default_casual_rate_too_high');
+    }
+    if (runtimeSignals.legacyTemplateHitRate != null && runtimeSignals.legacyTemplateHitRate > 0.005) {
+      failures.push('runtime_signal_legacy_template_hit_rate_too_high');
+    }
+    if (runtimeSignals.retrieveNeededRate != null && runtimeSignals.retrieveNeededRate > 0.25) {
+      failures.push('runtime_signal_retrieve_needed_rate_too_high');
+    }
+    if (runtimeSignals.avgActionCount != null && runtimeSignals.avgActionCount > 3.1) {
+      failures.push('runtime_signal_avg_action_count_over_budget');
     }
     if (runtimeSignals.directAnswerMissRate != null && runtimeSignals.directAnswerMissRate > 0.08) {
       failures.push('runtime_signal_direct_answer_miss_rate_too_high');

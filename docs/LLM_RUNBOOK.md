@@ -632,10 +632,13 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - release policy fail（overall非改善 / key dimension regression / must-pass fixture fail）
 - strict運用時:
   - runtime signals:
+    - `legacyTemplateHitRate > 0.005`
     - `defaultCasualRate > 0.02`
+    - `retrieveNeededRate > 0.25`
+    - `avgActionCount > 3.1`
     - `directAnswerMissRate > 0.08`
     - `avgRepeatRiskScore > 0.5`
-    - `defaultCasualRate/directAnswerAppliedRate/avgRepeatRiskScore` の欠損は fail（`runtime_signal_missing:*`）
+    - `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` の欠損は fail（`runtime_signal_missing:*`）
 
 ### Warning 条件
 - quality delta < +2 かつ latency p95 regression > 25%
