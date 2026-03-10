@@ -16,6 +16,42 @@ const SOURCE_READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refus
 const READINESS_DECISIONS = new Set(['allow', 'hedged', 'clarify', 'refuse']);
 const READINESS_SAFE_RESPONSE_MODES = new Set(['answer', 'answer_with_hedge', 'clarify', 'refuse']);
 const FOLLOWUP_INTENTS = new Set(['docs_required', 'appointment_needed', 'next_step']);
+const PARENT_INTENT_TYPES = new Set([
+  'NEXT_STEP',
+  'HOW_TO',
+  'DOCUMENTS_REQUIRED',
+  'ELIGIBILITY_CHECK',
+  'DEADLINE_CHECK',
+  'STATUS_EXPLANATION',
+  'STATE_RULE_DIFF',
+  'TIMELINE_PLAN',
+  'BLOCKER_HELP',
+  'EXCEPTION_ESCALATION',
+  'COST_ESTIMATE',
+  'RETURN_PLAN',
+  'GENERAL_OVERVIEW'
+]);
+const PARENT_ANSWER_MODES = new Set([
+  'ACTION_PLAN',
+  'CHECKLIST',
+  'EXPLANATION',
+  'COMPARISON',
+  'WARNING_ONLY',
+  'ESCALATION_NOTICE',
+  'TIMELINE',
+  'REVERSE_LOOKUP'
+]);
+const PARENT_LIFECYCLE_STAGES = new Set([
+  'PRE_ASSIGNMENT',
+  'PRE_DEPARTURE',
+  'ENTRY_TRAVEL',
+  'ARRIVAL_0_7',
+  'ARRIVAL_0_30',
+  'SETTLEMENT_30_90',
+  'STEADY_STATE',
+  'RENEWAL_CHANGE',
+  'RETURN_REPAT'
+]);
 const QUALITY_SLICE_KEYS = new Set([
   'paid',
   'free',
@@ -213,6 +249,30 @@ function normalizeFollowupIntent(value) {
   return FOLLOWUP_INTENTS.has(normalized) ? normalized : null;
 }
 
+function normalizeParentIntentType(value) {
+  const normalized = normalizeString(value, '').toUpperCase();
+  if (!normalized) return null;
+  return PARENT_INTENT_TYPES.has(normalized) ? normalized : null;
+}
+
+function normalizeParentAnswerMode(value) {
+  const normalized = normalizeString(value, '').toUpperCase();
+  if (!normalized) return null;
+  return PARENT_ANSWER_MODES.has(normalized) ? normalized : null;
+}
+
+function normalizeParentLifecycleStage(value) {
+  const normalized = normalizeString(value, '').toUpperCase();
+  if (!normalized) return null;
+  return PARENT_LIFECYCLE_STAGES.has(normalized) ? normalized : null;
+}
+
+function normalizeParentChapter(value) {
+  const normalized = normalizeString(value, '').toUpperCase();
+  if (!normalized) return null;
+  return /^[A-Z]$/.test(normalized) ? normalized : null;
+}
+
 function normalizeQualitySliceKey(value) {
   const normalized = normalizeString(value, '').toLowerCase();
   if (!normalized) return null;
@@ -401,6 +461,18 @@ async function appendLlmActionLog(params) {
     contextResumeDomain: normalizeContextResumeDomain(payload.contextResumeDomain),
     loopBreakApplied: payload.loopBreakApplied === true,
     followupIntent: normalizeFollowupIntent(payload.followupIntent),
+    parentIntentType: normalizeParentIntentType(payload.parentIntentType),
+    parentAnswerMode: normalizeParentAnswerMode(payload.parentAnswerMode),
+    parentLifecycleStage: normalizeParentLifecycleStage(payload.parentLifecycleStage),
+    parentChapter: normalizeParentChapter(payload.parentChapter),
+    parentRoutingInvariantStatus: normalizeString(payload.parentRoutingInvariantStatus, null),
+    parentRoutingInvariantErrors: normalizeStringList(payload.parentRoutingInvariantErrors, 8),
+    requiredCoreFactsComplete: payload.requiredCoreFactsComplete === true,
+    missingRequiredCoreFacts: normalizeStringList(payload.missingRequiredCoreFacts, 12),
+    missingRequiredCoreFactsCount: Math.max(0, Math.min(12, Math.floor(normalizeNumber(payload.missingRequiredCoreFactsCount, 0)))),
+    requiredCoreFactsCriticalMissingCount: Math.max(0, Math.min(12, Math.floor(normalizeNumber(payload.requiredCoreFactsCriticalMissingCount, 0)))),
+    requiredCoreFactsGateDecision: normalizeReadinessDecision(payload.requiredCoreFactsGateDecision),
+    requiredCoreFactsGateLogOnly: payload.requiredCoreFactsGateLogOnly === true,
     followupIntentReason: normalizeString(payload.followupIntentReason, null),
     followupCarryFromHistory: payload.followupCarryFromHistory === true,
     conciseModeApplied: payload.conciseModeApplied === true,

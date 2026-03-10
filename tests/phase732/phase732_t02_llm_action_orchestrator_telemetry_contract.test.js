@@ -62,7 +62,16 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
       followupIntent: 'docs_required',
       conciseModeApplied: true,
       repetitionPrevented: false,
-      routerReason: 'contextual_domain_resume'
+      routerReason: 'contextual_domain_resume',
+      parentIntentType: 'DOCUMENTS_REQUIRED',
+      parentAnswerMode: 'ACTION_PLAN',
+      parentLifecycleStage: 'ARRIVAL_0_30',
+      parentChapter: 'N',
+      parentRoutingInvariantStatus: 'ok',
+      requiredCoreFactsComplete: false,
+      missingRequiredCoreFactsCount: 6,
+      requiredCoreFactsCriticalMissingCount: 2,
+      requiredCoreFactsGateDecision: 'clarify'
     }
   ]);
 
@@ -86,7 +95,16 @@ test('phase732: conversation quality summary aggregates orchestrator telemetry f
   assert.equal(summary.defaultCasualRate, 0.5);
   assert.ok(Array.isArray(summary.followupIntents));
   assert.ok(Array.isArray(summary.routerReasons));
+  assert.ok(Array.isArray(summary.parentIntentTypes));
+  assert.ok(Array.isArray(summary.parentAnswerModes));
+  assert.ok(Array.isArray(summary.parentLifecycleStages));
+  assert.ok(Array.isArray(summary.parentChapters));
+  assert.ok(Array.isArray(summary.parentRoutingInvariantStatuses));
+  assert.ok(Array.isArray(summary.requiredCoreFactsGateDecisions));
   assert.ok(Array.isArray(summary.contradictionFlags));
+  assert.equal(typeof summary.requiredCoreFactsCompleteRate, 'number');
+  assert.equal(typeof summary.avgMissingRequiredCoreFactsCount, 'number');
+  assert.equal(typeof summary.avgRequiredCoreFactsCriticalMissingCount, 'number');
 });
 
 test('phase732: llm action log schema includes orchestrator telemetry fields', () => {
@@ -116,6 +134,18 @@ test('phase732: llm action log schema includes orchestrator telemetry fields', (
     'actionGatewayAllowed',
     'actionGatewayDecision',
     'actionGatewayReason',
+    'parentIntentType',
+    'parentAnswerMode',
+    'parentLifecycleStage',
+    'parentChapter',
+    'parentRoutingInvariantStatus',
+    'parentRoutingInvariantErrors',
+    'requiredCoreFactsComplete',
+    'missingRequiredCoreFacts',
+    'missingRequiredCoreFactsCount',
+    'requiredCoreFactsCriticalMissingCount',
+    'requiredCoreFactsGateDecision',
+    'requiredCoreFactsGateLogOnly',
     'conciseModeApplied',
     'repetitionPrevented',
     'intentRiskTier',

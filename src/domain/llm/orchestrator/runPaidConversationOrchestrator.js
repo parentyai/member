@@ -12,6 +12,8 @@ const { verifyCandidate } = require('./verifyCandidate');
 const { finalizeCandidate } = require('./finalizeCandidate');
 const { resolveLlmLegalPolicySnapshot } = require('../policy/resolveLlmLegalPolicySnapshot');
 const { resolveIntentRiskTier } = require('../policy/resolveIntentRiskTier');
+const { evaluateParentYamlRoutingInvariant } = require('../policy/parentYamlRoutingContract');
+const { evaluateRequiredCoreFactsGate } = require('../policy/evaluateRequiredCoreFactsGate');
 const { computeSourceReadiness } = require('../knowledge/computeSourceReadiness');
 const { evaluateAnswerReadiness } = require('../quality/evaluateAnswerReadiness');
 const { enforceActionGateway } = require('../../../v1/action_gateway/actionGateway');
@@ -106,6 +108,28 @@ function applyActionGatewayToReadiness(readiness, gatewayDecision, enabled) {
   return Object.assign({}, base, {
     decision: 'refuse',
     safeResponseMode: 'refuse',
+    reasonCodes
+  });
+}
+
+function applyCoreFactsGateToReadiness(readiness, gate) {
+  const base = readiness && typeof readiness === 'object'
+    ? readiness
+    : {
+      decision: 'allow',
+      reasonCodes: [],
+      safeResponseMode: 'answer',
+      qualitySnapshot: {}
+    };
+  const coreFactsGate = gate && typeof gate === 'object' ? gate : null;
+  if (!coreFactsGate || coreFactsGate.decision !== 'clarify') return base;
+  const reasonCodes = uniqueReasonCodes([]
+    .concat(base.reasonCodes || [])
+    .concat(coreFactsGate.reasonCodes || [])
+    .concat('missing_required_core_facts'));
+  return Object.assign({}, base, {
+    decision: 'clarify',
+    safeResponseMode: 'clarify',
     reasonCodes
   });
 }
@@ -568,6 +592,15 @@ async function runPaidConversationOrchestrator(params) {
   const riskSnapshot = resolveIntentRiskTier({
     domainIntent: packet.normalizedConversationIntent
   });
+  const parentRouting = evaluateParentYamlRoutingInvariant({
+    domainIntent: packet.normalizedConversationIntent,
+    followupIntent: packet.followupIntent,
+    routerMode: packet.routerMode,
+    strategy: strategyPlan.strategy,
+    contextSnapshot: packet.contextSnapshot,
+    intentRiskTier: riskSnapshot.intentRiskTier
+  });
+  const actionClass = resolveActionClassForOrchestrator(packet, strategyPlan, payload);
 
   const candidateSet = await buildCandidateSet(packet, strategyPlan, deps);
   const groundedResult = candidateSet.groundedResult && typeof candidateSet.groundedResult === 'object'
@@ -633,6 +666,14 @@ async function runPaidConversationOrchestrator(params) {
     .filter((item) => typeof item === 'string' && item.toLowerCase().includes('unsupported'))
     .length;
   const readinessEvidenceCoverage = strategyPlan.retrieveNeeded === true ? evidenceCoverage : 1;
+  const requiredCoreFacts = evaluateRequiredCoreFactsGate({
+    contextSnapshot: packet.contextSnapshot,
+    domainIntent: packet.normalizedConversationIntent,
+    intentRiskTier: riskSnapshot.intentRiskTier,
+    strategy: strategyPlan.strategy,
+    actionClass,
+    followupIntent: packet.followupIntent
+  });
   const readinessResult = evaluateAnswerReadiness({
     lawfulBasis: legalSnapshot.lawfulBasis,
     consentVerified: legalSnapshot.consentVerified,
@@ -646,19 +687,24 @@ async function runPaidConversationOrchestrator(params) {
     unsupportedClaimCount,
     contradictionDetected: Array.isArray(verified.contradictionFlags) && verified.contradictionFlags.length > 0,
     evidenceCoverage: readinessEvidenceCoverage,
+    requiredCoreFactsComplete: requiredCoreFacts.missingCount === 0,
+    missingRequiredCoreFactsCount: requiredCoreFacts.missingCount,
+    requiredCoreFactsMissing: requiredCoreFacts.missingFacts,
+    requiredCoreFactsDecision: requiredCoreFacts.decision,
+    requiredCoreFactsLogOnly: requiredCoreFacts.logOnly === true,
     fallbackType: groundedResult && groundedResult.ok !== true && groundedResult.blockedReason
       ? groundedResult.blockedReason
       : null
   });
   const actionGatewayEnabled = payload.llmFlags && payload.llmFlags.actionGatewayEnabled === true;
-  const actionClass = resolveActionClassForOrchestrator(packet, strategyPlan, payload);
   const actionToolName = resolveActionToolName(actionClass, payload);
   const actionGatewayDecision = enforceActionGateway({
     actionClass,
     toolName: actionToolName,
     confirmationToken: payload.confirmationToken
   });
-  const effectiveReadiness = applyActionGatewayToReadiness(readinessResult, actionGatewayDecision, actionGatewayEnabled);
+  const withCoreFactsGate = applyCoreFactsGateToReadiness(readinessResult, requiredCoreFacts);
+  const effectiveReadiness = applyActionGatewayToReadiness(withCoreFactsGate, actionGatewayDecision, actionGatewayEnabled);
   const finalized = finalizeCandidate({
     selected: verified.selected,
     verificationOutcome: verified.verificationOutcome,
@@ -759,6 +805,18 @@ async function runPaidConversationOrchestrator(params) {
       actionGatewayAllowed: actionGatewayEnabled ? actionGatewayDecision.allowed === true : true,
       actionGatewayDecision: actionGatewayEnabled ? actionGatewayDecision.decision : 'bypass',
       actionGatewayReason: actionGatewayEnabled ? actionGatewayDecision.reason : 'action_gateway_disabled',
+      parentIntentType: parentRouting.intentType,
+      parentAnswerMode: parentRouting.answerMode,
+      parentLifecycleStage: parentRouting.lifecycleStage,
+      parentChapter: parentRouting.chapter,
+      parentRoutingInvariantStatus: parentRouting.invariantStatus,
+      parentRoutingInvariantErrors: parentRouting.invariantErrors,
+      requiredCoreFactsComplete: requiredCoreFacts.missingCount === 0,
+      missingRequiredCoreFacts: requiredCoreFacts.missingFacts,
+      missingRequiredCoreFactsCount: requiredCoreFacts.missingCount,
+      requiredCoreFactsCriticalMissingCount: requiredCoreFacts.criticalMissingCount,
+      requiredCoreFactsGateDecision: requiredCoreFacts.decision,
+      requiredCoreFactsGateLogOnly: requiredCoreFacts.logOnly === true,
       judgeWinner: judged.judgeWinner,
       judgeScores: judged.judgeScores,
       verificationOutcome: finalized.finalMeta.verificationOutcome,

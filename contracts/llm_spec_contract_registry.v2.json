@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310-yaml-corefacts-r791",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -142,24 +142,28 @@
       "requirementId": "YAML-C-01",
       "sourceSpec": "parent_contract_yaml",
       "summary": "enum/routing invariants",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "compatibility",
-      "recommendedAction": "add contract tests and enum adapters",
+      "recommendedAction": "keep parent YAML enum/routing adapters in orchestrator telemetry and enforce via phase790 contracts",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/domain/llm/router/detectIntent.js:1"
+        "/Volumes/Arumamihs/Member/src/domain/llm/policy/parentYamlRoutingContract.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/llm/orchestrator/runPaidConversationOrchestrator.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase790/phase790_t01_parent_yaml_routing_contract.test.js:1"
       ]
     },
     {
       "requirementId": "YAML-C-02",
       "sourceSpec": "parent_contract_yaml",
       "summary": "required_core_facts completeness gate",
-      "status": "partial",
+      "status": "aligned",
       "severity": "high",
       "blastRadius": "factuality",
-      "recommendedAction": "required_core_facts gate before final response",
+      "recommendedAction": "keep required_core_facts gate wired to readiness decisions and monitor core-facts completeness telemetry",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/routes/webhookLine.js:2055"
+        "/Volumes/Arumamihs/Member/src/domain/llm/policy/evaluateRequiredCoreFactsGate.js:1",
+        "/Volumes/Arumamihs/Member/src/domain/llm/quality/evaluateAnswerReadiness.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase790/phase790_t02_required_core_facts_gate_contract.test.js:1"
       ]
     },
     {

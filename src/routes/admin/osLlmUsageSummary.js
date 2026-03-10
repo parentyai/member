@@ -544,6 +544,11 @@ function buildConversationQualitySummary(actionRows) {
   const followupIntents = new Map();
   const followupIntentReasons = new Map();
   const routerReasons = new Map();
+  const parentIntentTypes = new Map();
+  const parentAnswerModes = new Map();
+  const parentLifecycleStages = new Map();
+  const parentChapters = new Map();
+  const parentRoutingInvariantStatuses = new Map();
   const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
   let followupQuestionIncludedCount = 0;
@@ -589,6 +594,11 @@ function buildConversationQualitySummary(actionRows) {
   let misunderstandingRecoveredCount = 0;
   let recoveryRiskSeenCount = 0;
   let recoveryHandledCount = 0;
+  let requiredCoreFactsSeenCount = 0;
+  let requiredCoreFactsCompleteCount = 0;
+  let requiredCoreFactsMissingCountTotal = 0;
+  let requiredCoreFactsCriticalMissingCountTotal = 0;
+  const requiredCoreFactsGateDecisions = new Map();
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -605,6 +615,21 @@ function buildConversationQualitySummary(actionRows) {
     const followupIntent = normalizeReason(row && row.followupIntent ? row.followupIntent : 'none');
     const followupIntentReason = normalizeReason(row && row.followupIntentReason ? row.followupIntentReason : 'none');
     const routerReason = normalizeReason(row && row.routerReason ? row.routerReason : 'none');
+    const parentIntentType = normalizeReason(row && row.parentIntentType ? row.parentIntentType : 'none');
+    const parentAnswerMode = normalizeReason(row && row.parentAnswerMode ? row.parentAnswerMode : 'none');
+    const parentLifecycleStage = normalizeReason(row && row.parentLifecycleStage ? row.parentLifecycleStage : 'none');
+    const parentChapter = normalizeReason(row && row.parentChapter ? row.parentChapter : 'none');
+    const parentRoutingInvariantStatus = normalizeReason(row && row.parentRoutingInvariantStatus ? row.parentRoutingInvariantStatus : 'none');
+    const requiredCoreFactsComplete = row && row.requiredCoreFactsComplete === true;
+    const requiredCoreFactsMissingCount = Number.isFinite(Number(row && row.missingRequiredCoreFactsCount))
+      ? Math.max(0, Number(row.missingRequiredCoreFactsCount))
+      : null;
+    const requiredCoreFactsCriticalMissingCount = Number.isFinite(Number(row && row.requiredCoreFactsCriticalMissingCount))
+      ? Math.max(0, Number(row.requiredCoreFactsCriticalMissingCount))
+      : null;
+    const requiredCoreFactsGateDecision = normalizeReason(
+      row && row.requiredCoreFactsGateDecision ? row.requiredCoreFactsGateDecision : 'none'
+    );
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
     const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
     const retrieveNeeded = row && row.retrieveNeeded === true;
@@ -638,6 +663,18 @@ function buildConversationQualitySummary(actionRows) {
     followupIntents.set(followupIntent, (followupIntents.get(followupIntent) || 0) + 1);
     followupIntentReasons.set(followupIntentReason, (followupIntentReasons.get(followupIntentReason) || 0) + 1);
     routerReasons.set(routerReason, (routerReasons.get(routerReason) || 0) + 1);
+    parentIntentTypes.set(parentIntentType, (parentIntentTypes.get(parentIntentType) || 0) + 1);
+    parentAnswerModes.set(parentAnswerMode, (parentAnswerModes.get(parentAnswerMode) || 0) + 1);
+    parentLifecycleStages.set(parentLifecycleStage, (parentLifecycleStages.get(parentLifecycleStage) || 0) + 1);
+    parentChapters.set(parentChapter, (parentChapters.get(parentChapter) || 0) + 1);
+    parentRoutingInvariantStatuses.set(
+      parentRoutingInvariantStatus,
+      (parentRoutingInvariantStatuses.get(parentRoutingInvariantStatus) || 0) + 1
+    );
+    requiredCoreFactsGateDecisions.set(
+      requiredCoreFactsGateDecision,
+      (requiredCoreFactsGateDecisions.get(requiredCoreFactsGateDecision) || 0) + 1
+    );
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
     if (retrieveNeeded) retrieveNeededCount += 1;
@@ -677,6 +714,16 @@ function buildConversationQualitySummary(actionRows) {
     if (Object.prototype.hasOwnProperty.call(row, 'misunderstandingRecovered')) {
       misunderstandingRecoveredSeenCount += 1;
       if (misunderstandingRecovered) misunderstandingRecoveredCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'requiredCoreFactsComplete')) {
+      requiredCoreFactsSeenCount += 1;
+      if (requiredCoreFactsComplete) requiredCoreFactsCompleteCount += 1;
+    }
+    if (requiredCoreFactsMissingCount !== null) {
+      requiredCoreFactsMissingCountTotal += requiredCoreFactsMissingCount;
+    }
+    if (requiredCoreFactsCriticalMissingCount !== null) {
+      requiredCoreFactsCriticalMissingCountTotal += requiredCoreFactsCriticalMissingCount;
     }
     if (typeof row.routerReason === 'string' && row.routerReason.trim()) {
       defaultCasualSeenCount += 1;
@@ -775,6 +822,11 @@ function buildConversationQualitySummary(actionRows) {
     followupIntents: sortCountEntries(followupIntents, 'followupIntent', 10),
     followupIntentReasons: sortCountEntries(followupIntentReasons, 'followupIntentReason', 10),
     routerReasons: sortCountEntries(routerReasons, 'routerReason', 12),
+    parentIntentTypes: sortCountEntries(parentIntentTypes, 'parentIntentType', 12),
+    parentAnswerModes: sortCountEntries(parentAnswerModes, 'parentAnswerMode', 12),
+    parentLifecycleStages: sortCountEntries(parentLifecycleStages, 'parentLifecycleStage', 12),
+    parentChapters: sortCountEntries(parentChapters, 'parentChapter', 12),
+    parentRoutingInvariantStatuses: sortCountEntries(parentRoutingInvariantStatuses, 'parentRoutingInvariantStatus', 8),
     avgUnsupportedClaimCount: sampleCount > 0
       ? Math.round((unsupportedClaimCountTotal / sampleCount) * 10000) / 10000
       : 0,
@@ -814,6 +866,16 @@ function buildConversationQualitySummary(actionRows) {
     misunderstandingRecoveredRate: misunderstandingRecoveredSeenCount > 0
       ? Math.round((misunderstandingRecoveredCount / misunderstandingRecoveredSeenCount) * 10000) / 10000
       : 0,
+    requiredCoreFactsCompleteRate: requiredCoreFactsSeenCount > 0
+      ? Math.round((requiredCoreFactsCompleteCount / requiredCoreFactsSeenCount) * 10000) / 10000
+      : 0,
+    avgMissingRequiredCoreFactsCount: sampleCount > 0
+      ? Math.round((requiredCoreFactsMissingCountTotal / sampleCount) * 10000) / 10000
+      : 0,
+    avgRequiredCoreFactsCriticalMissingCount: sampleCount > 0
+      ? Math.round((requiredCoreFactsCriticalMissingCountTotal / sampleCount) * 10000) / 10000
+      : 0,
+    requiredCoreFactsGateDecisions: sortCountEntries(requiredCoreFactsGateDecisions, 'requiredCoreFactsGateDecision', 8),
     recoveryHandledRate: recoveryRiskSeenCount > 0
       ? Math.round((recoveryHandledCount / recoveryRiskSeenCount) * 10000) / 10000
       : 0,
