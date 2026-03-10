@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 
 const COLLECTION = 'llm_quality_logs';
 const QUALITY_SLICE_KEYS = new Set([
@@ -77,6 +78,23 @@ async function appendLlmQualityLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
+  const recordEnvelope = buildUniversalRecordEnvelope({
+    recordId: docRef.id,
+    recordType: 'llm_quality_log',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: normalizeString(payload.sourceSnapshotRef, 'snapshot:llm_quality_logs'),
+    effectiveFrom: payload.createdAt || new Date().toISOString(),
+    authorityTier: normalizeString(payload.authorityTier, 'T2_PUBLIC_DATA'),
+    bindingLevel: normalizeString(payload.bindingLevel, 'RECOMMENDED'),
+    status: 'active',
+    retentionTag: 'llm_quality_logs_180d',
+    piiClass: 'indirect_identifier',
+    accessScope: ['operator', 'quality_gate'],
+    maskingPolicy: 'quality_payload_masked',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: payload.createdAt || new Date().toISOString(),
+    updatedAt: payload.updatedAt || payload.createdAt || new Date().toISOString()
+  });
   const data = {
     userId: normalizeString(payload.userId, ''),
     intent: normalizeString(payload.intent, 'faq_search'),
@@ -95,6 +113,7 @@ async function appendLlmQualityLog(params) {
     replayFailureType: normalizeReplayFailureType(payload.replayFailureType),
     latencyMs: Math.max(0, Math.floor(normalizeNumber(payload.latencyMs, 0))),
     costUsd: Math.max(0, normalizeNumber(payload.costUsd, 0)),
+    recordEnvelope,
     createdAt: payload.createdAt || serverTimestamp()
   };
   await docRef.set(data, { merge: false });

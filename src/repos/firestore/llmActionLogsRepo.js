@@ -1,6 +1,7 @@
 'use strict';
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 
 const COLLECTION = 'llm_action_logs';
 const CONVERSATION_MODES = new Set(['casual', 'concierge']);
@@ -330,6 +331,23 @@ async function appendLlmActionLog(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
+  const recordEnvelope = buildUniversalRecordEnvelope({
+    recordId: docRef.id,
+    recordType: 'llm_action_log',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: normalizeString(payload.sourceSnapshotRef, 'snapshot:llm_action_logs'),
+    effectiveFrom: payload.createdAt || new Date().toISOString(),
+    authorityTier: normalizeString(payload.authorityTier, 'T2_PUBLIC_DATA'),
+    bindingLevel: normalizeString(payload.bindingLevel, 'RECOMMENDED'),
+    status: 'active',
+    retentionTag: 'llm_action_logs_180d',
+    piiClass: 'indirect_identifier',
+    accessScope: ['operator', 'llm_runtime'],
+    maskingPolicy: 'trace_summary_masked',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: payload.createdAt || new Date().toISOString(),
+    updatedAt: payload.updatedAt || payload.createdAt || new Date().toISOString()
+  });
   const data = {
     traceId: normalizeString(payload.traceId, null),
     requestId: normalizeString(payload.requestId, null),
@@ -446,6 +464,7 @@ async function appendLlmActionLog(params) {
     rewardVersion: normalizeString(payload.rewardVersion, 'v1'),
     rewardWindowHours: Math.max(1, Math.min(24 * 14, Math.floor(normalizeNumber(payload.rewardWindowHours, 48)))),
     rewardSignals: normalizeRewardSignals(payload.rewardSignals),
+    recordEnvelope,
     createdAt: payload.createdAt || serverTimestamp(),
     updatedAt: payload.updatedAt || serverTimestamp()
   };

@@ -9,6 +9,17 @@
 - `state=shadow_write`: payload本体は現状維持、envelopeサブオブジェクトをadd-only保存
 - `state=enforced`: writerで必須項目不足を拒否
 
+## Current adoption snapshot
+| data_class | adoption_state | writer_path |
+| --- | --- | --- |
+| llm_action_logs | shadow_write | `src/repos/firestore/llmActionLogsRepo.js` |
+| llm_quality_logs | shadow_write | `src/repos/firestore/llmQualityLogsRepo.js` |
+| faq_answer_logs | shadow_write | `src/repos/firestore/faqAnswerLogsRepo.js` |
+| source_refs | shadow_write | `src/repos/firestore/sourceRefsRepo.js` |
+| memory_* | planned | `src/v1/memory_fabric/*` |
+| delivery_records | planned | `src/v1/evidence_ledger/deliveryRecordsRepo.js` |
+| liff_synthetic_events | planned | `src/routes/liffSyntheticEvent.js` |
+
 ## Retention / deletion / masking / access / audit matrix template
 | data_class | retention_tag | deletion_policy | masking_policy | access_scope | audit_required |
 | --- | --- | --- | --- | --- | --- |

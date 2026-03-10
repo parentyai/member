@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { toMillis } = require('./queryFallback');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -227,11 +228,58 @@ function resolveId(data) {
   return `sr_${crypto.randomUUID()}`;
 }
 
+function resolveSourceAuthorityTier(normalized) {
+  if (!normalized || typeof normalized !== 'object') return 'UNKNOWN';
+  if (normalized.sourceType === 'official') return 'T1_OFFICIAL_OPERATION';
+  if (normalized.sourceType === 'semi_official') return 'T2_PUBLIC_DATA';
+  if (normalized.sourceType === 'community') return 'T4_COMMUNITY';
+  return 'T3_VENDOR';
+}
+
+function resolveSourceBindingLevel(normalized) {
+  if (!normalized || typeof normalized !== 'object') return 'UNKNOWN';
+  if (normalized.requiredLevel === 'required') return 'POLICY';
+  if (normalized.requiredLevel === 'optional') return 'REFERENCE';
+  return 'UNKNOWN';
+}
+
+function buildSourceRefEnvelope(sourceRefId, normalized, existingEnvelope) {
+  const payload = normalized && typeof normalized === 'object' ? normalized : {};
+  const sourceSnapshotRef = typeof payload.contentHash === 'string' && payload.contentHash.trim()
+    ? `source_ref:${payload.contentHash.trim()}`
+    : 'source_ref:unknown';
+  const effectiveFrom = payload.validFrom || new Date().toISOString();
+  const effectiveTo = payload.validUntil || null;
+  const previousCreatedAt = existingEnvelope && typeof existingEnvelope === 'object'
+    ? existingEnvelope.created_at
+    : null;
+  return buildUniversalRecordEnvelope({
+    recordId: sourceRefId,
+    recordType: 'source_ref',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef,
+    effectiveFrom,
+    effectiveTo,
+    authorityTier: resolveSourceAuthorityTier(payload),
+    bindingLevel: resolveSourceBindingLevel(payload),
+    jurisdiction: typeof payload.regionKey === 'string' && payload.regionKey.trim() ? payload.regionKey.trim() : null,
+    status: payload.status || 'active',
+    retentionTag: 'source_refs_365d',
+    piiClass: 'none',
+    accessScope: ['operator', 'retrieval'],
+    maskingPolicy: 'none',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: previousCreatedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+}
+
 async function createSourceRef(data) {
   const normalized = normalizeSourceRefData(data);
   ensureUrl(normalized.url);
   const id = resolveId(data);
   const db = getDb();
+  const recordEnvelope = buildSourceRefEnvelope(id, normalized, null);
   await db.collection(COLLECTION).doc(id).set({
     url: normalized.url,
     status: normalized.status,
@@ -252,6 +300,7 @@ async function createSourceRef(data) {
     regionKey: normalized.regionKey,
     evidenceLatestId: normalized.evidenceLatestId,
     usedByCityPackIds: normalized.usedByCityPackIds,
+    recordEnvelope,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
@@ -338,7 +387,10 @@ async function listSourceRefsForAudit(params) {
 
 async function updateSourceRef(sourceRefId, patch) {
   if (!sourceRefId) throw new Error('sourceRefId required');
+  const current = await getSourceRef(sourceRefId);
   const payload = patch && typeof patch === 'object' ? Object.assign({}, patch) : {};
+  const mergedForEnvelope = normalizeSourceRefData(Object.assign({}, current || {}, payload));
+  payload.recordEnvelope = buildSourceRefEnvelope(sourceRefId, mergedForEnvelope, current && current.recordEnvelope);
   payload.updatedAt = serverTimestamp();
   const db = getDb();
   await db.collection(COLLECTION).doc(sourceRefId).set(payload, { merge: true });

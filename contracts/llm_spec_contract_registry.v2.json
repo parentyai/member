@@ -103,12 +103,16 @@
       "requirementId": "DATA-C-02",
       "sourceSpec": "data_integration_spec",
       "summary": "Universal Record Envelope for all persisted records",
-      "status": "missing",
-      "severity": "critical",
+      "status": "partial",
+      "severity": "high",
       "blastRadius": "audit_traceability",
-      "recommendedAction": "add envelope schema and writer policy",
+      "recommendedAction": "expand envelope from shadow-write to all required data classes and enforce mode",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1"
+        "/Volumes/Arumamihs/Member/src/domain/data/universalRecordEnvelope.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/llmActionLogsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/llmQualityLogsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/faqAnswerLogsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1"
       ]
     },
     {
