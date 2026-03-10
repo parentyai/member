@@ -145,6 +145,15 @@ function main(argv) {
     args.requireStrictRuntimeSignals,
     toBool(process.env.LLM_QUALITY_REQUIRE_STRICT_RUNTIME_SIGNALS, false)
   );
+  const requireSoftFloor = toBool(
+    args.requireSoftFloor,
+    toBool(process.env.LLM_QUALITY_REQUIRE_SOFT_FLOOR_080, false)
+  );
+  const softFloor = Number.isFinite(Number(args.softFloor))
+    ? Number(args.softFloor)
+    : Number.isFinite(Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE))
+      ? Number(process.env.LLM_QUALITY_SOFT_FLOOR_VALUE)
+      : 0.8;
 
   const baseline = readJson(baselinePath);
   const candidate = readJson(candidatePath);
@@ -170,7 +179,9 @@ function main(argv) {
     minorityCriticalRegressionForbidden: true,
     mustPassFixturesRequired: true,
     allSlicesPassRequired: requireAllSlicesPass === true,
-    strictRuntimeSignalsRequired: requireStrictRuntimeSignals === true
+    strictRuntimeSignalsRequired: requireStrictRuntimeSignals === true,
+    softFloorRequired: requireSoftFloor === true,
+    softFloorValue: softFloor
   };
 
   if (!metricImproved(baseline.overallScore, candidate.overallScore)
@@ -208,6 +219,30 @@ function main(argv) {
   criticalSlices.forEach((row) => {
     if (row.pass !== true) failures.push(`critical_slice_failed:${row.sliceKey}`);
   });
+
+  const softFloorChecks = Array.from(candidateDimensionMap.keys())
+    .filter((key) => {
+      const row = candidateDimensionMap.get(key) || {};
+      return row.hardGate !== true;
+    })
+    .map((key) => {
+      const row = candidateDimensionMap.get(key) || {};
+      const score = Number(row.score || 0);
+      return {
+        key,
+        score,
+        pass: score >= softFloor
+      };
+    });
+  if (requireSoftFloor === true) {
+    softFloorChecks.forEach((row) => {
+      if (!row.pass) failures.push(`soft_floor_unmet:${row.key}`);
+    });
+  } else {
+    softFloorChecks.forEach((row) => {
+      if (!row.pass) warnings.push(`soft_floor_warning:${row.key}`);
+    });
+  }
 
   const allSliceChecks = Array.from(candidateSliceMap.keys()).map((sliceKey) => (
     checkSlicePassAndNoRegression(baselineSliceMap, candidateSliceMap, sliceKey)
@@ -311,6 +346,7 @@ function main(argv) {
     candidateOverallScore: Number(candidate.overallScore || 0),
     keyDimensions,
     criticalSlices,
+    softFloorChecks,
     allSlices: allSliceChecks,
     summaryPath,
     runtimeSignals,

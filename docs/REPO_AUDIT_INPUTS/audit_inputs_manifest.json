@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T04:37:30.441Z",
-  "gitCommit": "c6654dcd57448da891a7d6bc3467a17e6b7777bd",
-  "branch": "codex/phase776-runtime-conversation-enrichment",
-  "sourceDigest": "c39ffbd0973b484449cc4680496cf7288b9efe9a2252893aedd1e2523b1327a6",
+  "generatedAt": "2026-03-10T04:48:36.709Z",
+  "gitCommit": "bd264cad6025f2382e786484723547a0556e3da7",
+  "branch": "codex/phase777-soft-floor-uplift",
+  "sourceDigest": "bef2e0bd345d36c997b43b7ded948ba27352a30912e69b3d1c2fe7a1f3db1fc4",
   "counts": {
     "endpoints": 290,
     "routes": 129,
@@ -146,7 +146,7 @@
     },
     {
       "file": "docs/REPO_AUDIT_INPUTS/repo_map_ui.json",
-      "sha256": "727ed9fc09e6d9db41ce8320cbc8998e4b82027d777e9753a1dc3c2bfbeea283",
+      "sha256": "06dbd1194e9e4d97becf08cda96188334aa6035a73d7c048a2b00c7659c56a1c",
       "bytes": 447389
     },
     {

@@ -58,6 +58,10 @@ test('phase776: runtime gate uplifts continuity/recovery dimensions from convers
   assert.equal(getDimension(candidate, 'clarification_quality') >= 0.85, true);
   assert.equal(getDimension(candidate, 'misunderstanding_recovery') >= 0.85, true);
   assert.equal(getDimension(candidate, 'latency_surface_efficiency') >= 0.85, true);
+  assert.equal(getDimension(candidate, 'procedural_utility') >= 0.8, true);
+  assert.equal(getDimension(candidate, 'next_step_clarity') >= 0.8, true);
+  assert.equal(getDimension(candidate, 'japanese_naturalness') >= 0.8, true);
+  assert.equal(getDimension(candidate, 'keigo_distance') >= 0.8, true);
 });
 
 test('phase776: runtime gate keeps precomputed low dimensions when conversation quality is absent', () => {
