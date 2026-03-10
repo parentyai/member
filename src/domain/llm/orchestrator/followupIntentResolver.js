@@ -47,6 +47,10 @@ function resolveFollowupIntent(params) {
   const contextDomainRaw = normalizeText(payload.contextResumeDomain).toLowerCase();
   const recentFollowupIntents = Array.isArray(payload.recentFollowupIntents) ? payload.recentFollowupIntents : [];
   const domainIntent = domainIntentRaw || contextDomainRaw || 'general';
+  const hasFollowupHistory = recentFollowupIntents
+    .map((item) => normalizeFollowupIntent(item))
+    .some(Boolean);
+  const hasCarryContext = Boolean(contextDomainRaw) || hasFollowupHistory;
 
   if (!messageText || domainIntent === 'general') {
     return {
@@ -84,14 +88,14 @@ function resolveFollowupIntent(params) {
     };
   }
 
-  if (messageText.length <= 8 && hasPattern(messageText, CONTEXTUAL_SHORT_PATTERN)) {
+  if (hasCarryContext && messageText.length <= 8 && hasPattern(messageText, CONTEXTUAL_SHORT_PATTERN)) {
     return {
       followupIntent: 'next_step',
       reason: 'contextual_short_followup'
     };
   }
 
-  if (messageText.length <= 14 && hasPattern(messageText, DOMAIN_ANCHORED_SHORT_PATTERN)) {
+  if (hasCarryContext && messageText.length <= 14 && hasPattern(messageText, DOMAIN_ANCHORED_SHORT_PATTERN)) {
     return {
       followupIntent: 'next_step',
       reason: 'domain_anchored_short_followup'
