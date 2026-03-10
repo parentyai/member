@@ -3,6 +3,7 @@
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { sanitizeFaqAuditPayload } = require('../../domain/audit/faqAuditPayloadGuard');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'faq_answer_logs';
 
@@ -37,6 +38,7 @@ async function appendFaqAnswerLog(data) {
       updatedAt: sanitized && sanitized.createdAt ? sanitized.createdAt : new Date().toISOString()
     })
   });
+  assertRecordEnvelopeCompliance({ dataClass: 'faq_answer_logs', recordEnvelope: payload.recordEnvelope });
   await docRef.set(payload, { merge: false });
   return { id: docRef.id };
 }

@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'liff_synthetic_events';
 
@@ -55,6 +56,7 @@ async function appendLiffSyntheticEventRecord(entry) {
       updatedAt
     })
   };
+  assertRecordEnvelopeCompliance({ dataClass: 'liff_synthetic_events', recordEnvelope: data.recordEnvelope });
 
   await docRef.set(data, { merge: true });
   return { id: docRef.id };

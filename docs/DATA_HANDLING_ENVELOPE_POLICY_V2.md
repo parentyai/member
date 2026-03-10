@@ -12,13 +12,13 @@
 ## Current adoption snapshot
 | data_class | adoption_state | writer_path |
 | --- | --- | --- |
-| llm_action_logs | shadow_write | `src/repos/firestore/llmActionLogsRepo.js` |
-| llm_quality_logs | shadow_write | `src/repos/firestore/llmQualityLogsRepo.js` |
-| faq_answer_logs | shadow_write | `src/repos/firestore/faqAnswerLogsRepo.js` |
-| source_refs | shadow_write | `src/repos/firestore/sourceRefsRepo.js` |
-| memory_* | shadow_write | `src/v1/memory_fabric/*` |
-| delivery_records | shadow_write | `src/v1/evidence_ledger/deliveryRecordsRepo.js` |
-| liff_synthetic_events | shadow_write | `src/routes/liffSyntheticEvent.js`, `src/repos/firestore/liffSyntheticEventsRepo.js` |
+| llm_action_logs | enforced | `src/repos/firestore/llmActionLogsRepo.js` |
+| llm_quality_logs | enforced | `src/repos/firestore/llmQualityLogsRepo.js` |
+| faq_answer_logs | enforced | `src/repos/firestore/faqAnswerLogsRepo.js` |
+| source_refs | enforced | `src/repos/firestore/sourceRefsRepo.js` |
+| memory_* | enforced | `src/v1/memory_fabric/*` |
+| delivery_records | enforced | `src/v1/evidence_ledger/deliveryRecordsRepo.js` |
+| liff_synthetic_events | enforced | `src/routes/liffSyntheticEvent.js`, `src/repos/firestore/liffSyntheticEventsRepo.js` |
 
 ## Retention / deletion / masking / access / audit matrix template
 | data_class | retention_tag | deletion_policy | masking_policy | access_scope | audit_required |
@@ -36,3 +36,8 @@
 1. まず `planned -> shadow_write` を適用（読み取り互換を壊さない）。
 2. 監査/運用確認後に `enforced` へ昇格。
 3. rollback は `enforced -> shadow_write` の順で戻す。
+
+## Enforcement toggle
+- `ENABLE_DATA_ENVELOPE_ENFORCED_V1`（default: `true`）
+  - `true`: 対象 writer は `recordEnvelope` 必須検証（enforced）
+  - `false`: `shadow_write` 相当へ即時ダウングレード（writeは継続）

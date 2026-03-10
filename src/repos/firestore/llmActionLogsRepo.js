@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 
 const COLLECTION = 'llm_action_logs';
 const CONVERSATION_MODES = new Set(['casual', 'concierge']);
@@ -408,6 +409,7 @@ async function appendLlmActionLog(params) {
     createdAt: payload.createdAt || new Date().toISOString(),
     updatedAt: payload.updatedAt || payload.createdAt || new Date().toISOString()
   });
+  assertRecordEnvelopeCompliance({ dataClass: 'llm_action_logs', recordEnvelope });
   const data = {
     traceId: normalizeString(payload.traceId, null),
     requestId: normalizeString(payload.requestId, null),

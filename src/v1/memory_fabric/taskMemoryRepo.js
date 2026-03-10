@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
+const { assertRecordEnvelopeCompliance } = require('../../domain/data/universalRecordEnvelopeCompliance');
 const COLLECTION = 'memory_task';
 
 function normalizeLineUserId(value) {
@@ -15,27 +16,29 @@ async function putTaskMemory(lineUserId, payload) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc(String(normalizedLineUserId));
   const nowIso = new Date().toISOString();
+  const recordEnvelope = buildUniversalRecordEnvelope({
+    recordId: docRef.id,
+    recordType: 'memory_task',
+    sourceSystem: 'member_firestore',
+    sourceSnapshotRef: 'snapshot:memory_task',
+    effectiveFrom: nowIso,
+    authorityTier: 'T2_PUBLIC_DATA',
+    bindingLevel: 'REFERENCE',
+    status: 'active',
+    retentionTag: 'memory_task_180d',
+    piiClass: 'indirect_identifier',
+    accessScope: ['system', 'operator_limited'],
+    maskingPolicy: 'memory_payload_masked',
+    deletionPolicy: 'retention_policy_v1',
+    createdAt: nowIso,
+    updatedAt: nowIso
+  });
+  assertRecordEnvelopeCompliance({ dataClass: 'memory_task', recordEnvelope });
   await docRef.set({
     lineUserId: String(normalizedLineUserId),
     lane: 'task',
     data: payload && typeof payload === 'object' ? payload : {},
-    recordEnvelope: buildUniversalRecordEnvelope({
-      recordId: docRef.id,
-      recordType: 'memory_task',
-      sourceSystem: 'member_firestore',
-      sourceSnapshotRef: 'snapshot:memory_task',
-      effectiveFrom: nowIso,
-      authorityTier: 'T2_PUBLIC_DATA',
-      bindingLevel: 'REFERENCE',
-      status: 'active',
-      retentionTag: 'memory_task_180d',
-      piiClass: 'indirect_identifier',
-      accessScope: ['system', 'operator_limited'],
-      maskingPolicy: 'memory_payload_masked',
-      deletionPolicy: 'retention_policy_v1',
-      createdAt: nowIso,
-      updatedAt: nowIso
-    }),
+    recordEnvelope,
     updatedAt: serverTimestamp()
   }, { merge: true });
   return { id: docRef.id };
