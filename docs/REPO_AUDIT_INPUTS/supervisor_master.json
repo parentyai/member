@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T15:56:51-04:00",
-  "gitCommit": "2e0921ea6276e2253a93d1aa6295abe637c7392f",
+  "generatedAt": "2026-03-10T16:15:46-04:00",
+  "gitCommit": "5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98",
   "branch": "codex/data-c01-canonical-core-bridge-r793",
-  "sourceDigest": "744b6da8e391f849c8c3d296bab486ce50c53f427b314fa0d0fe4a6a74a6e964",
+  "sourceDigest": "2e712e37165438a72dbb10d94b45624a170f701de3ed8af5399f40a8c2c3c858",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -1,7 +1,7 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T20:15:03.728Z
-- gitCommit: 2e0921ea6276e2253a93d1aa6295abe637c7392f
+- generatedAt: 2026-03-10T20:17:56.214Z
+- gitCommit: 5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98
 - branch: codex/data-c01-canonical-core-bridge-r793
 - flagCount: 88
 - source: src/**/*.js

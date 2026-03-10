@@ -605,11 +605,11 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 3. `npm run llm:quality:diff`
 4. `npm run llm:quality:runtime-scorecard`（`tmp/llm_usage_summary.json` がある場合）
 5. `npm run llm:quality:gate`（runtime-first。all slices pass を既定で必須。実行前に `llm:quality:runtime-summary:prepare` が `tmp/llm_usage_summary.json` を準備）
-6. `npm run llm:quality:gate:strict`（all slices pass + runtime summary 必須）
+6. `npm run llm:quality:gate:strict`（all slices pass + runtime summary 必須 + runtime provenance 必須 + compat governance 必須）
 7. `npm run llm:quality:arena`
 8. `npm run llm:quality:must-pass`
 9. `npm run llm:quality:release-policy`（all slices pass を既定で必須）
-10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 を必須化）
+10. `npm run llm:quality:release-policy:strict`（strict runtime signals + soft floor 0.80 + compat governance を必須化）
 11. `npm run llm:quality:report`（`tmp/llm_usage_summary.json` がある場合。`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
     - failure register は signal別 materiality filter を適用（例: `defaultCasualRate > 0.02`, `retrieveNeededRate > 0.25`, `legacyTemplateHitRate > 0.005`）
     - `conversationQuality` 欠損シグナルは failure に含めず `signal_coverage.missingSignals` で運用監視する
@@ -647,6 +647,9 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
 - contamination risk `high` benchmark を hard gate に使用
 - release policy fail（overall非改善 / key dimension regression / must-pass fixture fail）
 - strict運用時:
+  - runtime provenance:
+    - `runtimeSummarySource` が `seeded_from_fixture/forced_refresh_from_seed/existing_stale_reseeded/existing_invalid_reseeded` の場合は fail（`runtime_summary_provenance_invalid:*`）
+    - strict prepare は `benchmarks/frozen/v1/runtime_summary_snapshot.v1.json`（`runtimeSummarySource=frozen_runtime_snapshot`）のみ seed として許可
   - runtime signals:
     - `legacyTemplateHitRate > 0.005`
     - `defaultCasualRate > 0.02`
@@ -655,6 +658,10 @@ plan で受け取った `planHash` / `confirmToken` をそのまま `set` に渡
     - `directAnswerMissRate > 0.08`
     - `avgRepeatRiskScore > 0.5`
     - `legacyTemplateHitRate/defaultCasualRate/followupQuestionIncludedRate/conciseModeAppliedRate/retrieveNeededRate/avgActionCount/directAnswerAppliedRate/avgRepeatRiskScore` の欠損は fail（`runtime_signal_missing:*`）
+  - compat governance:
+    - `summary.optimization.compatShareWindow` が欠損の場合は fail（`compat_share_window_missing`）
+    - `compatShareWindow > 0.15` の場合は fail（`compat_share_window_exceeded`）
+    - `compat` slice が `pass` でない場合は fail（`compat_slice_not_pass`）
   - soft floor:
     - hard-gate 以外の dimension で `score < 0.80` は fail（`soft_floor_unmet:*`）
 
