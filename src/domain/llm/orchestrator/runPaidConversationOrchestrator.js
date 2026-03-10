@@ -49,18 +49,79 @@ function isConciseReplyText(text) {
   return normalized.length <= 180;
 }
 
-function buildClarifyCandidate(packet, strategy) {
+const DOMAIN_CLARIFY_VARIANTS = Object.freeze({
+  school: [
+    '学校手続きを進めるため、学年か希望エリアを1つ教えてください。',
+    '学校の次の一手を絞るので、対象校の地域か学年を先に決めましょう。'
+  ],
+  ssn: [
+    'SSN手続きを進めるため、在留ステータスを1つ教えてください。',
+    'SSNの次の一手を確定したいので、最寄り窓口の地域を教えてください。'
+  ],
+  housing: [
+    '住まい探しを進めるため、希望エリアか入居時期を1つ教えてください。',
+    '住まい探しの次の一手に絞るので、予算帯かエリアを先に決めましょう。'
+  ],
+  banking: [
+    '口座手続きを進めるため、使いたい銀行か用途を1つ教えてください。',
+    '口座開設の次の一手を絞るので、口座種別か来店地域を先に決めましょう。'
+  ],
+  general: [
+    '対象を絞って案内したいので、いま一番気になっている手続きと期限を1つずつ教えてください。',
+    'まず優先手続きを1つに絞りたいので、対象手続きと期限を1つずつ教えてください。'
+  ]
+});
+
+function buildClarifyCandidate(packet, strategy, options) {
   const domainIntent = normalizeText(packet.normalizedConversationIntent).toLowerCase();
   const followupIntent = normalizeText(packet.followupIntent).toLowerCase();
   const hasFollowupIntent = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
+  const variant = options && options.variant === 'alt' ? 'alt' : 'default';
+  const candidateId = variant === 'alt' ? 'clarify_candidate_alt' : 'clarify_candidate';
+  const responseHints = []
+    .concat(Array.isArray(packet.recentAssistantCommitments) ? packet.recentAssistantCommitments : [])
+    .concat(Array.isArray(packet.recentResponseHints) ? packet.recentResponseHints : [])
+    .filter((item) => typeof item === 'string' && item.trim());
+  const pickLeastRepeatedVariant = (variants) => {
+    const rows = Array.isArray(variants) ? variants.filter(Boolean) : [];
+    if (!rows.length) return '';
+    const scored = rows.map((line, index) => ({
+      index,
+      line,
+      similarity: responseHints.reduce((max, hint) => Math.max(max, similarityScore(line, hint)), 0)
+    }));
+    scored.sort((left, right) => left.similarity - right.similarity || left.index - right.index);
+    if (variant === 'alt' && scored.length > 1) return scored[Math.min(1, scored.length - 1)].line;
+    return scored[0].line;
+  };
   if (hasFollowupIntent && domainIntent !== 'general') {
-    const followupReply = followupIntent === 'docs_required'
-      ? '必要書類の対象を確定したいので、対象者と現在の在留ステータスを教えてください。'
-      : (followupIntent === 'appointment_needed'
-        ? '予約要否を確定するため、手続き先の窓口名か地域を教えてください。'
-        : '次の一手を絞るため、期限が近い手続きを1つだけ教えてください。');
+    const byIntent = {
+      docs_required: {
+        school: '学校手続きでは、対象学年と住所エリアが分かると必要書類を即絞れます。',
+        ssn: 'SSN手続きでは、在留ステータスが分かると必要書類を即確定できます。',
+        housing: '住まい探しでは、希望エリアが分かると必要書類の優先度を絞れます。',
+        banking: '口座手続きでは、口座用途が分かると必要書類の案内を絞れます。',
+        general: '必要書類を確定したいので、対象手続きと対象者を1つずつ教えてください。'
+      },
+      appointment_needed: {
+        school: '学校手続きは予約制の窓口があるので、対象校の地域が分かると予約要否を確定できます。',
+        ssn: 'SSN窓口は地域差があるので、最寄り地域が分かると予約要否を確定できます。',
+        housing: '住まい探しは内見予約が必要な場合があるので、希望エリアが分かると確認できます。',
+        banking: '口座手続きは支店ごとに異なるため、利用予定の地域が分かると予約要否を確定できます。',
+        general: '予約要否を確定したいので、窓口名か地域を1つ教えてください。'
+      },
+      next_step: {
+        school: '学校手続きの次は、対象校を1校に絞って書類不足を先に潰すのが最短です。',
+        ssn: 'SSNの次は、必要書類を1つにまとめて窓口要件を確認するのが最短です。',
+        housing: '住まい探しの次は、候補物件を3件まで絞って内見順を決めるのが最短です。',
+        banking: '口座手続きの次は、口座種別を1つ決めて書類を先に確定するのが最短です。',
+        general: '次の一手を絞るため、期限が近い手続きを1つだけ教えてください。'
+      }
+    };
+    const intentMap = byIntent[followupIntent] || byIntent.next_step;
+    const followupReply = intentMap[domainIntent] || intentMap.general;
     return {
-      id: 'clarify_candidate',
+      id: candidateId,
       kind: 'clarify_candidate',
       replyText: followupReply,
       domainIntent,
@@ -74,12 +135,14 @@ function buildClarifyCandidate(packet, strategy) {
     };
   }
   const replyText = strategy === 'recommendation'
-    ? 'おすすめ先を絞りたいので、希望エリアと優先条件を1つずつ教えてください。'
-    : (domainIntent && domainIntent !== 'general'
-      ? '状況は把握しました。まず優先したい手続きと期限を1つずつ教えてください。そこから次の一手を絞ります。'
-      : '対象を絞って案内したいので、いま一番気になっている手続きと期限を1つずつ教えてください。');
+    ? (variant === 'alt'
+      ? 'おすすめ先を絞るため、優先条件を1つだけ教えてください。'
+      : 'おすすめ先を絞りたいので、希望エリアと優先条件を1つずつ教えてください。')
+    : pickLeastRepeatedVariant(
+      DOMAIN_CLARIFY_VARIANTS[domainIntent] || DOMAIN_CLARIFY_VARIANTS.general
+    );
   return {
-    id: 'clarify_candidate',
+    id: candidateId,
     kind: 'clarify_candidate',
     replyText,
     domainIntent: domainIntent || 'general',
@@ -91,6 +154,16 @@ function buildClarifyCandidate(packet, strategy) {
       followupQuestion: replyText
     }
   };
+}
+
+function appendClarifyCandidates(target, packet, strategy) {
+  const rows = Array.isArray(target) ? target : [];
+  const primary = buildClarifyCandidate(packet, strategy, { variant: 'default' });
+  rows.push(primary);
+  const alternate = buildClarifyCandidate(packet, strategy, { variant: 'alt' });
+  if (alternate && normalizeForSimilarity(alternate.replyText) !== normalizeForSimilarity(primary.replyText)) {
+    rows.push(alternate);
+  }
 }
 
 function buildCasualCandidate(casualReply, packet) {
@@ -199,7 +272,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
     });
     const domainCandidate = buildDomainCandidate(domainResult, packet);
     if (domainCandidate) candidates.push(domainCandidate);
-    candidates.push(buildClarifyCandidate(packet, strategy));
+    appendClarifyCandidates(candidates, packet, strategy);
     return { candidates, groundedResult, retrievalQuality };
   }
 
@@ -234,7 +307,7 @@ async function buildCandidateSet(packet, strategyPlan, deps) {
   }
 
   if (strategy === 'clarify' || strategy === 'grounded_answer' || strategy === 'recommendation') {
-    candidates.push(buildClarifyCandidate(packet, strategy));
+    appendClarifyCandidates(candidates, packet, strategy);
   }
 
   if (!candidates.length) {
