@@ -17,7 +17,7 @@
   - `npm run llm:quality:gate`
   - `npm run llm:quality:must-pass`
   - `npm run llm:quality:release-policy`
-  - `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` を同時生成）
+  - `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）
 
 ## 24 Dimension Weights
 | key | weight | hardGate |
@@ -113,6 +113,7 @@
   - diff
   - quality report (`top_10_*` を含む)
   - quality failure register (`tmp/llm_quality_failure_register.json`)
+  - counterexample queue (`tmp/llm_quality_counterexample_queue.json`)
   - benchmark version/hash
   - replay/perturbation report
   - must-pass fixture result

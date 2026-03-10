@@ -18,7 +18,9 @@ test('phase750: package scripts include quality framework gate and catchup gate 
   assert.equal(typeof pkg.scripts['llm:quality:candidate'], 'string');
   assert.equal(typeof pkg.scripts['llm:quality:diff'], 'string');
   assert.equal(typeof pkg.scripts['llm:quality:register-failures'], 'string');
+  assert.equal(typeof pkg.scripts['llm:quality:counterexample-queue'], 'string');
   assert.match(pkg.scripts['llm:quality:report'], /llm:quality:register-failures/);
+  assert.match(pkg.scripts['llm:quality:report'], /llm:quality:counterexample-queue/);
   assert.match(pkg.scripts['llm:quality:release-policy'], /LLM_QUALITY_REQUIRE_ALL_SLICES_PASS=true/);
   assert.match(pkg.scripts['catchup:gate:pr'], /llm:quality:gate/);
   assert.match(pkg.scripts['catchup:gate:pr'], /llm:quality:report/);

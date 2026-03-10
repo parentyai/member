@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T22:59:17-04:00",
-  "gitCommit": "ad863481d3381aa5ac71050a14ce9381707b18b9",
-  "branch": "codex/phase764-quality-week3-guard",
-  "sourceDigest": "34d8c0a6cc5f90714f0987ea03a43992556a351d27462ccdc5be4e95293868de",
+  "generatedAt": "2026-03-09T23:08:59-04:00",
+  "gitCommit": "946b1b62cc7b98e10fc10516da12ea559b1b4968",
+  "branch": "codex/phase765-counterexample-queue",
+  "sourceDigest": "76fc71687a81dbde9184a13aab4a6a61c0336c5ac6ed0d6e1f4c7871b58edd6d",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

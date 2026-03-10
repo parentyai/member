@@ -20,4 +20,4 @@
 - `npm run llm:quality:gate`
 - `npm run llm:quality:must-pass`
 - `npm run llm:quality:release-policy`
-- `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` を同時生成）
+- `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` と `tmp/llm_quality_counterexample_queue.json` を同時生成）

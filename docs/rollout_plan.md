@@ -12,7 +12,7 @@
 9. frontier warning review（quality-latency-cost）
 10. must-pass fixtures pass (`npm run llm:quality:must-pass`)
 11. release policy pass (`npm run llm:quality:release-policy`)
-12. quality report + failure register refresh (`npm run llm:quality:report`)
+12. quality report + failure register/counterexample queue refresh (`npm run llm:quality:report`)
 13. strict runtime gate pass (`npm run llm:quality:gate:strict` + `npm run llm:quality:release-policy:strict`)
 
 ## No-Go
