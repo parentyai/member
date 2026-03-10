@@ -25,6 +25,20 @@ test('phase755: runtime summary prepare seeds output when missing', () => {
   assert.equal(run.status, 0, run.stderr || run.stdout);
   const payload = JSON.parse(fs.readFileSync(outPath, 'utf8'));
   assert.equal(payload.summary && typeof payload.summary.qualityFramework === 'object', true);
+  assert.equal(payload.summary && typeof payload.summary.conversationQuality === 'object', true);
+  const conversation = payload.summary.conversationQuality;
+  [
+    'legacyTemplateHitRate',
+    'defaultCasualRate',
+    'followupQuestionIncludedRate',
+    'conciseModeAppliedRate',
+    'retrieveNeededRate',
+    'avgActionCount',
+    'directAnswerAppliedRate',
+    'avgRepeatRiskScore'
+  ].forEach((key) => {
+    assert.equal(Number.isFinite(Number(conversation[key])), true, `missing conversation signal: ${key}`);
+  });
   assert.equal(payload.runtimeSummarySource, 'seeded_from_fixture');
 });
 
