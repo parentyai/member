@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T16:21:42-04:00",
-  "gitCommit": "7743197615c4ff16fb71c12a2a23e715f9e7b8ad",
-  "branch": "codex/data-c01-postgres-sink-r794",
-  "sourceDigest": "65e5b5e5f1a68d3f5ba89ce7776ad3c11f7edb0e033c1e0cadcc2a14b779bbf9",
+  "generatedAt": "2026-03-10T16:50:01-04:00",
+  "gitCommit": "e6e91ff34feabb3d87353b9225f55f3123203526",
+  "branch": "codex/data-c01-source-evidence-outbox-r795",
+  "sourceDigest": "cc913e7b59d833074dc99385e6ceba456fc010ad6faa2e76ff4abdbb7591c6a9",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

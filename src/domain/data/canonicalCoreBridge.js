@@ -22,6 +22,7 @@ function normalizeObjectType(value) {
   if (!normalized) return 'unknown_object';
   if ([
     'source_snapshot',
+    'evidence_claim',
     'knowledge_object',
     'policy_rule',
     'publish_bundle',
