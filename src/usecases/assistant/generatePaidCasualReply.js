@@ -2,19 +2,55 @@
 
 const { detectMessagePosture } = require('./opportunity/detectMessagePosture');
 
+const CONTEXT_LABEL_MAP = Object.freeze({
+  school: '学校手続き',
+  housing: '住まい探し',
+  ssn: 'SSN手続き',
+  banking: '銀行手続き',
+  general: ''
+});
+
+const CASUAL_FOLLOWUP_DIRECT_ANSWER_MAP = Object.freeze({
+  school: {
+    docs_required: '学校手続きは、住所証明と予防接種記録を先にそろえると止まりにくいです。',
+    appointment_needed: '学校登録や面談は予約制のことがあるので、対象校が決まったら予約要否を確認しましょう。',
+    next_step: '次は、対象校を1校に絞って必要書類を先に確定するのが最短です。'
+  },
+  housing: {
+    docs_required: '住居手続きは、本人確認と収入確認に使う書類を先にそろえるのが近道です。',
+    appointment_needed: '内見は予約が必要な物件が多いので、候補を絞って空き枠を確認しましょう。',
+    next_step: '次は、候補物件を3件まで絞ってから内見可否を確認すると進みやすいです。'
+  },
+  ssn: {
+    docs_required: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。',
+    appointment_needed: '窓口は予約が必要な地域もあるので、最寄り窓口の予約要否を先に確認しましょう。',
+    next_step: '次は、必要書類を1つの一覧にまとめてから窓口の予約要否を確認するのが確実です。'
+  },
+  banking: {
+    docs_required: '口座開設は本人確認と住所証明の2点を先にそろえると進みやすいです。',
+    appointment_needed: '支店手続きは予約制のことがあるので、来店前に予約可否を確認しましょう。',
+    next_step: '次は、口座種別を1つ決めて必要書類を先に確定するのが最短です。'
+  }
+});
+
 function normalizeText(value) {
   if (typeof value !== 'string') return '';
   return value.trim();
 }
 
-function normalizeContextHintLabel(value) {
+function normalizeContextHintKey(value) {
   const normalized = normalizeText(value).toLowerCase();
-  if (!normalized) return '';
-  if (normalized === 'school') return '学校手続き';
-  if (normalized === 'housing') return '住まい探し';
-  if (normalized === 'ssn') return 'SSN手続き';
-  if (normalized === 'banking') return '銀行手続き';
-  if (normalized === 'general') return '';
+  if (!normalized) return 'general';
+  if (normalized === 'school') return 'school';
+  if (normalized === 'housing') return 'housing';
+  if (normalized === 'ssn') return 'ssn';
+  if (normalized === 'banking') return 'banking';
+  return 'general';
+}
+
+function normalizeContextHintLabel(value) {
+  const key = normalizeContextHintKey(value);
+  if (key !== 'general') return CONTEXT_LABEL_MAP[key];
   return normalizeText(value);
 }
 
@@ -50,22 +86,95 @@ function pickVariant(list, seedSource) {
   return rows[seed % rows.length];
 }
 
-function buildGeneralCasualReply(question, atoms, contextHint) {
+function normalizeForSimilarity(value) {
+  return normalizeText(value).toLowerCase().replace(/\s+/g, ' ');
+}
+
+function similarityScore(left, right) {
+  const a = normalizeForSimilarity(left);
+  const b = normalizeForSimilarity(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.92;
+  const aTokens = new Set(a.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  const bTokens = new Set(b.split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+  if (!aTokens.size || !bTokens.size) return 0;
+  let overlap = 0;
+  aTokens.forEach((token) => {
+    if (bTokens.has(token)) overlap += 1;
+  });
+  return overlap / Math.max(aTokens.size, bTokens.size);
+}
+
+function pickLeastRepeatedLine(list, recentHints, seedSource) {
+  const rows = Array.isArray(list) ? list.filter(Boolean) : [];
+  if (!rows.length) return '';
+  const hints = Array.isArray(recentHints)
+    ? recentHints.filter((item) => typeof item === 'string' && item.trim()).slice(0, 4)
+    : [];
+  if (!hints.length) return pickVariant(rows, seedSource);
+  const seedIndex = hashForVariantSeed(seedSource) % rows.length;
+  const scored = rows.map((line, index) => ({
+    line,
+    index,
+    similarity: hints.reduce((max, hint) => Math.max(max, similarityScore(line, hint)), 0),
+    seedDistance: Math.abs(index - seedIndex)
+  }));
+  scored.sort((left, right) => left.similarity - right.similarity || left.seedDistance - right.seedDistance);
+  return scored[0].line;
+}
+
+function buildFollowupActionLine(followupIntent) {
+  if (followupIntent === 'docs_required') return '次は、不足しやすい書類を1つずつ確認しましょう。';
+  if (followupIntent === 'appointment_needed') return '次は、最寄り窓口を1つ決めて予約要否を確認しましょう。';
+  if (followupIntent === 'next_step') return '次は、期限が近い手続きを1つに固定して進めましょう。';
+  return '';
+}
+
+function resolveFollowupDirectAnswer(contextHint, followupIntent) {
+  const domainKey = normalizeContextHintKey(contextHint);
+  if (domainKey === 'general') return '';
+  const normalizedIntent = normalizeText(followupIntent).toLowerCase();
+  const byDomain = CASUAL_FOLLOWUP_DIRECT_ANSWER_MAP[domainKey];
+  if (!byDomain) return '';
+  return normalizeText(byDomain[normalizedIntent] || '');
+}
+
+function buildGeneralCasualReply(question, atoms, contextHint, followupIntent, recentResponseHints) {
   const message = normalizeText(question);
+  const hints = Array.isArray(recentResponseHints) ? recentResponseHints : [];
   const contextLabel = normalizeContextHintLabel(contextHint);
-  const prompt = atoms && typeof atoms.question === 'string' && atoms.question.trim()
+  const directAnswer = resolveFollowupDirectAnswer(contextHint, followupIntent);
+  if (directAnswer) {
+    const actionLine = buildFollowupActionLine(followupIntent);
+    return actionLine ? `${directAnswer}\n${actionLine}` : directAnswer;
+  }
+
+  const questionPrompt = atoms && typeof atoms.question === 'string' && atoms.question.trim()
     ? atoms.question.trim()
+    : '';
+  const promptCandidates = questionPrompt
+    ? [questionPrompt]
     : (contextLabel
-      ? `${contextLabel}の話として進めます。いま一番詰まっている点を1つだけ教えてください。`
-      : '対象を絞って進めたいので、いま優先したい手続きを1つだけ教えてください。');
+      ? [
+        `${contextLabel}の続きとして、いま詰まっている点を1つだけ教えてください。`,
+        `${contextLabel}で次に決めたいことを1つだけ教えてください。`,
+        `${contextLabel}について、まず何から進めたいですか？`
+      ]
+      : [
+        '続きで進めるため、いま一番気になっている点を1つだけ教えてください。',
+        '状況を合わせたいので、次に決めたいことを1つだけ教えてください。',
+        '短くで大丈夫なので、先に進めたい手続きを1つだけ教えてください。'
+      ]);
+  const prompt = pickLeastRepeatedLine(promptCandidates, hints, `${message}:${contextLabel}`);
 
   if (!message) return prompt;
 
-  const intro = pickVariant([
+  const intro = pickLeastRepeatedLine([
     '了解です。状況を短く整理しながら進めます。',
     'ありがとうございます。いまの状況を一緒に整えて進めます。',
     '把握しました。まずは迷いを減らすところから進めます。'
-  ], message);
+  ], hints, message);
 
   return [
     intro,
@@ -77,6 +186,10 @@ function generatePaidCasualReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const messageText = normalizeText(payload.messageText);
   const contextHint = typeof payload.contextHint === 'string' ? normalizeText(payload.contextHint) : '';
+  const followupIntent = typeof payload.followupIntent === 'string' ? normalizeText(payload.followupIntent) : '';
+  const recentResponseHints = Array.isArray(payload.recentResponseHints)
+    ? payload.recentResponseHints.filter((item) => typeof item === 'string' && item.trim()).slice(0, 6)
+    : [];
   const suggestedAtoms = payload.suggestedAtoms && typeof payload.suggestedAtoms === 'object'
     ? payload.suggestedAtoms
     : { nextActions: [], pitfall: null, question: null };
@@ -100,7 +213,9 @@ function generatePaidCasualReply(params) {
   return {
     ok: true,
     mode: 'casual',
-    replyText: trimForPaidLineMessage(buildGeneralCasualReply(messageText, suggestedAtoms, contextHint))
+    replyText: trimForPaidLineMessage(
+      buildGeneralCasualReply(messageText, suggestedAtoms, contextHint, followupIntent, recentResponseHints)
+    )
   };
 }
 
