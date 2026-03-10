@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T08:46:14-04:00",
-  "gitCommit": "634fdf6d1c84b5af573ddba48cccd1317c3ec4d8",
+  "generatedAt": "2026-03-10T08:59:12-04:00",
+  "gitCommit": "17c0117e43391e5524a727e544cc5e14e9d83fd6",
   "branch": "codex/spec-v2-pr5-action-gateway-intercept",
-  "sourceDigest": "68c8865afa47979e848cebbe8bddd7c706ce1c283d12a5e5e8435fa9cf5611dc",
+  "sourceDigest": "b10642c90fb89d545398c2b91a2744fc01bb2887aafae2639ebe3a72e703322f",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",
