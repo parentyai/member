@@ -10,5 +10,5 @@
 - If duplicate replies: disable `ENABLE_V1_CHANNEL_EDGE` and inspect `line_webhook.events.filtered` audit.
 - If duplicate replies persist across multi-instance deploys: verify `webhook_edge_state` writes and confirm durable dedupe/order is active.
 - If malformed LLM output: disable `ENABLE_V1_SEMANTIC_OBJECT_STRICT`.
-- If LLM calls unexpectedly block after cutover: confirm `ENABLE_V1_OPENAI_RESPONSES=true` in runtime env.
+- If LLM calls unexpectedly block after cutover: verify `OPENAI_API_KEY`/`OPENAI_MODEL` and inspect Responses API errors (`ENABLE_V1_OPENAI_RESPONSES` is visibility-only).
 - If rendering truncation issue: disable `ENABLE_V1_LINE_RENDERER`.

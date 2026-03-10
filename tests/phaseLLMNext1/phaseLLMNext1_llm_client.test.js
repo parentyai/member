@@ -174,3 +174,25 @@ test('llmClient: uses responses text json_schema format', async () => {
   await llmClient.answerFaq(VALID_PAYLOAD, env);
   assert.equal(capturedBody.text.format.type, 'json_schema');
 });
+
+test('llmClient: keeps using Responses API even when ENABLE_V1_OPENAI_RESPONSES is false', async () => {
+  let capturedUrl;
+  const env = {
+    OPENAI_API_KEY: 'sk-test-key',
+    ENABLE_V1_OPENAI_RESPONSES: 'false',
+    _fetchFn: async (url) => {
+      capturedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          model: 'gpt-4o-mini',
+          output_text: JSON.stringify({ ok: true })
+        })
+      };
+    }
+  };
+  const result = await llmClient.answerFaq(VALID_PAYLOAD, env);
+  assert.equal(capturedUrl, 'https://api.openai.com/v1/responses');
+  assert.equal(result.provider, 'responses_api');
+});

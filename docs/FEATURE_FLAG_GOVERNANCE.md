@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T13:20:41.047Z
-- gitCommit: 3477b1bac4ed3f847952e4f089c93af612b66025
-- branch: codex/spec-v2-pr7-envelope-adoption
+- generatedAt: 2026-03-10T13:40:40.499Z
+- gitCommit: 39c2ccb71180a3f86ddac02c330076410721b9d1
+- branch: codex/spec-v2-pr8-responses-only-runtime
 - flagCount: 86
 - source: src/**/*.js
 - check: `npm run feature-flags:check`
