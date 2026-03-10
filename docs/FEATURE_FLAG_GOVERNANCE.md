@@ -1,8 +1,8 @@
 # FEATURE_FLAG_GOVERNANCE
 
-- generatedAt: 2026-03-10T13:07:34.694Z
-- gitCommit: 17c0117e43391e5524a727e544cc5e14e9d83fd6
-- branch: codex/spec-v2-pr5-action-gateway-intercept
+- generatedAt: 2026-03-10T13:20:41.047Z
+- gitCommit: 3477b1bac4ed3f847952e4f089c93af612b66025
+- branch: codex/spec-v2-pr7-envelope-adoption
 - flagCount: 86
 - source: src/**/*.js
 - check: `npm run feature-flags:check`

@@ -2,6 +2,7 @@
 
 const { getDb, serverTimestamp } = require('../../infra/firestore');
 const { sanitizeFaqAuditPayload } = require('../../domain/audit/faqAuditPayloadGuard');
+const { buildUniversalRecordEnvelope } = require('../../domain/data/universalRecordEnvelope');
 
 const COLLECTION = 'faq_answer_logs';
 
@@ -13,7 +14,29 @@ async function appendFaqAnswerLog(data) {
   const db = getDb();
   const docRef = db.collection(COLLECTION).doc();
   const sanitized = sanitizeFaqAuditPayload(data);
-  const payload = Object.assign({}, sanitized, { createdAt: resolveTimestamp(sanitized && sanitized.createdAt) });
+  const createdAt = resolveTimestamp(sanitized && sanitized.createdAt);
+  const payload = Object.assign({}, sanitized, {
+    createdAt,
+    recordEnvelope: buildUniversalRecordEnvelope({
+      recordId: docRef.id,
+      recordType: 'faq_answer_log',
+      sourceSystem: 'member_firestore',
+      sourceSnapshotRef: sanitized && typeof sanitized.sourceSnapshotRef === 'string' && sanitized.sourceSnapshotRef.trim()
+        ? sanitized.sourceSnapshotRef.trim()
+        : 'snapshot:faq_answer_logs',
+      effectiveFrom: sanitized && sanitized.createdAt ? sanitized.createdAt : new Date().toISOString(),
+      authorityTier: 'T2_PUBLIC_DATA',
+      bindingLevel: 'RECOMMENDED',
+      status: 'active',
+      retentionTag: 'faq_answer_logs_180d',
+      piiClass: 'indirect_identifier',
+      accessScope: ['operator', 'faq_runtime'],
+      maskingPolicy: 'faq_payload_masked',
+      deletionPolicy: 'retention_policy_v1',
+      createdAt: sanitized && sanitized.createdAt ? sanitized.createdAt : new Date().toISOString(),
+      updatedAt: sanitized && sanitized.createdAt ? sanitized.createdAt : new Date().toISOString()
+    })
+  });
   await docRef.set(payload, { merge: false });
   return { id: docRef.id };
 }
