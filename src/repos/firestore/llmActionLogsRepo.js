@@ -365,6 +365,7 @@ async function appendLlmActionLog(params) {
     repetitionPrevented: payload.repetitionPrevented === true,
     directAnswerApplied: payload.directAnswerApplied === true,
     clarifySuppressed: payload.clarifySuppressed === true,
+    misunderstandingRecovered: payload.misunderstandingRecovered === true,
     contextCarryScore: Math.max(0, Math.min(1, normalizeNumber(payload.contextCarryScore, 0))),
     repeatRiskScore: Math.max(0, Math.min(1, normalizeNumber(payload.repeatRiskScore, 0))),
     sliceKey: normalizeQualitySliceKey(payload.sliceKey),

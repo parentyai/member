@@ -968,6 +968,18 @@ function buildConversationQualityMeta(params) {
   const repetitionPrevented = payload.repetitionPrevented === true;
   const directAnswerApplied = payload.directAnswerApplied === true;
   const clarifySuppressed = payload.clarifySuppressed === true;
+  const recoverySignal = payload.recoverySignal === true;
+  const followupCarryFromHistory = payload.followupCarryFromHistory === true;
+  const misunderstandingRecovered = payload.misunderstandingRecovered === true
+    || (
+      recoverySignal
+      && (
+        directAnswerApplied
+        || clarifySuppressed
+        || repetitionPrevented
+        || followupCarryFromHistory
+      )
+    );
   const contextCarryScore = Number.isFinite(Number(payload.contextCarryScore))
     ? Math.max(0, Math.min(1, Number(payload.contextCarryScore)))
     : 0;
@@ -988,6 +1000,7 @@ function buildConversationQualityMeta(params) {
     repetitionPrevented,
     directAnswerApplied,
     clarifySuppressed,
+    misunderstandingRecovered,
     contextCarryScore,
     repeatRiskScore
   };
@@ -1255,6 +1268,7 @@ async function appendLlmGateDecisionBestEffort(data) {
         repetitionPrevented: payload.repetitionPrevented === true || qualityMeta.repetitionPrevented === true,
         directAnswerApplied: payload.directAnswerApplied === true || qualityMeta.directAnswerApplied === true,
         clarifySuppressed: payload.clarifySuppressed === true || qualityMeta.clarifySuppressed === true,
+        misunderstandingRecovered: payload.misunderstandingRecovered === true || qualityMeta.misunderstandingRecovered === true,
         contextCarryScore: Number.isFinite(Number(payload.contextCarryScore))
           ? Number(payload.contextCarryScore)
           : Number(qualityMeta.contextCarryScore || 0),
@@ -1484,6 +1498,7 @@ async function appendLlmActionLogBestEffort(data) {
       repetitionPrevented: payload.repetitionPrevented === true || qualityMeta.repetitionPrevented === true,
       directAnswerApplied: payload.directAnswerApplied === true || qualityMeta.directAnswerApplied === true,
       clarifySuppressed: payload.clarifySuppressed === true || qualityMeta.clarifySuppressed === true,
+      misunderstandingRecovered: payload.misunderstandingRecovered === true || qualityMeta.misunderstandingRecovered === true,
       contextCarryScore: Number.isFinite(Number(payload.contextCarryScore))
         ? Number(payload.contextCarryScore)
         : Number(qualityMeta.contextCarryScore || 0),

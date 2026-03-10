@@ -629,6 +629,13 @@ async function runPaidConversationOrchestrator(params) {
   const conciseModeApplied = selected && selected.conciseModeApplied === true
     ? true
     : isConciseReplyText(finalized.replyText);
+  const misunderstandingRecovered = packet.recoverySignal === true
+    && (
+      directAnswerApplied
+      || clarifySuppressed
+      || loopResolved.repetitionPrevented === true
+      || packet.followupCarryFromHistory === true
+    );
 
   return {
     ok: true,
@@ -668,6 +675,7 @@ async function runPaidConversationOrchestrator(params) {
       sourceFreshnessScore: readinessSourceFreshnessScore,
       sourceReadinessDecision: readinessSourceDecision,
       sourceReadinessReasons: readinessSourceReasons,
+      misunderstandingRecovered,
       officialOnlySatisfied: readinessOfficialOnlySatisfied,
       readinessDecision: readinessResult.decision,
       readinessReasonCodes: readinessResult.reasonCodes,
