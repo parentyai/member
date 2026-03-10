@@ -16,8 +16,8 @@ test('phase750: judge calibration dataset keeps minimum 120 cases and computes r
   const summary = summarize(rows);
   assert.ok(Array.isArray(rows));
   assert.ok(rows.length >= 120);
-  assert.ok(summary.disagreementRate <= 0.15);
-  assert.ok(summary.promptSensitivityDrift <= 0.1);
+  assert.ok(summary.disagreementRate <= 0.12);
+  assert.ok(summary.promptSensitivityDrift <= 0.08);
 });
 
 test('phase750: benchmark registry is frozen and contamination guard excludes high-risk fixture from hard gate', () => {

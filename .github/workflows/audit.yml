@@ -160,6 +160,7 @@ jobs:
           npm run llm:quality:gate
           npm run llm:quality:must-pass
           npm run llm:quality:release-policy
+          npm run llm:quality:report
 
       - name: Build LLM replay arena artifact
         run: npm run llm:quality:arena
@@ -176,6 +177,8 @@ jobs:
             tmp/llm_quality_diff.json
             tmp/llm_quality_must_pass_result.json
             tmp/llm_quality_release_policy_result.json
+            tmp/llm_quality_report.json
+            tmp/llm_quality_failure_register.json
             tmp/llm_replay_arena_result.json
 
   audit:

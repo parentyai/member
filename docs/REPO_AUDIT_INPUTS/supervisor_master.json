@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T22:43:00-04:00",
-  "gitCommit": "da4fa54423b342bec85e9afa6ea91ab6e9366ff7",
-  "branch": "codex/phase763-recovery-signal-uplift",
-  "sourceDigest": "9f440ee8a0971bf9ae268c6da5267dd630db0759e2e925957aab0130845924b1",
+  "generatedAt": "2026-03-09T22:59:17-04:00",
+  "gitCommit": "ad863481d3381aa5ac71050a14ce9381707b18b9",
+  "branch": "codex/phase764-quality-week3-guard",
+  "sourceDigest": "34d8c0a6cc5f90714f0987ea03a43992556a351d27462ccdc5be4e95293868de",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

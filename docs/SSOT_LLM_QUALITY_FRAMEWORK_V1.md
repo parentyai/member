@@ -17,7 +17,7 @@
   - `npm run llm:quality:gate`
   - `npm run llm:quality:must-pass`
   - `npm run llm:quality:release-policy`
-  - `npm run llm:quality:report`
+  - `npm run llm:quality:report`（`tmp/llm_quality_failure_register.json` を同時生成）
 
 ## 24 Dimension Weights
 | key | weight | hardGate |
@@ -62,8 +62,8 @@
 - multilingual check: `jp` vs `jp_en_terms`
 - prompt sensitivity check: `altPromptDecisions`
 - reliability policy:
-  - disagreementRate > 0.15 -> human review required
-  - promptSensitivityDrift > 0.10 -> human review required
+  - disagreementRate > 0.12 -> human review required
+  - promptSensitivityDrift > 0.08 -> human review required
 
 ## Benchmark Registry / Contamination Guard
 - registry: `benchmarks/registry/manifest.v1.json`
@@ -112,6 +112,7 @@
   - candidate scorecard
   - diff
   - quality report (`top_10_*` を含む)
+  - quality failure register (`tmp/llm_quality_failure_register.json`)
   - benchmark version/hash
   - replay/perturbation report
   - must-pass fixture result
