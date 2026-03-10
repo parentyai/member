@@ -23,7 +23,9 @@ test('phase751: quality report script emits required top_10 outputs', () => {
         followupQuestionIncludedRate: 0.7,
         conciseModeAppliedRate: 0.6,
         retrieveNeededRate: 0.3,
-        avgActionCount: 2
+        avgActionCount: 2,
+        directAnswerAppliedRate: 0.81,
+        avgRepeatRiskScore: 0.22
       }
     }
   }, null, 2)}\n`);
