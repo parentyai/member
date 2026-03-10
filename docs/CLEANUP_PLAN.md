@@ -5,7 +5,7 @@
 - add-onlyで legacy/duplicate/fallback/full-scan/drift を制御可能にする。
 
 ## 対象
-- canonical repos: 95
+- canonical repos: 96
 - legacy repos: 0
 - duplicate groups: 0
 - missing-index fallback points: 0

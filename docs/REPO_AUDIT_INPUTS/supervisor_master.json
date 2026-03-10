@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T15:57:51-04:00",
-  "gitCommit": "e513cc816ef27d8697c182aab2fa45fc311a899c",
-  "branch": "codex/runtime-first-compat-governance-r795",
-  "sourceDigest": "9a85a80c712a3767b5e9dacfae772896dfc410cbf8a75de6de57a924a0d74ba3",
+  "generatedAt": "2026-03-10T16:15:46-04:00",
+  "gitCommit": "5f147f1a7089174b6ca34c4e0eed6d23c7ef4b98",
+  "branch": "codex/data-c01-canonical-core-bridge-r793",
+  "sourceDigest": "2e712e37165438a72dbb10d94b45624a170f701de3ed8af5399f40a8c2c3c858",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

@@ -1,6 +1,6 @@
 {
   "registryVersion": "v2.0.0",
-  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c03-runtimefirst-compatgovernance",
+  "registryHash": "sha256:llm-spec-contract-v2-20260310-data-c01-bridge-r793",
   "generatedAt": "2026-03-10T00:00:00.000Z",
   "authorityOrder": [
     "Member_LLM_Unified_Master_Spec_v2",
@@ -99,12 +99,18 @@
       "requirementId": "DATA-C-01",
       "sourceSpec": "data_integration_spec",
       "summary": "Canonical Core object model on PostgreSQL",
-      "status": "missing",
+      "status": "partial",
       "severity": "critical",
       "blastRadius": "data_governance",
-      "recommendedAction": "introduce canonical core bridge with dual-write migration",
+      "recommendedAction": "enable canonical_core_outbox dual-write bridge and complete PostgreSQL canonical sink cutover",
       "evidence": [
-        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1"
+        "/Volumes/Arumamihs/Member/src/domain/data/canonicalCoreBridge.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/canonicalCoreOutboxRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/sourceRefsRepo.js:1",
+        "/Volumes/Arumamihs/Member/src/repos/firestore/faqArticlesRepo.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase793/phase793_t01_canonical_core_outbox_repo_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase793/phase793_t02_source_refs_canonical_core_dual_write_contract.test.js:1",
+        "/Volumes/Arumamihs/Member/tests/phase793/phase793_t03_faq_articles_canonical_core_dual_write_contract.test.js:1"
       ]
     },
     {
@@ -226,7 +232,7 @@
       "conflictId": "CF-02",
       "severity": "critical",
       "blocking": true,
-      "summary": "Canonical Core RDB required by spec vs Firestore-centric runtime"
+      "summary": "Canonical Core outbox bridge is active but PostgreSQL canonical sink is still not implemented"
     }
   ]
 }

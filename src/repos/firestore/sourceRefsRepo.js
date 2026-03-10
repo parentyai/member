@@ -12,6 +12,7 @@ const {
   isKnowledgeLifecycleState,
   normalizeKnowledgeLifecycleBucket
 } = require('../../domain/data/knowledgeLifecycleStateMachine');
+const { appendCanonicalCoreOutboxEvent } = require('./canonicalCoreOutboxRepo');
 
 const COLLECTION = 'source_refs';
 const VALIDITY_DAYS = 120;
@@ -339,6 +340,19 @@ async function createSourceRef(data) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: false });
+
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'source_snapshot',
+    objectId: id,
+    eventType: 'upsert',
+    recordEnvelope,
+    payloadSummary: {
+      lifecycleState: normalized.knowledgeLifecycleState,
+      lifecycleBucket: normalized.knowledgeLifecycleBucket,
+      status: normalized.status,
+      riskLevel: normalized.riskLevel
+    }
+  });
   return { id };
 }
 
@@ -472,6 +486,19 @@ async function updateSourceRef(sourceRefId, patch) {
   payload.updatedAt = serverTimestamp();
   const db = getDb();
   await db.collection(COLLECTION).doc(sourceRefId).set(payload, { merge: true });
+
+  await appendCanonicalCoreOutboxEvent({
+    objectType: 'source_snapshot',
+    objectId: sourceRefId,
+    eventType: 'upsert',
+    recordEnvelope: payload.recordEnvelope,
+    payloadSummary: {
+      lifecycleState: nextLifecycleState,
+      lifecycleBucket: resolveKnowledgeLifecycleBucket(nextLifecycleState),
+      status: mergedForEnvelope.status,
+      riskLevel: mergedForEnvelope.riskLevel
+    }
+  });
   return { id: sourceRefId };
 }
 
