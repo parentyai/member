@@ -11,6 +11,13 @@ const TASK_LABEL_MAP = Object.freeze({
   housing_search: '住まい探し',
   bank_account_opening: '口座開設手続き'
 });
+const DOMAIN_ANCHOR_MAP = Object.freeze({
+  housing: '住まい探しでは',
+  school: '学校手続きでは',
+  ssn: 'SSN手続きでは',
+  banking: '銀行口座手続きでは',
+  general: ''
+});
 
 const DOMAIN_SPECS = Object.freeze({
   housing: {
@@ -127,8 +134,13 @@ function formatTaskLabel(task) {
   return key.replace(/_/g, ' ');
 }
 
-function resolveDomainIntent(value) {
+function resolveDomainIntent(value, fallback) {
   const intent = normalizeText(value).toLowerCase();
+  const fallbackIntent = normalizeText(fallback).toLowerCase();
+  if (intent && intent !== 'general' && Object.prototype.hasOwnProperty.call(DOMAIN_SPECS, intent)) return intent;
+  if (fallbackIntent && fallbackIntent !== 'general' && Object.prototype.hasOwnProperty.call(DOMAIN_SPECS, fallbackIntent)) {
+    return fallbackIntent;
+  }
   if (intent && Object.prototype.hasOwnProperty.call(DOMAIN_SPECS, intent)) return intent;
   return 'general';
 }
@@ -216,6 +228,102 @@ function hasDomainWord(line, domainIntent) {
   return true;
 }
 
+function resolveDomainAnchor(domainIntent) {
+  const key = resolveDomainIntent(domainIntent);
+  return DOMAIN_ANCHOR_MAP[key] || '';
+}
+
+function withDomainAnchor(line, domainIntent) {
+  const base = normalizeText(line);
+  if (!base || resolveDomainIntent(domainIntent) === 'general' || hasDomainWord(base, domainIntent)) return base;
+  const anchor = resolveDomainAnchor(domainIntent);
+  if (!anchor) return base;
+  const normalizedBase = base.replace(/^[、,\s]+/, '');
+  return `${anchor}、${normalizedBase}`;
+}
+
+function resolveFollowupActionVariants(followupIntent, domainIntent) {
+  const key = normalizeText(followupIntent).toLowerCase();
+  const domain = resolveDomainIntent(domainIntent);
+  if (!key) return [];
+  const common = {
+    docs_required: [
+      '次は不足しやすい書類を1つずつ確認しましょう。',
+      '次は提出先ごとの必要書類を先に分けて整理しましょう。'
+    ],
+    appointment_needed: [
+      '次は最寄り窓口を1つ決めて予約可否を確認しましょう。',
+      '次は対象窓口を1つに絞って予約要否を先に確定しましょう。'
+    ],
+    next_step: [
+      '次は期限が近い手続きを1つに固定して進めましょう。',
+      '次は最優先手続きを1つだけ決めて進めましょう。'
+    ]
+  };
+  const byDomain = {
+    school: {
+      docs_required: '次は学校の提出書類を先にそろえましょう。',
+      appointment_needed: '次は対象校の面談予約が必要か確認しましょう。',
+      next_step: '次は対象校を1校に絞って手続きを進めましょう。'
+    },
+    ssn: {
+      docs_required: '次はSSN申請で不足しやすい書類を先に確認しましょう。',
+      appointment_needed: '次はSSN窓口の予約要否を先に確認しましょう。',
+      next_step: '次はSSN申請の優先手順を1つに絞って進めましょう。'
+    },
+    housing: {
+      docs_required: '次は住居契約に必要な書類を先に確認しましょう。',
+      appointment_needed: '次は内見予約の空き枠を先に確認しましょう。',
+      next_step: '次は候補物件を3件まで絞って進めましょう。'
+    },
+    banking: {
+      docs_required: '次は口座開設の本人確認書類を先に確認しましょう。',
+      appointment_needed: '次は来店予約の要否を先に確認しましょう。',
+      next_step: '次は口座種別を1つ決めて進めましょう。'
+    }
+  };
+  const preferred = byDomain[domain] && byDomain[domain][key] ? [byDomain[domain][key]] : [];
+  return preferred.concat(common[key] || []);
+}
+
+function selectVariantByStreak(variants, streak) {
+  const rows = Array.isArray(variants) ? variants.filter(Boolean) : [];
+  if (!rows.length) return '';
+  const index = Math.min(rows.length - 1, Math.max(0, streak));
+  return rows[index] || rows[0];
+}
+
+function resolveFollowupDirectAnswer(params) {
+  const payload = params && typeof params === 'object' ? params : {};
+  const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
+  const domainIntent = resolveDomainIntent(payload.domainIntent);
+  const streak = Number.isFinite(Number(payload.repeatedFollowupStreak))
+    ? Math.max(0, Math.floor(Number(payload.repeatedFollowupStreak)))
+    : 0;
+  const directAnswers = payload.directAnswers && typeof payload.directAnswers === 'object' ? payload.directAnswers : {};
+  const directAnswer = directAnswers[followupIntent] || '';
+  if (!directAnswer) return '';
+
+  if (streak <= 0) return withDomainAnchor(directAnswer, domainIntent);
+
+  const repeatedAnswerByIntent = {
+    docs_required: [
+      '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。',
+      '書類確認を続けるなら、最優先手続きの提出物だけ先に確定するのが早いです。'
+    ],
+    appointment_needed: [
+      '予約の確認を続けるなら、最寄り窓口を1つ決めて予約可否を確定しましょう。',
+      '予約要否の確認は、対象窓口を1つ固定して可否を先に確認するのが確実です。'
+    ],
+    next_step: [
+      '同じ話題を進めるなら、期限が近い手続きを1つに固定すると進みます。',
+      '次の一手を進めるなら、まず期限の近い手続きを1つだけ確定しましょう。'
+    ]
+  };
+  const repeatedVariant = selectVariantByStreak(repeatedAnswerByIntent[followupIntent], streak - 1);
+  return withDomainAnchor(repeatedVariant || directAnswer, domainIntent);
+}
+
 function countFollowupIntentStreak(params) {
   const payload = params && typeof params === 'object' ? params : {};
   const followupIntent = normalizeText(payload.followupIntent).toLowerCase();
@@ -237,14 +345,16 @@ function resolveFollowupIntentForDomain(params) {
   }
   const decision = resolveFollowupIntent({
     messageText: payload.messageText,
-    domainIntent: payload.domainIntent
+    domainIntent: payload.domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    recentFollowupIntents: payload.recentFollowupIntents
   });
   return decision && typeof decision.followupIntent === 'string' ? decision.followupIntent : null;
 }
 
 function buildConciseReply(parts) {
   const payload = parts && typeof parts === 'object' ? parts : {};
-  const domainIntent = resolveDomainIntent(payload.domainIntent);
+  const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
   const spec = DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general;
   const followupIntent = payload.followupIntent || null;
   const repeatedFollowupStreak = Number.isFinite(Number(payload.repeatedFollowupStreak))
@@ -253,51 +363,17 @@ function buildConciseReply(parts) {
   const repeatedFollowupIntent = repeatedFollowupStreak >= 1;
   const recentResponseHints = Array.isArray(payload.recentResponseHints) ? payload.recentResponseHints : [];
   const directAnswers = spec.directAnswers && typeof spec.directAnswers === 'object' ? spec.directAnswers : {};
-  const repeatedAnswerByIntent = {
-    docs_required: [
-      '同じ書類確認なら、次は不足しやすい書類を1つずつ潰すのが最短です。',
-      '書類確認を続けるなら、最優先手続きの提出物だけ先に確定するのが早いです。'
-    ],
-    appointment_needed: [
-      '予約の確認を続けるなら、最寄り窓口を1つ決めて予約可否を確定しましょう。',
-      '予約要否の確認は、対象窓口を1つ固定して可否を先に確認するのが確実です。'
-    ],
-    next_step: [
-      '同じ話題を進めるなら、期限が近い手続きを1つに固定すると進みます。',
-      '次の一手を進めるなら、まず期限の近い手続きを1つだけ確定しましょう。'
-    ]
-  };
-  const repeatedActionByIntent = {
-    docs_required: [
-      '次は不足しやすい書類を1つずつ確認しましょう。',
-      '次は提出先ごとの必要書類を先に分けて整理しましょう。'
-    ],
-    appointment_needed: [
-      '次は最寄り窓口を1つ決めて予約可否を確認しましょう。',
-      '次は対象窓口を1つに絞って予約要否を先に確定しましょう。'
-    ],
-    next_step: [
-      '次は期限が近い手続きを1つに固定して進めましょう。',
-      '次は最優先手続きを1つだけ決めて進めましょう。'
-    ]
-  };
+  const followupActionVariants = resolveFollowupActionVariants(followupIntent, domainIntent);
   const recoveryLeadLine = payload.recoverySignal === true ? '了解です。前提を修正して続けます。' : '';
-  let resolvedPrimaryLine = (
-    followupIntent
-      ? (repeatedFollowupIntent
-        ? (() => {
-          const variants = repeatedAnswerByIntent[followupIntent];
-          if (!Array.isArray(variants) || !variants.length) return directAnswers[followupIntent];
-          const index = Math.min(variants.length - 1, repeatedFollowupStreak - 1);
-          return variants[index] || variants[0];
-        })()
-        : directAnswers[followupIntent])
-      : (payload.situationLine || spec.situationLine)
-  );
-  if (followupIntent && domainIntent !== 'general' && !hasDomainWord(resolvedPrimaryLine, domainIntent)) {
-    const lead = normalizeText(spec.situationLine).replace(/[。！？!?]$/, '');
-    resolvedPrimaryLine = `${lead}は ${resolvedPrimaryLine}`;
-  }
+  let resolvedPrimaryLine = followupIntent
+    ? resolveFollowupDirectAnswer({
+      followupIntent,
+      domainIntent,
+      repeatedFollowupStreak,
+      directAnswers
+    })
+    : (payload.situationLine || spec.situationLine);
+  resolvedPrimaryLine = withDomainAnchor(resolvedPrimaryLine, domainIntent);
   const primaryLineCandidate = recoveryLeadLine
     ? `${recoveryLeadLine} ${resolvedPrimaryLine || payload.situationLine || spec.situationLine}`
     : resolvedPrimaryLine;
@@ -308,17 +384,10 @@ function buildConciseReply(parts) {
       || spec.situationLine
   );
   const actions = normalizeActions(payload.nextActions, 3);
-  const repeatedActionLine = (
-    repeatedFollowupIntent
-      ? (() => {
-        const variants = repeatedActionByIntent[followupIntent];
-        if (!Array.isArray(variants) || !variants.length) return '';
-        const index = Math.min(variants.length - 1, repeatedFollowupStreak - 1);
-        return ensureSentence(variants[index] || variants[0]);
-      })()
-      : ''
-  );
-  const actionLine = repeatedActionLine || buildActionLine(actions[0] || spec.defaultAction);
+  const followupActionLine = followupIntent
+    ? ensureSentence(selectVariantByStreak(followupActionVariants, repeatedFollowupStreak))
+    : '';
+  const actionLine = followupActionLine || buildActionLine(actions[0] || spec.defaultAction);
   const pitfall = ensureSentence(`詰まりやすいのは ${sanitizeReplyLine(payload.pitfall) || spec.pitfall}`);
   const question = sanitizeReplyLine(payload.followupQuestion);
   const questionLine = question
@@ -382,7 +451,7 @@ function buildDomainAuditMeta(params) {
 
 function generatePaidDomainConciergeReply(params) {
   const payload = params && typeof params === 'object' ? params : {};
-  const domainIntent = resolveDomainIntent(payload.domainIntent);
+  const domainIntent = resolveDomainIntent(payload.domainIntent, payload.contextResumeDomain);
   const spec = DOMAIN_SPECS[domainIntent] || DOMAIN_SPECS.general;
   const contextSnapshot = payload.contextSnapshot && typeof payload.contextSnapshot === 'object'
     ? payload.contextSnapshot
@@ -394,7 +463,9 @@ function generatePaidDomainConciergeReply(params) {
   const followupIntent = resolveFollowupIntentForDomain({
     followupIntent: payload.followupIntent,
     messageText: payload.messageText,
-    domainIntent
+    domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
+    recentFollowupIntents: payload.recentFollowupIntents
   });
   const repeatedFollowupStreak = countFollowupIntentStreak({
     followupIntent,
@@ -415,6 +486,7 @@ function generatePaidDomainConciergeReply(params) {
 
   const concise = buildConciseReply({
     domainIntent,
+    contextResumeDomain: payload.contextResumeDomain,
     situationLine: spec.situationLine,
     nextActions: mergedActions,
     pitfall: suggestedAtoms.pitfall || spec.pitfall,

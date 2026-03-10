@@ -58,7 +58,9 @@ test('phase757: quality framework lifts continuity/recovery dimensions when cont
       avgRepeatRiskScore: 0.2,
       followupQuestionIncludedRate: 0.74,
       followupResolutionRate: 0.92,
+      followupCarryFromHistoryRate: 0.86,
       contextualResumeHandledRate: 0.9,
+      recoverySignalRate: 0.84,
       recoveryHandledRate: 0.88,
       domainIntentConciergeRate: 0.9,
       avgUnsupportedClaimCount: 0.01,
@@ -81,4 +83,3 @@ test('phase757: quality framework lifts continuity/recovery dimensions when cont
   assert.equal(byKey('empathy').score >= 0.8, true);
   assert.equal(byKey('latency_surface_efficiency').score >= 0.8, true);
 });
-

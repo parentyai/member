@@ -147,6 +147,10 @@ test('phase734: ssn followup intents stay concise and avoid generic loop prompt'
   assert.equal(bookingLines.length <= 3, true);
   assert.equal(docsReply.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
   assert.equal(bookingReply.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
+  assert.equal(docsReply.replyText.includes('ですねは'), false);
+  assert.equal(bookingReply.replyText.includes('ですねは'), false);
+  assert.equal(/SSN/i.test(docsReply.replyText), true);
+  assert.equal(/SSN/i.test(bookingReply.replyText), true);
 });
 
 test('phase734: repeated docs follow-up rotates concise reply and avoids identical line reuse', () => {
@@ -179,4 +183,31 @@ test('phase734: repeated docs follow-up rotates concise reply and avoids identic
   assert.equal(second.replyText.length > 0, true);
   assert.equal(second.replyText === first.replyText, false);
   assert.equal(second.replyText.includes('優先したい手続きがあれば1つだけ教えてください。'), false);
+  assert.equal(second.replyText.includes('ですねは'), false);
+});
+
+test('phase734: domain fallback keeps context domain for short follow-up', () => {
+  const contextSnapshot = {
+    phase: 'arrival',
+    topOpenTasks: [{ key: 'ssn_application', status: 'open' }]
+  };
+
+  const result = generatePaidDomainConciergeReply({
+    domainIntent: 'general',
+    contextResumeDomain: 'ssn',
+    messageText: '予約するの？',
+    contextSnapshot,
+    recentFollowupIntents: ['appointment_needed'],
+    opportunityDecision: {
+      conversationMode: 'concierge',
+      opportunityType: 'action',
+      opportunityReasonKeys: ['contextual_domain_resume'],
+      interventionBudget: 1
+    }
+  });
+
+  assert.equal(result.domainIntent, 'ssn');
+  assert.equal(result.followupIntent, 'appointment_needed');
+  assert.equal(/SSN/i.test(result.replyText), true);
+  assert.equal(result.replyText.includes('ですねは'), false);
 });

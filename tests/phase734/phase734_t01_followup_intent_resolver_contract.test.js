@@ -32,3 +32,19 @@ test('phase734: followup intent resolver avoids domain guess without domain cont
   });
   assert.equal(unknown.followupIntent, null);
 });
+
+test('phase734: domain anchored short utterance needs carry context', () => {
+  const noCarry = resolveFollowupIntent({
+    messageText: 'SSNha?',
+    domainIntent: 'ssn'
+  });
+  assert.equal(noCarry.followupIntent, null);
+
+  const withCarry = resolveFollowupIntent({
+    messageText: 'SSNha?',
+    domainIntent: 'ssn',
+    contextResumeDomain: 'ssn',
+    recentFollowupIntents: ['next_step']
+  });
+  assert.equal(withCarry.followupIntent, 'next_step');
+});

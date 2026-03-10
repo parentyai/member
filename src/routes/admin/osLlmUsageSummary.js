@@ -518,6 +518,7 @@ function buildConversationQualitySummary(actionRows) {
   const readinessDecisions = new Map();
   const readinessSafeResponseModes = new Map();
   const followupIntents = new Map();
+  const followupIntentReasons = new Map();
   const routerReasons = new Map();
   const contradictionFlags = new Map();
   let legacyTemplateHitCount = 0;
@@ -554,8 +555,12 @@ function buildConversationQualitySummary(actionRows) {
   let pitfallIncludedSeenCount = 0;
   let followupIntentSeenCount = 0;
   let followupResolvedCount = 0;
+  let followupCarryFromHistorySeenCount = 0;
+  let followupCarryFromHistoryCount = 0;
   let contextResumeSeenCount = 0;
   let contextResumeHandledCount = 0;
+  let recoverySignalSeenCount = 0;
+  let recoverySignalCount = 0;
   let recoveryRiskSeenCount = 0;
   let recoveryHandledCount = 0;
 
@@ -572,6 +577,7 @@ function buildConversationQualitySummary(actionRows) {
     const readinessDecision = normalizeReason(row && row.readinessDecision ? row.readinessDecision : 'none');
     const readinessSafeResponseMode = normalizeReason(row && row.readinessSafeResponseMode ? row.readinessSafeResponseMode : 'none');
     const followupIntent = normalizeReason(row && row.followupIntent ? row.followupIntent : 'none');
+    const followupIntentReason = normalizeReason(row && row.followupIntentReason ? row.followupIntentReason : 'none');
     const routerReason = normalizeReason(row && row.routerReason ? row.routerReason : 'none');
     const actionCount = Number.isFinite(Number(row && row.actionCount)) ? Number(row.actionCount) : 0;
     const candidateCount = Number.isFinite(Number(row && row.candidateCount)) ? Number(row.candidateCount) : 0;
@@ -584,6 +590,8 @@ function buildConversationQualitySummary(actionRows) {
     const repetitionPrevented = row && row.repetitionPrevented === true;
     const directAnswerApplied = row && row.directAnswerApplied === true;
     const clarifySuppressed = row && row.clarifySuppressed === true;
+    const followupCarryFromHistory = row && row.followupCarryFromHistory === true;
+    const recoverySignal = row && row.recoverySignal === true;
     const contextCarryScore = Number.isFinite(Number(row && row.contextCarryScore)) ? Number(row.contextCarryScore) : null;
     const repeatRiskScore = Number.isFinite(Number(row && row.repeatRiskScore)) ? Number(row.repeatRiskScore) : null;
 
@@ -601,6 +609,7 @@ function buildConversationQualitySummary(actionRows) {
       (readinessSafeResponseModes.get(readinessSafeResponseMode) || 0) + 1
     );
     followupIntents.set(followupIntent, (followupIntents.get(followupIntent) || 0) + 1);
+    followupIntentReasons.set(followupIntentReason, (followupIntentReasons.get(followupIntentReason) || 0) + 1);
     routerReasons.set(routerReason, (routerReasons.get(routerReason) || 0) + 1);
     actionCountTotal += Math.max(0, actionCount);
     candidateCountTotal += Math.max(0, candidateCount);
@@ -630,6 +639,14 @@ function buildConversationQualitySummary(actionRows) {
       clarifySuppressedSeenCount += 1;
       if (clarifySuppressed) clarifySuppressedCount += 1;
     }
+    if (Object.prototype.hasOwnProperty.call(row, 'followupCarryFromHistory')) {
+      followupCarryFromHistorySeenCount += 1;
+      if (followupCarryFromHistory) followupCarryFromHistoryCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'recoverySignal')) {
+      recoverySignalSeenCount += 1;
+      if (recoverySignal) recoverySignalCount += 1;
+    }
     if (typeof row.routerReason === 'string' && row.routerReason.trim()) {
       defaultCasualSeenCount += 1;
       if (routerReason === 'default_casual') defaultCasualCount += 1;
@@ -638,6 +655,7 @@ function buildConversationQualitySummary(actionRows) {
       followupIntentSeenCount += 1;
       const followupResolved = directAnswerApplied
         || clarifySuppressed
+        || followupCarryFromHistory
         || repetitionPrevented
         || (contextCarryScore !== null && contextCarryScore >= 0.55);
       if (followupResolved) followupResolvedCount += 1;
@@ -646,13 +664,14 @@ function buildConversationQualitySummary(actionRows) {
       contextResumeSeenCount += 1;
       const contextResumeHandled = conversationMode === 'concierge'
         || routerReason === 'contextual_domain_resume'
+        || followupCarryFromHistory
         || directAnswerApplied
         || (contextCarryScore !== null && contextCarryScore >= 0.6);
       if (contextResumeHandled) contextResumeHandledCount += 1;
     }
     if (repeatRiskScore !== null && repeatRiskScore >= 0.55) {
       recoveryRiskSeenCount += 1;
-      if (repetitionPrevented || directAnswerApplied || clarifySuppressed) {
+      if (repetitionPrevented || directAnswerApplied || clarifySuppressed || followupCarryFromHistory || recoverySignal) {
         recoveryHandledCount += 1;
       }
     }
@@ -723,6 +742,7 @@ function buildConversationQualitySummary(actionRows) {
     readinessDecisions: sortCountEntries(readinessDecisions, 'readinessDecision', 10),
     readinessSafeResponseModes: sortCountEntries(readinessSafeResponseModes, 'readinessSafeResponseMode', 10),
     followupIntents: sortCountEntries(followupIntents, 'followupIntent', 10),
+    followupIntentReasons: sortCountEntries(followupIntentReasons, 'followupIntentReason', 10),
     routerReasons: sortCountEntries(routerReasons, 'routerReason', 12),
     avgUnsupportedClaimCount: sampleCount > 0
       ? Math.round((unsupportedClaimCountTotal / sampleCount) * 10000) / 10000
@@ -751,8 +771,14 @@ function buildConversationQualitySummary(actionRows) {
     followupResolutionRate: followupIntentSeenCount > 0
       ? Math.round((followupResolvedCount / followupIntentSeenCount) * 10000) / 10000
       : 0,
+    followupCarryFromHistoryRate: followupCarryFromHistorySeenCount > 0
+      ? Math.round((followupCarryFromHistoryCount / followupCarryFromHistorySeenCount) * 10000) / 10000
+      : 0,
     contextualResumeHandledRate: contextResumeSeenCount > 0
       ? Math.round((contextResumeHandledCount / contextResumeSeenCount) * 10000) / 10000
+      : 0,
+    recoverySignalRate: recoverySignalSeenCount > 0
+      ? Math.round((recoverySignalCount / recoverySignalSeenCount) * 10000) / 10000
       : 0,
     recoveryHandledRate: recoveryRiskSeenCount > 0
       ? Math.round((recoveryHandledCount / recoveryRiskSeenCount) * 10000) / 10000
@@ -1000,7 +1026,9 @@ function buildQualityFrameworkSummary(payload) {
   const repeatRiskScore = clamp01(conversation.avgRepeatRiskScore);
   const followupRate = clamp01(conversation.followupQuestionIncludedRate);
   const followupResolutionRate = clamp01(conversation.followupResolutionRate);
+  const followupCarryFromHistoryRate = clamp01(conversation.followupCarryFromHistoryRate);
   const contextualResumeHandledRate = clamp01(conversation.contextualResumeHandledRate);
+  const recoverySignalRate = clamp01(conversation.recoverySignalRate);
   const recoveryHandledRate = clamp01(conversation.recoveryHandledRate);
   const domainConciergeRate = clamp01(conversation.domainIntentConciergeRate);
   const unsupportedClaims = clamp01(1 - Math.min(1, Number(conversation.avgUnsupportedClaimCount || 0)));
@@ -1022,11 +1050,12 @@ function buildQualityFrameworkSummary(payload) {
         1 - defaultCasualRate
         + domainConciergeRate
         + contextCarryScore
+        + followupCarryFromHistoryRate
         + directAnswerRate
         + clarifySuppressedRate
         + followupResolutionRate
         + contextualResumeHandledRate
-      ) / 7
+      ) / 8
     ),
     short_followup_understanding: clamp01((1 - defaultCasualRate + followupRate + contextCarryScore + directAnswerRate) / 4),
     clarification_quality: clamp01(
@@ -1035,16 +1064,26 @@ function buildQualityFrameworkSummary(payload) {
         + clarifySuppressedRate
         + directAnswerRate
         + contextCarryScore
+        + followupCarryFromHistoryRate
         + followupResolutionRate
         + contextualResumeHandledRate
-      ) / 6
+      ) / 7
     ),
     repetition_loop_avoidance: clamp01((1 - legacyTemplateHitRate + repetitionPreventedRate) / 2),
     direct_answer_first: clamp01((directAnswerRate + conciseRate) / 2),
     japanese_naturalness: clamp01(conciseRate),
     japanese_service_quality: clamp01((conciseRate + followupRate + (1 - legacyTemplateHitRate)) / 3),
     keigo_distance: clamp01(conciseRate),
-    empathy: clamp01((followupRate + conciseRate + directAnswerRate + contextCarryScore + followupResolutionRate) / 5),
+    empathy: clamp01(
+      (
+        followupRate
+        + conciseRate
+        + directAnswerRate
+        + contextCarryScore
+        + followupCarryFromHistoryRate
+        + followupResolutionRate
+      ) / 6
+    ),
     cultural_habit_fit: clamp01((followupRate + domainConciergeRate) / 2),
     line_native_fit: clamp01((conciseRate + directAnswerRate + (1 - retrieveNeededRate)) / 3),
     action_policy_compliance: clamp01(acceptedRate),
@@ -1058,9 +1097,11 @@ function buildQualityFrameworkSummary(payload) {
         + directAnswerRate
         + (1 - repeatRiskScore)
         + contextCarryScore
+        + followupCarryFromHistoryRate
+        + recoverySignalRate
         + recoveryHandledRate
         + followupResolutionRate
-      ) / 6
+      ) / 8
     ),
     escalation_appropriateness: clamp01((officialOnlyRate + sourceAuthority) / 2),
     operational_reliability: clamp01(acceptedRate),
@@ -1070,8 +1111,9 @@ function buildQualityFrameworkSummary(payload) {
         + (1 - retrieveNeededRate)
         + (1 - repeatRiskScore)
         + directAnswerRate
+        + followupCarryFromHistoryRate
         + contextualResumeHandledRate
-      ) / 5
+      ) / 6
     )
   };
 
