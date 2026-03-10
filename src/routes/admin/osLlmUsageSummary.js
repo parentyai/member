@@ -488,7 +488,25 @@ function buildOptimizationSummary(actionRows, gateAuditBaseline) {
 }
 
 function buildConversationQualitySummary(actionRows) {
-  const rows = Array.isArray(actionRows) ? actionRows : [];
+  const rawRows = Array.isArray(actionRows) ? actionRows : [];
+  const conversationRows = rawRows.filter((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const entryType = normalizeReason(row.entryType).toLowerCase();
+    if (entryType === 'job') return false;
+    if (typeof row.conversationMode === 'string' && row.conversationMode.trim()) return true;
+    if (typeof row.routerReason === 'string' && row.routerReason.trim()) return true;
+    if (typeof row.strategy === 'string' && row.strategy.trim()) return true;
+    if (typeof row.domainIntent === 'string' && row.domainIntent.trim()) return true;
+    if (typeof row.followupIntent === 'string' && row.followupIntent.trim()) return true;
+    if (row.directAnswerApplied === true) return true;
+    if (row.conciseModeApplied === true) return true;
+    if (row.repetitionPrevented === true) return true;
+    if (row.clarifySuppressed === true) return true;
+    if (Number.isFinite(Number(row.contextCarryScore))) return true;
+    if (Number.isFinite(Number(row.repeatRiskScore))) return true;
+    return false;
+  });
+  const rows = conversationRows.length > 0 ? conversationRows : rawRows;
   const naturalnessVersions = new Map();
   const domainCounts = new Map();
   const fallbackTypes = new Map();
@@ -519,14 +537,21 @@ function buildConversationQualitySummary(actionRows) {
   let unsupportedClaimCountTotal = 0;
   let contradictionDetectedCount = 0;
   let conciseModeAppliedCount = 0;
+  let conciseModeAppliedSeenCount = 0;
   let repetitionPreventedCount = 0;
+  let repetitionPreventedSeenCount = 0;
   let defaultCasualCount = 0;
+  let defaultCasualSeenCount = 0;
   let directAnswerAppliedCount = 0;
+  let directAnswerAppliedSeenCount = 0;
   let clarifySuppressedCount = 0;
+  let clarifySuppressedSeenCount = 0;
   let contextCarryScoreTotal = 0;
   let contextCarryScoreCount = 0;
   let repeatRiskScoreTotal = 0;
   let repeatRiskScoreCount = 0;
+  let followupQuestionIncludedSeenCount = 0;
+  let pitfallIncludedSeenCount = 0;
 
   rows.forEach((row) => {
     const naturalnessVersion = normalizeReason(row && row.conversationNaturalnessVersion ? row.conversationNaturalnessVersion : 'v1');
@@ -573,13 +598,34 @@ function buildConversationQualitySummary(actionRows) {
     candidateCountTotal += Math.max(0, candidateCount);
     if (retrieveNeeded) retrieveNeededCount += 1;
     if (legacyTemplateHit) legacyTemplateHitCount += 1;
-    if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
-    if (pitfallIncluded) pitfallIncludedCount += 1;
-    if (conciseModeApplied) conciseModeAppliedCount += 1;
-    if (repetitionPrevented) repetitionPreventedCount += 1;
-    if (directAnswerApplied) directAnswerAppliedCount += 1;
-    if (clarifySuppressed) clarifySuppressedCount += 1;
-    if (routerReason === 'default_casual') defaultCasualCount += 1;
+    if (Object.prototype.hasOwnProperty.call(row, 'followupQuestionIncluded')) {
+      followupQuestionIncludedSeenCount += 1;
+      if (followupQuestionIncluded) followupQuestionIncludedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'pitfallIncluded')) {
+      pitfallIncludedSeenCount += 1;
+      if (pitfallIncluded) pitfallIncludedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'conciseModeApplied')) {
+      conciseModeAppliedSeenCount += 1;
+      if (conciseModeApplied) conciseModeAppliedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'repetitionPrevented')) {
+      repetitionPreventedSeenCount += 1;
+      if (repetitionPrevented) repetitionPreventedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'directAnswerApplied')) {
+      directAnswerAppliedSeenCount += 1;
+      if (directAnswerApplied) directAnswerAppliedCount += 1;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'clarifySuppressed')) {
+      clarifySuppressedSeenCount += 1;
+      if (clarifySuppressed) clarifySuppressedCount += 1;
+    }
+    if (typeof row.routerReason === 'string' && row.routerReason.trim()) {
+      defaultCasualSeenCount += 1;
+      if (routerReason === 'default_casual') defaultCasualCount += 1;
+    }
     if (row && row.officialOnlySatisfied === true) officialOnlySatisfiedCount += 1;
     if (Number.isFinite(Number(row && row.unsupportedClaimCount))) {
       unsupportedClaimCountTotal += Math.max(0, Number(row.unsupportedClaimCount));
@@ -619,8 +665,12 @@ function buildConversationQualitySummary(actionRows) {
     conversationNaturalnessVersion: versionRows.length > 0 ? versionRows[0].conversationNaturalnessVersion : 'v1',
     conversationNaturalnessVersions: versionRows,
     legacyTemplateHitRate: sampleCount > 0 ? Math.round((legacyTemplateHitCount / sampleCount) * 10000) / 10000 : 0,
-    followupQuestionIncludedRate: sampleCount > 0 ? Math.round((followupQuestionIncludedCount / sampleCount) * 10000) / 10000 : 0,
-    pitfallIncludedRate: sampleCount > 0 ? Math.round((pitfallIncludedCount / sampleCount) * 10000) / 10000 : 0,
+    followupQuestionIncludedRate: followupQuestionIncludedSeenCount > 0
+      ? Math.round((followupQuestionIncludedCount / followupQuestionIncludedSeenCount) * 10000) / 10000
+      : 0,
+    pitfallIncludedRate: pitfallIncludedSeenCount > 0
+      ? Math.round((pitfallIncludedCount / pitfallIncludedSeenCount) * 10000) / 10000
+      : 0,
     avgActionCount: sampleCount > 0 ? Math.round((actionCountTotal / sampleCount) * 10000) / 10000 : 0,
     avgCandidateCount: sampleCount > 0 ? Math.round((candidateCountTotal / sampleCount) * 10000) / 10000 : 0,
     retrieveNeededRate: sampleCount > 0 ? Math.round((retrieveNeededCount / sampleCount) * 10000) / 10000 : 0,
@@ -650,17 +700,17 @@ function buildConversationQualitySummary(actionRows) {
     contradictionDetectedRate: sampleCount > 0
       ? Math.round((contradictionDetectedCount / sampleCount) * 10000) / 10000
       : 0,
-    conciseModeAppliedRate: sampleCount > 0
-      ? Math.round((conciseModeAppliedCount / sampleCount) * 10000) / 10000
+    conciseModeAppliedRate: conciseModeAppliedSeenCount > 0
+      ? Math.round((conciseModeAppliedCount / conciseModeAppliedSeenCount) * 10000) / 10000
       : 0,
-    repetitionPreventedRate: sampleCount > 0
-      ? Math.round((repetitionPreventedCount / sampleCount) * 10000) / 10000
+    repetitionPreventedRate: repetitionPreventedSeenCount > 0
+      ? Math.round((repetitionPreventedCount / repetitionPreventedSeenCount) * 10000) / 10000
       : 0,
-    directAnswerAppliedRate: sampleCount > 0
-      ? Math.round((directAnswerAppliedCount / sampleCount) * 10000) / 10000
+    directAnswerAppliedRate: directAnswerAppliedSeenCount > 0
+      ? Math.round((directAnswerAppliedCount / directAnswerAppliedSeenCount) * 10000) / 10000
       : 0,
-    clarifySuppressedRate: sampleCount > 0
-      ? Math.round((clarifySuppressedCount / sampleCount) * 10000) / 10000
+    clarifySuppressedRate: clarifySuppressedSeenCount > 0
+      ? Math.round((clarifySuppressedCount / clarifySuppressedSeenCount) * 10000) / 10000
       : 0,
     avgContextCarryScore: contextCarryScoreCount > 0
       ? Math.round((contextCarryScoreTotal / contextCarryScoreCount) * 10000) / 10000
@@ -668,8 +718,8 @@ function buildConversationQualitySummary(actionRows) {
     avgRepeatRiskScore: repeatRiskScoreCount > 0
       ? Math.round((repeatRiskScoreTotal / repeatRiskScoreCount) * 10000) / 10000
       : 0,
-    defaultCasualRate: sampleCount > 0
-      ? Math.round((defaultCasualCount / sampleCount) * 10000) / 10000
+    defaultCasualRate: defaultCasualSeenCount > 0
+      ? Math.round((defaultCasualCount / defaultCasualSeenCount) * 10000) / 10000
       : 0,
     contradictionFlags: sortCountEntries(contradictionFlags, 'flag', 10),
     domainIntents: sortCountEntries(domainCounts, 'domainIntent', 10),
