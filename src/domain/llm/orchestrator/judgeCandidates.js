@@ -34,6 +34,11 @@ function hasDomainAlignment(packet, candidate) {
 function scoreCandidate(packet, candidate, options) {
   const payload = candidate && typeof candidate === 'object' ? candidate : {};
   const strategy = normalizeText(options && options.strategy).toLowerCase();
+  const followupIntent = normalizeText(packet && packet.followupIntent).toLowerCase();
+  const followupAware = followupIntent === 'docs_required' || followupIntent === 'appointment_needed' || followupIntent === 'next_step';
+  const contextResume = packet && packet.contextResume === true;
+  const directAnswerCandidate = payload.directAnswerCandidate === true
+    || (followupAware && payload.kind === 'domain_concierge_candidate');
   const text = normalizeText(payload.replyText);
   const bulletCount = countActionBullets(text);
   const questionCount = countQuestions(text);
@@ -48,7 +53,10 @@ function scoreCandidate(packet, candidate, options) {
   if (questionCount > 1) rejectedReasons.push('too_many_questions');
 
   const safety = rejectedReasons.length ? 0 : 1;
-  const naturalness = Math.max(0, 1 - ((legacyTemplateHit ? 0.5 : 0) + (questionCount > 1 ? 0.2 : 0) + (bulletCount > 3 ? 0.2 : 0)));
+  let naturalness = Math.max(0, 1 - ((legacyTemplateHit ? 0.5 : 0) + (questionCount > 1 ? 0.2 : 0) + (bulletCount > 3 ? 0.2 : 0)));
+  if (followupAware && payload.kind === 'clarify_candidate' && directAnswerCandidate !== true) {
+    naturalness = Math.max(0, naturalness - 0.08);
+  }
   const contextConsistency = hasDomainAlignment(packet, payload) ? 1 : 0.2;
   let taskProgress = bulletCount > 0 && bulletCount <= 3 ? 1 : (strategy === 'clarify' && questionCount === 1 ? 0.8 : 0.3);
   if (strategy === 'casual' && payload.kind === 'casual_candidate') {
@@ -57,10 +65,20 @@ function scoreCandidate(packet, candidate, options) {
   if (strategy === 'clarify' && payload.kind === 'clarify_candidate') {
     taskProgress = Math.min(1, taskProgress + 0.2);
   }
+  if (followupAware && directAnswerCandidate) {
+    taskProgress = Math.min(1, taskProgress + 0.35);
+  }
+  if (contextResume && hasDomainAlignment(packet, payload)) {
+    taskProgress = Math.min(1, taskProgress + 0.1);
+  }
   const groundedness = payload.retrievalQuality === 'good'
     ? 1
     : (payload.retrievalQuality === 'mixed' ? 0.6 : (payload.kind === 'clarify_candidate' || payload.kind === 'domain_concierge_candidate' ? 0.7 : 0.2));
-  const sensibleness = text.length >= 8 ? 1 : 0.4;
+  let sensibleness = text.length >= 8 ? 1 : 0.4;
+  if (followupAware && directAnswerCandidate && text.length >= 8) {
+    sensibleness = 1;
+  }
+  const directAnswerFit = followupAware ? (directAnswerCandidate ? 1 : 0.35) : 0.5;
   const total = Number(((sensibleness * 0.18)
     + (contextConsistency * 0.18)
     + (taskProgress * 0.2)
@@ -78,7 +96,8 @@ function scoreCandidate(packet, candidate, options) {
       taskProgress,
       groundedness,
       naturalness,
-      safety
+      safety,
+      directAnswerFit
     }
   };
 }
@@ -96,6 +115,9 @@ function judgeCandidates(params) {
     const leftRejected = left.verdict.rejectedReasons.length > 0 ? 1 : 0;
     const rightRejected = right.verdict.rejectedReasons.length > 0 ? 1 : 0;
     if (leftRejected !== rightRejected) return leftRejected - rightRejected;
+    const leftDirect = Number(left.verdict.metrics && left.verdict.metrics.directAnswerFit) || 0;
+    const rightDirect = Number(right.verdict.metrics && right.verdict.metrics.directAnswerFit) || 0;
+    if (rightDirect !== leftDirect) return rightDirect - leftDirect;
     return right.verdict.total - left.verdict.total;
   });
   const selected = scored[0] || null;

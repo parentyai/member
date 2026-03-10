@@ -359,6 +359,8 @@ async function appendLlmActionLog(params) {
     contextResumeDomain: normalizeContextResumeDomain(payload.contextResumeDomain),
     loopBreakApplied: payload.loopBreakApplied === true,
     followupIntent: normalizeFollowupIntent(payload.followupIntent),
+    followupIntentReason: normalizeString(payload.followupIntentReason, null),
+    followupCarryFromHistory: payload.followupCarryFromHistory === true,
     conciseModeApplied: payload.conciseModeApplied === true,
     repetitionPrevented: payload.repetitionPrevented === true,
     directAnswerApplied: payload.directAnswerApplied === true,

@@ -120,3 +120,61 @@ test('phase758: recovery signal keeps domain-aware clarify wording instead of ge
   assert.match(result.replyText, /SSN|書類/);
   assert.equal(result.replyText.includes('対象を絞って案内したいので'), false);
 });
+
+test('phase758: history-followup carry prefers direct domain answer over clarify candidate', async () => {
+  const result = await runPaidConversationOrchestrator({
+    lineUserId: 'U_PHASE758_HISTORY',
+    messageText: 'それで？',
+    paidIntent: 'situation_analysis',
+    planInfo: { plan: 'pro', status: 'active' },
+    routerMode: 'casual',
+    routerReason: 'default_casual',
+    llmFlags: {
+      llmConciergeEnabled: true,
+      llmWebSearchEnabled: true,
+      llmStyleEngineEnabled: true,
+      llmBanditEnabled: false,
+      qualityEnabled: true,
+      snapshotStrictMode: false
+    },
+    recentActionRows: [
+      {
+        createdAt: new Date().toISOString(),
+        domainIntent: 'ssn',
+        followupIntent: 'docs_required',
+        replyText: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。'
+      }
+    ],
+    deps: {
+      generatePaidCasualReply: () => ({ replyText: '了解です。' }),
+      generateGroundedReply: async () => ({ ok: false, blockedReason: 'not_used' }),
+      generateDomainConciergeCandidate: async () => ({
+        ok: true,
+        domainIntent: 'ssn',
+        conversationMode: 'concierge',
+        opportunityType: 'action',
+        opportunityReasonKeys: ['ssn_intent'],
+        interventionBudget: 1,
+        followupIntent: 'docs_required',
+        conciseModeApplied: true,
+        replyText: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。',
+        atoms: {
+          situationLine: 'SSNは本人確認書類と在留資格が分かる書類を先にそろえるのが最優先です。',
+          nextActions: ['不足書類を1つずつ確認する'],
+          pitfall: '',
+          followupQuestion: ''
+        },
+        auditMeta: null
+      })
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.packet.followupIntentReason, 'history_followup_carry');
+  assert.equal(result.packet.followupCarryFromHistory, true);
+  assert.equal(result.telemetry.directAnswerApplied, true);
+  assert.equal(result.telemetry.clarifySuppressed, true);
+  assert.equal(result.telemetry.followupCarryFromHistory, true);
+  assert.equal(result.telemetry.followupIntent, 'docs_required');
+  assert.equal(result.replyText.includes('対象を絞って案内'), false);
+});

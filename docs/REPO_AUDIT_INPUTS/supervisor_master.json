@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T21:31:53-04:00",
-  "gitCommit": "b8d62b24c52d273dc3f559ad05beafa95f47cca8",
-  "branch": "main",
-  "sourceDigest": "ebde51787c4f2ac38a3d2de3e69c09c12d741a0f20329e04c7db632e882d4670",
+  "generatedAt": "2026-03-09T21:49:28-04:00",
+  "gitCommit": "57be2304ad7888d242598c0dc3a37ed6aac9dff8",
+  "branch": "codex/phase760-followup-carry-judge-directanswer",
+  "sourceDigest": "dda357ec6e0115c2327de9b95bf3eb58689262eb9dfe154f3e9758c77d729e21",
   "required": {
     "ssot": {
       "index": "docs/SSOT_INDEX.md",

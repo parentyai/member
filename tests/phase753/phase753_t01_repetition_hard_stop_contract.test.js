@@ -71,3 +71,23 @@ test('phase753: orchestrator blocks repeated near-identical replies under contex
   assert.equal(result.telemetry.repeatRiskScore >= 0.4, true);
   assert.equal(result.replyText === repeatedReply, false);
 });
+
+test('phase753: repeated follow-up stays concise and avoids repeating identical question line', () => {
+  const { generatePaidDomainConciergeReply } = require('../../src/usecases/assistant/generatePaidDomainConciergeReply');
+  const response = generatePaidDomainConciergeReply({
+    domainIntent: 'ssn',
+    messageText: '予約するの？',
+    followupIntent: 'appointment_needed',
+    recentFollowupIntents: ['appointment_needed', 'appointment_needed'],
+    recentResponseHints: [
+      '窓口は予約が必要な地域もあるので、最寄り窓口の予約要否を先に確認しましょう。',
+      '次は最寄り窓口を1つ決めて予約可否を確認しましょう。'
+    ]
+  });
+
+  assert.equal(response.ok, true);
+  const lines = String(response.replyText || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  assert.equal(lines.length <= 2, true);
+  assert.equal(response.replyText.includes('教えてもらえますか？'), false);
+  assert.equal(response.replyText.includes('対象を絞って案内したいので'), false);
+});
